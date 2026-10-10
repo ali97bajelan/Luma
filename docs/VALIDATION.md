@@ -14,7 +14,7 @@ caches and downloaded SDKs out of the source tree. Google download endpoints
 returned HTTP 404; the official SDK download redirector and a temporary Google Maven mirror
 allowed verification to proceed. Standard official repositories remain in the project configuration.
 
-## Results
+## T01–T02 results (before T03)
 
 - PASS: all Android resource/manifest XML parses; version catalog parses.
 - PASS: all 20 tasks and future backlog reflected in TASKS.md.
@@ -28,7 +28,7 @@ allowed verification to proceed. Standard official repositories remain in the pr
 - PASS: final build/domain tests/lint/test APK check runs offline through the checked-in wrapper.
 - PASS: merged app manifest has no Internet or sensitive runtime permission; AndroidX adds only its internal signature permission.
 - PASS: ADB device query runs; initially no emulator or physical device was attached.
-- RUNNING: trying a temporary software emulator at minimum-supported API 26 (no hardware virtualization available).
+- PENDING: minimum-supported API 26 device verification; emulator attempts belong to the earlier foundation work. No emulator is being launched for T03.
 - PENDING: device launch and both navigation instrumentation tests.
 
 Domain test command used this environment's temporary Google Maven override:
@@ -56,3 +56,31 @@ GRADLE_USER_HOME=/tmp/luma-gradle-home ./gradlew \
 
 Artifacts: `app/build/outputs/apk/debug/app-debug.apk` and
 `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`.
+
+## T03 implementation — validation deferred
+
+At the user's request, T03 was implemented through file edits only. No application
+code, tests, Gradle commands, SDK installation, or virtualization was run. The prior
+PASS results above do not validate the new persistence module or current app build.
+
+Pending user checks:
+
+- Gradle sync with the added Room/KSP plugins and `core:data` Android module.
+- Debug build and Android lint for both the application and data library.
+- Generate and commit Room's version 1 JSON schemas under `core/data/schemas`.
+- Compile and run `PersistenceTest` and `SchemaMigrationTest` on a device.
+- Re-run application navigation/recreation instrumentation after storage wiring.
+
+Commands for the user to run later (not executed during T03):
+
+```sh
+./gradlew :app:assembleDebug :app:lintDebug :core:data:lintDebug
+./gradlew :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest
+./gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+The data tests exercise CRUD, complete snapshot updates, all relation types,
+foreign-key cascades, source and bucket uniqueness, failed-write rollback, import
+retry reconciliation, atomic checkpoint updates, cache freshness, stable ordering,
+half-open time ranges, exported-schema reopening, and unsupported-version failure.
+No test result is claimed until the user runs these checks.

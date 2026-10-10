@@ -11,7 +11,7 @@ A task is complete only after its acceptance criteria have been verified.
 
 Status: implemented (validation pending)
 
-Validation: debug APK and instrumentation APK build; Android lint has zero issues; 13 domain tests pass. Device launch/navigation checks are pending; a temporary software emulator is being attempted.
+Validation: foundation debug APK and instrumentation APK built; Android lint reported zero issues; 13 domain tests passed before T03. Device launch/navigation checks remain pending and will be run by the user; no further emulator work is requested.
 
 
 ### Scope
@@ -47,7 +47,17 @@ Validation: 13 JVM tests passed, including identity, audit/occurrence invariants
 
 ## T03 — Implement local persistence
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: added the `core:data` Android library, Room version 1 schema for all
+13 records and four link tables, indexed relations, DAOs, domain envelope mapping,
+transactional event/catalog/cache repositories, source-identity reconciliation,
+atomic import/checkpoint writes, and lazy application storage wiring. Persistence
+and migration baseline instrumentation test sources are included.
+
+Validation: not run, at the user's request. Gradle sync/build, schema JSON generation,
+CRUD/relation/rollback/import tests, and schema reopening checks are pending user
+validation. Commit Room's generated version 1 schema JSON after the first build.
 
 
 ### Scope

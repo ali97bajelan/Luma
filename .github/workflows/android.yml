@@ -28,7 +28,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
-      - run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest --no-daemon
+      - run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :core:data:lintDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest --no-daemon
   instrumentation:
     runs-on: ubuntu-latest
     steps:
@@ -48,4 +48,4 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon
+          script: ./gradlew :app:connectedDebugAndroidTest :core:data:connectedDebugAndroidTest --no-daemon

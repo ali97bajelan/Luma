@@ -33,6 +33,7 @@ kotlin { jvmToolchain(17) }
 
 dependencies {
     implementation(project(":core:domain"))
+    implementation(project(":core:data"))
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)
     implementation(libs.compose.ui)

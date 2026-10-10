@@ -14,7 +14,7 @@ constraints. No account, cloud sync, AI dependency, or telemetry is introduced.
 - Jetpack Compose and Material 3; AndroidX Navigation Compose.
 - Minimum Android API 26; compile/target API 36. `java.time` is available natively.
 - Coroutines and Flow for asynchronous repository contracts.
-- Room/SQLite and KSP in T03; WorkManager for retryable imports in T12/T13.
+- Room 2.8.5/SQLite and KSP2 2.3.5 for persistence; WorkManager for retryable imports in T12/T13.
 - JUnit for pure JVM tests; AndroidX Test and Compose testing for device checks.
 - Explicit constructor injection initially; no dependency injection framework.
 
@@ -28,7 +28,7 @@ This is a modular monolith, producing one APK:
 ```text
 app                         Android entry point, navigation, UI, composition root
   -> core:domain            pure Kotlin entities, invariants, repository contracts
-  -> core:data (T03)         Room, mappings, transactions, repository implementations
+  -> core:data              Room, mappings, transactions, repository implementations
 integration:usage (T12)      Android usage adapter
 integration:health (T13)     Health Connect adapter
 ```
@@ -38,7 +38,7 @@ Package layout follows the same boundaries:
 - `com.luma.lifeos`: Android entry point.
 - `com.luma.lifeos.ui` and `ui.theme`: navigation, screens, and visual theme.
 - `com.luma.lifeos.domain.model`, `.time`, `.repository`: domain values and contracts.
-- Planned `com.luma.lifeos.data`: `.db`, `.dao`, `.entity`, `.mapping`, `.repository`.
+- `com.luma.lifeos.data`: `.db`, `.dao`, `.entity`, `.mapping`, `.repository`.
 - Planned `com.luma.lifeos.integration.usage` and `.health`: platform adapters.
 
 The domain uses the Java library plugin and exports Coroutines as an API dependency
@@ -49,9 +49,9 @@ Room. Feature packages under `app/ui/` grow in task order; separate feature Grad
 modules are unnecessary until build or ownership needs justify them. Integration
 adapters depend inward on domain contracts. No microservices or backend.
 
-## Planned database schema (T03)
+## Database schema (T03)
 
-Schema version 1 will use stable text UUIDs, UTC epoch-millisecond timestamps,
+Schema version 1 uses stable text UUIDs, UTC epoch-millisecond timestamps,
 and explicit foreign keys. Day ranges are computed from the selected `ZoneId`,
 not by adding 24 hours. Keep event occurrence separate from creation/update times.
 
@@ -67,7 +67,7 @@ not by adding 24 hours. Keep event occurrence separate from creation/update time
 | media_attachment | id PK; life_event_id FK; type=image; app-private relative path; metadata_json |
 | tag / event_tag | id PK, normalized unique name / event_id + tag_id composite PK |
 | activity_record | id PK; life_event_id FK; activity_type; value; unit; source; external source identity |
-| app_usage_record | id PK; bucket_start/end; package_name; duration_ms; source; UNIQUE(source, package_name, bucket_start, bucket_end) |
+| app_usage_record | id PK; life_event_id UNIQUE FK; bucket_start/end; package_name; duration_ms; source; UNIQUE(source, package_name, bucket_start, bucket_end) |
 | daily_summary | date + zone_id composite PK; derived metrics; algorithm_version; computed_at; freshness state |
 | integration_state | source PK; status; last_sync_at; checkpoint |
 
@@ -78,9 +78,57 @@ only. Memory promotion never copies journal content. Related capture/edit/delete
 operations and import upserts are transactional. Physical media deletion occurs
 after database success with orphan cleanup, avoiding lost references on failure.
 
-Export Room schemas to version control. Add migration tests when version 2 is
-introduced; never enable destructive fallback. A backup has a distinct format
+The Room Gradle plugin exports versioned schemas to `core/data/schemas` and supplies
+them to the data module's instrumentation tests. Compiler-generated JSON is pending
+the user's first build; schema generation was not run during T03. Commit it before
+evolving version 1. `SchemaMigrationTest` covers opening the exported v1 schema,
+preserving journal content across the registered migration chain, and rejecting an
+unsupported database version without erasing records. There is no migration before
+the initial version; add a real upgrade to `LumaDatabase.MIGRATIONS` for version 2
+and extend data-preservation cases. Never enable destructive fallback.
+
+A backup has a distinct format
 version, validates before replacement, and includes only referenced local media.
+
+## Persistence boundaries
+
+`LumaApplication` lazily owns one `LumaStorage` with an app-private `luma.db`.
+Room opens it on demand through asynchronous queries; main-thread queries are not
+enabled. `RoomLifeEventRepository` implements the existing domain contract, keeps
+creation time and source identity stable, and reconciles repeated source imports to
+the original event ID. Updates use SQL UPDATE rather than deleting/replacing the
+parent row, so typed content survives envelope-only edits. Event types remain stable
+after insertion; memory promotion attaches a marker to the original event.
+
+`RoomEventStore.save` writes a **complete snapshot**: omitted typed content or links
+are removed. It updates the parent, replaces details/links, and invalidates cached
+summaries in one transaction. Invalid catalog references or uniqueness conflicts
+roll back the whole write. Catalog objects must exist first. Child IDs are validated
+as UUIDs; imported retries remap their parent links to the canonical event ID.
+`saveImportBatch` also commits the integration checkpoint in that same transaction.
+Feature-specific domain models and capture UI remain assigned to their later tasks;
+the initial typed storage DTOs belong only to `core:data`.
+
+`EventWithDetails` loads indexed relations in batched queries under `@Transaction`.
+People/emotions/tags are reusable catalog rows. Each event has at most one place.
+Tag uniqueness uses trimmed, locale-independent lowercase names. Activity source
+references and usage package/bucket tuples have unique indexes. Numeric ranges,
+coordinate pairs, and app-private media paths are validated at storage boundaries.
+Enum values are persisted by name; renaming a value needs a migration.
+
+Event writes and catalog edits conservatively mark all fresh daily summaries stale.
+`RoomDerivedDataRepository.rebuildSummary` reads a day's event graph and stores the
+caller-derived summary in the same transaction, preventing a concurrent event write
+from making an outdated cache appear fresh. T14 supplies the actual algorithm and
+can narrow invalidation when its full dependency set is known. No fabricated metrics
+or permission-state assumptions are introduced.
+
+Media operations here affect database references only. Aggregate saves/deletes return
+removed relative paths after commit, and `referencedMediaPaths` supports later orphan
+cleanup. T10 owns private file copying and physical deletion; it must recheck references
+before deleting a returned path. No file is deleted during a database transaction.
+Instant values are stored at millisecond precision. Range bounds round upward to
+preserve half-open inclusion rules for queries with submillisecond endpoints.
 
 ## Domain rules and time
 
@@ -123,3 +171,13 @@ and instrumentation tests on an API 36 emulator. Instrumentation verifies that
 the shell launches and primary routes are reachable; subsequent phases extend
 coverage to persistence and critical flows. Device-only checks must be marked
 pending when no emulator or physical device is available.
+
+T03 adds persistence CRUD, indexed relations, Flow updates, transactional rollback,
+source retry identity, atomic checkpoints, cache invalidation, deletion cascades,
+and schema baseline test sources. No code, Gradle, test, or emulator commands were
+run for T03, as requested; all acceptance checks remain pending user validation.
+
+Persistence tooling references:
+[Room releases and schema export](https://developer.android.com/jetpack/androidx/releases/room),
+[KSP 2.3.5](https://github.com/google/ksp/releases/tag/2.3.5), and
+[MigrationTestHelper](https://developer.android.com/reference/androidx/room/testing/MigrationTestHelper).
