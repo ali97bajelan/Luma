@@ -1,0 +1,132 @@
+Personal Life OS
+Project Definition & Product Specification — v0.1 — October 2026
+1. Product Vision
+Personal Life OS is a privacy-first, local-first Android application for recording, revisiting, and understanding a person's life. It combines automatically collected signals with intentional human input to create a coherent personal timeline and, over time, useful insights.
+The product is not primarily a task manager, habit tracker, diary, or health dashboard. Its core is a unified life record: what happened, how the user felt, who was involved, where it happened, and what patterns can be learned from the accumulated data.
+2. Core Principles
+Local-first: the on-device database is the primary source of truth and core features work offline.
+Privacy-first: no sensitive life data is sent remotely without explicit user action and consent.
+Low-friction capture: common entries should take only a few seconds.
+Unified timeline: manual and automatic records converge into one chronological life timeline.
+Useful without AI: AI is an optional enhancement, never a dependency for core functionality.
+Explainable insights: show the supporting time range/data and never present correlation as causation.
+Extensible model: keep the MVP focused while designing the data model for later modules.
+3. MVP Scope
+Today screen with daily summary and quick-capture actions.
+Day-based Life Timeline with calendar/date navigation.
+Mood check-ins: mood score, emotions, energy, stress, optional note, and timestamp.
+Journal entries: title (optional), text, timestamp, tags, and optional photo attachments.
+Memories: create a notable memory directly or promote an existing timeline/journal event into a memory.
+People: create people and link them to journal entries, memories, and other supported life events.
+Places: manually create/select places and link them to entries and memories. No continuous or automatic location tracking in MVP.
+Android screen-time/app-usage integration where platform permissions allow it.
+Health/activity integration using supported Android APIs, initially targeting steps and, where practical, sleep/workouts.
+Daily summaries and deterministic statistics.
+Weekly Review combining useful statistics, notable memories, mood/emotion patterns, people, and activity changes.
+Search and filters by date, text, type, tag, mood/emotion, person, and place.
+Local backup/export and restore using a versioned portable format.
+Settings for permissions, integrations, privacy, data deletion, backup, and restore.
+4. Explicitly Out of Scope for MVP
+Voice notes and transcription.
+Goals and full habit tracking.
+Task/project management and to-do features.
+Social features, followers, feeds, or public profiles.
+Mandatory accounts, cloud storage, or cross-device sync.
+Continuous/automatic location history.
+Full conversational 'Ask My Life' assistant.
+Semantic/vector search.
+Medical diagnosis, treatment recommendations, or mental-health diagnosis.
+5. Core User Experience
+Today
+The default screen summarizes the current day and provides fast capture. It may show recent mood, screen time, activity/health signals, journal entries, memories, people, and places when data exists.
+Life Timeline
+The timeline is the central navigation model. Each day contains timestamped automatic and manual events. The user can move between dates, inspect an event, edit supported manual records, and promote an event to a memory.
+Quick Capture
+A persistent action provides fast access to mood check-in, journal entry, and memory capture. People, places, tags, and photos can be attached without turning capture into a long form.
+Weekly Review
+The review should answer what happened during the week, how the user generally felt, notable memories, important people/places, changes in digital behavior and activity, and meaningful differences from previous periods.
+6. Suggested Domain Model
+Entity
+Purpose / Initial Fields
+LifeEvent
+id, type, occurred_at, ended_at?, source, source_ref?, title?, note?, metadata, created_at, updated_at
+MoodEntry
+id, life_event_id, mood_score, energy?, stress?, note?
+Emotion
+id, name; many-to-many with MoodEntry
+JournalEntry
+id, life_event_id, title?, body
+Memory
+id, life_event_id, importance?, note?
+Person
+id, name, note?, photo_uri?; many-to-many links to supported LifeEvents
+Place
+id, name, note?, latitude?, longitude?; manually created/selected in MVP
+MediaAttachment
+id, life_event_id, type=image, local_uri, metadata?
+Tag
+id, name; reusable many-to-many tagging
+ActivityRecord
+id, life_event_id, activity_type, value, unit, source
+AppUsageRecord
+id, bucket/date, package_name, duration, source
+DailySummary
+date, derived metrics/cache; reproducible from raw records
+IntegrationState
+source, permission/status, last_sync_at, checkpoint?
+7. Architecture Constraints
+Android-first application.
+Use a modular monolith; do not introduce microservices.
+Use a local relational database as the primary persistence layer (Room/SQLite is a suitable default).
+Keep domain logic separate from Android-specific integrations where practical.
+Wrap Health Connect, usage statistics, media, and future integrations behind interfaces/adapters.
+Background imports must be idempotent and safe to retry.
+Derived summaries must be reproducible from raw data.
+AI must sit behind an interface and may be completely disabled.
+Database migrations must preserve user data.
+Backup format must be versioned for future migration compatibility.
+The application must degrade gracefully when optional permissions are denied or revoked.
+8. Insight Engine
+MVP insights should be deterministic: trends, averages, distributions, period-over-period comparisons, and carefully labeled correlations when sufficient data exists. AI-generated narrative is optional and should only summarize facts computed by the application.
+Example: “During the last 8 weeks, days with a recorded morning workout were associated with a higher average evening mood.” The UI should expose the time range and sample size and must not claim that the workout caused the mood change.
+9. Future Phases
+Voice notes, local/optional transcription, and richer media.
+Goals and lightweight habits integrated into the life timeline.
+Ask My Life: natural-language questions over timeline, memories, people, places, moods, and trends.
+Semantic search and optional local embeddings.
+Monthly and yearly narrative retrospectives.
+Relationship timelines and richer People features.
+Optional encrypted multi-device sync.
+Additional user-authorized context integrations such as calendar, weather, wearables, and coarse location.
+10. MVP Screens
+Onboarding / privacy and permission setup
+Today
+Life Timeline / calendar navigation
+Quick Capture
+Mood Check-in
+Journal / Memory Editor
+Entry Detail / Edit
+People
+Person Detail
+Places
+Place Detail
+Weekly Review
+Search & Filters
+Settings / Integrations / Backup & Restore
+11. Non-Functional Requirements
+Fast startup and smooth timeline scrolling with multi-year datasets.
+Offline support for capture, browsing, search, and deterministic reviews.
+Automated tests for domain logic, aggregations, import idempotency, migrations, and backup/restore.
+No telemetry containing journal text, moods, health values, people, places, photos, or other sensitive content.
+Accessible UI with scalable text and appropriate content descriptions.
+Clear permission explanations and explicit opt-in for sensitive integrations.
+12. Definition of MVP Success
+A user can install the app without creating an account, record moods and journal/memory events quickly, attach a photo, associate entries with people and manually selected places, import at least one useful digital/health signal, browse a coherent day-by-day timeline, search their history, and receive a useful weekly review while keeping core data on-device.
+13. Instructions for Codex
+Treat this document as the product-level source of truth.
+Before coding, propose the concrete Android stack, module/package structure, database schema, and phased implementation plan.
+Do not silently expand the MVP. Features listed as future work should not be implemented unless required as a small architectural seam.
+When Android APIs impose limitations, document them and implement graceful degradation; never fabricate data.
+Implement in small vertical slices and keep the application runnable after each phase.
+Prioritize privacy, maintainability, migration safety, and testability over premature abstraction.
+Maintain ARCHITECTURE.md and a separate ordered TASKS.md during implementation.

@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Personal Life OS</string>
+    <string name="today">Today</string>
+    <string name="timeline">Timeline</string>
+    <string name="review">Review</string>
+    <string name="settings">Settings</string>
+    <string name="today_heading">A space for your life</string>
+    <string name="today_body">Your daily life record will appear here as capture becomes available.</string>
+    <string name="timeline_heading">Your life, day by day</string>
+    <string name="timeline_body">This is where you’ll revisit your entries and memories.</string>
+    <string name="review_heading">Look back on your week</string>
+    <string name="review_body">Your weekly review will bring together the moments you record.</string>
+    <string name="settings_heading">Private by design</string>
+    <string name="settings_body">No account is needed. Optional integrations will always ask for your permission.</string>
+    <string name="local_first">On your device. Under your control.</string>
+</resources>
