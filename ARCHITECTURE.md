@@ -1,4 +1,4 @@
-# Personal Life OS architecture
+# Luma architecture
 
 ## Product contract
 

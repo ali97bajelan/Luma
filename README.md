@@ -1,4 +1,4 @@
-# Personal Life OS
+# Luma
 
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The first slice establishes an application shell
