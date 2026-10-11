@@ -93,8 +93,6 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                     if (current.history.events.isEmpty()) Text(stringResource(R.string.person_history_empty))
                 }
                 items(current.history.events, key = { it.event.id.toString() }) { record ->
-                    val canOpen = record.journal != null || (record.event.isEditable &&
-                        (record.mood != null || (record.event.type == EventType.MEMORY && record.memory != null)))
                     Card(Modifier.fillMaxWidth().testTag("person_event_${record.event.id}")) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
@@ -115,7 +113,7 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                             LinkedPeople(record.people)
                             LinkedPlace(record.place)
                             PhotoCount(record.photos.size)
-                            if (canOpen) TextButton(onClick = { onEvent(record) }) { Text(stringResource(R.string.person_open_event)) }
+                            TextButton(onClick = { onEvent(record) }) { Text(stringResource(R.string.person_open_event)) }
                         }
                     }
                 }

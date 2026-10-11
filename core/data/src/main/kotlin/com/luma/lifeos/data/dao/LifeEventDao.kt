@@ -28,6 +28,13 @@ interface LifeEventDao {
     @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id) ORDER BY occurred_at, id")
     fun observeMemories(start: Long, end: Long): Flow<List<EventWithDetails>>
 
+    @Transaction
+    @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end ORDER BY occurred_at, id LIMIT :limit OFFSET :offset")
+    suspend fun pageDetails(start: Long, end: Long, offset: Int, limit: Int): List<EventWithDetails>
+
+    @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end")
+    suspend fun countDay(start: Long, end: Long): Int
+
     @Query("SELECT * FROM life_event WHERE id = :id")
     suspend fun get(id: String): LifeEventEntity?
 

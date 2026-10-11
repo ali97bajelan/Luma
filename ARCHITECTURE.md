@@ -162,9 +162,9 @@ selected year even after navigation outside the default range.
 
 Today displays occurrence time, type, optional envelope title/note and imported
 source, with counts derived directly from available events. These are record
-counts, not T14 mood/usage/activity metrics. T05 extends this feed with typed mood
-details and reuses it for the initial daily Timeline; the full T11 timeline remains
-separate. Quick Capture opens a scrollable sheet from every primary tab, with
+counts, not T14 mood/usage/activity metrics. T05 extended this feed with typed mood
+details for the initial daily Timeline; T11 replaces that reuse with a dedicated
+bounded Timeline route described below. Quick Capture opens a scrollable sheet from every primary tab, with
 mood, journal and memory capture enabled.
 
 ## Mood check-ins (T05)
@@ -407,6 +407,44 @@ and its removable reference. Previews reload when their screen starts again.
 No network/upload path or automatic backup is introduced. Picker reference:
 [Android photo picker](https://developer.android.com/training/data-storage/shared/photo-picker).
 
+## Complete Life Timeline (T11)
+
+`TimelineRepository` is an Android-free contract for committed day pages, change
+notifications and individual full records. `RoomTimelineRepository` uses half-open
+day bounds and the existing `(occurred_at, id)` index, with `LIMIT/OFFSET` in oldest
+first order. Each page's envelope, typed relations and total count share a Room
+transaction. Equal timestamps use the same UUID ordering as the domain comparator.
+No schema or build-tool version changes are required.
+
+`TimelineViewModel` initially loads 150 records, appends/prepends 50 at a time and
+retains at most 300. Stable event keys in `LazyColumn` retain visible rows when
+offscreen pages leave the window. Near-end scrolling loads later pages; earlier
+and later controls also allow explicit navigation. The selected date/zone and
+absolute window offset/size survive recreation. Changing date resets both saved
+window values immediately, cancels old reads and resets scrolling. Sequence guards
+reject late results. Failed loads preserve existing rows and expose retry.
+Deleting records beyond the old anchor recenters the window; an empty day resets
+its offset. DST days use actual local midnights, and skipped civil days are empty.
+
+Observation registers before the first query. Room invalidations include all
+envelope, typed, link and referenced catalog tables, so changes to body, signals,
+people, places, tags and photos refresh the current window. If a page observes a
+new count before invalidation arrives, it reloads one coherent window rather than
+combining mismatched counts. Observation stops with the screen and refreshes on
+foreground return. Generic detail uses lifecycle collection and distinguishes
+loading, missing/deleted records and retryable failure.
+
+`LifeEventRecord` carries actual `ActivityDetails` and `AppUsageDetails` alongside
+manual content and existing links. Shared cards and date controls serve Today and
+Timeline. Signal cards show stored activity type/value/unit or package/duration;
+full detail includes bucket bounds, source, local timestamps, content, links,
+memory status and photos. Absent typed values are shown as unavailable. Only
+complete editable manual moods, journals and direct memories open their existing
+content routes. Imported/incomplete records open read-only detail, including from
+Today and person history. Promotion remains limited to eligible manual records.
+Health/usage acquisition, app labeling and aggregation remain T12–T14; no runtime
+sample records, new permissions or dependencies are introduced.
+
 ## Implementation phases
 
 1. T01–T03: runnable project, tested domain contracts, relational persistence.
@@ -462,6 +500,12 @@ compiled place persistence and capture/reuse/rename/clear/deletion device source
 T10 brings coverage to 110 JVM tests (29 domain, 74 app and 7 data file-engine
 cases). Photo Room and Compose device sources compile, including disk database/
 file reopening, rollback, draft protection, removal and unavailable-media cases.
+T11 brings coverage to 126 JVM tests (32 domain, 87 app, 7 data), including bounded
+windows, restoration/startup ordering, deletion, cancellation, lifecycle refresh
+and detail-state regressions. Five Room cases and two Compose timeline flows
+compile; deterministic indexed mixed pages, navigation and long-day scrolling
+still require device execution. Smooth scrolling and multi-day timing are pending
+acceptance checks, not inferred from compilation.
 Full app lint and device execution remain pending;
 the current data-module lint and debug/test APK builds pass.
 

@@ -1,0 +1,133 @@
+package com.luma.lifeos
+
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.room.Room
+import androidx.room.withTransaction
+import androidx.test.platform.app.InstrumentationRegistry
+import com.luma.lifeos.data.db.LumaDatabase
+import com.luma.lifeos.data.entity.*
+import com.luma.lifeos.data.media.ManagedPhotoFiles
+import com.luma.lifeos.data.repository.*
+import com.luma.lifeos.domain.model.*
+import com.luma.lifeos.ui.LifeOsApp
+import com.luma.lifeos.ui.theme.LifeOsTheme
+import java.io.File
+import java.time.Clock
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.UUID
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+
+class TimelineFlowTest {
+    @get:Rule val compose = createComposeRule()
+    private lateinit var db: LumaDatabase
+    private lateinit var photos: RoomPhotoRepository
+    private lateinit var directory: File
+    private val zone = ZoneId.systemDefault()
+    private val today = LocalDate.now(zone)
+    private val time = today.atTime(12, 0).atZone(zone).toInstant()
+    private val clock = Clock.fixed(time, zone)
+    @Before fun setUp() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        db = Room.inMemoryDatabaseBuilder(context, LumaDatabase::class.java).build()
+        directory = File(context.cacheDir, "timeline-test-${UUID.randomUUID()}")
+        photos = RoomPhotoRepository(db, ManagedPhotoFiles(directory)) { error("No photo selection in this fixture") }
+    }
+    @After fun tearDown() { db.close(); directory.deleteRecursively() }
+
+    @Test fun mixedTimelineOpensSignalsReadOnlyAndManualJournalDetailsAcrossDays() {
+        val activity = LifeEvent(EventId.new(), EventType.ACTIVITY, time.minusSeconds(10_800), time,
+            source = EventSource.HEALTH_CONNECT, sourceReference = "test:steps")
+        val measurement = ActivityRecordEntity(UUID.randomUUID().toString(), activity.id.toString(), "steps", 123.0, "count", activity.source, "test:steps")
+        val usage = LifeEvent(EventId.new(), EventType.APP_USAGE, time.minusSeconds(7_200), time,
+            endedAt = time.minusSeconds(7_140), source = EventSource.USAGE_STATS, sourceReference = "test:usage")
+        val journal = EventId.new()
+        runBlocking {
+            RoomEventStore(db).save(EventWrite(activity, activities = listOf(measurement)))
+            RoomEventStore(db).save(EventWrite(usage, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), usage.id.toString(),
+                usage.occurredAt.toEpochMilli(), usage.endedAt!!.toEpochMilli(), "org.example.browser", 5_125)))
+            RoomJournalRepository(db, clock).create(journal, JournalInput("Earlier journal body", time.minusSeconds(86_400), "Earlier journal"))
+        }
+        show()
+        compose.onNodeWithTag("nav_timeline").performClick()
+        awaitTag("event_${activity.id}")
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${activity.id}"))
+        compose.onNodeWithTag("event_${activity.id}").performClick()
+        awaitTag("screen_event_detail")
+        awaitText("steps: 123 count")
+        compose.onNodeWithTag("event_edit").assertDoesNotExist()
+        compose.onNodeWithTag("event_promote").assertDoesNotExist()
+        runBlocking { RoomEventStore(db).save(EventWrite(activity.copy(updatedAt = time.plusSeconds(1)), activities = listOf(measurement.copy(value = 124.0)))) }
+        awaitText("steps: 124 count")
+        runBlocking { RoomLifeEventRepository(db).delete(activity.id) }
+        awaitTag("event_missing")
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${usage.id}"))
+        compose.onNodeWithTag("event_${usage.id}").performClick()
+        awaitTag("screen_event_detail"); awaitText("org.example.browser")
+        compose.onNodeWithTag("event_edit").assertDoesNotExist()
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("day_previous"))
+        compose.onNodeWithTag("day_previous").performClick()
+        awaitTag("event_$journal")
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_$journal"))
+        compose.onNodeWithTag("event_$journal").performClick()
+        awaitTag("screen_journal_detail"); awaitText("Earlier journal body")
+        compose.onNodeWithTag("journal_edit").assertExists()
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("day_picker"))
+        compose.onNodeWithTag("day_picker").performClick()
+        compose.onNodeWithTag("date_picker_dialog").assertExists()
+        compose.onNodeWithText("Cancel").performClick()
+    }
+
+    @Test fun longDayLoadsLaterRowsAndEarlierWindowWithoutRenderingTheWholeFixture() {
+        runBlocking {
+            db.withTransaction {
+                (499 downTo 0).forEach { n ->
+                    val id = UUID(0, n.toLong()).toString()
+                    db.lifeEvents().insert(LifeEventEntity(id, EventType.JOURNAL, time.toEpochMilli(), time.toEpochMilli(), time.toEpochMilli(), title = "Entry $n"))
+                    db.content().insertJournal(JournalEntryEntity(UUID(1, n.toLong()).toString(), id, "Entry $n", "Body $n"))
+                }
+            }
+        }
+        show(); compose.onNodeWithTag("nav_timeline").performClick()
+        awaitTag("event_${UUID(0, 0)}")
+        // Crossing each page boundary exercises automatic loading and removal of offscreen rows.
+        listOf(140, 190, 240, 290, 340, 390, 440, 490).forEach { n ->
+            scrollToEvent(UUID(0, n.toLong()).toString())
+        }
+        scrollToEvent(UUID(0, 499).toString())
+        compose.onNodeWithText("Entry 499").assertIsDisplayed()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_earlier"))
+        compose.onNodeWithTag("timeline_earlier").performClick()
+        scrollToEvent(UUID(0, 150).toString())
+        compose.onNodeWithText("Entry 150").assertIsDisplayed()
+    }
+    private fun scrollToEvent(id: String) {
+        // Room work is asynchronous to Compose's idle clock. A following page may not be loaded yet.
+        compose.waitUntil(10_000) {
+            try {
+                compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_$id"))
+                true
+            } catch (_: AssertionError) { false }
+        }
+    }
+
+    private fun show() {
+        compose.setContent { LifeOsTheme { LifeOsApp(RoomLifeEventRepository(db), RoomMoodRepository(db, clock),
+            RoomJournalRepository(db, clock), RoomMemoryRepository(db, clock), RoomPersonRepository(db),
+            RoomPlaceRepository(db), photos, RoomTimelineRepository(db)) } }
+    }
+    private fun awaitTag(tag: String) {
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    }
+    private fun awaitText(text: String) {
+        compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+    }
+}

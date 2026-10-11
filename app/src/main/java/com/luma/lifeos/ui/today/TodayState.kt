@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.today
 
+import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.Place
 import com.luma.lifeos.domain.model.Person
 import com.luma.lifeos.domain.model.EventType
@@ -28,7 +29,8 @@ sealed interface TodayUiState {
         val memories: Map<EventId, MemoryDetails> = emptyMap(),
         val people: Map<EventId, List<Person>> = emptyMap(),
         val places: Map<EventId, Place> = emptyMap(),
-        val photoCounts: Map<EventId, Int> = emptyMap()) : TodayUiState {
+        val photoCounts: Map<EventId, Int> = emptyMap(),
+        val records: Map<EventId, LifeEventRecord> = emptyMap()) : TodayUiState {
         val counts: Map<EventType, Int> = events.groupingBy { it.type }.eachCount()
     }
 }
@@ -44,7 +46,7 @@ fun observeToday(repository: LifeEventRepository, date: LocalDate, zone: ZoneId)
                 records.mapNotNull { record -> record.memory?.let { record.event.id to it } }.toMap(),
                 records.associate { it.event.id to it.people },
                 records.mapNotNull { record -> record.place?.let { record.event.id to it } }.toMap(),
-                records.associate { it.event.id to it.photos.size }))
+                records.associate { it.event.id to it.photos.size }, records.associateBy { it.event.id }))
         }
     }.catch { failure ->
         if (failure is CancellationException) throw failure

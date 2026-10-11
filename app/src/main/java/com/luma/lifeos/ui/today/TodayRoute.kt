@@ -26,6 +26,7 @@ fun TodayRoute(
     onMemoryClick: (EventId) -> Unit = {},
     @StringRes heading: Int = R.string.today,
     screenTag: String = "screen_today",
+    onEventClick: (EventId) -> Unit = {},
 ) {
     var retry by remember { mutableIntStateOf(0) }
     // Recreate collection state so old-day rows cannot appear under the new date header.
@@ -33,6 +34,6 @@ fun TodayRoute(
         val observation = remember { observeToday(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(initialValue = TodayUiState.Loading)
         TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
-            onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag)
+            onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick)
     }
 }

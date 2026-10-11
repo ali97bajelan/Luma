@@ -31,6 +31,7 @@ class LumaStorage(context: Context) {
         require(uri.scheme == "content") { "Choose an image with the system picker" }
         requireNotNull(context.contentResolver.openInputStream(uri)) { "Photo source is unavailable" }
     }
+    val timeline: com.luma.lifeos.domain.repository.TimelineRepository = com.luma.lifeos.data.repository.RoomTimelineRepository(database)
     val lifeEvents: LifeEventRepository = RoomLifeEventRepository(database)
     val moods: MoodRepository = RoomMoodRepository(database)
     val journals: JournalRepository = RoomJournalRepository(database)

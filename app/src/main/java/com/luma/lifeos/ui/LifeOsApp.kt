@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui
 
+import com.luma.lifeos.ui.timeline.TimelineRoute
+import com.luma.lifeos.ui.timeline.EventDetailRoute
+import com.luma.lifeos.domain.repository.TimelineRepository
+import com.luma.lifeos.domain.model.LifeEventRecord
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -75,7 +79,7 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository) {
     val photoScope = rememberCoroutineScope()
     fun cleanPhotos() { photoScope.launch {
         try { photos.cleanup() } catch (failure: Exception) { if (failure is CancellationException) throw failure }
@@ -87,8 +91,21 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val eventScreen = backStackEntry?.destination?.route in setOf("mood?eventId={eventId}",
         "journal?eventId={eventId}", "journal_detail/{eventId}", "memory?eventId={eventId}",
-        "person?personId={personId}", "person_detail/{personId}",
+        "person?personId={personId}", "person_detail/{personId}", "event_detail/{eventId}",
         "places", "place?placeId={placeId}", "place_detail/{placeId}")
+    fun editEvent(record: LifeEventRecord) {
+        if (!record.canEditContent) return
+        navController.navigate(when (record.event.type) {
+            EventType.MOOD -> "mood?eventId=${record.event.id}"
+            EventType.JOURNAL -> "journal?eventId=${record.event.id}"
+            else -> "memory?eventId=${record.event.id}"
+        })
+    }
+    fun openEvent(record: LifeEventRecord) {
+        if (record.canEditContent && record.journal != null) navController.navigate("journal_detail/${record.event.id}")
+        else if (record.canEditContent) editEvent(record)
+        else navController.navigate("event_detail/${record.event.id}")
+    }
     val currentDay by rememberCurrentDay()
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
@@ -126,7 +143,11 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
         ) {
             Destination.entries.forEach { destination ->
                 composable(destination.route) {
-                    if (destination == Destination.TODAY || destination == Destination.TIMELINE) {
+                    if (destination == Destination.TIMELINE) {
+                        TimelineRoute(timeline, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
+                            onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
+                            onEvent = ::openEvent, onMemory = { navController.navigate("memory?eventId=$it") })
+                    } else if (destination == Destination.TODAY) {
                         TodayRoute(repository,
                             date = selectedDate?.let(LocalDate::parse) ?: currentDay.date,
                             zone = currentDay.zone,
@@ -135,7 +156,8 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             onMoodClick = { navController.navigate("mood?eventId=$it") },
                             onJournalClick = { navController.navigate("journal_detail/$it") },
                             onMemoryClick = { navController.navigate("memory?eventId=$it") },
-                            heading = destination.label, screenTag = "screen_${destination.route}")
+                            heading = destination.label, screenTag = "screen_${destination.route}",
+                            onEventClick = { navController.navigate("event_detail/$it") })
                     } else if (destination == Destination.PEOPLE) {
                         PeopleRoute(people, onCreate = { navController.navigate("person") },
                             onPerson = { navController.navigate("person_detail/$it") })
@@ -179,13 +201,13 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
             composable("person_detail/{personId}", arguments = listOf(navArgument("personId") { type = NavType.StringType })) { entry ->
                 val id = UUID.fromString(requireNotNull(entry.arguments?.getString("personId")))
                 PersonDetailRoute(people, id, onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate("person?personId=$id") }, onEvent = { record ->
-                        navController.navigate(when {
-                            record.journal != null -> "journal_detail/${record.event.id}"
-                            record.event.type == EventType.MOOD -> "mood?eventId=${record.event.id}"
-                            else -> "memory?eventId=${record.event.id}"
-                        })
-                    })
+                    onEdit = { navController.navigate("person?personId=$id") }, onEvent = ::openEvent)
+
+            }
+            composable("event_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
+                val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
+                EventDetailRoute(timeline, photos, id, currentDay.zone, onBack = { navController.popBackStack() },
+                    onEdit = ::editEvent, onMemory = { navController.navigate("memory?eventId=$id") })
             }
             composable("memory?eventId={eventId}", arguments = listOf(navArgument("eventId") {
                 type = NavType.StringType; nullable = true; defaultValue = null

@@ -524,3 +524,69 @@ reads/deletes canonical UUID files in its photo root; arbitrary legacy paths sho
 unavailable and remain outside collection. Future backup/restore or import writers
 must lease managed files before committing references. Portable export and draft
 storage controls remain later work.
+
+## T11 results — 2026-10-11
+
+- PASS: 126 JVM tests (32 domain, 87 application, 7 data), zero failures/errors/skips.
+  New domain cases cover actual activity/usage metadata, page bounds and editable
+  manual-record eligibility. Window cases cover ordered append/prepend with a
+  300-record ceiling, short/end pages, errors/retry, subscription-before-read,
+  live changes, non-cancellable late reads, skipped civil days, DST, stopped-screen
+  observation and foreground refresh. Detail cases cover loading/data/deletion,
+  failure/retry and cancellation. Three review regressions failed before fixes:
+  lifecycle startup preceding saved-window selection, interrupted date changes,
+  and deletion of every record after window eviction. All pass with the fixes.
+- PASS: application debug APK and application/data instrumentation APK builds.
+- PASS: data-module Android lint reports zero issues; `git diff --check` passes.
+- PASS: independent read-only review found no critical or data-loss issue. The
+  reported restoration and empty-window defects were reproduced and fixed;
+  Today also now routes imported journals to generic read-only detail.
+- PASS: merged manifest has only AndroidX's internal signature receiver permission;
+  automatic backup remains disabled. No schema, build-tool or SDK version changes.
+- BLOCKED: full application lint again crashes with `IncompatibleClassChangeError`
+  in the bundled Lifecycle/Compose detectors. No rules were disabled.
+- PENDING: device execution. Five Room cases compile for reverse-inserted 2,001
+  mixed records with equal timestamps, indexed query-plan assertions and page
+  boundaries; actual activity/app-usage values and journal/tag/memory/people/place
+  graphs; typed-only updates; catalog-only rename invalidation; and DST half-open
+  day bounds. Two Compose flows compile for mixed signal read-only detail,
+  live update/deletion, manual journal routing and calendar navigation, and for
+  scrolling a 500-record day through automatic page loading/window eviction and
+  loading earlier records. No emulator or device was launched. Compilation does
+  not establish smooth scrolling, fast multi-day navigation or visual acceptance.
+
+Successful local check:
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug --no-daemon --console=plain
+```
+
+Full application lint attempt:
+
+```sh
+bash gradlew --offline :app:lintDebug --continue --no-daemon --console=plain
+```
+
+Device check command:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: use Previous/Next/Today and calendar selection across empty
+and populated days; confirm selected dates, local timestamps, DST and timezone
+changes. Scroll mixed long days on a representative device, measure day-switch
+latency/frame behavior, load earlier rows after eviction and recreate/return from
+background. Edit/delete manual records and rename linked catalogs; ensure the
+window refreshes without duplicates or stale dates. Open imported and incomplete
+records from Timeline, Today and person history, verify real values/source and
+read-only actions, and exercise missing-record/error/retry states. Check large
+fonts, landscape, screen-reader labels and linked photos. T12/T13 acquisition is
+not implemented, so signal fixtures live only in test databases.
+
+Implementation uses the existing Compose/Room dependencies and a native bounded
+window. Paging artifact requests returned HTTP 404 in this environment; the
+temporary dependency attempt was removed from the catalog and build files.

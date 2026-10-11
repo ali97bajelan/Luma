@@ -2,7 +2,7 @@
 
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
-a pure Kotlin domain, Room-backed local persistence, Today/daily Timeline browsing,
+a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
 mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, and private photo attachments on journals/memories. Remaining capture,
 integrations, and reviews follow [TASKS.md](TASKS.md).
 
@@ -49,7 +49,11 @@ analyzer compatibility failure, are recorded in `docs/VALIDATION.md`.
 - Original `.docx` files: product specification and implementation task source.
 - `docs/`: readable source extracts and validation evidence.
 
-Today and the daily Timeline browse stored mood and journal records. Quick Capture
+Timeline merges stored manual records and activity/app-usage signals in stable
+day order, with calendar navigation and a bounded scrolling window. Complete
+manual records open their existing content routes; imported records open read-only
+typed details. Health and screen-time acquisition remain later tasks.
+Today shares the event previews and date controls. Quick Capture
 creates mood, journal and memory records offline; journals include a full detail
 view. Existing moods/journals can be remembered without copying their content.
 People can be linked during capture/edit; person detail shows shared history,

@@ -292,7 +292,26 @@ launched. See `docs/VALIDATION.md` for evidence and private-file retention limit
 
 ## T11 — Complete Life Timeline
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: dedicated chronological day Timeline with calendar/date navigation,
+indexed transactional pages and deterministic occurrence/UUID ordering. A bounded
+150-record initial window loads 50 at a time and retains at most 300; stable rows,
+earlier/later controls, automatic later loading, saved window restoration and
+foreground refresh support long days. Shared previews show stored activity and
+app-usage values alongside manual records. Complete manual records retain their
+content routes; imported/incomplete records open live read-only details with
+missing/error states, linked metadata and photos. Integration adapters remain
+T12/T13. No schema, SDK, permissions or dependencies changed.
+
+Validation: 126 JVM tests pass (32 domain + 87 app + 7 data), debug and both
+instrumentation APKs build, and data lint reports no issues. Independent review
+findings have regression coverage and fixes for startup restoration, interrupted
+date selection and empty-window controls. Five Room cases and two Compose flows
+compile. Device execution, calendar/visual acceptance, multi-day timing and smooth
+large-fixture scrolling remain pending user validation; no emulator was launched.
+Full app lint retains the bundled analyzer compatibility failure. See
+`docs/VALIDATION.md` for evidence and commands.
 
 
 ### Scope

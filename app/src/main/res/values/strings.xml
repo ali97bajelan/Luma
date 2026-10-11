@@ -185,4 +185,20 @@
     <string name="photo_unavailable">Photo unavailable. The entry is still saved.</string>
     <string name="photo_limits">Up to 20 photos, 25 MB each. Photos stay on this device.</string>
     <plurals name="photo_count"><item quantity="one">%d photo</item><item quantity="other">%d photos</item></plurals>
+    <string name="event_edit">Edit</string>
+    <string name="event_open">Open event</string>
+    <string name="event_read_only">Read-only record</string>
+    <string name="event_missing">This event is no longer available.</string>
+    <string name="event_detail_error">Could not load this event. Try again.</string>
+    <string name="event_ended">Ended: %1$s</string>
+    <string name="event_interval">%1$s – %2$s</string>
+    <string name="activity_value">%1$s: %2$s %3$s</string>
+    <string name="activity_more">%1$d more measurements</string>
+    <string name="activity_unavailable">Activity details unavailable</string>
+    <string name="usage_duration">%1$d h %2$d min %3$s s</string>
+    <string name="usage_unavailable">App usage details unavailable</string>
+    <string name="timeline_empty">No events for this day yet</string>
+    <string name="timeline_error">Could not load timeline events. Try again.</string>
+    <string name="timeline_earlier">Earlier events</string>
+    <string name="timeline_later">Later events</string>
 </resources>
