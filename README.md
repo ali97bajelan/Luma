@@ -3,14 +3,14 @@
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today/daily Timeline browsing,
-mood check-ins, and offline journals with reusable tags. Remaining capture,
+mood check-ins, offline journals with reusable tags, and direct/reversible memories. Remaining capture,
 integrations, and reviews follow [TASKS.md](TASKS.md).
 
 ## Build and run
 
 Use Android Studio with support for AGP 8.7.3, JDK 17, and Android SDK Platform 35. Open this directory, let Gradle sync, then run the `app`
 configuration on an Android 9/API 28 or newer device. No account or runtime
-permissions are needed for browsing, mood check-ins, or journals.
+permissions are needed for browsing, mood check-ins, journals, or memories.
 
 From a shell with `JAVA_HOME` and `ANDROID_HOME` configured (or `sdk.dir` in an
 untracked `local.properties`):
@@ -50,6 +50,8 @@ analyzer compatibility failure, are recorded in `docs/VALIDATION.md`.
 - `docs/`: readable source extracts and validation evidence.
 
 Today and the daily Timeline browse stored mood and journal records. Quick Capture
-creates records offline; journals include a full detail view. Review and Settings
-retain introductory placeholders until their tasks. No future backlog features, network
+creates mood, journal and memory records offline; journals include a full detail
+view. Existing moods/journals can be remembered without copying their content.
+Review lists the current week’s memories; full statistics and Settings remain
+assigned to later tasks. No future backlog features, network
 permission, telemetry, or mandatory AI service are included.

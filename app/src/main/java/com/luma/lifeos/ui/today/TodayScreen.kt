@@ -38,6 +38,9 @@ import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.MoodDetails
 import com.luma.lifeos.domain.model.JournalDetails
+import com.luma.lifeos.domain.model.MemoryDetails
+import com.luma.lifeos.domain.model.LifeEventRecord
+import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.ui.mood.moodScoreLabel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -55,6 +58,7 @@ fun TodayScreen(
     onRetry: () -> Unit,
     onMoodClick: (EventId) -> Unit = {},
     onJournalClick: (EventId) -> Unit = {},
+    onMemoryClick: (EventId) -> Unit = {},
     @StringRes heading: Int = R.string.today,
     screenTag: String = "screen_today",
 ) {
@@ -124,7 +128,7 @@ fun TodayScreen(
                     }
                 }
                 items(state.events, key = { it.id.toString() }) { event ->
-                    EventRow(event, zone, state.moods[event.id], state.journals[event.id], onMoodClick, onJournalClick)
+                    EventRow(event, zone, state.moods[event.id], state.journals[event.id], state.memories[event.id], onMoodClick, onJournalClick, onMemoryClick)
                 }
             }
         }
@@ -149,12 +153,15 @@ fun TodayScreen(
 }
 
 @Composable
-private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, journal: JournalDetails?,
-    onMoodClick: (EventId) -> Unit, onJournalClick: (EventId) -> Unit) {
+private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, journal: JournalDetails?, memory: MemoryDetails?,
+    onMoodClick: (EventId) -> Unit, onJournalClick: (EventId) -> Unit, onMemoryClick: (EventId) -> Unit) {
     val editLabel = stringResource(R.string.mood_edit_action)
     val modifier = Modifier.fillMaxWidth().testTag("event_${event.id}")
     val journalLabel = stringResource(R.string.journal_open)
-    Card(if (journal != null) modifier.clickable(onClickLabel = journalLabel, onClick = { onJournalClick(event.id) })
+    val memoryLabel = stringResource(R.string.memory_edit)
+    Card(if (event.type == EventType.MEMORY && memory != null && event.isEditable)
+        modifier.clickable(onClickLabel = memoryLabel, onClick = { onMemoryClick(event.id) })
+        else if (journal != null) modifier.clickable(onClickLabel = journalLabel, onClick = { onJournalClick(event.id) })
         else if (mood != null && event.isEditable) modifier.clickable(onClickLabel = editLabel,
         onClick = { onMoodClick(event.id) }) else modifier) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -179,6 +186,14 @@ private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, journal
                 if (it.tags.isNotEmpty()) Text(it.tags.joinToString(", ") { tag -> tag.name }, style = MaterialTheme.typography.labelMedium)
                 Text(journalLabel, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             }
+            memory?.let { MemoryStatus(it) }
+            if (LifeEventRecord(event, mood, journal, memory).canPromoteToMemory ||
+                (event.type == EventType.MEMORY && memory != null && event.isEditable)) {
+                TextButton(onClick = { onMemoryClick(event.id) }, modifier = Modifier.testTag("event_memory_${event.id}")) {
+                    Text(stringResource(if (memory == null) R.string.memory_promote else R.string.memory_edit))
+                }
+            }
+            if (event.type != EventType.MEMORY) memory?.note?.let { Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis) }
             (mood?.note ?: event.note)?.takeIf { it.isNotBlank() }?.let {
                 Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }

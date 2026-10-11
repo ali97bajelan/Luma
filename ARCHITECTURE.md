@@ -165,7 +165,7 @@ source, with counts derived directly from available events. These are record
 counts, not T14 mood/usage/activity metrics. T05 extends this feed with typed mood
 details and reuses it for the initial daily Timeline; the full T11 timeline remains
 separate. Quick Capture opens a scrollable sheet from every primary tab, with
-mood and journal capture enabled; memory capture remains T07.
+mood, journal and memory capture enabled.
 
 ## Mood check-ins (T05)
 
@@ -242,6 +242,46 @@ when its navigation entry starts again after edits; successful deletion returns
 to the feed. Saving selects the journal occurrence day. No schema migration,
 permission or external dependency is introduced. Full filters remain T15.
 
+## Memories (T07)
+
+`MemoryDetails` adds optional importance (1–5) and a marker note to the existing
+`LifeEventRecord`. Domain `MemoryInput`, `MemoryMarkerInput` and `MemoryRepository`
+keep persistence types out of UI contracts. Direct capture creates one manual
+`MEMORY` envelope and one memory row, with optional title, required note and
+occurrence time. A complete manual mood or journal can instead be promoted:
+`canPromoteToMemory` excludes imported, incomplete and unsupported event types.
+Promoted records keep their original type, ID, occurrence time and content.
+
+`RoomMemoryRepository` uses v1 tables without a migration. Marker edits target
+only the memory row and preserve its ID; unmarking removes only that row, leaving
+the envelope, journal/mood, metadata, tags, people, place and attachments intact.
+Existing journal/mood edits preserve markers. Direct memory edits retain audit
+creation time and unrelated links; direct deletion is separate from unmarking and
+rejects attached media until T10 file cleanup exists. Identical retained-ID creates
+and repeated removals are idempotent. Writes and summary invalidation share one
+transaction. `observeMemories` uses the indexed event range and a unique indexed
+memory lookup; typed graph observations also react to marker-only changes.
+
+The navigation-scoped memory editor retains draft title/note/importance/time,
+capture identity and dirty state in `SavedStateHandle`. Draft limits are 200 title
+characters and 10,000 note characters; oversized changes are visibly rejected
+before entering saved state, preserving previous text. Promoted source content and
+timestamp are read-only. Save retries reconcile ambiguous direct creates; marker
+saves retain the original event ID. Confirmed deletion/unmark intent is saved before
+mutation and reconciled on restoration if the resulting memory is already gone.
+Changes after removal errors clear that pending intent and retain the newer draft.
+Back/cancel confirm changed drafts, and remove/delete confirms the appropriate
+operation. Saving selects the occurrence day on return.
+
+Today/Timeline show memory status and optional importance alongside the original
+event, plus promotion/edit actions for eligible records. Journal detail exposes the
+same status and action. Review lists stored direct and promoted memories for the
+current ISO calendar week (Monday through Sunday) in the system zone, showing
+source previews and marker notes. Week boundaries use local start-of-day instants,
+including DST, rather than fixed 24-hour durations. Its lifecycle-aware Flow has
+loading/empty/error/retry states and stable ordering. T16 still owns statistics,
+comparisons and a full weekly review; no derived metrics are invented here.
+
 ## Implementation phases
 
 1. T01–T03: runnable project, tested domain contracts, relational persistence.
@@ -288,7 +328,9 @@ See `docs/VALIDATION.md` for exact results and commands.
 
 T05 increases verified JVM coverage to 33 tests, with compiled Room mood and
 end-to-end capture test sources. T06 increases this to 47 JVM tests and compiles
-journal persistence and capture/detail/edit/delete device sources. Full app lint and device execution remain pending;
+journal persistence and capture/detail/edit/delete device sources. T07 brings
+verified coverage to 63 JVM tests, with compiled memory persistence and capture/
+promotion/review/removal device sources. Full app lint and device execution remain pending;
 the current data-module lint and debug/test APK builds pass.
 
 Persistence tooling references:

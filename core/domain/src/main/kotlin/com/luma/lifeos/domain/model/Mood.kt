@@ -32,7 +32,11 @@ data class MoodDetails(
 }
 
 /** One committed event graph; typed fields grow with the later feature slices. */
-data class LifeEventRecord(val event: LifeEvent, val mood: MoodDetails? = null, val journal: JournalDetails? = null) {
+data class LifeEventRecord(val event: LifeEvent, val mood: MoodDetails? = null, val journal: JournalDetails? = null,
+    val memory: MemoryDetails? = null) {
+    val canPromoteToMemory: Boolean get() = event.isEditable &&
+        ((event.type == EventType.MOOD && mood != null) || (event.type == EventType.JOURNAL && journal != null))
+
     init {
         require(mood == null || event.type == EventType.MOOD)
         require(journal == null || event.type == EventType.JOURNAL)

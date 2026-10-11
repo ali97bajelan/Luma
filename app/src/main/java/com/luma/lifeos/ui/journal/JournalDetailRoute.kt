@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.JournalRepository
@@ -23,7 +24,7 @@ import java.time.format.FormatStyle
 import kotlinx.coroutines.CancellationException
 
 @Composable
-fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: () -> Unit, onEdit: () -> Unit) {
+fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: () -> Unit, onEdit: () -> Unit, onMemory: () -> Unit) {
     var record by remember(repository, eventId) { mutableStateOf<LifeEventRecord?>(null) }
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
@@ -61,6 +62,13 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
             Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
             Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)))
             if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
+            entry.memory?.let {
+                MemoryStatus(it)
+                it.note?.let { note -> Text(note) }
+            }
+            if (entry.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("journal_memory")) {
+                Text(stringResource(if (entry.memory == null) R.string.memory_promote else R.string.memory_edit))
+            }
             Text(journal.body, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("journal_detail_body"))
         }
     }

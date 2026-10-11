@@ -255,3 +255,61 @@ scrolling, and time-picker DST handling. Drafts accept up to 50,000 body charact
 visibly rejected while retaining previous text. Existing larger stored journals
 remain readable in detail but cannot be loaded into a saved-state editor. Journals
 with media references require T10 cleanup before deletion. Tag filters remain T15.
+
+## T07 results — 2026-10-11
+
+- PASS: 63 JVM tests (22 domain and 41 application), zero failures/errors.
+  New coverage checks memory importance and text bounds, promotion eligibility,
+  required direct text, optional marker capture, repeated submits, restored drafts
+  and dirty state during load failure, ambiguous direct/marker saves, confirmed
+  unmark/direct-delete restoration, failed removal retry, protected records,
+  oversized text and DST gaps. Feed tests verify memory status changes without
+  duplicating original events. Review tests verify stable source-content ordering,
+  loading/empty/error/retry/cancellation and a 167-hour DST calendar week.
+- PASS: application debug APK and application/data instrumentation APK builds.
+- PASS: data-module Android lint, no issues found; `git diff --check` passes.
+- PASS: independent review found no blocking correctness or data-loss issue.
+  Generated Room observations include the memory table, allowing marker-only
+  changes to refresh the typed feed and memory Review.
+- BLOCKED: full app lint still crashes with `IncompatibleClassChangeError` inside
+  bundled Lifecycle `NonNullableMutableLiveDataDetector` and Compose
+  `FrequentlyChangingValueDetector`/`RememberInCompositionDetector`. No lint
+  rules or build-tool versions were changed.
+- PENDING: device execution. Five Room test cases compile for direct CRUD/retry
+  identity/day movement, journal/mood promotion and reversal, source edits
+  preserving markers, graph/metadata/link preservation, imported/incomplete/media
+  protection, transaction rollback and summary freshness. Two Compose device
+  flows compile for direct capture/recreation/review/edit/delete and journal
+  promotion/unmark with retained body. No emulator/device was launched.
+
+Successful final local check (retried once after automatic permission-review
+approval timed out before execution):
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug --no-daemon --console=plain
+```
+
+Full app lint attempt:
+
+```sh
+bash gradlew --offline :app:lintDebug --continue --no-daemon --console=plain
+```
+
+Device check command:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: capture and backdate a standalone memory offline, clear/set
+importance, recreate with a draft and edit/delete after relaunch. Promote a mood
+and journal; verify original ID/content/time/tags remain intact, edit the original,
+then unmark and verify the source stays present. Revisit current-week memories in
+Review, including Sunday/Monday and timezone/DST boundaries. Exercise confirmations,
+large text/landscape/keyboard layout and visible oversized-input rejection. Direct
+memory title/note limits are 200/10,000 characters. Unmarking is available only for
+complete manual mood/journal sources; standalone memory deletion with attached
+media requires T10 cleanup. Full weekly statistics remain T16.

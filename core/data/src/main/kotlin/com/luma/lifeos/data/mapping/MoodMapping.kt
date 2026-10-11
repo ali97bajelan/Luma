@@ -6,6 +6,7 @@ import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.MoodDetails
 import com.luma.lifeos.domain.model.JournalDetails
 import com.luma.lifeos.domain.model.Tag
+import com.luma.lifeos.domain.model.MemoryDetails
 import java.util.UUID
 
 fun EventWithDetails.toRecord(): LifeEventRecord = LifeEventRecord(event.toDomain(), mood?.let {
@@ -16,4 +17,4 @@ fun EventWithDetails.toRecord(): LifeEventRecord = LifeEventRecord(event.toDomai
 }, journal?.let { entry ->
     JournalDetails(entry.title, entry.body, tags.map { Tag(UUID.fromString(it.id), it.name) }
         .sortedWith(compareBy<Tag> { Tag.normalize(it.name) }.thenBy { it.id }))
-})
+}, memory?.let { MemoryDetails(it.importance, it.note) })

@@ -6,6 +6,7 @@ import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.MoodDetails
+import com.luma.lifeos.domain.model.MemoryDetails
 import com.luma.lifeos.domain.model.JournalDetails
 import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.domain.model.Emotion
@@ -106,6 +107,23 @@ class TodayStateTest {
         assertEquals("Edited", updated.events.single().title)
         assertEquals("New text", updated.journals[journal.id]!!.body)
         assertTrue(updated.journals[journal.id]!!.tags.isEmpty())
+    }
+
+    @Test fun promotionChangesMemoryStatusWithoutDuplicatingTheOriginalEvent() = runBlocking {
+        val journal = event(1, EventType.JOURNAL, "2026-03-08T08:00:00Z")
+        val original = LifeEventRecord(journal, journal = JournalDetails(null, "Keep this body"))
+        val repository = ReadRepository { flowOf(listOf(journal)) }.apply {
+            records = flowOf(listOf(original), listOf(original.copy(memory = MemoryDetails(5, "Notable"))), listOf(original))
+        }
+        val states = observeToday(repository, date, zone).toList()
+        val promoted = states[2] as TodayUiState.Data
+        assertEquals(listOf(journal), promoted.events)
+        assertEquals(mapOf(EventType.JOURNAL to 1), promoted.counts)
+        assertEquals(5, promoted.memories[journal.id]!!.importance)
+        assertEquals("Keep this body", promoted.journals[journal.id]!!.body)
+        val unmarked = states[3] as TodayUiState.Data
+        assertTrue(unmarked.memories.isEmpty())
+        assertEquals(listOf(journal), unmarked.events)
     }
 
     private fun event(number: Int, type: EventType, instant: String) = LifeEvent(

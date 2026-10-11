@@ -5,6 +5,7 @@ import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.MoodDetails
 import com.luma.lifeos.domain.model.JournalDetails
+import com.luma.lifeos.domain.model.MemoryDetails
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.time.TimeRange
 import java.time.Instant
@@ -21,7 +22,8 @@ sealed interface TodayUiState {
     data object Empty : TodayUiState
     data object Error : TodayUiState
     data class Data(val events: List<LifeEvent>, val moods: Map<EventId, MoodDetails> = emptyMap(),
-        val journals: Map<EventId, JournalDetails> = emptyMap()) : TodayUiState {
+        val journals: Map<EventId, JournalDetails> = emptyMap(),
+        val memories: Map<EventId, MemoryDetails> = emptyMap()) : TodayUiState {
         val counts: Map<EventType, Int> = events.groupingBy { it.type }.eachCount()
     }
 }
@@ -33,7 +35,8 @@ fun observeToday(repository: LifeEventRepository, date: LocalDate, zone: ZoneId)
             emit(if (records.isEmpty()) TodayUiState.Empty else TodayUiState.Data(
                 records.map { it.event }.sortedWith(LifeEvent.chronologicalOrder),
                 records.mapNotNull { record -> record.mood?.let { record.event.id to it } }.toMap(),
-                records.mapNotNull { record -> record.journal?.let { record.event.id to it } }.toMap()))
+                records.mapNotNull { record -> record.journal?.let { record.event.id to it } }.toMap(),
+                records.mapNotNull { record -> record.memory?.let { record.event.id to it } }.toMap()))
         }
     }.catch { failure ->
         if (failure is CancellationException) throw failure

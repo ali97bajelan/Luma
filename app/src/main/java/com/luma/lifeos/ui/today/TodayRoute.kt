@@ -23,6 +23,7 @@ fun TodayRoute(
     onToday: () -> Unit,
     onMoodClick: (EventId) -> Unit = {},
     onJournalClick: (EventId) -> Unit = {},
+    onMemoryClick: (EventId) -> Unit = {},
     @StringRes heading: Int = R.string.today,
     screenTag: String = "screen_today",
 ) {
@@ -32,6 +33,6 @@ fun TodayRoute(
         val observation = remember { observeToday(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(initialValue = TodayUiState.Loading)
         TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
-            onMoodClick = onMoodClick, onJournalClick = onJournalClick, heading = heading, screenTag = screenTag)
+            onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag)
     }
 }

@@ -164,7 +164,21 @@ device execution remains pending user validation. No emulator was launched.
 
 ## T07 — Memories
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: direct offline memory capture/edit/delete with optional title,
+importance and timestamp; complete manual moods and journals support reversible
+memory markers. Marker changes preserve source content, identity, metadata and
+links. Bounded saved drafts survive recreation and errors; ambiguous saves and
+confirmed removals reconcile committed results. Today/Timeline and journal detail
+show memory status; Review lists the current ISO calendar week’s stored memories.
+Full review statistics remain T16.
+
+Validation: 63 JVM tests pass (22 domain + 41 app), debug and instrumentation APKs
+build, and data lint reports no issues. Five Room test cases and two capture/
+promotion/recreation/review/removal device flows compile; device execution remains
+pending user validation. No emulator was launched. See `docs/VALIDATION.md` for
+commands and the app lint analyzer compatibility limitation.
 
 
 ### Scope
