@@ -1,14 +1,15 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
 }
 
 android {
     namespace = "com.luma.lifeos.data"
-    compileSdk = 36
+    compileSdk = 35
     defaultConfig {
-        minSdk = 26
+        minSdk = 28
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {

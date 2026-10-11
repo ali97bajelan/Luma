@@ -59,6 +59,10 @@ Validation: not run, at the user's request. Gradle sync/build, schema JSON gener
 CRUD/relation/rollback/import tests, and schema reopening checks are pending user
 validation. Commit Room's generated version 1 schema JSON after the first build.
 
+Follow-up during T04: the user-generated version 1 JSON is present; the data
+library and its instrumentation APK compile and data lint reports no issues.
+Persistence and migration tests still require device execution.
+
 
 ### Scope
 
@@ -73,7 +77,19 @@ validation. Commit Room's generated version 1 schema JSON after the first build.
 
 ## T04 — Build application shell and Today screen
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: Room-backed Today feed with current/selected-day navigation,
+calendar picker, deterministic rows, event counts by type, distinct loading/empty/
+error states with retry, saved selection, and foreground day/timezone refresh.
+Quick Capture is a persistent action on every primary tab and opens an explanatory
+sheet; capture forms remain assigned to T05–T07. Core browsing requires no permissions.
+
+Validation: 19 JVM tests passed (13 domain + 6 daily-state tests). Debug and test
+APK verification and lint results are recorded in `docs/VALIDATION.md`. Device
+navigation, rendering, picker, and Room/live-update tests remain pending user
+execution; no emulator was launched. Full app lint is pending because bundled
+Lifecycle/Compose detectors crash against the current AGP lint runtime.
 
 
 ### Scope

@@ -84,3 +84,62 @@ foreign-key cascades, source and bucket uniqueness, failed-write rollback, impor
 retry reconciliation, atomic checkpoint updates, cache freshness, stable ordering,
 half-open time ranges, exported-schema reopening, and unsupported-version failure.
 No test result is claimed until the user runs these checks.
+
+## T04 results — 2026-10-11
+
+The current local setup supplies JDK 17, an Android SDK, and the Gradle cache.
+The user's AGP 8.7.3, Kotlin Android plugin, minimum API 28 and compile/target API
+35 settings were preserved. Version 1 Room JSON was already present at task start.
+The Gradle launcher is not executable in this checkout, so commands use `bash
+gradlew`. Automatic approval permitted the local build to write the existing
+Gradle cache outside the restricted workspace.
+
+- PASS: 13 domain JVM tests and 6 new Today state tests, zero failures/errors.
+  Coverage includes a 23-hour DST query, chronological ties and counts, committed
+  updates, empty/loading/error transitions, retry, cancellation propagation, and
+  UTC date-picker conversion.
+- PASS: application debug APK and both application/data instrumentation APKs build.
+- PASS: `:core:data:lintDebug`, no issues found.
+- PASS: code review; selected-year picker range and scrollable capture-sheet fixes
+  address the two important findings. `git diff --check` passes.
+- BLOCKED: `:app:lintDebug` crashes internally. The bundled
+  `NonNullableMutableLiveDataDetector` (`NullSafeMutableLiveData`) and
+  `FrequentlyChangingValueDetector` (`FrequentlyChangingValue`) raise
+  `IncompatibleClassChangeError` in the current AGP lint runtime. The crashes also
+  occur while analyzing existing `LumaApplication.kt` and `AppNavigationTest.kt`.
+  No lint rules were disabled and no existing build-tool versions were changed.
+- PENDING: all device tests. No emulator/device was launched or instrumented.
+  New sources check rendering states, retry, stored rows/times, picker dates outside
+  the default year range, capture access on every tab, selected-date restoration,
+  and Room-backed date selection/edit/delete updates. Foreground midnight/zone
+  refresh, delayed emissions during navigation, and constrained-size/large-font
+  rendering remain manual device checks.
+- Existing build warnings: Kotlin plugin loaded in multiple modules and Gradle
+  deprecated features. These do not prevent the tested APK/JVM build.
+
+Final successful command:
+
+```sh
+bash gradlew --offline :app:testDebugUnitTest :core:domain:test \
+  :app:assembleDebug :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :core:data:lintDebug \
+  --no-daemon --console=plain
+```
+
+The full app lint command was separately attempted twice and failed as described:
+
+```sh
+bash gradlew --offline :app:lintDebug --no-daemon --console=plain
+```
+
+Device commands for the user:
+
+```sh
+bash gradlew :app:connectedDebugAndroidTest :core:data:connectedDebugAndroidTest
+```
+
+Manual pass: fresh install without permissions, switch dates and tabs, reopen the
+calendar after navigating before 1900/after 2100, rotate/recreate with a selected
+date, open/close Quick Capture on every tab, test large text/landscape, and keep
+Today visible across midnight or change the system timezone and resume. Capture
+forms remain future tasks; T04 creates no records and shows no fabricated metrics.

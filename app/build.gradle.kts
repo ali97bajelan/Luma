@@ -1,16 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.luma.lifeos"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.luma.lifeos"
-        minSdk = 26
-        targetSdk = 36
+        minSdk = 28
+        targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -40,6 +41,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.tooling.preview)
     implementation(libs.navigation.compose)
+    implementation(libs.lifecycle.runtime.compose)
 
     debugImplementation(libs.compose.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
@@ -49,4 +51,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.room.runtime)
 }

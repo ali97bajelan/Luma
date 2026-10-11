@@ -10,16 +10,18 @@ constraints. No account, cloud sync, AI dependency, or telemetry is introduced.
 ## Stack and dependency direction
 
 - Kotlin; JDK 17; Gradle Kotlin DSL with a checked-in Gradle wrapper.
-- Android Gradle Plugin 9.0.1 with built-in Kotlin 2.2.10; Gradle 9.1.0.
+- Android Gradle Plugin 8.7.3 with the Kotlin Android/Compose 2.2.10 plugins;
+  Gradle 9.1.0 (current user-supplied build configuration).
 - Jetpack Compose and Material 3; AndroidX Navigation Compose.
-- Minimum Android API 26; compile/target API 36. `java.time` is available natively.
+- Minimum Android API 28; compile/target API 35. `java.time` is available natively.
 - Coroutines and Flow for asynchronous repository contracts.
 - Room 2.8.5/SQLite and KSP2 2.3.5 for persistence; WorkManager for retryable imports in T12/T13.
 - JUnit for pure JVM tests; AndroidX Test and Compose testing for device checks.
 - Explicit constructor injection initially; no dependency injection framework.
 
-The AGP/Gradle/JDK combination follows the official compatibility matrix:
-https://developer.android.com/build/releases/agp-9-0-0-release-notes
+The foundation originally used AGP 9.0.1 and API 26/36. The current checkout's
+user-supplied AGP 8.7.3 and API 28/35 settings are preserved. Build verification
+and tool compatibility limitations are recorded in `docs/VALIDATION.md`.
 Compose compiler uses the matching Kotlin plugin:
 https://developer.android.com/develop/ui/compose/compiler
 
@@ -79,9 +81,10 @@ operations and import upserts are transactional. Physical media deletion occurs
 after database success with orphan cleanup, avoiding lost references on failure.
 
 The Room Gradle plugin exports versioned schemas to `core/data/schemas` and supplies
-them to the data module's instrumentation tests. Compiler-generated JSON is pending
-the user's first build; schema generation was not run during T03. Commit it before
-evolving version 1. `SchemaMigrationTest` covers opening the exported v1 schema,
+them to the data module's instrumentation tests. Compiler-generated version 1
+JSON is now present in the working tree following the user's build setup;
+generation was not run during T03. Include it in version control before evolving
+version 1. `SchemaMigrationTest` covers opening the exported v1 schema,
 preserving journal content across the registered migration chain, and rejecting an
 unsupported database version without erasing records. There is no migration before
 the initial version; add a real upgrade to `LumaDatabase.MIGRATIONS` for version 2
@@ -139,6 +142,31 @@ Source references identify retryable imported events; manual edits are supported
 only for manual sources. Equal-time ordering uses the stable ID as a tie breaker.
 Repositories expose Flow for observation and suspend operations for mutations.
 
+## Application shell and Today (T04)
+
+`MainActivity` supplies the application's `LifeEventRepository` to `LifeOsApp`.
+The shell retains primary navigation and owns saveable ISO date selection and
+Quick Capture sheet visibility. A null selection follows the system's current
+day; an explicit selection survives navigation and recreation. Foreground date/
+zone refresh runs immediately on resume and every 30 seconds to notice midnight
+and timezone changes without background polling.
+
+`TodayRoute` collects `observeToday` with Lifecycle Compose only while started.
+The adapter queries `TimeRange.forDay`, emits loading/empty/data/error states,
+preserves cancellation, and sorts by the domain comparator. Changing day, zone,
+or retry resets collection state so previous-day rows cannot appear under a new
+header. Room commits update the feed through the existing repository Flow.
+The Material calendar represents UTC dates; convert its timestamps using UTC,
+then query the selected date in the system zone. Its year range includes the
+selected year even after navigation outside the default range.
+
+Today displays occurrence time, type, optional envelope title/note and imported
+source, with counts derived directly from available events. These are record
+counts, not T14 mood/usage/activity metrics. Typed detail rendering grows with
+later feature tasks. Quick Capture opens a scrollable explanatory sheet from
+every primary tab; mood, journal and memory forms remain in T05–T07. No new
+permission or storage mutation is introduced.
+
 ## Implementation phases
 
 1. T01–T03: runnable project, tested domain contracts, relational persistence.
@@ -176,6 +204,12 @@ T03 adds persistence CRUD, indexed relations, Flow updates, transactional rollba
 source retry identity, atomic checkpoints, cache invalidation, deletion cascades,
 and schema baseline test sources. No code, Gradle, test, or emulator commands were
 run for T03, as requested; all acceptance checks remain pending user validation.
+
+During T04, the current debug app and both instrumentation APKs compile, all 19
+JVM tests pass, and data-module lint reports no issues. App lint crashes inside
+bundled Lifecycle/Compose detectors with `IncompatibleClassChangeError` against
+the current AGP lint runtime. Full app lint and device tests remain pending.
+See `docs/VALIDATION.md` for exact results and commands.
 
 Persistence tooling references:
 [Room releases and schema export](https://developer.android.com/jetpack/androidx/releases/room),
