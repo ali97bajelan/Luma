@@ -4,6 +4,9 @@ import com.luma.lifeos.ui.timeline.TimelineRoute
 import com.luma.lifeos.ui.timeline.EventDetailRoute
 import com.luma.lifeos.domain.repository.TimelineRepository
 import com.luma.lifeos.domain.model.LifeEventRecord
+import com.luma.lifeos.domain.usage.UsageIntegration
+import com.luma.lifeos.ui.usage.UsageSettingsRoute
+import com.luma.lifeos.ui.usage.UsageForegroundRefresh
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -79,7 +82,8 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null) {
+    if (usage != null) UsageForegroundRefresh(usage)
     val photoScope = rememberCoroutineScope()
     fun cleanPhotos() { photoScope.launch {
         try { photos.cleanup() } catch (failure: Exception) { if (failure is CancellationException) throw failure }
@@ -165,6 +169,10 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
                             onMemory = { navController.navigate("memory?eventId=$it") },
                             onJournal = { navController.navigate("journal_detail/$it") })
+                    } else if (destination == Destination.SETTINGS && usage != null) {
+                        UsageSettingsRoute(usage, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
+                            onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
+                            onPlaces = { navController.navigate("places") })
                     } else {
                         FoundationScreen(destination, onPlaces = { navController.navigate("places") })
                     }

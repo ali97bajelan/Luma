@@ -8,10 +8,11 @@ import java.util.UUID
 data class ActivityDetails(val id: UUID, val type: String, val value: Double, val unit: String, val source: EventSource) {
     init { require(type.isNotBlank() && unit.isNotBlank()); require(value.isFinite() && value >= 0) }
 }
-data class AppUsageDetails(val packageName: String, val bucketStart: Instant, val bucketEnd: Instant, val durationMillis: Long) {
+data class AppUsageDetails(val packageName: String, val bucketStart: Instant, val bucketEnd: Instant, val durationMillis: Long, val appLabel: String? = null) {
     init {
         require(packageName.isNotBlank() && bucketEnd.isAfter(bucketStart))
         require(durationMillis >= 0 && durationMillis <= Duration.between(bucketStart, bucketEnd).toMillis())
+        require(appLabel == null || (appLabel.isNotBlank() && appLabel.length <= 200))
     }
 }
 /** Count and records come from one committed snapshot; an offset beyond the end returns no records. */

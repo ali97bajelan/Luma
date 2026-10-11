@@ -72,7 +72,8 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
     activities.forEach { Text(stringResource(R.string.activity_value, it.type, format.format(it.value), it.unit)) }
     if (!full && record.activities.size > 3) Text(stringResource(R.string.activity_more, record.activities.size - 3))
     record.appUsage?.let { usage ->
-        Text(usage.packageName, style = MaterialTheme.typography.titleMedium)
+        Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
+        if (usage.appLabel != null) Text(usage.packageName, style = MaterialTheme.typography.bodySmall)
         val milliseconds = usage.durationMillis
         Text(stringResource(R.string.usage_duration, milliseconds / 3_600_000, (milliseconds / 60_000) % 60,
             format.format((milliseconds % 60_000) / 1000.0)))

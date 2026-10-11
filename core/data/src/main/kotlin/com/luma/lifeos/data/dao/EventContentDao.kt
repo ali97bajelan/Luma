@@ -17,6 +17,11 @@ interface EventContentDao {
     @Insert suspend fun insertMemory(entry: MemoryEntity)
     @Insert suspend fun insertActivities(entries: List<ActivityRecordEntity>)
     @Insert suspend fun insertAppUsage(entry: AppUsageRecordEntity)
+    @Query("""SELECT app_usage_record.* FROM app_usage_record
+        INNER JOIN life_event ON life_event.id = app_usage_record.life_event_id
+        WHERE life_event.source = 'USAGE_STATS' AND life_event.source_ref LIKE 'usage:daily:%'
+        AND bucket_start < :end AND bucket_end > :start""")
+    suspend fun overlappingImportedUsage(start: Long, end: Long): List<AppUsageRecordEntity>
     @Insert suspend fun insertAttachments(entries: List<MediaAttachmentEntity>)
     @Insert suspend fun insertEmotions(links: List<MoodEmotionEntity>)
     @Insert suspend fun insertPeople(links: List<EventPersonEntity>)

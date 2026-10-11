@@ -17,5 +17,5 @@ dependencyResolutionManagement {
 rootProject.name = "Luma"
 include(":core:domain")
 if (!providers.gradleProperty("domainOnly").map(String::toBoolean).getOrElse(false)) {
-    include(":app", ":core:data")
+    include(":app", ":core:data", ":integration:usage")
 }

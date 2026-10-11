@@ -3,7 +3,7 @@
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
-mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, and private photo attachments on journals/memories. Remaining capture,
+mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, and optional on-device app-usage imports. Remaining capture,
 integrations, and reviews follow [TASKS.md](TASKS.md).
 
 ## Build and run
@@ -17,8 +17,8 @@ untracked `local.properties`):
 
 ```sh
 ./gradlew :app:assembleDebug
-./gradlew :core:domain:test :app:testDebugUnitTest :app:lintDebug
-./gradlew :core:data:lintDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest
+./gradlew :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest :integration:usage:testDebugUnitTest
+./gradlew :app:lintDebug :core:data:lintDebug :integration:usage:lintDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest
 ./gradlew :app:connectedDebugAndroidTest # running emulator or attached device
 ./gradlew :core:data:connectedDebugAndroidTest # persistence and schema baseline checks
 ```
@@ -52,7 +52,12 @@ analyzer compatibility failure, are recorded in `docs/VALIDATION.md`.
 Timeline merges stored manual records and activity/app-usage signals in stable
 day order, with calendar navigation and a bounded scrolling window. Complete
 manual records open their existing content routes; imported records open read-only
-typed details. Health and screen-time acquisition remain later tasks.
+typed details. Settings offers optional Android Usage access, manual imports,
+background refresh, access/status controls and saved daily app foreground totals.
+The Android reporting intervals determine displayed dates; totals are not exact
+local-day measurements or device screen-on time. Device reboots and clock
+corrections conservatively leave affected intervals incomplete, retaining saved
+history and importing only newly started intervals. Health acquisition remains T13.
 Today shares the event previews and date controls. Quick Capture
 creates mood, journal and memory records offline; journals include a full detail
 view. Existing moods/journals can be remembered without copying their content.
@@ -63,6 +68,6 @@ Journal and memory forms can add up to 20 photos (25 MiB each); selected images
 are copied into app-private storage, with unavailable-photo states and safe
 removal. Photos remain on-device; no upload or automatic backup is enabled.
 Abandoned protected drafts may retain private files until released.
-Review lists the current week’s memories; full statistics and Settings remain
+Review lists the current week’s memories; full statistics and privacy Settings remain
 assigned to later tasks. No future backlog features, network
 permission, telemetry, or mandatory AI service are included.

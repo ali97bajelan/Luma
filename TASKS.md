@@ -328,7 +328,25 @@ Full app lint retains the bundled analyzer compatibility failure. See
 
 ## T12 — Screen-time integration
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: opt-in Android daily foreground-usage adapter, native Usage access
+setup/status UX, manual imports and unique six-hour background work. Incremental
+overlapping imports preserve native bounds/totals, original event/child identities,
+links and metadata, with atomic checkpoints. Settings shows saved daily app totals
+and package/label fallbacks shared by Timeline/Today/details. Empty, locked,
+unsupported, revoked and error states retain prior data; opt-out remains available
+during a query. Persisted clock/boot checks reject rewritten native history and
+resume with fresh intervals, conservatively leaving affected intervals incomplete.
+
+Validation: 153 JVM tests pass (49 domain + 92 app + 7 data + 5 adapter), debug and
+app/data instrumentation APKs build, and data/adapter lint report no issues.
+Independent review findings have fixes and regressions for native clock identity,
+concurrent opt-out and transient access failures. Six Room cases and two Compose
+flows compile; device execution, native/OEM access, boot identity, background jobs
+and visual acceptance remain pending. No emulator was launched. Full app lint
+retains the bundled analyzer compatibility failure. SDKs/schema are unchanged;
+see `docs/VALIDATION.md` for commands and the temporary dependency mirror used here.
 
 
 ### Scope

@@ -590,3 +590,125 @@ not implemented, so signal fixtures live only in test databases.
 Implementation uses the existing Compose/Room dependencies and a native bounded
 window. Paging artifact requests returned HTTP 404 in this environment; the
 temporary dependency attempt was removed from the catalog and build files.
+
+## T12 results — 2026-10-11
+
+- PASS: 153 JVM tests (49 domain, 92 application, 7 data, 5 usage adapter), zero
+  failures/errors/skips. The 27 added cases cover native millisecond bounds/totals,
+  growing retry identities, missing-day versus zero semantics, duplicate/conflicting
+  observations, selected-zone aggregation, seven-day bounds/two-day overlap,
+  access/revocation before and after queries, errors/cancellation, serialization,
+  immediate opt-out, late access refresh, transient service failures, non-overlapping
+  clock corrections, corrections during queries, reboot handling and cumulative
+  drift. Settings cases cover durable state, duplicate action suppression, opt-out
+  while busy, retry/cancellation and report loading/missing/error states; worker
+  policy tests cover bounded error/locked retries.
+- PASS: application debug APK and application/data instrumentation APK builds.
+- PASS: data and usage-adapter Android lint report no issues; `git diff --check`
+  passes. CI configuration now includes usage-adapter tests/lint and data JVM tests;
+  this does not establish a successful hosted run.
+- PASS: independent read-only review and follow-ups found no remaining Critical or
+  Important defects after fixes. The initial review identified native clock identity,
+  opt-out blocked by a query and transient access errors misclassified as unsupported.
+  The overlap-only clock fix was insufficient; persisted wall/monotonic/boot anchors
+  and a durable native-start boundary now also prevent non-overlapping translations
+  from being imported as additional history. Late access rescheduling after disable
+  and busy-UI opt-out suppression have regression coverage. Transient adapter errors,
+  late scheduling and busy-UI opt-out failed assertions before their fixes; new API
+  tests initially failed compilation before their implementations were added.
+- PASS: merged manifest retains min/target API 28/35 and disabled automatic backup.
+  Added permissions are special `PACKAGE_USAGE_STATS`, WorkManager `WAKE_LOCK` and
+  `RECEIVE_BOOT_COMPLETED`, alongside the existing internal signature receiver
+  permission. No `INTERNET`, `ACCESS_NETWORK_STATE`, `FOREGROUND_SERVICE` or
+  `QUERY_ALL_PACKAGES`. Room schema version 1 and SDK/build-tool versions are unchanged.
+- BLOCKED: full application lint again fails inside bundled Lifecycle/Compose
+  detectors with `IncompatibleClassChangeError` (`NonNullableMutableLiveDataDetector`,
+  `FrequentlyChangingValueDetector`, `RememberInCompositionDetector`). No detector
+  rules were disabled and this is not a successful full lint result.
+- PENDING: device execution. Six Room cases compile for growing retry bounds and
+  stable IDs/audit/links/metadata/labels; mid-batch rollback; disabled/revoked retention;
+  native bucket-start grouping in a display zone; overlapping-shift rejection; and
+  clock anchor/boundary durability across repository recreation/opt-out, followed by
+  fresh-interval recovery with old history retained. Two Compose flows compile for
+  optional access/import/retry/opt-out/day navigation and for empty/revoked access
+  with core navigation still available. No emulator or device was launched.
+- PENDING: actual native/OEM Usage access settings and service behavior, boot-count
+  readability, WorkManager background scheduling under battery restrictions,
+  revocation/restart acceptance, timezone/visual/accessibility checks.
+
+Successful local suite:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t12-mirror.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug :integration:usage:lintDebug --no-daemon --console=plain
+```
+
+After the last UI explanation and persistence-fixture updates, the app JVM suite,
+debug and app/data instrumentation APKs, and data lint were run again successfully.
+The domain and adapter production sources/tests were unchanged after the full suite.
+The application lint attempt used the same temporary init script:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t12-mirror.init.gradle \
+  :app:lintDebug --continue --no-daemon --console=plain
+```
+
+Dependency resolution in this environment: WorkManager 2.10.0 was cached and
+compatible with compile API 35. Its older AndroidX transitives are constrained to
+versions compatible with the existing project/cache. The app's existing Lifecycle
+platform selects 2.9.0; three newly needed artifacts were not cached and official
+Google Maven requests returned HTTP 404. A temporary Gradle init script fetched
+only those artifacts from the Aliyun Google mirror; subsequent checks ran offline.
+Project repositories remain `google()`/`mavenCentral()` and no mirror was committed.
+The temporary `/tmp/luma-t12-mirror.init.gradle` contained:
+
+```groovy
+settingsEvaluated { settings ->
+    settings.dependencyResolutionManagement.repositories {
+        exclusiveContent {
+            forRepository { maven { url = uri('https://maven.aliyun.com/repository/google') } }
+            filter {
+                includeVersion('androidx.lifecycle', 'lifecycle-livedata', '2.9.0')
+                includeVersion('androidx.lifecycle', 'lifecycle-service', '2.9.0')
+                includeVersion('androidx.lifecycle', 'lifecycle-livedata-core-ktx', '2.9.0')
+            }
+        }
+    }
+}
+```
+
+Usage measurements preserve Android's native reporting intervals, which may
+expand the query range. Displayed dates follow interval starts in the selected
+zone; no duration is prorated into exact civil-day totals. App foreground time can
+overlap across apps and is not device screen-on time. Empty/unavailable queries
+do not create zero-valued records or advance checkpoints.
+
+The conservative clock policy is a material limitation: after a device reboot or
+cumulative wall/elapsed drift over one second, old history/checkpoints remain, but
+native intervals starting at or before the persisted safety boundary stop receiving
+updates. The affected interval can remain permanently incomplete; imports resume
+with newly started intervals. App process restart within the same boot preserves
+the clock anchor. This is explained in Settings and avoids silently counting
+rewritten historical intervals twice. Unreadable boot identity produces an error
+and keeps existing history. It does not guess clock continuity.
+
+Device command, on an attached device or already running emulator:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: browse/capture without Usage access; enable imports and follow
+native settings; return and import known app usage, checking actual native bounds
+and totals rather than assuming equality with Digital Wellbeing's own display.
+Retry growing intervals and verify stable records/labels. Revoke access while a
+query runs, opt out while busy, recreate the app and confirm saved history/checkpoints
+persist. Exercise denied, unsupported, locked, empty and transient-error states,
+including an absent settings activity and unavailable app labels. Validate background
+jobs, bounded retries and cancellation on a representative device. Restart the
+device or correct wall time and confirm the incomplete-interval explanation, absence
+of duplicated history and subsequent fresh-interval recovery. Check selected zones,
+large fonts, landscape, screen-reader labels and existing Places/core routes.

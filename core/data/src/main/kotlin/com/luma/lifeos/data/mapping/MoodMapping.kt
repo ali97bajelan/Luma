@@ -23,4 +23,4 @@ fun EventWithDetails.toRecord(): LifeEventRecord = LifeEventRecord(event.toDomai
 }, memory?.let { MemoryDetails(it.importance, it.note) },
     people.map { it.toDomainPerson() }.sortedWith(compareBy({ it.name }, { it.id.toString() })), places.singleOrNull()?.toDomainPlace(), attachments.map { it.toDomainPhoto() }.sortedBy { it.id.toString() },
     activities.map { ActivityDetails(UUID.fromString(it.id), it.activityType, it.value, it.unit, it.source) }.sortedBy { it.id.toString() },
-    appUsage?.let { AppUsageDetails(it.packageName, Instant.ofEpochMilli(it.bucketStart), Instant.ofEpochMilli(it.bucketEnd), it.durationMs) })
+    appUsage?.let { AppUsageDetails(it.packageName, Instant.ofEpochMilli(it.bucketStart), Instant.ofEpochMilli(it.bucketEnd), it.durationMs, event.metadataJson.usageLabel()) })

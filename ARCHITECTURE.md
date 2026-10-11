@@ -15,7 +15,7 @@ constraints. No account, cloud sync, AI dependency, or telemetry is introduced.
 - Jetpack Compose and Material 3; AndroidX Navigation Compose.
 - Minimum Android API 28; compile/target API 35. `java.time` is available natively.
 - Coroutines and Flow for asynchronous repository contracts.
-- Room 2.8.5/SQLite and KSP2 2.3.5 for persistence; WorkManager for retryable imports in T12/T13.
+- Room 2.8.5/SQLite and KSP2 2.3.5 for persistence; WorkManager 2.10.0 for retryable usage imports.
 - JUnit for pure JVM tests; AndroidX Test and Compose testing for device checks.
 - Explicit constructor injection initially; no dependency injection framework.
 
@@ -41,7 +41,8 @@ Package layout follows the same boundaries:
 - `com.luma.lifeos.ui` and `ui.theme`: navigation, screens, and visual theme.
 - `com.luma.lifeos.domain.model`, `.time`, `.repository`: domain values and contracts.
 - `com.luma.lifeos.data`: `.db`, `.dao`, `.entity`, `.mapping`, `.repository`.
-- Planned `com.luma.lifeos.integration.usage` and `.health`: platform adapters.
+- `com.luma.lifeos.integration.usage`: Android usage adapter and work scheduling.
+- Planned `com.luma.lifeos.integration.health`: Health Connect adapter.
 
 The domain uses the Java library plugin and exports Coroutines as an API dependency
 because its public repository contracts return `Flow`.
@@ -442,8 +443,67 @@ memory status and photos. Absent typed values are shown as unavailable. Only
 complete editable manual moods, journals and direct memories open their existing
 content routes. Imported/incomplete records open read-only detail, including from
 Today and person history. Promotion remains limited to eligible manual records.
-Health/usage acquisition, app labeling and aggregation remain T12–T14; no runtime
-sample records, new permissions or dependencies are introduced.
+T11 deferred acquisition and aggregation to T12–T14. T12 adds optional usage
+acquisition below; health and cached daily summaries remain later tasks.
+
+## Optional app-usage imports (T12)
+
+`integration:usage` implements domain `UsageSource` through AppOps, UserManager,
+UsageStatsManager and PackageManager. Settings persists an off-by-default opt-in,
+explains access before opening native Usage access settings, and offers an explicit
+import. Missing settings activities, unsupported devices, locked storage, denied
+or revoked access, empty results and transient failures have distinct states.
+Core capture and browsing remain available without usage access. App labels are
+stored in envelope metadata with a package fallback; launcher intent visibility
+is sufficient, and `QUERY_ALL_PACKAGES` is absent.
+
+The adapter queries `INTERVAL_DAILY`, retains native first/last timestamps and
+`totalTimeInForeground` in milliseconds, and rejects impossible or contradictory
+values. Android may expand requested ranges to whole native intervals. Settings
+groups saved intervals by their start date in the selected zone, without clipping
+or prorating. Simultaneous app totals can overlap; this is foreground app usage,
+not device screen-on time. Missing data is distinct from reported zero. See
+[UsageStatsManager](https://developer.android.com/reference/android/app/usage/UsageStatsManager#queryUsageStats(int,long,long)).
+
+Within an unchanged native clock epoch, source references use
+`usage:daily:<package>:<native-start-ms>`; growing ends and totals update the same
+event/child UUIDs. Room preserves audit identity, unrelated metadata and links,
+and commits the rows and successful checkpoint atomically. The initial query
+covers seven days; subsequent queries overlap the checkpoint by two days, bounded
+to seven days. Errors, empty results and permission changes retain history and the
+last successful checkpoint. Daily reports read the existing indexed event graph;
+T14 summary cache computation is not introduced.
+
+Native bucket starts can change when Android corrects wall time, including shifts
+that do not overlap old short intervals. The importer persists the initial wall,
+elapsed-realtime and boot-count anchor, compares cumulative drift before and after
+queries, and treats drift over one second or a different boot as a discontinuity.
+An unreadable boot identity fails safely. On discontinuity it retains saved rows
+and checkpoint, records `INTERVAL_CHANGED`, and persists a minimum native start
+equal to the detection wall time (never earlier than the previous boundary).
+Only intervals starting strictly after that boundary can subsequently import;
+Room enforces this boundary in its transaction. A separate overlap check rejects
+same-package intervals with different starts that would otherwise count twice.
+These checks survive process recreation and opt-out. The reboot policy deliberately
+omits further updates to the affected interval, which may remain incomplete;
+newly started intervals restore imports automatically. Native identities are not
+globally immutable. Platform references: [SystemClock](https://developer.android.com/reference/android/os/SystemClock),
+[boot count](https://developer.android.com/reference/android/provider/Settings.Global#BOOT_COUNT)
+and [AOSP clock correction](https://android.googlesource.com/platform/frameworks/base/+/master/services/usage/java/com/android/server/usage/UserUsageStatsService.java).
+
+`LumaApplication` shares one coordinator between Settings and `UsageWorker`.
+Imports serialize, while a separate short controls mutex lets opt-out persist and
+cancel work during a native query; the commit checks enabled atomically. Access is
+refreshed on foreground return and checked before and after reads. WorkManager
+schedules one six-hour periodic job, with exponential backoff and bounded retries
+for errors and locked storage. Revoked/unsupported access cancels it; transient
+service failures retain retry scheduling. Scheduling is best effort under Android
+battery/background restrictions, with Import now available for immediate checks.
+
+The merged manifest adds special Usage access and WorkManager wake/boot permissions.
+Unused network-state and foreground-service permissions are removed. There is no
+Internet permission, network constraint, broad package query, telemetry or backup
+change. SDKs and Room schema version 1 remain unchanged.
 
 ## Implementation phases
 
@@ -462,7 +522,7 @@ backlog features are implemented during these phases.
 No network permission or analytics SDK. Android system backup is disabled so
 sensitive records cannot enter automatic remote backups. Portable backups in T17
 require a user action through the system document picker. Optional integrations
-will explain scope before consent and reflect permission revocation. Usage access
+explain scope before consent and reflect permission revocation. Usage access
 is special system access, not an ordinary runtime permission. Health Connect
 availability and supported records vary by OS/provider; unavailable is distinct
 from a known zero. Photos are selected through a system picker and copied
