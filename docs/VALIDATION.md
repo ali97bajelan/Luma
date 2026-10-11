@@ -436,3 +436,91 @@ rejected missing-reference writes must keep the draft. Exercise discard/delete
 confirmations, large fonts/landscape/keyboard scrolling and oversized-paste
 rejection. Verify core flows require no location permission. No continuous
 location tracking or automatic location capture is implemented.
+
+
+## T10 results — 2026-10-11
+
+- PASS: 110 JVM tests (29 domain, 74 application, 7 data), zero failures/errors/skips.
+  Domain cases cover safe relative paths, metadata, optional replacement snapshots,
+  counts and duplicate identities. Pure file tests cover bounded/interrupted/invalid
+  imports, stable completed-copy recovery across new engines, durable/overlapping
+  leases, current-reference protection, orphan removal, unrelated-file retention
+  and path/symlink containment. Editor cases cover selected-photo restoration,
+  explicit clearing, failed imports, interrupted-result recovery with the same
+  identity, discard without writing, and completion despite cleanup failure.
+  Regression tests prove pending imports remain leased during restoration and
+  newer photo drafts clear uncertain delete/unmark intents before restoration.
+  Saved-state references/metadata round-trip without storing image bytes.
+- PASS: application debug APK and application/data instrumentation APK builds.
+- PASS: data-module Android lint, no issues found; `git diff --check` passes.
+- PASS: independent code review; the reported recovery defect was reproduced by
+  two failing tests, fixed, and reviewed again with no remaining critical or
+  important issues. The pending-file lease regression also failed with its
+  protection removed and passes with the fix restored.
+- PASS: merged application manifest still excludes Internet, broad media/storage,
+  camera, contacts and location permissions. Only AndroidX's internal signature
+  receiver permission is present. Automatic backup remains disabled.
+- BLOCKED: full application lint again crashes with `IncompatibleClassChangeError`
+  in bundled Lifecycle/Compose analyzers (`NonNullableMutableLiveDataDetector`,
+  `FrequentlyChangingValueDetector`/`RememberInCompositionDetector`). No rules
+  were disabled and no build-tool versions changed.
+- PENDING: device execution. Seven photo Room test cases compile for copied image
+  metadata, reopening without source access, closing/reopening a disk database
+  and file store, create retries, atomic reference/body/tag rollback with retained
+  files, promotion/unmark, targeted attachment removal, unavailable/corrupt media,
+  event deletion with another draft lease, identity conflicts, and preservation
+  of unknown legacy metadata. Two Compose flows compile with actual Room/private
+  storage for preview/save/reopen/remove while retaining body/tags and for removing
+  an unavailable image. Native picker/provider behavior, full application restart
+  and visual/accessibility acceptance require device execution. No emulator or
+  device was launched.
+
+Successful local check:
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug --no-daemon --console=plain
+```
+
+After adding the disk-reopening case and fixed audit clock to the photo device
+fixtures, the data instrumentation APK and data lint were checked again:
+
+```sh
+bash gradlew --offline :core:data:assembleDebugAndroidTest :core:data:lintDebug \
+  --no-daemon --console=plain
+```
+
+Full application lint attempt:
+
+```sh
+bash gradlew --offline :app:lintDebug --continue --no-daemon --console=plain
+```
+
+Device check command:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: add images using the system photo picker on API 28 and a
+native-picker device; cancel the picker without changing the draft. Save a journal
+and direct/promoted memory, fully restart the app, revoke/remove the original
+provider image and confirm the private copy is still available. Recreate during
+copy/save; retry without duplicating an attachment. Reject non-images, corrupt,
+oversized and excessive selections without losing text or earlier images. Remove
+one image and verify body, tags, people, place, marker and other photos survive;
+discard an unsaved removal and verify the stored photo remains. Delete an entry,
+unmark a promoted memory, and confirm the appropriate references/content survive.
+Exercise missing-image retry/removal, large fonts, landscape, keyboard scrolling
+and discard/delete confirmations. Check that media is never uploaded or backed
+up automatically and broad storage access is not requested.
+
+Known storage limits: original image bytes (including embedded metadata) stay in
+app-private storage. Abandoned draft leases protect potentially restorable photos
+until explicit release, which can retain unused files. Managed-file cleanup only
+reads/deletes canonical UUID files in its photo root; arbitrary legacy paths show
+unavailable and remain outside collection. Future backup/restore or import writers
+must lease managed files before committing references. Portable export and draft
+storage controls remain later work.

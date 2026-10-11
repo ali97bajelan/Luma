@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.ui.places.LinkedPlace
+import com.luma.lifeos.ui.photos.PhotoCount
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
@@ -54,6 +55,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                                 record.memory?.let { MemoryStatus(it) }
                                 LinkedPeople(record.people)
                                 LinkedPlace(record.place)
+                            PhotoCount(record.photos.size)
                                 Text(record.event.occurredAt.atZone(zone).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)))
                                 record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
                                 record.journal?.let { Text(it.body, maxLines = 3, overflow = TextOverflow.Ellipsis) }

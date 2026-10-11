@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.memory
 
+import com.luma.lifeos.ui.photos.TestPhotoRepository
 import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.MemoryRepository
@@ -249,11 +250,84 @@ class MemoryEditorTest {
         assertEquals(original, repo.records[original.event.id]!!.copy(memory = null, place = first))
     }
 
+    @Test fun photosSurviveRestorationAndExistingPhotoCanBeRemovedWithoutChangingText() = runTest(dispatcher) {
+        val repo = TestMemoryRepository(); val files = TestPhotoRepository(); val handle = SavedStateHandle()
+        val editor = MemoryEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle(); editor.setNote("Keep"); editor.importPhoto("content://selected/image"); advanceUntilIdle()
+        val photo = editor.state.value.draft.photos.single()
+        val restored = MemoryEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle()
+        assertEquals(listOf(photo), restored.state.value.draft.photos)
+        restored.save(); advanceUntilIdle()
+        assertEquals(listOf(photo), repo.submittedPhotos)
+        val editing = MemoryEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock, files)
+        advanceUntilIdle(); assertEquals(listOf(photo), editing.state.value.draft.photos)
+        editing.removePhoto(photo.id); advanceUntilIdle(); editing.save(); advanceUntilIdle()
+        assertEquals(emptyList<PhotoAttachment>(), repo.submittedPhotos)
+        assertTrue(repo.records.values.single().photos.isEmpty())
+    }
+
+    @Test fun finishedCopyWithLostResultRecoversRetainedPhotoIdAndDraft() = runTest(dispatcher) {
+        val repo = TestMemoryRepository(); val files = TestPhotoRepository().apply { failAfterCopy = true }
+        val handle = SavedStateHandle()
+        val editor = MemoryEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle(); editor.setNote("Keep"); editor.importPhoto("content://selected/image"); advanceUntilIdle()
+        assertEquals(MemoryEditorError.PHOTO, editor.state.value.error)
+        assertTrue(editor.state.value.draft.photos.isEmpty())
+        files.failAfterCopy = false
+        val restored = MemoryEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle()
+        assertEquals(1, files.files.size)
+        assertEquals(files.files.values.single(), restored.state.value.draft.photos.single())
+        files.failRelease = true
+        restored.save(); advanceUntilIdle()
+        assertTrue(restored.state.value.completed)
+        assertEquals(listOf(files.files.values.single()), repo.submittedPhotos)
+    }
+
+    @Test fun failedImportKeepsPreviousSelectionAndDiscardDoesNotWriteEntry() = runTest(dispatcher) {
+        val repo = TestMemoryRepository(); val files = TestPhotoRepository()
+        val editor = MemoryEditorViewModel(repo, null, SavedStateHandle(), clock, files)
+        advanceUntilIdle(); editor.setNote("Keep"); editor.importPhoto("content://first"); advanceUntilIdle()
+        val draft = editor.state.value.draft
+        files.failImport = true; editor.importPhoto("content://missing"); advanceUntilIdle()
+        assertEquals(draft, editor.state.value.draft)
+        assertEquals(MemoryEditorError.PHOTO, editor.state.value.error)
+        var closed = false
+        editor.discardPhotos { closed = true }; advanceUntilIdle()
+        assertTrue(closed)
+        assertTrue(repo.records.isEmpty())
+        assertTrue(files.leases.isEmpty())
+    }
+
+    @Test fun photoChangesAfterAmbiguousUnmarkRetainNewDraftOnRestoration() = runTest(dispatcher) {
+        val repo = TestMemoryRepository().apply { failAfterRemoval = true }
+        val files = TestPhotoRepository()
+        val original = journal().copy(memory = MemoryDetails(5))
+        repo.records[original.event.id] = original
+        val handle = SavedStateHandle()
+        val editor = MemoryEditorViewModel(repo, original.event.id, handle, clock, files)
+        advanceUntilIdle(); editor.remove(); advanceUntilIdle()
+        assertEquals(MemoryEditorError.REMOVE, editor.state.value.error)
+        editor.importPhoto("content://new-draft"); advanceUntilIdle()
+        val photo = editor.state.value.draft.photos.single()
+        val restored = MemoryEditorViewModel(repo, original.event.id, handle, clock, files)
+        advanceUntilIdle()
+        assertFalse(restored.state.value.completed)
+        assertTrue(restored.state.value.ready)
+        assertEquals(listOf(photo), restored.state.value.draft.photos)
+        assertTrue(files.leases.values.any { photo in it })
+        restored.save(); advanceUntilIdle()
+        assertEquals(listOf(photo), repo.records.getValue(original.event.id).photos)
+        assertEquals(original.journal, repo.records.getValue(original.event.id).journal)
+    }
+
     private class TestMemoryRepository : MemoryRepository {
         val records = mutableMapOf<EventId, LifeEventRecord>()
         var creates = 0
         var submittedPeople: Set<java.util.UUID>? = null
         var submittedPlace: PlaceSelection? = null
+        var submittedPhotos: List<PhotoAttachment>? = null
         var failLoading = false
         var failAfterSave = false
         var failRemoval = false
@@ -263,34 +337,40 @@ class MemoryEditorTest {
         override suspend fun create(id: EventId, input: MemoryInput): EventId {
             submittedPeople = input.personIds
             submittedPlace = input.placeSelection
+            submittedPhotos = input.photos
             creates++
             require(id !in records)
             records[id] = LifeEventRecord(LifeEvent(id, EventType.MEMORY, input.occurredAt, input.occurredAt, title = input.title, note = input.note),
                 memory = MemoryDetails(input.importance, input.note),
                 people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty(),
-            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") })
+            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") },
+            photos = input.photos ?: records[id]?.photos.orEmpty())
             if (failAfterSave) error("Committed result unavailable")
             return id
         }
         override suspend fun update(id: EventId, input: MemoryInput) {
             submittedPeople = input.personIds
             submittedPlace = input.placeSelection
+            submittedPhotos = input.photos
             val previous = records.getValue(id)
             require(previous.event.type == EventType.MEMORY && previous.event.isEditable && previous.memory != null)
             records[id] = previous.copy(event = previous.event.copy(occurredAt = input.occurredAt, title = input.title, note = input.note),
                 memory = MemoryDetails(input.importance, input.note),
                 people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty(),
-            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") })
+            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") },
+            photos = input.photos ?: records[id]?.photos.orEmpty())
             if (failAfterSave) error("Committed result unavailable")
         }
         override suspend fun saveMarker(id: EventId, input: MemoryMarkerInput) {
             submittedPeople = input.personIds
             submittedPlace = input.placeSelection
+            submittedPhotos = input.photos
             val original = records.getValue(id)
             require(original.canPromoteToMemory)
             records[id] = original.copy(memory = MemoryDetails(input.importance, input.note?.takeIf { it.isNotBlank() }),
                 people = input.personIds?.map { Person(it, "Friend") } ?: original.people,
-                place = if (input.placeSelection == null) original.place else input.placeSelection?.id?.let { Place(it, "Cafe") })
+                place = if (input.placeSelection == null) original.place else input.placeSelection?.id?.let { Place(it, "Cafe") },
+            photos = input.photos ?: records[id]?.photos.orEmpty())
             if (failAfterSave) error("Committed result unavailable")
         }
         override suspend fun removeMarker(id: EventId) {

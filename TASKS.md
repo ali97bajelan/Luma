@@ -257,7 +257,25 @@ compatibility failure. See `docs/VALIDATION.md`.
 
 ## T10 — Photo attachments
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: journal, direct-memory and promoted-memory forms support local
+image selection, bounded previews, retry, removal and unavailable-photo states.
+Images copy into app-private storage before transactional reference/metadata
+writes. Stable pending identities and durable draft leases protect restored,
+unsaved and concurrent-editor selections; cleanup checks current references and
+leases only after database success. Promotion shares source photos and unmarking
+preserves them. Journal detail renders photos; browsing shows attachment counts.
+No broad media permission, network upload, automatic backup or schema migration
+is added.
+
+Validation: 110 JVM tests pass (29 domain + 74 app + 7 data), debug and both
+instrumentation APKs build, and data lint reports no issues. Seven photo Room
+cases and two Compose capture/removal/unavailable-media flows compile; device
+execution, native picker behavior and restart acceptance remain pending user
+validation. Independent review found no remaining critical/important defects.
+Full app lint retains the bundled analyzer compatibility failure. No emulator was
+launched. See `docs/VALIDATION.md` for evidence and private-file retention limits.
 
 
 ### Scope

@@ -115,8 +115,9 @@ class MemoryPersistenceTest {
         val graph = database.lifeEvents().getDetails(direct.toString())!!
         RoomEventStore(database).save(EventWrite(memories.get(direct)!!.event, memory = graph.memory,
             attachments = listOf(MediaAttachmentEntity(EventId.new().toString(), direct.toString(), "photos/direct.jpg"))))
-        assertTrue(runCatching { memories.delete(direct) }.isFailure)
-        assertNotNull(memories.get(direct)!!.memory)
+        memories.delete(direct)
+        assertNull(memories.get(direct))
+        assertTrue(database.content().attachments(direct.toString()).isEmpty())
     }
 
     @Test fun failedPromotionRollsBackMarkerAndSummaryAndSuccessfulChangesInvalidateCache() = runBlocking {

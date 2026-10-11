@@ -27,7 +27,8 @@ sealed interface TodayUiState {
         val journals: Map<EventId, JournalDetails> = emptyMap(),
         val memories: Map<EventId, MemoryDetails> = emptyMap(),
         val people: Map<EventId, List<Person>> = emptyMap(),
-        val places: Map<EventId, Place> = emptyMap()) : TodayUiState {
+        val places: Map<EventId, Place> = emptyMap(),
+        val photoCounts: Map<EventId, Int> = emptyMap()) : TodayUiState {
         val counts: Map<EventType, Int> = events.groupingBy { it.type }.eachCount()
     }
 }
@@ -42,7 +43,8 @@ fun observeToday(repository: LifeEventRepository, date: LocalDate, zone: ZoneId)
                 records.mapNotNull { record -> record.journal?.let { record.event.id to it } }.toMap(),
                 records.mapNotNull { record -> record.memory?.let { record.event.id to it } }.toMap(),
                 records.associate { it.event.id to it.people },
-                records.mapNotNull { record -> record.place?.let { record.event.id to it } }.toMap()))
+                records.mapNotNull { record -> record.place?.let { record.event.id to it } }.toMap(),
+                records.associate { it.event.id to it.photos.size }))
         }
     }.catch { failure ->
         if (failure is CancellationException) throw failure

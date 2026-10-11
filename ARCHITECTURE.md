@@ -128,8 +128,8 @@ or permission-state assumptions are introduced.
 
 Media operations here affect database references only. Aggregate saves/deletes return
 removed relative paths after commit, and `referencedMediaPaths` supports later orphan
-cleanup. T10 owns private file copying and physical deletion; it must recheck references
-before deleting a returned path. No file is deleted during a database transaction.
+cleanup. T10 implements private file copying and physical deletion, rechecking current
+references and durable draft leases before collecting managed files. No file is deleted during a database transaction.
 Instant values are stored at millisecond precision. Range bounds round upward to
 preserve half-open inclusion rules for queries with submillisecond endpoints.
 
@@ -185,7 +185,7 @@ Updates target the mood row and emotion junctions, retaining child IDs, audit
 creation time, metadata, memory markers and unrelated links. Note text is trimmed
 and synchronized into the envelope. Writes invalidate derived summaries in the
 same transaction. Delete cascades event references but preserves catalog objects;
-records with media references require T10 file cleanup and currently reject deletion.
+T10 now permits media-bearing manual deletion and performs file cleanup after commit.
 
 The navigation-scoped `MoodEditorViewModel` uses `SavedStateHandle` for draft
 values, dirty state, initial time and a stable capture ID. It loads typed check-ins,
@@ -223,9 +223,9 @@ Create IDs survive retries, and identical creates return the existing capture.
 Edits update the existing journal row and tag links, preserving child/audit IDs,
 metadata, memory markers, people, places and media. Missing, imported or incomplete
 journals cannot be edited. Deleting an already absent record is idempotent;
-existing imported/non-journal/media-bearing records retain deletion protection.
-Event deletion removes links but preserves reusable
-catalog entries; media-bearing journals require T10 cleanup and reject deletion.
+existing imported/non-journal records retain deletion protection.
+Event deletion removes links but preserves reusable catalog entries; T10 performs
+physical cleanup for media-bearing manual journals after commit.
 
 Quick Capture enables journals. The navigation-scoped journal editor retains
 body/title/time/tags, dirty state and capture identity through `SavedStateHandle`.
@@ -257,7 +257,7 @@ only the memory row and preserve its ID; unmarking removes only that row, leavin
 the envelope, journal/mood, metadata, tags, people, place and attachments intact.
 Existing journal/mood edits preserve markers. Direct memory edits retain audit
 creation time and unrelated links; direct deletion is separate from unmarking and
-rejects attached media until T10 file cleanup exists. Identical retained-ID creates
+permits attached media with T10 post-commit cleanup. Identical retained-ID creates
 and repeated removals are idempotent. Writes and summary invalidation share one
 transaction. `observeMemories` uses the indexed event range and a unique indexed
 memory lookup; typed graph observations also react to marker-only changes.
@@ -353,6 +353,60 @@ on return. Missing selections remain visible/removable, and failed saves retain
 the draft. Today/Timeline, journal detail, memory Review and person history show
 linked names. Core capture remains optional-place and permission-free.
 
+## Photo attachments (T10)
+
+`PhotoAttachment` carries a UUID, validated relative path and optional
+`PhotoMetadata` (actual MIME type, original byte count and dimensions).
+`LifeEventRecord.photos` maps the existing v1 `media_attachment` relation.
+Journal/direct-memory/marker inputs append nullable photo snapshots: null keeps
+existing references, an explicit empty list clears them, and a supplied list
+replaces only attachment rows in the existing content/link/cache transaction.
+Explicit photo identities and paths participate in create retry matching.
+Existing attachment metadata JSON is preserved verbatim on updates, including
+unknown legacy fields. No migration is needed. Promoted memories share photos
+on the original event; unmarking keeps them.
+
+The application-owned `PhotoRepository` copies a selected content URI into
+`filesDir/photos/<UUID>.img` before references can be saved. `ManagedPhotoFiles`
+writes a durable owner lease before opening the source, bounds the copy at
+25 MiB, syncs a temporary file and publishes it atomically. `AndroidPhotoCodec`
+validates a decoded image, rejects sources over 40 million pixels, handles image
+orientation through `ImageDecoder`, and produces previews with a maximum edge
+of 640 pixels. Original bytes remain local. Copying, decoding and cleanup run
+on an IO dispatcher. A repository mutex serializes imports/leases/previews and
+cleanup reference queries. Writers of managed media must acquire a draft lease
+before committing references, including future import/restore adapters.
+
+Drafts retain at most 20 images. `PhotoDraftSession` stores only paths/metadata
+and a stable pending source/UUID in `SavedStateHandle`, never image bytes.
+Restoring an editor retains both selected and pending paths before allowing
+cleanup. A completed copy is recovered without reopening the source grant.
+Interrupted copies can retry while source access remains available; otherwise
+the user can select a photo again. Failed imports/writes keep the draft and
+previous selections. Photo changes clear uncertain removal intents just like
+text changes, so restoring after an ambiguous unmark cannot discard newer
+photos. Successful saves/deletes and explicit discard release the editor lease;
+a cleanup failure cannot report a committed save as failed.
+
+Lease files under `photos/.drafts` survive process death and protect concurrent
+editors. Physical collection happens outside Room transactions, rechecks current
+committed references and all leases, and deletes only canonical managed UUID
+files. Startup and capture completion retry collection. Abandoned leases remain
+protected until explicit release; this favors restorable drafts but can retain
+unused private files. Future draft lifecycle/storage controls can reconcile them.
+Arbitrary legacy relative paths display as unavailable and are never resolved or
+deleted by the managed-file engine; paths and symlinks cannot escape its root.
+
+Journal and memory forms use AndroidX `PickVisualMedia` with image-only selection
+and its older-device document-picker fallback, repeated Add photo, previews,
+retry and removal. No broad media permission or persistent provider grant is
+required for a finished private copy. Journal detail shows read-only photos;
+Today/Timeline, Review and person history show photo counts. Missing, corrupt or
+unsupported images show an unavailable state with retry while keeping the entry
+and its removable reference. Previews reload when their screen starts again.
+No network/upload path or automatic backup is introduced. Picker reference:
+[Android photo picker](https://developer.android.com/training/data-storage/shared/photo-picker).
+
 ## Implementation phases
 
 1. T01–T03: runnable project, tested domain contracts, relational persistence.
@@ -373,7 +427,7 @@ require a user action through the system document picker. Optional integrations
 will explain scope before consent and reflect permission revocation. Usage access
 is special system access, not an ordinary runtime permission. Health Connect
 availability and supported records vary by OS/provider; unavailable is distinct
-from a known zero. Photos will be selected through a system picker and copied
+from a known zero. Photos are selected through a system picker and copied
 into private storage, without requiring broad media access. Core flows require
 neither location nor health/usage permission. AI remains absent until explicitly
 authorized; deterministic reviews remain sufficient.
@@ -405,6 +459,9 @@ promotion/review/removal device sources. T08 increases this to 75 JVM tests and
 compiles People CRUD/link/history/live-update persistence cases and two capture/
 history/removal/deletion device flows. T09 brings coverage to 91 JVM tests with
 compiled place persistence and capture/reuse/rename/clear/deletion device sources.
+T10 brings coverage to 110 JVM tests (29 domain, 74 app and 7 data file-engine
+cases). Photo Room and Compose device sources compile, including disk database/
+file reopening, rollback, draft protection, removal and unavailable-media cases.
 Full app lint and device execution remain pending;
 the current data-module lint and debug/test APK builds pass.
 

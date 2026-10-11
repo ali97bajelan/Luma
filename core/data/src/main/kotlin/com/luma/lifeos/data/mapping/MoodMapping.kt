@@ -18,4 +18,4 @@ fun EventWithDetails.toRecord(): LifeEventRecord = LifeEventRecord(event.toDomai
     JournalDetails(entry.title, entry.body, tags.map { Tag(UUID.fromString(it.id), it.name) }
         .sortedWith(compareBy<Tag> { Tag.normalize(it.name) }.thenBy { it.id }))
 }, memory?.let { MemoryDetails(it.importance, it.note) },
-    people.map { it.toDomainPerson() }.sortedWith(compareBy({ it.name }, { it.id.toString() })), places.singleOrNull()?.toDomainPlace())
+    people.map { it.toDomainPerson() }.sortedWith(compareBy({ it.name }, { it.id.toString() })), places.singleOrNull()?.toDomainPlace(), attachments.map { it.toDomainPhoto() }.sortedBy { it.id.toString() })

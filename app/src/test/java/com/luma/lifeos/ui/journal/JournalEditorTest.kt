@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.journal
 
+import com.luma.lifeos.ui.photos.TestPhotoRepository
 import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.JournalRepository
@@ -213,11 +214,80 @@ class JournalEditorTest {
         assertNull(repo.records.values.single().place)
     }
 
+    @Test fun photosSurviveRestorationAndExistingPhotoCanBeRemovedWithoutChangingText() = runTest(dispatcher) {
+        val repo = TestJournalRepository(); val files = TestPhotoRepository(); val handle = SavedStateHandle()
+        val editor = JournalEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle(); editor.setBody("Keep"); editor.importPhoto("content://selected/image"); advanceUntilIdle()
+        val photo = editor.state.value.draft.photos.single()
+        val restored = JournalEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle()
+        assertEquals(listOf(photo), restored.state.value.draft.photos)
+        restored.save(); advanceUntilIdle()
+        assertEquals(listOf(photo), repo.submittedPhotos)
+        val editing = JournalEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock, files)
+        advanceUntilIdle(); assertEquals(listOf(photo), editing.state.value.draft.photos)
+        editing.removePhoto(photo.id); advanceUntilIdle(); editing.save(); advanceUntilIdle()
+        assertEquals(emptyList<PhotoAttachment>(), repo.submittedPhotos)
+        assertTrue(repo.records.values.single().photos.isEmpty())
+    }
+
+    @Test fun finishedCopyWithLostResultRecoversRetainedPhotoIdAndDraft() = runTest(dispatcher) {
+        val repo = TestJournalRepository(); val files = TestPhotoRepository().apply { failAfterCopy = true }
+        val handle = SavedStateHandle()
+        val editor = JournalEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle(); editor.setBody("Keep"); editor.importPhoto("content://selected/image"); advanceUntilIdle()
+        assertEquals(JournalEditorError.PHOTO, editor.state.value.error)
+        assertTrue(editor.state.value.draft.photos.isEmpty())
+        files.failAfterCopy = false
+        val restored = JournalEditorViewModel(repo, null, handle, clock, files)
+        advanceUntilIdle()
+        assertEquals(1, files.files.size)
+        assertEquals(files.files.values.single(), restored.state.value.draft.photos.single())
+        files.failRelease = true
+        restored.save(); advanceUntilIdle()
+        assertTrue(restored.state.value.completed)
+        assertEquals(listOf(files.files.values.single()), repo.submittedPhotos)
+    }
+
+    @Test fun failedImportKeepsPreviousSelectionAndDiscardDoesNotWriteEntry() = runTest(dispatcher) {
+        val repo = TestJournalRepository(); val files = TestPhotoRepository()
+        val editor = JournalEditorViewModel(repo, null, SavedStateHandle(), clock, files)
+        advanceUntilIdle(); editor.setBody("Keep"); editor.importPhoto("content://first"); advanceUntilIdle()
+        val draft = editor.state.value.draft
+        files.failImport = true; editor.importPhoto("content://missing"); advanceUntilIdle()
+        assertEquals(draft, editor.state.value.draft)
+        assertEquals(JournalEditorError.PHOTO, editor.state.value.error)
+        var closed = false
+        editor.discardPhotos { closed = true }; advanceUntilIdle()
+        assertTrue(closed)
+        assertTrue(repo.records.isEmpty())
+        assertTrue(files.leases.isEmpty())
+    }
+
+    @Test fun photoChangesAfterAmbiguousDeleteStayVisibleInsteadOfFinishingRestoredEditor() = runTest(dispatcher) {
+        val repo = TestJournalRepository().apply { failAfterDelete = true }
+        val files = TestPhotoRepository()
+        val id = EventId.new()
+        repo.create(id, JournalInput("Body", clock.instant()))
+        val handle = SavedStateHandle()
+        val editor = JournalEditorViewModel(repo, id, handle, clock, files)
+        advanceUntilIdle(); editor.delete(); advanceUntilIdle()
+        editor.importPhoto("content://new-draft"); advanceUntilIdle()
+        val photo = editor.state.value.draft.photos.single()
+        val restored = JournalEditorViewModel(repo, id, handle, clock, files)
+        advanceUntilIdle()
+        assertFalse(restored.state.value.completed)
+        assertEquals(JournalEditorError.LOAD, restored.state.value.error)
+        assertEquals(listOf(photo), restored.state.value.draft.photos)
+        assertTrue(files.leases.values.any { photo in it })
+    }
+
     private class TestJournalRepository : JournalRepository {
         val records = mutableMapOf<EventId, LifeEventRecord>()
         var creates = 0
         var submittedPeople: Set<java.util.UUID>? = null
         var submittedPlace: PlaceSelection? = null
+        var submittedPhotos: List<PhotoAttachment>? = null
         var failAfterCreate = false
         var failLoading = false
         var failDeleting = false
@@ -230,6 +300,7 @@ class JournalEditorTest {
         override suspend fun create(id: EventId, input: JournalInput): EventId {
             submittedPeople = input.personIds
             submittedPlace = input.placeSelection
+            submittedPhotos = input.photos
             creates++
             require(id !in records)
             records[id] = record(id, input)
@@ -239,6 +310,7 @@ class JournalEditorTest {
         override suspend fun update(id: EventId, input: JournalInput) {
             submittedPeople = input.personIds
             submittedPlace = input.placeSelection
+            submittedPhotos = input.photos
             require(id in records)
             records[id] = record(id, input)
         }
@@ -251,6 +323,7 @@ class JournalEditorTest {
             LifeEvent(id, EventType.JOURNAL, input.occurredAt, input.occurredAt, title = input.title),
             journal = JournalDetails(input.title, input.body),
             people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty(),
-            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") })
+            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") },
+            photos = input.photos ?: records[id]?.photos.orEmpty())
     }
 }

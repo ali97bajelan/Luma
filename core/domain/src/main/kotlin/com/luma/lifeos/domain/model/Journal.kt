@@ -26,8 +26,10 @@ data class JournalInput(
     val tagNames: Set<String> = emptySet(),
     val personIds: Set<UUID>? = null,
     val placeSelection: PlaceSelection? = null,
+    val photos: List<PhotoAttachment>? = null,
 ) {
     init {
+        validatePhotos(photos)
         validatePersonSelection(personIds)
         require(body.isNotBlank()) { "Journal body is required" }
         require(body.length <= JournalTextLimits.BODY) { "Journal body is too long" }

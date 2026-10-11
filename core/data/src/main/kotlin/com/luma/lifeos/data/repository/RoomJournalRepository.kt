@@ -33,7 +33,8 @@ class RoomJournalRepository(private val database: LumaDatabase, private val cloc
                 journal.title == title && journal.body == input.body &&
                 journal.tags.map { Tag.normalize(it.name) }.toSet() == input.tagNames.map(Tag::normalize).toSet() &&
                 (input.personIds == null || record.people.map { it.id }.toSet() == input.personIds) &&
-                (input.placeSelection == null || record.place?.id == input.placeSelection?.id)) {
+                (input.placeSelection == null || record.place?.id == input.placeSelection?.id) &&
+                (input.photos == null || record.photos.map { it.id to it.relativePath }.toSet() == input.photos?.map { it.id to it.relativePath }?.toSet())) {
                 "This capture ID already belongs to a different journal"
             }
             return@withTransaction id
@@ -44,6 +45,7 @@ class RoomJournalRepository(private val database: LumaDatabase, private val cloc
         replaceTags(id, input.tagNames)
         replacePeopleInTransaction(database, id, input.personIds)
         replacePlaceInTransaction(database, id, input.placeSelection)
+        replacePhotosInTransaction(database, id, input.photos)
         database.derived().invalidateSummaries()
         id
     }
@@ -58,13 +60,13 @@ class RoomJournalRepository(private val database: LumaDatabase, private val cloc
         replaceTags(id, input.tagNames)
         replacePeopleInTransaction(database, id, input.personIds)
         replacePlaceInTransaction(database, id, input.placeSelection)
+        replacePhotosInTransaction(database, id, input.photos)
         database.derived().invalidateSummaries()
     }
 
     override suspend fun delete(id: EventId) = database.withTransaction {
         val previous = database.lifeEvents().getDetails(id.toString()) ?: return@withTransaction
         editable(previous)
-        require(content.attachments(id.toString()).isEmpty()) { "Attached media requires file cleanup" }
         database.lifeEvents().delete(id.toString())
         database.derived().invalidateSummaries()
     }

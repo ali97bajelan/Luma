@@ -35,7 +35,7 @@ data class MoodDetails(
 
 /** One committed event graph; typed fields grow with the later feature slices. */
 data class LifeEventRecord(val event: LifeEvent, val mood: MoodDetails? = null, val journal: JournalDetails? = null,
-    val memory: MemoryDetails? = null, val people: List<Person> = emptyList(), val place: Place? = null) {
+    val memory: MemoryDetails? = null, val people: List<Person> = emptyList(), val place: Place? = null, val photos: List<PhotoAttachment> = emptyList()) {
     val canPromoteToMemory: Boolean get() = event.isEditable &&
         ((event.type == EventType.MOOD && mood != null) || (event.type == EventType.JOURNAL && journal != null))
 

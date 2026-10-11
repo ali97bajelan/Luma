@@ -23,7 +23,7 @@ import java.time.ZoneId
 fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave: () -> Unit,
     onDelete: () -> Unit, onRetry: () -> Unit, onTitle: (String) -> Unit, onBody: (String) -> Unit,
     onAddTag: (String) -> Boolean, onRemoveTag: (String) -> Unit,
-    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}) {
+    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {}) {
     var deleting by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
     var tagText by rememberSaveable { mutableStateOf("") }
@@ -61,6 +61,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                     JournalEditorError.SAVE -> R.string.journal_save_error
                     JournalEditorError.DELETE -> R.string.journal_delete_error
                     JournalEditorError.TIME -> R.string.mood_time_error
+                    JournalEditorError.PHOTO -> R.string.photo_error
                     JournalEditorError.TEXT -> R.string.journal_text_error
                 }), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("journal_error"))
                 if (error == JournalEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
@@ -97,6 +98,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
             }
             peopleContent()
             placeContent()
+            photosContent()
             MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == JournalEditorError.TIME, onTime)
         }
     }

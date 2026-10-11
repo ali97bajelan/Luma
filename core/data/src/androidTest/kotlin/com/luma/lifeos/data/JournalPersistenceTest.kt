@@ -102,7 +102,7 @@ class JournalPersistenceTest {
         assertEquals(SummaryFreshness.STALE, derived.summary(date, ZoneOffset.UTC)!!.freshness)
     }
 
-    @Test fun importedAndIncompleteRecordsRejectWritesAndMediaDeletionIsProtected() = runBlocking {
+    @Test fun importedRecordsRejectWritesAndManualMediaReferencesDeleteWithTheirEvent() = runBlocking {
         val store = RoomEventStore(database)
         val imported = EventId.new()
         val event = LifeEvent(imported, EventType.JOURNAL, now, now,
@@ -117,7 +117,8 @@ class JournalPersistenceTest {
         val graph = store.get(id)!!
         store.save(EventWrite(journals.get(id)!!.event, journal = graph.journal,
             attachments = listOf(MediaAttachmentEntity(EventId.new().toString(), id.toString(), "photos/test.jpg"))))
-        assertTrue(runCatching { journals.delete(id) }.isFailure)
-        assertEquals("Keep", journals.get(id)!!.journal!!.body)
+        journals.delete(id)
+        assertNull(journals.get(id))
+        assertTrue(database.content().attachments(id.toString()).isEmpty())
     }
 }

@@ -1,6 +1,10 @@
 package com.luma.lifeos.ui.memory
 
 import androidx.lifecycle.SavedStateHandle
+import com.luma.lifeos.ui.photos.*
+import com.luma.lifeos.domain.repository.PhotoRepository
+import com.luma.lifeos.domain.model.PhotoAttachment
+import com.luma.lifeos.domain.model.validatePhotos
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.model.*
@@ -17,8 +21,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null)
-enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT }
+data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null, val photos: List<PhotoAttachment> = emptyList())
+enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT, PHOTO }
 data class MemoryEditorState(
     val draft: MemoryDraft,
     val original: LifeEventRecord? = null,
@@ -34,7 +38,7 @@ data class MemoryEditorState(
 )
 
 class MemoryEditorViewModel(private val repository: MemoryRepository, private val eventId: EventId?,
-    private val saved: SavedStateHandle, clock: Clock = Clock.systemUTC()) : ViewModel() {
+    private val saved: SavedStateHandle, clock: Clock = Clock.systemUTC(), photoRepository: PhotoRepository? = null) : ViewModel() {
     private val initialTime = saved.get<Long>("initial_time") ?: clock.millis().also { saved["initial_time"] = it }
     private val captureId = EventId.parse(saved.get<String>("capture_id") ?: EventId.new().toString().also { saved["capture_id"] = it })
     private var baseline = MemoryDraft(initialTime)
@@ -44,6 +48,25 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         completed = saved["completed"] ?: false, removed = saved["removed"] ?: false,
         hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true)))
     val state = mutableState.asStateFlow()
+
+    private val photoSession = PhotoDraftSession(photoRepository, saved, viewModelScope, captureId.value,
+        current = { state.value.draft.photos },
+        canEdit = { state.value.ready && !state.value.busy && !state.value.completed },
+        busy = { mutableState.value = state.value.copy(busy = it) },
+        update = { photos ->
+            if (photos != state.value.draft.photos) saved["pending_remove"] = null
+            val draft = state.value.draft.copy(photos = photos)
+            persist(draft)
+            mutableState.value = state.value.copy(draft = draft, hasChanges = draft != baseline, error = null)
+        }, error = { mutableState.value = state.value.copy(error = MemoryEditorError.PHOTO) })
+
+    fun importPhoto(source: String) = photoSession.importPhoto(source)
+    fun removePhoto(id: UUID) = photoSession.remove(id)
+    fun retryPhoto() = photoSession.retry()
+    fun hasPendingPhotoImport(): Boolean = saved.get<String>("photo_pending") != null
+    fun discardPhotos(onDone: () -> Unit) {
+        if (!state.value.busy && !state.value.completed) photoSession.discard(onDone)
+    }
 
     init { if (!state.value.completed) load() }
 
@@ -58,6 +81,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                     (pending == "unmark" && record?.canPromoteToMemory == true && record.memory == null)) {
                     val direct = pending == "delete"
                     saved["direct"] = direct
+                    photoSession.releaseAfterWrite()
                     finish(removed = true)
                     mutableState.value = state.value.copy(loading = false, direct = direct)
                     return@launch
@@ -72,9 +96,12 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                 editingId = record?.event?.id
                 saved["direct"] = direct
                 val draft = if (saved.get<Boolean>("has_draft") == true) readDraft() else baseline
+                validatePhotos(draft.photos)
+                photoSession.retain(draft.photos)
                 persist(draft)
                 mutableState.value = state.value.copy(draft = draft, original = record.takeUnless { direct }, direct = direct,
                     editing = record?.memory != null, loading = false, ready = true, hasChanges = draft != baseline, error = null)
+                photoSession.resumePending()
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 mutableState.value = state.value.copy(loading = false, ready = false, error = MemoryEditorError.LOAD)
@@ -117,13 +144,13 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["pending_remove"] = null
         write(MemoryEditorError.SAVE) {
             if (current.direct) {
-                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.importance, draft.personIds, PlaceSelection(draft.placeId))
+                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.importance, draft.personIds, PlaceSelection(draft.placeId), draft.photos)
                 val recoveredId = editingId ?: repository.get(captureId)?.event?.id
                 if (recoveredId == null) repository.create(captureId, input) else {
                     editingId = recoveredId
                     repository.update(recoveredId, input)
                 }
-            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId)))
+            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId), draft.photos))
         }
     }
     fun remove() {
@@ -138,7 +165,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     private fun write(error: MemoryEditorError, action: suspend () -> Unit) {
         mutableState.value = state.value.copy(busy = true, error = null)
         viewModelScope.launch {
-            try { action(); finish(removed = error == MemoryEditorError.REMOVE) }
+            try { action(); photoSession.releaseAfterWrite(); finish(removed = error == MemoryEditorError.REMOVE) }
             catch (failure: Exception) {
                 mutableState.value = state.value.copy(busy = false)
                 if (failure is CancellationException) throw failure
@@ -167,6 +194,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     }
 
     private fun persist(draft: MemoryDraft) {
+        saved.savePhotos(draft.photos)
         saved["place"] = draft.placeId?.toString()
         saved["people"] = ArrayList(draft.personIds.map(UUID::toString))
         saved["has_draft"] = true
@@ -179,7 +207,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     private fun readDraft() = MemoryDraft(saved.get<Long>("time") ?: initialTime, saved.get<String>("title") ?: "",
         saved.get<String>("note") ?: "", saved["importance"],
         saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet(),
-        saved.get<String>("place")?.let(UUID::fromString))
+        saved.get<String>("place")?.let(UUID::fromString), saved.readPhotos())
     private fun LifeEventRecord.toDraft(direct: Boolean) = MemoryDraft(event.occurredAt.toEpochMilli(),
-        if (direct) event.title.orEmpty() else "", if (direct) (memory?.note ?: event.note).orEmpty() else memory?.note.orEmpty(), memory?.importance, people.map { it.id }.toSet(), place?.id)
+        if (direct) event.title.orEmpty() else "", if (direct) (memory?.note ?: event.note).orEmpty() else memory?.note.orEmpty(), memory?.importance, people.map { it.id }.toSet(), place?.id, photos)
 }

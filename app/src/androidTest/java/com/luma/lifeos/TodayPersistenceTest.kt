@@ -27,6 +27,7 @@ import org.junit.Test
 class TodayPersistenceTest {
     @get:Rule val compose = createComposeRule()
     private lateinit var database: LumaDatabase
+    private lateinit var photoDirectory: java.io.File
     private lateinit var repository: RoomLifeEventRepository
 
     @Before fun setUp() {
@@ -34,16 +35,17 @@ class TodayPersistenceTest {
             InstrumentationRegistry.getInstrumentation().targetContext, LumaDatabase::class.java,
         ).build()
         repository = RoomLifeEventRepository(database)
+        photoDirectory = java.io.File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "photos-${java.util.UUID.randomUUID()}")
     }
 
-    @After fun tearDown() { database.close() }
+    @After fun tearDown() { database.close(); photoDirectory.deleteRecursively() }
 
     @Test fun selectedDayLoadsStoredRecordsAndReactsToCommittedChanges() {
         val today = LocalDate.now()
         val current = event(today, "Current day record")
         val previous = event(today.minusDays(1), "Previous day record")
         runBlocking { repository.upsert(current); repository.upsert(previous) }
-        compose.setContent { LifeOsTheme { LifeOsApp(repository, RoomMoodRepository(database), com.luma.lifeos.data.repository.RoomJournalRepository(database), com.luma.lifeos.data.repository.RoomMemoryRepository(database), com.luma.lifeos.data.repository.RoomPersonRepository(database), com.luma.lifeos.data.repository.RoomPlaceRepository(database)) } }
+        compose.setContent { LifeOsTheme { LifeOsApp(repository, RoomMoodRepository(database), com.luma.lifeos.data.repository.RoomJournalRepository(database), com.luma.lifeos.data.repository.RoomMemoryRepository(database), com.luma.lifeos.data.repository.RoomPersonRepository(database), com.luma.lifeos.data.repository.RoomPlaceRepository(database), com.luma.lifeos.data.repository.RoomPhotoRepository(database, com.luma.lifeos.data.media.ManagedPhotoFiles(photoDirectory)) { error("No fixture source") }) } }
         awaitText("Current day record")
         compose.onNodeWithText("Previous day record").assertDoesNotExist()
         compose.onNodeWithTag("day_previous").performClick()

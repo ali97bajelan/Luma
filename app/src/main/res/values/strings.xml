@@ -176,4 +176,13 @@
     <string name="place_selected_loading">Selected place · Remove</string>
     <string name="place_linked">Place: %1$s</string>
     <string name="place_coordinates">Coordinates: %1$.5f, %2$.5f</string>
+    <string name="photo_error">Could not change photos. Your entry and existing photos are still here. Retry or select another photo.</string>
+    <string name="photos">Photos</string>
+    <string name="photo_add">Add photo</string>
+    <string name="photo_remove">Remove photo</string>
+    <string name="photo_number">Photo %1$d</string>
+    <string name="photo_retry_import">Retry adding photo</string>
+    <string name="photo_unavailable">Photo unavailable. The entry is still saved.</string>
+    <string name="photo_limits">Up to 20 photos, 25 MB each. Photos stay on this device.</string>
+    <plurals name="photo_count"><item quantity="one">%d photo</item><item quantity="other">%d photos</item></plurals>
 </resources>

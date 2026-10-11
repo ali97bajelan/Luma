@@ -3,14 +3,14 @@
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today/daily Timeline browsing,
-mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, and reusable manual places. Remaining capture,
+mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, and private photo attachments on journals/memories. Remaining capture,
 integrations, and reviews follow [TASKS.md](TASKS.md).
 
 ## Build and run
 
 Use Android Studio with support for AGP 8.7.3, JDK 17, and Android SDK Platform 35. Open this directory, let Gradle sync, then run the `app`
 configuration on an Android 9/API 28 or newer device. No account or runtime
-permissions are needed for browsing, mood check-ins, journals, memories, people, or manual places.
+permissions are needed for browsing, mood check-ins, journals, memories, people, manual places, or photo selection through the system picker.
 
 From a shell with `JAVA_HOME` and `ANDROID_HOME` configured (or `sdk.dir` in an
 untracked `local.properties`):
@@ -54,6 +54,11 @@ creates mood, journal and memory records offline; journals include a full detail
 view. Existing moods/journals can be remembered without copying their content.
 People can be linked during capture/edit; person detail shows shared history,
 and deleting a person keeps the entries. Places can be managed from Settings
-and attached optionally during capture/edit without location permission. Review lists the current week’s memories; full statistics and Settings remain
+and attached optionally during capture/edit without location permission.
+Journal and memory forms can add up to 20 photos (25 MiB each); selected images
+are copied into app-private storage, with unavailable-photo states and safe
+removal. Photos remain on-device; no upload or automatic backup is enabled.
+Abandoned protected drafts may retain private files until released.
+Review lists the current week’s memories; full statistics and Settings remain
 assigned to later tasks. No future backlog features, network
 permission, telemetry, or mandatory AI service are included.

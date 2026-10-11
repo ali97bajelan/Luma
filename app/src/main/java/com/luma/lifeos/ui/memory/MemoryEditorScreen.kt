@@ -23,7 +23,7 @@ import java.time.format.FormatStyle
 @Composable
 fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: () -> Unit, onRemove: () -> Unit,
     onRetry: () -> Unit, onTitle: (String) -> Unit, onNote: (String) -> Unit, onImportance: (Int?) -> Unit,
-    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}) {
+    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {}) {
     var removing by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
     val enabled = state.ready && !state.busy && !state.completed
@@ -55,6 +55,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     MemoryEditorError.SAVE -> R.string.memory_save_error
                     MemoryEditorError.REMOVE -> R.string.memory_remove_error
                     MemoryEditorError.TIME -> R.string.mood_time_error
+                    MemoryEditorError.PHOTO -> R.string.photo_error
                     MemoryEditorError.TEXT -> R.string.memory_text_error
                 }), color = MaterialTheme.colorScheme.error)
                 if (error == MemoryEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
@@ -85,6 +86,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
             }
             peopleContent()
             placeContent()
+            photosContent()
             if (state.direct) MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MemoryEditorError.TIME, onTime)
         }
     }

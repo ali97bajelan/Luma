@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.places.LinkedPlace
+import com.luma.lifeos.ui.photos.PhotoCount
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PersonRepository
@@ -113,6 +114,7 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                             record.memory?.let { MemoryStatus(it) }
                             LinkedPeople(record.people)
                             LinkedPlace(record.place)
+                            PhotoCount(record.photos.size)
                             if (canOpen) TextButton(onClick = { onEvent(record) }) { Text(stringResource(R.string.person_open_event)) }
                         }
                     }

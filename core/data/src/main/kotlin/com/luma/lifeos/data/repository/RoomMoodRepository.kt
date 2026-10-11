@@ -84,8 +84,7 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
 
     override suspend fun delete(id: EventId) = database.withTransaction {
         editable(requireNotNull(database.lifeEvents().getDetails(id.toString())) { "Check-in was deleted" })
-        // Media capture arrives in T10; do not orphan a file attached by another writer.
-        require(content.attachments(id.toString()).isEmpty()) { "Attached media requires file cleanup" }
+        // Photo cleanup rechecks committed references after deletion; no physical file IO here.
         database.lifeEvents().delete(id.toString())
         database.derived().invalidateSummaries()
     }

@@ -31,7 +31,8 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
             require(record.event.occurredAt.toEpochMilli() == input.occurredAt.toEpochMilli() &&
                 record.event.title == title && memory.note == note && memory.importance == input.importance &&
                 (input.personIds == null || record.people.map { it.id }.toSet() == input.personIds) &&
-                (input.placeSelection == null || record.place?.id == input.placeSelection?.id)) {
+                (input.placeSelection == null || record.place?.id == input.placeSelection?.id) &&
+                (input.photos == null || record.photos.map { it.id to it.relativePath }.toSet() == input.photos?.map { it.id to it.relativePath }?.toSet())) {
                 "This capture ID already belongs to a different memory"
             }
             return@withTransaction id
@@ -40,6 +41,7 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
         content.insertMemory(MemoryEntity(EventId.new().toString(), id.toString(), input.importance, note))
         replacePeopleInTransaction(database, id, input.personIds)
         replacePlaceInTransaction(database, id, input.placeSelection)
+        replacePhotosInTransaction(database, id, input.photos)
         database.derived().invalidateSummaries()
         id
     }
@@ -53,13 +55,13 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
         content.upsertMemory(requireNotNull(previous.memory).copy(importance = input.importance, note = note))
         replacePeopleInTransaction(database, id, input.personIds)
         replacePlaceInTransaction(database, id, input.placeSelection)
+        replacePhotosInTransaction(database, id, input.photos)
         database.derived().invalidateSummaries()
     }
 
     override suspend fun delete(id: EventId) = database.withTransaction {
         val previous = events.getDetails(id.toString()) ?: return@withTransaction
         direct(previous)
-        require(content.attachments(id.toString()).isEmpty()) { "Attached media requires file cleanup" }
         events.delete(id.toString())
         database.derived().invalidateSummaries()
     }
@@ -72,6 +74,7 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
         content.upsertMemory(marker.copy(importance = input.importance, note = input.note.clean()))
         replacePeopleInTransaction(database, id, input.personIds)
         replacePlaceInTransaction(database, id, input.placeSelection)
+        replacePhotosInTransaction(database, id, input.photos)
         database.derived().invalidateSummaries()
     }
 
