@@ -182,9 +182,42 @@ class MemoryEditorTest {
     private fun journal() = LifeEventRecord(LifeEvent(EventId.new(), EventType.JOURNAL, clock.instant(), clock.instant(), title = "Source title"),
         journal = JournalDetails("Source title", "Source body"))
 
+    @Test fun peopleDraftRestoresAndSubmitsExplicitSelectionIncludingClear() = runTest(dispatcher) {
+        val repo = TestMemoryRepository()
+        val handle = SavedStateHandle()
+        val person = java.util.UUID.randomUUID()
+        val editor = MemoryEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle(); editor.setNote("Moment"); editor.togglePerson(person)
+        val restored = MemoryEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle()
+        assertEquals(setOf(person), restored.state.value.draft.personIds)
+        restored.save(); advanceUntilIdle()
+        assertEquals(setOf(person), repo.submittedPeople)
+        val editing = MemoryEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock)
+        advanceUntilIdle()
+        assertEquals(setOf(person), editing.state.value.draft.personIds)
+        editing.togglePerson(person); editing.save(); advanceUntilIdle()
+        assertEquals(emptySet<java.util.UUID>(), repo.submittedPeople)
+    }
+
+    @Test fun promotionLoadsOriginalPeopleAndSubmitsChangedSelection() = runTest(dispatcher) {
+        val repo = TestMemoryRepository()
+        val person = Person(java.util.UUID.randomUUID(), "Friend")
+        val original = journal().copy(people = listOf(person))
+        repo.records[original.event.id] = original
+        val editor = MemoryEditorViewModel(repo, original.event.id, SavedStateHandle(), clock)
+        advanceUntilIdle()
+        assertEquals(setOf(person.id), editor.state.value.draft.personIds)
+        editor.togglePerson(person.id); editor.save(); advanceUntilIdle()
+        assertEquals(emptySet<java.util.UUID>(), repo.submittedPeople)
+        assertEquals(original.copy(people = emptyList()), repo.records[original.event.id]!!.copy(memory = null))
+        assertTrue(repo.records[original.event.id]!!.people.isEmpty())
+    }
+
     private class TestMemoryRepository : MemoryRepository {
         val records = mutableMapOf<EventId, LifeEventRecord>()
         var creates = 0
+        var submittedPeople: Set<java.util.UUID>? = null
         var failLoading = false
         var failAfterSave = false
         var failRemoval = false
@@ -192,24 +225,30 @@ class MemoryEditorTest {
         override suspend fun get(id: EventId): LifeEventRecord? { if (failLoading) error("Unavailable"); return records[id] }
         override fun observe(range: TimeRange) = flowOf(records.values.filter { it.memory != null })
         override suspend fun create(id: EventId, input: MemoryInput): EventId {
+            submittedPeople = input.personIds
             creates++
             require(id !in records)
             records[id] = LifeEventRecord(LifeEvent(id, EventType.MEMORY, input.occurredAt, input.occurredAt, title = input.title, note = input.note),
-                memory = MemoryDetails(input.importance, input.note))
+                memory = MemoryDetails(input.importance, input.note),
+                people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty())
             if (failAfterSave) error("Committed result unavailable")
             return id
         }
         override suspend fun update(id: EventId, input: MemoryInput) {
+            submittedPeople = input.personIds
             val previous = records.getValue(id)
             require(previous.event.type == EventType.MEMORY && previous.event.isEditable && previous.memory != null)
             records[id] = previous.copy(event = previous.event.copy(occurredAt = input.occurredAt, title = input.title, note = input.note),
-                memory = MemoryDetails(input.importance, input.note))
+                memory = MemoryDetails(input.importance, input.note),
+                people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty())
             if (failAfterSave) error("Committed result unavailable")
         }
         override suspend fun saveMarker(id: EventId, input: MemoryMarkerInput) {
+            submittedPeople = input.personIds
             val original = records.getValue(id)
             require(original.canPromoteToMemory)
-            records[id] = original.copy(memory = MemoryDetails(input.importance, input.note?.takeIf { it.isNotBlank() }))
+            records[id] = original.copy(memory = MemoryDetails(input.importance, input.note?.takeIf { it.isNotBlank() }),
+                people = input.personIds?.map { Person(it, "Friend") } ?: original.people)
             if (failAfterSave) error("Committed result unavailable")
         }
         override suspend fun removeMarker(id: EventId) {

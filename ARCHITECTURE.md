@@ -282,6 +282,43 @@ including DST, rather than fixed 24-hour durations. Its lifecycle-aware Flow has
 loading/empty/error/retry states and stable ordering. T16 still owns statistics,
 comparisons and a full weekly review; no derived metrics are invented here.
 
+## People (T08)
+
+Domain `Person`, `PersonInput`, `PersonHistory` and `PersonRepository` provide
+catalog CRUD and linked history without Android/Room types. Names are required
+and bounded at 200 characters; optional notes are bounded at 10,000. Stable UUIDs
+allow distinct people with equal names. Identical retained-ID creates are
+idempotent, missing edits fail, and confirmed deletions are safe to retry. Editing
+preserves an existing photo URI; photo workflows remain outside T08.
+
+`RoomPersonRepository` reuses v1 `person`/`event_person` tables. Catalog mutations
+and summary invalidation share a transaction. Foreign-key cascade removes a
+deleted person's links, preserving all life events, typed content and other links.
+`PersonWithEvents` loads a person and complete linked graphs in one transaction;
+history uses `LifeEvent.chronologicalOrder`. Generated Room observations include
+catalog, junction and typed-content tables, so renames, source edits, markers,
+link changes and deletion refresh the history. Original entries open their
+existing detail/editor routes. Missing people have an explicit detail state.
+
+`LifeEventRecord` includes linked people in the same committed graph. Mood,
+journal, direct-memory and marker inputs accept nullable `personIds`: null
+preserves links for existing callers; an explicit empty set clears them. Supplied
+IDs replace only people links inside the same content/envelope write transaction.
+A missing-person foreign key rolls back the entire capture, including tags and
+summary changes. Promotion keeps the original event ID and source content;
+explicit selections change its shared person links, while unmarking preserves them.
+
+People has a primary tab with list, create, edit and detail. Saved person editors
+retain name/note, dirty state and capture identity, recover ambiguous committed
+creates and confirmed deletes, and keep drafts after errors. Capture editors
+retain up to 100 selected UUIDs through `SavedStateHandle`; the shared picker
+observes the local catalog and can open person creation while keeping the parent
+editor on the back stack. On return, the new person is available for selection.
+Deleted selections remain visible and removable rather than silently dropped;
+failed writes retain the draft. Today/Timeline, journal detail and memory Review
+show attached names. No schema migration, contacts import, permission, network
+or new dependency is introduced. Full searching/filtering remains T15.
+
 ## Implementation phases
 
 1. T01–T03: runnable project, tested domain contracts, relational persistence.
@@ -330,7 +367,9 @@ T05 increases verified JVM coverage to 33 tests, with compiled Room mood and
 end-to-end capture test sources. T06 increases this to 47 JVM tests and compiles
 journal persistence and capture/detail/edit/delete device sources. T07 brings
 verified coverage to 63 JVM tests, with compiled memory persistence and capture/
-promotion/review/removal device sources. Full app lint and device execution remain pending;
+promotion/review/removal device sources. T08 increases this to 75 JVM tests and
+compiles People CRUD/link/history/live-update persistence cases and two capture/
+history/removal/deletion device flows. Full app lint and device execution remain pending;
 the current data-module lint and debug/test APK builds pass.
 
 Persistence tooling references:

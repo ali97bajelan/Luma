@@ -313,3 +313,65 @@ large text/landscape/keyboard layout and visible oversized-input rejection. Dire
 memory title/note limits are 200/10,000 characters. Unmarking is available only for
 complete manual mood/journal sources; standalone memory deletion with attached
 media requires T10 cleanup. Full weekly statistics remain T16.
+
+
+## T08 results — 2026-10-11
+
+- PASS: 75 JVM tests (24 domain and 51 application), zero failures/errors/skips.
+  New tests cover required/bounded person input, nullable preserve versus explicit
+  clear selection semantics, person draft restoration and text limits, failed
+  loading/deletion, missing-edit protection, duplicate submit prevention and
+  reconciliation after committed create/delete results are lost. Existing capture
+  editor tests now verify persisted selections load, restore, forward and clear,
+  including people on promoted source events.
+- PASS: application debug APK and application/data instrumentation APK builds.
+- PASS: data-module Android lint, no issues found; `git diff --check` passes.
+- PASS: independent production review found no critical or important defect.
+  The reviewed fake-repository selection gap was corrected so tests reopen an
+  actual populated selection, remove it, and verify explicit empty submission.
+  Device flows wait for loaded catalog/history and enabled editor controls.
+  Generated Room history observation includes person/junction/content tables.
+- BLOCKED: full application lint was retried and still crashes with
+  `IncompatibleClassChangeError` inside bundled Lifecycle/Compose analyzers.
+  No rules were disabled and no build-tool versions changed.
+- PENDING: device execution. Five Room cases compile for catalog identity,
+  duplicate names, photo-reference preservation, all capture links, preservation/
+  clearing, chronological complete source graphs, link-only deletion, foreign-key
+  rollback of content/tags/links/cache, and live history invalidation after catalog,
+  body, marker, link and deletion changes. Two Compose People flows compile for
+  creation within journal capture with retained parent draft, multiple selections,
+  recreation, linked history/removal, and deleting a linked person while keeping
+  a standalone memory. Primary-navigation tests include People. No emulator or
+  device was launched.
+
+Successful final local check:
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug --no-daemon --console=plain
+```
+
+Full application lint attempt:
+
+```sh
+bash gradlew --offline :app:lintDebug --continue --no-daemon --console=plain
+```
+
+Device check command:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: create/edit people offline, including two people with equal
+names; attach several to moods, journals, direct and promoted memories. Recreate
+with unsaved selections, create another person from capture, return and select
+them. Move an event to another time/day and confirm chronological shared history;
+edit a name and check all feeds refresh. Delete a selected person from another
+screen and confirm the retained chip can be removed; a rejected missing-ID save
+must retain content. Delete a person and verify entries, markers, tags and other
+people survive. Check large fonts, landscape, keyboard scrolling, discard/delete
+confirmations and visible oversized-input rejection. No contacts permission is
+required; photo management and full people filters remain later work.

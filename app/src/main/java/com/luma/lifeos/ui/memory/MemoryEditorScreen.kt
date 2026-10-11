@@ -23,7 +23,7 @@ import java.time.format.FormatStyle
 @Composable
 fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: () -> Unit, onRemove: () -> Unit,
     onRetry: () -> Unit, onTitle: (String) -> Unit, onNote: (String) -> Unit, onImportance: (Int?) -> Unit,
-    onTime: (LocalDateTime, ZoneId) -> Boolean) {
+    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}) {
     var removing by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
     val enabled = state.ready && !state.busy && !state.completed
@@ -83,6 +83,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         modifier = Modifier.testTag("memory_importance_$value"))
                 }
             }
+            peopleContent()
             if (state.direct) MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MemoryEditorError.TIME, onTime)
         }
     }

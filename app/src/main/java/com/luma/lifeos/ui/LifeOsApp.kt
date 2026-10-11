@@ -27,6 +27,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.luma.lifeos.domain.repository.PersonRepository
+import com.luma.lifeos.ui.people.PeopleRoute
+import com.luma.lifeos.ui.people.PersonDetailRoute
+import com.luma.lifeos.ui.people.PersonEditorRoute
+import com.luma.lifeos.domain.model.EventType
+import java.util.UUID
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.repository.MemoryRepository
@@ -53,16 +59,18 @@ private enum class Destination(
 ) {
     TODAY("today", R.string.today, R.string.today_heading, R.string.today_body, "◉"),
     TIMELINE("timeline", R.string.timeline, R.string.timeline_heading, R.string.timeline_body, "≡"),
+    PEOPLE("people", R.string.people, R.string.people, R.string.people_intro, "♧"),
     REVIEW("review", R.string.review, R.string.review_heading, R.string.review_body, "◇"),
     SETTINGS("settings", R.string.settings, R.string.settings_heading, R.string.settings_body, "⚙"),
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val eventScreen = backStackEntry?.destination?.route in setOf("mood?eventId={eventId}",
-        "journal?eventId={eventId}", "journal_detail/{eventId}", "memory?eventId={eventId}")
+        "journal?eventId={eventId}", "journal_detail/{eventId}", "memory?eventId={eventId}",
+        "person?personId={personId}", "person_detail/{personId}")
     val currentDay by rememberCurrentDay()
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
@@ -110,6 +118,9 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             onJournalClick = { navController.navigate("journal_detail/$it") },
                             onMemoryClick = { navController.navigate("memory?eventId=$it") },
                             heading = destination.label, screenTag = "screen_${destination.route}")
+                    } else if (destination == Destination.PEOPLE) {
+                        PeopleRoute(people, onCreate = { navController.navigate("person") },
+                            onPerson = { navController.navigate("person_detail/$it") })
                     } else if (destination == Destination.REVIEW) {
                         MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
                             onMemory = { navController.navigate("memory?eventId=$it") },
@@ -119,6 +130,26 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     }
                 }
             }
+            composable("person?personId={personId}", arguments = listOf(navArgument("personId") {
+                type = NavType.StringType; nullable = true; defaultValue = null
+            })) { entry ->
+                PersonEditorRoute(people, entry.arguments?.getString("personId")?.let(UUID::fromString),
+                    onCancel = { navController.popBackStack() }, onFinished = { deleted ->
+                        navController.popBackStack()
+                        if (deleted && navController.currentDestination?.route == "person_detail/{personId}") navController.popBackStack()
+                    })
+            }
+            composable("person_detail/{personId}", arguments = listOf(navArgument("personId") { type = NavType.StringType })) { entry ->
+                val id = UUID.fromString(requireNotNull(entry.arguments?.getString("personId")))
+                PersonDetailRoute(people, id, onBack = { navController.popBackStack() },
+                    onEdit = { navController.navigate("person?personId=$id") }, onEvent = { record ->
+                        navController.navigate(when {
+                            record.journal != null -> "journal_detail/${record.event.id}"
+                            record.event.type == EventType.MOOD -> "mood?eventId=${record.event.id}"
+                            else -> "memory?eventId=${record.event.id}"
+                        })
+                    })
+            }
             composable("memory?eventId={eventId}", arguments = listOf(navArgument("eventId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
             })) { entry ->
@@ -127,7 +158,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     onFinished = { date ->
                         if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
                         navController.popBackStack()
-                    })
+                    }, people = people, onCreatePerson = { navController.navigate("person") })
             }
             composable("journal_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
                 val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
@@ -146,7 +177,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         if (date == null && navController.currentDestination?.route == "journal_detail/{eventId}") {
                             navController.popBackStack()
                         }
-                    })
+                    }, people = people, onCreatePerson = { navController.navigate("person") })
             }
             composable("mood?eventId={eventId}", arguments = listOf(navArgument("eventId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
@@ -156,7 +187,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     onFinished = { date ->
                         if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
                         navController.popBackStack()
-                    })
+                    }, people = people, onCreatePerson = { navController.navigate("person") })
             }
         }
     }

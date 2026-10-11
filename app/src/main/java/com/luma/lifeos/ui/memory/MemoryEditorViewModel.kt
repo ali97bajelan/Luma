@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.MemoryRepository
 import com.luma.lifeos.domain.time.moodInstant
+import java.util.UUID
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDateTime
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null)
+data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet())
 enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT }
 data class MemoryEditorState(
     val draft: MemoryDraft,
@@ -67,7 +68,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                 if (record != null) require(if (direct) record.event.isEditable && record.memory != null else record.canPromoteToMemory)
                 baseline = record?.toDraft(direct) ?: MemoryDraft(initialTime)
                 // Larger legacy content stays in the database rather than entering saved state.
-                require(baseline.title.length <= MemoryTextLimits.TITLE && baseline.note.length <= MemoryTextLimits.NOTE)
+                require(baseline.title.length <= MemoryTextLimits.TITLE && baseline.note.length <= MemoryTextLimits.NOTE && baseline.personIds.size <= PersonTextLimits.SELECTION)
                 editingId = record?.event?.id
                 saved["direct"] = direct
                 val draft = if (saved.get<Boolean>("has_draft") == true) readDraft() else baseline
@@ -116,13 +117,13 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["pending_remove"] = null
         write(MemoryEditorError.SAVE) {
             if (current.direct) {
-                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.importance)
+                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.importance, draft.personIds)
                 val recoveredId = editingId ?: repository.get(captureId)?.event?.id
                 if (recoveredId == null) repository.create(captureId, input) else {
                     editingId = recoveredId
                     repository.update(recoveredId, input)
                 }
-            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(draft.importance, draft.note))
+            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(draft.importance, draft.note, draft.personIds))
         }
     }
     fun remove() {
@@ -158,7 +159,13 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         persist(draft)
         mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
     }
+    fun togglePerson(id: UUID) = change {
+        it.copy(personIds = if (id in it.personIds) it.personIds - id
+            else if (it.personIds.size < PersonTextLimits.SELECTION) it.personIds + id else it.personIds)
+    }
+
     private fun persist(draft: MemoryDraft) {
+        saved["people"] = ArrayList(draft.personIds.map(UUID::toString))
         saved["has_draft"] = true
         saved["dirty"] = draft != baseline
         saved["time"] = draft.occurredAtMillis
@@ -167,7 +174,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["importance"] = draft.importance
     }
     private fun readDraft() = MemoryDraft(saved.get<Long>("time") ?: initialTime, saved.get<String>("title") ?: "",
-        saved.get<String>("note") ?: "", saved["importance"])
+        saved.get<String>("note") ?: "", saved["importance"],
+        saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet())
     private fun LifeEventRecord.toDraft(direct: Boolean) = MemoryDraft(event.occurredAt.toEpochMilli(),
-        if (direct) event.title.orEmpty() else "", if (direct) (memory?.note ?: event.note).orEmpty() else memory?.note.orEmpty(), memory?.importance)
+        if (direct) event.title.orEmpty() else "", if (direct) (memory?.note ?: event.note).orEmpty() else memory?.note.orEmpty(), memory?.importance, people.map { it.id }.toSet())
 }

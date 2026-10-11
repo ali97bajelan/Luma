@@ -7,6 +7,7 @@ import com.luma.lifeos.domain.model.Emotion
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.MoodInput
+import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.time.moodInstant
 import java.time.Clock
@@ -29,6 +30,7 @@ data class MoodDraft(
     val energy: Int? = null,
     val stress: Int? = null,
     val note: String = "",
+    val personIds: Set<UUID> = emptySet(),
 )
 
 enum class MoodEditorError { LOAD, SAVE, DELETE, TIME }
@@ -76,7 +78,7 @@ class MoodEditorViewModel(
                 if (eventId != null) requireNotNull(record) { "Check-in unavailable" }
                 baseline = if (record == null) MoodDraft(initialTime) else {
                     require(record.event.isEditable && record.mood != null)
-                    record.toDraft()
+                    record.toDraft().also { require(it.personIds.size <= PersonTextLimits.SELECTION) }
                 }
                 editingId = record?.event?.id
                 val draft = if (saved.get<Boolean>("has_draft") == true) readDraft() else baseline
@@ -116,7 +118,7 @@ class MoodEditorViewModel(
         if (!current.ready || current.busy || current.completed || current.draft.score == null) return
         val draft = current.draft
         val input = MoodInput(requireNotNull(draft.score), Instant.ofEpochMilli(draft.occurredAtMillis),
-            draft.emotionIds, draft.energy, draft.stress, draft.note)
+            draft.emotionIds, draft.energy, draft.stress, draft.note, draft.personIds)
         write(MoodEditorError.SAVE) {
             // Also reconcile a committed write whose result failed to reach this still-open form.
             val recoveredId = editingId ?: repository.get(captureId)?.event?.id
@@ -158,7 +160,13 @@ class MoodEditorViewModel(
         mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
     }
 
+    fun togglePerson(id: UUID) = change {
+        it.copy(personIds = if (id in it.personIds) it.personIds - id
+            else if (it.personIds.size < PersonTextLimits.SELECTION) it.personIds + id else it.personIds)
+    }
+
     private fun persist(draft: MoodDraft) {
+        saved["people"] = ArrayList(draft.personIds.map(UUID::toString))
         saved["has_draft"] = true
         saved["dirty"] = draft != baseline
         saved["time"] = draft.occurredAtMillis
@@ -172,11 +180,12 @@ class MoodEditorViewModel(
     private fun readDraft(): MoodDraft = MoodDraft(
         saved.get<Long>("time") ?: initialTime, saved["score"],
         saved.get<ArrayList<String>>("emotions")?.map(UUID::fromString)?.toSet() ?: emptySet(),
-        saved["energy"], saved["stress"], saved.get<String>("note") ?: "")
+        saved["energy"], saved["stress"], saved.get<String>("note") ?: "",
+        saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet())
 
     private fun LifeEventRecord.toDraft(): MoodDraft {
         val details = requireNotNull(mood)
         return MoodDraft(event.occurredAt.toEpochMilli(), details.score, details.emotions.map { it.id }.toSet(),
-            details.energy, details.stress, details.note.orEmpty())
+            details.energy, details.stress, details.note.orEmpty(), people.map { it.id }.toSet())
     }
 }

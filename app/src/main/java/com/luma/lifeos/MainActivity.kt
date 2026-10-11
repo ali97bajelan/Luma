@@ -12,6 +12,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val storage = (application as LumaApplication).storage
-        setContent { LifeOsTheme { LifeOsApp(storage.lifeEvents, storage.moods, storage.journals, storage.memories) } }
+        setContent { LifeOsTheme { LifeOsApp(storage.lifeEvents, storage.moods, storage.journals, storage.memories, storage.people) } }
     }
 }

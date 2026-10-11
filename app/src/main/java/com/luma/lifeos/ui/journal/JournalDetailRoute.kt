@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.domain.model.EventId
@@ -59,6 +60,7 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
         }
         if (!loading) record?.let { entry ->
             val journal = requireNotNull(entry.journal)
+            LinkedPeople(entry.people)
             Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
             Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)))
             if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })

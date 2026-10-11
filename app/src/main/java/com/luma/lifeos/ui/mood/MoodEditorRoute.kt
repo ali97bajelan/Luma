@@ -10,6 +10,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.domain.model.EventId
+import com.luma.lifeos.ui.people.PersonPicker
+import com.luma.lifeos.domain.repository.PersonRepository
 import com.luma.lifeos.domain.repository.MoodRepository
 import java.time.Instant
 import java.time.LocalDate
@@ -17,7 +19,7 @@ import java.time.ZoneId
 
 @Composable
 fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () -> Unit,
-    onFinished: (LocalDate?) -> Unit) {
+    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit) {
     val factory = remember(repository, eventId) {
         viewModelFactory { initializer { MoodEditorViewModel(repository, eventId, createSavedStateHandle()) } }
     }
@@ -30,5 +32,5 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
     MoodEditorScreen(state, editing = state.editing, onCancel = onCancel, onSave = editor::save,
         onDelete = editor::delete, onRetry = editor::load, onScore = editor::setScore,
         onEmotion = editor::toggleEmotion, onEnergy = editor::setEnergy, onStress = editor::setStress,
-        onNote = editor::setNote, onTime = editor::setLocalTime)
+        onNote = editor::setNote, onTime = editor::setLocalTime, peopleContent = { PersonPicker(people, state.draft.personIds, state.ready && !state.busy && !state.completed, editor::togglePerson, onCreatePerson) })
 }

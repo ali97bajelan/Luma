@@ -174,9 +174,28 @@ class JournalEditorTest {
         assertNull(restored.state.value.error)
     }
 
+    @Test fun peopleDraftRestoresAndSubmitsExplicitSelectionIncludingClear() = runTest(dispatcher) {
+        val repo = TestJournalRepository()
+        val handle = SavedStateHandle()
+        val person = java.util.UUID.randomUUID()
+        val editor = JournalEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle(); editor.setBody("Body"); editor.togglePerson(person)
+        val restored = JournalEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle()
+        assertEquals(setOf(person), restored.state.value.draft.personIds)
+        restored.save(); advanceUntilIdle()
+        assertEquals(setOf(person), repo.submittedPeople)
+        val editing = JournalEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock)
+        advanceUntilIdle()
+        assertEquals(setOf(person), editing.state.value.draft.personIds)
+        editing.togglePerson(person); editing.save(); advanceUntilIdle()
+        assertEquals(emptySet<java.util.UUID>(), repo.submittedPeople)
+    }
+
     private class TestJournalRepository : JournalRepository {
         val records = mutableMapOf<EventId, LifeEventRecord>()
         var creates = 0
+        var submittedPeople: Set<java.util.UUID>? = null
         var failAfterCreate = false
         var failLoading = false
         var failDeleting = false
@@ -187,13 +206,18 @@ class JournalEditorTest {
             return records[id]
         }
         override suspend fun create(id: EventId, input: JournalInput): EventId {
+            submittedPeople = input.personIds
             creates++
             require(id !in records)
             records[id] = record(id, input)
             if (failAfterCreate) error("Committed result unavailable")
             return id
         }
-        override suspend fun update(id: EventId, input: JournalInput) { require(id in records); records[id] = record(id, input) }
+        override suspend fun update(id: EventId, input: JournalInput) {
+            submittedPeople = input.personIds
+            require(id in records)
+            records[id] = record(id, input)
+        }
         override suspend fun delete(id: EventId) {
             if (failDeleting) error("Unavailable")
             records.remove(id)
@@ -201,6 +225,7 @@ class JournalEditorTest {
         }
         private fun record(id: EventId, input: JournalInput) = LifeEventRecord(
             LifeEvent(id, EventType.JOURNAL, input.occurredAt, input.occurredAt, title = input.title),
-            journal = JournalDetails(input.title, input.body))
+            journal = JournalDetails(input.title, input.body),
+            people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty())
     }
 }

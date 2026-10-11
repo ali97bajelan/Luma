@@ -1,0 +1,124 @@
+package com.luma.lifeos
+
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import org.junit.Rule
+import org.junit.Test
+
+class PeopleCaptureTest {
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test fun journalKeepsDraftAcrossNewPeopleAndHistoryReflectsExplicitRemoval() {
+        val suffix = System.nanoTime()
+        val first = "First person $suffix"
+        val second = "Second person $suffix"
+        val body = "People journal $suffix"
+        compose.onNodeWithTag("quick_capture").performClick()
+        compose.onNodeWithTag("capture_journal").performClick()
+        awaitTag("journal_body")
+        compose.onNodeWithTag("journal_body").performTextInput(body)
+        createFromPicker(first)
+        compose.onNodeWithTag("journal_body").assertTextContains(body)
+        createFromPicker(second)
+        compose.onNodeWithTag("people_picker").performScrollTo().performClick()
+        awaitText(first)
+        compose.onNodeWithText(first).performScrollTo().performClick()
+        compose.onNodeWithText(second).performScrollTo().performClick()
+        compose.activityRule.scenario.recreate()
+        awaitTag("journal_body")
+        compose.onNodeWithTag("journal_body").assertTextContains(body)
+        compose.onNodeWithText("$first · Remove").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("$second · Remove").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("journal_save").performClick()
+        awaitTag("screen_today")
+        openPerson(first)
+        compose.onNodeWithTag("screen_person_detail").performScrollToNode(hasText(body))
+        compose.onNodeWithText(body).assertIsDisplayed()
+        compose.onNodeWithText("Open entry").performClick()
+        awaitTag("journal_detail_body")
+        compose.onNodeWithTag("journal_edit").performClick()
+        awaitTag("journal_body")
+        compose.onNodeWithText("$first · Remove").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_save").performClick()
+        awaitTag("journal_detail_body")
+        compose.onNodeWithText("Back").performClick()
+        awaitTag("person_detail_ready")
+        awaitText("No linked events yet.")
+        deleteCurrentPerson()
+        openPerson(second)
+        compose.onNodeWithTag("screen_person_detail").performScrollToNode(hasText(body))
+        compose.onNodeWithText("Open entry").performClick()
+        awaitTag("journal_detail_body")
+        compose.onNodeWithTag("journal_edit").performClick()
+        awaitTag("journal_delete")
+        compose.onNodeWithTag("journal_delete").performClick()
+        compose.onNodeWithTag("journal_confirm_delete").performClick()
+        awaitTag("person_detail_ready")
+        deleteCurrentPerson()
+    }
+
+    @Test fun deletingLinkedPersonKeepsStandaloneMemory() {
+        val name = "Memory person ${System.nanoTime()}"
+        val note = "Retained memory ${System.nanoTime()}"
+        compose.onNodeWithTag("nav_people").performClick()
+        compose.onNodeWithTag("people_create").performClick()
+        fillPerson(name)
+        awaitTag("screen_people")
+        compose.onNodeWithTag("quick_capture").performClick()
+        compose.onNodeWithTag("capture_memory").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").performTextInput(note)
+        compose.onNodeWithTag("people_picker").performScrollTo().performClick()
+        awaitText(name)
+        compose.onNodeWithText(name).performScrollTo().performClick()
+        compose.onNodeWithTag("memory_save").performClick()
+        awaitTag("screen_people")
+        openPerson(name)
+        compose.onNodeWithTag("screen_person_detail").performScrollToNode(hasText(note))
+        compose.onNodeWithText(note).assertIsDisplayed()
+        deleteCurrentPerson()
+        compose.onNodeWithTag("nav_today").performClick()
+        awaitTag("today_summary")
+        compose.onNodeWithTag("screen_today").performScrollToNode(hasText(note))
+        compose.onNodeWithText(note).performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").assertTextContains(note)
+        compose.onNodeWithTag("memory_remove").performClick()
+        compose.onNodeWithTag("memory_confirm_remove").performClick()
+        awaitTag("screen_today")
+    }
+    private fun createFromPicker(name: String) {
+        compose.onNodeWithTag("people_picker_create").performScrollTo().performClick()
+        fillPerson(name)
+        awaitTag("journal_body")
+    }
+    private fun fillPerson(name: String) {
+        awaitTag("person_name")
+        compose.onNodeWithTag("person_name").performTextInput(name)
+        compose.onNodeWithTag("person_note").performTextInput("Friend")
+        compose.activityRule.scenario.recreate()
+        awaitTag("person_name")
+        compose.onNodeWithTag("person_name").assertTextContains(name)
+        compose.onNodeWithTag("person_save").performClick()
+    }
+    private fun openPerson(name: String) {
+        compose.onNodeWithTag("nav_people").performClick()
+        awaitTag("people_ready")
+        compose.onNodeWithTag("screen_people").performScrollToNode(hasText(name))
+        compose.onNodeWithText(name).performClick()
+        awaitTag("person_detail_ready")
+    }
+    private fun deleteCurrentPerson() {
+        compose.onNodeWithTag("person_edit").performClick()
+        awaitTag("person_delete")
+        compose.onNodeWithTag("person_delete").performClick()
+        compose.onNodeWithTag("person_confirm_delete").performClick()
+        awaitTag("screen_people")
+    }
+    private fun awaitText(text: String) {
+        compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+    }
+    private fun awaitTag(tag: String) {
+        compose.waitUntil(5_000) { compose.onAllNodes(hasTestTag(tag) and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
+    }
+}

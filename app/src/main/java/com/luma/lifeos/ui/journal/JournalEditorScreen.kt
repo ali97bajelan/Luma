@@ -23,7 +23,7 @@ import java.time.ZoneId
 fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave: () -> Unit,
     onDelete: () -> Unit, onRetry: () -> Unit, onTitle: (String) -> Unit, onBody: (String) -> Unit,
     onAddTag: (String) -> Boolean, onRemoveTag: (String) -> Unit,
-    onTime: (LocalDateTime, ZoneId) -> Boolean) {
+    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}) {
     var deleting by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
     var tagText by rememberSaveable { mutableStateOf("") }
@@ -95,6 +95,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                     FilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
                 }
             }
+            peopleContent()
             MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == JournalEditorError.TIME, onTime)
         }
     }

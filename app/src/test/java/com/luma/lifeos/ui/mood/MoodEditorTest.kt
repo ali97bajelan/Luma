@@ -169,16 +169,36 @@ class MoodEditorTest {
         assertEquals("New draft value", repo.records.values.single().mood!!.note)
     }
 
+    @Test fun peopleDraftRestoresAndSubmitsExplicitSelectionIncludingClear() = runTest(dispatcher) {
+        val repo = TestMoodRepository()
+        val handle = SavedStateHandle()
+        val person = java.util.UUID.randomUUID()
+        val editor = MoodEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle(); editor.setScore(4); editor.togglePerson(person)
+        val restored = MoodEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle()
+        assertEquals(setOf(person), restored.state.value.draft.personIds)
+        restored.save(); advanceUntilIdle()
+        assertEquals(setOf(person), repo.submittedPeople)
+        val editing = MoodEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock)
+        advanceUntilIdle()
+        assertEquals(setOf(person), editing.state.value.draft.personIds)
+        editing.togglePerson(person); editing.save(); advanceUntilIdle()
+        assertEquals(emptySet<java.util.UUID>(), repo.submittedPeople)
+    }
+
     private class TestMoodRepository : MoodRepository {
         val emotions = listOf(Emotion(UUID.randomUUID(), "Calm"), Emotion(UUID.randomUUID(), "Happy"))
         val records = mutableMapOf<EventId, LifeEventRecord>()
         var failAfterCreate = false
         var failLoading = false
         var creates = 0
+        var submittedPeople: Set<java.util.UUID>? = null
         override suspend fun prepareEmotions() { if (failLoading) error("Unavailable") }
         override fun observeEmotions() = flowOf(emotions)
         override suspend fun get(id: EventId) = records[id]
         override suspend fun create(id: EventId, input: MoodInput): EventId {
+            submittedPeople = input.personIds
             creates++
             val incoming = record(id, input)
             val previous = records[id]
@@ -188,12 +208,14 @@ class MoodEditorTest {
             return id
         }
         override suspend fun update(id: EventId, input: MoodInput) {
+            submittedPeople = input.personIds
             require(records.containsKey(id))
             records[id] = record(id, input)
         }
         override suspend fun delete(id: EventId) { records.remove(id) }
         private fun record(id: EventId, input: MoodInput) = LifeEventRecord(
             LifeEvent(id, EventType.MOOD, input.occurredAt, input.occurredAt),
-            MoodDetails(input.score, emotions.filter { it.id in input.emotionIds }, input.energy, input.stress, input.note))
+            MoodDetails(input.score, emotions.filter { it.id in input.emotionIds }, input.energy, input.stress, input.note),
+            people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty())
     }
 }

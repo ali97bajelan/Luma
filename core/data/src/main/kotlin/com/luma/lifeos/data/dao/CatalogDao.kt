@@ -1,5 +1,7 @@
 package com.luma.lifeos.data.dao
 
+import androidx.room.Transaction
+import com.luma.lifeos.data.entity.PersonWithEvents
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
@@ -12,6 +14,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CatalogDao {
     @Query("SELECT * FROM emotion ORDER BY name, id") fun observeEmotions(): Flow<List<EmotionEntity>>
+    @Transaction
+    @Query("SELECT * FROM person WHERE id = :id") fun observePersonHistory(id: String): Flow<PersonWithEvents?>
     @Query("SELECT * FROM person ORDER BY name, id") fun observePeople(): Flow<List<PersonEntity>>
     @Query("SELECT * FROM place ORDER BY name, id") fun observePlaces(): Flow<List<PlaceEntity>>
     @Query("SELECT * FROM tag ORDER BY normalized_name, id") fun observeTags(): Flow<List<TagEntity>>

@@ -19,7 +19,7 @@ class AppNavigationTest {
 
     @Test fun launchesOnTodayAndNavigatesToEveryPrimaryRoute() {
         compose.onNodeWithTag("screen_today").assertIsDisplayed()
-        listOf("timeline", "review", "settings", "today").forEach { route ->
+        listOf("timeline", "people", "review", "settings", "today").forEach { route ->
             compose.onNodeWithTag("nav_$route").performClick()
             compose.onNodeWithTag("screen_$route").assertIsDisplayed()
         }
@@ -32,7 +32,7 @@ class AppNavigationTest {
     }
 
     @Test fun quickCaptureIsReachableFromEveryPrimaryRoute() {
-        listOf("today", "timeline", "review", "settings").forEach { route ->
+        listOf("today", "timeline", "people", "review", "settings").forEach { route ->
             compose.onNodeWithTag("nav_$route").performClick()
             compose.onNodeWithTag("quick_capture").assertIsDisplayed().performClick()
             compose.onNodeWithTag("capture_sheet").assertIsDisplayed()

@@ -29,13 +29,15 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
             val record = direct(previous).toRecord()
             val memory = requireNotNull(record.memory)
             require(record.event.occurredAt.toEpochMilli() == input.occurredAt.toEpochMilli() &&
-                record.event.title == title && memory.note == note && memory.importance == input.importance) {
+                record.event.title == title && memory.note == note && memory.importance == input.importance &&
+                (input.personIds == null || record.people.map { it.id }.toSet() == input.personIds)) {
                 "This capture ID already belongs to a different memory"
             }
             return@withTransaction id
         }
         envelopes.upsertInTransaction(LifeEvent(id, EventType.MEMORY, input.occurredAt, clock.instant(), title = title, note = note))
         content.insertMemory(MemoryEntity(EventId.new().toString(), id.toString(), input.importance, note))
+        replacePeopleInTransaction(database, id, input.personIds)
         database.derived().invalidateSummaries()
         id
     }
@@ -47,6 +49,7 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
         envelopes.upsertInTransaction(event.copy(occurredAt = input.occurredAt, endedAt = null,
             updatedAt = maxOf(clock.instant(), event.updatedAt), title = input.title.clean(), note = note))
         content.upsertMemory(requireNotNull(previous.memory).copy(importance = input.importance, note = note))
+        replacePeopleInTransaction(database, id, input.personIds)
         database.derived().invalidateSummaries()
     }
 
@@ -62,8 +65,9 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
         val previous = requireNotNull(events.getDetails(id.toString())) { "Original event was deleted" }
         require(previous.toRecord().canPromoteToMemory) { "Only complete manual moods and journals can be promoted" }
         val marker = previous.memory ?: MemoryEntity(EventId.new().toString(), id.toString())
-        // Only the marker changes. The original envelope and all source content remain intact.
+        // Source content remains intact; explicitly supplied people update only event links.
         content.upsertMemory(marker.copy(importance = input.importance, note = input.note.clean()))
+        replacePeopleInTransaction(database, id, input.personIds)
         database.derived().invalidateSummaries()
     }
 

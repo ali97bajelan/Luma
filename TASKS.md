@@ -195,7 +195,21 @@ commands and the app lint analyzer compatibility limitation.
 
 ## T08 — People
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: offline people list/create/edit/delete and detail with chronological
+linked event history. Mood, journal, standalone-memory and promoted-memory forms
+support multiple saved person selections and creating a person without losing the
+parent draft. Typed feeds, journal detail and memory Review show linked names.
+Catalog identities remain distinct even for equal names; deleting a person removes
+only their links and retains all event content. Existing capture calls preserve
+links unless they provide an explicit replacement selection. Writes remain atomic.
+
+Validation: 75 JVM tests pass (24 domain + 51 app), debug and instrumentation APKs
+build, and data lint reports no issues. Five Room cases and two People capture/
+history/removal/deletion device flows compile. Device execution remains pending
+user validation; no emulator was launched. Full app lint still fails inside the
+existing bundled analyzers. See `docs/VALIDATION.md`.
 
 
 ### Scope
