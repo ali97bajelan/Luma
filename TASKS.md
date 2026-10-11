@@ -106,7 +106,19 @@ Lifecycle/Compose detectors crash against the current AGP lint runtime.
 
 ## T05 — Mood and emotion check-ins
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: permission-free local mood capture/edit/delete with an explicit
+1–5 score, reusable multi-select emotions, optional energy/stress/note, and date/
+time controls. Saved drafts survive recreation and loading errors; stable capture
+IDs reconcile committed writes after process death. Edits preserve unrelated links
+and metadata. Typed mood rows update on Today and the initial daily Timeline.
+
+Validation: 33 JVM tests pass (16 domain + 17 app), debug and instrumentation APKs
+build, and data lint reports no issues. The existing app lint detector compatibility
+failure remains. Five new Room test sources and a capture/recreation/edit/delete
+device flow are included; device execution and acceptance timing remain pending
+user validation. No emulator was launched. Details are in `docs/VALIDATION.md`.
 
 
 ### Scope

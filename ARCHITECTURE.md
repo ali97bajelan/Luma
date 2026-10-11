@@ -162,10 +162,47 @@ selected year even after navigation outside the default range.
 
 Today displays occurrence time, type, optional envelope title/note and imported
 source, with counts derived directly from available events. These are record
-counts, not T14 mood/usage/activity metrics. Typed detail rendering grows with
-later feature tasks. Quick Capture opens a scrollable explanatory sheet from
-every primary tab; mood, journal and memory forms remain in T05–T07. No new
-permission or storage mutation is introduced.
+counts, not T14 mood/usage/activity metrics. T05 extends this feed with typed mood
+details and reuses it for the initial daily Timeline; the full T11 timeline remains
+separate. Quick Capture opens a scrollable sheet from every primary tab, with
+mood capture enabled and journal/memory capture remaining in T06–T07.
+
+## Mood check-ins (T05)
+
+Domain `MoodInput`, `MoodDetails`, and `Emotion` validate numeric scales and keep
+Android/Room types out of UI-facing contracts. `MoodRepository` owns catalog
+preparation and check-in CRUD. `LifeEventRepository.observeRecords` provides typed
+`LifeEventRecord` snapshots; its Room implementation observes indexed relations
+under one transaction, keeping mood values and the envelope consistent. Existing
+envelope-only repository implementations retain a default observation adapter.
+
+`RoomMoodRepository` uses the existing v1 mood/emotion tables without a migration.
+It initializes twelve reusable emotion names only when both the name and stable
+seed ID are absent, preserving renamed/existing catalog rows. Create retries with
+an identical caller-retained capture ID and payload are idempotent. Update/delete
+require a complete manual mood; missing/imported records cannot be changed.
+Updates target the mood row and emotion junctions, retaining child IDs, audit
+creation time, metadata, memory markers and unrelated links. Note text is trimmed
+and synchronized into the envelope. Writes invalidate derived summaries in the
+same transaction. Delete cascades event references but preserves catalog objects;
+records with media references require T10 file cleanup and currently reject deletion.
+
+The navigation-scoped `MoodEditorViewModel` uses `SavedStateHandle` for draft
+values, dirty state, initial time and a stable capture ID. It loads typed check-ins,
+blocks duplicate saves, retains inputs after errors, and permits completion only
+after the write succeeds. Restored create drafts reconcile the retained capture ID
+against storage before unlocking the form; already committed captures become edits.
+Save retries also reconcile an ambiguous committed result. Dirty state is available
+before loading so cancellation still confirms discard if loading fails.
+
+The editor requires one explicit score selection; emotions are optional multi-select
+chips. Energy, stress and note are collapsible. Date/time controls use UTC calendar
+picker dates and the current system zone. `moodInstant` rejects DST gaps and keeps
+an existing valid offset during overlaps. Back/cancel confirm changed drafts;
+delete confirms before mutation. Today/Timeline manual mood rows show score,
+emotions and optional values and open editing; imported/incomplete rows stay read-only.
+Saving selects the occurrence day on return so a backdated capture can be seen.
+No runtime permission, network dependency or schema-version change is introduced.
 
 ## Implementation phases
 
@@ -210,6 +247,10 @@ JVM tests pass, and data-module lint reports no issues. App lint crashes inside
 bundled Lifecycle/Compose detectors with `IncompatibleClassChangeError` against
 the current AGP lint runtime. Full app lint and device tests remain pending.
 See `docs/VALIDATION.md` for exact results and commands.
+
+T05 increases verified JVM coverage to 33 tests, with compiled Room mood and
+end-to-end capture test sources. Full app lint and device execution remain pending;
+the current data-module lint and debug/test APK builds pass.
 
 Persistence tooling references:
 [Room releases and schema export](https://developer.android.com/jetpack/androidx/releases/room),

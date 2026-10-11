@@ -5,8 +5,10 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.mapping.storageBoundary
 import com.luma.lifeos.data.mapping.toDomain
 import com.luma.lifeos.data.mapping.toEntity
+import com.luma.lifeos.data.mapping.toRecord
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEvent
+import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.SourceIdentity
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.time.TimeRange
@@ -21,6 +23,10 @@ class RoomLifeEventRepository(private val database: LumaDatabase) : LifeEventRep
             .map { rows -> rows.map { it.toDomain() } }
 
     override suspend fun get(id: EventId): LifeEvent? = dao.get(id.toString())?.toDomain()
+
+    override fun observeRecords(range: TimeRange): Flow<List<LifeEventRecord>> =
+        dao.observeDetails(range.start.storageBoundary(), range.endExclusive.storageBoundary())
+            .map { rows -> rows.map { it.toRecord() } }
 
     override suspend fun findBySource(identity: SourceIdentity): LifeEvent? =
         dao.findBySource(identity.source, identity.reference)?.toDomain()

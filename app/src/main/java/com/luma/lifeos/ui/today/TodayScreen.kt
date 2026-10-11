@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -33,7 +34,10 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.EventSource
 import com.luma.lifeos.domain.model.EventType
+import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEvent
+import com.luma.lifeos.domain.model.MoodDetails
+import com.luma.lifeos.ui.mood.moodScoreLabel
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -48,17 +52,20 @@ fun TodayScreen(
     onSelectDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
     onRetry: () -> Unit,
+    onMoodClick: (EventId) -> Unit = {},
+    @StringRes heading: Int = R.string.today,
+    screenTag: String = "screen_today",
 ) {
     var pickingDate by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
-        modifier = Modifier.fillMaxSize().testTag("screen_today"),
+        modifier = Modifier.fillMaxSize().testTag(screenTag),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
-                Text(stringResource(R.string.today), style = MaterialTheme.typography.headlineLarge)
+                Text(stringResource(heading), style = MaterialTheme.typography.headlineLarge)
                 TextButton(onClick = { pickingDate = true }, modifier = Modifier.testTag("day_picker")) {
                     Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
                         modifier = Modifier.testTag("day_selected"))
@@ -114,7 +121,9 @@ fun TodayScreen(
                         }
                     }
                 }
-                items(state.events, key = { it.id.toString() }) { event -> EventRow(event, zone) }
+                items(state.events, key = { it.id.toString() }) { event ->
+                    EventRow(event, zone, state.moods[event.id], onMoodClick)
+                }
             }
         }
     }
@@ -138,8 +147,11 @@ fun TodayScreen(
 }
 
 @Composable
-private fun EventRow(event: LifeEvent, zone: ZoneId) {
-    Card(Modifier.fillMaxWidth().testTag("event_${event.id}")) {
+private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, onMoodClick: (EventId) -> Unit) {
+    val editLabel = stringResource(R.string.mood_edit_action)
+    val modifier = Modifier.fillMaxWidth().testTag("event_${event.id}")
+    Card(if (mood != null && event.isEditable) modifier.clickable(onClickLabel = editLabel,
+        onClick = { onMoodClick(event.id) }) else modifier) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(stringResource(event.type.label()), style = MaterialTheme.typography.labelLarge,
@@ -150,9 +162,18 @@ private fun EventRow(event: LifeEvent, zone: ZoneId) {
             event.title?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            event.note?.takeIf { it.isNotBlank() }?.let {
+            mood?.let {
+                Text(stringResource(R.string.mood_score_value, it.score, stringResource(moodScoreLabel(it.score))),
+                    style = MaterialTheme.typography.titleMedium)
+                if (it.emotions.isNotEmpty()) Text(it.emotions.joinToString(", ") { emotion -> emotion.name })
+                it.energy?.let { energy -> Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_energy), energy)) }
+                it.stress?.let { stress -> Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_stress), stress)) }
+            }
+            (mood?.note ?: event.note)?.takeIf { it.isNotBlank() }?.let {
                 Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
+            if (mood != null && event.isEditable) Text(editLabel, style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary)
             if (event.source != EventSource.MANUAL) {
                 Text(stringResource(when (event.source) {
                     EventSource.HEALTH_CONNECT -> R.string.source_health

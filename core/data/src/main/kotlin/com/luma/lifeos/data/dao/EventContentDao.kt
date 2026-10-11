@@ -4,11 +4,14 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Upsert
+import androidx.room.Update
 import com.luma.lifeos.data.entity.*
 
 @Dao
 interface EventContentDao {
     @Insert suspend fun insertMood(entry: MoodEntryEntity)
+    @Update suspend fun updateMood(entry: MoodEntryEntity)
+    @Query("DELETE FROM mood_emotion WHERE mood_id = :moodId") suspend fun deleteMoodEmotions(moodId: String)
     @Insert suspend fun insertJournal(entry: JournalEntryEntity)
     @Insert suspend fun insertMemory(entry: MemoryEntity)
     @Insert suspend fun insertActivities(entries: List<ActivityRecordEntity>)

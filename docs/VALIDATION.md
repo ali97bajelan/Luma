@@ -143,3 +143,58 @@ calendar after navigating before 1900/after 2100, rotate/recreate with a selecte
 date, open/close Quick Capture on every tab, test large text/landscape, and keep
 Today visible across midnight or change the system timezone and resume. Capture
 forms remain future tasks; T04 creates no records and shows no fabricated metrics.
+
+## T05 results — 2026-10-11
+
+- PASS: 33 JVM tests (16 domain and 17 application), zero failures/errors.
+  New coverage checks mood/optional scale ranges, DST gaps and overlaps, one-score
+  capture, multiple emotions/optional values, repeated submit prevention, write
+  retry with a stable ID, restored drafts, load retry, invalid timestamps, imported
+  record protection, delete completion, typed mood feed values, dirty state during
+  failed loading, and recovery of a capture committed before process death.
+- PASS: debug APK and application/data instrumentation APK compilation.
+- PASS: data-module Android lint, no issues found; `git diff --check` is clean.
+- PASS: code review followed by fixes and re-review with no important issues.
+  Recovery regressions failed before their fixes and passed afterward.
+- BLOCKED: full application lint still crashes in the same bundled
+  `NullSafeMutableLiveData` and `FrequentlyChangingValue` detectors, with
+  `IncompatibleClassChangeError`. Checks were attempted using `--continue`;
+  no lint rules were disabled and the existing build-tool versions were preserved.
+- PENDING: device execution of the five Room mood test cases and the application
+  capture/recreation/edit/delete flow. No emulator or device was launched.
+  Room sources cover scale/note/emotion storage, catalog and capture idempotency,
+  renamed seed preservation, stable child/audit IDs, unrelated links/metadata,
+  invalid-link rollback, day movement, imported-record write rejection and deletion.
+
+Successful final local check:
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug --no-daemon --console=plain
+```
+
+Full application lint was also attempted as part of this command, which fails
+only in the app lint analyzer tasks:
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug :app:lintDebug --continue --no-daemon --console=plain
+```
+
+Device check command:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: capture with one score and Save in a few seconds; select
+multiple emotions; clear optional values; backdate a check-in and verify it moves
+to that day on Today/Timeline; edit/delete/relaunch and check persistence; exercise
+discard/delete confirmations and retained draft input after errors; test time
+pickers during DST gaps/overlaps, large fonts and landscape. Mood records with
+media references cannot currently be deleted through this flow: T10 owns physical
+file cleanup. Journal/memory capture remains T06/T07; complete Timeline remains T11.

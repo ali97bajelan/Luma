@@ -2,9 +2,11 @@ package com.luma.lifeos.domain.repository
 
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEvent
+import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.SourceIdentity
 import com.luma.lifeos.domain.time.TimeRange
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * Persistence boundary. Implementations own atomic writes and enforce unique source identities.
@@ -14,6 +16,9 @@ import kotlinx.coroutines.flow.Flow
  */
 interface LifeEventRepository {
     fun observe(range: TimeRange): Flow<List<LifeEvent>>
+    /** Implementations with typed storage load envelopes and details in one committed snapshot. */
+    fun observeRecords(range: TimeRange): Flow<List<LifeEventRecord>> =
+        observe(range).map { events -> events.map { LifeEventRecord(it) } }
     suspend fun get(id: EventId): LifeEvent?
     suspend fun findBySource(identity: SourceIdentity): LifeEvent?
     suspend fun upsert(event: LifeEvent): EventId

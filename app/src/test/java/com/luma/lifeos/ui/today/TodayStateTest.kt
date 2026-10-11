@@ -4,6 +4,10 @@ import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventSource
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEvent
+import com.luma.lifeos.domain.model.LifeEventRecord
+import com.luma.lifeos.domain.model.MoodDetails
+import com.luma.lifeos.domain.model.Emotion
+import java.util.UUID
 import com.luma.lifeos.domain.model.SourceIdentity
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.time.TimeRange
@@ -72,6 +76,19 @@ class TodayStateTest {
         assertEquals(milliseconds, pickerMillis(date))
     }
 
+    @Test fun typedMoodValuesArriveWithTheEventInTheSameFeedState() = runBlocking {
+        val moodEvent = event(1, EventType.MOOD, "2026-03-08T08:00:00Z")
+        val details = MoodDetails(4, listOf(Emotion(UUID.randomUUID(), "Calm")), energy = 2, note = "Quiet")
+        val repository = ReadRepository { flowOf(listOf(moodEvent)) }.apply {
+            records = flowOf(listOf(LifeEventRecord(moodEvent, details)))
+        }
+        val state = observeToday(repository, date, zone).toList().last() as TodayUiState.Data
+        assertEquals(listOf(moodEvent), state.events)
+        assertEquals(4, state.moods[moodEvent.id]!!.score)
+        assertEquals("Calm", state.moods[moodEvent.id]!!.emotions.single().name)
+        assertEquals("Quiet", state.moods[moodEvent.id]!!.note)
+    }
+
     private fun event(number: Int, type: EventType, instant: String) = LifeEvent(
         id = EventId.parse("00000000-0000-0000-0000-${number.toString().padStart(12, '0')}"),
         type = type,
@@ -82,6 +99,9 @@ class TodayStateTest {
 
     private class ReadRepository(val read: () -> Flow<List<LifeEvent>>) : LifeEventRepository {
         var range: TimeRange? = null
+        var records: Flow<List<LifeEventRecord>>? = null
+        override fun observeRecords(range: TimeRange): Flow<List<LifeEventRecord>> =
+            records ?: super.observeRecords(range)
         override fun observe(range: TimeRange): Flow<List<LifeEvent>> {
             this.range = range
             return read()

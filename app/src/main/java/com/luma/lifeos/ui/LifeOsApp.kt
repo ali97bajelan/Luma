@@ -29,6 +29,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.repository.LifeEventRepository
+import com.luma.lifeos.domain.repository.MoodRepository
+import com.luma.lifeos.domain.model.EventId
+import com.luma.lifeos.ui.mood.MoodEditorRoute
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.luma.lifeos.ui.today.TodayRoute
 import com.luma.lifeos.ui.today.rememberCurrentDay
 import java.time.LocalDate
@@ -47,21 +52,22 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
+    val editingMood = backStackEntry?.destination?.route == "mood?eventId={eventId}"
     val currentDay by rememberCurrentDay()
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
     var capturing by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         floatingActionButton = {
-            ExtendedFloatingActionButton(onClick = { capturing = true }, modifier = Modifier.testTag("quick_capture")) {
+            if (!editingMood) ExtendedFloatingActionButton(onClick = { capturing = true }, modifier = Modifier.testTag("quick_capture")) {
                 Text(stringResource(R.string.quick_capture))
             }
         },
         bottomBar = {
-            NavigationBar {
+            if (!editingMood) NavigationBar {
                 Destination.entries.forEach { destination ->
                     NavigationBarItem(
                         modifier = Modifier.testTag("nav_${destination.route}"),
@@ -87,20 +93,35 @@ fun LifeOsApp(repository: LifeEventRepository) {
         ) {
             Destination.entries.forEach { destination ->
                 composable(destination.route) {
-                    if (destination == Destination.TODAY) {
+                    if (destination == Destination.TODAY || destination == Destination.TIMELINE) {
                         TodayRoute(repository,
                             date = selectedDate?.let(LocalDate::parse) ?: currentDay.date,
                             zone = currentDay.zone,
                             onSelectDate = { selectedDate = it.toString() },
-                            onToday = { selectedDate = null })
+                            onToday = { selectedDate = null },
+                            onMoodClick = { navController.navigate("mood?eventId=$it") },
+                            heading = destination.label, screenTag = "screen_${destination.route}")
                     } else {
                         FoundationScreen(destination)
                     }
                 }
             }
+            composable("mood?eventId={eventId}", arguments = listOf(navArgument("eventId") {
+                type = NavType.StringType; nullable = true; defaultValue = null
+            })) { entry ->
+                MoodEditorRoute(moods, entry.arguments?.getString("eventId")?.let(EventId::parse),
+                    onCancel = { navController.popBackStack() },
+                    onFinished = { date ->
+                        if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
+                        navController.popBackStack()
+                    })
+            }
         }
     }
-    if (capturing) QuickCaptureSheet(onDismiss = { capturing = false })
+    if (capturing) QuickCaptureSheet(onDismiss = { capturing = false }, onMood = {
+        capturing = false
+        navController.navigate("mood")
+    })
 }
 
 @Composable

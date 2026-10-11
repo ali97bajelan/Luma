@@ -42,10 +42,12 @@ dependencies {
     implementation(libs.compose.tooling.preview)
     implementation(libs.navigation.compose)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.lifecycle.viewmodel.compose)
 
     debugImplementation(libs.compose.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.junit)

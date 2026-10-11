@@ -10,6 +10,7 @@ import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.repository.RoomLifeEventRepository
+import com.luma.lifeos.data.repository.RoomMoodRepository
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEvent
@@ -42,7 +43,7 @@ class TodayPersistenceTest {
         val current = event(today, "Current day record")
         val previous = event(today.minusDays(1), "Previous day record")
         runBlocking { repository.upsert(current); repository.upsert(previous) }
-        compose.setContent { LifeOsTheme { LifeOsApp(repository) } }
+        compose.setContent { LifeOsTheme { LifeOsApp(repository, RoomMoodRepository(database)) } }
         awaitText("Current day record")
         compose.onNodeWithText("Previous day record").assertDoesNotExist()
         compose.onNodeWithTag("day_previous").performClick()

@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -20,13 +21,15 @@ import com.luma.lifeos.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuickCaptureSheet(onDismiss: () -> Unit) {
+fun QuickCaptureSheet(onDismiss: () -> Unit, onMood: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp).testTag("capture_sheet"),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.quick_capture), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.capture_intro))
-            Text(stringResource(R.string.capture_mood), style = MaterialTheme.typography.titleMedium)
+            Button(onClick = onMood, modifier = Modifier.fillMaxWidth().testTag("capture_mood")) {
+                Text(stringResource(R.string.capture_mood))
+            }
             Text(stringResource(R.string.capture_journal), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.capture_memory), style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = onDismiss, modifier = Modifier.testTag("capture_close")) {
