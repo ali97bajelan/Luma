@@ -21,7 +21,7 @@ import com.luma.lifeos.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuickCaptureSheet(onDismiss: () -> Unit, onMood: () -> Unit) {
+fun QuickCaptureSheet(onDismiss: () -> Unit, onMood: () -> Unit, onJournal: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp).testTag("capture_sheet"),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -30,7 +30,9 @@ fun QuickCaptureSheet(onDismiss: () -> Unit, onMood: () -> Unit) {
             Button(onClick = onMood, modifier = Modifier.fillMaxWidth().testTag("capture_mood")) {
                 Text(stringResource(R.string.capture_mood))
             }
-            Text(stringResource(R.string.capture_journal), style = MaterialTheme.typography.titleMedium)
+            Button(onClick = onJournal, modifier = Modifier.fillMaxWidth().testTag("capture_journal")) {
+                Text(stringResource(R.string.capture_journal))
+            }
             Text(stringResource(R.string.capture_memory), style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = onDismiss, modifier = Modifier.testTag("capture_close")) {
                 Text(stringResource(R.string.close))

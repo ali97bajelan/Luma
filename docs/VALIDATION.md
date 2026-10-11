@@ -198,3 +198,60 @@ discard/delete confirmations and retained draft input after errors; test time
 pickers during DST gaps/overlaps, large fonts and landscape. Mood records with
 media references cannot currently be deleted through this flow: T10 owns physical
 file cleanup. Journal/memory capture remains T06/T07; complete Timeline remains T11.
+
+## T06 results — 2026-10-11
+
+- PASS: 47 JVM tests (20 domain, 27 application), zero failures/errors.
+  Journal coverage checks required body and input sizes, locale-independent tag
+  normalization, body formatting, typed feed updates, duplicate submit protection,
+  draft text/title/time/tag restoration, failed load/save/delete retention, missing
+  and imported record protection, DST gaps, ambiguous create reconciliation, and
+  restoration after a confirmed deletion committed without returning its result.
+- PASS: application debug APK and application/data instrumentation APK builds.
+- PASS: data-module Android lint, no issues found; `git diff --check` passes.
+- PASS: independent code review followed by two recovery fixes. Oversized input
+  and committed-delete restoration regression tests failed before the fixes and
+  passed afterward, with the full local suite green.
+- BLOCKED: full app lint again fails inside bundled analyzers with
+  `IncompatibleClassChangeError`: Lifecycle `NonNullableMutableLiveDataDetector`
+  and Compose `FrequentlyChangingValueDetector`/`RememberInCompositionDetector`.
+  Tool versions and lint rules remain unchanged. This prevents a full app-lint
+  acceptance claim; APK compilation and JVM execution succeed.
+- PENDING: device execution. Four Room journal test sources compile, covering
+  tag/capture retry identity, body formatting, content/link/audit preservation,
+  day movement, import/media protection, catalog retention, transaction rollback
+  using an aborted tag insertion, and summary freshness. Two Compose test sources
+  compile for capture/recreation/detail/edit/delete and explicit discard, including
+  oversized-paste rejection before recreation. No emulator/device was launched.
+
+Final successful command:
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug --no-daemon --console=plain
+```
+
+Full lint attempt:
+
+```sh
+bash gradlew --offline :core:data:lintDebug :app:lintDebug \
+  --continue --no-daemon --console=plain
+```
+
+Device check command:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: capture a journal without permissions; reuse a tag using a
+case/whitespace variant; save multiline body text; recreate during editing; cancel
+and keep/discard changes; backdate and verify Today/Timeline placement; open full
+body detail, edit, delete and relaunch. Verify large fonts/landscape, keyboard
+scrolling, and time-picker DST handling. Drafts accept up to 50,000 body characters,
+200 title characters and 50 tags of up to 50 characters each. Oversized input is
+visibly rejected while retaining previous text. Existing larger stored journals
+remain readable in detail but cannot be loaded into a saved-state editor. Journals
+with media references require T10 cleanup before deletion. Tag filters remain T15.

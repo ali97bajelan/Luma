@@ -165,7 +165,7 @@ source, with counts derived directly from available events. These are record
 counts, not T14 mood/usage/activity metrics. T05 extends this feed with typed mood
 details and reuses it for the initial daily Timeline; the full T11 timeline remains
 separate. Quick Capture opens a scrollable sheet from every primary tab, with
-mood capture enabled and journal/memory capture remaining in T06–T07.
+mood and journal capture enabled; memory capture remains T07.
 
 ## Mood check-ins (T05)
 
@@ -203,6 +203,44 @@ delete confirms before mutation. Today/Timeline manual mood rows show score,
 emotions and optional values and open editing; imported/incomplete rows stay read-only.
 Saving selects the occurrence day on return so a backdated capture can be seen.
 No runtime permission, network dependency or schema-version change is introduced.
+
+## Journals and tags (T06)
+
+Domain `JournalInput`, `JournalDetails`, `Tag` and `JournalRepository` expose
+journal content without Android/Room dependencies. `LifeEventRecord` now carries
+journal details and tags with its envelope in the same transactional observation.
+Bodies must contain non-whitespace text; body formatting is retained verbatim.
+Draft text is bounded at 50,000 body characters, 200 title characters, and
+50 tags of up to 50 characters each. Oversized input is visibly rejected before
+entering saved state, retaining the previous draft. Existing larger stored content
+remains readable in detail; the editor rejects loading it into a saved-state draft.
+Optional titles and tag names are trimmed. Tag identity uses locale-independent
+lowercase normalization; case/whitespace variants reuse existing catalog IDs.
+
+`RoomJournalRepository` uses the existing v1 tables. Tag creation, envelope,
+journal content, junction changes and summary invalidation share one transaction.
+Create IDs survive retries, and identical creates return the existing capture.
+Edits update the existing journal row and tag links, preserving child/audit IDs,
+metadata, memory markers, people, places and media. Missing, imported or incomplete
+journals cannot be edited. Deleting an already absent record is idempotent;
+existing imported/non-journal/media-bearing records retain deletion protection.
+Event deletion removes links but preserves reusable
+catalog entries; media-bearing journals require T10 cleanup and reject deletion.
+
+Quick Capture enables journals. The navigation-scoped journal editor retains
+body/title/time/tags, dirty state and capture identity through `SavedStateHandle`.
+Restored captures reconcile previously committed IDs before enabling editing.
+Save retries reconcile ambiguous create results. Confirmed delete intent is saved
+before mutation; a restored editor reconciles a committed deletion to completion.
+Changing a draft after a delete error clears that intent, retaining the newer text.
+Failed operations retain
+inputs. Cancel/back confirm changed drafts; deletion confirms before writing.
+The existing timezone-aware date/time controls also serve journal timestamps.
+Today and the daily Timeline show typed body previews and tags; rows open a full
+journal detail view, with editing available for manual records. Detail reloads
+when its navigation entry starts again after edits; successful deletion returns
+to the feed. Saving selects the journal occurrence day. No schema migration,
+permission or external dependency is introduced. Full filters remain T15.
 
 ## Implementation phases
 
@@ -249,7 +287,8 @@ the current AGP lint runtime. Full app lint and device tests remain pending.
 See `docs/VALIDATION.md` for exact results and commands.
 
 T05 increases verified JVM coverage to 33 tests, with compiled Room mood and
-end-to-end capture test sources. Full app lint and device execution remain pending;
+end-to-end capture test sources. T06 increases this to 47 JVM tests and compiles
+journal persistence and capture/detail/edit/delete device sources. Full app lint and device execution remain pending;
 the current data-module lint and debug/test APK builds pass.
 
 Persistence tooling references:

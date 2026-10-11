@@ -2,15 +2,15 @@
 
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
-a pure Kotlin domain, and Room-backed local persistence. Capture, integrations, and reviews follow
-in the order recorded in [TASKS.md](TASKS.md).
+a pure Kotlin domain, Room-backed local persistence, Today/daily Timeline browsing,
+mood check-ins, and offline journals with reusable tags. Remaining capture,
+integrations, and reviews follow [TASKS.md](TASKS.md).
 
 ## Build and run
 
-Use Android Studio with support for AGP 9.0, JDK 17, Android SDK Platform 36, and
-Build Tools 36.0.0. Open this directory, let Gradle sync, then run the `app`
-configuration on an Android 8.0/API 26 or newer device. No account or permissions
-are needed for the foundation shell.
+Use Android Studio with support for AGP 8.7.3, JDK 17, and Android SDK Platform 35. Open this directory, let Gradle sync, then run the `app`
+configuration on an Android 9/API 28 or newer device. No account or runtime
+permissions are needed for browsing, mood check-ins, or journals.
 
 From a shell with `JAVA_HOME` and `ANDROID_HOME` configured (or `sdk.dir` in an
 untracked `local.properties`):
@@ -39,8 +39,8 @@ See [docs/VALIDATION.md](docs/VALIDATION.md) for checks actually run here.
 T03 was implemented without running code, Gradle, or an emulator, at the user's
 request. The Room Gradle plugin exports schema JSON under `core/data/schemas` during
 your first build. Commit those generated files before changing the database schema;
-see [schema history](core/data/schemas/README.md). The commands above are for later
-user validation and were not executed during this task.
+see [schema history](core/data/schemas/README.md). Current build and test results, including pending device checks and the app lint
+analyzer compatibility failure, are recorded in `docs/VALIDATION.md`.
 
 ## Project references
 
@@ -49,6 +49,7 @@ user validation and were not executed during this task.
 - Original `.docx` files: product specification and implementation task source.
 - `docs/`: readable source extracts and validation evidence.
 
-The navigation destinations currently show introductory placeholders. They do
-not store records or simulate statistics. No future backlog features, network
+Today and the daily Timeline browse stored mood and journal records. Quick Capture
+creates records offline; journals include a full detail view. Review and Settings
+retain introductory placeholders until their tasks. No future backlog features, network
 permission, telemetry, or mandatory AI service are included.

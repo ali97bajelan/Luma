@@ -13,6 +13,7 @@ interface EventContentDao {
     @Update suspend fun updateMood(entry: MoodEntryEntity)
     @Query("DELETE FROM mood_emotion WHERE mood_id = :moodId") suspend fun deleteMoodEmotions(moodId: String)
     @Insert suspend fun insertJournal(entry: JournalEntryEntity)
+    @Update suspend fun updateJournal(entry: JournalEntryEntity)
     @Insert suspend fun insertMemory(entry: MemoryEntity)
     @Insert suspend fun insertActivities(entries: List<ActivityRecordEntity>)
     @Insert suspend fun insertAppUsage(entry: AppUsageRecordEntity)

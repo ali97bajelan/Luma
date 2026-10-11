@@ -36,9 +36,9 @@
     <string name="source_usage">Usage access</string>
     <string name="source_manual">Manual</string>
     <string name="quick_capture">Quick Capture</string>
-    <string name="capture_intro">Record a mood check-in offline. Journal and memory capture are coming soon.</string>
+    <string name="capture_intro">Record a mood check-in or journal offline. Memory capture is coming soon.</string>
     <string name="capture_mood">Mood check-in</string>
-    <string name="capture_journal">Journal entry · Coming soon</string>
+    <string name="capture_journal">Journal entry</string>
     <string name="capture_memory">Memory · Coming soon</string>
     <string name="close">Close</string>
     <string name="save">Save</string>
@@ -78,4 +78,24 @@
     <string name="mood_delete_body">This removes the check-in and its event links from this device.</string>
     <string name="mood_discard_title">Discard your changes?</string>
     <string name="mood_discard_body">Your unsaved changes will be lost.</string>
+    <string name="journal_capture">Write a journal</string>
+    <string name="journal_edit">Edit journal</string>
+    <string name="journal_title">Title (optional)</string>
+    <string name="journal_body">Journal</string>
+    <string name="journal_body_hint">Write something before saving.</string>
+    <string name="journal_tags">Tags</string>
+    <string name="journal_tag_name">New or existing tag</string>
+    <string name="journal_remove_tag">%1$s · Remove</string>
+    <string name="journal_load_error">This journal could not be loaded. Your draft is retained.</string>
+    <string name="journal_save_error">The journal could not be saved. Your draft is retained; try again.</string>
+    <string name="journal_delete_error">The journal could not be deleted. Try again.</string>
+    <string name="journal_delete_title">Delete this journal?</string>
+    <string name="journal_delete_body">This removes the journal and its event links from this device.</string>
+    <string name="journal_discard_title">Discard journal changes?</string>
+    <string name="journal_discard_body">Your unsaved text and tag changes will be discarded.</string>
+    <string name="journal_open">Open journal</string>
+    <string name="add">Add</string>
+    <string name="back">Back</string>
+    <string name="journal_text_error">The previous draft is retained. Use at most 50,000 characters for the journal, 200 for its title, and 50 tags of up to 50 characters each.</string>
+    <string name="journal_tag_size_error">Use up to 50 characters. The previous tag text is retained.</string>
 </resources>

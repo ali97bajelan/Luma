@@ -37,6 +37,7 @@ import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.MoodDetails
+import com.luma.lifeos.domain.model.JournalDetails
 import com.luma.lifeos.ui.mood.moodScoreLabel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -53,6 +54,7 @@ fun TodayScreen(
     onToday: () -> Unit,
     onRetry: () -> Unit,
     onMoodClick: (EventId) -> Unit = {},
+    onJournalClick: (EventId) -> Unit = {},
     @StringRes heading: Int = R.string.today,
     screenTag: String = "screen_today",
 ) {
@@ -122,7 +124,7 @@ fun TodayScreen(
                     }
                 }
                 items(state.events, key = { it.id.toString() }) { event ->
-                    EventRow(event, zone, state.moods[event.id], onMoodClick)
+                    EventRow(event, zone, state.moods[event.id], state.journals[event.id], onMoodClick, onJournalClick)
                 }
             }
         }
@@ -147,10 +149,13 @@ fun TodayScreen(
 }
 
 @Composable
-private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, onMoodClick: (EventId) -> Unit) {
+private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, journal: JournalDetails?,
+    onMoodClick: (EventId) -> Unit, onJournalClick: (EventId) -> Unit) {
     val editLabel = stringResource(R.string.mood_edit_action)
     val modifier = Modifier.fillMaxWidth().testTag("event_${event.id}")
-    Card(if (mood != null && event.isEditable) modifier.clickable(onClickLabel = editLabel,
+    val journalLabel = stringResource(R.string.journal_open)
+    Card(if (journal != null) modifier.clickable(onClickLabel = journalLabel, onClick = { onJournalClick(event.id) })
+        else if (mood != null && event.isEditable) modifier.clickable(onClickLabel = editLabel,
         onClick = { onMoodClick(event.id) }) else modifier) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -168,6 +173,11 @@ private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, onMoodC
                 if (it.emotions.isNotEmpty()) Text(it.emotions.joinToString(", ") { emotion -> emotion.name })
                 it.energy?.let { energy -> Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_energy), energy)) }
                 it.stress?.let { stress -> Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_stress), stress)) }
+            }
+            journal?.let {
+                Text(it.body, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                if (it.tags.isNotEmpty()) Text(it.tags.joinToString(", ") { tag -> tag.name }, style = MaterialTheme.typography.labelMedium)
+                Text(journalLabel, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             }
             (mood?.note ?: event.note)?.takeIf { it.isNotBlank() }?.let {
                 Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis)

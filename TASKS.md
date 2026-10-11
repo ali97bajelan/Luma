@@ -135,7 +135,19 @@ user validation. No emulator was launched. Details are in `docs/VALIDATION.md`.
 
 ## T06 — Journal and tags
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: offline journal create/edit/delete with optional title, required
+body, timestamp and reusable tags. Case/whitespace variants share tag identities;
+body formatting survives edits. Drafts and capture IDs survive recreation,
+failed saves retain inputs, and navigation confirms discard. Visible size limits
+protect saved drafts; confirmed deletes reconcile committed results after restoration.
+Transactional edits
+preserve other links and metadata. Today/Timeline previews open a full detail view.
+
+Validation: JVM, APK and lint results are recorded in `docs/VALIDATION.md`.
+Room and capture/recreation/detail/edit/delete device test sources compile;
+device execution remains pending user validation. No emulator was launched.
 
 
 ### Scope

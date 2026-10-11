@@ -6,6 +6,8 @@ import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.MoodDetails
+import com.luma.lifeos.domain.model.JournalDetails
+import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.domain.model.Emotion
 import java.util.UUID
 import com.luma.lifeos.domain.model.SourceIdentity
@@ -87,6 +89,23 @@ class TodayStateTest {
         assertEquals(4, state.moods[moodEvent.id]!!.score)
         assertEquals("Calm", state.moods[moodEvent.id]!!.emotions.single().name)
         assertEquals("Quiet", state.moods[moodEvent.id]!!.note)
+    }
+
+    @Test fun typedJournalBodyAndTagsUpdateTogetherWithTheEnvelope() = runBlocking {
+        val journal = event(1, EventType.JOURNAL, "2026-03-08T08:00:00Z")
+        val tag = Tag(UUID.fromString("00000000-0000-0000-0000-000000000011"), "Work")
+        val repository = ReadRepository { flowOf(listOf(journal)) }.apply {
+            records = flowOf(listOf(LifeEventRecord(journal, journal = JournalDetails("Title", "Body", listOf(tag)))),
+                listOf(LifeEventRecord(journal.copy(title = "Edited"), journal = JournalDetails("Edited", "New text"))))
+        }
+        val states = observeToday(repository, date, zone).toList()
+        val first = states[1] as TodayUiState.Data
+        assertEquals("Body", first.journals[journal.id]!!.body)
+        assertEquals(listOf(tag), first.journals[journal.id]!!.tags)
+        val updated = states[2] as TodayUiState.Data
+        assertEquals("Edited", updated.events.single().title)
+        assertEquals("New text", updated.journals[journal.id]!!.body)
+        assertTrue(updated.journals[journal.id]!!.tags.isEmpty())
     }
 
     private fun event(number: Int, type: EventType, instant: String) = LifeEvent(

@@ -32,8 +32,11 @@ data class MoodDetails(
 }
 
 /** One committed event graph; typed fields grow with the later feature slices. */
-data class LifeEventRecord(val event: LifeEvent, val mood: MoodDetails? = null) {
-    init { require(mood == null || event.type == EventType.MOOD) }
+data class LifeEventRecord(val event: LifeEvent, val mood: MoodDetails? = null, val journal: JournalDetails? = null) {
+    init {
+        require(mood == null || event.type == EventType.MOOD)
+        require(journal == null || event.type == EventType.JOURNAL)
+    }
 }
 
 private fun validateScales(score: Int, energy: Int?, stress: Int?) {

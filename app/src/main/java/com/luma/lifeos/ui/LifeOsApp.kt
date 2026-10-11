@@ -29,6 +29,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.repository.LifeEventRepository
+import com.luma.lifeos.domain.repository.JournalRepository
+import com.luma.lifeos.ui.journal.JournalEditorRoute
+import com.luma.lifeos.ui.journal.JournalDetailRoute
 import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.mood.MoodEditorRoute
@@ -52,10 +55,11 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val editingMood = backStackEntry?.destination?.route == "mood?eventId={eventId}"
+    val editingMood = backStackEntry?.destination?.route in setOf("mood?eventId={eventId}",
+        "journal?eventId={eventId}", "journal_detail/{eventId}")
     val currentDay by rememberCurrentDay()
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
@@ -100,11 +104,30 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository) {
                             onSelectDate = { selectedDate = it.toString() },
                             onToday = { selectedDate = null },
                             onMoodClick = { navController.navigate("mood?eventId=$it") },
+                            onJournalClick = { navController.navigate("journal_detail/$it") },
                             heading = destination.label, screenTag = "screen_${destination.route}")
                     } else {
                         FoundationScreen(destination)
                     }
                 }
+            }
+            composable("journal_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
+                val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
+                JournalDetailRoute(journals, id, onBack = { navController.popBackStack() },
+                    onEdit = { navController.navigate("journal?eventId=$id") })
+            }
+            composable("journal?eventId={eventId}", arguments = listOf(navArgument("eventId") {
+                type = NavType.StringType; nullable = true; defaultValue = null
+            })) { entry ->
+                JournalEditorRoute(journals, entry.arguments?.getString("eventId")?.let(EventId::parse),
+                    onCancel = { navController.popBackStack() },
+                    onFinished = { date ->
+                        if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
+                        navController.popBackStack()
+                        if (date == null && navController.currentDestination?.route == "journal_detail/{eventId}") {
+                            navController.popBackStack()
+                        }
+                    })
             }
             composable("mood?eventId={eventId}", arguments = listOf(navArgument("eventId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
@@ -121,6 +144,9 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository) {
     if (capturing) QuickCaptureSheet(onDismiss = { capturing = false }, onMood = {
         capturing = false
         navController.navigate("mood")
+    }, onJournal = {
+        capturing = false
+        navController.navigate("journal")
     })
 }
 
