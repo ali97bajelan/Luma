@@ -31,6 +31,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.luma.lifeos.ui.places.LinkedPlace
+import com.luma.lifeos.domain.model.Place
 import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.domain.model.Person
 import com.luma.lifeos.R
@@ -130,7 +132,7 @@ fun TodayScreen(
                     }
                 }
                 items(state.events, key = { it.id.toString() }) { event ->
-                    EventRow(event, zone, state.moods[event.id], state.journals[event.id], state.memories[event.id], onMoodClick, onJournalClick, onMemoryClick, state.people[event.id].orEmpty())
+                    EventRow(event, zone, state.moods[event.id], state.journals[event.id], state.memories[event.id], onMoodClick, onJournalClick, onMemoryClick, state.people[event.id].orEmpty(), state.places[event.id])
                 }
             }
         }
@@ -156,7 +158,7 @@ fun TodayScreen(
 
 @Composable
 private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, journal: JournalDetails?, memory: MemoryDetails?,
-    onMoodClick: (EventId) -> Unit, onJournalClick: (EventId) -> Unit, onMemoryClick: (EventId) -> Unit, people: List<Person>) {
+    onMoodClick: (EventId) -> Unit, onJournalClick: (EventId) -> Unit, onMemoryClick: (EventId) -> Unit, people: List<Person>, place: Place?) {
     val editLabel = stringResource(R.string.mood_edit_action)
     val modifier = Modifier.fillMaxWidth().testTag("event_${event.id}")
     val journalLabel = stringResource(R.string.journal_open)
@@ -189,6 +191,7 @@ private fun EventRow(event: LifeEvent, zone: ZoneId, mood: MoodDetails?, journal
                 Text(journalLabel, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             }
             LinkedPeople(people)
+            LinkedPlace(place)
             memory?.let { MemoryStatus(it) }
             if (LifeEventRecord(event, mood, journal, memory).canPromoteToMemory ||
                 (event.type == EventType.MEMORY && memory != null && event.isEditable)) {

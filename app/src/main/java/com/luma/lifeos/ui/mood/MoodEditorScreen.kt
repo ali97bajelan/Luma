@@ -53,6 +53,7 @@ fun MoodEditorScreen(
     onNote: (String) -> Unit,
     onTime: (LocalDateTime, ZoneId) -> Boolean,
     peopleContent: @Composable () -> Unit = {},
+    placeContent: @Composable () -> Unit = {},
 ) {
     var more by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
@@ -121,6 +122,7 @@ fun MoodEditorScreen(
                         modifier = Modifier.fillMaxWidth().testTag("mood_note"))
                 }
                 peopleContent()
+                placeContent()
                 MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
             }
         }

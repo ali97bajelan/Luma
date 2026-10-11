@@ -25,6 +25,7 @@ data class JournalInput(
     val title: String? = null,
     val tagNames: Set<String> = emptySet(),
     val personIds: Set<UUID>? = null,
+    val placeSelection: PlaceSelection? = null,
 ) {
     init {
         validatePersonSelection(personIds)

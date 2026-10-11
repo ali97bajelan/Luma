@@ -32,7 +32,8 @@ class RoomJournalRepository(private val database: LumaDatabase, private val cloc
             require(record.event.occurredAt.toEpochMilli() == input.occurredAt.toEpochMilli() &&
                 journal.title == title && journal.body == input.body &&
                 journal.tags.map { Tag.normalize(it.name) }.toSet() == input.tagNames.map(Tag::normalize).toSet() &&
-                (input.personIds == null || record.people.map { it.id }.toSet() == input.personIds)) {
+                (input.personIds == null || record.people.map { it.id }.toSet() == input.personIds) &&
+                (input.placeSelection == null || record.place?.id == input.placeSelection?.id)) {
                 "This capture ID already belongs to a different journal"
             }
             return@withTransaction id
@@ -42,6 +43,7 @@ class RoomJournalRepository(private val database: LumaDatabase, private val cloc
         content.insertJournal(JournalEntryEntity(EventId.new().toString(), id.toString(), input.body, title))
         replaceTags(id, input.tagNames)
         replacePeopleInTransaction(database, id, input.personIds)
+        replacePlaceInTransaction(database, id, input.placeSelection)
         database.derived().invalidateSummaries()
         id
     }
@@ -55,6 +57,7 @@ class RoomJournalRepository(private val database: LumaDatabase, private val cloc
         content.updateJournal(requireNotNull(previous.journal).copy(body = input.body, title = title))
         replaceTags(id, input.tagNames)
         replacePeopleInTransaction(database, id, input.personIds)
+        replacePlaceInTransaction(database, id, input.placeSelection)
         database.derived().invalidateSummaries()
     }
 

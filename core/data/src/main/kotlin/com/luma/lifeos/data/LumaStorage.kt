@@ -1,5 +1,7 @@
 package com.luma.lifeos.data
 
+import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.data.repository.RoomPlaceRepository
 import android.content.Context
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.repository.RoomCatalogRepository
@@ -23,6 +25,7 @@ class LumaStorage(context: Context) {
     val moods: MoodRepository = RoomMoodRepository(database)
     val journals: JournalRepository = RoomJournalRepository(database)
     val memories: MemoryRepository = RoomMemoryRepository(database)
+    val places: PlaceRepository = RoomPlaceRepository(database)
     val people: PersonRepository = RoomPersonRepository(database)
     val events = RoomEventStore(database)
     val catalog = RoomCatalogRepository(database)

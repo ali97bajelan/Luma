@@ -49,7 +49,8 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
             require(record.event.occurredAt.toEpochMilli() == input.occurredAt.toEpochMilli() &&
                 mood.score == input.score && mood.energy == input.energy && mood.stress == input.stress &&
                 mood.note == note && mood.emotions.map { it.id }.toSet() == input.emotionIds &&
-                (input.personIds == null || record.people.map { it.id }.toSet() == input.personIds)) {
+                (input.personIds == null || record.people.map { it.id }.toSet() == input.personIds) &&
+                (input.placeSelection == null || record.place?.id == input.placeSelection?.id)) {
                 "This capture ID already belongs to a different check-in"
             }
             return@withTransaction id
@@ -61,6 +62,7 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
         content.insertMood(entry)
         replaceEmotions(entry.id, input)
         replacePeopleInTransaction(database, id, input.personIds)
+        replacePlaceInTransaction(database, id, input.placeSelection)
         database.derived().invalidateSummaries()
         id
     }
@@ -76,6 +78,7 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
         content.updateMood(entry.copy(moodScore = input.score, energy = input.energy, stress = input.stress, note = note))
         replaceEmotions(entry.id, input)
         replacePeopleInTransaction(database, id, input.personIds)
+        replacePlaceInTransaction(database, id, input.placeSelection)
         database.derived().invalidateSummaries()
     }
 

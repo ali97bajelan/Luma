@@ -187,6 +187,27 @@ class MoodEditorTest {
         assertEquals(emptySet<java.util.UUID>(), repo.submittedPeople)
     }
 
+    @Test fun placeSelectionRestoresLoadsAndExplicitlyClearsWhileNoneIsOptional() = runTest(dispatcher) {
+        val repo = TestMoodRepository()
+        val handle = SavedStateHandle()
+        val place = java.util.UUID.randomUUID()
+        val editor = MoodEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle(); editor.setScore(4)
+        assertNull(editor.state.value.draft.placeId)
+        editor.setPlace(place)
+        val restored = MoodEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle()
+        assertEquals(place, restored.state.value.draft.placeId)
+        restored.save(); advanceUntilIdle()
+        assertEquals(PlaceSelection(place), repo.submittedPlace)
+        val editing = MoodEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock)
+        advanceUntilIdle()
+        assertEquals(place, editing.state.value.draft.placeId)
+        editing.setPlace(null); editing.save(); advanceUntilIdle()
+        assertEquals(PlaceSelection(null), repo.submittedPlace)
+        assertNull(repo.records.values.single().place)
+    }
+
     private class TestMoodRepository : MoodRepository {
         val emotions = listOf(Emotion(UUID.randomUUID(), "Calm"), Emotion(UUID.randomUUID(), "Happy"))
         val records = mutableMapOf<EventId, LifeEventRecord>()
@@ -194,11 +215,13 @@ class MoodEditorTest {
         var failLoading = false
         var creates = 0
         var submittedPeople: Set<java.util.UUID>? = null
+        var submittedPlace: PlaceSelection? = null
         override suspend fun prepareEmotions() { if (failLoading) error("Unavailable") }
         override fun observeEmotions() = flowOf(emotions)
         override suspend fun get(id: EventId) = records[id]
         override suspend fun create(id: EventId, input: MoodInput): EventId {
             submittedPeople = input.personIds
+            submittedPlace = input.placeSelection
             creates++
             val incoming = record(id, input)
             val previous = records[id]
@@ -209,6 +232,7 @@ class MoodEditorTest {
         }
         override suspend fun update(id: EventId, input: MoodInput) {
             submittedPeople = input.personIds
+            submittedPlace = input.placeSelection
             require(records.containsKey(id))
             records[id] = record(id, input)
         }
@@ -216,6 +240,7 @@ class MoodEditorTest {
         private fun record(id: EventId, input: MoodInput) = LifeEventRecord(
             LifeEvent(id, EventType.MOOD, input.occurredAt, input.occurredAt),
             MoodDetails(input.score, emotions.filter { it.id in input.emotionIds }, input.energy, input.stress, input.note),
-            people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty())
+            people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty(),
+            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") })
     }
 }

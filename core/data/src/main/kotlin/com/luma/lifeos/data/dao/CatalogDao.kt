@@ -17,6 +17,7 @@ interface CatalogDao {
     @Transaction
     @Query("SELECT * FROM person WHERE id = :id") fun observePersonHistory(id: String): Flow<PersonWithEvents?>
     @Query("SELECT * FROM person ORDER BY name, id") fun observePeople(): Flow<List<PersonEntity>>
+    @Query("SELECT * FROM place WHERE id = :id") fun observePlace(id: String): Flow<PlaceEntity?>
     @Query("SELECT * FROM place ORDER BY name, id") fun observePlaces(): Flow<List<PlaceEntity>>
     @Query("SELECT * FROM tag ORDER BY normalized_name, id") fun observeTags(): Flow<List<TagEntity>>
     @Query("SELECT * FROM emotion WHERE id = :id") suspend fun emotion(id: String): EmotionEntity?

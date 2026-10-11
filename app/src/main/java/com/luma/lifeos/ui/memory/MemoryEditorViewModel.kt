@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet())
+data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null)
 enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT }
 data class MemoryEditorState(
     val draft: MemoryDraft,
@@ -117,13 +117,13 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["pending_remove"] = null
         write(MemoryEditorError.SAVE) {
             if (current.direct) {
-                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.importance, draft.personIds)
+                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.importance, draft.personIds, PlaceSelection(draft.placeId))
                 val recoveredId = editingId ?: repository.get(captureId)?.event?.id
                 if (recoveredId == null) repository.create(captureId, input) else {
                     editingId = recoveredId
                     repository.update(recoveredId, input)
                 }
-            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(draft.importance, draft.note, draft.personIds))
+            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId)))
         }
     }
     fun remove() {
@@ -159,12 +159,15 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         persist(draft)
         mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
     }
+    fun setPlace(id: UUID?) = change { it.copy(placeId = id) }
+
     fun togglePerson(id: UUID) = change {
         it.copy(personIds = if (id in it.personIds) it.personIds - id
             else if (it.personIds.size < PersonTextLimits.SELECTION) it.personIds + id else it.personIds)
     }
 
     private fun persist(draft: MemoryDraft) {
+        saved["place"] = draft.placeId?.toString()
         saved["people"] = ArrayList(draft.personIds.map(UUID::toString))
         saved["has_draft"] = true
         saved["dirty"] = draft != baseline
@@ -175,7 +178,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     }
     private fun readDraft() = MemoryDraft(saved.get<Long>("time") ?: initialTime, saved.get<String>("title") ?: "",
         saved.get<String>("note") ?: "", saved["importance"],
-        saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet())
+        saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet(),
+        saved.get<String>("place")?.let(UUID::fromString))
     private fun LifeEventRecord.toDraft(direct: Boolean) = MemoryDraft(event.occurredAt.toEpochMilli(),
-        if (direct) event.title.orEmpty() else "", if (direct) (memory?.note ?: event.note).orEmpty() else memory?.note.orEmpty(), memory?.importance, people.map { it.id }.toSet())
+        if (direct) event.title.orEmpty() else "", if (direct) (memory?.note ?: event.note).orEmpty() else memory?.note.orEmpty(), memory?.importance, people.map { it.id }.toSet(), place?.id)
 }

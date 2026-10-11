@@ -319,6 +319,40 @@ failed writes retain the draft. Today/Timeline, journal detail and memory Review
 show attached names. No schema migration, contacts import, permission, network
 or new dependency is introduced. Full searching/filtering remains T15.
 
+## Manual Places (T09)
+
+`Place`, `PlaceInput`, `PlaceSelection` and `PlaceRepository` expose the local
+catalog without Android/Room types. Names are required and bounded at 200
+characters; optional notes at 10,000. UUID identities allow equal names, and
+identical retained-ID creates are idempotent. Existing optional paired coordinates
+are validated and preserved on name/note edits; detail can display them. T09 adds
+no coordinate acquisition, map, contacts/location integration or tracking.
+
+`RoomPlaceRepository` reuses the v1 `place`/`event_place` tables. Name/note edits
+and deletion invalidate summaries in the same transaction. Deletion cascades only
+the place links, keeping envelopes, typed content, people, tags, markers and other
+relations intact. Place detail observes its catalog row live, with distinct
+loading/missing/error states and retry; catalog lists have loading/empty/error
+states. Schema version and dependencies remain unchanged.
+
+`LifeEventRecord` carries at most one `Place` from its committed graph. Capture
+inputs append nullable `placeSelection`: null preserves any existing link;
+`PlaceSelection(null)` clears it; a selected UUID replaces it. Mood, journal,
+standalone-memory and promoted-memory writes replace the place link inside their
+existing content/envelope/people/tag/cache transaction. Missing place references
+roll back the entire write. Promotion modifies shared links on the original event;
+unmarking retains its place. Identical create retries also compare explicitly
+supplied place IDs.
+
+Places is reachable through Settings and each capture picker. The saved place
+editor follows the existing dirty-draft, retained-ID and committed-result recovery
+pattern, including confirmed deletion intent and bounded input. Capture editors
+retain one nullable UUID and submit an explicit selection. Creating a place keeps
+the parent editor on the back stack; the new row appears for explicit selection
+on return. Missing selections remain visible/removable, and failed saves retain
+the draft. Today/Timeline, journal detail, memory Review and person history show
+linked names. Core capture remains optional-place and permission-free.
+
 ## Implementation phases
 
 1. T01–T03: runnable project, tested domain contracts, relational persistence.
@@ -369,7 +403,9 @@ journal persistence and capture/detail/edit/delete device sources. T07 brings
 verified coverage to 63 JVM tests, with compiled memory persistence and capture/
 promotion/review/removal device sources. T08 increases this to 75 JVM tests and
 compiles People CRUD/link/history/live-update persistence cases and two capture/
-history/removal/deletion device flows. Full app lint and device execution remain pending;
+history/removal/deletion device flows. T09 brings coverage to 91 JVM tests with
+compiled place persistence and capture/reuse/rename/clear/deletion device sources.
+Full app lint and device execution remain pending;
 the current data-module lint and debug/test APK builds pass.
 
 Persistence tooling references:

@@ -15,6 +15,7 @@ data class MoodInput(
     val stress: Int? = null,
     val note: String? = null,
     val personIds: Set<UUID>? = null,
+    val placeSelection: PlaceSelection? = null,
 ) {
     init { validatePersonSelection(personIds); validateScales(score, energy, stress) }
 }
@@ -34,7 +35,7 @@ data class MoodDetails(
 
 /** One committed event graph; typed fields grow with the later feature slices. */
 data class LifeEventRecord(val event: LifeEvent, val mood: MoodDetails? = null, val journal: JournalDetails? = null,
-    val memory: MemoryDetails? = null, val people: List<Person> = emptyList()) {
+    val memory: MemoryDetails? = null, val people: List<Person> = emptyList(), val place: Place? = null) {
     val canPromoteToMemory: Boolean get() = event.isEditable &&
         ((event.type == EventType.MOOD && mood != null) || (event.type == EventType.JOURNAL && journal != null))
 

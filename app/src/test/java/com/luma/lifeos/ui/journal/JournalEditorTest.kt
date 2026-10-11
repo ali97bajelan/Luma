@@ -192,10 +192,32 @@ class JournalEditorTest {
         assertEquals(emptySet<java.util.UUID>(), repo.submittedPeople)
     }
 
+    @Test fun placeSelectionRestoresLoadsAndExplicitlyClearsWhileNoneIsOptional() = runTest(dispatcher) {
+        val repo = TestJournalRepository()
+        val handle = SavedStateHandle()
+        val place = java.util.UUID.randomUUID()
+        val editor = JournalEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle(); editor.setBody("Body")
+        assertNull(editor.state.value.draft.placeId)
+        editor.setPlace(place)
+        val restored = JournalEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle()
+        assertEquals(place, restored.state.value.draft.placeId)
+        restored.save(); advanceUntilIdle()
+        assertEquals(PlaceSelection(place), repo.submittedPlace)
+        val editing = JournalEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock)
+        advanceUntilIdle()
+        assertEquals(place, editing.state.value.draft.placeId)
+        editing.setPlace(null); editing.save(); advanceUntilIdle()
+        assertEquals(PlaceSelection(null), repo.submittedPlace)
+        assertNull(repo.records.values.single().place)
+    }
+
     private class TestJournalRepository : JournalRepository {
         val records = mutableMapOf<EventId, LifeEventRecord>()
         var creates = 0
         var submittedPeople: Set<java.util.UUID>? = null
+        var submittedPlace: PlaceSelection? = null
         var failAfterCreate = false
         var failLoading = false
         var failDeleting = false
@@ -207,6 +229,7 @@ class JournalEditorTest {
         }
         override suspend fun create(id: EventId, input: JournalInput): EventId {
             submittedPeople = input.personIds
+            submittedPlace = input.placeSelection
             creates++
             require(id !in records)
             records[id] = record(id, input)
@@ -215,6 +238,7 @@ class JournalEditorTest {
         }
         override suspend fun update(id: EventId, input: JournalInput) {
             submittedPeople = input.personIds
+            submittedPlace = input.placeSelection
             require(id in records)
             records[id] = record(id, input)
         }
@@ -226,6 +250,7 @@ class JournalEditorTest {
         private fun record(id: EventId, input: JournalInput) = LifeEventRecord(
             LifeEvent(id, EventType.JOURNAL, input.occurredAt, input.occurredAt, title = input.title),
             journal = JournalDetails(input.title, input.body),
-            people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty())
+            people = input.personIds?.map { Person(it, "Friend") } ?: records[id]?.people.orEmpty(),
+            place = if (input.placeSelection == null) records[id]?.place else input.placeSelection?.id?.let { Place(it, "Cafe") })
     }
 }

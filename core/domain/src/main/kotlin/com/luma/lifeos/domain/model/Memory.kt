@@ -8,7 +8,7 @@ object MemoryTextLimits {
     const val NOTE = 10_000
 }
 
-data class MemoryInput(val note: String, val occurredAt: Instant, val title: String? = null, val importance: Int? = null, val personIds: Set<UUID>? = null) {
+data class MemoryInput(val note: String, val occurredAt: Instant, val title: String? = null, val importance: Int? = null, val personIds: Set<UUID>? = null, val placeSelection: PlaceSelection? = null) {
     init {
         validatePersonSelection(personIds)
         require(note.isNotBlank()) { "Describe the memory before saving" }
@@ -17,7 +17,7 @@ data class MemoryInput(val note: String, val occurredAt: Instant, val title: Str
     }
 }
 
-data class MemoryMarkerInput(val importance: Int? = null, val note: String? = null, val personIds: Set<UUID>? = null) {
+data class MemoryMarkerInput(val importance: Int? = null, val note: String? = null, val personIds: Set<UUID>? = null, val placeSelection: PlaceSelection? = null) {
     init { validatePersonSelection(personIds); validateMarker(importance, note) }
 }
 

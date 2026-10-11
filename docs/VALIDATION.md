@@ -375,3 +375,64 @@ must retain content. Delete a person and verify entries, markers, tags and other
 people survive. Check large fonts, landscape, keyboard scrolling, discard/delete
 confirmations and visible oversized-input rejection. No contacts permission is
 required; photo management and full people filters remain later work.
+
+
+## T09 results — 2026-10-11
+
+- PASS: 91 JVM tests (27 domain and 64 application), zero failures/errors/skips.
+  New tests cover required/bounded place input, stored coordinate pairing/ranges,
+  absent selection versus explicit clearing, place editor draft restoration,
+  failed loading/deletion, missing-edit protection, repeated submits, ambiguous
+  committed create/delete recovery and visible oversized-input rejection.
+  Capture-editor tests verify selection restoration/loading/forwarding/clearing,
+  including promoted sources with retained original content. Catalog/detail tests
+  distinguish loading/empty/missing/data/error, retry and cancellation.
+- PASS: application debug APK and application/data instrumentation APK builds.
+- PASS: data-module Android lint, no issues found; `git diff --check` passes.
+- PASS: independent review found no concrete correctness or data-loss defects.
+  Generated Room observers include place/link tables for feed, memory and
+  person-history refresh after catalog/link changes.
+- BLOCKED: full application lint repeats the existing `IncompatibleClassChangeError`
+  inside bundled Lifecycle/Compose analyzers. No lint rules were disabled and
+  no build-tool versions were changed.
+- PENDING: device execution. Five Room cases compile for catalog retry identity,
+  equal names, coordinate preservation, single-place reuse across all captures,
+  explicit clearing/default preservation, promotion/unmark source retention,
+  place deletion without losing the complete graph, foreign-key rollback of
+  content/tags/people/links/cache, and live place-detail/feed refresh on renames
+  and deletion. Two Compose flows compile for creation within journal capture,
+  draft/selection recreation, renaming, clearing, reuse in memory capture and
+  deletion while retaining the memory. Device flows wait for loaded catalogs and
+  enabled controls. No emulator/device was launched.
+
+Successful local check:
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest \
+  :core:data:testDebugUnitTest :app:assembleDebug \
+  :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :core:data:lintDebug --no-daemon --console=plain
+```
+
+Full application lint attempt:
+
+```sh
+bash gradlew --offline :app:lintDebug --continue --no-daemon --console=plain
+```
+
+Device check command:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+Manual acceptance: create/edit/delete places through Settings, reuse a place in
+mood, journal, direct and promoted memory forms, and save with no place selected.
+Create a new place from an unsaved capture, return, explicitly select it, recreate
+and save. Replace or clear an existing selection; verify people, tags, source
+content and memory markers survive. Rename/delete a place and check feeds refresh.
+Delete a selected place elsewhere and remove its retained unavailable chip;
+rejected missing-reference writes must keep the draft. Exercise discard/delete
+confirmations, large fonts/landscape/keyboard scrolling and oversized-paste
+rejection. Verify core flows require no location permission. No continuous
+location tracking or automatic location capture is implemented.

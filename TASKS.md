@@ -226,7 +226,21 @@ existing bundled analyzers. See `docs/VALIDATION.md`.
 
 ## T09 — Manual Places
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: permission-free local place list/create/edit/delete/detail,
+reachable from Settings and capture forms. Mood, journal, standalone-memory and
+promoted-memory editors retain one optional place selection and can create a place
+without losing the parent draft. Existing coordinates survive name/note edits.
+Place links save atomically with entry content; explicit clearing removes only the
+place link, and deleting a place preserves all life events. Typed browsing shows
+linked place names. No location tracking or permission is added.
+
+Validation: 91 JVM tests pass (27 domain + 64 app), debug and instrumentation APKs
+build, and data lint reports no issues. Five Room cases and two place capture/
+reuse/rename/clear/deletion flows compile; device execution remains pending user
+validation. No emulator was launched. Full app lint retains its bundled analyzer
+compatibility failure. See `docs/VALIDATION.md`.
 
 
 ### Scope

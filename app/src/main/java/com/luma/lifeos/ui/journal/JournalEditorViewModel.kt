@@ -8,6 +8,7 @@ import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.JournalInput
 import com.luma.lifeos.domain.model.JournalTextLimits
+import com.luma.lifeos.domain.model.PlaceSelection
 import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.domain.repository.JournalRepository
 import com.luma.lifeos.domain.time.moodInstant
@@ -30,6 +31,7 @@ data class JournalDraft(
     val body: String = "",
     val tagNames: Set<String> = emptySet(),
     val personIds: Set<UUID> = emptySet(),
+    val placeId: UUID? = null,
 )
 
 enum class JournalEditorError { LOAD, SAVE, DELETE, TIME, TEXT }
@@ -84,7 +86,7 @@ class JournalEditorViewModel(
                 baseline = if (record == null) JournalDraft(initialTime) else {
                     require(record.event.isEditable && record.journal != null)
                     record.toDraft().also { draft ->
-                        JournalInput(draft.body, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.tagNames, draft.personIds)
+                        JournalInput(draft.body, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.tagNames, draft.personIds, PlaceSelection(draft.placeId))
                     }
                 }
                 editingId = record?.event?.id
@@ -146,7 +148,7 @@ class JournalEditorViewModel(
         if (!current.ready || current.busy || current.completed || current.draft.body.isBlank()) return
         val draft = current.draft
         val input = JournalInput(draft.body, Instant.ofEpochMilli(draft.occurredAtMillis),
-            draft.title, draft.tagNames, draft.personIds)
+            draft.title, draft.tagNames, draft.personIds, PlaceSelection(draft.placeId))
         write(JournalEditorError.SAVE) {
             // Also reconcile a committed write whose result failed to reach this still-open form.
             val recoveredId = editingId ?: repository.get(captureId)?.event?.id
@@ -191,12 +193,15 @@ class JournalEditorViewModel(
         mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
     }
 
+    fun setPlace(id: UUID?) = change { it.copy(placeId = id) }
+
     fun togglePerson(id: UUID) = change {
         it.copy(personIds = if (id in it.personIds) it.personIds - id
             else if (it.personIds.size < PersonTextLimits.SELECTION) it.personIds + id else it.personIds)
     }
 
     private fun persist(draft: JournalDraft) {
+        saved["place"] = draft.placeId?.toString()
         saved["people"] = ArrayList(draft.personIds.map(UUID::toString))
         saved["has_draft"] = true
         saved["dirty"] = draft != baseline
@@ -210,11 +215,12 @@ class JournalEditorViewModel(
         saved.get<Long>("time") ?: initialTime,
         saved.get<String>("title") ?: "", saved.get<String>("body") ?: "",
         saved.get<ArrayList<String>>("tags")?.toSet() ?: emptySet(),
-        saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet())
+        saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet(),
+        saved.get<String>("place")?.let(UUID::fromString))
 
     private fun LifeEventRecord.toDraft(): JournalDraft {
         val details = requireNotNull(journal)
         return JournalDraft(event.occurredAt.toEpochMilli(), details.title.orEmpty(), details.body,
-            details.tags.map { it.name }.toSet(), people.map { it.id }.toSet())
+            details.tags.map { it.name }.toSet(), people.map { it.id }.toSet(), place?.id)
     }
 }
