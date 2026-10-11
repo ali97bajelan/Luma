@@ -27,6 +27,8 @@ import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.ui.timeline.DayNavigation
 import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.timeline.label
+import com.luma.lifeos.ui.summary.DailySummaryState
+import com.luma.lifeos.ui.summary.DailySummaryCard
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -44,6 +46,8 @@ fun TodayScreen(
     @StringRes heading: Int = R.string.today,
     screenTag: String = "screen_today",
     onEventClick: (EventId) -> Unit = {},
+    summaryState: DailySummaryState? = null,
+    onSummaryRetry: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(screenTag),
@@ -57,6 +61,7 @@ fun TodayScreen(
                 DayNavigation(date, onSelectDate, onToday)
             }
         }
+        summaryState?.let { item { DailySummaryCard(it, onSummaryRetry) } }
         when (state) {
             TodayUiState.Loading -> item {
                 Column(Modifier.testTag("today_loading"), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -12,7 +12,7 @@ import com.luma.lifeos.domain.time.TimeRange
 import java.time.LocalDate
 import java.time.ZoneId
 
-/** Storage only: summary algorithms and integration permission handling are later tasks. */
+/** Low-level derived storage. T14 calculation/caching lives in RoomDailySummaryRepository. */
 class RoomDerivedDataRepository(private val database: LumaDatabase) {
     private val dao = database.derived()
     fun observeSummary(date: LocalDate, zone: ZoneId) = dao.observeSummary(date.toString(), zone.id)

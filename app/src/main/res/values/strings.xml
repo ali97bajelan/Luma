@@ -221,4 +221,19 @@
     <string name="usage_daily_empty">No reported usage saved for this day</string>
     <string name="usage_daily_error">Saved usage could not be loaded</string>
     <string name="usage_interval_changed">Android usage intervals changed or the device restarted. Saved totals are preserved; only newly started intervals will import.</string>
+    <string name="summary_heading">Saved daily summary</string>
+    <string name="summary_saved_only">From saved records. Unavailable means no observations saved for this day.</string>
+    <string name="summary_error">Daily summary could not be calculated. Your saved records remain available.</string>
+    <string name="summary_records">Saved entries: %1$d</string>
+    <string name="summary_journals">Journal entries: %1$d</string>
+    <string name="summary_memories">Memories, including remembered entries: %1$d</string>
+    <string name="summary_mood">Mean mood</string>
+    <string name="summary_energy">Mean energy</string>
+    <string name="summary_stress">Mean stress</string>
+    <string name="summary_average">%1$s: %2$s/5 · saved samples: %3$d</string>
+    <string name="summary_unavailable">%1$s: unavailable</string>
+    <string name="summary_usage">Saved foreground usage</string>
+    <string name="summary_usage_value">Saved foreground usage: %1$s · apps: %2$d</string>
+    <string name="summary_activity">Recorded activity</string>
+    <string name="summary_activity_value">%1$s: %2$s %3$s · %4$s · saved samples: %5$d</string>
 </resources>

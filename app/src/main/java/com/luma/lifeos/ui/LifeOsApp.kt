@@ -82,7 +82,7 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null) {
     if (usage != null) UsageForegroundRefresh(usage)
     val photoScope = rememberCoroutineScope()
     fun cleanPhotos() { photoScope.launch {
@@ -161,7 +161,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             onJournalClick = { navController.navigate("journal_detail/$it") },
                             onMemoryClick = { navController.navigate("memory?eventId=$it") },
                             heading = destination.label, screenTag = "screen_${destination.route}",
-                            onEventClick = { navController.navigate("event_detail/$it") })
+                            onEventClick = { navController.navigate("event_detail/$it") }, summaries = summaries)
                     } else if (destination == Destination.PEOPLE) {
                         PeopleRoute(people, onCreate = { navController.navigate("person") },
                             onPerson = { navController.navigate("person_detail/$it") })

@@ -9,6 +9,9 @@ import androidx.compose.runtime.setValue
 import androidx.annotation.StringRes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.domain.repository.LifeEventRepository
+import com.luma.lifeos.domain.repository.DailySummaryRepository
+import com.luma.lifeos.ui.summary.DailySummaryState
+import com.luma.lifeos.ui.summary.observeDailySummary
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.R
 import java.time.LocalDate
@@ -27,13 +30,21 @@ fun TodayRoute(
     @StringRes heading: Int = R.string.today,
     screenTag: String = "screen_today",
     onEventClick: (EventId) -> Unit = {},
+    summaries: DailySummaryRepository? = null,
 ) {
     var retry by remember { mutableIntStateOf(0) }
+    var summaryRetry by remember { mutableIntStateOf(0) }
     // Recreate collection state so old-day rows cannot appear under the new date header.
-    key(repository, date, zone, retry) {
+    key(repository, summaries, date, zone, retry, summaryRetry) {
         val observation = remember { observeToday(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(initialValue = TodayUiState.Loading)
+        val summary = if (summaries != null) {
+            val summaryFlow = remember { observeDailySummary(summaries, date, zone) }
+            val summaryState by summaryFlow.collectAsStateWithLifecycle(initialValue = DailySummaryState.Loading)
+            summaryState
+        } else null
         TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
-            onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick)
+            onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,
+            summaryState = summary, onSummaryRetry = { summaryRetry++ })
     }
 }

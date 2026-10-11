@@ -7,12 +7,23 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.luma.lifeos.data.entity.EventWithDetails
 import com.luma.lifeos.data.entity.LifeEventEntity
+import com.luma.lifeos.data.entity.SummarySource
 import com.luma.lifeos.domain.model.EventSource
 import kotlinx.coroutines.flow.Flow
 
 /** Low-level operations: application writes go through the transactional repositories. */
 @Dao
 interface LifeEventDao {
+    @Transaction
+    @Query("SELECT id, occurred_at, metadata_json FROM life_event WHERE occurred_at >= :start AND occurred_at < :end ORDER BY occurred_at, id")
+    suspend fun summarySources(start: Long, end: Long): List<SummarySource>
+
+    @Transaction
+    @Query("""SELECT id, occurred_at, metadata_json FROM life_event WHERE id IN
+        (SELECT life_event_id FROM app_usage_record WHERE bucket_start >= :start AND bucket_start < :end)
+        ORDER BY occurred_at, id""")
+    suspend fun summaryUsageSources(start: Long, end: Long): List<SummarySource>
+
     @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end ORDER BY occurred_at, id")
     fun observe(start: Long, end: Long): Flow<List<LifeEventEntity>>
 
