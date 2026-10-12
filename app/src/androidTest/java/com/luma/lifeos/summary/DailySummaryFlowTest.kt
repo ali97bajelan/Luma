@@ -10,6 +10,7 @@ import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.DailySummaryRepository
 import com.luma.lifeos.domain.summary.DailySummary
+import com.luma.lifeos.domain.usage.UsageBucket
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.ui.today.TodayRoute
 import java.time.*
@@ -80,6 +81,28 @@ class DailySummaryFlowTest {
         compose.onNodeWithTag("daily_summary_retry").performClick()
         awaitText("summary_records", "Saved entries: 2")
         compose.onNodeWithTag("daily_summary_error").assertDoesNotExist()
+    }
+    @Test fun usageRowsShowLabelsPackagesAndTheirOwnDurationsByNativeDate() {
+        val start = day.atStartOfDay(zone).toInstant()
+        val labeled = UsageBucket("org.example.reader", start, now, 5_125, "Reader")
+        val unlabeled = UsageBucket("org.example.empty", start, now, 0)
+        runBlocking {
+            val usage = RoomUsageRepository(db)
+            usage.setEnabled(true)
+            usage.commit(listOf(labeled, unlabeled), now, now)
+            // The native interval belongs to today even if its timeline envelope does not.
+            val events = RoomLifeEventRepository(db)
+            val parent = events.findBySource(SourceIdentity(EventSource.USAGE_STATS, labeled.sourceReference))!!
+            events.upsert(parent.copy(occurredAt = day.minusDays(1).atStartOfDay(zone).toInstant()))
+        }
+        show()
+        awaitText("summary_usage", "Saved foreground usage: 0 h 0 min 5.125 s · apps: 2")
+        awaitText("summary_usage_label_org.example.reader", "Reader")
+        awaitText("summary_usage_package_org.example.reader", "org.example.reader")
+        awaitText("summary_usage_duration_org.example.reader", "0 h 0 min 5.125 s")
+        awaitText("summary_usage_label_org.example.empty", "org.example.empty")
+        awaitText("summary_usage_duration_org.example.empty", "0 h 0 min 0 s")
+        compose.onNodeWithTag("summary_usage_package_org.example.empty").assertDoesNotExist()
     }
     private fun scrollToTag(tag: String) {
         compose.waitUntil(5_000) {

@@ -400,7 +400,24 @@ No emulator or device was launched.
 
 ## T14 — Daily summaries
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: deterministic saved daily metrics on Today with entry/journal/
+memory counts, mood/energy/stress averages and sample counts, foreground usage
+totals and labeled per-app durations, and activity totals grouped by type/unit/
+source. Promotions retain one underlying entry. Civil-day occurrence bounds and
+native usage-start dates remain distinct. Missing signals are unavailable while
+recorded zero is retained. Versioned derived-only Room caches rebuild after source
+changes, collection restart, corruption or incompatible versions; reads and cache
+writes are transactional. Summary errors retain source browsing and expose retry.
+
+Validation: all 188 JVM tests pass, debug and app/data instrumentation APKs build,
+and data/usage lint pass. Independent review identified the missing per-app rows;
+they are now rendered with a new compiled Compose regression. Eight summary Room
+cases and three Compose flows compile; device execution and visual acceptance
+remain pending. App/health lint retain their bundled detector crashes. Summary
+retry resetting feed/scroll state is a deferred minor review finding. No emulator
+or device was launched. Commands and evidence are in `docs/VALIDATION.md`.
 
 
 ### Scope

@@ -18,7 +18,7 @@ Review Focus:
 - [x] Task 1 domain: create summary/DailySummary.kt (models/calculator), repository/DailySummaryRepository.kt and summary/DailySummaryTest.kt. API calculateDailySummary(LocalDate, ZoneId, List<SummaryRecord>): DailySummary, repository observe/get/recalculate(date, zone). Tests first for literal mixed values, memory promotion, absent/known-zero signals, order/dedup/conflicts, unit/provider segregation, native-start bounds, DST/skipped dates and decimal precision. Run :core:domain:test RED (missing API), implement, run GREEN.
 - [x] Task 2 data: entity/SummarySource.kt, DAO indexed projections, mapping/SummaryCacheCodec.kt and repository/RoomDailySummaryRepository.kt; expose storage.summaries. Consume domain models/calculator. Produce reusable fresh cache reads, forced rebuild and source-driven observation. Add DailySummaryPersistenceTest fixtures for mixed metrics/cache-only content, cache reuse/deletion/corruption/version rebuild, mutation/promotion/deletion invalidation, atomic failure, native start vs parent date, live changes and DST/skipped dates. Compile data instrument APK; device execution pending.
 - [x] Task 3 app: ui/summary/DailySummaryState.kt and DailySummaryCard.kt; optional repository argument through LifeOsApp/TodayRoute/TodayScreen, with production wiring in MainActivity. Add summary state tests first for loading/data/update/error/retry/cancellation, and Compose fixture exercising actual Room+calculator with summary and event browsing/date navigation. Consume repository.observe(date,zone); no fake fallback values. Run app JVM tests RED/GREEN, compile app debug/instrument APKs.
-- [ ] Task 4 verify/review/docs: all JVM suites, debug and app/data instrumentation APKs, data/adapter lint, app lint attempt; one reviewer with spec/plan and T14-only review range using baseline common-file copies. Fix important findings with regressions. Update README/ARCHITECTURE/TASKS/VALIDATION and provide commit message. Record actual tests separately from pending device acceptance.
+- [x] Task 4 verify/review/docs: all JVM suites, debug and app/data instrumentation APKs, data/adapter lint, app lint attempt; one reviewer with spec/plan and T14-only review range using baseline common-file copies. Fix important findings with regressions. Update README/ARCHITECTURE/TASKS/VALIDATION and provide commit message. Record actual tests separately from pending device acceptance.
 
 Verification: bash gradlew --offline -I /tmp/luma-t12-mirror.init.gradle :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest :integration:usage:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest :core:data:lintDebug :integration:usage:lintDebug --no-daemon --console=plain.
 Ledger: Task1->Task2 calculator models/API align; Task2->Task3 repository.observe(date,zone) align. Existing cache storage DTOs stay storage-only; T14 introduces a new domain repository without changing legacy APIs. Source-only projections avoid unrelated photo/catalog failures and private text in the cache. No unresolved interface conflicts.
@@ -28,3 +28,34 @@ Task 1 complete: :core:domain:test RED missing API -> GREEN 55 tests (6 new). Li
 Task 2 implementation/fixture compilation: data instrument APK and data lint pass after missing API RED, with seven initial Room cases compiled. A concurrent-capture fixture was added afterward and remains in the final compile run. Codec validates cached counts/sums/nulls/group identity and old-format/version fallback; raw metric projections avoid content text and unrelated catalog/photo reads. Room fixtures are not runtime-verified without a device.
 
 Task 3 complete: app JVM RED missing state API -> GREEN 96 tests (4 new), debug APK builds. Separate summary loading/retry/cancellation and selected-day validation preserve feed use; two actual Room+calculator Compose fixtures are in the final instrument compile run.
+
+Task 4 resumed/completed — 2026-10-12: Tasks 1–3 were already committed in
+4f0032c; resumed from HEAD d15fc05, which also includes independently implemented
+T13. Existing untracked release artifacts/schema remain outside the change.
+All 188 JVM tests executed again with zero failures/errors/skips (71 domain,
+99 app, 7 data, 5 usage, 6 health). Debug and app/data test APKs build; data/usage
+lint pass. App/health lint attempts still fail inside bundled detectors. Updated
+README, ARCHITECTURE, TASKS and VALIDATION. T14 acceptance remains device-pending.
+
+Final review: one fresh read-only reviewer evaluated current T14 files against
+the spec and plan. Important: Today omitted per-app usage attribution. Added
+label/package/duration rows and a real Room/Compose fixture covering native-start
+dating with an outside-day parent, absent labels and known zero. The fixture was
+written and compiled before the rendering fix, then the final APKs compiled again.
+No runtime RED/GREEN result is claimed for this device-only regression.
+
+Task 4: Ruling: retained the plan's no-device-execution constraint and compiled
+the UI regression instead of running it — device execution was explicitly deferred
+by this plan; no extra test framework/dependency was introduced — cost if wrong:
+rendering or fixture failures may remain until device acceptance. Existing domain
+and state JVM regressions ran successfully; this is not a substitute for UI execution.
+
+Final: minor (deferred): summary Retry currently recreates the feed subscription
+and list scroll state because its retry key shares TodayRoute's outer key.
+The loaded feed can briefly show Loading and lose its scroll position during retry.
+
+Logs: `/tmp/luma-t14-final-check.log` (all checks including blocked lint),
+`/tmp/luma-t14-passing.log` (successful tasks only). The local-only retest init
+script disables up-to-date reuse for JVM Test tasks; repositories/toolchain/schema
+are unchanged. No commit was created; the requested commit message is supplied
+with the final response.

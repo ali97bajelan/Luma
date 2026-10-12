@@ -121,11 +121,10 @@ coordinate pairs, and app-private media paths are validated at storage boundarie
 Enum values are persisted by name; renaming a value needs a migration.
 
 Event writes and catalog edits conservatively mark all fresh daily summaries stale.
-`RoomDerivedDataRepository.rebuildSummary` reads a day's event graph and stores the
-caller-derived summary in the same transaction, preventing a concurrent event write
-from making an outdated cache appear fresh. T14 supplies the actual algorithm and
-can narrow invalidation when its full dependency set is known. No fabricated metrics
-or permission-state assumptions are introduced.
+`RoomDailySummaryRepository` reads metric projections and writes the derived cache
+in one transaction, preventing a concurrent event write from making an outdated
+cache appear fresh. `RoomDerivedDataRepository` retains the low-level storage API.
+No fabricated metrics or permission-state assumptions are introduced.
 
 Media operations here affect database references only. Aggregate saves/deletes return
 removed relative paths after commit, and `referencedMediaPaths` supports later orphan
@@ -472,8 +471,8 @@ event/child UUIDs. Room preserves audit identity, unrelated metadata and links,
 and commits the rows and successful checkpoint atomically. The initial query
 covers seven days; subsequent queries overlap the checkpoint by two days, bounded
 to seven days. Errors, empty results and permission changes retain history and the
-last successful checkpoint. Daily reports read the existing indexed event graph;
-T14 summary cache computation is not introduced.
+last successful checkpoint. Settings daily reports read the indexed event graph;
+Today summaries also query native bucket starts independently of parent occurrence.
 
 Native bucket starts can change when Android corrects wall time, including shifts
 that do not overlap old short intervals. The importer persists the initial wall,
@@ -546,6 +545,34 @@ device acceptance check. No SDK or schema override bypasses those requirements.
 References: [aggregation and access](https://developer.android.com/health-and-fitness/health-connect/read-data),
 [rationale manifest](https://developer.android.com/health-and-fitness/health-connect/get-started),
 [SDK releases](https://developer.android.com/jetpack/androidx/releases/health-connect).
+
+## Daily summaries (T14)
+
+The pure domain `calculateDailySummary(date, zone, records)` calculates distinct
+saved-entry counts, journal/memory counts, exact mood/energy/stress sums and sample
+counts, foreground usage totals per package, and activity totals grouped by exact
+type/unit/source. Promotion adds a memory marker without duplicating an entry.
+Missing mood, usage or activity stays nullable; recorded zero is retained. Activity
+totals use decimal sums of stored finite nonnegative values, with canonical group
+ordering. Conflicting snapshots, duplicate activity identities and ambiguous native
+usage intervals fail instead of fabricating metrics.
+
+Occurrence bounds follow half-open civil days in the requested timezone, including
+DST and skipped dates. Usage follows native interval starts without proration.
+Room queries both indexed occurrence and usage-start ranges, deduplicates identical
+projections and loads only metric relations. The version 1 `daily_summary` table
+stores derived counts/sums/totals/labels keyed by date and timezone; journal bodies,
+memory notes and media are excluded. Fresh compatible cache reads are reused;
+stale, incompatible, old-version or malformed values rebuild from source records.
+Forced recalculation produces the same metrics and failures preserve the prior cache.
+
+Observation watches raw metric tables and recomputes on collection restart and
+source changes. Cache writes cannot trigger their own observation loop. Production
+writes invalidate cached rows within their transactions, including health/usage
+imports. Today renders a separate loading/data/error card with retry, per-app usage
+attribution, sample counts and localized values; browsing remains available after
+summary errors. These metrics describe saved observations, not provider completeness.
+No database migration, dependency or permission is added by T14.
 
 ## Implementation phases
 

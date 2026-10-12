@@ -830,3 +830,90 @@ opt-out. Test large fonts, landscape and screen readers. Device commands remain:
 ```sh
 bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
 ```
+
+## T14 — Daily summaries (2026-10-12)
+
+Resumed the unfinished verification/review/documentation step of the existing
+T14 plan. The calculator, Room cache and Today card were already committed in
+`4f0032c`; current HEAD also includes T13. T14 is implemented (validation pending),
+with device acceptance outstanding.
+
+- PASS: all 188 JVM tests executed again: 71 domain, 99 application, 7 data,
+  5 usage adapter and 6 health adapter, zero failures/errors/skips. A temporary
+  init script forced Test tasks to run rather than reuse up-to-date results.
+  Summary coverage includes literal mixed metrics, reversible promotions without
+  duplicate entries, unavailable versus known zero, order/dedup/conflicts, exact
+  decimal sums, unit/provider separation, native-start dates, DST/skipped dates,
+  loading/data/error/retry, wrong-day rejection and cancellation.
+- PASS: application debug APK and application/data instrumentation APK builds.
+  Eight summary Room cases and three summary Compose flows compile. Room sources
+  cover derived-only caching, deterministic rebuilds, fresh reuse, corrupt/version
+  fallback, edit/promotion/deletion invalidation, native-start inclusion despite
+  outside-day parent occurrence, failed rebuild retention, observation restart,
+  zone/skipped-date behavior and concurrent capture/cache transactions.
+- PASS: data and usage-adapter lint report no issues; `git diff --check` passes.
+  Database schema, dependencies, toolchain and permissions are unchanged.
+- PASS: one independent read-only review found missing per-app usage attribution
+  on Today. The card now renders labels, package names and each app's stored
+  duration, including package fallback and known zero. A new Room-backed Compose
+  fixture checks two packages, fractional seconds, zero and native-date attribution
+  for an outside-day parent. It was written/compiled before the rendering change;
+  final compilation passes. This is not a runtime RED/GREEN claim.
+- DEFERRED MINOR: summary Retry shares TodayRoute's outer composition key with
+  the feed; retry can restart the feed query, briefly show Loading and reset list
+  scroll position. Saved records remain available. Isolating retry collection keys
+  remains a follow-up.
+- BLOCKED: full app and health-adapter lint still crash inside bundled Lifecycle/
+  Compose analyzers with `IncompatibleClassChangeError`, including
+  `NonNullableMutableLiveDataDetector` and `FrequentlyChangingValueDetector`.
+  No lint rules were disabled. The all-checks command exits unsuccessfully for
+  those analyzers; tests and APK tasks succeed. Full lint acceptance is pending.
+- PENDING: runtime Room/Compose tests, visual/accessibility checks, large fonts,
+  landscape, actual provider-to-summary values and restart acceptance. The plan's
+  no-device-execution constraint was retained; no emulator/device was launched.
+  Device-only regression execution may still expose rendering or fixture failures.
+
+Successful final check:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t13-mirror.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :core:data:lintDebug \
+  :integration:usage:lintDebug --no-daemon --console=plain
+```
+
+Before that successful confirmation, the same task list ran with
+`-I /tmp/luma-t14-retest.init.gradle`, `:app:lintDebug`,
+`:integration:health:lintDebug` and `--continue`. All JVM Test tasks executed and
+passed; the two modules' lint analyzers failed as described. The local-only retest
+script contained:
+
+```groovy
+allprojects {
+    tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+        outputs.upToDateWhen { false }
+    }
+}
+```
+
+Logs: `/tmp/luma-t14-final-check.log` and `/tmp/luma-t14-passing.log`.
+The previously documented T13 mirror init script was reused offline; project
+repositories remain unchanged. Initial sandbox execution could not write the
+existing Gradle cache; automatically approved execution used that cache and local
+daemon sockets. Existing untracked release artifacts and schema exports were not
+added to version control. No commit was created.
+
+Manual acceptance: compare Today summaries with saved moods, optional scales,
+journals, direct memories and promoted entries; edit/delete/backdate them and
+verify recomputation on date navigation and resume. Check missing versus recorded
+zero activity/usage, per-app labels/packages/durations, selected-zone/native-start
+dating, DST and decimal values. Retry a summary failure while continuing to open
+source entries. Rebuild or remove a derived cache and verify identical values with
+source content intact. Run the existing device suites on an attached device or
+already running emulator:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```

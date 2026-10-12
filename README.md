@@ -3,7 +3,7 @@
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
-mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, and optional Health Connect step imports. Remaining capture,
+mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, optional Health Connect step imports, and saved daily summaries. Remaining capture,
 integrations, and reviews follow [TASKS.md](TASKS.md).
 
 ## Build and run
@@ -65,7 +65,15 @@ records and reconcile source corrections/deletions in that window. Missing data
 stays unavailable; older saved totals remain snapshots. Turning imports off stops
 reads and keeps saved history; native Health Connect settings manage revocation.
 Sleep, workouts and background health reads are deferred.
-Today shares the event previews and date controls. Quick Capture
+Today shares the event previews and date controls. Its saved daily summary shows
+entry/journal/memory counts, mood/energy/stress averages with sample counts,
+foreground usage totals and per-app durations, and activity totals by type, unit
+and source. Missing measurements display as unavailable; recorded zero stays zero.
+Memory promotion keeps one underlying entry. Summaries use the selected day's
+timezone, with usage assigned by native interval starts, and cache only derived
+values that can be rebuilt from saved records. They describe saved observations,
+not complete provider coverage. Summary errors expose retry while entries remain
+available. Quick Capture
 creates mood, journal and memory records offline; journals include a full detail
 view. Existing moods/journals can be remembered without copying their content.
 People can be linked during capture/edit; person detail shows shared history,

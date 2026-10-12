@@ -36,7 +36,19 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                     Text(if (usage == null) stringResource(R.string.summary_unavailable, stringResource(R.string.summary_usage))
                         else stringResource(R.string.summary_usage_value, usageDuration(usage.totalMillis), usage.apps.size),
                         modifier = Modifier.testTag("summary_usage"))
-                    if (usage != null) Text(stringResource(R.string.usage_daily_explanation), style = MaterialTheme.typography.bodySmall)
+                    if (usage != null) {
+                        Text(stringResource(R.string.usage_daily_explanation), style = MaterialTheme.typography.bodySmall)
+                        usage.apps.forEach { app ->
+                            Column(Modifier.fillMaxWidth().testTag("summary_usage_app_${app.packageName}")) {
+                                Text(app.appLabel ?: app.packageName, style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.testTag("summary_usage_label_${app.packageName}"))
+                                if (app.appLabel != null) Text(app.packageName, style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.testTag("summary_usage_package_${app.packageName}"))
+                                Text(usageDuration(app.durationMillis),
+                                    modifier = Modifier.testTag("summary_usage_duration_${app.packageName}"))
+                            }
+                        }
+                    }
                     val activity = summary.activities
                     if (activity == null) Text(stringResource(R.string.summary_unavailable, stringResource(R.string.summary_activity)),
                         modifier = Modifier.testTag("summary_activity_unavailable"))
