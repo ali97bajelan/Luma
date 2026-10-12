@@ -46,6 +46,18 @@ class TodayStateTest {
         assertEquals(listOf(early, tied, late), data.events)
         assertEquals(mapOf(EventType.MOOD to 2, EventType.JOURNAL to 1), data.counts)
     }
+    @Test fun screenTimeRecordsDoNotAppearInTodayOrItsCounts() = runBlocking {
+        val journal = event(1, EventType.JOURNAL, "2026-03-08T08:00:00Z")
+        val usage = event(2, EventType.APP_USAGE, "2026-03-08T09:00:00Z")
+        val data = observeToday(ReadRepository { flowOf(listOf(usage, journal)) }, date, zone).toList().last() as TodayUiState.Data
+        assertEquals(listOf(journal), data.events)
+        assertEquals(mapOf(EventType.JOURNAL to 1), data.counts)
+        assertFalse(data.records.containsKey(usage.id))
+    }
+    @Test fun aScreenTimeOnlyDayShowsTheTodayEmptyState() = runBlocking {
+        val usage = event(1, EventType.APP_USAGE, "2026-03-08T08:00:00Z")
+        assertEquals(TodayUiState.Empty, observeToday(ReadRepository { flowOf(listOf(usage)) }, date, zone).toList().last())
+    }
 
     @Test fun committedUpdatesReplaceTheSummaryAndRows() = runBlocking {
         val journal = event(1, EventType.JOURNAL, "2026-03-08T08:00:00Z")

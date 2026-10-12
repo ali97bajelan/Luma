@@ -48,16 +48,22 @@ class TimelineFlowTest {
         val measurement = ActivityRecordEntity(UUID.randomUUID().toString(), activity.id.toString(), "steps", 123.0, "count", activity.source, "test:steps")
         val usage = LifeEvent(EventId.new(), EventType.APP_USAGE, time.minusSeconds(7_200), time,
             endedAt = time.minusSeconds(7_140), source = EventSource.USAGE_STATS, sourceReference = "test:usage")
+        val unused = LifeEvent(EventId.new(), EventType.APP_USAGE, time.minusSeconds(14_400), time,
+            endedAt = time, source = EventSource.USAGE_STATS, sourceReference = "test:unused")
         val journal = EventId.new()
         runBlocking {
             RoomEventStore(db).save(EventWrite(activity, activities = listOf(measurement)))
             RoomEventStore(db).save(EventWrite(usage, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), usage.id.toString(),
                 usage.occurredAt.toEpochMilli(), usage.endedAt!!.toEpochMilli(), "org.example.browser", 5_125)))
+            RoomEventStore(db).save(EventWrite(unused, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), unused.id.toString(),
+                unused.occurredAt.toEpochMilli(), time.toEpochMilli(), "org.example.unused", 0)))
             RoomJournalRepository(db, clock).create(journal, JournalInput("Earlier journal body", time.minusSeconds(86_400), "Earlier journal"))
         }
         show()
         compose.onNodeWithTag("nav_timeline").performClick()
         awaitTag("event_${activity.id}")
+        compose.onNodeWithTag("event_${unused.id}").assertDoesNotExist()
+        compose.onNodeWithTag("timeline_event_count").assertTextEquals("1 event this day")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${activity.id}"))
         compose.onNodeWithTag("event_${activity.id}").performClick()
         awaitTag("screen_event_detail")
@@ -69,11 +75,20 @@ class TimelineFlowTest {
         runBlocking { RoomLifeEventRepository(db).delete(activity.id) }
         awaitTag("event_missing")
         compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_event_count"))
+        compose.onNodeWithTag("timeline_event_count").assertTextEquals("0 events this day")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${usage.id}"))
         compose.onNodeWithTag("event_${usage.id}").performClick()
         awaitTag("screen_event_detail"); awaitText("org.example.browser")
         compose.onNodeWithTag("event_edit").assertDoesNotExist()
         compose.onNodeWithText("Back").performClick()
+        runBlocking {
+            db.withTransaction {
+                db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 0 WHERE life_event_id = ?", arrayOf(usage.id.toString()))
+            }
+        }
+        awaitTag("timeline_empty")
+        compose.onNodeWithTag("event_${usage.id}").assertDoesNotExist()
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("day_previous"))
         compose.onNodeWithTag("day_previous").performClick()
         awaitTag("event_$journal")

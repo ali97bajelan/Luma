@@ -152,6 +152,9 @@ zone refresh runs immediately on resume and every 30 seconds to notice midnight
 and timezone changes without background polling.
 
 `TodayRoute` collects `observeToday` with Lifecycle Compose only while started.
+App-usage envelopes are filtered before constructing Today rows, detail maps and
+counts. A usage-only day shows the Today empty state; aggregate usage metrics
+remain available in the separate summary and usage views.
 The adapter queries `TimeRange.forDay`, emits loading/empty/data/error states,
 preserves cancellation, and sorts by the domain comparator. Changing day, zone,
 or retry resets collection state so previous-day rows cannot appear under a new
@@ -497,9 +500,19 @@ Visits are clipped to local civil-day boundaries, including DST; same-package
 overlaps are unioned before calculating both views. Separate visits remain
 chronological and totals sort by duration. Unused apps are excluded from Settings
 and summary app lists; measured aggregate zero is retained without a zero-use row.
-Summary algorithm version 2 rebuilds older caches. When no visits exist but native
+Summary algorithm version 3 rebuilds older caches. When no visits exist but native
 totals remain, Settings retains those legacy totals with an unavailable-history
 explanation. Partial/empty/unavailable histories have distinct messages.
+
+Displayed event counts exclude `APP_USAGE`: Today counts its filtered rows, saved
+daily summaries omit usage snapshots (including envelopes missing typed details),
+and Timeline uses a separate full-day `eventCount` query. Timeline keeps `totalCount`
+for paging visible records and continues to render usage rows with positive or
+unavailable usage. Known zero-duration app rows are excluded before LIMIT/OFFSET;
+the paging count uses the same predicate, and the raw day count stays unchanged.
+Both counts and
+page rows are read in one transaction. Summary version 3 replaces older cached
+counts without changing stored usage data or foreground-time metrics.
 
 Native bucket starts can change when Android corrects wall time, including shifts
 that do not overlap old short intervals. The importer persists the initial wall,

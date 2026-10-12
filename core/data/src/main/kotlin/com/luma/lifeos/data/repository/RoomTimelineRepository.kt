@@ -24,7 +24,8 @@ class RoomTimelineRepository(private val database: LumaDatabase) : TimelineRepos
             database.withTransaction {
                 val start = range.start.storageBoundary(); val end = range.endExclusive.storageBoundary()
                 val rows = database.lifeEvents().pageDetails(start, end, offset, limit)
-                TimelinePage(rows.map { it.toRecord() }, offset, database.lifeEvents().countDay(start, end))
+                TimelinePage(rows.map { it.toRecord() }, offset, database.lifeEvents().countTimelineRows(start, end),
+                    eventCount = database.lifeEvents().countDayEvents(start, end))
             }
         }
     }

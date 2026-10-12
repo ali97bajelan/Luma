@@ -34,6 +34,20 @@ class TimelineViewModelTest {
         assertEquals((0L..299L).toList(), ids(vm)); assertEquals(0, vm.state.value.offset)
         assertEquals(1_000, vm.state.value.totalCount)
     }
+    @Test fun usageRowsDoNotIncreaseDisplayedEventCountOrStopPagination() = runTest(dispatcher) {
+        val repo = StoredRecords(170)
+        repo.records.replaceAll { it.copy(event = it.event.copy(type = EventType.APP_USAGE)) }
+        val vm = TimelineViewModel(repo, SavedStateHandle())
+        vm.selectDay(day, zone); advanceUntilIdle()
+        assertEquals(0, vm.state.value.eventCount); assertEquals(170, vm.state.value.totalCount)
+        assertTrue(vm.state.value.canLoadLater)
+        vm.loadLater(); advanceUntilIdle()
+        assertEquals(170, vm.state.value.records.size); assertEquals(0, vm.state.value.eventCount)
+        assertFalse(vm.state.value.canLoadLater)
+        repo.records[0] = repo.records[0].copy(event = repo.records[0].event.copy(type = EventType.JOURNAL))
+        repo.changes.emit(Unit); advanceUntilIdle()
+        assertEquals(1, vm.state.value.eventCount); assertEquals(170, vm.state.value.totalCount)
+    }
     @Test fun exhaustedShortPageStopsLoadingAndErrorsRetryWithoutLosingRows() = runTest(dispatcher) {
         val repo = StoredRecords(170)
         val vm = TimelineViewModel(repo, SavedStateHandle()); vm.selectDay(day, zone); advanceUntilIdle()
@@ -136,7 +150,8 @@ class TimelineViewModelTest {
             if (range.start == Instant.parse("2026-10-11T00:00:00Z")) block?.let { withContext(NonCancellable) { it.await() } }
             failure?.let { throw it }
             val dayRecords = records.filter { it.event.occurredAt in range }
-            return TimelinePage(dayRecords.drop(offset).take(limit), offset, dayRecords.size)
+            return TimelinePage(dayRecords.drop(offset).take(limit), offset, dayRecords.size,
+                eventCount = dayRecords.count { it.event.type != EventType.APP_USAGE })
         }
         override suspend fun get(id: EventId) = records.firstOrNull { it.event.id == id }
     }

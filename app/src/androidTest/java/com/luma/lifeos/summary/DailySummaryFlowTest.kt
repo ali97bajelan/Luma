@@ -104,6 +104,24 @@ class DailySummaryFlowTest {
         compose.onNodeWithTag("summary_usage_duration_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_package_org.example.empty").assertDoesNotExist()
     }
+    @Test fun todayHidesUsageEventsAndItsCountsExcludeThem() {
+        val start = day.atStartOfDay(zone).toInstant()
+        val usage = com.luma.lifeos.domain.usage.UsageBucket("org.example.reader", start, now, 5_125, "Reader")
+        runBlocking {
+            val imports = RoomUsageRepository(db); imports.setEnabled(true); imports.commit(listOf(usage), now, now)
+        }
+        val id = runBlocking { db.lifeEvents().findBySource(EventSource.USAGE_STATS, usage.sourceReference)!!.id }
+        show()
+        awaitText("summary_records", "Saved entries: 2")
+        scrollToTag("today_summary")
+        compose.onNodeWithText("2 events this day").assertIsDisplayed()
+        compose.onNodeWithTag("event_$id").assertDoesNotExist()
+        runBlocking { RoomLifeEventRepository(db).delete(mood); RoomLifeEventRepository(db).delete(journal) }
+        awaitText("summary_records", "Saved entries: 0")
+        scrollToTag("today_empty")
+        compose.onNodeWithTag("event_$id").assertDoesNotExist()
+        assertNotNull(runBlocking { db.lifeEvents().get(id) })
+    }
     private fun scrollToTag(tag: String) {
         compose.waitUntil(5_000) {
             try { compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag(tag)); compose.onNodeWithTag(tag).assertIsDisplayed(); true }

@@ -37,7 +37,7 @@ class DailySummaryPersistenceTest {
         val activity = LifeEvent(EventId.new(), EventType.ACTIVITY, now, now)
         RoomEventStore(db).save(EventWrite(activity, activities = listOf(ActivityRecordEntity(UUID.randomUUID().toString(), activity.id.toString(), "steps", 1200.0, "count", EventSource.MANUAL))))
         val result = summaries.get(date, zone)
-        assertEquals(4, result.records); assertEquals(1, result.journals); assertEquals(1, result.memories)
+        assertEquals(3, result.records); assertEquals(1, result.journals); assertEquals(1, result.memories)
         assertEquals(4.0, result.mood!!.score.average, 0.0); assertEquals(5_125L, result.usage!!.totalMillis)
         assertEquals("1200", result.activities!!.single().total.toPlainString())
         val cache = db.derived().summary(date.toString(), zone.id)!!
@@ -78,6 +78,19 @@ class DailySummaryPersistenceTest {
         val result = summaries.get(date, zone)
         assertEquals(0, result.records); assertEquals(5_125L, result.usage!!.totalMillis)
         assertNull(summaries.get(date.minusDays(1), zone).usage)
+    }
+    @Test fun usageOnlyDaysExcludeIncompleteEnvelopesFromCountsAndRebuildOlderCaches() = runBlocking {
+        val usage = RoomUsageRepository(db); usage.setEnabled(true)
+        usage.commit(listOf(com.luma.lifeos.domain.usage.UsageBucket("org.example", date.atStartOfDay(zone).toInstant(), now, 5_125)), now, now)
+        RoomLifeEventRepository(db).upsert(LifeEvent(EventId.new(), EventType.APP_USAGE, now, now,
+            source = EventSource.USAGE_STATS, sourceReference = "missing-usage-details"))
+        val first = summaries.get(date, zone)
+        assertEquals(0, first.records); assertEquals(5_125L, first.usage!!.totalMillis)
+        val cache = db.derived().summary(date.toString(), zone.id)!!
+        val old = org.json.JSONObject(cache.metricsJson).put("records", 2).toString()
+        db.derived().upsertSummary(cache.copy(algorithmVersion = 2, metricsJson = old))
+        assertEquals(0, RoomDailySummaryRepository(db, clock).get(date, zone).records)
+        assertNotNull(db.lifeEvents().findBySource(EventSource.USAGE_STATS, "missing-usage-details"))
     }
     @Test fun failedRebuildRetainsTheOldCacheAndRawRecords() = runBlocking {
         val start = date.atStartOfDay(zone).toInstant()

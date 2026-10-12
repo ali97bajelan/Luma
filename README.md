@@ -52,7 +52,8 @@ checks and the app/health lint analyzer compatibility failure, are recorded in
 - `docs/`: readable source extracts and validation evidence.
 
 Timeline merges stored manual records and activity/app-usage signals in stable
-day order, with calendar navigation and a bounded scrolling window. Complete
+day order, with calendar navigation and a bounded scrolling window. App-usage
+rows with zero recorded time are omitted from Timeline. Complete
 manual records open their existing content routes; imported records open read-only
 typed details. Settings offers optional Android Usage access, manual imports,
 background refresh, access/status controls, a session Timeline and per-app Daily
@@ -70,7 +71,9 @@ records and reconcile source corrections/deletions in that window. Missing data
 stays unavailable; older saved totals remain snapshots. Turning imports off stops
 reads and keeps saved history; native Health Connect settings manage revocation.
 Sleep, workouts and background health reads are deferred.
-Today shares the event previews and date controls. Its saved daily summary shows
+Today shares the event previews and date controls, excluding screen-time event
+rows. Event counts on Today, Timeline and saved summaries exclude screen time;
+usage views and aggregate usage metrics remain available. Its saved daily summary shows
 entry/journal/memory counts, mood/energy/stress averages with sample counts,
 foreground usage totals and per-app durations, and activity totals by type, unit
 and source. Missing measurements display as unavailable; recorded zero stays zero.

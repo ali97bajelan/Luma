@@ -7,7 +7,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-const val DAILY_SUMMARY_VERSION = 2
+const val DAILY_SUMMARY_VERSION = 3
 
 /** Only metric inputs: no private body text, attachments or unrelated catalog relations. */
 data class SummaryRecord(val id: EventId, val occurredAt: Instant, val mood: MoodSample? = null,
@@ -47,7 +47,8 @@ fun calculateDailySummary(date: LocalDate, zone: ZoneId, records: List<SummaryRe
         }
     val start = date.atStartOfDay(zone).toInstant(); val end = date.plusDays(1).atStartOfDay(zone).toInstant()
     val day = rows.filter { it.occurredAt >= start && it.occurredAt < end }
-    val moods = day.mapNotNull { it.mood }
+    val events = day.filter { it.usage == null }
+    val moods = events.mapNotNull { it.mood }
     fun scale(values: List<Int>) = values.takeIf { it.isNotEmpty() }?.let { ScaleTotal(it.size, it.sumOf(Int::toLong)) }
     val mood = scale(moods.map { it.score })?.let { MoodSummary(it, scale(moods.mapNotNull { it.energy }), scale(moods.mapNotNull { it.stress })) }
     val usageRows = rows.mapNotNull { it.usage }.filter { it.bucketStart >= start && it.bucketStart < end }.map {
@@ -61,5 +62,5 @@ fun calculateDailySummary(date: LocalDate, zone: ZoneId, records: List<SummaryRe
         val total = observations.fold(BigDecimal.ZERO) { sum, observation -> sum + BigDecimal.valueOf(observation.value) }
         ActivityTotal(key.first, key.second, key.third, observations.size, total.stripTrailingZeros().toPlainString().toBigDecimal())
     }.sortedWith(compareBy<ActivityTotal> { it.type }.thenBy { it.unit }.thenBy { it.source.name }).takeIf { it.isNotEmpty() }
-    return DailySummary(date, zone, day.size, day.count { it.journal }, day.count { it.memory }, mood, usage, totals)
+    return DailySummary(date, zone, events.size, events.count { it.journal }, events.count { it.memory }, mood, usage, totals)
 }

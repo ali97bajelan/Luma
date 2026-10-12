@@ -38,7 +38,8 @@ sealed interface TodayUiState {
 fun observeToday(repository: LifeEventRepository, date: LocalDate, zone: ZoneId): Flow<TodayUiState> =
     flow<TodayUiState> {
         emit(TodayUiState.Loading)
-        repository.observeRecords(TimeRange.forDay(date, zone)).collect { records ->
+        repository.observeRecords(TimeRange.forDay(date, zone)).collect { stored ->
+            val records = stored.filterNot { it.event.type == EventType.APP_USAGE }
             emit(if (records.isEmpty()) TodayUiState.Empty else TodayUiState.Data(
                 records.map { it.event }.sortedWith(LifeEvent.chronologicalOrder),
                 records.mapNotNull { record -> record.mood?.let { record.event.id to it } }.toMap(),

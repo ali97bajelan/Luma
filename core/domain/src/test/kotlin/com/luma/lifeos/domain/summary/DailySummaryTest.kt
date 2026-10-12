@@ -20,7 +20,7 @@ class DailySummaryTest {
             record(5).copy(usage = AppUsageDetails("org.example", start, start.plusSeconds(3600), 5_125, "Example")),
             record(6).copy(activities = listOf(activity(1, 1200.0), activity(2, 300.0))))
         val result = calculateDailySummary(date, ZoneOffset.UTC, records)
-        assertEquals(6, result.records); assertEquals(1, result.journals); assertEquals(3, result.memories)
+        assertEquals(5, result.records); assertEquals(1, result.journals); assertEquals(3, result.memories)
         assertEquals(ScaleTotal(2, 7), result.mood!!.score); assertEquals(3.5, result.mood!!.score.average, 0.0)
         assertEquals(ScaleTotal(1, 1), result.mood!!.energy); assertEquals(ScaleTotal(1, 4), result.mood!!.stress)
         assertEquals(5_125L, result.usage!!.totalMillis); assertEquals("Example", result.usage!!.apps.single().appLabel)
@@ -34,6 +34,12 @@ class DailySummaryTest {
             activities = listOf(activity(1, 0.0)), usage = AppUsageDetails("org.example", start, start.plusSeconds(60), 0))))
         assertEquals(0L, zero.usage!!.totalMillis); assertEquals(BigDecimal.ZERO, zero.activities!!.single().total)
         assertTrue(zero.usage!!.apps.isEmpty())
+    }
+    @Test fun screenTimeDoesNotCountAsEventsWhileItsMetricsRemainAvailable() {
+        val usage = record(1).copy(usage = AppUsageDetails("org.example", start, start.plusSeconds(3600), 5_125))
+        val result = calculateDailySummary(date, ZoneOffset.UTC, listOf(usage))
+        assertEquals(0, result.records); assertEquals(5_125L, result.usage!!.totalMillis)
+        assertEquals(1, calculateDailySummary(date, ZoneOffset.UTC, listOf(usage, record(2).copy(journal = true))).records)
     }
     @Test fun orderingAndDuplicateSnapshotsCannotChangeTheMetrics() {
         val rows = listOf(record(1).copy(activities = listOf(activity(2, 0.2), activity(1, 0.1))),

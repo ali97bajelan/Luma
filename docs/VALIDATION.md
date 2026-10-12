@@ -1131,3 +1131,63 @@ boundary; class-count reconstruction is conservative and native history is marke
 partial. Minimum API/OEM behavior, six-hour battery scheduling and reboot/clock
 correction remain device follow-ups. Existing full app/health lint analyzer failures
 remain documented; this update claims only data/usage lint. No commit was created.
+
+## Today screen-time filtering and event counts — 2026-10-12
+
+Today filters APP_USAGE envelopes before rows, detail maps, counts and empty-state
+selection. Usage-only days show Today empty. Displayed event counts in Today,
+Timeline and saved summaries omit screen time. Timeline retains all stored rows
+and its original paging total, with a separate full-day event count read in the
+same transaction. Summary source queries also exclude incomplete usage envelopes;
+foreground usage metrics remain available. Summary algorithm version 3 rebuilds
+earlier caches, including version 2 caches containing inflated entry counts. No
+schema change, deletion, new permission or integration change was introduced.
+
+- PASS: all 209 JVM tests, including mixed/usage-only Today, usage-free event counts,
+  unchanged usage totals and a 170-usage-row Timeline paging/count regression.
+- PASS: all 78 Room tests, including incomplete usage envelopes, version 2 cache
+  rebuilding and full-day counts independent of the current Timeline page.
+- PASS: all 15 affected UI tests on API 36.1: Today/summary, mixed Timeline details
+  and count labels, 500/20,000-row traversal, day navigation and usage views. The
+  new mixed Today test confirms two manual events and no usage card; after deleting
+  the manual records, Today shows empty and the stored usage record remains intact.
+- PASS: data lint, regular debug and test APK builds, and diff whitespace review.
+- Read-only review found no Important correctness issues. No commit was created.
+
+Logs: `/tmp/luma-today-usage-red.log`, `/tmp/luma-event-count-red.log`,
+`/tmp/luma-today-usage-green-build.log`, `/tmp/luma-today-usage-data-tests.log`,
+`/tmp/luma-today-usage-ui-tests.log`, `/tmp/luma-today-usage-normal-build.log`.
+Device tests used only the disposable validation app; the installed user app and
+its data were not replaced or cleared. Final APK outputs use the normal application
+ID. Earlier unrelated full-suite Places timeout remains recorded above; this
+follow-up verifies affected UI flows rather than claiming a new full app-suite run.
+
+## Timeline zero-usage rows — 2026-10-12
+
+Main Timeline excludes APP_USAGE records whose stored duration is exactly zero.
+The shared SQL visibility predicate runs before LIMIT/OFFSET and is reused for
+the paging total. Raw day counts, persisted records, direct detail lookup and
+unavailable usage records remain intact; even a positive 1 ms observation remains
+visible. Existing typed-content invalidation updates rows after usage corrections.
+
+- PASS: all 209 JVM tests and 80 Room instrumentation tests. The new fixture has
+  160 zero-use rows followed by positive, manual and unavailable records; only four
+  visible records page correctly. Tests cover a zero-only day, retained zero-use
+  storage and a zero→positive correction.
+- PASS: seven Timeline/usage UI flows, including hidden imported zero-use apps,
+  a positive→zero correction producing Timeline empty, correct event labels,
+  500/20,000-entry traversal, day navigation and retained Settings usage views.
+- PASS: data lint, normal debug/test APK builds and whitespace review. Read-only
+  review found no Important correctness issue. No commit was created.
+
+The initial new fixtures lacked required end timestamps and failed at validation
+rather than the query. After correcting the fixtures, both regressions failed
+against the unfiltered query (164 rows instead of four; nonempty zero-only day),
+then passed with the filter restored. No production validation was loosened.
+
+Logs: `/tmp/luma-timeline-unused-corrected-red.log`,
+`/tmp/luma-timeline-unused-final-checks.log`, `/tmp/luma-timeline-unused-final-data.log`,
+`/tmp/luma-timeline-unused-final-ui.log`, `/tmp/luma-timeline-unused-normal-build.log`.
+Tests used the already-running API 36.1 emulator and disposable validation app;
+the installed user app and its data were not replaced or cleared. Final APKs use
+the normal application ID. Earlier full app-suite limitations remain recorded above.

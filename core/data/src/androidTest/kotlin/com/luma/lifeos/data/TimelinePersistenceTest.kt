@@ -70,6 +70,7 @@ class TimelinePersistenceTest {
         RoomMemoryRepository(db).saveMarker(journal, MemoryMarkerInput(5, "Marker"))
         val page = timeline.page(range, 0, 50)
         assertEquals(3, page.totalCount)
+        assertEquals(2, page.eventCount)
         assertEquals(120.0, page.records.single { it.event.id == activity.id }.activities.single().value, 0.0)
         assertEquals(5_125L, page.records.single { it.event.id == usage.id }.appUsage?.durationMillis)
         assertEquals("org.example.app", timeline.get(usage.id)?.appUsage?.packageName)
@@ -78,6 +79,46 @@ class TimelinePersistenceTest {
         assertEquals("Marker", source.memory?.note)
         assertEquals("Friend", source.people.single().name); assertEquals("Park", source.place?.name)
         assertNull(timeline.get(EventId.new()))
+    }
+    @Test fun eventCountExcludesUsageAcrossAllPagesAndIncludesOtherTypes() = runBlocking {
+        val events = RoomLifeEventRepository(db)
+        repeat(160) { index -> events.upsert(LifeEvent(EventId(UUID(0, index.toLong())), EventType.APP_USAGE, time, time)) }
+        events.upsert(LifeEvent(EventId(UUID(0, 200)), EventType.MOOD, time, time))
+        val first = timeline.page(range, 0, 50)
+        assertEquals(161, first.totalCount); assertEquals(1, first.eventCount)
+        val last = timeline.page(range, 150, 50)
+        assertEquals(11, last.records.size); assertEquals(1, last.eventCount)
+    }
+    @Test fun unusedAppsAreExcludedBeforePagingWhilePositiveAndUnknownUsageRemain() = runBlocking {
+        val store = RoomEventStore(db)
+        suspend fun usage(n: Int, duration: Long) {
+            val event = LifeEvent(EventId(UUID(0, n.toLong())), EventType.APP_USAGE, time, time,
+                endedAt = time.plusSeconds(60), source = EventSource.USAGE_STATS, sourceReference = "fixture:$n")
+            store.save(EventWrite(event, appUsage = AppUsageRecordEntity(UUID(1, n.toLong()).toString(),
+                event.id.toString(), time.toEpochMilli(), time.plusSeconds(60).toEpochMilli(), "org.example.app$n", duration)))
+        }
+        repeat(160) { usage(it, 0) }
+        usage(200, 1); usage(201, 5_125)
+        RoomLifeEventRepository(db).upsert(LifeEvent(EventId(UUID(0, 300)), EventType.MOOD, time, time))
+        RoomLifeEventRepository(db).upsert(LifeEvent(EventId(UUID(0, 400)), EventType.APP_USAGE, time, time))
+        val first = timeline.page(range, 0, 2); val last = timeline.page(range, 2, 2)
+        assertEquals(4, first.totalCount); assertEquals(1, first.eventCount)
+        assertEquals(listOf(200L, 201L), first.records.map { it.event.id.value.leastSignificantBits })
+        assertEquals(listOf(300L, 400L), last.records.map { it.event.id.value.leastSignificantBits })
+        assertEquals(0L, timeline.get(EventId(UUID(0, 0)))!!.appUsage!!.durationMillis)
+        db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 2 WHERE life_event_id = ?",
+            arrayOf(EventId(UUID(0, 0)).toString()))
+        assertEquals(5, timeline.page(range, 0, 2).totalCount)
+        assertEquals(0L, timeline.page(range, 0, 2).records.first().event.id.value.leastSignificantBits)
+    }
+    @Test fun aDayOfOnlyUnusedAppsHasNoTimelineRowsOrPagingTotal() = runBlocking {
+        val event = LifeEvent(EventId.new(), EventType.APP_USAGE, time, time,
+            endedAt = time.plusSeconds(60), source = EventSource.USAGE_STATS, sourceReference = "unused-only")
+        RoomEventStore(db).save(EventWrite(event, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(),
+            event.id.toString(), time.toEpochMilli(), time.plusSeconds(60).toEpochMilli(), "org.example.unused", 0)))
+        val page = timeline.page(range, 0, 50)
+        assertTrue(page.records.isEmpty()); assertEquals(0, page.totalCount); assertEquals(0, page.eventCount)
+        assertNotNull(timeline.get(event.id))
     }
     @Test fun typedOnlyChangesInvalidatePages() = runBlocking {
         val journal = EventId.new(); RoomJournalRepository(db).create(journal, JournalInput("Before", time))

@@ -388,11 +388,25 @@ remain platform follow-ups. See docs/VALIDATION.md.
 - Integrate Android app-usage/screen-time APIs behind an adapter.
 - Implement permission/status UX, incremental/idempotent imports, package/app labeling, and daily aggregation.
 - Fix the usage list so apps with no recorded foreground usage on the selected day are excluded.
+- Exclude known zero-duration app rows from the main Life Timeline before paging, with matching visible-row totals; keep positive and unavailable usage records accessible.
 - Provide two selectable views for the selected day: "Timeline" and "Daily totals".
 - In Timeline, show each recorded app session chronologically with the app name, opening/start time, end time, and duration; keep separate visits to the same app visible.
 - In Daily totals, show the cumulative foreground usage duration for each used app on the selected day.
 - Use recorded foreground-session events for Timeline; do not infer opening times or individual sessions from daily aggregates. Represent unavailable session history explicitly.
 - Gracefully handle unsupported/revoked permission states.
+
+Display update (2026-10-12): screen-time records are excluded from the Today feed
+and from displayed event counts on Today, Timeline and daily summaries. A usage-only
+day shows Today empty. Timeline retains usage rows and a separate total for paging;
+summary algorithm version 3 rebuilds older event counts while retaining usage metrics.
+Validation: all 209 JVM tests, 78 Room tests and 15 affected Today/summary/Timeline/
+usage UI tests pass; data lint and normal debug/test APK builds pass.
+
+Timeline visibility update (2026-10-12): known zero-duration app records are hidden
+before Timeline paging, including saved imports and later corrections. The visible
+row total uses the same filter; positive millisecond values and unavailable details
+remain visible, and stored records remain intact. All 209 JVM, 80 Room and seven
+Timeline/usage UI tests pass; data lint and normal debug/test APK builds pass.
 
 ### Acceptance criteria
 
@@ -400,6 +414,8 @@ remain platform follow-ups. See docs/VALIDATION.md.
 - Repeated imports do not duplicate records.
 - Apps with zero recorded foreground usage on the selected day do not appear in either view; a day with no usage shows an empty state.
 - User can switch between Timeline and Daily totals for the same selected day.
+- Screen-time records do not appear as Today events or contribute to displayed event counts; imported usage and its views remain available.
+- Main Life Timeline omits apps with zero recorded usage, including previously imported rows and later corrections; hidden rows do not create empty pages or incorrect paging totals.
 - Timeline shows when each app was opened and how long each recorded visit lasted, including repeated visits to the same app in chronological order.
 - Daily totals correctly combine all recorded usage for each app within the selected day's boundaries; visits spanning midnight contribute only their overlap with that day.
 - When session history is complete, session durations and per-app daily totals agree; unavailable or incomplete session history is clearly indicated without fabricated visits.

@@ -15,7 +15,11 @@ data class AppUsageDetails(val packageName: String, val bucketStart: Instant, va
         require(appLabel == null || (appLabel.isNotBlank() && appLabel.length <= 200))
     }
 }
-/** Count and records come from one committed snapshot; an offset beyond the end returns no records. */
-data class TimelinePage(val records: List<LifeEventRecord>, val offset: Int, val totalCount: Int) {
-    init { require(offset >= 0 && totalCount >= 0); require(records.size.toLong() <= maxOf(0L, totalCount.toLong() - offset)) }
+/** Counts and rows share one snapshot. totalCount pages visible rows; eventCount excludes app usage. */
+data class TimelinePage(val records: List<LifeEventRecord>, val offset: Int, val totalCount: Int,
+    val eventCount: Int = totalCount) {
+    init {
+        require(offset >= 0 && totalCount >= 0 && eventCount in 0..totalCount)
+        require(records.size.toLong() <= maxOf(0L, totalCount.toLong() - offset))
+    }
 }

@@ -31,6 +31,7 @@ data class TimelineState(
     val records: List<LifeEventRecord> = emptyList(), val offset: Int = 0, val totalCount: Int = 0,
     val loaded: Boolean = false, val loading: Boolean = true, val busy: Boolean = false,
     val error: TimelineError? = null,
+    val eventCount: Int = totalCount,
 ) {
     val canLoadEarlier: Boolean get() = loaded && offset > 0
     val canLoadLater: Boolean get() = loaded && offset.toLong() + records.size < totalCount
@@ -135,7 +136,8 @@ class TimelineViewModel(private val repository: TimelineRepository, private val 
                 val start = if (page.totalCount == 0) 0 else
                     (if (!replace && mode == TimelineError.LATER) current.offset else page.offset) + dropping
                 saved["offset"] = start; saved["window_size"] = records.size.coerceIn(INITIAL, MAXIMUM)
-                mutableState.value = TimelineState(date, zone, records, start, page.totalCount, loaded = true, loading = false)
+                mutableState.value = TimelineState(date, zone, records, start, page.totalCount, loaded = true, loading = false,
+                    eventCount = page.eventCount)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 if (token == sequence) mutableState.value = state.value.copy(loading = false, busy = false, error = mode)
