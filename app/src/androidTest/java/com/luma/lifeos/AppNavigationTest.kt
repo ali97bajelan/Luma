@@ -47,9 +47,9 @@ class AppNavigationTest {
         compose.onNodeWithTag("nav_settings").performClick()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("nav_today").performClick()
-        compose.onNodeWithTag("day_selected").assertTextEquals(yesterday)
+        compose.onNodeWithTag("day_selected", useUnmergedTree = true).assertTextEquals(yesterday)
         compose.onNodeWithTag("day_today").performClick()
-        compose.onNodeWithTag("day_selected").assertTextEquals(
+        compose.onNodeWithTag("day_selected", useUnmergedTree = true).assertTextEquals(
             LocalDate.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
     }
 }

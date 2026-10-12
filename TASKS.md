@@ -9,9 +9,13 @@ A task is complete only after its acceptance criteria have been verified.
 
 ## T01 — Bootstrap the Android project
 
-Status: implemented (validation pending)
+Status: complete
 
-Validation: foundation debug APK and instrumentation APK built; Android lint reported zero issues; 13 domain tests passed before T03. Device launch/navigation checks remain pending and will be run by the user; no further emulator work is requested.
+Validation (2026-10-12): application build/launch and all primary navigation,
+route/date recreation and Quick Capture checks pass on the existing API 36 emulator.
+All 189 JVM tests and 101 Android instrumentation tests pass. Foundation scope and
+architecture remain documented. The separate app/health lint compatibility issue
+is still recorded in docs/VALIDATION.md.
 
 
 ### Scope
@@ -47,7 +51,7 @@ Validation: 13 JVM tests passed, including identity, audit/occurrence invariants
 
 ## T03 — Implement local persistence
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: added the `core:data` Android library, Room version 1 schema for all
 13 records and four link tables, indexed relations, DAOs, domain envelope mapping,
@@ -55,13 +59,13 @@ transactional event/catalog/cache repositories, source-identity reconciliation,
 atomic import/checkpoint writes, and lazy application storage wiring. Persistence
 and migration baseline instrumentation test sources are included.
 
-Validation: not run, at the user's request. Gradle sync/build, schema JSON generation,
-CRUD/relation/rollback/import tests, and schema reopening checks are pending user
-validation. Commit Room's generated version 1 schema JSON after the first build.
-
-Follow-up during T04: the user-generated version 1 JSON is present; the data
-library and its instrumentation APK compile and data lint reports no issues.
-Persistence and migration tests still require device execution.
+Validation (2026-10-12): all 72 Room instrumentation tests pass on API 36,
+including CRUD, batched/indexed relations, foreign keys, rollback, source retry
+identity, cache invalidation and exported-schema reopening. Version 1 reopens with
+content retained; unsupported versions fail without destructive replacement. Debug
+and test APKs build and data lint passes. The generated v1 schema is present and
+used by the tests; include the existing untracked JSON in the next commit before
+changing schema versions. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -77,7 +81,7 @@ Persistence and migration tests still require device execution.
 
 ## T04 — Build application shell and Today screen
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: Room-backed Today feed with current/selected-day navigation,
 calendar picker, deterministic rows, event counts by type, distinct loading/empty/
@@ -85,11 +89,12 @@ error states with retry, saved selection, and foreground day/timezone refresh.
 Quick Capture is a persistent action on every primary tab and opens an explanatory
 sheet; capture forms remain assigned to T05–T07. Core browsing requires no permissions.
 
-Validation: 19 JVM tests passed (13 domain + 6 daily-state tests). Debug and test
-APK verification and lint results are recorded in `docs/VALIDATION.md`. Device
-navigation, rendering, picker, and Room/live-update tests remain pending user
-execution; no emulator was launched. Full app lint is pending because bundled
-Lifecycle/Compose detectors crash against the current AGP lint runtime.
+Validation (2026-10-12): API 36 tests pass for loading/empty/error/retry,
+stored values/times, selected-day Room updates, picker dates outside the default
+year range, date/route recreation and Quick Capture on every primary tab. Core
+navigation and capture run without optional integration access. Foreground
+midnight/zone changes and broad visual/accessibility audits remain follow-ups in
+T19; full app lint retains its documented analyzer compatibility issue.
 
 
 ### Scope
@@ -106,7 +111,7 @@ Lifecycle/Compose detectors crash against the current AGP lint runtime.
 
 ## T05 — Mood and emotion check-ins
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: permission-free local mood capture/edit/delete with an explicit
 1–5 score, reusable multi-select emotions, optional energy/stress/note, and date/
@@ -114,11 +119,12 @@ time controls. Saved drafts survive recreation and loading errors; stable captur
 IDs reconcile committed writes after process death. Edits preserve unrelated links
 and metadata. Typed mood rows update on Today and the initial daily Timeline.
 
-Validation: 33 JVM tests pass (16 domain + 17 app), debug and instrumentation APKs
-build, and data lint reports no issues. The existing app lint detector compatibility
-failure remains. Five new Room test sources and a capture/recreation/edit/delete
-device flow are included; device execution and acceptance timing remain pending
-user validation. No emulator was launched. Details are in `docs/VALIDATION.md`.
+Validation (2026-10-12): API 36 capture/recreation/edit/delete and Room
+mood/emotion persistence cases pass. A minimal Quick Capture -> Mood -> score 4 ->
+Save flow completed in 4.97 seconds, including UI confirmation overhead, with
+optional access denied. SQLite contained the saved score and Today displayed the
+matching average. Multiple emotions, optional scales, retained drafts and timeline
+updates have passing device/JVM coverage. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -135,7 +141,7 @@ user validation. No emulator was launched. Details are in `docs/VALIDATION.md`.
 
 ## T06 — Journal and tags
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: offline journal create/edit/delete with optional title, required
 body, timestamp and reusable tags. Case/whitespace variants share tag identities;
@@ -145,9 +151,12 @@ protect saved drafts; confirmed deletes reconcile committed results after restor
 Transactional edits
 preserve other links and metadata. Today/Timeline previews open a full detail view.
 
-Validation: JVM, APK and lint results are recorded in `docs/VALIDATION.md`.
-Room and capture/recreation/detail/edit/delete device test sources compile;
-device execution remains pending user validation. No emulator was launched.
+Validation (2026-10-12): API 36 journal capture/recreation/detail/edit/delete,
+explicit discard, oversized-input retention, tag reuse and transactional persistence
+checks pass. Device execution exposed an error cleared by redundant text callbacks;
+a new JVM regression failed before the fix and passes afterward, together with the
+Journal device flow and full suites. Body formatting and source/link preservation
+are verified. The app has no Internet permission. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -164,7 +173,7 @@ device execution remains pending user validation. No emulator was launched.
 
 ## T07 — Memories
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: direct offline memory capture/edit/delete with optional title,
 importance and timestamp; complete manual moods and journals support reversible
@@ -174,11 +183,11 @@ confirmed removals reconcile committed results. Today/Timeline and journal detai
 show memory status; Review lists the current ISO calendar week’s stored memories.
 Full review statistics remain T16.
 
-Validation: 63 JVM tests pass (22 domain + 41 app), debug and instrumentation APKs
-build, and data lint reports no issues. Five Room test cases and two capture/
-promotion/recreation/review/removal device flows compile; device execution remains
-pending user validation. No emulator was launched. See `docs/VALIDATION.md` for
-commands and the app lint analyzer compatibility limitation.
+Validation (2026-10-12): direct memory capture/recreation/review/edit/delete,
+journal promotion and reversal pass on API 36. Room cases verify source content,
+identity, metadata, links, marker visibility and rollback without duplicate events.
+All JVM and Android suites pass. Full weekly statistics remain T16; full app lint
+retains its documented compatibility issue. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -195,7 +204,7 @@ commands and the app lint analyzer compatibility limitation.
 
 ## T08 — People
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: offline people list/create/edit/delete and detail with chronological
 linked event history. Mood, journal, standalone-memory and promoted-memory forms
@@ -205,11 +214,11 @@ Catalog identities remain distinct even for equal names; deleting a person remov
 only their links and retains all event content. Existing capture calls preserve
 links unless they provide an explicit replacement selection. Writes remain atomic.
 
-Validation: 75 JVM tests pass (24 domain + 51 app), debug and instrumentation APKs
-build, and data lint reports no issues. Five Room cases and two People capture/
-history/removal/deletion device flows compile. Device execution remains pending
-user validation; no emulator was launched. Full app lint still fails inside the
-existing bundled analyzers. See `docs/VALIDATION.md`.
+Validation (2026-10-12): all five People Room cases and both capture/history
+flows pass on API 36. Tests verify multiple selections, retained parent drafts,
+recreation, live chronological history, explicit link removal and person deletion
+without deleting linked source content. The previously invalid JUnit return type
+was corrected, allowing the history observation test to execute. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -226,7 +235,7 @@ existing bundled analyzers. See `docs/VALIDATION.md`.
 
 ## T09 — Manual Places
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: permission-free local place list/create/edit/delete/detail,
 reachable from Settings and capture forms. Mood, journal, standalone-memory and
@@ -236,11 +245,10 @@ Place links save atomically with entry content; explicit clearing removes only t
 place link, and deleting a place preserves all life events. Typed browsing shows
 linked place names. No location tracking or permission is added.
 
-Validation: 91 JVM tests pass (27 domain + 64 app), debug and instrumentation APKs
-build, and data lint reports no issues. Five Room cases and two place capture/
-reuse/rename/clear/deletion flows compile; device execution remains pending user
-validation. No emulator was launched. Full app lint retains its bundled analyzer
-compatibility failure. See `docs/VALIDATION.md`.
+Validation (2026-10-12): all five Places Room cases and both capture/reuse/
+rename/clear/deletion UI flows pass on API 36. Optional selection persists; deleting
+a place retains source entries and other links. Core place capture needs no location
+permission; none is declared. All JVM and Android suites pass. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -257,7 +265,7 @@ compatibility failure. See `docs/VALIDATION.md`.
 
 ## T10 — Photo attachments
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: journal, direct-memory and promoted-memory forms support local
 image selection, bounded previews, retry, removal and unavailable-photo states.
@@ -269,13 +277,12 @@ preserves them. Journal detail renders photos; browsing shows attachment counts.
 No broad media permission, network upload, automatic backup or schema migration
 is added.
 
-Validation: 110 JVM tests pass (29 domain + 74 app + 7 data), debug and both
-instrumentation APKs build, and data lint reports no issues. Seven photo Room
-cases and two Compose capture/removal/unavailable-media flows compile; device
-execution, native picker behavior and restart acceptance remain pending user
-validation. Independent review found no remaining critical/important defects.
-Full app lint retains the bundled analyzer compatibility failure. No emulator was
-launched. See `docs/VALIDATION.md` for evidence and private-file retention limits.
+Validation (2026-10-12): all seven photo Room cases and both rendering/removal/
+unavailable-photo UI flows pass on API 36. A disk-database/private-store close and
+reopen preserves the referenced image without its original source. Removal keeps
+entry content and links intact; rollback and draft protection pass. No Internet
+permission or automatic backup exists. The native system-picker interaction and
+broader visual/accessibility audit remain platform follow-ups. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -304,14 +311,14 @@ content routes; imported/incomplete records open live read-only details with
 missing/error states, linked metadata and photos. Integration adapters remain
 T12/T13. No schema, SDK, permissions or dependencies changed.
 
-Validation: 126 JVM tests pass (32 domain + 87 app + 7 data), debug and both
-instrumentation APKs build, and data lint reports no issues. Independent review
-findings have regression coverage and fixes for startup restoration, interrupted
-date selection and empty-window controls. Five Room cases and two Compose flows
-compile. Device execution, calendar/visual acceptance, multi-day timing and smooth
-large-fixture scrolling remain pending user validation; no emulator was launched.
-Full app lint retains the bundled analyzer compatibility failure. See
-`docs/VALIDATION.md` for evidence and commands.
+Validation (2026-10-12): five Timeline Room cases and mixed-detail/day navigation,
+500-entry window traversal and a 20,000-entry/three-year navigation fixture pass
+on API 36. Day changes measured 115–133 ms. A real-time native-input frame probe
+captured 1,112 frames: p95 21.96 ms, 52.43% missed platform deadlines, no dropped
+reports. Remaining acceptance: smooth scrolling is not established on this debug
+emulator; profile/optimize and verify on representative hardware. Functional paging,
+ordering, restoration and cancellation pass. Full app lint retains its analyzer
+compatibility issue. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -328,7 +335,7 @@ Full app lint retains the bundled analyzer compatibility failure. See
 
 ## T12 — Screen-time integration
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: opt-in Android daily foreground-usage adapter, native Usage access
 setup/status UX, manual imports and unique six-hour background work. Incremental
@@ -339,14 +346,15 @@ unsupported, revoked and error states retain prior data; opt-out remains availab
 during a query. Persisted clock/boot checks reject rewritten native history and
 resume with fresh intervals, conservatively leaving affected intervals incomplete.
 
-Validation: 153 JVM tests pass (49 domain + 92 app + 7 data + 5 adapter), debug and
-app/data instrumentation APKs build, and data/adapter lint report no issues.
-Independent review findings have fixes and regressions for native clock identity,
-concurrent opt-out and transient access failures. Six Room cases and two Compose
-flows compile; device execution, native/OEM access, boot identity, background jobs
-and visual acceptance remain pending. No emulator was launched. Full app lint
-retains the bundled analyzer compatibility failure. SDKs/schema are unchanged;
-see `docs/VALIDATION.md` for commands and the temporary dependency mirror used here.
+Validation (2026-10-12): native Android Usage access setup/status, real
+UsageStats imports and an initial scheduled WorkManager import were exercised on
+API 36 using a separate validation app. Imports saved 502 native rows, including
+positive foreground time. A retry retained all event/child/package/start identities
+and row count while 25 intervals updated bounds or totals. Revocation, restart and
+opt-out retained saved rows and the successful sync timestamp. Core capture still
+worked without access. Six Room and two UI flows plus JVM suites pass. OEM battery
+restrictions, a full six-hour refresh cycle and reboot/clock-correction acceptance
+remain platform follow-ups. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -376,14 +384,13 @@ pending queries and rejects stale commits even across disable/re-enable. Existin
 Today/Timeline/details and saved summaries consume activity values. Sleep/workouts
 and background health reads remain deferred; schema and API 28/35 are unchanged.
 
-Validation: 188 JVM tests pass (71 domain, 99 app, 7 data, 5 usage adapter,
-6 health adapter); debug and both instrumentation APKs build. Data/usage lint
-pass; health/app lint hit the existing bundled-analyzer compatibility failure.
-Independent review findings have regression fixes. Six Room cases and two Compose
-flows compile. Full evidence is recorded in `docs/VALIDATION.md`.
-Native Health Connect permission/provider behavior, actual
-steps, restart/revocation and device rendering remain pending user validation.
-No emulator or device was launched.
+Validation (2026-10-12): six health Room cases, two Health Settings UI flows
+and all JVM tests pass, covering simulated imports/corrections/deletion, identity,
+rollback, durable controls, revocation and unsupported states. A read-only native probe on the
+API 36 emulator returned GRANTED / NO_DATA with zero stored activity rows. Remaining
+acceptance: import a known step-data fixture through native consent on a supported
+device; an empty provider does not establish that useful native signal. App/health
+lint retain their documented detector crashes. See docs/VALIDATION.md.
 
 
 ### Scope
@@ -400,7 +407,7 @@ No emulator or device was launched.
 
 ## T14 — Daily summaries
 
-Status: implemented (validation pending)
+Status: complete
 
 Implementation: deterministic saved daily metrics on Today with entry/journal/
 memory counts, mood/energy/stress averages and sample counts, foreground usage
@@ -411,13 +418,13 @@ recorded zero is retained. Versioned derived-only Room caches rebuild after sour
 changes, collection restart, corruption or incompatible versions; reads and cache
 writes are transactional. Summary errors retain source browsing and expose retry.
 
-Validation: all 188 JVM tests pass, debug and app/data instrumentation APKs build,
-and data/usage lint pass. Independent review identified the missing per-app rows;
-they are now rendered with a new compiled Compose regression. Eight summary Room
-cases and three Compose flows compile; device execution and visual acceptance
-remain pending. App/health lint retain their bundled detector crashes. Summary
-retry resetting feed/scroll state is a deferred minor review finding. No emulator
-or device was launched. Commands and evidence are in `docs/VALIDATION.md`.
+Validation (2026-10-12): all eight summary Room cases and three Compose
+flows pass on API 36. Tests verify source-matching metrics, deterministic cache
+rebuilds, corruption/version fallback, transactional invalidation, missing versus
+zero, native-start dating and labeled per-app durations. All 189 JVM tests pass.
+Known minor: summary Retry resets feed/scroll state; this does not affect metric
+correctness. Full app/health lint remain blocked by their existing analyzers.
+See docs/VALIDATION.md.
 
 
 ### Scope

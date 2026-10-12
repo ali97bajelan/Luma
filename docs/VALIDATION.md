@@ -917,3 +917,155 @@ already running emulator:
 ```sh
 bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
 ```
+
+## Runtime acceptance follow-up — 2026-10-12
+
+The user launched the app and requested completion of outstanding validation.
+ADB found an already running Android 16/API 36 x86_64 emulator (`emulator-5554`).
+No emulator was created or launched. The new request authorized device execution,
+superseding earlier task-plan deferrals.
+
+To protect the user's installed `com.luma.lifeos` data, a local-only Gradle init
+script built the same app with application ID `com.luma.lifeos.validation`:
+
+```groovy
+gradle.beforeProject { project ->
+    project.plugins.withId('com.android.application') {
+        project.androidComponents.finalizeDsl { android ->
+            android.defaultConfig.applicationId = 'com.luma.lifeos.validation'
+        }
+    }
+}
+```
+
+The script is `/tmp/luma-device-validation.init.gradle`; no application ID change
+was committed. The final normal build restores `com.luma.lifeos` in generated APKs.
+
+- PASS: **72/72 Room instrumentation tests**, zero failures. CRUD, all relation
+  types, live observations, rollback, deletion cascades, capture/import identities,
+  cache freshness, exported v1 schema reopening and unsupported-version protection
+  execute successfully. Photo tests close/reopen a disk database and private store
+  and verify the committed image remains available without its original source.
+- PASS: **29/29 app instrumentation tests**, zero failures. Coverage includes
+  primary routes and recreation, all-tab Quick Capture, dates/pickers, Today live
+  persistence, mood/journal/memory capture/edit/delete, explicit discard, People
+  and Places links/history/deletion, photo rendering/removal/unavailable states,
+  mixed Timeline details and 500-entry window traversal, three summary UI flows,
+  and simulated usage/health access/import/retry/opt-out.
+  Final app suite runtime: 118.277 seconds; data suite: 6.616 seconds.
+- PASS: **189 JVM tests** (71 domain, 100 app, 7 data, 5 usage adapter, 6 health
+  adapter), zero failures/errors/skips. Test tasks were forced to execute again.
+  Debug and app/data instrumentation APKs build; data and usage-adapter lint pass.
+  `git diff --check` passes.
+- PASS: native Usage access route/consent on API 36, real UsageStats acquisition
+  and an initial scheduled WorkManager import. SQLite snapshots contain **502
+  native rows**, 11 with positive durations and none with negative durations,
+  including foreground use of the validation app. Manual retry preserves all
+  child/event/package/native-start identities and the 502-row count; 25 intervals
+  update totals or end bounds. After access revocation, process restart and opt-out,
+  all rows remain equal to the post-retry snapshot and the successful sync timestamp
+  is retained. Settings reflects required access and then imports-off states.
+- PASS: timed minimal mood capture with optional access denied: Quick Capture ->
+  Mood -> score 4 -> Save takes **4.97 seconds**, including scripted settling and
+  UI confirmation overhead. SQLite contains the score with optional values absent;
+  Today shows the matching 4/5 average and sample count. This is one measured run,
+  not a device-performance benchmark.
+- PASS: fresh read-only review of validation fixes confirmed they retain behavior
+  assertions and identified the Journal no-op update/error issue. Its JVM regression
+  failed with expected TEXT / actual null before the production fix, then passed.
+  The previously failing oversized-input/discard device flow and full suites pass.
+
+Failures discovered and corrected during actual execution:
+
+- People history observation inferred a non-void JUnit return type, causing class
+  initialization failure. Explicit `Unit` allows all five People cases to run.
+- The selected-day text is inside merged button semantics; the test now inspects
+  that label in the unmerged tree while still asserting its exact restored date.
+- Three older capture flows waited for Today's summary on the dedicated Timeline.
+  They now wait for its actual loading state, retaining exact source-row/edit/delete
+  assertions. The Places selected chip assertion now allows its appended Remove label.
+- Journal rejected oversized text correctly but cleared the visible rejection on
+  a redundant callback containing the retained value. No-op draft updates now keep
+  the error until a real draft change. A new regression verifies both preservation
+  and clearing after corrected input. No detector rules, dependencies or SDKs changed.
+
+Completed acceptance in TASKS.md: **T01, T03–T10, T12 and T14**. T02 was already
+complete. Remaining implemented-task acceptance:
+
+- **T11:** smooth scrolling. A three-year, 20,000-entry fixture measured four day
+  changes at 122, 115, 117 and 133 ms. A separate plain ActivityScenario probe used
+  the real app clock and paced native touch events for 30 swipes, collecting 1,112
+  frame reports: p95 21.96 ms and 52.43% missed platform deadlines, with no dropped
+  reports. Thus day navigation is fast in this run, but smooth scrolling acceptance
+  is not established on this debug emulator. Profile/optimize and verify on
+  representative hardware before closing the task. The controlled Compose-clock
+  gesture measurements were discarded; they were unsuitable for live frame timing.
+- **T13:** obtain a useful actual Health Connect step import through native consent.
+  The emulator has the native controller installed, but simulated-provider tests
+  do not establish acquisition of real steps.
+
+Native photo-picker interaction, physical/OEM battery behavior, six-hour scheduling,
+reboot/clock correction, minimum-API coverage and broad accessibility/visual checks
+remain platform follow-ups. Full app/health lint still has the previously documented
+bundled-detector compatibility failure; this runtime pass does not claim full lint
+acceptance. T15–T20 remain unimplemented and were not marked complete.
+
+Device launcher detail: offline `connectedDebugAndroidTest` could not resolve
+`com.android.tools.utp:android-test-plugin-host-additional-test-output:31.7.3`.
+The APKs compiled, then ADB ran the same AndroidJUnitRunner directly. ADB's process
+exit code alone is insufficient; the recorded instrumentation output explicitly
+reports `OK (72 tests)` and `OK (29 tests)`:
+
+```sh
+adb -s emulator-5554 shell am instrument -w -r -e timeout_msec 90000 \
+  com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
+adb -s emulator-5554 shell am instrument -w -r -e timeout_msec 90000 \
+  com.luma.lifeos.validation.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Final successful normal build used the T13 mirror and T14 retest init scripts with
+the task list from the T14 successful check above; no validation-ID override.
+Logs: `/tmp/luma-data-device-tests-final.log`,
+`/tmp/luma-app-device-tests-complete.log`, `/tmp/luma-validation-final-build.log`.
+Earlier failing runs and the Journal RED/GREEN logs remain under `/tmp/luma-*`.
+Native snapshot comparisons and the timed capture record also remain under `/tmp`.
+The user's installed app was neither cleared nor replaced. Existing untracked
+release artifacts and generated schema remain outside the edited files.
+
+Performance measurement details: the temporary plain-Activity probe is under
+`/tmp/luma-live-performance-src`, enabled only through a local init script and
+guarded to the validation application ID. It is excluded from the final regular
+test APK. Measurements use positive `TOTAL_DURATION`/`DEADLINE` values and exclude
+first-layout frames; see [Android FrameMetrics](https://developer.android.com/reference/android/view/FrameMetrics).
+The native probe passed its fixture/frame-collection assertions in 34.236 seconds;
+that is not a smooth-scrolling pass. Logs: `/tmp/luma-timeline-native-frame-device.log`
+and `/tmp/luma-timeline-live-frame-metrics.log`. The reusable day-navigation fixture
+remains in TimelineFlowTest. Physical/release profiling remains open.
+
+Session checkpoint — stopped at the user's request.
+
+Final regular suites: 72 Room + 29 app tests pass (101 Android tests); all 189 JVM
+tests pass. Native Health Connect read access was granted only to the disposable
+validation app. The production adapter/native provider returned GRANTED / NO_DATA
+and stored zero activity rows in an in-memory database, without inventing zero
+step values. No health-provider data was written. T13 still needs a known native
+step-data fixture and consent-flow acceptance. Logs: /tmp/luma-native-health-read.log
+and /tmp/luma-native-validation-metrics.log.
+
+Completed: T01, T03–T10, T12, T14; T02 was already complete. T11 remains open for
+scrolling performance (native p95 21.96 ms, 52.43% missed deadlines). T13 remains
+open for useful native steps. T15–T20 remain pending. App/health lint retain the
+existing bundled-detector crashes.
+
+Uncommitted changes include the Journal no-op/error fix and regression, corrected
+device test assertions, a reusable 20,000-entry Timeline day-navigation fixture,
+and updated task/validation documentation. No commit was created. Suggested message:
+`fix: preserve journal validation errors and verify implemented tasks`.
+
+Temporary validation app/test packages remain installed on emulator-5554 at this
+checkpoint; they are separate from com.luma.lifeos and can be removed later. The
+latest temporary health-probe build used the validation-ID/test-source init scripts.
+Before using generated APKs, run a normal build without those temporary scripts
+to restore standard build configuration. User app data was not cleared or replaced.
+Temporary probes and logs remain under /tmp. No further validation is running or
+requested after this checkpoint.

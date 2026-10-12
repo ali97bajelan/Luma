@@ -39,8 +39,10 @@ See [docs/VALIDATION.md](docs/VALIDATION.md) for checks actually run here.
 T03 was implemented without running code, Gradle, or an emulator, at the user's
 request. The Room Gradle plugin exports schema JSON under `core/data/schemas` during
 your first build. Commit those generated files before changing the database schema;
-see [schema history](core/data/schemas/README.md). Current build and test results, including pending device checks and the app lint
-analyzer compatibility failure, are recorded in `docs/VALIDATION.md`.
+see [schema history](core/data/schemas/README.md). Current build and test results,
+including 101 passing API 36 instrumentation tests, remaining native/performance
+checks and the app/health lint analyzer compatibility failure, are recorded in
+`docs/VALIDATION.md`.
 
 ## Project references
 

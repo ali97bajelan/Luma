@@ -642,3 +642,14 @@ Persistence tooling references:
 [Room releases and schema export](https://developer.android.com/jetpack/androidx/releases/room),
 [KSP 2.3.5](https://github.com/google/ksp/releases/tag/2.3.5), and
 [MigrationTestHelper](https://developer.android.com/reference/androidx/room/testing/MigrationTestHelper).
+
+Runtime follow-up, 2026-10-12: all 72 Room and 29 app instrumentation tests pass
+on an already running API 36 emulator, alongside 189 JVM tests. An isolated
+application ID protects the user's installed app during validation. Tests verify
+schema reopening, transactional feature persistence, disk/photo reopening,
+capture/recreation/navigation, 500-entry Timeline traversal and derived summaries.
+Real Android UsageStats imports, retry identity, native consent/revocation and
+retention were also exercised. Timeline frame/latency measurement and actual
+Health Connect step imports remain pending; app/health lint retain their existing
+detector compatibility failures. A Journal regression now preserves size-rejection
+errors when TextField repeats the retained draft value. See docs/VALIDATION.md.

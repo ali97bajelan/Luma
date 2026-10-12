@@ -24,7 +24,7 @@ class MemoryCaptureTest {
         compose.onNodeWithTag("memory_review_list").performScrollToNode(hasText(note))
         compose.onNodeWithText(note).assertIsDisplayed()
         compose.onNodeWithTag("nav_timeline").performClick()
-        awaitTag("today_summary")
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("timeline_loading").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText(note))
         compose.onNodeWithText(note).performClick()
         awaitTag("memory_note")

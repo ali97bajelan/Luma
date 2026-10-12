@@ -55,7 +55,8 @@ class MoodCaptureTest {
     }
 
     private fun awaitText(text: String, feed: String) {
-        awaitTag("today_summary")
+        if (feed == "screen_today") awaitTag("today_summary")
+        else compose.waitUntil(5_000) { compose.onAllNodesWithTag("timeline_loading").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag(feed).performScrollToNode(hasText(text))
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText(text).assertIsDisplayed()

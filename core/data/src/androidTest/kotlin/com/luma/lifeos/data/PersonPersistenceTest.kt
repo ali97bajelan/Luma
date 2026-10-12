@@ -95,7 +95,7 @@ class PersonPersistenceTest {
         assertNotNull(memories.get(id)!!.memory)
     }
 
-    @Test fun openHistoryUpdatesForCatalogContentMarkersAndLinkChanges() = runBlocking {
+    @Test fun openHistoryUpdatesForCatalogContentMarkersAndLinkChanges(): Unit = runBlocking {
         val person = UUID.randomUUID()
         people.create(person, PersonInput("Friend"))
         val journals = RoomJournalRepository(database)

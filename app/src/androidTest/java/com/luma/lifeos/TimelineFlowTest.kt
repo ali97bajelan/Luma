@@ -17,6 +17,8 @@ import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
+import android.os.SystemClock
+import android.util.Log
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -108,6 +110,36 @@ class TimelineFlowTest {
         compose.onNodeWithTag("timeline_earlier").performClick()
         scrollToEvent(UUID(0, 150).toString())
         compose.onNodeWithText("Entry 150").assertIsDisplayed()
+    }
+
+    @Test fun largeStoredHistoryKeepsDayNavigationResponsive() {
+        runBlocking {
+            db.withTransaction {
+                (0 until 20_000).forEach { n ->
+                    val day = if (n < 500) today else today.minusDays((1 + (n - 500) % 1095).toLong())
+                    val occurred = day.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+                    val id = UUID(3, n.toLong()).toString()
+                    db.lifeEvents().insert(LifeEventEntity(id, EventType.JOURNAL, occurred, occurred, occurred, title = "Fixture $n"))
+                    db.content().insertJournal(JournalEntryEntity(UUID(4, n.toLong()).toString(), id, "Fixture $n", "Stored body $n"))
+                }
+            }
+        }
+        show()
+        compose.onNodeWithTag("nav_timeline").performClick()
+        awaitTag("event_${UUID(3, 0)}")
+        val navigation = mutableListOf<Double>()
+        repeat(3) { day ->
+            val started = SystemClock.elapsedRealtimeNanos()
+            compose.onNodeWithTag("day_previous").performClick()
+            awaitTag("event_${UUID(3, 500L + day)}")
+            navigation += (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
+        }
+        val started = SystemClock.elapsedRealtimeNanos()
+        compose.onNodeWithTag("day_today").performClick()
+        awaitTag("event_${UUID(3, 0)}")
+        navigation += (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
+
+        Log.i("LumaValidation", "Timeline rows=20000 day_navigation_ms=$navigation")
     }
     private fun scrollToEvent(id: String) {
         // Room work is asynchronous to Compose's idle clock. A following page may not be loaded yet.

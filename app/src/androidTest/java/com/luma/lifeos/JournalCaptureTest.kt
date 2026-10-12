@@ -22,7 +22,7 @@ class JournalCaptureTest {
         compose.onNodeWithTag("journal_save").performClick()
         awaitTag("screen_today")
         compose.onNodeWithTag("nav_timeline").performClick()
-        awaitTag("today_summary")
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("timeline_loading").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText(body))
         compose.onNodeWithText(body).performClick()
         awaitTag("journal_detail_body")

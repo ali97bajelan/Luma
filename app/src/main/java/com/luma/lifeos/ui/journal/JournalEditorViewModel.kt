@@ -218,7 +218,10 @@ class JournalEditorViewModel(
     private fun change(transform: (JournalDraft) -> JournalDraft) {
         if (!state.value.ready || state.value.busy || state.value.completed) return
         val draft = transform(state.value.draft)
-        if (draft != state.value.draft) saved["pending_delete"] = false
+        // TextField can echo the retained value after rejecting an oversized edit.
+        // Keep its validation error visible until the user actually changes the draft.
+        if (draft == state.value.draft) return
+        saved["pending_delete"] = false
         persist(draft)
         mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
     }

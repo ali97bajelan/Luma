@@ -136,6 +136,19 @@ class JournalEditorTest {
         assertEquals(JournalEditorError.TIME, editor.state.value.error)
     }
 
+    @Test fun redundantTextUpdatesKeepRejectionVisibleUntilTheDraftChanges() = runTest(dispatcher) {
+        val editor = JournalEditorViewModel(TestJournalRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle()
+        editor.setBody("Unsaved")
+        editor.setBody("x".repeat(50_001))
+        editor.setBody("Unsaved")
+        editor.setTitle("")
+        assertEquals("Unsaved", editor.state.value.draft.body)
+        assertEquals(JournalEditorError.TEXT, editor.state.value.error)
+        editor.setBody("Corrected")
+        assertNull(editor.state.value.error)
+    }
+
     @Test fun oversizedInputIsRejectedBeforeReplacingTheRestorableDraft() = runTest(dispatcher) {
         val handle = SavedStateHandle()
         val repo = TestJournalRepository()

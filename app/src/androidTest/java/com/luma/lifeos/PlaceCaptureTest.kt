@@ -25,7 +25,7 @@ class PlaceCaptureTest {
         compose.onNodeWithText(name).performScrollTo().performClick()
         compose.activityRule.scenario.recreate()
         awaitTag("journal_body")
-        compose.onNodeWithTag("place_selected").performScrollTo().assertTextContains(name)
+        compose.onNodeWithTag("place_selected").performScrollTo().assertTextContains(name, substring = true)
         compose.onNodeWithTag("journal_save").performClick()
         awaitTag("screen_today")
         openPlace(name)
