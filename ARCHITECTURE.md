@@ -42,7 +42,7 @@ Package layout follows the same boundaries:
 - `com.luma.lifeos.domain.model`, `.time`, `.repository`: domain values and contracts.
 - `com.luma.lifeos.data`: `.db`, `.dao`, `.entity`, `.mapping`, `.repository`.
 - `com.luma.lifeos.integration.usage`: Android usage adapter and work scheduling.
-- Planned `com.luma.lifeos.integration.health`: Health Connect adapter.
+- `com.luma.lifeos.integration.health`: optional Health Connect steps adapter.
 
 The domain uses the Java library plugin and exports Coroutines as an API dependency
 because its public repository contracts return `Flow`.
@@ -444,7 +444,8 @@ complete editable manual moods, journals and direct memories open their existing
 content routes. Imported/incomplete records open read-only detail, including from
 Today and person history. Promotion remains limited to eligible manual records.
 T11 deferred acquisition and aggregation to T12–T14. T12 adds optional usage
-acquisition below; health and cached daily summaries remain later tasks.
+acquisition below; T13 adds optional Health Connect steps and the existing daily
+summary pipeline consumes stored activity values.
 
 ## Optional app-usage imports (T12)
 
@@ -504,6 +505,47 @@ The merged manifest adds special Usage access and WorkManager wake/boot permissi
 Unused network-state and foreground-service permissions are removed. There is no
 Internet permission, network constraint, broad package query, telemetry or backup
 change. SDKs and Room schema version 1 remain unchanged.
+
+## Optional Health Connect steps (T13)
+
+`integration:health` implements pure domain `HealthSource` through Health Connect.
+The app owns `HealthSyncer`, `RoomHealthRepository`, and a Settings card; imported
+step snapshots reuse ActivityRecord and IntegrationState in database version 1.
+Settings explains local retention before requesting READ_STEPS and offers provider
+installation/update, access management, status refresh, opt-out and manual import.
+An exported rationale activity and Android 14 permission-usage alias show the same
+privacy explanation without opening storage. Foreground resume checks access;
+there is no scheduled health job or background-read/history/write permission.
+
+Each import aggregates `StepsRecord.COUNT_TOTAL` without filtering origins, allowing
+Health Connect to handle overlapping sources. The adapter returns native counts,
+including null versus explicit zero. Seven calendar dates, including today through
+the query time, use real day boundaries in a durable ZoneId selected at first opt-in.
+The zone remains fixed across travel/re-enabling to avoid overlapping bucket sets.
+Source references include that zone/date and exclude changing counts/end bounds.
+Existing Timeline/Today/details and saved summaries consume these activity values;
+display dates follow interval occurrence in the display zone, without repartitioning.
+
+One import mutex serializes queries and access refreshes. Opt-out persists a new
+configuration revision and cancels the active query child immediately; the adapter
+checks cancellation between native aggregates. Late access checks cannot start a
+disabled query. Complete snapshots are validated and rechecked for access before
+an atomic Room transaction checks enabled/zone/revision again. Updates preserve
+event/child IDs, audit creation, metadata and unrelated links. Successful missing
+observations remove the owned daily event to reflect source deletion. Errors,
+revocation, cancellation and partial responses preserve history/checkpoints. Each
+successful batch invalidates summaries; older data outside the seven-date refresh
+window remains a snapshot. Sleep/workouts are deferred.
+
+Health Connect **1.1.0-beta01** is the newest inspected SDK release compatible with
+the supplied API 35/AGP 8.7.3 toolchain. Actual published AAR metadata for beta02,
+rc02, rc03 and stable 1.1.0 requires API 36/AGP 8.9.1. This dependency can move to
+stable alongside a future toolchain update; native/provider behavior remains a
+device acceptance check. No SDK or schema override bypasses those requirements.
+
+References: [aggregation and access](https://developer.android.com/health-and-fitness/health-connect/read-data),
+[rationale manifest](https://developer.android.com/health-and-fitness/health-connect/get-started),
+[SDK releases](https://developer.android.com/jetpack/androidx/releases/health-connect).
 
 ## Implementation phases
 

@@ -82,8 +82,9 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null) {
     if (usage != null) UsageForegroundRefresh(usage)
+    if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
     val photoScope = rememberCoroutineScope()
     fun cleanPhotos() { photoScope.launch {
         try { photos.cleanup() } catch (failure: Exception) { if (failure is CancellationException) throw failure }
@@ -172,7 +173,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     } else if (destination == Destination.SETTINGS && usage != null) {
                         UsageSettingsRoute(usage, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
                             onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
-                            onPlaces = { navController.navigate("places") })
+                            onPlaces = { navController.navigate("places") }, health = health)
                     } else {
                         FoundationScreen(destination, onPlaces = { navController.navigate("places") })
                     }

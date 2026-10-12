@@ -33,6 +33,7 @@ class LumaStorage(context: Context) {
     }
     val timeline: com.luma.lifeos.domain.repository.TimelineRepository = com.luma.lifeos.data.repository.RoomTimelineRepository(database)
     val usage: com.luma.lifeos.domain.usage.UsageRepository = com.luma.lifeos.data.repository.RoomUsageRepository(database)
+    val health: com.luma.lifeos.domain.health.HealthRepository = com.luma.lifeos.data.repository.RoomHealthRepository(database)
     val summaries: com.luma.lifeos.domain.repository.DailySummaryRepository = com.luma.lifeos.data.repository.RoomDailySummaryRepository(database)
     val lifeEvents: LifeEventRepository = RoomLifeEventRepository(database)
     val moods: MoodRepository = RoomMoodRepository(database)

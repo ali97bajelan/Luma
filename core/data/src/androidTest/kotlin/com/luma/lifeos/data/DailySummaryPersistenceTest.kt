@@ -113,7 +113,7 @@ class DailySummaryPersistenceTest {
     @Test fun concurrentCaptureCannotLeaveAnOutdatedFreshCache() = runBlocking {
         val entered = CompletableDeferred<Unit>(); val release = CountDownLatch(1)
         val blockingClock = object : Clock() {
-            override fun getZone() = zone
+            override fun getZone(): ZoneId = this@DailySummaryPersistenceTest.zone
             override fun withZone(zone: ZoneId): Clock = this
             override fun instant(): Instant = now
             override fun millis(): Long { entered.complete(Unit); check(release.await(10, TimeUnit.SECONDS)); return now.toEpochMilli() }

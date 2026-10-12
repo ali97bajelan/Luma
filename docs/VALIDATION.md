@@ -712,3 +712,121 @@ jobs, bounded retries and cancellation on a representative device. Restart the
 device or correct wall time and confirm the incomplete-interval explanation, absence
 of duplicated history and subsequent fresh-interval recovery. Check selected zones,
 large fonts, landscape, screen-reader labels and existing Places/core routes.
+
+## T13 — Health Connect steps (2026-10-12)
+
+Implemented optional foreground, read-only Health Connect step imports in the
+existing schema. Device acceptance remains pending; T13 is marked implemented
+(validation pending), not complete.
+
+- PASS: 188 JVM tests: 71 domain, 99 app, 7 data, 5 usage adapter, 6 health
+  adapter; zero failures/errors/skips. Health cases cover fixed-zone identities,
+  growing current-day bounds, seven-date refreshes, DST/midnight windows, null
+  versus zero, incomplete/conflicting responses, unsupported/update/denied access,
+  revocation during reads, errors/cancellation, immediate opt-out, queued imports,
+  stale enable revisions, cancellation before remaining native aggregates and
+  delayed status refresh. App cases cover durable controls, duplicate suppression,
+  opt-out while busy, retry and failed observer restoration.
+- PASS: debug APK and app/data instrumentation APK builds. Six new Room cases
+  compile for stable IDs/audit/metadata/links, corrected counts, explicit zero,
+  missing-data removal, rollback, disabled/stale revisions, saved zone restoration,
+  backward checkpoint rejection and summary rebuilding. Two Compose flows compile
+  for optional access/import/correction/opt-out, empty/unsupported/revoked data and
+  retained Settings navigation/privacy explanation. Compilation is not device
+  execution.
+- PASS: core:data and integration:usage lint report no issues. `git diff --check`
+  passes. CI includes health adapter tests/lint; no hosted CI result is claimed.
+- PASS: merged manifest keeps API 28/35 and automatic backup disabled. READ_STEPS
+  is the only new data permission, plus scoped Health Connect package visibility
+  and rationale/Android 14 permission-usage routes. No INTERNET, WRITE_STEPS,
+  background-health-read, health-history, sleep, workout, location or broad package
+  permission is added. Database version remains 1; pre-existing release artifacts
+  and generated schema were not added to version control.
+- PASS: independent review identified continued reads after opt-out, absent
+  retention explanation in Settings, and a stale status-refresh race. Three
+  domain regressions failed before the fixes (pending-query timeout, unwanted
+  post-disable query and overwritten successful status), then passed. A composed
+  adapter regression now verifies exactly one native aggregate request when
+  disabling during the first read, with no commit or subsequent reads. The Settings
+  card displays retention details directly. No review findings remain deferred.
+- BLOCKED: full application and health-adapter lint fail inside bundled Lifecycle/
+  Compose detectors with `IncompatibleClassChangeError`: respectively
+  NonNullableMutableLiveDataDetector, FrequentlyChangingValueDetector and
+  RememberInCompositionDetector. Health's Activity dependency now also brings the
+  existing incompatible Lifecycle detector into that module. No rules were disabled;
+  this is not a successful lint result for those modules.
+- PENDING: actual native Health Connect availability/installation, permission
+  grant/deny/revocation, Android 13 APK versus Android 14+ framework behavior,
+  step aggregation across phone/watch sources, deletion/correction and restart
+  acceptance, native rationale routes, visual/accessibility rendering and device
+  execution of Room/Compose tests. No emulator/device was launched.
+
+Successful checks (excluding the two blocked lint tasks):
+
+```sh
+bash gradlew --offline -I /tmp/luma-t13-mirror.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :core:data:lintDebug \
+  :integration:usage:lintDebug --no-daemon --console=plain
+```
+
+The lint attempt ran the same suite with `:app:lintDebug` and
+`:integration:health:lintDebug`, `--continue`; tests and APK tasks succeeded,
+while those lint analyzers failed. Local command logs are under
+`/tmp/luma-t13-final-check.log` and `/tmp/luma-t13-passing.log`.
+
+Environment/dependency details: initial sandboxed Gradle failed because the
+existing Gradle cache is read-only; permitted Gradle execution used that cache and
+local daemon sockets. Official Google Maven returned missing Health Connect
+artifacts, as prior T12 validation observed for other AndroidX artifacts. A
+local-only init script resolves `androidx.health.connect` through the Aliyun Google
+mirror; project repositories remain google()/mavenCentral(). The script is:
+
+```groovy
+settingsEvaluated { settings ->
+    settings.dependencyResolutionManagement.repositories {
+        exclusiveContent {
+            forRepository { maven { url = uri('https://maven.aliyun.com/repository/google') } }
+            filter { includeGroup('androidx.health.connect') }
+        }
+    }
+}
+```
+
+Health Connect 1.1.0-beta01 is pinned to preserve the supplied API 35/AGP 8.7.3
+settings. Published AAR metadata was inspected for beta01 (API 35/AGP 8.6.0),
+beta02, rc02, rc03 and stable 1.1.0 (all API 36/AGP 8.9.1). Thus native behavior
+and upgrading to stable are material follow-ups when the toolchain is updated.
+Activity/Core/Lifecycle transitives are aligned with existing project versions.
+See [AndroidX release history](https://developer.android.com/jetpack/androidx/releases/health-connect).
+
+A pre-existing DailySummaryPersistenceTest compile failure was also fixed:
+Clock.getZone referenced its inherited property recursively; it now explicitly
+uses the outer test's ZoneId. All existing persistence test sources compile.
+One simulated-provider test blocked because it awaited access refresh before
+releasing a queued query; that test worker was stopped and the test was corrected
+to validate import serialization separately. The final suite passes.
+
+Bounded sync semantics: each successful import refreshes seven dates in the
+persisted import zone. A null aggregate removes the owned daily snapshot rather
+than creating zero, reflecting source deletion. Provider failures/revocation never
+clear snapshots or advance the checkpoint. Older dates remain local snapshots;
+disabling retains them. Import timezone is fixed across travel and re-enabling;
+Timeline/Today/summary display dates follow each interval's start in the display
+zone, without repartitioning counts. These limits are explained in Settings.
+
+Manual acceptance on a supported device: navigate/capture with health disabled;
+enable steps, read the explanation, deny access and verify normal app use. Install
+or update Health Connect where needed; grant READ_STEPS and import a known
+phone/watch fixture. Repeat imports as today's total grows or is corrected and
+verify stable rows; remove source data within the refreshed window and verify
+missing versus zero. Revoke during a query, disable while busy and confirm no
+later reads/commits. Restart the app and change timezone, verifying the saved
+import zone/history/status. Open both native privacy links and manage access after
+opt-out. Test large fonts, landscape and screen readers. Device commands remain:
+
+```sh
+bash gradlew :core:data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```

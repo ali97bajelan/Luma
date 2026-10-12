@@ -14,4 +14,7 @@ class LumaApplication : Application() {
     val usage: UsageIntegration by lazy {
         UsageSyncer(AndroidUsageSource(this), storage.usage, UsageWorkScheduler(this, UsageWorker::class.java))
     }
+    val health: com.luma.lifeos.domain.health.HealthIntegration by lazy {
+        com.luma.lifeos.domain.health.HealthSyncer(com.luma.lifeos.integration.health.AndroidHealthSource(this), storage.health)
+    }
 }

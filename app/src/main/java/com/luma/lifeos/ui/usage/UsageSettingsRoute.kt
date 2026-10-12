@@ -27,7 +27,8 @@ import java.time.format.FormatStyle
 
 @Composable
 fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneId,
-    onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onPlaces: () -> Unit) {
+    onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onPlaces: () -> Unit,
+    health: com.luma.lifeos.domain.health.HealthIntegration? = null) {
     val factory = remember(integration) { viewModelFactory { initializer { UsageSettingsViewModel(integration) } } }
     val vm: UsageSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
@@ -73,6 +74,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                     }
                 }
             }
+            if (health != null) item { com.luma.lifeos.ui.health.HealthSettingsCard(health) }
             item {
                 Text(stringResource(R.string.usage_daily_title), style = MaterialTheme.typography.titleLarge)
                 DayNavigation(date, onSelectDate, onToday)

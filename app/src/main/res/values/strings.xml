@@ -236,4 +236,26 @@
     <string name="summary_usage_value">Saved foreground usage: %1$s · apps: %2$d</string>
     <string name="summary_activity">Recorded activity</string>
     <string name="summary_activity_value">%1$s: %2$s %3$s · %4$s · saved samples: %5$d</string>
+    <string name="health_title">Health Connect steps</string>
+    <string name="health_explanation">Optionally allow Luma to read step totals from Health Connect. Tap Import to refresh the last seven calendar dates, including today so far. Totals stay on this device and appear in Today, Timeline and saved summaries. Health Connect combines overlapping sources. Luma does not write health data or read sleep or workouts.</string>
+    <string name="health_enable">Enable step imports</string>
+    <string name="health_disabled">Step imports are off</string>
+    <string name="health_required">Read-steps permission is required</string>
+    <string name="health_update_required">Health Connect needs installation or an update</string>
+    <string name="health_unavailable">Health Connect is unavailable on this device</string>
+    <string name="health_ready">Read-steps access is available</string>
+    <string name="health_no_data">Health Connect returned no step data for this window</string>
+    <string name="health_error">Step import failed. Saved history is retained; try again.</string>
+    <string name="health_zone">Import timezone: %1$s. This timezone stays fixed when you travel; display dates follow each interval’s start.</string>
+    <string name="health_last_sync">Last successful step import: %1$s</string>
+    <string name="health_grant">Allow reading steps</string>
+    <string name="health_install">Install or update Health Connect</string>
+    <string name="health_import">Import steps now</string>
+    <string name="health_manage">Manage Health Connect access</string>
+    <string name="health_refresh">Refresh access status</string>
+    <string name="health_settings_missing">The requested screen could not open. Use device Settings to find Health Connect.</string>
+    <string name="health_action_error">Health controls could not load or save. Refresh to retry.</string>
+    <string name="health_privacy_title">How Luma uses steps</string>
+    <string name="health_privacy_retention">Luma stores imported daily step totals in its private local database. It does not upload them, use telemetry, or enable automatic backup. Imports run only while the app is open. Turning imports off stops Luma reads and keeps saved history; manage Health Connect access to revoke permission. Successful imports reconcile corrections and removed data in the last seven dates. Older saved totals remain snapshots. Missing data is shown as unavailable, not zero. Clearing Luma’s app storage or uninstalling deletes these local copies without changing Health Connect data.</string>
+    <string name="health_close">Close</string>
 </resources>

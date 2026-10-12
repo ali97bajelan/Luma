@@ -36,6 +36,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
     implementation(project(":integration:usage"))
+    implementation(project(":integration:health"))
     implementation(libs.work.runtime)
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)

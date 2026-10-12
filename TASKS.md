@@ -363,7 +363,27 @@ see `docs/VALIDATION.md` for commands and the temporary dependency mirror used h
 
 ## T13 — Health/activity integration
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: opt-in read-only Health Connect steps behind an Android adapter,
+permission/provider/status UX, native privacy-rationale routes and foreground
+manual sync. Native aggregation avoids overlapping-source double counts. A durable
+import timezone and calendar-date identities retain one set of step totals across
+travel and retries. Seven-date atomic refreshes update corrections and reconcile
+removed data, preserving IDs/audit/metadata/links during updates. Null is unavailable,
+explicit zero is retained; errors/revocation keep history. Immediate opt-out cancels
+pending queries and rejects stale commits even across disable/re-enable. Existing
+Today/Timeline/details and saved summaries consume activity values. Sleep/workouts
+and background health reads remain deferred; schema and API 28/35 are unchanged.
+
+Validation: 188 JVM tests pass (71 domain, 99 app, 7 data, 5 usage adapter,
+6 health adapter); debug and both instrumentation APKs build. Data/usage lint
+pass; health/app lint hit the existing bundled-analyzer compatibility failure.
+Independent review findings have regression fixes. Six Room cases and two Compose
+flows compile. Full evidence is recorded in `docs/VALIDATION.md`.
+Native Health Connect permission/provider behavior, actual
+steps, restart/revocation and device rendering remain pending user validation.
+No emulator or device was launched.
 
 
 ### Scope

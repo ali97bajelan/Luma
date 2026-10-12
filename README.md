@@ -3,7 +3,7 @@
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
-mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, and optional on-device app-usage imports. Remaining capture,
+mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, and optional Health Connect step imports. Remaining capture,
 integrations, and reviews follow [TASKS.md](TASKS.md).
 
 ## Build and run
@@ -17,8 +17,8 @@ untracked `local.properties`):
 
 ```sh
 ./gradlew :app:assembleDebug
-./gradlew :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest :integration:usage:testDebugUnitTest
-./gradlew :app:lintDebug :core:data:lintDebug :integration:usage:lintDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest
+./gradlew :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest
+./gradlew :app:lintDebug :core:data:lintDebug :integration:usage:lintDebug :integration:health:lintDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest
 ./gradlew :app:connectedDebugAndroidTest # running emulator or attached device
 ./gradlew :core:data:connectedDebugAndroidTest # persistence and schema baseline checks
 ```
@@ -57,7 +57,14 @@ background refresh, access/status controls and saved daily app foreground totals
 The Android reporting intervals determine displayed dates; totals are not exact
 local-day measurements or device screen-on time. Device reboots and clock
 corrections conservatively leave affected intervals incomplete, retaining saved
-history and importing only newly started intervals. Health acquisition remains T13.
+history and importing only newly started intervals. Settings also offers optional
+Health Connect read-steps access and foreground imports. Step totals use Health
+Connect aggregation across sources and refresh the last seven calendar dates in
+a saved import timezone, including today so far. Repeated imports update the same
+records and reconcile source corrections/deletions in that window. Missing data
+stays unavailable; older saved totals remain snapshots. Turning imports off stops
+reads and keeps saved history; native Health Connect settings manage revocation.
+Sleep, workouts and background health reads are deferred.
 Today shares the event previews and date controls. Quick Capture
 creates mood, journal and memory records offline; journals include a full detail
 view. Existing moods/journals can be remembered without copying their content.
