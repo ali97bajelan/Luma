@@ -19,6 +19,16 @@ private const val TIMELINE_VISIBLE = """(type != 'APP_USAGE' OR NOT EXISTS (
 @Dao
 interface LifeEventDao {
     @Transaction
+    @Query("SELECT id, occurred_at FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE' ORDER BY occurred_at, id")
+    suspend fun reviewSources(start: Long, end: Long): List<com.luma.lifeos.data.entity.ReviewSource>
+
+    @Query("""SELECT app_usage_record.*, life_event.metadata_json FROM app_usage_record
+        INNER JOIN life_event ON life_event.id = app_usage_record.life_event_id
+        WHERE life_event.source = 'USAGE_STATS' AND life_event.source_ref LIKE 'usage:daily:%'
+        AND bucket_start >= :start AND bucket_start < :end ORDER BY bucket_start, package_name""")
+    suspend fun nativeUsageSources(start: Long, end: Long): List<com.luma.lifeos.data.entity.NativeUsageSource>
+
+    @Transaction
     @Query("SELECT id, occurred_at, metadata_json FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE' ORDER BY occurred_at, id")
     suspend fun summarySources(start: Long, end: Long): List<SummarySource>
 

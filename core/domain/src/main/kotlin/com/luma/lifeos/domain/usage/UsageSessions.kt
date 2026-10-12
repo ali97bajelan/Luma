@@ -52,3 +52,11 @@ fun sessionUsageReport(sessions: List<UsageSession>, date: LocalDate, zone: Zone
     }.sortedWith(compareByDescending<AppUsageTotal> { it.durationMillis }.thenBy { it.packageName })
     return DailyUsageReport(date, zone, apps, apps.fold(0L) { total, row -> Math.addExact(total, row.durationMillis) }, visits, history)
 }
+
+/** Empty partial history cannot erase an observed aggregate, including an explicit zero. */
+fun selectSavedUsageReport(sessions: DailyUsageReport, legacy: DailyUsageReport?, hasQueryWindows: Boolean): DailyUsageReport? = when {
+    sessions.sessions.isNotEmpty() || sessions.history == UsageHistory.COMPLETE -> sessions
+    legacy != null -> legacy
+    hasQueryWindows -> sessions
+    else -> null
+}

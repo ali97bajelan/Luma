@@ -673,6 +673,38 @@ into private storage, without requiring broad media access. Core flows require
 neither location nor health/usage permission. AI remains absent until explicitly
 authorized; deterministic reviews remain sufficient.
 
+## Weekly Review (T16)
+
+`WeeklyReviewRepository` provides a deterministic report and bounded contributing
+source pages. Pure domain calculations use metric-only records, inclusive ISO
+civil dates and the selected zone. Completed weeks compare seven dates; the
+current week compares Monday through today with matching previous weekdays and
+labels today partial. Mood/energy/stress averages weight individual samples.
+Emotion and catalog frequencies group by stable IDs and retain distinct equal
+names. Promotions keep one event; app usage does not contribute to entry counts.
+Activity totals keep type/unit/provider groups separate and use decimal sums.
+
+`RoomWeeklyReviewRepository` reads inputs and all saved usage dates in one read
+transaction on IO. Indexed Room projections omit bodies, notes, photos and private
+catalog fields. The current continuous occurrence query also reads the gap between
+partial comparison periods; eliminating that unused work is a deferred optimization.
+All contributing table changes invalidate the observed report. No weekly cache or
+schema migration is added. Exact bound-argument metric predicates filter sources
+before count and 50-row paging, without retaining unbounded event-ID arrays.
+
+Usage reuses Settings' saved-day calculation: unioned/clipped sessions take
+precedence, with native-start aggregate fallback if sessions are unavailable.
+An empty partial query cannot discard a non-null legacy aggregate, including
+recorded zero. Partial empty windows alone do not establish zero measurements.
+Weekly totals expose recorded dates and complete/partial/aggregate-only history.
+Per-date read-only usage routes inspect the same evidence without native imports.
+
+Compose Review keeps its independently saved week selection, calendar controls,
+lazy sections and bounded memory previews. Source pages cancel obsolete loads
+using `transformLatest`; retries retain filters and saved offsets. Existing content,
+memory, person and place routes remain the navigation targets. No AI service,
+causal text, telemetry or new permission is introduced.
+
 ## Validation
 
 Run JVM domain tests independently, Android lint and debug/unit builds in CI,

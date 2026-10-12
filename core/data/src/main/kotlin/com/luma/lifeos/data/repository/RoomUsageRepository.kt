@@ -94,7 +94,7 @@ class RoomUsageRepository(private val database: LumaDatabase) : UsageRepository 
         withContext(Dispatchers.IO) { database.withTransaction { loadDaily(date, zone) } }
     }.distinctUntilChanged()
 
-    private suspend fun loadDaily(date: LocalDate, zone: ZoneId): DailyUsageReport? {
+    internal suspend fun loadDaily(date: LocalDate, zone: ZoneId): DailyUsageReport? {
         val start = date.atStartOfDay(zone).toInstant(); val end = date.plusDays(1).atStartOfDay(zone).toInstant()
         if (start == end) return null
         val visits = database.usageSessions().forDay(start.toEpochMilli(), end.toEpochMilli())
@@ -108,20 +108,15 @@ class RoomUsageRepository(private val database: LumaDatabase) : UsageRepository 
             Instant.ofEpochMilli(it.startedAt), Instant.ofEpochMilli(it.endedAt), it.appLabel, it.ongoing) }, date, zone, history)
         if (visits.isNotEmpty() || history == UsageHistory.COMPLETE) return report
 
-        val rows = database.lifeEvents().details(start.storageBoundary(), end.storageBoundary())
-            .filter { it.event.source == source && it.event.sourceReference?.startsWith("usage:daily:") == true }
-            .mapNotNull { record -> record.appUsage?.let { usage ->
-                UsageBucket(usage.packageName, Instant.ofEpochMilli(usage.bucketStart), Instant.ofEpochMilli(usage.bucketEnd),
-                    usage.durationMs, record.event.metadataJson.usageLabel())
-            } }
+        val rows = database.lifeEvents().nativeUsageSources(start.storageBoundary(), end.storageBoundary()).map { record ->
+            val usage = record.usage
+            UsageBucket(usage.packageName, Instant.ofEpochMilli(usage.bucketStart), Instant.ofEpochMilli(usage.bucketEnd),
+                usage.durationMs, record.metadataJson.usageLabel())
+        }
         val legacy = dailyUsageReport(rows, date, zone)
         // Requested query bounds do not establish retention. An empty partial query
         // must not hide real saved totals when Android has already lost the events.
-        return when {
-            legacy?.apps?.isNotEmpty() == true -> legacy
-            windows.isNotEmpty() -> report
-            else -> legacy
-        }
+        return selectSavedUsageReport(report, legacy, windows.isNotEmpty())
     }
     private suspend fun saveState(state: UsageImportState) {
         val checkpoint = JSONObject().put("v", 1).put("enabled", state.enabled).put("status", state.status.name)

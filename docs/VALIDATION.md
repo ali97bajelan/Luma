@@ -1279,3 +1279,79 @@ Logs: `/tmp/luma-t15-data-red.log`, `/tmp/luma-t15-state-red.log`,
 `/tmp/luma-t15-review-green.log`, `/tmp/luma-t15-final-checks.log`,
 `/tmp/luma-t15-final-apks.log`. The host metrics are also in the data test XML
 for `SearchSqlHostTest`. No commit was created.
+
+## T16 — Weekly Review, 2026-10-12
+
+Implemented the approved offline Weekly Review. It uses ISO Monday–Sunday weeks,
+saved independent date selection and current-week weekday-matched comparisons.
+Today is explicitly partial. Source actions browse exact contributing records in
+50-row pages; memories, catalogs and saved usage retain existing source routes.
+Report calculations use one transactional metric snapshot, weighted mood scales,
+ID-based emotion/catalog frequencies, decimal activity totals and the same saved
+session-first usage rules as Settings. No AI, network access, dependencies,
+permissions or schema migration were added.
+
+Verified in this session:
+
+- PASS: **239 JVM tests**, forced to execute in the final run: 94 domain, 117 app,
+  9 data, 13 usage and 6 health; zero failures, errors or skipped tests.
+- PASS: normal debug APK, app instrumentation APK and data instrumentation APK.
+  Eight new Room cases and three new Review Compose flows compile. They cover
+  weighted statistics, exact sources, catalog identity/correction/deletion, source
+  paging, activity units/providers, midnight sessions, displaced native usage
+  parents, observed zero, live updates and saved historical-week restoration.
+- PASS: app, data, usage and health lint with zero errors. App has eight existing
+  warnings (target/dependency versions and older quantity strings); other modules
+  have no issues. The earlier documented app/health detector failures did not
+  recur with this checkout's configured lint 8.8.2. No lint suppression or
+  dependency change was introduced by T16.
+- PASS: production-generated metric source SQL against the exported Room v2
+  schema via standard-library host SQLite. Checks cover all metric predicates,
+  date boundaries, stable ordering, count/page agreement, measured zero activity,
+  literal bound values, deletion and correction. A 50,000-entry history fixture
+  across approximately five years measured count+page query p95 of 0.006–0.013 ms.
+  This deliberately isolates indexed queries with most rows outside the selected
+  period; it excludes Room mapping, dense selected weeks, device I/O and UI.
+- PASS: generated Room code confirms the report projections exclude journal
+  bodies, mood notes, photos and private catalog fields.
+- PASS: `git diff --check`. Existing untracked release files, schema exports and
+  Search resources were preserved. No commit, installation or emulator change.
+
+A fresh read-only reviewer identified two important problems. The source state
+regression reproduced an illegal Flow emission context; `transformLatest` now
+cancels obsolete page loads and emits within a valid context. Empty partial usage
+windows could mask an explicit zero aggregate; the pure saved-report selection
+regressions now preserve known zero while keeping complete-session precedence.
+These changes passed the final full suites. The corresponding Room zero fixture
+is compiled, not runtime-verified.
+
+Minor deferred: partial-week comparisons currently read up to six unused dates
+between the previous comparison and the selected week, then discard them before
+calculation. Results are correct; using two explicit date predicates could reduce
+work. This remains recorded in the plan.
+
+Pending: `adb devices -l` returned no connected device. The Room/UI tests,
+source navigation/recreation, visual/accessibility checks and full repository p95
+are unexecuted. A compiled fixture inserts 50,000 records across five years with
+2,500 selected mood entries and records 20 full repository load timings; it does
+not claim the <300 ms target until run. T16 is implemented, validation pending.
+T11/T13/T15 platform follow-ups remain separate.
+
+Final commands:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t13-mirror.init.gradle \
+  -I /tmp/luma-t14-retest.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug \
+  :integration:usage:lintDebug :integration:health:lintDebug
+```
+
+Logs: `/tmp/luma-t16-baseline.log`, `/tmp/luma-t16-domain-red.log`,
+`/tmp/luma-t16-data-red.log`, `/tmp/luma-t16-sql-red.log`,
+`/tmp/luma-t16-state-red.log`, `/tmp/luma-t16-ui-red.log`,
+`/tmp/luma-t16-checks.log`, `/tmp/luma-t16-checks-green.log`,
+`/tmp/luma-t16-zero-red.log`, `/tmp/luma-t16-zero-green.log`,
+`/tmp/luma-t16-app-health-lint.log`, `/tmp/luma-t16-final-checks.log`.

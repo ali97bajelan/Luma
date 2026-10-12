@@ -3,8 +3,8 @@
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
-mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, optional Health Connect step imports, saved daily summaries, and simple local lookup. Remaining capture,
-integrations, and reviews follow [TASKS.md](TASKS.md).
+mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, optional Health Connect step imports, saved daily summaries, simple local lookup, and deterministic weekly reviews.
+Remaining backup, privacy and release work follows [TASKS.md](TASKS.md).
 
 ## Build and run
 
@@ -101,6 +101,14 @@ Journal and memory forms can add up to 20 photos (25 MiB each); selected images
 are copied into app-private storage, with unavailable-photo states and safe
 removal. Photos remain on-device; no upload or automatic backup is enabled.
 Abandoned protected drafts may retain private files until released.
-Review lists the current week’s memories; full statistics and privacy Settings remain
-assigned to later tasks. No future backlog features, network
+Review selects an ISO Monday–Sunday week and compares its saved observations with
+the preceding period. The current week uses matching weekdays and labels today
+partial. It shows weighted mood/energy/stress averages, mood by date, emotion
+frequencies, notable memories, linked people/places, recorded foreground app usage
+and activity grouped by type/unit/source. Source actions open contributing entries,
+catalog details and saved daily usage evidence. Missing measurements remain
+unavailable, including empty partial session history; explicit aggregate zero is
+retained. Reviews run offline with AI disabled. Device execution and full repository
+timing for T16 remain pending; see docs/VALIDATION.md. Privacy Settings remain
+assigned to T18. No future backlog features, network
 permission, telemetry, or mandatory AI service are included.

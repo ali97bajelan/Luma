@@ -26,6 +26,7 @@ import com.luma.lifeos.domain.repository.LifeEventRepository
 /** One database per process, owned by the application composition root. */
 class LumaStorage(context: Context) {
     private val database = LumaDatabase.open(context)
+    val reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository = com.luma.lifeos.data.repository.RoomWeeklyReviewRepository(database)
     val search: com.luma.lifeos.domain.repository.SearchRepository = com.luma.lifeos.data.repository.RoomSearchRepository(database)
     val photos: PhotoRepository = RoomPhotoRepository(database, ManagedPhotoFiles(File(context.filesDir, "photos"))) { source ->
         val uri = Uri.parse(source)

@@ -533,7 +533,28 @@ findings were reproduced with failing JVM regressions and fixed. See docs/VALIDA
 
 ## T16 — Weekly Review
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation: permission-free offline Review with saved ISO week/date selection,
+matched previous-period comparisons, weighted mood/energy/stress averages, daily
+mood samples, recorded emotion frequencies, notable memory previews, linked
+people/place counts, saved foreground app usage and activity grouped by unit and
+source. Current-week reviews compare matching weekdays and label today partial.
+Metric-only Room projections read one transaction; exact metric predicates drive
+50-row source pages and existing content routes. Memories retain original content
+and marker actions. Saved per-date usage evidence preserves session precedence,
+midnight clipping, native-start aggregate dating and history labels; recorded zero
+survives empty partial windows. No AI, schema change, dependency or permission added.
+
+Validation (2026-10-12): all 239 JVM tests pass; normal debug and both test APKs
+build, and app/data/usage/health lint passes with zero errors. Actual generated
+metric-source SQL executes against the exported v2 schema, including a 50,000-record history fixture. Eight
+Room and three Review UI tests compile, including source traceability, corrections,
+paging, restoration and a repository timing fixture. No device is connected;
+native Room/UI execution, visual checks and end-to-end repository p95 remain
+pending. Host query timings exclude Room/device costs. Previously documented
+app/health analyzer crashes did not recur in this run. Minor deferred: partial
+comparisons read a few excluded previous-week dates before discarding them. See docs/VALIDATION.md.
 
 
 ### Scope

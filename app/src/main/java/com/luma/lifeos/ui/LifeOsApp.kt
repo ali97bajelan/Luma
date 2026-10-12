@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui
 
+import android.net.Uri
+import com.luma.lifeos.domain.review.*
+import com.luma.lifeos.ui.review.*
 import com.luma.lifeos.ui.timeline.TimelineRoute
 import com.luma.lifeos.ui.timeline.EventDetailRoute
 import com.luma.lifeos.domain.repository.TimelineRepository
@@ -82,7 +85,7 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null, reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository? = null) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
     val photoScope = rememberCoroutineScope()
@@ -168,7 +171,18 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         PeopleRoute(people, onCreate = { navController.navigate("person") },
                             onPerson = { navController.navigate("person_detail/$it") })
                     } else if (destination == Destination.REVIEW) {
-                        MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
+                        if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
+                            onSources = { dates, metric ->
+                                val activity = metric.activity
+                                navController.navigate("review_sources/${dates.start}/${dates.through}/${metric.kind.name}" +
+                                    "?id=${metric.id ?: ""}&activity=${Uri.encode(activity?.type.orEmpty())}" +
+                                    "&unit=${Uri.encode(activity?.unit.orEmpty())}&source=${activity?.source?.name.orEmpty()}")
+                            }, onEvent = ::openEvent,
+                            onPerson = { navController.navigate("person_detail/$it") },
+                            onPlace = { navController.navigate("place_detail/$it") },
+                            onUsage = { navController.navigate("review_usage/$it") },
+                            onMemory = { navController.navigate("memory?eventId=${it.event.id}") })
+                        else MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
                             onMemory = { navController.navigate("memory?eventId=$it") },
                             onJournal = { navController.navigate("journal_detail/$it") })
                     } else if (destination == Destination.SETTINGS && usage != null) {
@@ -179,6 +193,26 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         FoundationScreen(destination, onPlaces = { navController.navigate("places") })
                     }
                 }
+            }
+            composable("review_sources/{start}/{through}/{kind}?id={id}&activity={activity}&unit={unit}&source={source}",
+                arguments = listOf("start", "through", "kind", "id", "activity", "unit", "source").map { name ->
+                    navArgument(name) { type = NavType.StringType; if (name in setOf("id", "activity", "unit", "source")) defaultValue = "" }
+                }) { entry ->
+                reviews?.let { reviewRepository ->
+                    val args = requireNotNull(entry.arguments)
+                    val kind = ReviewMetricKind.valueOf(requireNotNull(args.getString("kind")))
+                    val metric = ReviewMetric(kind, args.getString("id")?.takeIf { it.isNotEmpty() }?.let(UUID::fromString),
+                        if (kind == ReviewMetricKind.ACTIVITY) ReviewActivityKey(requireNotNull(args.getString("activity")),
+                            requireNotNull(args.getString("unit")), com.luma.lifeos.domain.model.EventSource.valueOf(requireNotNull(args.getString("source")))) else null)
+                    ReviewSourcesRoute(reviewRepository,
+                        ReviewDates(LocalDate.parse(args.getString("start")), LocalDate.parse(args.getString("through"))),
+                        currentDay.zone, metric, onBack = { navController.popBackStack() }, onEvent = ::openEvent,
+                        onMemory = { navController.navigate("memory?eventId=${it.event.id}") })
+                }
+            }
+            composable("review_usage/{date}", arguments = listOf(navArgument("date") { type = NavType.StringType })) { entry ->
+                usage?.let { ReviewUsageRoute(it, LocalDate.parse(entry.arguments?.getString("date")), currentDay.zone,
+                    onBack = { navController.popBackStack() }) }
             }
             composable("search") {
                 search?.let { com.luma.lifeos.ui.search.SearchRoute(it, currentDay.zone,
