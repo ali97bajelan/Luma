@@ -493,13 +493,37 @@ See docs/VALIDATION.md.
 
 ## T15 — Search and filters
 
-Status: pending
+Status: implemented (validation pending)
 
+Scope revised by the user (2026-10-12): prioritize app performance and simple
+lookup by titles, tags, people, places and dates. Body/note search, mood/emotion
+and event-type filters and full-text indexing are outside this stage.
+
+Implementation: Timeline opens local Search with literal title/linked-name
+substring matching and optional date/tag/person/place filters. AND between
+categories and OR within tag/person selections run in SQL before paging. Bound
+arguments preserve literal wildcard input; catalog IDs preserve distinct names.
+Newest-first 50-row pages retain at most 300 rows. Typing is debounced, obsolete
+queries are cancelled, filters/date zones and opened-result anchors survive
+restoration, and source changes refresh matches. Known zero-use app records follow
+Timeline visibility. Results reuse the existing source routes. No schema migration,
+new product dependency, permission or body-text index was introduced.
+
+Validation (2026-10-12): all 222 JVM tests pass; normal debug/test APKs compile and
+data lint passes. Host SQLite executes the production SQL against the exported v2
+schema, checking combined filters, Persian/literal names, body exclusion,
+count/pages, edits/deletion and a 50,000-entry/five-year fixture. Query-only p95 is
+0.25–44.53 ms across broad/title/no-match/date/combined profiles on the host; this
+excludes Room relation mapping and device UI. Six Room and two Search UI device
+tests compile. No device is connected, so native result navigation, recreation,
+visual checks and end-to-end page timing remain pending. Review paging/anchor
+findings were reproduced with failing JVM regressions and fixed. See docs/VALIDATION.md.
 
 ### Scope
 
-- Implement local text search and filters for date, event type, tags, mood/emotion, person, and place.
-- Design query/index strategy for multi-year data.
+- Implement local lookup on titles and linked tag/person/place names.
+- Combine optional date, tag, person and place filters.
+- Keep queries and retained results bounded; measure realistic multi-year data.
 
 ### Acceptance criteria
 

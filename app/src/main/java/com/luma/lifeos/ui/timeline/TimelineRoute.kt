@@ -29,7 +29,8 @@ import java.time.ZoneId
 
 @Composable
 fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
-    onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: (EventId) -> Unit) {
+    onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: (EventId) -> Unit,
+    onSearch: (() -> Unit)? = null) {
     val factory = remember(repository) { viewModelFactory { initializer { TimelineViewModel(repository, createSavedStateHandle()) } } }
     val pager: TimelineViewModel = viewModel(factory = factory)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -58,6 +59,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
                     Text(stringResource(R.string.timeline), style = MaterialTheme.typography.headlineLarge)
+                    onSearch?.let { TextButton(onClick = it, modifier = Modifier.testTag("timeline_search")) { Text(stringResource(R.string.search)) } }
                     DayNavigation(date, onSelectDate, onToday)
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
                     if (state.loaded) Text(pluralStringResource(R.plurals.daily_events, state.eventCount, state.eventCount),

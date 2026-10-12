@@ -82,7 +82,7 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
     val photoScope = rememberCoroutineScope()
@@ -151,7 +151,8 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     if (destination == Destination.TIMELINE) {
                         TimelineRoute(timeline, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
                             onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
-                            onEvent = ::openEvent, onMemory = { navController.navigate("memory?eventId=$it") })
+                            onEvent = ::openEvent, onMemory = { navController.navigate("memory?eventId=$it") },
+                            onSearch = search?.let { { navController.navigate("search") } })
                     } else if (destination == Destination.TODAY) {
                         TodayRoute(repository,
                             date = selectedDate?.let(LocalDate::parse) ?: currentDay.date,
@@ -178,6 +179,10 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         FoundationScreen(destination, onPlaces = { navController.navigate("places") })
                     }
                 }
+            }
+            composable("search") {
+                search?.let { com.luma.lifeos.ui.search.SearchRoute(it, currentDay.zone,
+                    onBack = { navController.popBackStack() }, onEvent = ::openEvent) }
             }
             composable("places") {
                 PlacesRoute(places, onBack = { navController.popBackStack() },

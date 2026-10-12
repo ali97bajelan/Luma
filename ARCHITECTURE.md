@@ -614,6 +614,40 @@ attribution, sample counts and localized values; browsing remains available afte
 summary errors. These metrics describe saved observations, not provider completeness.
 No database migration, dependency or permission is added by T14.
 
+## Simple local lookup (T15)
+
+The user reduced T15 to titles, tags, people, places and dates, prioritizing speed.
+Pure domain SearchQuery/SearchPage/SearchOptions contracts are implemented by
+RoomSearchRepository. SearchSql builds fixed predicates and bound arguments:
+literal escaped LIKE matches event/journal titles and linked catalog names, while
+ID subqueries apply relational selections and occurrence bounds use civil dates.
+Outer whitespace is trimmed; matching follows SQLite LIKE, including ASCII case
+folding and exact non-ASCII characters. Body/note, mood and event-type lookup are
+outside this stage. No FTS/index-maintenance subsystem or schema change is added.
+
+Name subqueries match catalogs once before reverse-link traversal. Existing
+occurrence/UUID and reverse-link indexes serve dates, links and stable newest-first
+ordering. SQL applies predicates before count/LIMIT/OFFSET; count and a typed page
+share one Room transaction on Dispatchers.IO. Relation loading is limited to the
+matching page, rather than the full history. Known zero-duration usage is hidden
+using the same semantics as Timeline. Missing usage remains searchable.
+
+Timeline opens Search with an independent optional date range and catalog dialogs.
+SearchViewModel retains inputs and catalog IDs in SavedStateHandle, debounces text
+by 300 ms, rejects late generations and observes lifecycle/source invalidation.
+It reads at most 50 records per request and retains at most 300. Short earlier
+windows request only their missing prefix; count drift or overlapping IDs replaces
+the window rather than publishing duplicate keys. Clicking a result saves its
+absolute position for detail return/recreation. Replacement resets scrolling;
+append/prepend retain stable row keys. Deleted catalog selections remain explicit.
+Existing source routes, Quick Capture and primary tabs are reused.
+
+No network, permissions, new product dependency or migration is introduced. The
+host Python/SQLite regression executes production-generated SQL against schema v2
+and measures a 50,000-row/five-year fixture. Its timing excludes Room mapping and
+Android UI; native tests compile but require a connected validation device before
+T15 acceptance can be marked complete. See docs/VALIDATION.md.
+
 ## Implementation phases
 
 1. T01–T03: runnable project, tested domain contracts, relational persistence.

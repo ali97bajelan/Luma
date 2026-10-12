@@ -1191,3 +1191,91 @@ Logs: `/tmp/luma-timeline-unused-corrected-red.log`,
 Tests used the already-running API 36.1 emulator and disposable validation app;
 the installed user app and its data were not replaced or cleared. Final APKs use
 the normal application ID. Earlier full app-suite limitations remain recorded above.
+
+## T15 simple lookup — 2026-10-12
+
+User-approved reduced scope: titles, tags, people, places and dates, prioritizing
+speed. Timeline opens Search, whose text uses literal escaped substring matching
+on event/journal titles and linked catalog names. Outer whitespace is trimmed;
+SQLite LIKE folds ASCII case and compares non-ASCII characters directly. Search
+does not match bodies, notes, emotions, mood scores or event types. No FTS, new
+product dependencies, permissions, schema changes or migration were introduced.
+
+Date/catalog constraints and text combine before LIMIT/OFFSET. Different categories
+use AND; selected tags/people use OR. Count and 50-result pages share a Room
+transaction; only matching records' typed relations are loaded. The UI retains
+at most 300 rows, debounces typing by 300 ms, cancels obsolete generations and
+retains filters and opened-result anchors through recreation/detail return.
+Deleted catalog selections remain explicit and do not broaden the query.
+
+Verified:
+
+- PASS: all **222 JVM tests**: 83 domain, 8 data, 112 app, 13 usage, 6 health.
+  This includes three civil-date/input-limit domain checks, nine state checks and
+  the actual-SQL host regression. The final complete suites ran with test tasks
+  forced to execute, not inferred from compilation or UP-TO-DATE output.
+- PASS: normal debug APK, app and data instrumentation APK builds and data lint.
+  Six Room search cases and two Search UI flows compile. Current schema version
+  remains 2, with its existing identity hash unchanged.
+- PASS: production SearchSql output executed against the exported Room v2 schema
+  using Python 3's SQLite 3.46.1. It verifies literal percent/underscore/backslash/
+  quotes, Persian names, ASCII case matching, title/linked-name lookup, exclusion
+  of body/catalog-note-only matches, SQL-looking text treated literally, duplicate
+  link elimination, combined categories, ID selections, chronological ties,
+  count/page agreement, zero-use visibility, title edits/renames and deletion.
+- PASS: query-only benchmark with 50,000 journals across 1,825 dates (five years),
+  1,300-character bodies, tags, person links and places. Twelve count+page samples
+  per profile alternate offsets 0 and 200. Date lookup uses the existing
+  occurrence/UUID index without a temporary sorting tree.
+
+| Host query profile | Matching rows | Median ms | p95 ms |
+| --- | ---: | ---: | ---: |
+| All saved entries | 50,000 | 1.76 | 2.13 |
+| Title substring | 1,111 | 31.31 | 44.53 |
+| No matches | 0 | 36.79 | 38.32 |
+| From date | 336 | 0.17 | 0.25 |
+| Text + dates + tag + person + place | 8 | 28.63 | 30.41 |
+
+These are host in-memory SQLite timings on the ThinkBook Linux workstation. They
+exclude Room relation mapping, storage reopening, Android hardware and Compose;
+they do not establish the target device-page p95 or native UI responsiveness.
+The compiled Room fixture also contains 50,000 records and records full repository
+timings for subsequent device validation.
+
+Review reproduced three Important defects before fixing them: a 325-row result
+set prepended overlapping rows after its short last page; a same-count reordered
+source could append duplicate keys before invalidation arrived; returning from a
+detail near the end of the retained window lost that result. All three JVM
+regressions failed before the fixes, then passed with the six original state
+tests. Earlier loads now request only the missing prefix, overlap/count drift
+reloads a consistent first page, and opening a result saves its absolute anchor.
+Replacement resets scroll while append/prepend keep stable keys. Follow-up
+read-only review found no remaining Important issue in the fixes.
+
+Commands:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t13-mirror.init.gradle \
+  -I /tmp/luma-t14-retest.init.gradle \
+  :core:domain:test :core:data:testDebugUnitTest :app:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :core:data:lintDebug
+```
+
+The host SQL test uses Python 3/standard-library SQLite; no additional Python
+packages were installed. APKs were rebuilt after the final accessible picker/test
+selector changes. All final artifacts use the normal application ID.
+
+Pending: `adb devices` reports no connected device. No emulator was launched or
+reset, and no app was installed/replaced or personal data accessed. Native Room
+mapping, source navigation, recreation, filter dialogs, visual behavior and full
+repository/UI performance remain unverified. T15 is implemented, validation
+pending. Existing full app/health lint analyzer failures and T11/T13 platform
+follow-ups remain as documented; this task claims only data lint.
+
+Logs: `/tmp/luma-t15-data-red.log`, `/tmp/luma-t15-state-red.log`,
+`/tmp/luma-t15-host-sql.log`, `/tmp/luma-t15-review-red.log`,
+`/tmp/luma-t15-review-green.log`, `/tmp/luma-t15-final-checks.log`,
+`/tmp/luma-t15-final-apks.log`. The host metrics are also in the data test XML
+for `SearchSqlHostTest`. No commit was created.

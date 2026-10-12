@@ -28,6 +28,7 @@ import com.luma.lifeos.data.entity.*
 )
 @TypeConverters(StorageConverters::class)
 abstract class LumaDatabase : RoomDatabase() {
+    abstract fun search(): com.luma.lifeos.data.dao.SearchDao
     abstract fun lifeEvents(): LifeEventDao
     abstract fun content(): EventContentDao
     abstract fun catalog(): CatalogDao
