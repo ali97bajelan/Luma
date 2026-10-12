@@ -35,7 +35,8 @@ fun usageClockDiscontinuity(previous: UsageClockAnchor, current: UsageClockAncho
     return kotlin.math.abs(wallDelta.toDouble() - elapsedDelta.toDouble()) > 1_000
 }
 data class AppUsageTotal(val packageName: String, val appLabel: String?, val durationMillis: Long)
-data class DailyUsageReport(val date: LocalDate, val zone: ZoneId, val apps: List<AppUsageTotal>, val totalMillis: Long)
+data class DailyUsageReport(val date: LocalDate, val zone: ZoneId, val apps: List<AppUsageTotal>, val totalMillis: Long,
+    val sessions: List<UsageSession> = emptyList(), val history: UsageHistory = UsageHistory.UNAVAILABLE)
 
 class UsageIntervalChangedException : Exception("Native usage intervals overlap with different starts")
 
@@ -58,7 +59,7 @@ fun distinctUsageBuckets(buckets: List<UsageBucket>): List<UsageBucket> = bucket
 fun dailyUsageReport(buckets: List<UsageBucket>, date: LocalDate, zone: ZoneId): DailyUsageReport? {
     val rows = distinctUsageBuckets(buckets).filter { it.start.atZone(zone).toLocalDate() == date }
     if (rows.isEmpty()) return null
-    val apps = rows.groupBy { it.packageName }.map { (pkg, entries) ->
+    val apps = rows.filter { it.durationMillis > 0 }.groupBy { it.packageName }.map { (pkg, entries) ->
         AppUsageTotal(pkg, entries.last().appLabel, entries.fold(0L) { total, row -> Math.addExact(total, row.durationMillis) })
     }.sortedWith(compareByDescending<AppUsageTotal> { it.durationMillis }.thenBy { it.packageName })
     return DailyUsageReport(date, zone, apps, apps.fold(0L) { total, app -> Math.addExact(total, app.durationMillis) })

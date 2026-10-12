@@ -34,6 +34,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
+    var showTimeline by rememberSaveable { mutableStateOf(false) }
     key(date, zone) {
         var retry by remember { mutableIntStateOf(0) }
         val flow = remember(integration, retry) { observeUsageDay(integration, date, zone) }
@@ -80,17 +81,52 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                 DayNavigation(date, onSelectDate, onToday)
                 Text(zone.id, style = MaterialTheme.typography.bodySmall)
                 Text(stringResource(R.string.usage_daily_explanation))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = showTimeline, onClick = { showTimeline = true },
+                        label = { Text(stringResource(R.string.usage_view_timeline)) },
+                        modifier = Modifier.weight(1f).testTag("usage_view_timeline"))
+                    FilterChip(selected = !showTimeline, onClick = { showTimeline = false },
+                        label = { Text(stringResource(R.string.usage_view_totals)) },
+                        modifier = Modifier.weight(1f).testTag("usage_view_totals"))
+                }
             }
             when (val current = day) {
                 UsageDayState.Loading -> item { CircularProgressIndicator() }
-                UsageDayState.Empty -> item { Text(stringResource(R.string.usage_daily_empty), modifier = Modifier.testTag("usage_daily_empty")) }
+                UsageDayState.Empty -> item {
+                    Text(stringResource(R.string.usage_daily_empty), modifier = Modifier.testTag("usage_daily_empty"))
+                    if (showTimeline) Text(stringResource(R.string.usage_history_unavailable), modifier = Modifier.testTag("usage_history_unavailable"))
+                }
                 UsageDayState.Error -> item {
                     Text(stringResource(R.string.usage_daily_error))
                     TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
                 is UsageDayState.Data -> {
-                    item { Text(usageDuration(current.report.totalMillis), style = MaterialTheme.typography.titleLarge, modifier = Modifier.testTag("usage_daily_total")) }
-                    items(current.report.apps, key = { it.packageName }) { app ->
+                    when (current.report.history) {
+                        UsageHistory.PARTIAL -> item { Text(stringResource(R.string.usage_history_partial), modifier = Modifier.testTag("usage_history_partial")) }
+                        UsageHistory.UNAVAILABLE -> item { Text(stringResource(if (showTimeline) R.string.usage_history_unavailable else R.string.usage_legacy_totals),
+                            modifier = Modifier.testTag("usage_history_unavailable")) }
+                        UsageHistory.COMPLETE -> Unit
+                    }
+                    if (current.report.apps.isEmpty()) item {
+                        Text(stringResource(R.string.usage_daily_empty), modifier = Modifier.testTag("usage_daily_empty"))
+                    } else if (!showTimeline || current.report.history != UsageHistory.UNAVAILABLE) item {
+                        Text(usageDuration(current.report.totalMillis), style = MaterialTheme.typography.titleLarge, modifier = Modifier.testTag("usage_daily_total"))
+                    }
+                    if (showTimeline) items(current.report.sessions, key = { it.identity }) { session ->
+                        Card(Modifier.fillMaxWidth().testTag("usage_session_${session.packageName}_${session.openedAt.toEpochMilli()}")) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(session.appLabel ?: session.packageName, style = MaterialTheme.typography.titleMedium)
+                                if (session.appLabel != null) Text(session.packageName, style = MaterialTheme.typography.bodySmall)
+                                val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                                Text(stringResource(R.string.usage_session_times, session.start.atZone(zone).format(formatter),
+                                    session.end.atZone(zone).format(formatter)))
+                                if (session.openedAt < session.start) Text(stringResource(R.string.usage_session_continued,
+                                    session.openedAt.atZone(zone).format(formatter)), style = MaterialTheme.typography.bodySmall)
+                                Text(usageDuration(session.durationMillis))
+                                if (session.ongoing) Text(stringResource(R.string.usage_session_ongoing), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    } else items(current.report.apps, key = { it.packageName }) { app ->
                         Card(Modifier.fillMaxWidth().testTag("usage_app_${app.packageName}")) {
                             Column(Modifier.padding(16.dp)) {
                                 Text(app.appLabel ?: app.packageName, style = MaterialTheme.typography.titleMedium)

@@ -61,6 +61,8 @@ class UsageSyncer(private val source: UsageSource, private val repository: Usage
                 ?: now.minus(Duration.ofDays(7))
             val rows = distinctUsageBuckets(source.query(TimeRange(start, now)))
             if (!repository.state().enabled) return@withLock UsageSyncOutcome.DISABLED
+            val sessions = source.querySessions(TimeRange(now.minus(Duration.ofDays(7)), now))
+            if (!repository.state().enabled) return@withLock UsageSyncOutcome.DISABLED
             val afterClock = source.clockAnchor()
             if (afterClock != null && (beforeClock?.let { usageClockDiscontinuity(it, afterClock) } == true ||
                     state.clockAnchor?.let { usageClockDiscontinuity(it, afterClock) } == true))
@@ -68,13 +70,25 @@ class UsageSyncer(private val source: UsageSource, private val repository: Usage
             val after = source.access()
             if (after != UsageAccess.GRANTED) return@withLock unavailable(after)
             val eligible = rows.filter { state.minimumBucketStart == null || it.start > state.minimumBucketStart }
-            if (eligible.isEmpty()) {
+            val safeSessions = sessions?.let { batch ->
+                val floor = state.minimumBucketStart
+                if (floor == null) batch else {
+                    val safeStart = maxOf(batch.range.start, floor.plusMillis(1))
+                    if (safeStart >= batch.range.endExclusive) null else batch.copy(
+                        range = TimeRange(safeStart, batch.range.endExclusive),
+                        sessions = batch.sessions.filter { it.start > floor }, history = UsageHistory.PARTIAL)
+                }
+            }
+            if (eligible.isEmpty() && safeSessions == null) {
                 val quarantined = state.minimumBucketStart != null
                 repository.recordStatus(if (quarantined) UsageSyncStatus.INTERVAL_CHANGED else UsageSyncStatus.NO_DATA)
                 return@withLock if (quarantined) UsageSyncOutcome.INTERVAL_CHANGED else UsageSyncOutcome.NO_DATA
             }
-            repository.commit(eligible, now, now, afterClock ?: beforeClock)
-            UsageSyncOutcome.SUCCESS
+            repository.commitImport(eligible, safeSessions, now, now, afterClock ?: beforeClock)
+            if (eligible.none { it.durationMillis > 0 } && safeSessions?.sessions.isNullOrEmpty()) {
+                repository.recordStatus(UsageSyncStatus.NO_DATA)
+                UsageSyncOutcome.NO_DATA
+            } else UsageSyncOutcome.SUCCESS
         } catch (failure: Exception) {
             if (failure is CancellationException) throw failure
             if (!repository.state().enabled) return@withLock UsageSyncOutcome.DISABLED

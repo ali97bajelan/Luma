@@ -217,7 +217,15 @@
     <string name="usage_settings_missing">Usage access settings could not be opened. Look for Usage access in Android Settings.</string>
     <string name="usage_action_error">This action could not finish. Try again.</string>
     <string name="usage_daily_title">Saved daily foreground usage</string>
-    <string name="usage_daily_explanation">Dates follow the start of Android\'s reporting intervals. A timezone change can shift the displayed day. Apps used at the same time may be counted separately; the total is not device screen-on time. Intervals affected by a device restart or clock correction may be incomplete.</string>
+    <string name="usage_daily_explanation">View app visits or total foreground time for the selected day. Visits crossing midnight count only their time within this day. Apps used at the same time may be counted separately; the total is not device screen-on time.</string>
+    <string name="usage_view_timeline">Timeline</string>
+    <string name="usage_view_totals">Daily totals</string>
+    <string name="usage_history_partial">Session history may be incomplete. Android keeps recent opening and closing events for only a few days. These views show recorded visits and their totals.</string>
+    <string name="usage_history_unavailable">Opening and closing times are unavailable for this day. Switch to Daily totals to see any saved totals.</string>
+    <string name="usage_legacy_totals">Only older Android daily totals are saved for this day. Dates follow the start of Android\'s reporting intervals; individual visits are unavailable.</string>
+    <string name="usage_session_times">%1$s – %2$s</string>
+    <string name="usage_session_continued">Continued from a visit opened at %1$s</string>
+    <string name="usage_session_ongoing">Still open at the observation time shown; closing time is not yet recorded.</string>
     <string name="usage_daily_empty">No reported usage saved for this day</string>
     <string name="usage_daily_error">Saved usage could not be loaded</string>
     <string name="usage_interval_changed">Android usage intervals changed or the device restarted. Saved totals are preserved; only newly started intervals will import.</string>

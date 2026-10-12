@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 interface UsageSource {
     suspend fun access(): UsageAccess
     suspend fun query(range: TimeRange): List<UsageBucket>
+    suspend fun querySessions(range: TimeRange): UsageSessionBatch? = null
     /** Native Android sources must supply wall/monotonic/boot identity or fail safely. */
     suspend fun clockAnchor(): UsageClockAnchor? = null
 }
@@ -23,6 +24,11 @@ interface UsageRepository {
     suspend fun recordClockSafety(anchor: UsageClockAnchor, minimumBucketStart: Instant)
     /** Atomic buckets/checkpoint commit; rejects writes while disabled. */
     suspend fun commit(buckets: List<UsageBucket>, syncedAt: Instant, checkpoint: Instant, anchor: UsageClockAnchor? = null)
+    suspend fun commitImport(buckets: List<UsageBucket>, sessions: UsageSessionBatch?, syncedAt: Instant,
+        checkpoint: Instant, anchor: UsageClockAnchor? = null) {
+        check(sessions == null) { "Session persistence is unavailable" }
+        commit(buckets, syncedAt, checkpoint, anchor)
+    }
     fun observeDaily(date: LocalDate, zone: ZoneId): Flow<DailyUsageReport?>
 }
 interface UsageIntegration {

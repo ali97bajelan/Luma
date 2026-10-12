@@ -142,6 +142,30 @@ class UsageSyncerTest {
         assertEquals(UsageSyncOutcome.INTERVAL_CHANGED, sync.importNow())
         assertEquals(listOf(row), repo.rows); assertEquals(now, repo.current.checkpoint)
     }
+    @Test fun sessionsAreImportedWithoutDailyBucketsAndRevocationRejectsTheWholeBatch() = runBlocking {
+        val repo = MemoryRepo(); val source = Source()
+        val sync = UsageSyncer(source, repo, Jobs(), Clock.fixed(now, ZoneOffset.UTC))
+        sync.setEnabled(true)
+        source.sessions = UsageSessionBatch(TimeRange(now.minusSeconds(604_800), now),
+            listOf(UsageSession("org.example.app", now.minusSeconds(60), now, ongoing = true)))
+        assertEquals(UsageSyncOutcome.SUCCESS, sync.importNow())
+        assertEquals(60_000L, repo.sessions!!.sessions.single().durationMillis)
+        assertEquals(now, repo.current.checkpoint)
+        val original = repo.sessions
+        source.afterSessions = { source.permission = UsageAccess.REQUIRED }
+        source.sessions = source.sessions!!.copy(sessions = emptyList())
+        assertEquals(UsageSyncOutcome.ACCESS_REQUIRED, sync.importNow())
+        assertEquals(original, repo.sessions)
+    }
+    @Test fun emptySessionWindowIsSavedAndDoesNotFabricateAppUsage() = runBlocking {
+        val repo = MemoryRepo(); val source = Source()
+        val sync = UsageSyncer(source, repo, Jobs(), Clock.fixed(now, ZoneOffset.UTC))
+        sync.setEnabled(true)
+        source.sessions = UsageSessionBatch(TimeRange(now.minusSeconds(604_800), now), emptyList())
+        assertEquals(UsageSyncOutcome.NO_DATA, sync.importNow())
+        assertTrue(repo.sessions!!.sessions.isEmpty()); assertTrue(repo.rows.isEmpty())
+        assertEquals(now, repo.current.lastSync)
+    }
     private class Source : UsageSource {
         var permission = UsageAccess.GRANTED; var rows = emptyList<UsageBucket>()
         var failure: Exception? = null; var range: TimeRange? = null
@@ -149,8 +173,10 @@ class UsageSyncerTest {
         var accessGate: CompletableDeferred<Unit>? = null; var accessFailure: Exception? = null
         var anchor: UsageClockAnchor? = null
         var inFlight = 0; var maximumInFlight = 0
+        var sessions: UsageSessionBatch? = null; var afterSessions: () -> Unit = {}
         override suspend fun access(): UsageAccess { accessGate?.await(); accessFailure?.let { throw it }; return permission }
         override suspend fun clockAnchor() = anchor
+        override suspend fun querySessions(range: TimeRange): UsageSessionBatch? { afterSessions(); return sessions }
         override suspend fun query(range: TimeRange): List<UsageBucket> {
             this.range = range; failure?.let { throw it }
             inFlight++; maximumInFlight = maxOf(maximumInFlight, inFlight)
@@ -160,6 +186,7 @@ class UsageSyncerTest {
     private class Jobs : UsageScheduler { var active = false; override fun schedule() { active = true }; override fun cancel() { active = false } }
     private class MemoryRepo : UsageRepository {
         var current = UsageImportState(); var rows = emptyList<UsageBucket>()
+        var sessions: UsageSessionBatch? = null
         override fun observeState() = flowOf(current)
         override suspend fun state() = current
         override suspend fun setEnabled(enabled: Boolean) { current = current.copy(enabled = enabled, status = if (enabled) UsageSyncStatus.READY else UsageSyncStatus.DISABLED) }
@@ -168,6 +195,9 @@ class UsageSyncerTest {
             if (current.enabled) current = current.copy(clockAnchor = anchor, minimumBucketStart = minimumBucketStart, status = UsageSyncStatus.INTERVAL_CHANGED)
         }
         override suspend fun commit(buckets: List<UsageBucket>, syncedAt: Instant, checkpoint: Instant, anchor: UsageClockAnchor?) { check(current.enabled); assertUnambiguousUsage(buckets, rows); rows = buckets; current = current.copy(status = UsageSyncStatus.READY, lastSync = syncedAt, checkpoint = checkpoint, clockAnchor = current.clockAnchor ?: anchor) }
+        override suspend fun commitImport(buckets: List<UsageBucket>, sessions: UsageSessionBatch?, syncedAt: Instant, checkpoint: Instant, anchor: UsageClockAnchor?) {
+            commit(buckets, syncedAt, checkpoint, anchor); this.sessions = sessions
+        }
         override fun observeDaily(date: LocalDate, zone: ZoneId) = flowOf(dailyUsageReport(rows, date, zone))
     }
 }

@@ -14,6 +14,7 @@ interface UsagePlatform {
     fun unlocked(): Boolean
     fun granted(): Boolean
     fun daily(range: TimeRange): List<NativeUsageRow>?
+    fun events(range: TimeRange): List<NativeUsageEvent>? = null
     fun label(packageName: String): String?
     fun clockAnchor(): UsageClockAnchor? = null
 }
@@ -42,5 +43,23 @@ class AndroidUsageSource(private val platform: UsagePlatform) : UsageSource {
                 catch (failure: Exception) { if (failure is CancellationException) throw failure; null }
             UsageBucket(row.packageName, Instant.ofEpochMilli(row.startMillis), Instant.ofEpochMilli(row.endMillis), row.durationMillis, label)
         }
+    }
+    override suspend fun querySessions(range: TimeRange): UsageSessionBatch? = withContext(Dispatchers.IO) {
+        val permission = access()
+        if (permission != UsageAccess.GRANTED) throw UsageAccessException(permission)
+        val events = try { platform.events(range) }
+            catch (_: SecurityException) { throw UsageAccessException(UsageAccess.REQUIRED) }
+            ?: if (!platform.unlocked()) throw UsageAccessException(UsageAccess.LOCKED) else return@withContext null
+        check(events.size <= 200_000) { "Usage event response is too large" }
+        val labels = mutableMapOf<String, String?>()
+        val sessions = reconstructUsageSessions(events, range).map { session ->
+            val label = labels.getOrPut(session.packageName) {
+                try { platform.label(session.packageName)?.trim()?.take(200)?.takeIf { it.isNotEmpty() } }
+                catch (failure: Exception) { if (failure is CancellationException) throw failure; null }
+            }
+            session.copy(appLabel = label)
+        }
+        // Android does not expose a retention boundary or guarantee complete event history.
+        UsageSessionBatch(range, sessions, UsageHistory.PARTIAL)
     }
 }

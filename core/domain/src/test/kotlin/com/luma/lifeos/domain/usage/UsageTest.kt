@@ -32,6 +32,12 @@ class UsageTest {
         assertEquals(1_000L, dailyUsageReport(listOf(bucket(), bucket()), day, zone)!!.totalMillis)
         assertTrue(runCatching { dailyUsageReport(listOf(bucket(), bucket(duration = 2000)), day, zone) }.isFailure)
     }
+    @Test fun unusedAppsAreExcludedEvenWhenAndroidReportsNonEmptyBounds() {
+        val day = LocalDate.parse("2026-10-11"); val zone = ZoneId.of("UTC")
+        val report = dailyUsageReport(listOf(bucket(duration = 0), bucket("org.example.used", duration = 2000)), day, zone)!!
+        assertEquals(listOf("org.example.used"), report.apps.map { it.packageName })
+        assertTrue(dailyUsageReport(listOf(bucket(duration = 0)), day, zone)!!.apps.isEmpty())
+    }
     @Test fun shiftedNativeIntervalsAreRejectedWhileGrowingEndsAndAdjacentDaysAreAllowed() {
         val old = bucket()
         assertUnambiguousUsage(listOf(old.copy(end = old.end.plusSeconds(60))), listOf(old))

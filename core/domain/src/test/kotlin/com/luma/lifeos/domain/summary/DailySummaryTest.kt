@@ -33,6 +33,7 @@ class DailySummaryTest {
         val zero = calculateDailySummary(date, ZoneOffset.UTC, listOf(record(1).copy(
             activities = listOf(activity(1, 0.0)), usage = AppUsageDetails("org.example", start, start.plusSeconds(60), 0))))
         assertEquals(0L, zero.usage!!.totalMillis); assertEquals(BigDecimal.ZERO, zero.activities!!.single().total)
+        assertTrue(zero.usage!!.apps.isEmpty())
     }
     @Test fun orderingAndDuplicateSnapshotsCannotChangeTheMetrics() {
         val rows = listOf(record(1).copy(activities = listOf(activity(2, 0.2), activity(1, 0.1))),

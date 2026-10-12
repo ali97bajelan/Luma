@@ -96,12 +96,12 @@ class DailySummaryFlowTest {
             events.upsert(parent.copy(occurredAt = day.minusDays(1).atStartOfDay(zone).toInstant()))
         }
         show()
-        awaitText("summary_usage", "Saved foreground usage: 0 h 0 min 5.125 s · apps: 2")
+        awaitText("summary_usage", "Saved foreground usage: 0 h 0 min 5.125 s · apps: 1")
         awaitText("summary_usage_label_org.example.reader", "Reader")
         awaitText("summary_usage_package_org.example.reader", "org.example.reader")
         awaitText("summary_usage_duration_org.example.reader", "0 h 0 min 5.125 s")
-        awaitText("summary_usage_label_org.example.empty", "org.example.empty")
-        awaitText("summary_usage_duration_org.example.empty", "0 h 0 min 0 s")
+        compose.onNodeWithTag("summary_usage_label_org.example.empty").assertDoesNotExist()
+        compose.onNodeWithTag("summary_usage_duration_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_package_org.example.empty").assertDoesNotExist()
     }
     private fun scrollToTag(tag: String) {

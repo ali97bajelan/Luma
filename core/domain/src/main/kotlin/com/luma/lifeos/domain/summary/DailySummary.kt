@@ -7,7 +7,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-const val DAILY_SUMMARY_VERSION = 1
+const val DAILY_SUMMARY_VERSION = 2
 
 /** Only metric inputs: no private body text, attachments or unrelated catalog relations. */
 data class SummaryRecord(val id: EventId, val occurredAt: Instant, val mood: MoodSample? = null,
@@ -30,7 +30,7 @@ data class DailySummary(val date: LocalDate, val zone: ZoneId, val records: Int,
     val mood: MoodSummary? = null, val usage: DailyUsageReport? = null, val activities: List<ActivityTotal>? = null) {
     init {
         require(records >= 0 && journals in 0..records && memories in 0..records && (mood?.score?.samples ?: 0) <= records)
-        require(usage == null || (usage.date == date && usage.zone == zone && usage.apps.isNotEmpty() &&
+        require(usage == null || (usage.date == date && usage.zone == zone &&
             usage.apps.map { it.packageName }.distinct().size == usage.apps.size && usage.apps.all {
                 it.packageName.isNotBlank() && it.durationMillis >= 0 && (it.appLabel == null || it.appLabel.isNotBlank())
             } && usage.totalMillis == usage.apps.fold(0L) { sum, app -> Math.addExact(sum, app.durationMillis) }))

@@ -3,6 +3,7 @@ package com.luma.lifeos.integration.usage
 import android.Manifest
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
+import android.app.usage.UsageEvents
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -37,6 +38,28 @@ internal class AndroidUsagePlatform(private val context: Context) : UsagePlatfor
     override fun daily(range: TimeRange) = usage?.queryUsageStats(UsageStatsManager.INTERVAL_DAILY,
         range.start.toEpochMilli(), range.endExclusive.toEpochMilli())?.map {
         NativeUsageRow(it.packageName, it.firstTimeStamp, it.lastTimeStamp, it.totalTimeInForeground)
+    }
+    @Suppress("DEPRECATION")
+    override fun events(range: TimeRange): List<NativeUsageEvent>? {
+        val events = usage?.queryEvents(range.start.toEpochMilli(), range.endExclusive.toEpochMilli()) ?: return null
+        val result = mutableListOf<NativeUsageEvent>()
+        val event = UsageEvents.Event()
+        var count = 0
+        while (events.hasNextEvent()) {
+            check(++count <= 200_000) { "Usage event response is too large" }
+            if (!events.getNextEvent(event)) break
+            val kind = when (event.eventType) {
+                UsageEvents.Event.MOVE_TO_FOREGROUND -> NativeUsageEventKind.RESUME
+                UsageEvents.Event.MOVE_TO_BACKGROUND -> NativeUsageEventKind.PAUSE
+                UsageEvents.Event.SCREEN_NON_INTERACTIVE -> NativeUsageEventKind.SCREEN_OFF
+                UsageEvents.Event.KEYGUARD_SHOWN -> NativeUsageEventKind.LOCK
+                UsageEvents.Event.DEVICE_SHUTDOWN -> NativeUsageEventKind.SHUTDOWN
+                UsageEvents.Event.DEVICE_STARTUP -> NativeUsageEventKind.STARTUP
+                else -> continue
+            }
+            result += NativeUsageEvent(event.timeStamp, kind, event.packageName, event.className)
+        }
+        return result
     }
     @Suppress("DEPRECATION")
     override fun label(packageName: String): String? {

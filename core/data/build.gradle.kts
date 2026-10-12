@@ -22,6 +22,11 @@ kotlin { jvmToolchain(17) }
 
 room { schemaDirectory("$projectDir/schemas") }
 
+// Include a schema exported by this same build, including on the first clean build.
+tasks.matching { it.name.startsWith("copyRoomSchemasToAndroidTestAssets") }.configureEach {
+    dependsOn("copyRoomSchemas")
+}
+
 dependencies {
     api(project(":core:domain"))
     implementation(libs.room.runtime)

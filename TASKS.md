@@ -337,6 +337,32 @@ compatibility issue. See docs/VALIDATION.md.
 
 Status: complete
 
+Update requested (2026-10-12): reopen T12 for the reported issue where unused apps
+also appear in the usage list, and add two selectable views for the selected day:
+an app-session timeline and cumulative usage per app. This update is implemented
+and verified as described below; the original baseline remains documented afterward.
+
+Update implementation: Settings offers a saved Timeline/Daily totals selector.
+Native foreground events reconstruct chronological visits with opening/end times,
+durations, continued-from-previous-day and ongoing labels. Both views use the same
+recorded sessions, clipped at civil-day boundaries, with same-app overlaps unioned.
+Zero-use apps are excluded from usage and summary lists. Native event retention
+and missing boundaries are explicitly partial/unavailable; no visits are inferred
+from daily aggregates. Aggregate-only days retain their older totals. Separate
+session/window tables use an additive Room v1→v2 migration; daily records, metadata,
+links and summaries remain intact. Buckets/sessions/checkpoint commit atomically
+under existing access/clock/opt-out guards; retries retain identities and history.
+
+Update validation (2026-10-12): all 205 JVM tests and 76 Room instrumentation tests
+pass on the API 36.1 emulator, including migration/reopening, retry/rollback,
+retention fallback, complete/partial windows and opt-out. Eight focused native,
+usage Settings and summary UI checks pass, including real Android session import,
+view switching/restoration and midnight splitting. Normal debug/test APKs build;
+data/usage lint passes. The broader app run passed 31 of 32 tests, with an unrelated
+Places picker timeout that passed isolated retry; this is not a claim of a clean
+full app-suite run. Public native event identity/retention cannot guarantee complete
+session history, and OEM/reboot/six-hour-cycle follow-ups remain. See docs/VALIDATION.md.
+
 Implementation: opt-in Android daily foreground-usage adapter, native Usage access
 setup/status UX, manual imports and unique six-hour background work. Incremental
 overlapping imports preserve native bounds/totals, original event/child identities,
@@ -361,12 +387,22 @@ remain platform follow-ups. See docs/VALIDATION.md.
 
 - Integrate Android app-usage/screen-time APIs behind an adapter.
 - Implement permission/status UX, incremental/idempotent imports, package/app labeling, and daily aggregation.
+- Fix the usage list so apps with no recorded foreground usage on the selected day are excluded.
+- Provide two selectable views for the selected day: "Timeline" and "Daily totals".
+- In Timeline, show each recorded app session chronologically with the app name, opening/start time, end time, and duration; keep separate visits to the same app visible.
+- In Daily totals, show the cumulative foreground usage duration for each used app on the selected day.
+- Use recorded foreground-session events for Timeline; do not infer opening times or individual sessions from daily aggregates. Represent unavailable session history explicitly.
 - Gracefully handle unsupported/revoked permission states.
 
 ### Acceptance criteria
 
 - No fabricated usage data.
 - Repeated imports do not duplicate records.
+- Apps with zero recorded foreground usage on the selected day do not appear in either view; a day with no usage shows an empty state.
+- User can switch between Timeline and Daily totals for the same selected day.
+- Timeline shows when each app was opened and how long each recorded visit lasted, including repeated visits to the same app in chronological order.
+- Daily totals correctly combine all recorded usage for each app within the selected day's boundaries; visits spanning midnight contribute only their overlap with that day.
+- When session history is complete, session durations and per-app daily totals agree; unavailable or incomplete session history is clearly indicated without fabricated visits.
 - User can use the rest of the app without permission.
 
 ## T13 — Health/activity integration

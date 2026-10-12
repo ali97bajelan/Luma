@@ -54,7 +54,7 @@ adapters depend inward on domain contracts. No microservices or backend.
 
 ## Database schema (T03)
 
-Schema version 1 uses stable text UUIDs, UTC epoch-millisecond timestamps,
+Schema version 2 retains the original stable text UUIDs, UTC epoch-millisecond timestamps,
 and explicit foreign keys. Day ranges are computed from the selected `ZoneId`,
 not by adding 24 hours. Keep event occurrence separate from creation/update times.
 
@@ -73,6 +73,8 @@ not by adding 24 hours. Keep event occurrence separate from creation/update time
 | app_usage_record | id PK; life_event_id UNIQUE FK; bucket_start/end; package_name; duration_ms; source; UNIQUE(source, package_name, bucket_start, bucket_end) |
 | daily_summary | date + zone_id composite PK; derived metrics; algorithm_version; computed_at; freshness state |
 | integration_state | source PK; status; last_sync_at; checkpoint |
+| usage_session | package_name + started_at composite PK; ended_at; app_label nullable; ongoing; start/end indexes |
+| usage_session_window | query_start + query_end composite PK; complete flag |
 
 Index events on `(occurred_at, id)` and `(type, occurred_at)`; source identities
 are unique when present. Index every FK lookup and reverse link lookup. Event
@@ -81,15 +83,13 @@ only. Memory promotion never copies journal content. Related capture/edit/delete
 operations and import upserts are transactional. Physical media deletion occurs
 after database success with orphan cleanup, avoiding lost references on failure.
 
-The Room Gradle plugin exports versioned schemas to `core/data/schemas` and supplies
-them to the data module's instrumentation tests. Compiler-generated version 1
-JSON is now present in the working tree following the user's build setup;
-generation was not run during T03. Include it in version control before evolving
-version 1. `SchemaMigrationTest` covers opening the exported v1 schema,
-preserving journal content across the registered migration chain, and rejecting an
-unsupported database version without erasing records. There is no migration before
-the initial version; add a real upgrade to `LumaDatabase.MIGRATIONS` for version 2
-and extend data-preservation cases. Never enable destructive fallback.
+The Room Gradle plugin exports schemas to `core/data/schemas` and supplies them to
+instrumentation tests after exporting the current schema. Compiler-generated
+versions 1 and 2 must both be included in version control. The additive 1→2
+migration creates session/window tables and marks derived caches stale, retaining
+all original data. `SchemaMigrationTest` checks preserved journal content, new
+session writes across reopening, and rejection of unsupported versions without
+erasing records. Never enable destructive fallback.
 
 A backup has a distinct format
 version, validates before replacement, and includes only referenced local media.
@@ -459,8 +459,8 @@ is sufficient, and `QUERY_ALL_PACKAGES` is absent.
 
 The adapter queries `INTERVAL_DAILY`, retains native first/last timestamps and
 `totalTimeInForeground` in milliseconds, and rejects impossible or contradictory
-values. Android may expand requested ranges to whole native intervals. Settings
-groups saved intervals by their start date in the selected zone, without clipping
+values. Android may expand requested ranges to whole native intervals. Legacy
+Settings totals and Today summaries group these intervals by their start date, without clipping
 or prorating. Simultaneous app totals can overlap; this is foreground app usage,
 not device screen-on time. Missing data is distinct from reported zero. See
 [UsageStatsManager](https://developer.android.com/reference/android/app/usage/UsageStatsManager#queryUsageStats(int,long,long)).
@@ -471,8 +471,35 @@ event/child UUIDs. Room preserves audit identity, unrelated metadata and links,
 and commits the rows and successful checkpoint atomically. The initial query
 covers seven days; subsequent queries overlap the checkpoint by two days, bounded
 to seven days. Errors, empty results and permission changes retain history and the
-last successful checkpoint. Settings daily reports read the indexed event graph;
+last successful checkpoint. Legacy Settings reports read the indexed event graph;
 Today summaries also query native bucket starts independently of parent occurrence.
+
+The T12 update also reads seven days of `queryEvents` and reconstructs foreground
+visits from resume/pause events. Per-class counts handle overlapping activities;
+equal-time native ordering distinguishes same-class reopens from different-class
+handoffs. Exact duplicate events are ignored. Screen-off, keyguard and shutdown
+close known visits; startup discards unmatched starts, and orphan pauses never
+invent openings. Unclosed visits end at the observation boundary with an ongoing
+label. The public API lacks activity instance IDs and retention guarantees, so
+native session history is always marked partial. See
+[UsageEvents.Event](https://developer.android.com/reference/android/app/usage/UsageEvents.Event)
+and [queryEvents](https://developer.android.com/reference/android/app/usage/UsageStatsManager#queryEvents(long,%20long)).
+
+Sessions use package + original opening timestamp as their stable identity in
+`usage_session`; query windows are recorded separately. Daily buckets, sessions,
+windows and checkpoint commit atomically under the existing clock/access/opt-out
+guards. Retries update growing visits; expired event history does not delete saved
+observations. Clock quarantine also excludes older session starts. Empty successful
+session queries save query metadata and checkpoint without inventing usage.
+
+Settings provides a saved Timeline/Daily totals selector for the chosen day.
+Visits are clipped to local civil-day boundaries, including DST; same-package
+overlaps are unioned before calculating both views. Separate visits remain
+chronological and totals sort by duration. Unused apps are excluded from Settings
+and summary app lists; measured aggregate zero is retained without a zero-use row.
+Summary algorithm version 2 rebuilds older caches. When no visits exist but native
+totals remain, Settings retains those legacy totals with an unavailable-history
+explanation. Partial/empty/unavailable histories have distinct messages.
 
 Native bucket starts can change when Android corrects wall time, including shifts
 that do not overlap old short intervals. The importer persists the initial wall,
@@ -503,13 +530,13 @@ battery/background restrictions, with Import now available for immediate checks.
 The merged manifest adds special Usage access and WorkManager wake/boot permissions.
 Unused network-state and foreground-service permissions are removed. There is no
 Internet permission, network constraint, broad package query, telemetry or backup
-change. SDKs and Room schema version 1 remain unchanged.
+change. SDKs remain unchanged; Room version 2 adds the session tables above.
 
 ## Optional Health Connect steps (T13)
 
 `integration:health` implements pure domain `HealthSource` through Health Connect.
 The app owns `HealthSyncer`, `RoomHealthRepository`, and a Settings card; imported
-step snapshots reuse ActivityRecord and IntegrationState in database version 1.
+step snapshots reuse the original ActivityRecord and IntegrationState tables.
 Settings explains local retention before requesting READ_STEPS and offers provider
 installation/update, access management, status refresh, opt-out and manual import.
 An exported rationale activity and Android 14 permission-usage alias show the same

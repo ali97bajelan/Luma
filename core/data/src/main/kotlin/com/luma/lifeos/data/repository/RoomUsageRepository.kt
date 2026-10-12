@@ -6,7 +6,6 @@ import com.luma.lifeos.data.entity.*
 import com.luma.lifeos.data.mapping.usageLabel
 import com.luma.lifeos.data.mapping.storageBoundary
 import com.luma.lifeos.domain.model.*
-import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.domain.usage.*
 import java.time.Instant
 import java.time.LocalDate
@@ -14,10 +13,11 @@ import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-/** Owns T12 imports in the existing v1 graph; unrelated content and links remain intact. */
+/** Owns daily imports and separate session observations; unrelated content and links remain intact. */
 class RoomUsageRepository(private val database: LumaDatabase) : UsageRepository {
     private val source = EventSource.USAGE_STATS
     private val derived = database.derived()
@@ -43,15 +43,21 @@ class RoomUsageRepository(private val database: LumaDatabase) : UsageRepository 
                 status = UsageSyncStatus.INTERVAL_CHANGED))
         }
     }
-    override suspend fun commit(buckets: List<UsageBucket>, syncedAt: Instant, checkpoint: Instant, anchor: UsageClockAnchor?) = withContext(Dispatchers.IO) {
+    override suspend fun commit(buckets: List<UsageBucket>, syncedAt: Instant, checkpoint: Instant, anchor: UsageClockAnchor?) =
+        commitImport(buckets, null, syncedAt, checkpoint, anchor)
+
+    override suspend fun commitImport(buckets: List<UsageBucket>, sessions: UsageSessionBatch?, syncedAt: Instant,
+        checkpoint: Instant, anchor: UsageClockAnchor?) = withContext(Dispatchers.IO) {
         val rows = distinctUsageBuckets(buckets)
-        require(rows.isNotEmpty())
+        require(rows.isNotEmpty() || sessions != null)
         database.withTransaction {
             val previousState = derived.integration(source).state()
             check(previousState.enabled) { "Usage imports are disabled" }
             if (previousState.minimumBucketStart?.let { floor -> rows.any { it.start <= floor } } == true)
                 throw UsageIntervalChangedException()
-            val stored = database.content().overlappingImportedUsage(rows.minOf { it.start }.toEpochMilli(), rows.maxOf { it.end }.toEpochMilli())
+            if (previousState.minimumBucketStart?.let { floor -> sessions != null && sessions.range.start <= floor } == true)
+                throw UsageIntervalChangedException()
+            val stored = if (rows.isEmpty()) emptyList() else database.content().overlappingImportedUsage(rows.minOf { it.start }.toEpochMilli(), rows.maxOf { it.end }.toEpochMilli())
                 .map { UsageBucket(it.packageName, Instant.ofEpochMilli(it.bucketStart), Instant.ofEpochMilli(it.bucketEnd), it.durationMs) }
             assertUnambiguousUsage(rows, stored)
             rows.forEach { row ->
@@ -70,20 +76,51 @@ class RoomUsageRepository(private val database: LumaDatabase) : UsageRepository 
                 database.content().insertAppUsage(AppUsageRecordEntity(oldChild?.id ?: stableId("content:${row.sourceReference}").toString(),
                     id.toString(), row.start.toEpochMilli(), row.end.toEpochMilli(), row.packageName, row.durationMillis))
             }
+            sessions?.let { batch ->
+                // Keep old observations when Android has already discarded their transitions.
+                database.usageSessions().upsert(batch.sessions.map { UsageSessionEntity(it.packageName,
+                    it.start.toEpochMilli(), it.end.toEpochMilli(), it.appLabel, it.ongoing) })
+                database.usageSessions().upsertWindow(UsageSessionWindowEntity(batch.range.start.toEpochMilli(),
+                    batch.range.endExclusive.toEpochMilli(), batch.history == UsageHistory.COMPLETE))
+            }
             saveState(previousState.copy(status = UsageSyncStatus.READY, lastSync = syncedAt, checkpoint = checkpoint,
                 clockAnchor = previousState.clockAnchor ?: anchor))
             derived.invalidateSummaries()
         }
     }
-    override fun observeDaily(date: LocalDate, zone: ZoneId) = run {
+    override fun observeDaily(date: LocalDate, zone: ZoneId) = database.invalidationTracker.createFlow(
+        "life_event", "app_usage_record", "usage_session", "usage_session_window",
+    ).map {
+        withContext(Dispatchers.IO) { database.withTransaction { loadDaily(date, zone) } }
+    }.distinctUntilChanged()
+
+    private suspend fun loadDaily(date: LocalDate, zone: ZoneId): DailyUsageReport? {
         val start = date.atStartOfDay(zone).toInstant(); val end = date.plusDays(1).atStartOfDay(zone).toInstant()
-        database.lifeEvents().observeDetails(start.storageBoundary(), end.storageBoundary()).map { records ->
-            val rows = records.filter { it.event.source == source && it.event.sourceReference?.startsWith("usage:daily:") == true }
-                .mapNotNull { record -> record.appUsage?.let { usage ->
-                    UsageBucket(usage.packageName, Instant.ofEpochMilli(usage.bucketStart), Instant.ofEpochMilli(usage.bucketEnd),
-                        usage.durationMs, record.event.metadataJson.usageLabel())
-                } }
-            dailyUsageReport(rows, date, zone)
+        if (start == end) return null
+        val visits = database.usageSessions().forDay(start.toEpochMilli(), end.toEpochMilli())
+        val windows = database.usageSessions().windows(start.toEpochMilli(), end.toEpochMilli())
+        var coveredUntil = start.toEpochMilli()
+        windows.filter { it.complete }.forEach { window ->
+            if (window.queryStart <= coveredUntil) coveredUntil = maxOf(coveredUntil, window.queryEnd)
+        }
+        val history = if (coveredUntil >= end.toEpochMilli()) UsageHistory.COMPLETE else UsageHistory.PARTIAL
+        val report = sessionUsageReport(visits.map { UsageSession(it.packageName,
+            Instant.ofEpochMilli(it.startedAt), Instant.ofEpochMilli(it.endedAt), it.appLabel, it.ongoing) }, date, zone, history)
+        if (visits.isNotEmpty() || history == UsageHistory.COMPLETE) return report
+
+        val rows = database.lifeEvents().details(start.storageBoundary(), end.storageBoundary())
+            .filter { it.event.source == source && it.event.sourceReference?.startsWith("usage:daily:") == true }
+            .mapNotNull { record -> record.appUsage?.let { usage ->
+                UsageBucket(usage.packageName, Instant.ofEpochMilli(usage.bucketStart), Instant.ofEpochMilli(usage.bucketEnd),
+                    usage.durationMs, record.event.metadataJson.usageLabel())
+            } }
+        val legacy = dailyUsageReport(rows, date, zone)
+        // Requested query bounds do not establish retention. An empty partial query
+        // must not hide real saved totals when Android has already lost the events.
+        return when {
+            legacy?.apps?.isNotEmpty() == true -> legacy
+            windows.isNotEmpty() -> report
+            else -> legacy
         }
     }
     private suspend fun saveState(state: UsageImportState) {

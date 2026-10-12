@@ -3,6 +3,7 @@ package com.luma.lifeos.usage
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.data.db.LumaDatabase
@@ -22,6 +23,7 @@ class UsageSettingsFlowTest {
     private lateinit var db: LumaDatabase
     private lateinit var repository: RoomUsageRepository
     private lateinit var integration: UsageSyncer
+    private lateinit var restoration: StateRestorationTester
     private val source = Source()
     private val today = LocalDate.now()
     private val zone = ZoneId.systemDefault()
@@ -32,7 +34,8 @@ class UsageSettingsFlowTest {
         integration = UsageSyncer(source, repository, object : UsageScheduler {
             override fun schedule() { }; override fun cancel() { }
         }, Clock.fixed(now, zone))
-        compose.setContent {
+        restoration = StateRestorationTester(compose)
+        restoration.setContent {
             var date by remember { mutableStateOf(today) }
             LifeOsTheme { UsageSettingsRoute(integration, date, zone, { date = it }, { date = today }, {}) }
         }
@@ -74,6 +77,49 @@ class UsageSettingsFlowTest {
         assertNull(runBlocking { repository.state().checkpoint })
         compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag("settings_places"))
         compose.onNodeWithTag("settings_places").assertIsEnabled()
+    }
+    @Test fun switchesBetweenRecordedVisitsAndTotalsWithoutShowingUnusedApps() {
+        val start = today.atStartOfDay(zone).toInstant()
+        runBlocking {
+            integration.setEnabled(true)
+            repository.commitImport(listOf(UsageBucket("org.example.unused", start, now, 0, "Unused app")),
+                UsageSessionBatch(TimeRange(start.minusSeconds(60), now), listOf(
+                    UsageSession("org.example.app", start.minusSeconds(30), start.plusSeconds(60), "Example app"),
+                    UsageSession("org.example.app", start.plusSeconds(120), start.plusSeconds(240), "Example app"))), now, now)
+        }
+        scrollToTag("usage_view_timeline")
+        compose.onNodeWithTag("usage_view_timeline").performClick()
+        scrollToTag("usage_session_org.example.app_${start.minusSeconds(30).toEpochMilli()}")
+        compose.onNodeWithText("0 h 1 min 0 s").assertIsDisplayed()
+        scrollToTag("usage_session_org.example.app_${start.plusSeconds(120).toEpochMilli()}")
+        compose.onNodeWithText("0 h 2 min 0 s").assertIsDisplayed()
+        compose.onNodeWithText("Unused app").assertDoesNotExist()
+        scrollToTag("usage_view_totals")
+        compose.onNodeWithTag("usage_view_totals").performClick()
+        scrollToTag("usage_app_org.example.app")
+        compose.onAllNodesWithText("0 h 3 min 0 s").assertCountEquals(2)
+        compose.onNodeWithTag("usage_app_org.example.unused").assertDoesNotExist()
+        scrollToTag("usage_history_partial")
+        scrollToTag("day_previous"); compose.onNodeWithTag("day_previous").performClick()
+        scrollToTag("usage_app_org.example.app")
+        compose.onAllNodesWithText("0 h 0 min 30 s").assertCountEquals(2)
+        scrollToTag("usage_view_timeline"); compose.onNodeWithTag("usage_view_timeline").performClick()
+        scrollToTag("usage_session_org.example.app_${start.minusSeconds(30).toEpochMilli()}")
+    }
+    @Test fun legacyDailyTotalsDoNotInventTimelineSessions() {
+        runBlocking {
+            integration.setEnabled(true)
+            repository.commit(listOf(UsageBucket("org.example.app", today.atStartOfDay(zone).toInstant(), now, 5_125)), now, now)
+        }
+        scrollToTag("usage_view_timeline"); compose.onNodeWithTag("usage_view_timeline").performClick()
+        scrollToTag("usage_history_unavailable")
+        restoration.emulateSavedInstanceStateRestore()
+        scrollToTag("usage_view_timeline"); compose.onNodeWithTag("usage_view_timeline").assertIsSelected()
+        scrollToTag("usage_history_unavailable")
+        compose.onNodeWithTag("usage_daily_total").assertDoesNotExist()
+        scrollToTag("usage_view_totals"); compose.onNodeWithTag("usage_view_totals").performClick()
+        scrollToTag("usage_app_org.example.app")
+        compose.onAllNodesWithText("0 h 0 min 5.125 s").assertCountEquals(2)
     }
     private fun scrollToTag(tag: String) {
         compose.waitUntil(5_000) {

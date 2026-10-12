@@ -39,7 +39,7 @@ class SchemaMigrationTest {
             )
         }.close()
 
-        // At v1 this validates the baseline. Once VERSION increases it traverses all real upgrades.
+        // Traverse the registered upgrades, including the additive session tables in v2.
         helper.runMigrationsAndValidate(fileName, LumaDatabase.VERSION, true, *LumaDatabase.MIGRATIONS.toTypedArray()).close()
         val database = LumaDatabase.open(instrumentation.targetContext, fileName)
         try {
@@ -48,6 +48,9 @@ class SchemaMigrationTest {
             assertEquals(EventType.JOURNAL, stored.type)
             assertEquals(1000L, stored.createdAt.toEpochMilli())
             assertEquals("Survives reopening", RoomEventStore(database).get(stored.id)?.journal?.body)
+            assertTrue(database.usageSessions().forDay(0, 10_000).isEmpty())
+            database.usageSessions().upsert(listOf(com.luma.lifeos.data.entity.UsageSessionEntity("org.example.app", 2000, 3000, "Example", false)))
+            database.usageSessions().upsertWindow(com.luma.lifeos.data.entity.UsageSessionWindowEntity(0, 10_000, true))
             events.upsert(stored.copy(title = "Updated after reopening", updatedAt = stored.updatedAt.plusMillis(1)))
         } finally {
             database.close()
@@ -58,6 +61,8 @@ class SchemaMigrationTest {
             assertEquals("Updated after reopening", details.event.title)
             assertEquals(journalId, details.journal?.id)
             assertEquals("Survives reopening", details.journal?.body)
+            assertEquals(1, reopened.usageSessions().forDay(0, 10_000).size)
+            assertEquals(1, reopened.usageSessions().windows(0, 10_000).size)
             reopened.openHelper.readableDatabase.query("PRAGMA foreign_key_check").use { assertEquals(0, it.count) }
         } finally {
             reopened.close()

@@ -7,6 +7,7 @@ import com.luma.lifeos.data.entity.*
 import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.usage.*
+import com.luma.lifeos.domain.time.TimeRange
 import java.time.*
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
@@ -101,5 +102,65 @@ class UsagePersistenceTest {
         assertEquals(5_125L, recreated.observeDaily(LocalDate.parse("2026-10-11"), ZoneOffset.UTC).first()!!.totalMillis)
         assertEquals(5_125L, recreated.observeDaily(LocalDate.parse("2026-10-12"), ZoneOffset.UTC).first()!!.totalMillis)
         assertEquals(rebooted, recreated.state().clockAnchor)
+    }
+    @Test fun sessionRetriesKeepIdentityAndTotalsWithoutAddingLegacyBuckets() = runBlocking {
+        repository.setEnabled(true)
+        val visit = UsageSession("org.example.app", start.minusSeconds(60), start.plusSeconds(60), "Example")
+        val later = UsageSession("org.example.app", start.plusSeconds(120), start.plusSeconds(180), "Example", true)
+        val batch = UsageSessionBatch(TimeRange(start.minusSeconds(3600), now), listOf(visit, later))
+        repository.commitImport(listOf(bucket), batch, now, now)
+        repository.commitImport(listOf(bucket), batch, now, now)
+        val report = RoomUsageRepository(db).observeDaily(LocalDate.parse("2026-10-11"), ZoneOffset.UTC).first()!!
+        assertEquals(120_000L, report.totalMillis); assertEquals(2, report.sessions.size)
+        assertEquals(UsageHistory.PARTIAL, report.history)
+        assertEquals(5_125L, db.content().overlappingImportedUsage(start.toEpochMilli(), now.toEpochMilli()).single().durationMs)
+        repository.commitImport(emptyList(), batch.copy(sessions = listOf(later.copy(end = start.plusSeconds(240), ongoing = false))), now, now)
+        val updated = repository.observeDaily(LocalDate.parse("2026-10-11"), ZoneOffset.UTC).first()!!
+        assertEquals(180_000L, updated.totalMillis); assertEquals(2, updated.sessions.size)
+        assertFalse(updated.sessions.last().ongoing)
+        val shorterRetention = UsageSessionBatch(TimeRange(start.plusSeconds(300), now), emptyList())
+        repository.commitImport(emptyList(), shorterRetention, now, now)
+        assertEquals(updated, repository.observeDaily(LocalDate.parse("2026-10-11"), ZoneOffset.UTC).first())
+    }
+    @Test fun sessionBatchRollbackOptOutAndClockFloorRetainPreviousSessions() = runBlocking {
+        repository.setEnabled(true)
+        val batch = UsageSessionBatch(TimeRange(start, now), listOf(UsageSession("org.example.app", start.plusSeconds(60), start.plusSeconds(120))))
+        repository.commitImport(listOf(bucket), batch, now, now)
+        val previous = repository.state()
+        val shifted = bucket.copy(start = start.plusSeconds(5), end = now.plusSeconds(5))
+        assertTrue(runCatching { repository.commitImport(listOf(shifted), batch.copy(sessions = emptyList()), now.plusSeconds(5), now.plusSeconds(5)) }.isFailure)
+        assertEquals(previous, repository.state())
+        repository.setEnabled(false)
+        assertTrue(runCatching { repository.commitImport(emptyList(), batch, now, now) }.isFailure)
+        repository.setEnabled(true)
+        repository.recordClockSafety(UsageClockAnchor(now, 1000, 2), now)
+        assertTrue(runCatching { repository.commitImport(emptyList(), batch, now, now) }.exceptionOrNull() is UsageIntervalChangedException)
+        assertEquals(60_000L, repository.observeDaily(LocalDate.parse("2026-10-11"), ZoneOffset.UTC).first()!!.totalMillis)
+    }
+    @Test fun emptyPartialWindowsPreserveLegacyTotalsOutsideEventRetention() = runBlocking {
+        repository.setEnabled(true); repository.commit(listOf(bucket), now, now)
+        assertEquals(UsageHistory.UNAVAILABLE, repository.observeDaily(LocalDate.parse("2026-10-11"), ZoneOffset.UTC).first()!!.history)
+        repository.commitImport(emptyList(), UsageSessionBatch(TimeRange(start, now), emptyList()), now, now)
+        val legacy = repository.observeDaily(LocalDate.parse("2026-10-11"), ZoneOffset.UTC).first()!!
+        assertEquals(5_125L, legacy.totalMillis); assertEquals(UsageHistory.UNAVAILABLE, legacy.history)
+        val nextStart = start.plusSeconds(86_400)
+        repository.commitImport(emptyList(), UsageSessionBatch(TimeRange(nextStart, nextStart.plusSeconds(3600)), emptyList()), now, now)
+        val empty = repository.observeDaily(LocalDate.parse("2026-10-12"), ZoneOffset.UTC).first()!!
+        assertTrue(empty.apps.isEmpty()); assertTrue(empty.sessions.isEmpty()); assertEquals(UsageHistory.PARTIAL, empty.history)
+    }
+    @Test fun completeWindowsCoverTheDayWithoutSummingLegacyUsageAgain() = runBlocking {
+        repository.setEnabled(true); repository.commit(listOf(bucket), now, now)
+        repository.commitImport(emptyList(), UsageSessionBatch(TimeRange(start, now),
+            listOf(UsageSession("org.example.app", start.plusSeconds(60), start.plusSeconds(120))), UsageHistory.COMPLETE), now, now)
+        val date = LocalDate.parse("2026-10-11")
+        assertEquals(UsageHistory.PARTIAL, repository.observeDaily(date, ZoneOffset.UTC).first()!!.history)
+        repository.commitImport(emptyList(), UsageSessionBatch(TimeRange(now, start.plusSeconds(86_400)), emptyList(), UsageHistory.COMPLETE), now, now)
+        val report = repository.observeDaily(date, ZoneOffset.UTC).first()!!
+        assertEquals(UsageHistory.COMPLETE, report.history); assertEquals(60_000L, report.totalMillis)
+        val next = start.plusSeconds(86_400)
+        repository.commitImport(listOf(bucket.copy(start = next, end = next.plusSeconds(43_200))),
+            UsageSessionBatch(TimeRange(next, next.plusSeconds(86_400)), emptyList(), UsageHistory.COMPLETE), now, now)
+        val empty = repository.observeDaily(date.plusDays(1), ZoneOffset.UTC).first()!!
+        assertEquals(UsageHistory.COMPLETE, empty.history); assertTrue(empty.apps.isEmpty())
     }
 }

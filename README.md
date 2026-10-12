@@ -55,9 +55,12 @@ Timeline merges stored manual records and activity/app-usage signals in stable
 day order, with calendar navigation and a bounded scrolling window. Complete
 manual records open their existing content routes; imported records open read-only
 typed details. Settings offers optional Android Usage access, manual imports,
-background refresh, access/status controls and saved daily app foreground totals.
-The Android reporting intervals determine displayed dates; totals are not exact
-local-day measurements or device screen-on time. Device reboots and clock
+background refresh, access/status controls, a session Timeline and per-app Daily
+totals. The two views share the selected day, exclude unused apps and clip visits
+at local midnight. Android retains session events briefly; incomplete history is
+marked. Older aggregate-only days keep their saved totals, dated by native interval
+starts, with no invented visits. Totals measure foreground app usage rather than
+device screen-on time. Device reboots and clock
 corrections conservatively leave affected intervals incomplete, retaining saved
 history and importing only newly started intervals. Settings also offers optional
 Health Connect read-steps access and foreground imports. Step totals use Health
