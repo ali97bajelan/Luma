@@ -85,7 +85,7 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null, reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository? = null) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null, reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository? = null, backup: com.luma.lifeos.domain.backup.BackupService? = null) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
     val photoScope = rememberCoroutineScope()
@@ -188,9 +188,9 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     } else if (destination == Destination.SETTINGS && usage != null) {
                         UsageSettingsRoute(usage, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
                             onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
-                            onPlaces = { navController.navigate("places") }, health = health)
+                            onPlaces = { navController.navigate("places") }, health = health, backup = backup)
                     } else {
-                        FoundationScreen(destination, onPlaces = { navController.navigate("places") })
+                        FoundationScreen(destination, onPlaces = { navController.navigate("places") }, backup = backup)
                     }
                 }
             }
@@ -317,7 +317,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
 }
 
 @Composable
-private fun FoundationScreen(destination: Destination, onPlaces: () -> Unit) {
+private fun FoundationScreen(destination: Destination, onPlaces: () -> Unit, backup: com.luma.lifeos.domain.backup.BackupService?) {
     Column(
         modifier = Modifier.fillMaxSize()
             .testTag("screen_${destination.route}")
@@ -329,6 +329,7 @@ private fun FoundationScreen(destination: Destination, onPlaces: () -> Unit) {
         Text(stringResource(destination.heading), style = MaterialTheme.typography.headlineLarge)
         Text(stringResource(destination.body), style = MaterialTheme.typography.bodyLarge)
         if (destination == Destination.SETTINGS) com.luma.lifeos.language.LanguageSettingsCard()
+        if (destination == Destination.SETTINGS && backup != null) com.luma.lifeos.ui.backup.BackupSettingsCard(backup)
         if (destination == Destination.SETTINGS) TextButton(onClick = onPlaces, modifier = Modifier.testTag("settings_places")) {
             Text(stringResource(R.string.places))
         }

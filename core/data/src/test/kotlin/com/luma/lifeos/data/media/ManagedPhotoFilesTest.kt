@@ -15,6 +15,17 @@ class ManagedPhotoFilesTest {
     private val root = Files.createTempDirectory("luma-photos-test").toFile()
     private val owner = UUID.randomUUID()
     private val info = PhotoMetadata("image/png", 4, 2, 2)
+    @Test fun backupPublicationHasNoDraftLeaseAndNeverOverwritesExistingFile() {
+        val files = ManagedPhotoFiles(root)
+        val id = UUID.randomUUID()
+        val original = files.import(owner, id, { ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)) }) { info }
+        assertThrows(Exception::class.java) { files.publishBackup(id, { ByteArrayInputStream(byteArrayOf(5)) }) { info } }
+        assertArrayEquals(byteArrayOf(1, 2, 3, 4), files.resolve(original.relativePath)!!.readBytes())
+        val restored = files.publishBackup(UUID.randomUUID(), { ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)) }) { info }
+        files.clean(emptySet())
+        assertNull(files.resolve(restored.relativePath))
+        assertNotNull(files.resolve(original.relativePath))
+    }
     @After fun cleanup() { root.deleteRecursively() }
     @Test fun privateCopySurvivesReopeningAndDoesNotDependOnSource() {
         val files = ManagedPhotoFiles(root)

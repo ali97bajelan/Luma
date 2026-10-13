@@ -705,6 +705,25 @@ using `transformLatest`; retries retain filters and saved offsets. Existing cont
 memory, person and place routes remain the navigation targets. No AI service,
 causal text, telemetry or new permission is introduced.
 
+## Portable backup and replacement (T17)
+
+`BackupService` exposes export and a closeable validated preview; `LumaStorage`
+wires `RoomBackupService` and the photo repository with one shared mutex. Settings
+uses system document contracts and a retained ViewModel for work/confirmation.
+ZIP format 1 contains a manifest, typed TSV for application tables, and referenced
+photos, with explicit schema versions and SHA-256 inventory. Schema 1's missing
+session tables import as empty; unknown versions are rejected.
+
+Export snapshots rows and copies photos in one Room transaction, including WAL
+writes. Restore validates an isolated generated Room database and photos, publishes
+new files under fresh private paths with file/directory sync, then replaces the
+known tables in one transaction. Failed commits preserve old records/photos;
+post-commit cleanup respects draft leases. Raw writes participate in Room
+invalidation. Summary caches become stale, imports disable, usage device cursors
+reset, and health timezone/revision safety is retained. No migration, dependency,
+permission or network service is added. Full format, resource bounds and native
+validation limitations are in [docs/BACKUP_FORMAT.md](docs/BACKUP_FORMAT.md).
+
 ## Validation
 
 Run JVM domain tests independently, Android lint and debug/unit builds in CI,

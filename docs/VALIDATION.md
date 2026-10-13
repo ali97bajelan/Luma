@@ -1368,3 +1368,80 @@ forms, dialogs and accessibility labels; verify language persistence through
 navigation, recreation and restart; check Persian layout and mixed-language text;
 verify plurals, date/number formatting, English fallback and content/draft preservation.
 No language-selection implementation or runtime checks have been performed.
+
+## T17 — Backup, export and restore, 2026-10-13
+
+Implemented manual Settings export and replacement restore; the format and data
+semantics are documented in [BACKUP_FORMAT.md](BACKUP_FORMAT.md). No live user
+restore, app installation, commit, schema migration or dependency change occurred.
+Existing untracked release files, Room schemas and Search test resources were
+preserved. Test stages use isolated temporary/in-memory stores only.
+
+Verified in this session:
+
+- PASS: **260 JVM tests**, forced to execute: 94 domain, 126 app, 21 data, 13 usage
+  and 6 health. Zero failures, errors or skipped tests. T17 adds 17 JVM cases.
+- PASS: normal debug APK and app/data instrumentation APK builds. Thirteen Room backup
+  tests and two Compose tests compile. Native fixtures cover journal/catalog/tag/
+  marker/photo round trip, repeated backups of remapped photos, mood/emotions,
+  session/windows, stale summaries, explicit replacement, v1 compatibility,
+  checksummed malformed rows/references/types, missing photos, injected commit
+  failure, health timezone/revision, observed catalog invalidation and abandoned
+  staging cleanup. Compose sources cover cancellation and busy/success controls.
+- PASS: app/data/usage/health lint with zero errors. App has 11 existing target,
+  dependency, locale-config and quantity warnings; the other modules have none.
+- PASS: production-generated backup SQL executed with host Python SQLite against
+  the compiler-exported Room v2 schema. Tests prove existing typed-child mismatch
+  rejection, all-table transaction rollback after a broken FK insertion, and
+  replacement without retaining the prior catalog. This does not verify Room's
+  Android connection handling or invalidation.
+- PASS: archive and TSV tests preserve null/empty/Unicode/numeric values, enforce
+  line/expanded-size bounds, reject traversal/unknown/duplicate names, missing or
+  modified payloads, malformed types/headers and future format/schema versions,
+  and verify caller-owned streams remain open. Pure domain guards reject invalid
+  native labels/packages and deep JSON before Android parsing. Photo-file tests
+  prove backup publication never overwrites an existing path or acquires a draft
+  lease. Settings state tests require confirmation, close cancelled previews,
+  suppress duplicate actions, close failing streams and expose failures.
+- PASS: `git diff --check`.
+
+An independent read-only review identified missing child/parent graph checks,
+missing UsageSession/UsageBucket limits, unbounded native JSON recursion and photo
+rename durability. These were addressed with graph/domain guards, a 64-level JSON
+precheck and photo directory fsync before replacement. Stream ownership was also
+fixed. The stream/session/bucket regressions failed before their fixes and pass
+in the full suite; host SQLite and the bounded-depth guard pass. Health restore
+retains the saved import zone and advances revision beyond live/imported values.
+
+Compatibility ruling: require child/parent type and source agreement, but retain
+native usage bucket dates independently from an older/displaced event envelope.
+T16 explicitly supports that distinction. A production-SQL regression failed with
+the initially strict bounds-equality check; removing that check preserves the
+supported case while validating each interval independently. The final host test
+passes; an additional native round-trip fixture compiles but is unexecuted.
+
+Pending: escalated `adb devices -l` listed **no connected device**. Native Room
+round trip and rollback, image decoding, SAF provider selection/cancellation,
+activity/process recreation, concurrent capture/import/cleanup, actual observed
+Room invalidation, visual/accessibility layout and power-loss durability are
+**unexecuted**. Compilation and host SQL are not native acceptance evidence.
+T17 remains **implemented (validation pending)**. The earlier T11/T13/T15/T16
+platform follow-ups and partial T21 status remain unchanged.
+
+Final command (temporary init only forces JVM tests to execute):
+
+```sh
+bash gradlew --offline -I /tmp/luma-t17-force-tests.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug \
+  :integration:usage:lintDebug :integration:health:lintDebug
+```
+
+Logs: `/tmp/luma-t17-baseline.log`, `/tmp/luma-t17-codec-red.log`,
+`/tmp/luma-t17-codec-green.log`, `/tmp/luma-t17-room-red.log`,
+`/tmp/luma-t17-publication-red.log`, `/tmp/luma-t17-ui-red.log`,
+`/tmp/luma-t17-ui-green.log`, `/tmp/luma-t17-review-regressions-red.log`,
+`/tmp/luma-t17-json-red.log`, `/tmp/luma-t17-review-green.log`,
+`/tmp/luma-t17-native-bounds-red.log`, `/tmp/luma-t17-final-checks.log`.

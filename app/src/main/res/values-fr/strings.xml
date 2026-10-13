@@ -339,4 +339,20 @@
     <string name="language_persian">فارسی</string>
     <string name="language_french">Français</string>
     <string name="language_save_error">Impossible d’enregistrer la langue. Réessayez.</string>
+    <string name="backup_title">Sauvegarde et restauration</string>
+    <string name="backup_description">Exportez les données enregistrées et leurs photos dans une sauvegarde portable. La restauration remplace les données enregistrées sur cet appareil.</string>
+    <string name="backup_private">Les sauvegardes ne sont pas chiffrées et contiennent des textes et photos privés. Choisissez un emplacement de confiance dans le sélecteur de fichiers.</string>
+    <string name="backup_export">Exporter une sauvegarde</string>
+    <string name="backup_choose">Choisir une sauvegarde à restaurer</string>
+    <string name="backup_working">Opération en cours… Gardez Luma ouvert jusqu’à la fin.</string>
+    <string name="backup_exported">Sauvegarde exportée.</string>
+    <string name="backup_restored">Données restaurées. Les importations sont désactivées ; réactivez-les dans les paramètres si nécessaire.</string>
+    <string name="backup_export_failed">Export impossible. Vérifiez la disponibilité des photos et l’espace à destination, puis réessayez. Un export échoué peut laisser un fichier incomplet.</string>
+    <string name="backup_invalid">Validation impossible. La sauvegarde peut être endommagée, non prise en charge ou trop volumineuse, ou cet appareil peut manquer d’espace. Les données enregistrées sont inchangées.</string>
+    <string name="backup_restore_failed">La restauration a échoué. Vos données précédentes sont toujours disponibles. Choisissez à nouveau la sauvegarde pour réessayer.</string>
+    <string name="backup_picker_unavailable">Le sélecteur de fichiers est indisponible. Réessayez lorsqu’un fournisseur de documents est disponible.</string>
+    <string name="backup_confirm_title">Remplacer les données enregistrées ?</string>
+    <string name="backup_preview">%1$s événements · %2$s photos\nSauvegarde créée le %3$s</string>
+    <string name="backup_replace_warning">Cette opération remplace toutes les données de vie, les catalogues et l’historique importé par cette sauvegarde. Exportez d’abord vos données actuelles pour les conserver. La langue de l’application et les autorisations Android sont conservées. Les importations seront désactivées.</string>
+    <string name="backup_replace">Remplacer et restaurer</string>
 </resources>

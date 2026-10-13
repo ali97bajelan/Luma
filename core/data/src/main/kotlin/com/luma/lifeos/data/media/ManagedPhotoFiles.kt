@@ -51,6 +51,31 @@ class ManagedPhotoFiles(directory: File, private val maxBytes: Long = PhotoLimit
             throw failure
         }
     }
+    /** Caller holds the shared photo mutex until reference commit or rollback. No draft lease. */
+    fun publishBackup(id: UUID, open: () -> InputStream, inspect: (File) -> PhotoMetadata): PhotoAttachment {
+        val path = "photos/$id.img"
+        val target = requireNotNull(managed(path))
+        require(!target.exists()) { "Backup file identity is already in use" }
+        val temporary = File(root, "$id.part")
+        require(temporary.canonicalFile == temporary.absoluteFile && !temporary.exists())
+        try {
+            FileOutputStream(temporary).use { output ->
+                open().use { input ->
+                    val buffer = ByteArray(8192); var size = 0L
+                    while (true) {
+                        val count = input.read(buffer); if (count < 0) break
+                        size += count; require(size <= maxBytes)
+                        output.write(buffer, 0, count)
+                    }
+                    require(size > 0)
+                }
+                output.fd.sync()
+            }
+            val metadata = inspect(temporary)
+            move(temporary, target)
+            return PhotoAttachment(id, path, metadata)
+        } finally { temporary.delete() }
+    }
     fun retain(owner: UUID, photos: List<PhotoAttachment>) = retainPaths(owner, photos.map { it.relativePath }.toSet())
     fun release(owner: UUID) { check(!lease(owner).exists() || lease(owner).delete()) { "Could not release photo draft" } }
     fun resolve(path: String): File? = managed(path)?.takeIf { it.isFile }

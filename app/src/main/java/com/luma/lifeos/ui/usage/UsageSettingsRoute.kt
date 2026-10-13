@@ -27,7 +27,8 @@ import java.time.format.FormatStyle
 @Composable
 fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneId,
     onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onPlaces: () -> Unit,
-    health: com.luma.lifeos.domain.health.HealthIntegration? = null) {
+    health: com.luma.lifeos.domain.health.HealthIntegration? = null,
+    backup: com.luma.lifeos.domain.backup.BackupService? = null) {
     val factory = remember(integration) { viewModelFactory { initializer { UsageSettingsViewModel(integration) } } }
     val vm: UsageSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
@@ -45,6 +46,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                 TextButton(onClick = onPlaces, modifier = Modifier.testTag("settings_places")) { Text(stringResource(R.string.places)) }
             }
             item { com.luma.lifeos.language.LanguageSettingsCard() }
+            if (backup != null) item { com.luma.lifeos.ui.backup.BackupSettingsCard(backup) }
             item {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

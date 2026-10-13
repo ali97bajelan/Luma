@@ -571,7 +571,27 @@ comparisons read a few excluded previous-week dates before discarding them. See 
 
 ## T17 — Backup, export, and restore
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation (2026-10-13): Settings exports a versioned ZIP with all application
+records and referenced private photos, and validates a chosen backup before a
+replacement confirmation. Typed TSV preserves IDs, nulls, Unicode, timestamps,
+relations, metadata and usage history. Inventory/hash/path/size checks, generated
+Room staging, row/domain invariants, graph constraints and image validation reject
+invalid backups. Schema 1 and 2 are supported explicitly; the live schema stays 2.
+Shared photo serialization, fresh paths, file/directory sync and a single replacement
+transaction protect existing records/photos on failure. Imported observations remain;
+imports turn off, device usage cursors reset, health timezone survives and health
+revision advances. Derived summaries are recalculated. See docs/BACKUP_FORMAT.md.
+
+Validation: all 260 JVM tests pass, including archive/row bounds, malicious paths,
+duplicates, checksum/version failures, JSON-depth/domain validation, photo
+publication and Settings state transitions. Production backup SQL against the
+exported Room schema verifies graph mismatch detection and transaction rollback.
+Debug and both instrumentation APKs build; app/data/usage/health lint has zero errors.
+Thirteen Room backup tests and two Compose flows compile. No device is connected:
+native round trip/replacement, images, file picker, concurrency, lifecycle and
+power-loss acceptance remain pending. See docs/VALIDATION.md.
 
 
 ### Scope

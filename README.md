@@ -4,7 +4,7 @@ A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
 mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, optional Health Connect step imports, saved daily summaries, simple local lookup, and deterministic weekly reviews.
-Remaining backup, privacy and release work follows [TASKS.md](TASKS.md).
+Remaining privacy, reliability and release work follows [TASKS.md](TASKS.md).
 
 ## Build and run
 
@@ -47,6 +47,12 @@ see [schema history](core/data/schemas/README.md). Current build and test result
 including 101 passing API 36 instrumentation tests, remaining native/performance
 checks and the app/health lint analyzer compatibility failure, are recorded in
 `docs/VALIDATION.md`.
+
+Settings includes manual [backup, export and restore](docs/BACKUP_FORMAT.md).
+Export saves a versioned archive of records and referenced photos through the
+system file picker. Restore validates the archive before confirming replacement
+of current saved data. Archives are unencrypted; choose a trusted destination.
+Native backup/restore acceptance remains pending device validation.
 
 ## Project references
 

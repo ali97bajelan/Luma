@@ -13,8 +13,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class RoomPhotoRepository(private val database: LumaDatabase, private val files: ManagedPhotoFiles,
-    private val openSource: (String) -> InputStream) : PhotoRepository {
-    private val mutex = Mutex()
+    private val mutex: Mutex = Mutex(), private val openSource: (String) -> InputStream) : PhotoRepository {
     override suspend fun import(draftId: UUID, id: UUID, source: String) = withContext(Dispatchers.IO) {
         mutex.withLock { files.import(draftId, id, { openSource(source) }, AndroidPhotoCodec::inspect) }
     }

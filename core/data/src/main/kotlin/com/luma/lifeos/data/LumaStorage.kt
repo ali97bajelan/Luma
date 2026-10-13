@@ -28,7 +28,11 @@ class LumaStorage(context: Context) {
     private val database = LumaDatabase.open(context)
     val reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository = com.luma.lifeos.data.repository.RoomWeeklyReviewRepository(database)
     val search: com.luma.lifeos.domain.repository.SearchRepository = com.luma.lifeos.data.repository.RoomSearchRepository(database)
-    val photos: PhotoRepository = RoomPhotoRepository(database, ManagedPhotoFiles(File(context.filesDir, "photos"))) { source ->
+    private val photoFiles = ManagedPhotoFiles(File(context.filesDir, "photos"))
+    private val photoMutex = kotlinx.coroutines.sync.Mutex()
+    val backup: com.luma.lifeos.domain.backup.BackupService = com.luma.lifeos.data.backup.RoomBackupService(
+        context.applicationContext, database, photoFiles, File(context.cacheDir, "backups"), photoMutex)
+    val photos: PhotoRepository = RoomPhotoRepository(database, photoFiles, photoMutex) { source ->
         val uri = Uri.parse(source)
         require(uri.scheme == "content") { "Choose an image with the system picker" }
         requireNotNull(context.contentResolver.openInputStream(uri)) { "Photo source is unavailable" }

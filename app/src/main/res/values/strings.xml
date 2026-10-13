@@ -336,4 +336,20 @@
     <string name="language_persian">فارسی</string>
     <string name="language_french">Français</string>
     <string name="language_save_error">Could not save the language. Try again.</string>
+    <string name="backup_title">Backup and restore</string>
+    <string name="backup_description">Export saved records and their photos to a portable backup. Restore replaces the saved data on this device.</string>
+    <string name="backup_private">Backups are not encrypted and include private text and photos. Choose a trusted location in the file picker.</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_choose">Choose backup to restore</string>
+    <string name="backup_working">Working… Keep Luma open until this finishes.</string>
+    <string name="backup_exported">Backup exported.</string>
+    <string name="backup_restored">Saved data restored. Imports are off; enable them again in Settings if needed.</string>
+    <string name="backup_export_failed">Backup could not be exported. Check that referenced photos are available and the destination has space, then try again. A failed export may leave an incomplete file.</string>
+    <string name="backup_invalid">This backup could not be validated. It may be damaged, unsupported, or too large, or this device may need more space. Saved data has not changed.</string>
+    <string name="backup_restore_failed">Restore failed. Your previous saved data is still available. Choose the backup again to retry.</string>
+    <string name="backup_picker_unavailable">The file picker is unavailable. Try again after a document provider is available.</string>
+    <string name="backup_confirm_title">Replace saved data?</string>
+    <string name="backup_preview">%1$s events · %2$s photos\nBackup created %3$s</string>
+    <string name="backup_replace_warning">This replaces all saved life records, catalogs, and imported history with this backup. Export your current data first if you want to keep it. App language and Android permissions stay as they are. Imports will be turned off.</string>
+    <string name="backup_replace">Replace and restore</string>
 </resources>
