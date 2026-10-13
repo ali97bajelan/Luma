@@ -151,7 +151,7 @@ class TimelineFlowTest {
         return event
     }
 
-    @Test fun longDayLoadsLaterRowsAndEarlierWindowWithoutRenderingTheWholeFixture() {
+    @Test fun longDayLoadsOlderRowsAndNewerWindowWithoutRenderingTheWholeFixture() {
         runBlocking {
             db.withTransaction {
                 (499 downTo 0).forEach { n ->
@@ -162,15 +162,15 @@ class TimelineFlowTest {
             }
         }
         show(); compose.onNodeWithTag("nav_timeline").performClick()
-        awaitTag("event_${UUID(0, 0)}")
+        awaitTag("event_${UUID(0, 499)}")
         // Crossing each page boundary exercises automatic loading and removal of offscreen rows.
-        listOf(140, 190, 240, 290, 340, 390, 440, 490).forEach { n ->
+        listOf(359, 309, 259, 209, 159, 109, 59, 9, 0).forEach { n ->
             scrollToEvent(UUID(0, n.toLong()).toString())
         }
-        scrollToEvent(UUID(0, 499).toString())
-        compose.onNodeWithText("Entry 499").assertIsDisplayed()
-        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_earlier"))
-        compose.onNodeWithTag("timeline_earlier").performClick()
+        scrollToEvent(UUID(0, 0).toString())
+        compose.onNodeWithText("Entry 0").assertIsDisplayed()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_later"))
+        compose.onNodeWithTag("timeline_later").performClick()
         scrollToEvent(UUID(0, 150).toString())
         compose.onNodeWithText("Entry 150").assertIsDisplayed()
     }

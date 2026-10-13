@@ -23,21 +23,23 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
     var picking by rememberSaveable { mutableStateOf<String?>(null) }
     var datePicking by rememberSaveable { mutableStateOf<String?>(null) }
     val input = state.input
-    AlertDialog(onDismissRequest = onDone, title = { Text(stringResource(R.string.search_filters)) },
-        text = {
-            LazyColumn(Modifier.heightIn(max = 450.dp).testTag("search_filter_panel"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                item {
-                    Text(stringResource(R.string.search_filters_help), style = MaterialTheme.typography.bodySmall)
-                    SearchDate(stringResource(R.string.search_from), input.from, "search_from", onPick = { datePicking = "from" }, onClear = { vm.setFrom(null) })
-                    SearchDate(stringResource(R.string.search_through), input.through, "search_through", onPick = { datePicking = "through" }, onClear = { vm.setThrough(null) })
-                    Text(state.zone.id, style = MaterialTheme.typography.bodySmall)
-                    if (state.invalidDates) Text(stringResource(R.string.search_invalid_dates), color = MaterialTheme.colorScheme.error)
+    if (picking == null && datePicking == null) {
+        AlertDialog(onDismissRequest = onDone, title = { Text(stringResource(R.string.search_filters)) },
+            text = {
+                LazyColumn(Modifier.heightIn(max = 450.dp).testTag("search_filter_panel"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    item {
+                        Text(stringResource(R.string.search_filters_help), style = MaterialTheme.typography.bodySmall)
+                        SearchDate(stringResource(R.string.search_from), input.from, "search_from", onPick = { datePicking = "from" }, onClear = { vm.setFrom(null) })
+                        SearchDate(stringResource(R.string.search_through), input.through, "search_through", onPick = { datePicking = "through" }, onClear = { vm.setThrough(null) })
+                        Text(state.zone.id, style = MaterialTheme.typography.bodySmall)
+                        if (state.invalidDates) Text(stringResource(R.string.search_invalid_dates), color = MaterialTheme.colorScheme.error)
+                    }
+                    item { SelectionButton(stringResource(R.string.journal_tags), "search_tags", state.options.tags, input.tagIds) { picking = "tags" } }
+                    item { SelectionButton(stringResource(R.string.people), "search_people", state.options.people, input.personIds) { picking = "people" } }
+                    item { SelectionButton(stringResource(R.string.places), "search_places", state.options.places, setOfNotNull(input.placeId)) { picking = "places" } }
                 }
-                item { SelectionButton(stringResource(R.string.journal_tags), "search_tags", state.options.tags, input.tagIds) { picking = "tags" } }
-                item { SelectionButton(stringResource(R.string.people), "search_people", state.options.people, input.personIds) { picking = "people" } }
-                item { SelectionButton(stringResource(R.string.places), "search_places", state.options.places, setOfNotNull(input.placeId)) { picking = "places" } }
-            }
-        }, confirmButton = { TextButton(onClick = onDone, modifier = Modifier.testTag("search_filters_done")) { Text(stringResource(R.string.search_done)) } })
+            }, confirmButton = { TextButton(onClick = onDone, modifier = Modifier.testTag("search_filters_done")) { Text(stringResource(R.string.search_done)) } })
+    }
     picking?.let { kind ->
         val choices = when (kind) { "tags" -> state.options.tags; "people" -> state.options.people; else -> state.options.places }
         val selected = when (kind) { "tags" -> input.tagIds; "people" -> input.personIds; else -> setOfNotNull(input.placeId) }

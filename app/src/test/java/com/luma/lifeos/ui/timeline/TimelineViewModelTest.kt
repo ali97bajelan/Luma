@@ -27,11 +27,11 @@ class TimelineViewModelTest {
     @Test fun appendAndPrependKeepOrderedRowsWithABoundedWindowAndNoGaps() = runTest(dispatcher) {
         val vm = TimelineViewModel(StoredRecords(1_000), SavedStateHandle())
         vm.selectDay(day, zone); advanceUntilIdle()
-        assertEquals((0L..149L).toList(), ids(vm))
+        assertEquals((999L downTo 850L).toList(), ids(vm))
         repeat(4) { vm.loadLater(); advanceUntilIdle() }
-        assertEquals((50L..349L).toList(), ids(vm)); assertEquals(50, vm.state.value.offset)
+        assertEquals((949L downTo 650L).toList(), ids(vm)); assertEquals(50, vm.state.value.offset)
         vm.loadEarlier(); advanceUntilIdle()
-        assertEquals((0L..299L).toList(), ids(vm)); assertEquals(0, vm.state.value.offset)
+        assertEquals((999L downTo 700L).toList(), ids(vm)); assertEquals(0, vm.state.value.offset)
         assertEquals(1_000, vm.state.value.totalCount)
     }
     @Test fun usageRowsDoNotIncreaseDisplayedEventCountOrStopPagination() = runTest(dispatcher) {
@@ -74,7 +74,7 @@ class TimelineViewModelTest {
         vm.loadLater(); advanceUntilIdle()
         assertEquals(150, vm.state.value.records.size); assertEquals(TimelineError.LATER, vm.state.value.error)
         repo.failure = null; vm.retry(); advanceUntilIdle()
-        assertEquals((0L..169L).toList(), ids(vm)); assertFalse(vm.state.value.canLoadLater)
+        assertEquals((169L downTo 0L).toList(), ids(vm)); assertFalse(vm.state.value.canLoadLater)
         vm.loadLater(); advanceUntilIdle(); assertEquals(170, vm.state.value.records.size)
     }
     @Test fun failedInitialObservationAndLoadCanRetry() = runTest(dispatcher) {
@@ -112,7 +112,7 @@ class TimelineViewModelTest {
         restored.startObserving(); restored.selectDay(day, zone); advanceUntilIdle()
         assertEquals(ids(vm), ids(restored))
         repo.records.subList(20, repo.records.size).clear(); repo.changes.emit(Unit); advanceUntilIdle()
-        assertEquals((0L..19L).toList(), ids(restored)); assertEquals(0, restored.state.value.offset)
+        assertEquals((19L downTo 0L).toList(), ids(restored)); assertEquals(0, restored.state.value.offset)
     }
     @Test fun interruptedDateChangeRestoresTheNewDayAtItsBeginning() = runTest(dispatcher) {
         val repo = StoredRecords(1_000); val saved = SavedStateHandle()
@@ -170,6 +170,7 @@ class TimelineViewModelTest {
             failure?.let { throw it }
             val dayRecords = records.filter { it.event.occurredAt in range }
                 .filter { showAppUsage || it.event.type != EventType.APP_USAGE }
+                .sortedWith(compareBy<LifeEventRecord, LifeEvent>(LifeEvent.chronologicalOrder) { it.event }.reversed())
             return TimelinePage(dayRecords.drop(offset).take(limit), offset, dayRecords.size,
                 eventCount = dayRecords.count { it.event.type != EventType.APP_USAGE })
         }

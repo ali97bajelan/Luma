@@ -31,10 +31,26 @@ fun PrivacySettingsRoute(reset: AppDataReset, onBack: () -> Unit) {
 
 /** Shared with the native Health Connect rationale; contains no actions or database access. */
 @Composable
-fun PrivacyPolicyContent() {
-    Text(stringResource(R.string.privacy_local_storage), modifier = Modifier.testTag("privacy_local_storage"))
-    Text(stringResource(R.string.privacy_optional_access), modifier = Modifier.testTag("privacy_optional_access"))
-    Text(stringResource(R.string.privacy_backup_policy), modifier = Modifier.testTag("privacy_backup_policy"))
+fun PrivacyPolicyContent(accessAction: (@Composable () -> Unit)? = null) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        PrivacySection(R.string.privacy_storage_heading, R.string.privacy_local_storage, "privacy_local_storage")
+        PrivacySection(R.string.privacy_access_heading, R.string.privacy_optional_access, "privacy_optional_access") {
+            accessAction?.invoke()
+        }
+        PrivacySection(R.string.privacy_backup_heading, R.string.privacy_backup_policy, "privacy_backup_policy")
+    }
+}
+
+@Composable
+private fun PrivacySection(@StringRes heading: Int, @StringRes description: Int, tag: String,
+    content: @Composable ColumnScope.() -> Unit = {}) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(heading), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(description), modifier = Modifier.testTag(tag))
+            content()
+        }
+    }
 }
 
 @Composable
@@ -47,23 +63,28 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
             Text(stringResource(R.string.back))
         }
         Text(stringResource(R.string.privacy_title), style = MaterialTheme.typography.headlineLarge)
-        PrivacyPolicyContent()
-        Text(stringResource(R.string.privacy_delete_title), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(R.string.privacy_delete_description))
-        Button(onClick = onDelete, enabled = !state.busy && !state.requestAccepted,
-            modifier = Modifier.testTag("privacy_delete"),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError)) {
-            Text(stringResource(R.string.privacy_delete))
+        PrivacyPolicyContent {
+            TextButton(onClick = onAppSettings, enabled = !state.busy, modifier = Modifier.testTag("privacy_app_settings")) {
+                Text(stringResource(R.string.privacy_app_settings))
+            }
+            if (settingsMissing) Text(stringResource(R.string.privacy_settings_missing))
         }
-        if (state.busy) CircularProgressIndicator(Modifier.testTag("privacy_busy"))
-        if (state.requestAccepted) Text(stringResource(R.string.privacy_reset_requested), modifier = Modifier.testTag("privacy_requested"))
-        if (state.actionError) Text(stringResource(R.string.privacy_reset_failed),
-            color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("privacy_error"))
-        TextButton(onClick = onAppSettings, enabled = !state.busy, modifier = Modifier.testTag("privacy_app_settings")) {
-            Text(stringResource(R.string.privacy_app_settings))
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.privacy_delete_section), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.privacy_delete_description))
+                Button(onClick = onDelete, enabled = !state.busy && !state.requestAccepted,
+                    modifier = Modifier.testTag("privacy_delete"),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError)) {
+                    Text(stringResource(R.string.privacy_delete))
+                }
+                if (state.busy) CircularProgressIndicator(Modifier.testTag("privacy_busy"))
+                if (state.requestAccepted) Text(stringResource(R.string.privacy_reset_requested), modifier = Modifier.testTag("privacy_requested"))
+                if (state.actionError) Text(stringResource(R.string.privacy_reset_failed),
+                    color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("privacy_error"))
+            }
         }
-        if (settingsMissing) Text(stringResource(R.string.privacy_settings_missing))
     }
     if (state.confirming) AlertDialog(onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.privacy_delete_title)) },

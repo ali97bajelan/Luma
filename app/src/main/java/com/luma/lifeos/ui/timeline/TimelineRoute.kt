@@ -28,6 +28,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.TimelineRepository
+import com.luma.lifeos.ui.common.EmptyStateCard
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -92,16 +93,19 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     TextButton(onClick = pager::retry) { Text(stringResource(R.string.retry)) }
                 }
             }
-            if (state.loaded && state.records.isEmpty()) item(key = "empty") { Text(stringResource(R.string.timeline_empty), modifier = Modifier.testTag("timeline_empty")) }
-            if (state.canLoadEarlier) item(key = "earlier") {
-                TextButton(enabled = !state.busy, onClick = pager::loadEarlier, modifier = Modifier.testTag("timeline_earlier")) { Text(stringResource(R.string.timeline_earlier)) }
+            if (state.loaded && state.records.isEmpty()) item(key = "empty") {
+                EmptyStateCard(R.drawable.ic_nav_timeline, R.string.timeline_empty_heading, R.string.timeline_empty,
+                    "timeline_empty")
+            }
+            if (state.canLoadEarlier) item(key = "later") {
+                TextButton(enabled = !state.busy, onClick = pager::loadEarlier, modifier = Modifier.testTag("timeline_later")) { Text(stringResource(R.string.timeline_later)) }
             }
             items(state.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { record ->
                 EventCard(record, zone, onOpen = { onEvent(record) }, onMemory = { onMemory(record.event.id) })
             }
             if (state.busy && state.loaded) item(key = "busy") { CircularProgressIndicator() }
-            if (state.canLoadLater) item(key = "later") {
-                TextButton(enabled = !state.busy, onClick = pager::loadLater, modifier = Modifier.testTag("timeline_later")) { Text(stringResource(R.string.timeline_later)) }
+            if (state.canLoadLater) item(key = "earlier") {
+                TextButton(enabled = !state.busy, onClick = pager::loadLater, modifier = Modifier.testTag("timeline_earlier")) { Text(stringResource(R.string.timeline_earlier)) }
             }
         }
     }

@@ -41,7 +41,7 @@ fun observeToday(repository: LifeEventRepository, date: LocalDate, zone: ZoneId)
         repository.observeRecords(TimeRange.forDay(date, zone)).collect { stored ->
             val records = stored.filterNot { it.event.type == EventType.APP_USAGE }
             emit(if (records.isEmpty()) TodayUiState.Empty else TodayUiState.Data(
-                records.map { it.event }.sortedWith(LifeEvent.chronologicalOrder),
+                records.map { it.event }.sortedWith(LifeEvent.chronologicalOrder.reversed()),
                 records.mapNotNull { record -> record.mood?.let { record.event.id to it } }.toMap(),
                 records.mapNotNull { record -> record.journal?.let { record.event.id to it } }.toMap(),
                 records.mapNotNull { record -> record.memory?.let { record.event.id to it } }.toMap(),

@@ -37,13 +37,13 @@ class TodayStateTest {
         assertEquals(Instant.parse("2026-03-09T04:00:00Z"), repository.range!!.endExclusive)
     }
 
-    @Test fun ordersStoredEventsAndCountsOnlyAvailableTypes() = runBlocking {
+    @Test fun ordersStoredEventsNewestFirstAndCountsOnlyAvailableTypes() = runBlocking {
         val early = event(1, EventType.MOOD, "2026-03-08T08:00:00Z")
         val tied = event(2, EventType.JOURNAL, "2026-03-08T08:00:00Z")
         val late = event(3, EventType.MOOD, "2026-03-08T10:00:00Z")
         val states = observeToday(ReadRepository { flowOf(listOf(late, tied, early)) }, date, zone).toList()
         val data = states.last() as TodayUiState.Data
-        assertEquals(listOf(early, tied, late), data.events)
+        assertEquals(listOf(late, tied, early), data.events)
         assertEquals(mapOf(EventType.MOOD to 2, EventType.JOURNAL to 1), data.counts)
     }
     @Test fun screenTimeRecordsDoNotAppearInTodayOrItsCounts() = runBlocking {

@@ -147,7 +147,8 @@ class TimelineViewModel(private val repository: TimelineRepository, private val 
                 if (token != sequence) return@launch
                 val merged = if (replace) page.records else if (mode == TimelineError.LATER) current.records + page.records
                     else page.records + current.records
-                val unique = merged.distinctBy { it.event.id }.sortedWith(compareBy(LifeEvent.chronologicalOrder) { it.event })
+                val unique = merged.distinctBy { it.event.id }
+                    .sortedWith(compareBy<LifeEventRecord, LifeEvent>(LifeEvent.chronologicalOrder) { it.event }.reversed())
                 val dropping = if (!replace && mode == TimelineError.LATER) maxOf(0, unique.size - MAXIMUM) else 0
                 val records = if (dropping > 0) unique.drop(dropping) else unique.take(MAXIMUM)
                 val start = if (page.totalCount == 0) 0 else

@@ -9,12 +9,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoCount
+import com.luma.lifeos.ui.common.EmptyStateCard
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PersonRepository
@@ -28,6 +30,7 @@ fun PeopleRoute(repository: PersonRepository, onCreate: () -> Unit, onPerson: (U
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, retry) { observePeople(repository) }
     val state by observation.collectAsStateWithLifecycle(PeopleState.Loading)
+    val empty = (state as? PeopleState.Data)?.people?.isEmpty() == true
     LazyColumn(Modifier.fillMaxSize().testTag("screen_people"),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -35,7 +38,7 @@ fun PeopleRoute(repository: PersonRepository, onCreate: () -> Unit, onPerson: (U
             Column(Modifier.testTag(if (state is PeopleState.Data) "people_ready" else "people_header")) {
                 Text(stringResource(R.string.people), style = MaterialTheme.typography.headlineLarge)
                 Text(stringResource(R.string.people_intro))
-                Button(onClick = onCreate, modifier = Modifier.testTag("people_create")) { Text(stringResource(R.string.person_create)) }
+                if (!empty) Button(onClick = onCreate, modifier = Modifier.testTag("people_create")) { Text(stringResource(R.string.person_create)) }
             }
         }
         when (val current = state) {
@@ -45,12 +48,20 @@ fun PeopleRoute(repository: PersonRepository, onCreate: () -> Unit, onPerson: (U
                 TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
             is PeopleState.Data -> {
-                if (current.people.isEmpty()) item { Text(stringResource(R.string.people_empty)) }
+                if (current.people.isEmpty()) item {
+                    EmptyStateCard(R.drawable.ic_nav_people, R.string.people_empty_heading, R.string.people_empty,
+                        "people_empty", R.string.person_create, onCreate, "people_create")
+                }
                 items(current.people, key = { it.id.toString() }) { person ->
                     Card(Modifier.fillMaxWidth().testTag("person_${person.id}").clickable { onPerson(person.id) }) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(person.name, style = MaterialTheme.typography.titleMedium)
-                            person.note?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Icon(painterResource(R.drawable.ic_nav_people), contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(person.name, style = MaterialTheme.typography.titleMedium)
+                                person.note?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                            }
                         }
                     }
                 }
@@ -89,7 +100,9 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                     Text(current.history.person.name, style = MaterialTheme.typography.headlineMedium)
                     current.history.person.note?.let { Text(it) }
                     Text(stringResource(R.string.person_history), style = MaterialTheme.typography.titleLarge)
-                    if (current.history.events.isEmpty()) Text(stringResource(R.string.person_history_empty))
+                    if (current.history.events.isEmpty()) EmptyStateCard(R.drawable.ic_nav_people,
+                        R.string.person_history_empty_heading, R.string.person_history_empty,
+                        "person_history_empty")
                 }
                 items(current.history.events, key = { it.event.id.toString() }) { record ->
                     Card(Modifier.fillMaxWidth().testTag("person_event_${record.event.id}")) {
