@@ -11,7 +11,7 @@ import com.luma.lifeos.data.repository.RoomUsageRepository
 import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.ui.theme.LifeOsTheme
-import com.luma.lifeos.ui.usage.UsageSettingsRoute
+import com.luma.lifeos.ui.settings.IntegrationsSettingsRoute
 import java.time.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
@@ -36,8 +36,11 @@ class UsageSettingsFlowTest {
         }, Clock.fixed(now, zone))
         restoration = StateRestorationTester(compose)
         restoration.setContent {
-            var date by remember { mutableStateOf(today) }
-            LifeOsTheme { UsageSettingsRoute(integration, date, zone, { date = it }, { date = today }, {}) }
+            LifeOsTheme { IntegrationsSettingsRoute(integration, null, zone, {}) }
+        }
+        compose.waitUntil(5000) {
+            try { compose.onNodeWithTag("usage_enabled").assertIsEnabled(); true }
+            catch (_: AssertionError) { false }
         }
     }
     @After fun tearDown() { db.close() }
@@ -59,20 +62,22 @@ class UsageSettingsFlowTest {
         source.rows = listOf(UsageBucket("org.example.app", today.atStartOfDay(zone).toInstant(), now, 5_125, "Example app"))
         runBlocking { integration.refreshAccess() }
         awaitText("Usage access is available")
-        compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag("usage_import"))
+        compose.onNodeWithTag("usage_import").performScrollTo()
         compose.onNodeWithTag("usage_import").performClick()
-        scrollToTag("usage_daily_total")
-        compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag("usage_app_org.example.app"))
-        compose.onNodeWithText("Example app").assertIsDisplayed()
+        compose.waitUntil(5_000) { runBlocking { repository.state().lastSync != null } }
+        assertNoSavedUsageBrowser()
         runBlocking { integration.importNow() }
         assertEquals(5_125L, runBlocking { repository.observeDaily(today, zone).firstReport() }!!.totalMillis)
-        compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag("usage_enabled"))
+        compose.onNodeWithTag("usage_enabled").performScrollTo()
         compose.onNodeWithTag("usage_enabled").performClick()
         awaitText("Imports are off")
         assertFalse(runBlocking { RoomUsageRepository(db).state().enabled })
         assertEquals(now, runBlocking { repository.state().lastSync })
-        compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag("day_previous"))
-        compose.onNodeWithTag("day_previous").performClick(); scrollToTag("usage_daily_empty")
+        assertEquals(5_125L, runBlocking { RoomUsageRepository(db).observeDaily(today, zone).firstReport() }!!.totalMillis)
+        assertNoSavedUsageBrowser()
+        restoration.emulateSavedInstanceStateRestore()
+        awaitText("Imports are off")
+        assertEquals(5_125L, runBlocking { repository.observeDaily(today, zone).firstReport() }!!.totalMillis)
     }
     @Test fun emptyAndRevokedAccessDoNotProduceZeroUsageOrDiscardSavedData() {
         compose.waitUntil(5_000) { compose.onNodeWithTag("usage_enabled").fetchSemanticsNode().config.contains(androidx.compose.ui.semantics.SemanticsProperties.ToggleableState) }
@@ -80,60 +85,39 @@ class UsageSettingsFlowTest {
         runBlocking { integration.setEnabled(true); integration.importNow() }
         awaitText("Android has no reported usage data yet")
         compose.onNodeWithTag("usage_daily_total").assertDoesNotExist()
+        assertNull(runBlocking { repository.state().checkpoint })
+        assertNull(runBlocking { repository.observeDaily(today, zone).firstReport() })
+        source.rows = listOf(UsageBucket("org.example.app", today.atStartOfDay(zone).toInstant(), now, 5_125, "Example app"))
+        runBlocking { integration.importNow() }
+        assertEquals(5_125L, runBlocking { repository.observeDaily(today, zone).firstReport() }!!.totalMillis)
         source.permission = UsageAccess.REQUIRED
         runBlocking { integration.refreshAccess() }
         awaitText("Android Usage access is required")
-        assertNull(runBlocking { repository.state().checkpoint })
-        compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag("settings_places"))
-        compose.onNodeWithTag("settings_places").assertIsEnabled()
+        assertEquals(now, runBlocking { repository.state().checkpoint })
+        scrollToTag("usage_access"); compose.onNodeWithTag("usage_access").assertIsEnabled()
+        scrollToTag("usage_refresh"); compose.onNodeWithTag("usage_refresh").assertIsEnabled()
+        assertEquals(5_125L, runBlocking { RoomUsageRepository(db).observeDaily(today, zone).firstReport() }!!.totalMillis)
+        assertNoSavedUsageBrowser()
     }
-    @Test fun switchesBetweenRecordedVisitsAndTotalsWithoutShowingUnusedApps() {
-        val start = today.atStartOfDay(zone).toInstant()
-        runBlocking {
-            integration.setEnabled(true)
-            repository.commitImport(listOf(UsageBucket("org.example.unused", start, now, 0, "Unused app")),
-                UsageSessionBatch(TimeRange(start.minusSeconds(60), now), listOf(
-                    UsageSession("org.example.app", start.minusSeconds(30), start.plusSeconds(60), "Example app"),
-                    UsageSession("org.example.app", start.plusSeconds(120), start.plusSeconds(240), "Example app"))), now, now)
-        }
-        scrollToTag("usage_view_timeline")
-        compose.onNodeWithTag("usage_view_timeline").performClick()
-        scrollToTag("usage_session_org.example.app_${start.minusSeconds(30).toEpochMilli()}")
-        compose.onNodeWithText("0 h 1 min 0 s").assertIsDisplayed()
-        scrollToTag("usage_session_org.example.app_${start.plusSeconds(120).toEpochMilli()}")
-        compose.onNodeWithText("0 h 2 min 0 s").assertIsDisplayed()
-        compose.onNodeWithText("Unused app").assertDoesNotExist()
-        scrollToTag("usage_view_totals")
-        compose.onNodeWithTag("usage_view_totals").performClick()
-        scrollToTag("usage_app_org.example.app")
-        compose.onAllNodesWithText("0 h 3 min 0 s").assertCountEquals(2)
-        compose.onNodeWithTag("usage_app_org.example.unused").assertDoesNotExist()
-        scrollToTag("usage_history_partial")
-        scrollToTag("day_previous"); compose.onNodeWithTag("day_previous").performClick()
-        scrollToTag("usage_app_org.example.app")
-        compose.onAllNodesWithText("0 h 0 min 30 s").assertCountEquals(2)
-        scrollToTag("usage_view_timeline"); compose.onNodeWithTag("usage_view_timeline").performClick()
-        scrollToTag("usage_session_org.example.app_${start.minusSeconds(30).toEpochMilli()}")
+    @Test fun importFailuresKeepAccessRefreshAndRetentionControlsUsable() {
+        source.permission = UsageAccess.GRANTED; source.fail = true
+        runBlocking { integration.setEnabled(true); integration.importNow() }
+        awaitText("Import failed. Saved usage is unchanged; try again.")
+        scrollToTag("usage_import"); compose.onNodeWithTag("usage_import").assertIsEnabled()
+        scrollToTag("usage_refresh"); compose.onNodeWithTag("usage_refresh").assertIsEnabled().performClick()
+        scrollToTag("usage_details"); compose.onNodeWithTag("usage_details").performClick()
+        scrollToTag("usage_retention"); compose.onNodeWithTag("usage_retention").assertIsDisplayed()
+        scrollToTag("usage_access"); compose.onNodeWithTag("usage_access").assertIsEnabled()
+        assertNoSavedUsageBrowser()
     }
-    @Test fun legacyDailyTotalsDoNotInventTimelineSessions() {
-        runBlocking {
-            integration.setEnabled(true)
-            repository.commit(listOf(UsageBucket("org.example.app", today.atStartOfDay(zone).toInstant(), now, 5_125)), now, now)
-        }
-        scrollToTag("usage_view_timeline"); compose.onNodeWithTag("usage_view_timeline").performClick()
-        scrollToTag("usage_history_unavailable")
-        restoration.emulateSavedInstanceStateRestore()
-        scrollToTag("usage_view_timeline"); compose.onNodeWithTag("usage_view_timeline").assertIsSelected()
-        scrollToTag("usage_history_unavailable")
-        compose.onNodeWithTag("usage_daily_total").assertDoesNotExist()
-        scrollToTag("usage_view_totals"); compose.onNodeWithTag("usage_view_totals").performClick()
-        scrollToTag("usage_app_org.example.app")
-        compose.onAllNodesWithText("0 h 0 min 5.125 s").assertCountEquals(2)
+    private fun assertNoSavedUsageBrowser() {
+        listOf("day_previous", "usage_view_timeline", "usage_view_totals", "usage_daily_total", "usage_daily_empty", "settings_places")
+            .forEach { compose.onNodeWithTag(it).assertDoesNotExist() }
     }
     private fun scrollToTag(tag: String) {
         compose.waitUntil(5_000) {
             try {
-                compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag(tag))
+                compose.onNodeWithTag(tag).performScrollTo()
                 compose.onNodeWithTag(tag).assertIsDisplayed(); true
             } catch (_: AssertionError) { false }
         }
@@ -141,8 +125,8 @@ class UsageSettingsFlowTest {
     private fun awaitText(text: String) { compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
     private suspend fun <T> kotlinx.coroutines.flow.Flow<T>.firstReport(): T = first()
     private class Source : UsageSource {
-        var permission = UsageAccess.REQUIRED; var rows = emptyList<UsageBucket>()
+        var permission = UsageAccess.REQUIRED; var rows = emptyList<UsageBucket>(); var fail = false
         override suspend fun access() = permission
-        override suspend fun query(range: TimeRange) = rows
+        override suspend fun query(range: TimeRange): List<UsageBucket> { if (fail) error("Provider failure"); return rows }
     }
 }

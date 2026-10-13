@@ -434,4 +434,13 @@
     <string name="review_details_expanded">Développé</string>
     <string name="review_details_collapsed">Réduit</string>
     <string name="review_usage_incomplete">Couverture incomplète</string>
+    <string name="settings_hub_description">Gérez le fonctionnement de Luma sur cet appareil.</string>
+    <string name="settings_language_title">Langue</string>
+    <string name="settings_language_description">Choisissez la langue utilisée par Luma.</string>
+    <string name="settings_backup_title">Sauvegarde</string>
+    <string name="settings_backup_description">Exportez ou restaurez une sauvegarde locale privée.</string>
+    <string name="settings_privacy_title">Confidentialité</string>
+    <string name="settings_privacy_description">Consultez le stockage local, les accès et la suppression des données.</string>
+    <string name="settings_integrations_title">Intégrations</string>
+    <string name="settings_integrations_description">Gérez les imports facultatifs et les accès aux fournisseurs.</string>
 </resources>

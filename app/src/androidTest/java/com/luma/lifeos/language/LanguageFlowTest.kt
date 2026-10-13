@@ -24,11 +24,12 @@ class LanguageFlowTest {
         val selected = LocalDate.now().minusDays(1)
         compose.onNodeWithTag("day_previous").performClick()
         compose.onNodeWithTag("nav_settings").performClick()
+        compose.onNodeWithTag("settings_language").performClick()
         for ((language, settings) in listOf(AppLanguage.PERSIAN to "تنظیمات", AppLanguage.FRENCH to "Paramètres", AppLanguage.ENGLISH to "Settings")) {
             compose.onNodeWithTag("language_${language.tag}").performScrollTo().performClick()
             awaitLanguage(language)
-            compose.onNodeWithTag("nav_settings").assertTextContains(settings)
-            compose.onNodeWithTag("screen_settings").assertIsDisplayed()
+            compose.onNodeWithTag("screen_settings_language").assertIsDisplayed()
+            compose.onNodeWithTag("nav_settings").assertDoesNotExist()
             compose.activityRule.scenario.onActivity { activity ->
                 assertEquals(if (language == AppLanguage.PERSIAN) Configuration.SCREENLAYOUT_LAYOUTDIR_RTL else Configuration.SCREENLAYOUT_LAYOUTDIR_LTR,
                     activity.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_LAYOUTDIR_MASK)
@@ -36,6 +37,10 @@ class LanguageFlowTest {
             }
             compose.activityRule.scenario.recreate()
             awaitLanguage(language)
+            compose.onNodeWithTag("screen_settings_language").assertIsDisplayed()
+            compose.onNodeWithTag("settings_back").performClick()
+            compose.onNodeWithTag("nav_settings").assertTextContains(settings)
+            compose.onNodeWithTag("screen_settings").assertIsDisplayed()
             compose.onNodeWithTag("nav_today").performClick()
             compose.onNodeWithTag("day_selected", useUnmergedTree = true)
                 .assertTextEquals(selected.format(localizedDate(FormatStyle.MEDIUM)))
@@ -46,6 +51,7 @@ class LanguageFlowTest {
                 compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
                 compose.onNodeWithTag("capture_close").performClick()
             }
+            if (language != AppLanguage.ENGLISH) compose.onNodeWithTag("settings_language").performClick()
         }
     }
 

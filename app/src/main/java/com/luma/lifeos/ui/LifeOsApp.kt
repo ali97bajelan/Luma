@@ -8,7 +8,9 @@ import com.luma.lifeos.ui.timeline.EventDetailRoute
 import com.luma.lifeos.domain.repository.TimelineRepository
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.usage.UsageIntegration
-import com.luma.lifeos.ui.usage.UsageSettingsRoute
+import com.luma.lifeos.ui.settings.SettingsRoute
+import com.luma.lifeos.ui.settings.SettingsSectionPage
+import com.luma.lifeos.ui.settings.IntegrationsSettingsRoute
 import com.luma.lifeos.ui.usage.UsageForegroundRefresh
 import androidx.annotation.StringRes
 import androidx.annotation.DrawableRes
@@ -26,7 +28,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -195,14 +196,15 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         else MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
                             onMemory = { navController.navigate("memory?eventId=$it") },
                             onJournal = { navController.navigate("journal_detail/$it") })
-                    } else if (destination == Destination.SETTINGS && usage != null) {
-                        UsageSettingsRoute(usage, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
-                            onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
-                            onPlaces = { navController.navigate("places") }, health = health, backup = backup,
-                            onPrivacy = reset?.let { { navController.navigate("privacy") } })
+                    } else if (destination == Destination.SETTINGS) {
+                        SettingsRoute(backupAvailable = backup != null, privacyAvailable = reset != null,
+                            integrationsAvailable = usage != null || health != null,
+                            onLanguage = { navController.navigate("settings_language") },
+                            onBackup = { navController.navigate("settings_backup") },
+                            onPrivacy = { navController.navigate("privacy") },
+                            onIntegrations = { navController.navigate("settings_integrations") })
                     } else {
-                        FoundationScreen(destination, onPlaces = { navController.navigate("places") }, backup = backup,
-                            onPrivacy = reset?.let { { navController.navigate("privacy") } })
+                        FoundationScreen(destination)
                     }
                 }
             }
@@ -230,8 +232,19 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                 search?.let { com.luma.lifeos.ui.search.SearchRoute(it, currentDay.zone,
                     onBack = { navController.popBackStack() }, onEvent = ::openEvent) }
             }
-            composable("privacy") {
-                reset?.let { com.luma.lifeos.ui.privacy.PrivacySettingsRoute(it, onBack = { navController.popBackStack() }) }
+            composable("settings_language") {
+                SettingsSectionPage(R.string.settings_language_title, onBack = { navController.popBackStack() },
+                    screenTag = "screen_settings_language") { com.luma.lifeos.language.LanguageSettingsCard() }
+            }
+            if (backup != null) composable("settings_backup") {
+                SettingsSectionPage(R.string.settings_backup_title, onBack = { navController.popBackStack() },
+                    screenTag = "screen_settings_backup") { com.luma.lifeos.ui.backup.BackupSettingsCard(backup) }
+            }
+            if (reset != null) composable("privacy") {
+                com.luma.lifeos.ui.privacy.PrivacySettingsRoute(reset, onBack = { navController.popBackStack() })
+            }
+            if (usage != null || health != null) composable("settings_integrations") {
+                IntegrationsSettingsRoute(usage, health, currentDay.zone, onBack = { navController.popBackStack() })
             }
             composable("places") {
                 PlacesRoute(places, onBack = { navController.popBackStack() },
@@ -346,7 +359,7 @@ private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {
 }
 
 @Composable
-private fun FoundationScreen(destination: Destination, onPlaces: () -> Unit, backup: com.luma.lifeos.domain.backup.BackupService?, onPrivacy: (() -> Unit)?) {
+private fun FoundationScreen(destination: Destination) {
     Column(
         modifier = Modifier.fillMaxSize()
             .testTag("screen_${destination.route}")
@@ -357,14 +370,6 @@ private fun FoundationScreen(destination: Destination, onPlaces: () -> Unit, bac
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
         Text(stringResource(destination.heading), style = MaterialTheme.typography.headlineLarge)
         Text(stringResource(destination.body), style = MaterialTheme.typography.bodyLarge)
-        if (destination == Destination.SETTINGS && onPrivacy != null) TextButton(onClick = onPrivacy, modifier = Modifier.testTag("settings_privacy")) {
-            Text(stringResource(R.string.privacy_title))
-        }
-        if (destination == Destination.SETTINGS) com.luma.lifeos.language.LanguageSettingsCard()
-        if (destination == Destination.SETTINGS && backup != null) com.luma.lifeos.ui.backup.BackupSettingsCard(backup)
-        if (destination == Destination.SETTINGS) TextButton(onClick = onPlaces, modifier = Modifier.testTag("settings_places")) {
-            Text(stringResource(R.string.places))
-        }
         Text(
             stringResource(R.string.local_first),
             style = MaterialTheme.typography.bodyMedium,

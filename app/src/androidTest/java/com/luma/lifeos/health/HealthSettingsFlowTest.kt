@@ -10,7 +10,7 @@ import com.luma.lifeos.domain.health.*
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.ui.theme.LifeOsTheme
-import com.luma.lifeos.ui.usage.UsageSettingsRoute
+import com.luma.lifeos.ui.settings.IntegrationsSettingsRoute
 import java.time.*
 import kotlinx.coroutines.runBlocking
 import org.junit.*
@@ -32,8 +32,12 @@ class HealthSettingsFlowTest {
             override suspend fun query(range: TimeRange) = emptyList<UsageBucket>()
         }, RoomUsageRepository(db), object : UsageScheduler { override fun schedule() {}; override fun cancel() {} })
         compose.setContent { LifeOsTheme {
-            UsageSettingsRoute(usage, LocalDate.parse("2026-10-12"), zone, {}, {}, {}, health)
+            IntegrationsSettingsRoute(usage, health, zone, {})
         } }
+        compose.waitUntil(5000) {
+            try { compose.onNodeWithTag("health_enabled").assertIsEnabled(); true }
+            catch (_: AssertionError) { false }
+        }
     }
     @After fun close() { db.close() }
     @Test fun permissionStatusImportsCorrectionsAndOptOutPersistAcrossRecreation() {
@@ -64,9 +68,26 @@ class HealthSettingsFlowTest {
         assertEquals(0, runBlocking { db.lifeEvents().countDay(0, now.toEpochMilli()) })
         source.access = HealthAccess.REQUIRED; runBlocking { health.refreshAccess() }
         awaitText("Read-steps permission is required")
-        scroll("settings_places"); compose.onNodeWithTag("settings_places").assertIsEnabled()
+        scroll("health_manage"); compose.onNodeWithTag("health_manage").assertIsEnabled()
+        scroll("health_refresh"); compose.onNodeWithTag("health_refresh").assertIsEnabled()
+        compose.onNodeWithTag("day_previous").assertDoesNotExist()
+        compose.onNodeWithTag("usage_view_totals").assertDoesNotExist()
+        compose.onNodeWithTag("settings_places").assertDoesNotExist()
     }
-    private fun scroll(tag: String) { compose.onNodeWithTag("screen_settings").performScrollToNode(hasTestTag(tag)) }
+    @Test fun revokedAccessKeepsSavedStepsAndManagementUsable() {
+        source.access = HealthAccess.GRANTED
+        runBlocking { health.setEnabled(true); health.importNow() }
+        val window = stepWindows(now, zone).last()
+        val saved = runBlocking { db.lifeEvents().findBySource(com.luma.lifeos.domain.model.EventSource.HEALTH_CONNECT, window.sourceReference)!! }
+        source.access = HealthAccess.REQUIRED
+        runBlocking { health.refreshAccess() }
+        awaitText("Read-steps permission is required")
+        scroll("health_import"); compose.onNodeWithTag("health_import").assertIsNotEnabled()
+        scroll("health_manage"); compose.onNodeWithTag("health_manage").assertIsEnabled()
+        scroll("health_refresh"); compose.onNodeWithTag("health_refresh").assertIsEnabled()
+        assertEquals(100.0, runBlocking { db.lifeEvents().getDetails(saved.id)!!.activities.single().value }, 0.0)
+    }
+    private fun scroll(tag: String) { compose.onNodeWithTag(tag).performScrollTo() }
     private fun awaitText(text: String) { compose.waitUntil(5000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
     private class Source : HealthSource {
         var access = HealthAccess.REQUIRED; var count: Long? = 100

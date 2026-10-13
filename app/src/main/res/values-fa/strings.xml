@@ -429,4 +429,13 @@
     <string name="review_details_expanded">باز شده</string>
     <string name="review_details_collapsed">بسته</string>
     <string name="review_usage_incomplete">پوشش ناقص</string>
+    <string name="settings_hub_description">تنظیمات لوما را در این دستگاه مدیریت کنید.</string>
+    <string name="settings_language_title">زبان</string>
+    <string name="settings_language_description">زبان نمایش لوما را انتخاب کنید.</string>
+    <string name="settings_backup_title">پشتیبان‌گیری</string>
+    <string name="settings_backup_description">یک نسخهٔ پشتیبان خصوصی و محلی تهیه یا بازیابی کنید.</string>
+    <string name="settings_privacy_title">حریم خصوصی</string>
+    <string name="settings_privacy_description">ذخیره‌سازی محلی، دسترسی‌ها و حذف داده‌ها را بررسی کنید.</string>
+    <string name="settings_integrations_title">اتصال‌ها</string>
+    <string name="settings_integrations_description">دریافت اختیاری داده‌ها و دسترسی به سرویس‌ها را مدیریت کنید.</string>
 </resources>
