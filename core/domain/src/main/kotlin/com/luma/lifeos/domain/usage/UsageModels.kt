@@ -5,6 +5,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
+const val APP_USAGE_DISPLAY_THRESHOLD_MILLIS = 60_000L
+
 /** Bounds and foreground total reported by Android, not a prorated query range. */
 data class UsageBucket(val packageName: String, val start: Instant, val end: Instant,
     val durationMillis: Long, val appLabel: String? = null) {

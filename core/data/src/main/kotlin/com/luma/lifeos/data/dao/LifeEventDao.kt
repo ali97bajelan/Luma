@@ -9,11 +9,12 @@ import com.luma.lifeos.data.entity.EventWithDetails
 import com.luma.lifeos.data.entity.LifeEventEntity
 import com.luma.lifeos.data.entity.SummarySource
 import com.luma.lifeos.domain.model.EventSource
+import com.luma.lifeos.domain.usage.APP_USAGE_DISPLAY_THRESHOLD_MILLIS
 import kotlinx.coroutines.flow.Flow
 
-// Missing usage details are unavailable, not a measured zero. Apply before LIMIT/OFFSET.
-private const val TIMELINE_VISIBLE = """(type != 'APP_USAGE' OR NOT EXISTS (
-    SELECT 1 FROM app_usage_record WHERE life_event_id = life_event.id AND duration_ms = 0))"""
+// Missing usage details are unavailable, not a measured value. Apply before LIMIT/OFFSET.
+private const val TIMELINE_VISIBLE = """(type != 'APP_USAGE' OR (:showAppUsage AND EXISTS (
+    SELECT 1 FROM app_usage_record WHERE life_event_id = life_event.id AND duration_ms > $APP_USAGE_DISPLAY_THRESHOLD_MILLIS)))"""
 
 /** Low-level operations: application writes go through the transactional repositories. */
 @Dao
@@ -55,13 +56,13 @@ interface LifeEventDao {
 
     @Transaction
     @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND " + TIMELINE_VISIBLE + " ORDER BY occurred_at, id LIMIT :limit OFFSET :offset")
-    suspend fun pageDetails(start: Long, end: Long, offset: Int, limit: Int): List<EventWithDetails>
+    suspend fun pageDetails(start: Long, end: Long, offset: Int, limit: Int, showAppUsage: Boolean): List<EventWithDetails>
 
     @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end")
     suspend fun countDay(start: Long, end: Long): Int
 
     @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND " + TIMELINE_VISIBLE)
-    suspend fun countTimelineRows(start: Long, end: Long): Int
+    suspend fun countTimelineRows(start: Long, end: Long, showAppUsage: Boolean): Int
 
     @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE'")
     suspend fun countDayEvents(start: Long, end: Long): Int

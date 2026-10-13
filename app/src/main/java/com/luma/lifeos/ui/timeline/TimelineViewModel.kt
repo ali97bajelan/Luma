@@ -32,15 +32,18 @@ data class TimelineState(
     val loaded: Boolean = false, val loading: Boolean = true, val busy: Boolean = false,
     val error: TimelineError? = null,
     val eventCount: Int = totalCount,
+    val showAppUsage: Boolean = false,
 ) {
     val canLoadEarlier: Boolean get() = loaded && offset > 0
     val canLoadLater: Boolean get() = loaded && offset.toLong() + records.size < totalCount
 }
 
 /** A bounded day window. Stable LazyColumn keys retain the visible row when offscreen pages are dropped. */
-class TimelineViewModel(private val repository: TimelineRepository, private val saved: SavedStateHandle) : ViewModel() {
+class TimelineViewModel(private val repository: TimelineRepository, private val saved: SavedStateHandle,
+    initialShowAppUsage: Boolean = false) : ViewModel() {
     private val mutableState = MutableStateFlow(TimelineState(
-        date = saved.get<String>("day")?.let(LocalDate::parse), zone = saved.get<String>("zone")?.let(ZoneId::of)))
+        date = saved.get<String>("day")?.let(LocalDate::parse), zone = saved.get<String>("zone")?.let(ZoneId::of),
+        showAppUsage = initialShowAppUsage))
     val state = mutableState.asStateFlow()
     private var ready = CompletableDeferred<Unit>()
     private var observation: Job? = null
@@ -86,8 +89,21 @@ class TimelineViewModel(private val repository: TimelineRepository, private val 
         val size = if (sameDay) (saved.get<Int>("window_size") ?: INITIAL).coerceIn(INITIAL, MAXIMUM) else INITIAL
         saved["day"] = date.toString(); saved["zone"] = zone.id
         saved["offset"] = offset; saved["window_size"] = size
-        mutableState.value = TimelineState(date = date, zone = zone, offset = offset)
+        mutableState.value = TimelineState(date = date, zone = zone, offset = offset,
+            showAppUsage = state.value.showAppUsage)
         observe(); request(TimelineError.LOAD, offset, size)
+    }
+    fun setShowAppUsage(show: Boolean) {
+        val current = state.value
+        if (current.showAppUsage == show) return
+        sequence++; read?.cancel()
+        saved["offset"] = 0; saved["window_size"] = INITIAL
+        mutableState.value = current.copy(records = emptyList(), offset = 0, totalCount = 0, eventCount = 0,
+            loaded = false, loading = true, busy = false, error = null, showAppUsage = show)
+        if (current.date != null && current.zone != null) {
+            observe()
+            request(TimelineError.LOAD, 0, INITIAL)
+        }
     }
     fun loadLater() {
         val current = state.value
@@ -117,7 +133,8 @@ class TimelineViewModel(private val repository: TimelineRepository, private val 
             try {
                 ready.await()
                 val range = timelineDayRange(date, zone)
-                var page = if (range == null) TimelinePage(emptyList(), 0, 0) else repository.page(range, offset, limit)
+                var page = if (range == null) TimelinePage(emptyList(), 0, 0) else
+                    repository.page(range, offset, limit, current.showAppUsage)
                 var replace = mode == TimelineError.LOAD
                 if (range != null && !replace && page.totalCount != current.totalCount) {
                     // A write may commit just before its invalidation reaches us. Re-read one coherent window.
@@ -137,7 +154,7 @@ class TimelineViewModel(private val repository: TimelineRepository, private val 
                     (if (!replace && mode == TimelineError.LATER) current.offset else page.offset) + dropping
                 saved["offset"] = start; saved["window_size"] = records.size.coerceIn(INITIAL, MAXIMUM)
                 mutableState.value = TimelineState(date, zone, records, start, page.totalCount, loaded = true, loading = false,
-                    eventCount = page.eventCount)
+                    eventCount = page.eventCount, showAppUsage = current.showAppUsage)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 if (token == sequence) mutableState.value = state.value.copy(loading = false, busy = false, error = mode)

@@ -37,7 +37,7 @@ class TimelineViewModelTest {
     @Test fun usageRowsDoNotIncreaseDisplayedEventCountOrStopPagination() = runTest(dispatcher) {
         val repo = StoredRecords(170)
         repo.records.replaceAll { it.copy(event = it.event.copy(type = EventType.APP_USAGE)) }
-        val vm = TimelineViewModel(repo, SavedStateHandle())
+        val vm = TimelineViewModel(repo, SavedStateHandle(), initialShowAppUsage = true)
         vm.selectDay(day, zone); advanceUntilIdle()
         assertEquals(0, vm.state.value.eventCount); assertEquals(170, vm.state.value.totalCount)
         assertTrue(vm.state.value.canLoadLater)
@@ -47,6 +47,25 @@ class TimelineViewModelTest {
         repo.records[0] = repo.records[0].copy(event = repo.records[0].event.copy(type = EventType.JOURNAL))
         repo.changes.emit(Unit); advanceUntilIdle()
         assertEquals(1, vm.state.value.eventCount); assertEquals(170, vm.state.value.totalCount)
+    }
+    @Test fun usageRowsAreHiddenByDefaultAndChangingVisibilityReloadsTheDay() = runTest(dispatcher) {
+        val repo = StoredRecords(3)
+        repo.records.replaceAll { it.copy(event = it.event.copy(type = EventType.APP_USAGE)) }
+        val vm = TimelineViewModel(repo, SavedStateHandle())
+        vm.selectDay(day, zone); advanceUntilIdle()
+
+        assertFalse(vm.state.value.showAppUsage)
+        assertTrue(vm.state.value.records.isEmpty())
+        assertEquals(0, vm.state.value.totalCount)
+        vm.setShowAppUsage(true); advanceUntilIdle()
+        assertTrue(vm.state.value.showAppUsage)
+        assertEquals(3, vm.state.value.totalCount)
+        assertEquals(3, vm.state.value.records.size)
+        assertEquals(0, vm.state.value.eventCount)
+        vm.setShowAppUsage(false); advanceUntilIdle()
+        assertFalse(vm.state.value.showAppUsage)
+        assertTrue(vm.state.value.records.isEmpty())
+        assertEquals(0, vm.state.value.totalCount)
     }
     @Test fun exhaustedShortPageStopsLoadingAndErrorsRetryWithoutLosingRows() = runTest(dispatcher) {
         val repo = StoredRecords(170)
@@ -146,10 +165,11 @@ class TimelineViewModelTest {
         private val time = Instant.parse("2026-10-11T08:00:00Z")
         val records = (0 until count).map { LifeEventRecord(LifeEvent(EventId(UUID(0, it.toLong())), EventType.ACTIVITY, time, time)) }.toMutableList()
         override fun observeChanges() = changes
-        override suspend fun page(range: TimeRange, offset: Int, limit: Int): TimelinePage {
+        override suspend fun page(range: TimeRange, offset: Int, limit: Int, showAppUsage: Boolean): TimelinePage {
             if (range.start == Instant.parse("2026-10-11T00:00:00Z")) block?.let { withContext(NonCancellable) { it.await() } }
             failure?.let { throw it }
             val dayRecords = records.filter { it.event.occurredAt in range }
+                .filter { showAppUsage || it.event.type != EventType.APP_USAGE }
             return TimelinePage(dayRecords.drop(offset).take(limit), offset, dayRecords.size,
                 eventCount = dayRecords.count { it.event.type != EventType.APP_USAGE })
         }

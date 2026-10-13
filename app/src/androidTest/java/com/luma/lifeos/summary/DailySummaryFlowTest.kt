@@ -84,7 +84,7 @@ class DailySummaryFlowTest {
     }
     @Test fun usageRowsShowLabelsPackagesAndTheirOwnDurationsByNativeDate() {
         val start = day.atStartOfDay(zone).toInstant()
-        val labeled = UsageBucket("org.example.reader", start, now, 5_125, "Reader")
+        val labeled = UsageBucket("org.example.reader", start, now, 65_125, "Reader")
         val unlabeled = UsageBucket("org.example.empty", start, now, 0)
         runBlocking {
             val usage = RoomUsageRepository(db)
@@ -96,10 +96,10 @@ class DailySummaryFlowTest {
             events.upsert(parent.copy(occurredAt = day.minusDays(1).atStartOfDay(zone).toInstant()))
         }
         show()
-        awaitText("summary_usage", "Saved foreground usage: 0 h 0 min 5.125 s · apps: 1")
+        awaitText("summary_usage", "Saved foreground usage: 0 h 1 min 5.125 s · apps shown: 1")
         awaitText("summary_usage_label_org.example.reader", "Reader")
         awaitText("summary_usage_package_org.example.reader", "org.example.reader")
-        awaitText("summary_usage_duration_org.example.reader", "0 h 0 min 5.125 s")
+        awaitText("summary_usage_duration_org.example.reader", "0 h 1 min 5.125 s")
         compose.onNodeWithTag("summary_usage_label_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_duration_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_package_org.example.empty").assertDoesNotExist()

@@ -45,30 +45,35 @@ CI is configured for domain tests, Android compilation/lint, navigation, and per
 on an API 36 emulator. Workflow creation does not imply a successful hosted run.
 See [docs/VALIDATION.md](docs/VALIDATION.md) for checks actually run here.
 
-T03 was implemented without running code, Gradle, or an emulator, at the user's
-request. The Room Gradle plugin exports schema JSON under `core/data/schemas` during
-your first build. Commit those generated files before changing the database schema;
-see [schema history](core/data/schemas/README.md). Current build and test results,
-including 101 passing API 36 instrumentation tests, remaining native/performance
-checks and the app/health lint analyzer compatibility failure, are recorded in
-`docs/VALIDATION.md`.
+T03's initial validation was deferred at the user's request; its Room suite now
+passes on API 36 as part of 107 native data tests. The Room Gradle plugin exports
+schema JSON under `core/data/schemas`; commit those generated files before changing
+the database schema. Current validation includes 277 passing JVM tests and a
+50-case app instrumentation run with no failures (one usage-access-dependent case
+was skipped). Search and Weekly Review still exceed their measured performance
+targets on the emulator; native Health Connect data, system file-picker and reset
+checks remain open. See `docs/VALIDATION.md` for exact results.
 
 Settings includes manual [backup, export and restore](docs/BACKUP_FORMAT.md).
 Export saves a versioned archive of records and referenced photos through the
 system file picker. Restore validates the archive before confirming replacement
 of current saved data. Archives are unencrypted; choose a trusted destination.
-Native backup/restore acceptance remains pending device validation.
+Room backup round-trip/replacement tests pass on API 36. The native Android export
+and restore pickers were exercised with a generated two-event backup in the isolated
+validation install, and both restored records appeared in Timeline. Process-lifecycle,
+concurrent cleanup and power-loss checks remain pending.
 
 Settings → [Privacy and local data](docs/PRIVACY.md) explains optional permissions
 and retained copies, and offers a confirmed full app-data reset. Reset removes
 private records/photos/drafts and app preferences, then closes Luma. Shared backup
 files and original provider records must be managed separately. Native reset and
-permission acceptance remain pending device validation.
+real provider-permission and app-data-reset acceptance remain pending; no real app
+data was reset or optional health access granted during validation.
 
 ## Project references
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): stack, module boundaries, relational schema, privacy, and phases.
-- [TASKS.md](TASKS.md): all 20 ordered tasks with acceptance criteria and status.
+- [TASKS.md](TASKS.md): all 21 ordered tasks with acceptance criteria and status.
 - Original `.docx` files: product specification and implementation task source.
 - `docs/`: readable source extracts and validation evidence.
 
@@ -77,10 +82,14 @@ with optional dates and saved catalog selections. Filters combine across categor
 multiple tags or people match any selected item. Results open their source entries.
 Lookup uses debounced SQL queries and bounded pages, without searching journal
 bodies or notes. No extra permission or integration access is needed.
+On the API 36 emulator with 50,000 saved entries, title and no-match searches took
+about 2.0–2.2 seconds per page; improving that large-fixture response remains open.
 
 Timeline merges stored manual records and activity/app-usage signals in stable
-day order, with calendar navigation and a bounded scrolling window. App-usage
-rows with zero recorded time are omitted from Timeline. Complete
+day order, with calendar navigation and a bounded scrolling window. Today shows
+at most the three most-used apps with more than one minute of usage. Timeline
+hides app-usage rows by default; its switch reveals only rows with more than one
+minute of usage, and remembers the user's choice. Complete
 manual records open their existing content routes; imported records open read-only
 typed details. Settings offers optional Android Usage access, manual imports,
 background refresh, access/status controls, a session Timeline and per-app Daily
@@ -125,7 +134,8 @@ frequencies, notable memories, linked people/places, recorded foreground app usa
 and activity grouped by type/unit/source. Source actions open contributing entries,
 catalog details and saved daily usage evidence. Missing measurements remain
 unavailable, including empty partial session history; explicit aggregate zero is
-retained. Reviews run offline with AI disabled. Device execution and full repository
-timing for T16 remain pending; see docs/VALIDATION.md. Privacy Settings and confirmed local-data reset are implemented in T18;
-native acceptance remains pending. No future backlog features, network
+retained. Reviews run offline with AI disabled. API 36 Room/UI checks pass, but a
+50,000-row repository run measured a 364 ms p95 against the 300 ms target, so T16
+remains open. Privacy Settings and confirmed local-data reset are implemented in
+T18; native reset and provider-permission acceptance remain pending. No future backlog features, network
 permission, telemetry, or mandatory AI service are included.

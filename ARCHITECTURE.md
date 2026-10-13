@@ -507,12 +507,14 @@ explanation. Partial/empty/unavailable histories have distinct messages.
 Displayed event counts exclude `APP_USAGE`: Today counts its filtered rows, saved
 daily summaries omit usage snapshots (including envelopes missing typed details),
 and Timeline uses a separate full-day `eventCount` query. Timeline keeps `totalCount`
-for paging visible records and continues to render usage rows with positive or
-unavailable usage. Known zero-duration app rows are excluded before LIMIT/OFFSET;
-the paging count uses the same predicate, and the raw day count stays unchanged.
-Both counts and
-page rows are read in one transaction. Summary version 3 replaces older cached
-counts without changing stored usage data or foreground-time metrics.
+for paging visible records. Today displays at most the three highest-usage apps whose
+recorded duration exceeds one minute, and its displayed-app count matches those
+rows. Timeline app usage is hidden by default behind a persisted user switch;
+when enabled, only records longer than one minute qualify. The predicate runs
+before LIMIT/OFFSET and is reused for the paging count, while the raw day count
+stays unchanged. Both counts and page rows are read in one transaction. Summary
+version 3 replaces older cached counts without changing stored usage data or
+foreground-time metrics.
 
 Native bucket starts can change when Android corrects wall time, including shifts
 that do not overlap old short intervals. The importer persists the initial wall,
@@ -629,8 +631,8 @@ Name subqueries match catalogs once before reverse-link traversal. Existing
 occurrence/UUID and reverse-link indexes serve dates, links and stable newest-first
 ordering. SQL applies predicates before count/LIMIT/OFFSET; count and a typed page
 share one Room transaction on Dispatchers.IO. Relation loading is limited to the
-matching page, rather than the full history. Known zero-duration usage is hidden
-using the same semantics as Timeline. Missing usage remains searchable.
+matching page, rather than the full history. Search hides known zero-duration
+usage. Missing usage remains searchable.
 
 Timeline opens Search with an independent optional date range and catalog dialogs.
 SearchViewModel retains inputs and catalog IDs in SavedStateHandle, debounces text
@@ -817,3 +819,17 @@ retention were also exercised. Timeline frame/latency measurement and actual
 Health Connect step imports remain pending; app/health lint retain their existing
 detector compatibility failures. A Journal regression now preserves size-rejection
 errors when TextField repeats the retained draft value. See docs/VALIDATION.md.
+
+## Current validation status — 2026-10-13
+
+On API 36, 277 JVM tests, 107 Room instrumentation tests, and the 50-case app
+instrumentation suite completed without failures; one optional Usage Access probe
+was skipped because special access was not granted. Debug and unsigned release APKs
+assemble, and all module lint checks have zero errors (the app has nine warnings).
+Large-fixture measurements still block T11/T15/T16/T19 release acceptance: Timeline
+day changes take 116–150 ms, Search substring/no-match pages take 2.0–2.2 seconds,
+and Weekly Review measures 364 ms p95 against its 300 ms target. A useful native
+Health Connect import and actual app-data reset remain unverified. Android's real
+backup export/restore picker flow passed using generated data in the isolated
+validation install; backup lifecycle and interruption cases remain open. Details are
+recorded in [docs/VALIDATION.md](docs/VALIDATION.md).

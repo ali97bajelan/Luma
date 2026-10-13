@@ -7,6 +7,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -31,7 +35,12 @@ import java.time.ZoneId
 fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
     onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: (EventId) -> Unit,
     onSearch: (() -> Unit)? = null) {
-    val factory = remember(repository) { viewModelFactory { initializer { TimelineViewModel(repository, createSavedStateHandle()) } } }
+    val context = LocalContext.current.applicationContext
+    val usagePreference = remember(context) { TimelineUsagePreference(context) }
+    val initialShowAppUsage = remember(usagePreference) { usagePreference.showAppUsage() }
+    val factory = remember(repository, initialShowAppUsage) {
+        viewModelFactory { initializer { TimelineViewModel(repository, createSavedStateHandle(), initialShowAppUsage) } }
+    }
     val pager: TimelineViewModel = viewModel(factory = factory)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(pager, lifecycle) {
@@ -61,6 +70,16 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     Text(stringResource(R.string.timeline), style = MaterialTheme.typography.headlineLarge)
                     onSearch?.let { TextButton(onClick = it, modifier = Modifier.testTag("timeline_search")) { Text(stringResource(R.string.search)) } }
                     DayNavigation(date, onSelectDate, onToday)
+                    val usageSwitchLabel = stringResource(R.string.timeline_show_app_usage)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(usageSwitchLabel, modifier = Modifier.weight(1f))
+                        Switch(checked = state.showAppUsage, onCheckedChange = { show ->
+                            usagePreference.setShowAppUsage(show)
+                            pager.setShowAppUsage(show)
+                        }, modifier = Modifier.testTag("timeline_show_app_usage")
+                            .semantics { contentDescription = usageSwitchLabel })
+                    }
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
                     if (state.loaded) Text(pluralStringResource(R.plurals.daily_events, state.eventCount, state.eventCount),
                         modifier = Modifier.testTag("timeline_event_count"))

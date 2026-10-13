@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.domain.usage.APP_USAGE_DISPLAY_THRESHOLD_MILLIS
 import com.luma.lifeos.domain.summary.ScaleTotal
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
@@ -35,12 +36,17 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                     ScaleLine(stringResource(R.string.summary_energy), summary.mood?.energy, "summary_energy")
                     ScaleLine(stringResource(R.string.summary_stress), summary.mood?.stress, "summary_stress")
                     val usage = summary.usage
+                    val displayedApps = usage?.apps.orEmpty()
+                        .filter { it.durationMillis > APP_USAGE_DISPLAY_THRESHOLD_MILLIS }
+                        .sortedWith(compareByDescending<com.luma.lifeos.domain.usage.AppUsageTotal> { it.durationMillis }
+                            .thenBy { it.packageName })
+                        .take(3)
                     Text(if (usage == null) stringResource(R.string.summary_unavailable, stringResource(R.string.summary_usage))
-                        else stringResource(R.string.summary_usage_value, usageDuration(usage.totalMillis), usage.apps.size),
+                        else stringResource(R.string.summary_usage_value, usageDuration(usage.totalMillis), displayedApps.size),
                         modifier = Modifier.testTag("summary_usage"))
                     if (usage != null) {
                         Text(stringResource(R.string.usage_daily_explanation), style = MaterialTheme.typography.bodySmall)
-                        usage.apps.forEach { app ->
+                        displayedApps.forEach { app ->
                             Column(Modifier.fillMaxWidth().testTag("summary_usage_app_${app.packageName}")) {
                                 Text(app.appLabel ?: app.packageName, style = MaterialTheme.typography.titleMedium,
                                     modifier = Modifier.testTag("summary_usage_label_${app.packageName}"))

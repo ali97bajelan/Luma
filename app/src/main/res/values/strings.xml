@@ -201,6 +201,7 @@
     <string name="timeline_error">Could not load timeline events. Try again.</string>
     <string name="timeline_earlier">Earlier events</string>
     <string name="timeline_later">Later events</string>
+    <string name="timeline_show_app_usage">Show app usage</string>
     <string name="usage_title">Screen-time imports</string>
     <string name="usage_access_explanation">Luma can periodically read app names and foreground time with Android Usage access. Imports stay on this device. You can revoke access at any time. Turning imports off keeps previously saved records.</string>
     <string name="usage_enable">Enable imports</string>
@@ -241,7 +242,7 @@
     <string name="summary_average">%1$s: %2$s/5 · saved samples: %3$d</string>
     <string name="summary_unavailable">%1$s: unavailable</string>
     <string name="summary_usage">Saved foreground usage</string>
-    <string name="summary_usage_value">Saved foreground usage: %1$s · apps: %2$d</string>
+    <string name="summary_usage_value">Saved foreground usage: %1$s · apps shown: %2$d</string>
     <string name="summary_activity">Recorded activity</string>
     <string name="summary_activity_value">%1$s: %2$s %3$s · %4$s · saved samples: %5$d</string>
     <string name="health_title">Health Connect steps</string>

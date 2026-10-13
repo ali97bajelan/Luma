@@ -21,6 +21,7 @@ import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -36,6 +37,7 @@ class TimelineFlowTest {
     private val clock = Clock.fixed(time, zone)
     @Before fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.getSharedPreferences("timeline_usage", android.content.Context.MODE_PRIVATE).edit().clear().commit()
         db = Room.inMemoryDatabaseBuilder(context, LumaDatabase::class.java).build()
         directory = File(context.cacheDir, "timeline-test-${UUID.randomUUID()}")
         photos = RoomPhotoRepository(db, ManagedPhotoFiles(directory)) { error("No photo selection in this fixture") }
@@ -47,18 +49,21 @@ class TimelineFlowTest {
             source = EventSource.HEALTH_CONNECT, sourceReference = "test:steps")
         val measurement = ActivityRecordEntity(UUID.randomUUID().toString(), activity.id.toString(), "steps", 123.0, "count", activity.source, "test:steps")
         val usage = LifeEvent(EventId.new(), EventType.APP_USAGE, time.minusSeconds(7_200), time,
-            endedAt = time.minusSeconds(7_140), source = EventSource.USAGE_STATS, sourceReference = "test:usage")
+            endedAt = time.minusSeconds(7_000), source = EventSource.USAGE_STATS, sourceReference = "test:usage")
         val unused = LifeEvent(EventId.new(), EventType.APP_USAGE, time.minusSeconds(14_400), time,
             endedAt = time, source = EventSource.USAGE_STATS, sourceReference = "test:unused")
         val journal = EventId.new()
         runBlocking {
             RoomEventStore(db).save(EventWrite(activity, activities = listOf(measurement)))
             RoomEventStore(db).save(EventWrite(usage, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), usage.id.toString(),
-                usage.occurredAt.toEpochMilli(), usage.endedAt!!.toEpochMilli(), "org.example.browser", 5_125)))
+                usage.occurredAt.toEpochMilli(), usage.endedAt!!.toEpochMilli(), "org.example.browser", 125_125)))
             RoomEventStore(db).save(EventWrite(unused, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), unused.id.toString(),
                 unused.occurredAt.toEpochMilli(), time.toEpochMilli(), "org.example.unused", 0)))
             RoomJournalRepository(db, clock).create(journal, JournalInput("Earlier journal body", time.minusSeconds(86_400), "Earlier journal"))
         }
+        InstrumentationRegistry.getInstrumentation().targetContext
+            .getSharedPreferences("timeline_usage", android.content.Context.MODE_PRIVATE).edit()
+            .putBoolean("show_app_usage", true).commit()
         show()
         compose.onNodeWithTag("nav_timeline").performClick()
         awaitTag("event_${activity.id}")
@@ -67,11 +72,11 @@ class TimelineFlowTest {
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${activity.id}"))
         compose.onNodeWithTag("event_${activity.id}").performClick()
         awaitTag("screen_event_detail")
-        awaitText("steps: 123 count")
+        awaitText("Steps: 123 count")
         compose.onNodeWithTag("event_edit").assertDoesNotExist()
         compose.onNodeWithTag("event_promote").assertDoesNotExist()
         runBlocking { RoomEventStore(db).save(EventWrite(activity.copy(updatedAt = time.plusSeconds(1)), activities = listOf(measurement.copy(value = 124.0)))) }
-        awaitText("steps: 124 count")
+        awaitText("Steps: 124 count")
         runBlocking { RoomLifeEventRepository(db).delete(activity.id) }
         awaitTag("event_missing")
         compose.onNodeWithText("Back").performClick()
@@ -101,6 +106,48 @@ class TimelineFlowTest {
         compose.onNodeWithTag("day_picker").performClick()
         compose.onNodeWithTag("date_picker_dialog").assertExists()
         compose.onNodeWithText("Cancel").performClick()
+    }
+
+    @Test fun appUsageRowsAreHiddenByDefault() {
+        val usage = saveUsage("org.example.browser", 60_001)
+        show()
+        compose.onNodeWithTag("nav_timeline").performClick()
+        awaitTag("timeline_event_count")
+
+        compose.onNodeWithTag("event_${usage.id}").assertDoesNotExist()
+    }
+
+    @Test fun timelineSwitchShowsOnlyAppsOverOneMinuteAndPersistsTheChoice() {
+        val oneMinute = saveUsage("org.example.one-minute", 60_000)
+        val overOneMinute = saveUsage("org.example.over-one-minute", 60_001)
+        show()
+        compose.onNodeWithTag("nav_timeline").performClick()
+        awaitTag("timeline_event_count")
+
+        compose.onNodeWithTag("timeline_show_app_usage").assertIsOff()
+        compose.onNodeWithTag("event_${oneMinute.id}").assertDoesNotExist()
+        compose.onNodeWithTag("event_${overOneMinute.id}").assertDoesNotExist()
+        compose.onNodeWithTag("timeline_show_app_usage").performClick()
+        compose.onNodeWithTag("timeline_show_app_usage").assertIsOn()
+        compose.onNodeWithTag("event_${oneMinute.id}").assertDoesNotExist()
+        awaitTag("event_${overOneMinute.id}")
+        compose.onNodeWithTag("event_${overOneMinute.id}").assertIsDisplayed()
+
+        val preferences = InstrumentationRegistry.getInstrumentation().targetContext
+            .getSharedPreferences("timeline_usage", android.content.Context.MODE_PRIVATE)
+        assertTrue(preferences.getBoolean("show_app_usage", false))
+    }
+
+    private fun saveUsage(packageName: String, durationMillis: Long): LifeEvent {
+        val start = time.minusSeconds(600)
+        val end = start.plusMillis(durationMillis)
+        val event = LifeEvent(EventId.new(), EventType.APP_USAGE, start, time, endedAt = end,
+            source = EventSource.USAGE_STATS, sourceReference = "test:$packageName")
+        runBlocking {
+            RoomEventStore(db).save(EventWrite(event, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), event.id.toString(),
+                start.toEpochMilli(), end.toEpochMilli(), packageName, durationMillis)))
+        }
+        return event
     }
 
     @Test fun longDayLoadsLaterRowsAndEarlierWindowWithoutRenderingTheWholeFixture() {

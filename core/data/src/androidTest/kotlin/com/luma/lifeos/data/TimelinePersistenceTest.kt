@@ -59,8 +59,8 @@ class TimelinePersistenceTest {
         val store = RoomEventStore(db)
         val activity = LifeEvent(EventId.new(), EventType.ACTIVITY, time, time, source = EventSource.HEALTH_CONNECT, sourceReference = "steps:1")
         store.save(EventWrite(activity, activities = listOf(ActivityRecordEntity(UUID.randomUUID().toString(), activity.id.toString(), "steps", 120.0, "count", activity.source, "steps:1"))))
-        val usage = LifeEvent(EventId.new(), EventType.APP_USAGE, time, time, endedAt = time.plusSeconds(60), source = EventSource.USAGE_STATS, sourceReference = "usage:1")
-        store.save(EventWrite(usage, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), usage.id.toString(), time.toEpochMilli(), time.plusSeconds(60).toEpochMilli(), "org.example.app", 5_125)))
+        val usage = LifeEvent(EventId.new(), EventType.APP_USAGE, time, time, endedAt = time.plusSeconds(200), source = EventSource.USAGE_STATS, sourceReference = "usage:1")
+        store.save(EventWrite(usage, appUsage = AppUsageRecordEntity(UUID.randomUUID().toString(), usage.id.toString(), time.toEpochMilli(), time.plusSeconds(200).toEpochMilli(), "org.example.app", 125_125)))
         val journal = EventId.new()
         val person = UUID.randomUUID(); val place = UUID.randomUUID()
         RoomPersonRepository(db).create(person, PersonInput("Friend"))
@@ -72,7 +72,7 @@ class TimelinePersistenceTest {
         assertEquals(3, page.totalCount)
         assertEquals(2, page.eventCount)
         assertEquals(120.0, page.records.single { it.event.id == activity.id }.activities.single().value, 0.0)
-        assertEquals(5_125L, page.records.single { it.event.id == usage.id }.appUsage?.durationMillis)
+        assertEquals(125_125L, page.records.single { it.event.id == usage.id }.appUsage?.durationMillis)
         assertEquals("org.example.app", timeline.get(usage.id)?.appUsage?.packageName)
         val source = timeline.get(journal)!!
         assertEquals("Keep body", source.journal?.body); assertEquals("Work", source.journal?.tags?.single()?.name)
@@ -80,35 +80,68 @@ class TimelinePersistenceTest {
         assertEquals("Friend", source.people.single().name); assertEquals("Park", source.place?.name)
         assertNull(timeline.get(EventId.new()))
     }
+    @Test fun timelineIncludesOnlyUsageBucketsLongerThanOneMinute() = runBlocking {
+        val store = RoomEventStore(db)
+        suspend fun usage(n: Int, durationMillis: Long?) {
+            val start = time.plusSeconds(n.toLong())
+            val end = start.plusMillis(maxOf(durationMillis ?: 5_000, 1))
+            val event = LifeEvent(EventId(UUID(0, n.toLong())), EventType.APP_USAGE, start, start,
+                endedAt = end, source = EventSource.USAGE_STATS, sourceReference = "threshold:$n")
+            val child = durationMillis?.let {
+                AppUsageRecordEntity(UUID(1, n.toLong()).toString(), event.id.toString(), start.toEpochMilli(), end.toEpochMilli(),
+                    "org.example.app$n", it)
+            }
+            store.save(EventWrite(event, appUsage = child))
+        }
+        usage(1, 60_000)
+        usage(2, 60_001)
+        usage(3, 0)
+        usage(4, null)
+        val manual = LifeEvent(EventId(UUID(0, 5)), EventType.MOOD, time.plusSeconds(5), time.plusSeconds(5))
+        RoomLifeEventRepository(db).upsert(manual)
+
+        val page = timeline.page(range, 0, 50)
+
+        assertEquals(2, page.totalCount)
+        assertEquals(1, page.eventCount)
+        assertEquals(setOf(EventId(UUID(0, 2)), manual.id), page.records.map { it.event.id }.toSet())
+    }
     @Test fun eventCountExcludesUsageAcrossAllPagesAndIncludesOtherTypes() = runBlocking {
-        val events = RoomLifeEventRepository(db)
-        repeat(160) { index -> events.upsert(LifeEvent(EventId(UUID(0, index.toLong())), EventType.APP_USAGE, time, time)) }
-        events.upsert(LifeEvent(EventId(UUID(0, 200)), EventType.MOOD, time, time))
+        val store = RoomEventStore(db)
+        repeat(160) { index ->
+            val start = time.plusMillis(index.toLong())
+            val end = start.plusSeconds(61)
+            val event = LifeEvent(EventId(UUID(0, index.toLong())), EventType.APP_USAGE, start, start,
+                endedAt = end, source = EventSource.USAGE_STATS, sourceReference = "usage:$index")
+            store.save(EventWrite(event, appUsage = AppUsageRecordEntity(UUID(1, index.toLong()).toString(), event.id.toString(),
+                start.toEpochMilli(), end.toEpochMilli(), "org.example.app$index", 60_001)))
+        }
+        RoomLifeEventRepository(db).upsert(LifeEvent(EventId(UUID(0, 200)), EventType.MOOD, time, time))
         val first = timeline.page(range, 0, 50)
         assertEquals(161, first.totalCount); assertEquals(1, first.eventCount)
         val last = timeline.page(range, 150, 50)
         assertEquals(11, last.records.size); assertEquals(1, last.eventCount)
     }
-    @Test fun unusedAppsAreExcludedBeforePagingWhilePositiveAndUnknownUsageRemain() = runBlocking {
+    @Test fun shortAndMissingUsageAreExcludedBeforePagingWhileLongUsageRemains() = runBlocking {
         val store = RoomEventStore(db)
         suspend fun usage(n: Int, duration: Long) {
             val event = LifeEvent(EventId(UUID(0, n.toLong())), EventType.APP_USAGE, time, time,
-                endedAt = time.plusSeconds(60), source = EventSource.USAGE_STATS, sourceReference = "fixture:$n")
+                endedAt = time.plusSeconds(61), source = EventSource.USAGE_STATS, sourceReference = "fixture:$n")
             store.save(EventWrite(event, appUsage = AppUsageRecordEntity(UUID(1, n.toLong()).toString(),
-                event.id.toString(), time.toEpochMilli(), time.plusSeconds(60).toEpochMilli(), "org.example.app$n", duration)))
+                event.id.toString(), time.toEpochMilli(), time.plusSeconds(61).toEpochMilli(), "org.example.app$n", duration)))
         }
         repeat(160) { usage(it, 0) }
-        usage(200, 1); usage(201, 5_125)
+        usage(200, 60_000); usage(201, 60_001)
         RoomLifeEventRepository(db).upsert(LifeEvent(EventId(UUID(0, 300)), EventType.MOOD, time, time))
         RoomLifeEventRepository(db).upsert(LifeEvent(EventId(UUID(0, 400)), EventType.APP_USAGE, time, time))
         val first = timeline.page(range, 0, 2); val last = timeline.page(range, 2, 2)
-        assertEquals(4, first.totalCount); assertEquals(1, first.eventCount)
-        assertEquals(listOf(200L, 201L), first.records.map { it.event.id.value.leastSignificantBits })
-        assertEquals(listOf(300L, 400L), last.records.map { it.event.id.value.leastSignificantBits })
+        assertEquals(2, first.totalCount); assertEquals(1, first.eventCount)
+        assertEquals(listOf(201L, 300L), first.records.map { it.event.id.value.leastSignificantBits })
+        assertTrue(last.records.isEmpty())
         assertEquals(0L, timeline.get(EventId(UUID(0, 0)))!!.appUsage!!.durationMillis)
-        db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 2 WHERE life_event_id = ?",
+        db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 60_001 WHERE life_event_id = ?",
             arrayOf(EventId(UUID(0, 0)).toString()))
-        assertEquals(5, timeline.page(range, 0, 2).totalCount)
+        assertEquals(3, timeline.page(range, 0, 2).totalCount)
         assertEquals(0L, timeline.page(range, 0, 2).records.first().event.id.value.leastSignificantBits)
     }
     @Test fun aDayOfOnlyUnusedAppsHasNoTimelineRowsOrPagingTotal() = runBlocking {

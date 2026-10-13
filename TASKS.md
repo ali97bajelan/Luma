@@ -320,6 +320,11 @@ emulator; profile/optimize and verify on representative hardware. Functional pag
 ordering, restoration and cancellation pass. Full app lint retains its analyzer
 compatibility issue. See docs/VALIDATION.md.
 
+Follow-up (2026-10-13): the full app instrumentation suite passes after updating
+the English activity-label assertion for T21 localization. The 20,000-record
+navigation fixture measured 116–150 ms across four day changes. Smooth-scroll
+frame performance remains unverified, so T11 stays open.
+
 
 ### Scope
 
@@ -388,7 +393,8 @@ remain platform follow-ups. See docs/VALIDATION.md.
 - Integrate Android app-usage/screen-time APIs behind an adapter.
 - Implement permission/status UX, incremental/idempotent imports, package/app labeling, and daily aggregation.
 - Fix the usage list so apps with no recorded foreground usage on the selected day are excluded.
-- Exclude known zero-duration app rows from the main Life Timeline before paging, with matching visible-row totals; keep positive and unavailable usage records accessible.
+- Show at most the three highest-usage apps over one minute on Today, with the displayed count matching the shown rows.
+- Keep Timeline app-usage rows hidden by default behind a persisted switch; when enabled, show only records over one minute and apply the same filter before paging and counting.
 - Provide two selectable views for the selected day: "Timeline" and "Daily totals".
 - In Timeline, show each recorded app session chronologically with the app name, opening/start time, end time, and duration; keep separate visits to the same app visible.
 - In Daily totals, show the cumulative foreground usage duration for each used app on the selected day.
@@ -408,6 +414,14 @@ row total uses the same filter; positive millisecond values and unavailable deta
 remain visible, and stored records remain intact. All 209 JVM, 80 Room and seven
 Timeline/usage UI tests pass; data lint and normal debug/test APK builds pass.
 
+Usage display update (2026-10-13): Today shows at most the three highest-usage
+apps strictly over one minute. Timeline app usage is hidden by default; a saved
+switch enables rows strictly over one minute, with filtering applied before page
+and count queries. Stored usage and raw day counts remain unchanged. Validation
+passed: 278 JVM tests, 108 Room instrumentation tests, all 53 app instrumentation
+tests, debug/release and instrumentation APK builds, and app/data/usage/health
+lint. Full details are in `docs/VALIDATION.md`.
+
 ### Acceptance criteria
 
 - No fabricated usage data.
@@ -415,7 +429,8 @@ Timeline/usage UI tests pass; data lint and normal debug/test APK builds pass.
 - Apps with zero recorded foreground usage on the selected day do not appear in either view; a day with no usage shows an empty state.
 - User can switch between Timeline and Daily totals for the same selected day.
 - Screen-time records do not appear as Today events or contribute to displayed event counts; imported usage and its views remain available.
-- Main Life Timeline omits apps with zero recorded usage, including previously imported rows and later corrections; hidden rows do not create empty pages or incorrect paging totals.
+- Today shows no more than three apps, all with strictly more than one minute of usage, and counts only displayed apps.
+- Timeline app usage defaults to hidden; users can persistently show only rows with strictly more than one minute of usage. Hidden/short rows do not create empty pages or incorrect paging totals.
 - Timeline shows when each app was opened and how long each recorded visit lasted, including repeated visits to the same app in chronological order.
 - Daily totals correctly combine all recorded usage for each app within the selected day's boundaries; visits spanning midnight contribute only their overlap with that day.
 - When session history is complete, session durations and per-app daily totals agree; unavailable or incomplete session history is clearly indicated without fabricated visits.
@@ -443,6 +458,10 @@ API 36 emulator returned GRANTED / NO_DATA with zero stored activity rows. Remai
 acceptance: import a known step-data fixture through native consent on a supported
 device; an empty provider does not establish that useful native signal. App/health
 lint retain their documented detector crashes. See docs/VALIDATION.md.
+
+Follow-up (2026-10-13): Health Settings UI cases pass in the 50-case app suite.
+No Health Connect read permission or synthetic step fixture was granted during this
+run; useful native step import remains unverified.
 
 
 ### Scope
@@ -515,9 +534,16 @@ schema, checking combined filters, Persian/literal names, body exclusion,
 count/pages, edits/deletion and a 50,000-entry/five-year fixture. Query-only p95 is
 0.25–44.53 ms across broad/title/no-match/date/combined profiles on the host; this
 excludes Room relation mapping and device UI. Six Room and two Search UI device
-tests compile. No device is connected, so native result navigation, recreation,
-visual checks and end-to-end page timing remain pending. Review paging/anchor
+tests compiled. At that initial run no device was connected, so native result
+navigation, recreation, visual checks and end-to-end page timing remained pending.
+Review paging/anchor
 findings were reproduced with failing JVM regressions and fixed. See docs/VALIDATION.md.
+
+Follow-up (2026-10-13): both Search UI flows and the 50,000-row Room fixture pass
+on API 36. Device page measurements show about 2.0–2.2 seconds for title-substring
+and no-match queries; broad and date-filtered pages take about 10–25 ms. Large-fixture
+substring responsiveness is not acceptable yet, so T15 remains open for query
+optimization and representative-device retesting.
 
 ### Scope
 
@@ -550,11 +576,16 @@ Validation (2026-10-12): all 239 JVM tests pass; normal debug and both test APKs
 build, and app/data/usage/health lint passes with zero errors. Actual generated
 metric-source SQL executes against the exported v2 schema, including a 50,000-record history fixture. Eight
 Room and three Review UI tests compile, including source traceability, corrections,
-paging, restoration and a repository timing fixture. No device is connected;
-native Room/UI execution, visual checks and end-to-end repository p95 remain
-pending. Host query timings exclude Room/device costs. Previously documented
+paging, restoration and a repository timing fixture. At that initial run no device
+was connected; native Room/UI execution, visual checks and end-to-end repository
+p95 remained pending. Host query timings exclude Room/device costs. Previously documented
 app/health analyzer crashes did not recur in this run. Minor deferred: partial
 comparisons read a few excluded previous-week dates before discarding them. See docs/VALIDATION.md.
+
+Follow-up (2026-10-13): the three Review UI flows and Room suite pass on API 36.
+The 50,000-row/five-year repository fixture measured median 330 ms and p95 364 ms
+with 2,500 selected mood entries, above the 300 ms target. T16 remains open for
+optimization and retesting.
 
 
 ### Scope
@@ -589,9 +620,19 @@ duplicates, checksum/version failures, JSON-depth/domain validation, photo
 publication and Settings state transitions. Production backup SQL against the
 exported Room schema verifies graph mismatch detection and transaction rollback.
 Debug and both instrumentation APKs build; app/data/usage/health lint has zero errors.
-Thirteen Room backup tests and two Compose flows compile. No device is connected:
-native round trip/replacement, images, file picker, concurrency, lifecycle and
-power-loss acceptance remain pending. See docs/VALIDATION.md.
+Thirteen Room backup tests and two Compose flows compiled. At initial implementation
+validation no device was connected, so native round trip/replacement, images, file
+picker, concurrency, lifecycle and power-loss acceptance remained pending. See
+docs/VALIDATION.md.
+
+Follow-up (2026-10-13): the API 36 Room instrumentation suite passes 107/107,
+including native backup round-trip, replacement and rollback cases. Backup Settings
+flows also pass. On the isolated validation install, Android's actual create-document
+picker exported a ZIP to Downloads; the open-document picker loaded that generated
+backup, showed a two-event/zero-photo replacement preview, and confirmed restore.
+Both synthetic events then appeared in Timeline. Backing out of the restore picker
+also returned without starting a restore. Process lifecycle, concurrent cleanup and
+power-loss acceptance remain open.
 
 
 ### Scope
@@ -631,10 +672,16 @@ rejection/retry, lifecycle and the RED→GREEN delayed-access opt-out regression
 Debug and both instrumentation APKs build; app/data/usage/health lint has zero
 errors. Five new/extended Compose cases compile. Built manifest/source/dependency
 audit finds no Internet permission, telemetry SDK or production content logging;
-backup and device-transfer extraction remain disabled. No device is connected,
-so actual reset/termination/reopen, provider permission dialogs, native lifecycle,
+backup and device-transfer extraction remain disabled. The initial implementation
+validation had no connected device, so actual reset/termination/reopen, provider
+permission dialogs, native lifecycle,
 external-copy preservation and visual acceptance remain pending. No real data was
 reset, app installed, permission granted or Git mutation performed in this task.
+
+Follow-up (2026-10-13): the privacy and permission-explanation UI cases pass in the
+API 36 app suite. The Android reset boundary remains mocked; no app data was erased,
+and no real provider permission was granted. Native reset/provider lifecycle checks
+remain open.
 
 
 ### Scope
@@ -654,6 +701,13 @@ reset, app installed, permission granted or Git mutation performed in this task.
 
 Status: pending
 
+Validation follow-up (2026-10-13): all 277 JVM tests, 107 Room instrumentation tests
+and 50 app instrumentation cases completed without failures (one usage-access test
+was skipped because special access was absent). Debug/release builds and module lint
+passed. Large Timeline day navigation measured 116–150 ms, but Search text scans
+measured 2.0–2.2 seconds and Weekly Review p95 measured 364 ms against 300 ms. Smooth
+scrolling, broad TalkBack/screen-size audit and the performance targets remain open.
+
 
 ### Scope
 
@@ -670,6 +724,13 @@ Status: pending
 ## T20 — MVP release readiness
 
 Status: pending
+
+Validation follow-up (2026-10-13): the isolated fresh-install app navigation and
+capture flows pass on API 36; debug APK, instrumentation APKs and unsigned release
+APK assemble. The release manifest has no INTERNET permission, and README/architecture
+limitations now include current validation evidence. End-to-end Health Connect
+fixture, native backup picker and reset, plus Search/Review performance follow-ups
+remain before release readiness is complete.
 
 
 ### Scope

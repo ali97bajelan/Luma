@@ -18,13 +18,13 @@ class RoomTimelineRepository(private val database: LumaDatabase) : TimelineRepos
         "event_person", "person", "event_place", "place", "media_attachment", "activity_record", "app_usage_record",
     ).map { Unit }
 
-    override suspend fun page(range: TimeRange, offset: Int, limit: Int): TimelinePage {
+    override suspend fun page(range: TimeRange, offset: Int, limit: Int, showAppUsage: Boolean): TimelinePage {
         require(offset >= 0 && limit in 1..300)
         return withContext(Dispatchers.IO) {
             database.withTransaction {
                 val start = range.start.storageBoundary(); val end = range.endExclusive.storageBoundary()
-                val rows = database.lifeEvents().pageDetails(start, end, offset, limit)
-                TimelinePage(rows.map { it.toRecord() }, offset, database.lifeEvents().countTimelineRows(start, end),
+                val rows = database.lifeEvents().pageDetails(start, end, offset, limit, showAppUsage)
+                TimelinePage(rows.map { it.toRecord() }, offset, database.lifeEvents().countTimelineRows(start, end, showAppUsage),
                     eventCount = database.lifeEvents().countDayEvents(start, end))
             }
         }

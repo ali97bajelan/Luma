@@ -1600,3 +1600,139 @@ Logs: `/tmp/luma-t21-catalog-red.log`, `/tmp/luma-t21-language-green.log`,
 `/tmp/luma-t21-device-tests.log`, `/tmp/luma-t21-native-probe.log`,
 `/tmp/luma-t21-visual-probe.log`. Screenshots: `/tmp/luma-t21-{en,fa,fr}-settings.png`,
 `/tmp/luma-t21-fa-datepicker.png`, `/tmp/luma-t21-fa-journal.png`.
+
+## Open-task validation follow-up — 2026-10-13
+
+Validation ran on the existing API 36 emulator (`emulator-5554`). All application
+instrumentation tests used the isolated `com.luma.lifeos.validationrun` package;
+the user's `com.luma.lifeos` package remained installed and its data was not read or
+changed. The original app was returned to the foreground afterward. The Room suite
+used its separate test package and disposable databases.
+
+Verified:
+
+- PASS: **277 JVM tests**: 95 domain, 140 app, 23 data, 13 usage and 6 health;
+  zero failures, errors or skipped tests.
+- PASS: **107/107 Room instrumentation tests** on API 36, including migrations,
+  atomic replacement/rollback, summary observation, backup round trips, invalid
+  backup rejection, and 50,000-row Search and Weekly Review fixtures.
+- PASS: **50-case app instrumentation suite**, with no failures. One Usage Access
+  native import case was assumption-skipped because the validation app did not have
+  special Usage access. The other navigation, capture, Search, Timeline, Review,
+  language, backup and privacy UI cases passed. A Timeline assertion was updated
+  from lowercase `steps` to the current English resource `Steps`; the production
+  behavior was already correct, and the complete suite then passed.
+- PASS: standard `com.luma.lifeos` debug APK, app/data instrumentation APKs and
+  unsigned release APK assemble. The release APK manifest contains no `INTERNET`
+  permission. App/data/usage/health lint completed with zero errors; the app has
+  nine warnings, and the other modules have none. R8 emitted repeated Kotlin
+  metadata parsing compatibility warnings during release minification, but the
+  release task completed successfully.
+- PASS: API 36 Timeline navigation over 20,000 records measured 116–150 ms across
+  four selected-day changes. This covers navigation latency, not scroll frame rate.
+- PASS: API 36 backup Room tests exercise actual database replacement and rollback.
+  The Settings UI tests cover confirmation and state, not the system file picker.
+- PASS: On the isolated app package, the native Android create-document picker saved
+  a 6,169-byte backup ZIP in Downloads and returned to Settings with “Backup exported.”
+  The generated ZIP was removed after the restore check.
+  The native open-document picker loaded that generated archive, showed its two-event,
+  zero-photo preview, and confirmed restore. Luma displayed “Saved data restored,”
+  and both synthetic journal records appeared in Timeline. Returning from the picker
+  without selecting a file also left the app on Settings without starting a restore.
+  This exercised the real picker and app flow using only generated validation data;
+  the original `com.luma.lifeos` installation was not used for test actions or modified.
+
+Performance findings that keep task acceptance open:
+
+- T15 Search on 50,000 records took 2.0–2.2 seconds per page for title-substring
+  and no-match queries. Broad pages took 13.8–24.8 ms, and date-filtered pages took
+  9.6–13.5 ms. This emulator result does not establish representative phone speed;
+  substring responsiveness still needs improvement and retesting.
+- T16 Weekly Review on 50,000 records across five years, with 2,500 selected mood
+  entries, measured a 330 ms median and 364 ms p95. The current p95 exceeds the
+  documented 300 ms target.
+- T11's day-change measurements are within the prior navigation range, but the
+  previous native frame probe still showed p95 21.96 ms and 52.43% missed frame
+  deadlines. Smooth scrolling remains unverified.
+
+Still pending: a useful Health Connect step fixture through native consent; app-data
+reset and reopen on a disposable package; actual provider permission dialogs and
+revocation; backup process-lifecycle interruption, concurrent cleanup and power-loss
+checks; and a full TalkBack, font-scale and screen-size audit. No Health permission
+was granted and no original app data was erased. These checks are required before
+T11, T13, T15–T20 can all be marked complete.
+
+`connectedDebugAndroidTest` could not resolve Android Gradle Plugin's
+`com.android.tools.utp:android-test-plugin-host-additional-test-output:31.7.3` from
+the configured Google/Maven repositories. The already-built isolated APKs were
+installed and the app and Room instrumentation runners were started directly with
+`adb shell am instrument`; both suites completed as recorded above.
+
+The final JVM/build/lint/release command was:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t18-force-tests.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug \
+  :integration:usage:lintDebug :integration:health:lintDebug
+```
+
+Instrumentation commands used the isolated package:
+
+```sh
+adb shell am instrument -w -r \
+  com.luma.lifeos.validationrun.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w -r \
+  com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Search, Timeline, Weekly Review and release results are also summarized in
+[TASKS.md](../TASKS.md), [README.md](../README.md), and
+[ARCHITECTURE.md](../ARCHITECTURE.md). T19 and T20 remain pending because the
+measured performance and end-to-end native checks are not complete.
+
+## Usage display filtering — 2026-10-13
+
+Today shows no more than the three apps with the highest recorded usage strictly
+above 60,000 ms. Its displayed app count matches those rows. Timeline hides app
+usage by default; a persisted switch reveals only records strictly above 60,000
+ms. The SQL predicate is applied before paging and reused by the visible-row
+count. Stored app usage, raw day counts and Daily totals remain unchanged.
+
+- PASS: 278 JVM tests (95 domain, 141 app, 23 data, 13 usage, 6 health), with no
+  failures, errors or skips.
+- PASS: all 108 Room instrumentation tests. New coverage excludes exactly 60,000
+  ms, includes 60,001 ms, keeps short/missing records out of pages and counts, and
+  confirms the all-day count and stored records remain intact.
+- PASS: all 53 app instrumentation tests on API 36. The new Today test checks
+  thresholding, ordering and the three-app cap. Timeline tests check the default-
+  off state, the threshold when enabled and preference persistence. The four
+  Daily summary UI tests also pass with qualifying app usage rows.
+- PASS: debug/release APKs, app and Room instrumentation APKs, and debug lint for
+  app, data, usage and health modules. `git diff --check` reports no whitespace
+  errors.
+- PASS: tests ran in `com.luma.lifeos.validationrun` and `com.luma.lifeos.data.test`.
+  The normal `com.luma.lifeos` package stayed installed with its data untouched
+  and was in the foreground after validation.
+
+The complete JVM/build/lint command was:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t18-force-tests.init.gradle --console=plain \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug \
+  :integration:usage:lintDebug :integration:health:lintDebug
+```
+
+Instrumentation used the isolated validation packages:
+
+```sh
+adb shell am instrument -w -r \
+  com.luma.lifeos.validationrun.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w -r \
+  com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
+```

@@ -31,7 +31,7 @@ class EventDetailStateTest {
     private class Reader(private val record: LifeEventRecord?) : TimelineRepository {
         var failure: Exception? = null
         override fun observeChanges() = flowOf(Unit)
-        override suspend fun page(range: TimeRange, offset: Int, limit: Int): TimelinePage = error("Not used by detail")
+        override suspend fun page(range: TimeRange, offset: Int, limit: Int, showAppUsage: Boolean): TimelinePage = error("Not used by detail")
         override suspend fun get(id: EventId): LifeEventRecord? { failure?.let { throw it }; return record }
     }
 }

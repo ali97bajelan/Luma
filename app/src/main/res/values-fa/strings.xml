@@ -215,6 +215,7 @@
     <string name="timeline_error">رویدادهای خط زمانی بارگذاری نشدند. دوباره تلاش کنید.</string>
     <string name="timeline_earlier">رویدادهای قدیمی‌تر</string>
     <string name="timeline_later">رویدادهای جدیدتر</string>
+    <string name="timeline_show_app_usage">نمایش استفاده از برنامه‌ها</string>
     <string name="usage_title">وارد کردن زمان استفاده از صفحه‌نمایش</string>
     <string name="usage_access_explanation">Luma با دسترسی به داده‌های استفاده در Android می‌تواند نام برنامه‌ها و زمان استفاده از آن‌ها در پیش‌زمینه را به‌صورت دوره‌ای بخواند. داده‌های واردشده روی این دستگاه می‌مانند. هر زمان می‌توانید دسترسی را لغو کنید. با غیرفعال کردن ورود داده‌ها، اطلاعات ذخیره‌شدهٔ قبلی حفظ می‌شوند.</string>
     <string name="usage_enable">فعال کردن ورود داده‌ها</string>
@@ -255,7 +256,7 @@
     <string name="summary_average">%1$s: %2$s/۵ · نمونه‌های ذخیره‌شده: %3$d</string>
     <string name="summary_unavailable">%1$s: در دسترس نیست</string>
     <string name="summary_usage">استفادهٔ ذخیره‌شده در پیش‌زمینه</string>
-    <string name="summary_usage_value">استفادهٔ ذخیره‌شده در پیش‌زمینه: %1$s · برنامه‌ها: %2$d</string>
+    <string name="summary_usage_value">استفادهٔ ذخیره‌شده در پیش‌زمینه: %1$s · برنامه‌های نمایش‌داده‌شده: %2$d</string>
     <string name="summary_activity">فعالیت ثبت‌شده</string>
     <string name="summary_activity_value">%1$s: %2$s %3$s · %4$s · نمونه‌های ذخیره‌شده: %5$d</string>
     <string name="health_title">قدم‌های Health Connect</string>
