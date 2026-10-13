@@ -31,6 +31,7 @@ import com.luma.lifeos.ui.summary.DailySummaryState
 import com.luma.lifeos.ui.summary.DailySummaryCard
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.FormatStyle
 
 @Composable
 fun TodayScreen(
@@ -57,7 +58,10 @@ fun TodayScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
-                Text(stringResource(heading), style = MaterialTheme.typography.headlineLarge)
+                val dayHeading = if (date == LocalDate.now(zone)) stringResource(heading) else
+                    stringResource(R.string.today_selected_date,
+                        date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
+                Text(dayHeading, style = MaterialTheme.typography.headlineLarge)
                 DayNavigation(date, onSelectDate, onToday)
             }
         }

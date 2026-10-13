@@ -60,8 +60,10 @@ class JournalEditorViewModel(
     private val saved: SavedStateHandle,
     clock: Clock = Clock.systemUTC(),
     photoRepository: PhotoRepository? = null,
+    initialTimeMillis: Long? = null,
 ) : ViewModel() {
-    private val initialTime = saved.get<Long>("initial_time") ?: clock.instant().toEpochMilli().also { saved["initial_time"] = it }
+    private val initialTime = saved.get<Long>("initial_time") ?: (initialTimeMillis ?: clock.instant().toEpochMilli())
+        .also { saved["initial_time"] = it }
     private val captureId = EventId.parse(saved.get<String>("capture_id") ?: EventId.new().toString().also { saved["capture_id"] = it })
     private var baseline = JournalDraft(initialTime)
     private var editingId: EventId? = eventId

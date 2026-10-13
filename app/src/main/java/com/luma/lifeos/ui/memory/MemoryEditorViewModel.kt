@@ -38,8 +38,10 @@ data class MemoryEditorState(
 )
 
 class MemoryEditorViewModel(private val repository: MemoryRepository, private val eventId: EventId?,
-    private val saved: SavedStateHandle, clock: Clock = Clock.systemUTC(), photoRepository: PhotoRepository? = null) : ViewModel() {
-    private val initialTime = saved.get<Long>("initial_time") ?: clock.millis().also { saved["initial_time"] = it }
+    private val saved: SavedStateHandle, clock: Clock = Clock.systemUTC(), photoRepository: PhotoRepository? = null,
+    initialTimeMillis: Long? = null) : ViewModel() {
+    private val initialTime = saved.get<Long>("initial_time") ?: (initialTimeMillis ?: clock.millis())
+        .also { saved["initial_time"] = it }
     private val captureId = EventId.parse(saved.get<String>("capture_id") ?: EventId.new().toString().also { saved["capture_id"] = it })
     private var baseline = MemoryDraft(initialTime)
     private var editingId: EventId? = eventId

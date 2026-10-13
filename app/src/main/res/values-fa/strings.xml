@@ -19,6 +19,7 @@
     <string name="cancel">لغو</string>
     <string name="retry">تلاش دوباره</string>
     <string name="today_loading">در حال بارگذاری روز شما…</string>
+    <string name="today_selected_date">رویدادهای %1$s</string>
     <string name="today_empty_heading">هنوز رویدادی برای این روز ثبت نشده</string>
     <string name="today_empty_body">روز دیگری را ببینید یا برای ثبت حال‌وهوایتان، ثبت سریع را باز کنید. نیازی به مجوز یا حساب کاربری نیست.</string>
     <string name="today_error">اطلاعات این روز بارگذاری نشد. دوباره تلاش کنید.</string>
@@ -37,6 +38,8 @@
     <string name="source_manual">دستی</string>
     <string name="quick_capture">ثبت سریع</string>
     <string name="capture_intro">حال‌وهوا، یادداشت روزانه یا خاطره‌ای را بدون اینترنت ثبت کنید.</string>
+    <string name="capture_use_now">استفاده از زمان فعلی</string>
+    <string name="capture_add_to_date">افزودن به %1$s</string>
     <string name="capture_mood">ثبت حال‌وهوا</string>
     <string name="capture_journal">یادداشت روزانه</string>
     <string name="capture_memory">خاطره</string>
@@ -227,7 +230,7 @@
     <string name="timeline_show_app_usage">نمایش استفاده از برنامه‌ها</string>
     <string name="usage_title">وارد کردن زمان استفاده از صفحه‌نمایش</string>
     <string name="usage_access_explanation">Luma با دسترسی به داده‌های استفاده در Android می‌تواند نام برنامه‌ها و زمان استفاده از آن‌ها در پیش‌زمینه را به‌صورت دوره‌ای بخواند. داده‌های واردشده روی این دستگاه می‌مانند. هر زمان می‌توانید دسترسی را لغو کنید. با غیرفعال کردن ورود داده‌ها، اطلاعات ذخیره‌شدهٔ قبلی حفظ می‌شوند.</string>
-    <string name="usage_enable">فعال کردن ورود داده‌ها</string>
+    <string name="usage_enable">فعال کردن ورود داده‌های زمان استفاده از صفحه‌نمایش</string>
     <string name="usage_manage_access">مدیریت دسترسی به داده‌های استفاده در Android</string>
     <string name="usage_import_now">وارد کردن داده‌ها اکنون</string>
     <string name="usage_last_sync">آخرین ورود موفق داده‌ها: %1$s</string>

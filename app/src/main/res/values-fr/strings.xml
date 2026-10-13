@@ -19,6 +19,7 @@
     <string name="cancel">Annuler</string>
     <string name="retry">Réessayer</string>
     <string name="today_loading">Chargement de votre journée…</string>
+    <string name="today_selected_date">Entrées du %1$s</string>
     <string name="today_empty_heading">Aucun événement pour cette journée pour le moment</string>
     <string name="today_empty_body">Explorez une autre journée ou ouvrez la Saisie rapide pour noter votre état d’esprit. Aucune autorisation ni aucun compte ne sont nécessaires.</string>
     <string name="today_error">Impossible de charger votre journée. Réessayez.</string>
@@ -38,6 +39,8 @@
     <string name="source_manual">Manuel</string>
     <string name="quick_capture">Saisie rapide</string>
     <string name="capture_intro">Notez une humeur, une entrée de journal ou un souvenir hors ligne.</string>
+    <string name="capture_use_now">Utiliser l’heure actuelle</string>
+    <string name="capture_add_to_date">Ajouter au %1$s</string>
     <string name="capture_mood">Point sur l’humeur</string>
     <string name="capture_journal">Entrée de journal</string>
     <string name="capture_memory">Souvenir</string>
@@ -218,7 +221,7 @@
     <string name="timeline_show_app_usage">Afficher l’utilisation des applications</string>
     <string name="usage_title">Importation du temps d’écran</string>
     <string name="usage_access_explanation">Luma peut lire régulièrement les noms des applications et leur durée d’utilisation au premier plan grâce à l’accès aux données d’utilisation d’Android. Les données importées restent sur cet appareil. Vous pouvez révoquer cet accès à tout moment. La désactivation des importations conserve les données déjà enregistrées.</string>
-    <string name="usage_enable">Activer les importations</string>
+    <string name="usage_enable">Activer l’importation du temps d’écran</string>
     <string name="usage_manage_access">Gérer l’accès aux données d’utilisation d’Android</string>
     <string name="usage_import_now">Importer maintenant</string>
     <string name="usage_last_sync">Dernière importation réussie : %1$s</string>

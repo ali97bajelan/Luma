@@ -19,6 +19,7 @@
     <string name="cancel">Cancel</string>
     <string name="retry">Try again</string>
     <string name="today_loading">Loading your day…</string>
+    <string name="today_selected_date">Entries for %1$s</string>
     <string name="today_empty_heading">No events for this day yet</string>
     <string name="today_empty_body">Explore another day or open Quick Capture to record how you feel. No permissions or account are needed.</string>
     <string name="today_error">Your day could not be loaded. Try again.</string>
@@ -37,6 +38,8 @@
     <string name="source_manual">Manual</string>
     <string name="quick_capture">Quick Capture</string>
     <string name="capture_intro">Record a mood, journal, or memory offline.</string>
+    <string name="capture_use_now">Use current time</string>
+    <string name="capture_add_to_date">Add to %1$s</string>
     <string name="capture_mood">Mood check-in</string>
     <string name="capture_journal">Journal entry</string>
     <string name="capture_memory">Memory</string>
@@ -213,7 +216,7 @@
     <string name="timeline_show_app_usage">Show app usage</string>
     <string name="usage_title">Screen-time imports</string>
     <string name="usage_access_explanation">Luma can periodically read app names and foreground time with Android Usage access. Imports stay on this device. You can revoke access at any time. Turning imports off keeps previously saved records.</string>
-    <string name="usage_enable">Enable imports</string>
+    <string name="usage_enable">Enable screen-time imports</string>
     <string name="usage_manage_access">Manage Android Usage access</string>
     <string name="usage_import_now">Import now</string>
     <string name="usage_last_sync">Last successful import: %1$s</string>

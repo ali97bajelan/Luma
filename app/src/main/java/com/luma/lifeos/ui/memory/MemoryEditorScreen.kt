@@ -24,8 +24,6 @@ import com.luma.lifeos.ui.mood.MoodTimeControls
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.Instant
-import java.time.format.FormatStyle
 
 @Composable
 fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: () -> Unit, onRemove: () -> Unit,
@@ -77,13 +75,13 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 }), color = MaterialTheme.colorScheme.error)
                 if (error == MemoryEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
+            if (state.ready) MoodTimeControls(state.draft.occurredAtMillis, enabled && state.direct,
+                state.error == MemoryEditorError.TIME, onTime)
             state.original?.let { original ->
                 Text(stringResource(R.string.memory_original), style = MaterialTheme.typography.titleMedium)
                 original.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
                 Text(original.journal?.body ?: original.mood?.note ?: original.event.note.orEmpty(), modifier = Modifier.testTag("memory_original"))
                 original.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
-                Text(Instant.ofEpochMilli(state.draft.occurredAtMillis).atZone(ZoneId.systemDefault())
-                    .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
                 Text(stringResource(R.string.memory_source_kept), style = MaterialTheme.typography.bodySmall)
             }
             if (state.direct) OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled, singleLine = true,
@@ -113,7 +111,6 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 peopleContent()
                 placeContent()
                 photosContent()
-                if (state.direct) MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MemoryEditorError.TIME, onTime)
             }
         }
     }

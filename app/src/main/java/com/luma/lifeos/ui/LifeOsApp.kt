@@ -73,7 +73,9 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.luma.lifeos.ui.today.TodayRoute
 import com.luma.lifeos.ui.today.rememberCurrentDay
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 
 private enum class Destination(
     val route: String,
@@ -270,9 +272,10 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                 EventDetailRoute(timeline, photos, id, currentDay.zone, onBack = { navController.popBackStack() },
                     onEdit = ::editEvent, onMemory = { navController.navigate("memory?eventId=$id") })
             }
-            composable("memory?eventId={eventId}", arguments = listOf(navArgument("eventId") {
-                type = NavType.StringType; nullable = true; defaultValue = null
-            })) { entry ->
+            composable("memory?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
+                navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("initialTime") { type = NavType.StringType; nullable = true; defaultValue = null },
+            )) { entry ->
                 MemoryEditorRoute(memories, entry.arguments?.getString("eventId")?.let(EventId::parse),
                     onCancel = { navController.popBackStack() },
                     onFinished = { date ->
@@ -280,6 +283,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
                         navController.popBackStack()
                     }, people = people, onCreatePerson = { navController.navigate("person") },
+                        initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
                         places = places, onCreatePlace = { navController.navigate("place") }, photos = photos)
             }
             composable("journal_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
@@ -288,9 +292,10 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     onEdit = { navController.navigate("journal?eventId=$id") },
                     onMemory = { navController.navigate("memory?eventId=$id") }, photos = photos)
             }
-            composable("journal?eventId={eventId}", arguments = listOf(navArgument("eventId") {
-                type = NavType.StringType; nullable = true; defaultValue = null
-            })) { entry ->
+            composable("journal?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
+                navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("initialTime") { type = NavType.StringType; nullable = true; defaultValue = null },
+            )) { entry ->
                 JournalEditorRoute(journals, entry.arguments?.getString("eventId")?.let(EventId::parse),
                     onCancel = { navController.popBackStack() },
                     onFinished = { date ->
@@ -301,11 +306,13 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             navController.popBackStack()
                         }
                     }, people = people, onCreatePerson = { navController.navigate("person") },
+                        initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
                         places = places, onCreatePlace = { navController.navigate("place") }, photos = photos)
             }
-            composable("mood?eventId={eventId}", arguments = listOf(navArgument("eventId") {
-                type = NavType.StringType; nullable = true; defaultValue = null
-            })) { entry ->
+            composable("mood?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
+                navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("initialTime") { type = NavType.StringType; nullable = true; defaultValue = null },
+            )) { entry ->
                 MoodEditorRoute(moods, entry.arguments?.getString("eventId")?.let(EventId::parse),
                     onCancel = { navController.popBackStack() },
                     onFinished = { date ->
@@ -313,20 +320,29 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
                         navController.popBackStack()
                     }, people = people, onCreatePerson = { navController.navigate("person") },
+                        initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
                         places = places, onCreatePlace = { navController.navigate("place") })
             }
         }
     }
-    if (capturing) QuickCaptureSheet(onDismiss = { capturing = false }, onMood = {
+    val browsedDate = selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
+    fun openCapture(route: String, date: LocalDate?) {
         capturing = false
-        navController.navigate("mood")
-    }, onJournal = {
-        capturing = false
-        navController.navigate("journal")
-    }, onMemory = {
-        capturing = false
-        navController.navigate("memory")
+        val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
+        navController.navigate(if (target == null) route else "$route?initialTime=$target")
+    }
+    if (capturing) QuickCaptureSheet(browsedDate = browsedDate, onDismiss = { capturing = false }, onMood = { date ->
+        openCapture("mood", date)
+    }, onJournal = { date ->
+        openCapture("journal", date)
+    }, onMemory = { date ->
+        openCapture("memory", date)
     })
+}
+
+private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {
+    val now = Instant.now()
+    return date.atTime(now.atZone(zone).toLocalTime()).atZone(zone).toInstant().toEpochMilli()
 }
 
 @Composable

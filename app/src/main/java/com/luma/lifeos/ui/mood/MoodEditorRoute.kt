@@ -21,9 +21,12 @@ import java.time.ZoneId
 
 @Composable
 fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () -> Unit,
-    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit, places: PlaceRepository, onCreatePlace: () -> Unit) {
-    val factory = remember(repository, eventId) {
-        viewModelFactory { initializer { MoodEditorViewModel(repository, eventId, createSavedStateHandle()) } }
+    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
+    places: PlaceRepository, onCreatePlace: () -> Unit, initialTimeMillis: Long? = null) {
+    val factory = remember(repository, eventId, initialTimeMillis) {
+        viewModelFactory { initializer {
+            MoodEditorViewModel(repository, eventId, createSavedStateHandle(), initialTimeMillis = initialTimeMillis)
+        } }
     }
     val editor: MoodEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()

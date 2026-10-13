@@ -19,9 +19,14 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
-fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel: () -> Unit, onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit, places: PlaceRepository, onCreatePlace: () -> Unit, photos: PhotoRepository) {
-    val factory = remember(repository, eventId, photos) {
-        viewModelFactory { initializer { MemoryEditorViewModel(repository, eventId, createSavedStateHandle(), photoRepository = photos) } }
+fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel: () -> Unit,
+    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
+    places: PlaceRepository, onCreatePlace: () -> Unit, photos: PhotoRepository, initialTimeMillis: Long? = null) {
+    val factory = remember(repository, eventId, photos, initialTimeMillis) {
+        viewModelFactory { initializer {
+            MemoryEditorViewModel(repository, eventId, createSavedStateHandle(), photoRepository = photos,
+                initialTimeMillis = initialTimeMillis)
+        } }
     }
     val editor: MemoryEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()

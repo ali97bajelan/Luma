@@ -82,6 +82,8 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 }), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("journal_error"))
                 if (error == JournalEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
+            if (state.ready) MoodTimeControls(state.draft.occurredAtMillis, enabled,
+                state.error == JournalEditorError.TIME, onTime)
             // Restored text remains visible even if loading fails.
             OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled, singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -127,7 +129,6 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 peopleContent()
                 placeContent()
                 photosContent()
-                MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == JournalEditorError.TIME, onTime)
             }
         }
     }

@@ -107,6 +107,7 @@ fun MoodEditorScreen(
                 if (it == MoodEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             if (state.ready) {
+                MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
                 Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (1..5).forEach { score ->
@@ -143,7 +144,6 @@ fun MoodEditorScreen(
                         modifier = Modifier.fillMaxWidth().testTag("mood_note"))
                     peopleContent()
                     placeContent()
-                    MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
                 }
             }
         }

@@ -23,9 +23,13 @@ import java.time.ZoneId
 
 @Composable
 fun JournalEditorRoute(repository: JournalRepository, eventId: EventId?, onCancel: () -> Unit,
-    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit, places: PlaceRepository, onCreatePlace: () -> Unit, photos: PhotoRepository) {
-    val factory = remember(repository, eventId, photos) {
-        viewModelFactory { initializer { JournalEditorViewModel(repository, eventId, createSavedStateHandle(), photoRepository = photos) } }
+    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
+    places: PlaceRepository, onCreatePlace: () -> Unit, photos: PhotoRepository, initialTimeMillis: Long? = null) {
+    val factory = remember(repository, eventId, photos, initialTimeMillis) {
+        viewModelFactory { initializer {
+            JournalEditorViewModel(repository, eventId, createSavedStateHandle(), photoRepository = photos,
+                initialTimeMillis = initialTimeMillis)
+        } }
     }
     val editor: JournalEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()

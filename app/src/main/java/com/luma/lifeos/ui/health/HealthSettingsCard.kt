@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.health
 import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -10,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,10 +38,12 @@ fun HealthSettingsCard(integration: HealthIntegration) {
     Card(Modifier.fillMaxWidth().testTag("health_card")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.health_title), style = MaterialTheme.typography.titleLarge)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            val canToggle = !state.loading && (!state.busy || state.current.enabled)
+            Row(Modifier.fillMaxWidth().toggleable(value = state.current.enabled, enabled = canToggle,
+                role = Role.Switch, onValueChange = vm::setEnabled).testTag("health_enabled"),
+                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text(stringResource(R.string.health_enable), modifier = Modifier.weight(1f))
-                Switch(checked = state.current.enabled, enabled = !state.loading && (!state.busy || state.current.enabled),
-                    onCheckedChange = vm::setEnabled, modifier = Modifier.testTag("health_enabled"))
+                Switch(checked = state.current.enabled, enabled = canToggle, onCheckedChange = null)
             }
             if (state.loading || state.busy) CircularProgressIndicator(Modifier.testTag("health_busy"))
             Text(stringResource(state.current.status.label()), modifier = Modifier.testTag("health_status"))
