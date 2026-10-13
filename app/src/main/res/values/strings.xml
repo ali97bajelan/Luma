@@ -199,6 +199,8 @@
     <string name="activity_unavailable">Activity details unavailable</string>
     <string name="usage_duration">%1$d h %2$d min %3$s s</string>
     <string name="app_usage_duration">%1$d h %2$d min</string>
+    <string name="app_usage_duration_seconds">%1$s sec</string>
+    <string name="app_usage_duration_under_second">&lt;1 sec</string>
     <string name="usage_unavailable">App usage details unavailable</string>
     <string name="timeline_empty">No events for this day yet</string>
     <string name="timeline_error">Could not load timeline events. Try again.</string>
@@ -303,6 +305,8 @@
     <string name="review_previous_week">Previous week</string>
     <string name="review_next_week">Next week</string>
     <string name="review_unavailable">Unavailable</string>
+    <string name="review_current_period">This period</string>
+    <string name="review_previous_period">Previous period</string>
     <string name="review_previous_value">Previous period: %1$s</string>
     <string name="review_change">Change in saved observations: %1$s</string>
     <string name="review_scale_samples">%1$s / 5 · Samples: %2$d</string>

@@ -62,11 +62,16 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
         }
         if (!loading) record?.let { entry ->
             val journal = requireNotNull(entry.journal)
-            LinkedPeople(entry.people)
-            LinkedPlace(entry.place)
             Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
             Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
             if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
+            Card(Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                Text(journal.body, style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp).testTag("journal_detail_body"))
+            }
+            LinkedPeople(entry.people)
+            LinkedPlace(entry.place)
             entry.memory?.let {
                 MemoryStatus(it)
                 it.note?.let { note -> Text(note) }
@@ -75,7 +80,6 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
                 Text(stringResource(if (entry.memory == null) R.string.memory_promote else R.string.memory_edit))
             }
             PhotoGallery(photos, entry.photos)
-            Text(journal.body, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("journal_detail_body"))
         }
     }
 }

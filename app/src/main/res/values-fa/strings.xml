@@ -213,6 +213,8 @@
     <string name="activity_unavailable">جزئیات فعالیت در دسترس نیست</string>
     <string name="usage_duration">%1$d ساعت %2$d دقیقه %3$s ثانیه</string>
     <string name="app_usage_duration">%1$d ساعت %2$d دقیقه</string>
+    <string name="app_usage_duration_seconds">%1$s ثانیه</string>
+    <string name="app_usage_duration_under_second">کمتر از ۱ ثانیه</string>
     <string name="usage_unavailable">جزئیات استفاده از برنامه‌ها در دسترس نیست</string>
     <string name="timeline_empty">هنوز رویدادی برای این روز ثبت نشده</string>
     <string name="timeline_error">رویدادهای خط زمانی بارگذاری نشدند. دوباره تلاش کنید.</string>
@@ -317,6 +319,8 @@
     <string name="review_previous_week">هفتهٔ قبل</string>
     <string name="review_next_week">هفتهٔ بعد</string>
     <string name="review_unavailable">در دسترس نیست</string>
+    <string name="review_current_period">این بازه</string>
+    <string name="review_previous_period">بازهٔ قبل</string>
     <string name="review_previous_value">بازهٔ قبل: %1$s</string>
     <string name="review_change">تغییر مشاهده‌های ذخیره‌شده: %1$s</string>
     <string name="review_scale_samples">%1$s / ۵ · نمونه‌ها: %2$d</string>

@@ -204,6 +204,8 @@
     <string name="activity_unavailable">Détails de l’activité indisponibles</string>
     <string name="usage_duration">%1$d h %2$d min %3$s s</string>
     <string name="app_usage_duration">%1$d h %2$d min</string>
+    <string name="app_usage_duration_seconds">%1$s s</string>
+    <string name="app_usage_duration_under_second">&lt;1 s</string>
     <string name="usage_unavailable">Détails de l’utilisation des applications indisponibles</string>
     <string name="timeline_empty">Aucun événement pour cette journée pour le moment</string>
     <string name="timeline_error">Impossible de charger les événements de la chronologie. Réessayez.</string>
@@ -308,6 +310,8 @@
     <string name="review_previous_week">Semaine précédente</string>
     <string name="review_next_week">Semaine suivante</string>
     <string name="review_unavailable">Indisponible</string>
+    <string name="review_current_period">Cette période</string>
+    <string name="review_previous_period">Période précédente</string>
     <string name="review_previous_value">Période précédente : %1$s</string>
     <string name="review_change">Évolution des observations enregistrées : %1$s</string>
     <string name="review_scale_samples">%1$s / 5 · Observations : %2$d</string>

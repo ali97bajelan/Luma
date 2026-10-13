@@ -23,17 +23,37 @@ internal fun reviewChange(current: Double?, previous: Double?): String? = if (cu
 @Composable
 internal fun ReviewValue(label: String, current: String, previous: String, change: String?, tag: String,
     onCurrent: (() -> Unit)? = null, onPrevious: (() -> Unit)? = null) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, style = MaterialTheme.typography.titleMedium)
-        Text(current, modifier = Modifier.testTag("review_metric_$tag"), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(R.string.review_previous_value, previous))
-        change?.let { Text(stringResource(R.string.review_change, it), style = MaterialTheme.typography.bodySmall) }
-        // Stack actions so large text and long translations do not overlap.
-        if (onCurrent != null) TextButton(onClick = onCurrent, modifier = Modifier.testTag("review_sources_$tag")) {
-            Text(stringResource(R.string.review_view_sources))
-        }
-        if (onPrevious != null) TextButton(onClick = onPrevious, modifier = Modifier.testTag("review_previous_sources_$tag")) {
-            Text(stringResource(R.string.review_view_previous_sources))
+    Card(Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(label, style = MaterialTheme.typography.titleSmall)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(stringResource(R.string.review_current_period), style = MaterialTheme.typography.labelSmall)
+                    Text(current, modifier = Modifier.testTag("review_metric_$tag"), style = MaterialTheme.typography.titleMedium)
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(stringResource(R.string.review_previous_period), style = MaterialTheme.typography.labelSmall)
+                    Text(previous, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+            change?.let { Text(stringResource(R.string.review_change, it), style = MaterialTheme.typography.bodySmall) }
+            if (onCurrent != null || onPrevious != null) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    onCurrent?.let {
+                        val width = if (onPrevious == null) Modifier.fillMaxWidth() else Modifier.weight(1f)
+                        TextButton(onClick = it, modifier = width.testTag("review_sources_$tag")) {
+                            Text(stringResource(R.string.review_view_sources))
+                        }
+                    }
+                    onPrevious?.let {
+                        val width = if (onCurrent == null) Modifier.fillMaxWidth() else Modifier.weight(1f)
+                        TextButton(onClick = it, modifier = width.testTag("review_previous_sources_$tag")) {
+                            Text(stringResource(R.string.review_view_previous_sources))
+                        }
+                    }
+                }
+            }
         }
     }
 }

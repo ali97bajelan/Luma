@@ -77,12 +77,23 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
         activityUnitDisplayName(it.type, it.unit, it.source))) }
     if (!full && record.activities.size > 3) Text(stringResource(R.string.activity_more, record.activities.size - 3))
     record.appUsage?.let { usage ->
-        Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
-        if (usage.appLabel != null) Text(usage.packageName, style = MaterialTheme.typography.bodySmall)
-        Text(appUsageDuration(usage.durationMillis))
         if (full) {
             val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)
-            Text(stringResource(R.string.event_interval, usage.bucketStart.atZone(zone).format(formatter), usage.bucketEnd.atZone(zone).format(formatter)))
+            Card(Modifier.fillMaxWidth().testTag("event_usage_detail"),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
+                    Text(appUsageDuration(usage.durationMillis), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.event_interval, usage.bucketStart.atZone(zone).format(formatter), usage.bucketEnd.atZone(zone).format(formatter)))
+                    Text(zone.id, style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(record.event.source.label()), style = MaterialTheme.typography.labelMedium)
+                    if (usage.appLabel != null) Text(usage.packageName, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        } else {
+            Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
+            if (usage.appLabel != null) Text(usage.packageName, style = MaterialTheme.typography.bodySmall)
+            Text(appUsageDuration(usage.durationMillis))
         }
     }
     if (record.event.type == EventType.ACTIVITY && record.activities.isEmpty()) Text(stringResource(R.string.activity_unavailable))
