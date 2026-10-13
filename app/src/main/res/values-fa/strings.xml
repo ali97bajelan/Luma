@@ -410,4 +410,23 @@
     <string name="summary_details">شمارش‌ها و جزئیات</string>
     <string name="imports_details">دربارهٔ ورود این داده‌ها</string>
     <string name="hide_details">پنهان کردن جزئیات</string>
+    <string name="review_overview">هفته در یک نگاه</string>
+    <string name="review_missing_context">اندازه‌گیری‌های ثبت‌نشده در دسترس نیستند؛ صفر ثبت‌شده همچنان صفر است.</string>
+    <string name="review_overview_mood">حال‌وهوا · %1$s</string>
+    <string name="review_latest_memory">تازه‌ترین خاطرهٔ ثبت‌شده</string>
+    <string name="review_overview_usage">استفادهٔ ثبت‌شده از برنامه‌ها · %1$s</string>
+    <string name="review_usage_summary">تاریخ‌های دارای سابقه: %1$d از %2$d · کامل: %3$d</string>
+    <string name="review_overview_activity">معیار فعالیت با بیشترین نمونه · %1$s</string>
+    <string name="review_overview_activity_value">%1$s · %2$s %3$s · نمونه‌ها: %4$d · %5$s</string>
+    <string name="review_overview_catalog">افراد پیوندخورده: %1$d · مکان‌های پیوندخورده: %2$d</string>
+    <string name="review_overview_linked_explanation">این تعداد، افراد و مکان‌های پیوندخورده به نوشته‌های ثبت‌شده را نشان می‌دهد، نه زمان باهم‌بودن یا تعداد بازدیدها.</string>
+    <string name="review_people_places">افراد / مکان‌ها</string>
+    <string name="review_sources">منابع</string>
+    <string name="review_methodology">این مشاهدات چگونه محاسبه می‌شوند</string>
+    <string name="review_coverage_details">جزئیات پوشش استفادهٔ ثبت‌شده</string>
+    <string name="review_daily_evidence">شواهد بر اساس تاریخ</string>
+    <string name="review_hide_details">پنهان کردن: %1$s</string>
+    <string name="review_details_expanded">باز شده</string>
+    <string name="review_details_collapsed">بسته</string>
+    <string name="review_usage_incomplete">پوشش ناقص</string>
 </resources>

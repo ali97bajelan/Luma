@@ -2,7 +2,10 @@ package com.luma.lifeos.ui.review
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -38,22 +41,33 @@ internal fun ReviewValue(label: String, current: String, previous: String, chang
                 }
             }
             change?.let { Text(stringResource(R.string.review_change, it), style = MaterialTheme.typography.bodySmall) }
-            if (onCurrent != null || onPrevious != null) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    onCurrent?.let {
-                        val width = if (onPrevious == null) Modifier.fillMaxWidth() else Modifier.weight(1f)
-                        TextButton(onClick = it, modifier = width.testTag("review_sources_$tag")) {
-                            Text(stringResource(R.string.review_view_sources))
-                        }
-                    }
-                    onPrevious?.let {
-                        val width = if (onCurrent == null) Modifier.fillMaxWidth() else Modifier.weight(1f)
-                        TextButton(onClick = it, modifier = width.testTag("review_previous_sources_$tag")) {
-                            Text(stringResource(R.string.review_view_previous_sources))
-                        }
-                    }
-                }
+            ReviewSourcesControl(label, tag, onCurrent, onPrevious)
+        }
+    }
+}
+
+@Composable
+private fun ReviewSourcesControl(label: String, tag: String,
+    onCurrent: (() -> Unit)?, onPrevious: (() -> Unit)?) {
+    val sources = stringResource(R.string.review_sources)
+    if (onCurrent != null && onPrevious != null) {
+        var expanded by remember { mutableStateOf(false) }
+        val state = stringResource(if (expanded) R.string.review_details_expanded else R.string.review_details_collapsed)
+        Box {
+            TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("review_sources_menu_$tag")
+                .semantics { contentDescription = "$label · $sources"; stateDescription = state }) { Text(sources) }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                DropdownMenuItem(text = { Text(stringResource(R.string.review_current_period)) },
+                    onClick = { expanded = false; onCurrent() }, modifier = Modifier.testTag("review_sources_$tag"))
+                DropdownMenuItem(text = { Text(stringResource(R.string.review_previous_period)) },
+                    onClick = { expanded = false; onPrevious() }, modifier = Modifier.testTag("review_previous_sources_$tag"))
             }
         }
+    } else if (onCurrent != null || onPrevious != null) {
+        val action = if (onCurrent != null) stringResource(R.string.review_view_sources)
+            else stringResource(R.string.review_view_previous_sources)
+        TextButton(onClick = onCurrent ?: onPrevious!!,
+            modifier = Modifier.testTag(if (onCurrent != null) "review_sources_$tag" else "review_previous_sources_$tag")
+                .semantics { contentDescription = "$label · $action" }) { Text(action) }
     }
 }

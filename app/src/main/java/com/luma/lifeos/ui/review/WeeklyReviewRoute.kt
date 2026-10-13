@@ -2,6 +2,7 @@ package com.luma.lifeos.ui.review
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -9,7 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import kotlinx.coroutines.launch
+import com.luma.lifeos.ui.common.DetailsDisclosure
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
@@ -35,11 +39,14 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     var retry by remember { mutableIntStateOf(0) }
     val period = reviewPeriod(restoredReviewDate(selected, today), today, zone)
     val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var section by rememberSaveable { mutableStateOf<String?>(null) }
     key(period, retry) {
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
         Box(Modifier.fillMaxSize().testTag("screen_review")) {
-            LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"),
+            LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = listState,
                 contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item(key = "heading") {
                     Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineLarge)
@@ -50,8 +57,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                             Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.review_previous_week))
                         }
                         TextButton(onClick = { picking = true }, modifier = Modifier.weight(1f).testTag("review_picker")) {
-                            Text(stringResource(R.string.memory_review_range, period.current.start.format(format), period.current.through.format(format)),
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(stringResource(R.string.memory_review_range, period.current.start.format(format), period.current.through.format(format)))
                         }
                         IconButton(onClick = { selected = null }, modifier = Modifier.testTag("review_this_week")) {
                             Icon(painterResource(R.drawable.ic_nav_today), contentDescription = stringResource(R.string.review_this_week))
@@ -74,7 +80,18 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                     is WeeklyReviewState.Data -> {
                         val report = current.report
                         val a = report.current; val b = report.previous
-                        if (a.records == 0 && a.usage?.totalMillis == null && a.activities.isEmpty()) item(key = "empty") {
+                        val empty = a.records == 0 && a.usage?.totalMillis == null && a.activities.isEmpty()
+                        val keys = listOf("heading", "overview", "sections") +
+                            (if (empty) listOf("empty") else emptyList()) +
+                            listOf("counts", "mood", "memories", "catalog", "usage", "activity")
+                        item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources) }
+                        item(key = "sections") {
+                            ReviewSectionNavigation(section) { key ->
+                                section = key
+                                scope.launch { listState.animateScrollToItem(keys.indexOf(key)) }
+                            }
+                        }
+                        if (empty) item(key = "empty") {
                             Text(stringResource(R.string.review_empty), modifier = Modifier.testTag("review_empty"))
                         }
                         item(key = "counts") {
@@ -82,13 +99,17 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         }
                         item(key = "mood") { ReviewMood(report, onSources) }
                         item(key = "memories") {
-                            Text(stringResource(R.string.review_memories), style = MaterialTheme.typography.titleLarge)
+                            Text(stringResource(R.string.review_memories), style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.testTag("review_heading_memories").semantics { heading() })
                             MemoryHighlights(repository, period, onEvent, onMemory)
                             TextButton(onClick = { onSources(period.current, ReviewMetric(ReviewMetricKind.MEMORIES)) }) { Text(stringResource(R.string.review_all_memories)) }
                         }
-                        item(key = "people") { CatalogPatterns(stringResource(R.string.people), a.people, b.people, period,
-                            ReviewMetricKind.PERSON, onSources, onPerson) }
-                        item(key = "places") { CatalogPatterns(stringResource(R.string.places), a.places, b.places, period,
+                        item(key = "catalog") {
+                            Text(stringResource(R.string.review_people_places), style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.testTag("review_heading_catalog").semantics { heading() })
+                            CatalogPatterns(stringResource(R.string.people), a.people, b.people, period,
+                            ReviewMetricKind.PERSON, onSources, onPerson)
+                            CatalogPatterns(stringResource(R.string.places), a.places, b.places, period,
                             ReviewMetricKind.PLACE, onSources, onPlace) }
                         item(key = "usage") { ReviewDigital(report, onUsage) }
                         item(key = "activity") { ReviewActivities(report, onSources) }
@@ -124,7 +145,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     }
 }
 @Composable private fun ReviewMood(report: WeeklyReview, onSources: (ReviewDates, ReviewMetric) -> Unit) {
-    Text(stringResource(R.string.review_mood_patterns), style = MaterialTheme.typography.titleLarge)
+    Text(stringResource(R.string.review_mood_patterns), style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.testTag("review_heading_mood").semantics { heading() })
     listOf(ReviewMetricKind.MOOD to (report.current.mood?.score to report.previous.mood?.score),
         ReviewMetricKind.ENERGY to (report.current.mood?.energy to report.previous.mood?.energy),
         ReviewMetricKind.STRESS to (report.current.mood?.stress to report.previous.mood?.stress)).forEach { (kind, scales) ->
@@ -133,13 +155,15 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             scales.first?.let { { onSources(report.period.current, ReviewMetric(kind)) } },
             scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
     }
-    Text(stringResource(R.string.review_mood_dates), style = MaterialTheme.typography.titleMedium)
-    val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
-    report.current.moodDays.forEach { day ->
-        Text(day.date.format(format))
-        Text(reviewScale(day.mood?.score))
-        if (day.mood != null) TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) }) {
-            Text(stringResource(R.string.review_view_sources))
+    DetailsDisclosure(R.string.review_daily_evidence, "review_mood_daily_details", keepTitle = true) {
+        Text(stringResource(R.string.review_mood_dates), style = MaterialTheme.typography.titleMedium)
+        val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
+        report.current.moodDays.forEach { day ->
+            Text(day.date.format(format))
+            Text(reviewScale(day.mood?.score))
+            if (day.mood != null) TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) }) {
+                Text(stringResource(R.string.review_view_sources))
+            }
         }
     }
     CatalogPatterns(stringResource(R.string.review_top_emotions), report.current.emotions, report.previous.emotions,
@@ -160,7 +184,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         val displayName = if (kind == ReviewMetricKind.EMOTION) emotionDisplayName(name.name.id, name.name.name) else name.name.name
         ReviewValue(displayName, stringResource(R.string.review_frequency, a), stringResource(R.string.review_frequency, b),
             reviewChange(a.toDouble(), b.toDouble()), "${kind.name.lowercase()}_${name.name.id}",
-            { onSources(period.current, metric) }, { onSources(period.previous, metric) })
+            if (a > 0) ({ onSources(period.current, metric) }) else null,
+            if (b > 0) ({ onSources(period.previous, metric) }) else null)
         onDetails?.let { TextButton(onClick = { it(name.name.id) }) { Text(stringResource(R.string.review_catalog_detail)) } }
     }
 }

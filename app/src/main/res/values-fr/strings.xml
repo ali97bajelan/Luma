@@ -415,4 +415,23 @@
     <string name="summary_details">Décomptes et détails</string>
     <string name="imports_details">À propos de ces importations</string>
     <string name="hide_details">Masquer les détails</string>
+    <string name="review_overview">La semaine en bref</string>
+    <string name="review_missing_context">Les mesures absentes sont indisponibles ; un zéro enregistré reste zéro.</string>
+    <string name="review_overview_mood">Humeur · %1$s</string>
+    <string name="review_latest_memory">Dernier souvenir enregistré</string>
+    <string name="review_overview_usage">Utilisation enregistrée des applications · %1$s</string>
+    <string name="review_usage_summary">Historique enregistré : %1$d dates sur %2$d · Complètes : %3$d</string>
+    <string name="review_overview_activity">Mesure d’activité avec le plus d’échantillons · %1$s</string>
+    <string name="review_overview_activity_value">%1$s · %2$s %3$s · Échantillons : %4$d · %5$s</string>
+    <string name="review_overview_catalog">Personnes liées : %1$d · Lieux liés : %2$d</string>
+    <string name="review_overview_linked_explanation">Ces nombres décrivent les personnes et les lieux liés aux entrées enregistrées, pas le temps passé ensemble ni les visites.</string>
+    <string name="review_people_places">Personnes / Lieux</string>
+    <string name="review_sources">Sources</string>
+    <string name="review_methodology">Comment ces observations sont calculées</string>
+    <string name="review_coverage_details">Détails de la couverture de l’utilisation enregistrée</string>
+    <string name="review_daily_evidence">Observations par date</string>
+    <string name="review_hide_details">Masquer : %1$s</string>
+    <string name="review_details_expanded">Développé</string>
+    <string name="review_details_collapsed">Réduit</string>
+    <string name="review_usage_incomplete">Couverture incomplète</string>
 </resources>

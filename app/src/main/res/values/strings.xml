@@ -410,4 +410,23 @@
     <string name="summary_details">Counts and details</string>
     <string name="imports_details">About these imports</string>
     <string name="hide_details">Hide details</string>
+    <string name="review_overview">Week at a glance</string>
+    <string name="review_missing_context">Missing measurements are unavailable; a saved zero remains zero.</string>
+    <string name="review_overview_mood">Mood · %1$s</string>
+    <string name="review_latest_memory">Latest saved memory</string>
+    <string name="review_overview_usage">Saved app usage · %1$s</string>
+    <string name="review_usage_summary">Saved history: %1$d of %2$d dates · Complete: %3$d</string>
+    <string name="review_overview_activity">Most-sampled activity metric · %1$s</string>
+    <string name="review_overview_activity_value">%1$s · %2$s %3$s · Samples: %4$d · %5$s</string>
+    <string name="review_overview_catalog">Linked people: %1$d · Linked places: %2$d</string>
+    <string name="review_overview_linked_explanation">Counts describe people and places linked to saved entries, not time together or visits.</string>
+    <string name="review_people_places">People / Places</string>
+    <string name="review_sources">Sources</string>
+    <string name="review_methodology">How these observations are calculated</string>
+    <string name="review_coverage_details">Saved usage coverage details</string>
+    <string name="review_daily_evidence">Evidence by date</string>
+    <string name="review_hide_details">Hide: %1$s</string>
+    <string name="review_details_expanded">Expanded</string>
+    <string name="review_details_collapsed">Collapsed</string>
+    <string name="review_usage_incomplete">Incomplete coverage</string>
 </resources>
