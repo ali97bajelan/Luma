@@ -20,6 +20,7 @@ import com.luma.lifeos.ui.mood.moodScoreLabel
 import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoCount
+import com.luma.lifeos.ui.usage.appUsageDuration
 import java.text.NumberFormat
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -78,9 +79,7 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
     record.appUsage?.let { usage ->
         Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
         if (usage.appLabel != null) Text(usage.packageName, style = MaterialTheme.typography.bodySmall)
-        val milliseconds = usage.durationMillis
-        Text(stringResource(R.string.usage_duration, milliseconds / 3_600_000, (milliseconds / 60_000) % 60,
-            format.format((milliseconds % 60_000) / 1000.0)))
+        Text(appUsageDuration(usage.durationMillis))
         if (full) {
             val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)
             Text(stringResource(R.string.event_interval, usage.bucketStart.atZone(zone).format(formatter), usage.bucketEnd.atZone(zone).format(formatter)))

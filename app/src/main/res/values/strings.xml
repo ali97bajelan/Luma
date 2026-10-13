@@ -196,6 +196,7 @@
     <string name="activity_more">%1$d more measurements</string>
     <string name="activity_unavailable">Activity details unavailable</string>
     <string name="usage_duration">%1$d h %2$d min %3$s s</string>
+    <string name="app_usage_duration">%1$d h %2$d min</string>
     <string name="usage_unavailable">App usage details unavailable</string>
     <string name="timeline_empty">No events for this day yet</string>
     <string name="timeline_error">Could not load timeline events. Try again.</string>

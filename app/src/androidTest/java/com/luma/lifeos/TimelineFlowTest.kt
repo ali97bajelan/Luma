@@ -83,8 +83,9 @@ class TimelineFlowTest {
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_event_count"))
         compose.onNodeWithTag("timeline_event_count").assertTextEquals("0 events this day")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${usage.id}"))
+        awaitText("0 h 2 min")
         compose.onNodeWithTag("event_${usage.id}").performClick()
-        awaitTag("screen_event_detail"); awaitText("org.example.browser")
+        awaitTag("screen_event_detail"); awaitText("org.example.browser"); awaitText("0 h 2 min")
         compose.onNodeWithTag("event_edit").assertDoesNotExist()
         compose.onNodeWithText("Back").performClick()
         runBlocking {

@@ -13,6 +13,7 @@ import com.luma.lifeos.domain.summary.ScaleTotal
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.ui.timeline.label
+import com.luma.lifeos.ui.usage.appUsageDuration
 import java.text.NumberFormat
 
 @Composable
@@ -42,7 +43,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                             .thenBy { it.packageName })
                         .take(3)
                     Text(if (usage == null) stringResource(R.string.summary_unavailable, stringResource(R.string.summary_usage))
-                        else stringResource(R.string.summary_usage_value, usageDuration(usage.totalMillis), displayedApps.size),
+                        else stringResource(R.string.summary_usage_value, appUsageDuration(usage.totalMillis), displayedApps.size),
                         modifier = Modifier.testTag("summary_usage"))
                     if (usage != null) {
                         Text(stringResource(R.string.usage_daily_explanation), style = MaterialTheme.typography.bodySmall)
@@ -52,7 +53,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                                     modifier = Modifier.testTag("summary_usage_label_${app.packageName}"))
                                 if (app.appLabel != null) Text(app.packageName, style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.testTag("summary_usage_package_${app.packageName}"))
-                                Text(usageDuration(app.durationMillis),
+                                Text(appUsageDuration(app.durationMillis),
                                     modifier = Modifier.testTag("summary_usage_duration_${app.packageName}"))
                             }
                         }
@@ -81,9 +82,4 @@ private fun ScaleLine(label: String, scale: ScaleTotal?, tag: String) {
     val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 2 }
     Text(if (scale == null) stringResource(R.string.summary_unavailable, label)
         else stringResource(R.string.summary_average, label, format.format(scale.average), scale.samples), modifier = Modifier.testTag(tag))
-}
-@Composable
-private fun usageDuration(millis: Long): String {
-    val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 3 }
-    return stringResource(R.string.usage_duration, millis / 3_600_000, (millis / 60_000) % 60, format.format((millis % 60_000) / 1000.0))
 }

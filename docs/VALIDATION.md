@@ -1736,3 +1736,20 @@ adb shell am instrument -w -r \
 adb shell am instrument -w -r \
   com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
 ```
+
+## Whole-minute app-usage durations — 2026-10-13
+
+Today and Timeline now format app-usage durations as whole hours and minutes.
+Seconds and fractional seconds are truncated; event/session timestamps and the
+Settings and Review usage views keep their existing formats.
+
+- PASS: all 4 `DailySummaryFlowTest` cases and all 5 `TimelineFlowTest` cases on
+  API 36. Coverage includes 65,125 ms rendering as `1 min` on Today and 125,125
+  ms rendering as `2 min` in both the Timeline row and its detail.
+- PASS: app JVM tests, debug and release builds, isolated instrumentation APK
+  build, and app lint.
+- PASS: the new Timeline expectation failed against the seconds-bearing formatter
+  before the shared whole-minute formatter was applied.
+
+The emulator tests used `com.luma.lifeos.validationrun`; the installed
+`com.luma.lifeos` app and its data were left untouched.

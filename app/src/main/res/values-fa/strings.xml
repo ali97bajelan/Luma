@@ -210,6 +210,7 @@
     <string name="activity_more">%1$d اندازه‌گیری دیگر</string>
     <string name="activity_unavailable">جزئیات فعالیت در دسترس نیست</string>
     <string name="usage_duration">%1$d ساعت %2$d دقیقه %3$s ثانیه</string>
+    <string name="app_usage_duration">%1$d ساعت %2$d دقیقه</string>
     <string name="usage_unavailable">جزئیات استفاده از برنامه‌ها در دسترس نیست</string>
     <string name="timeline_empty">هنوز رویدادی برای این روز ثبت نشده</string>
     <string name="timeline_error">رویدادهای خط زمانی بارگذاری نشدند. دوباره تلاش کنید.</string>

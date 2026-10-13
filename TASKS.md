@@ -422,6 +422,12 @@ passed: 278 JVM tests, 108 Room instrumentation tests, all 53 app instrumentatio
 tests, debug/release and instrumentation APK builds, and app/data/usage/health
 lint. Full details are in `docs/VALIDATION.md`.
 
+Duration display update (2026-10-13): Today and Timeline app-usage durations show
+whole hours and minutes. Seconds and milliseconds are omitted; leftover partial
+minutes are truncated. Other usage views retain their existing precision. All
+four DailySummaryFlow and five TimelineFlow UI tests pass; app unit tests, debug
+and release builds, instrumentation APK build and app lint pass.
+
 ### Acceptance criteria
 
 - No fabricated usage data.
@@ -431,6 +437,7 @@ lint. Full details are in `docs/VALIDATION.md`.
 - Screen-time records do not appear as Today events or contribute to displayed event counts; imported usage and its views remain available.
 - Today shows no more than three apps, all with strictly more than one minute of usage, and counts only displayed apps.
 - Timeline app usage defaults to hidden; users can persistently show only rows with strictly more than one minute of usage. Hidden/short rows do not create empty pages or incorrect paging totals.
+- Today and Timeline app-usage duration labels show hours and minutes only, without seconds or milliseconds.
 - Timeline shows when each app was opened and how long each recorded visit lasted, including repeated visits to the same app in chronological order.
 - Daily totals correctly combine all recorded usage for each app within the selected day's boundaries; visits spanning midnight contribute only their overlap with that day.
 - When session history is complete, session durations and per-app daily totals agree; unavailable or incomplete session history is clearly indicated without fabricated visits.

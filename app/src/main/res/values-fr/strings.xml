@@ -201,6 +201,7 @@
     <string name="activity_more">%1$d mesures supplémentaires</string>
     <string name="activity_unavailable">Détails de l’activité indisponibles</string>
     <string name="usage_duration">%1$d h %2$d min %3$s s</string>
+    <string name="app_usage_duration">%1$d h %2$d min</string>
     <string name="usage_unavailable">Détails de l’utilisation des applications indisponibles</string>
     <string name="timeline_empty">Aucun événement pour cette journée pour le moment</string>
     <string name="timeline_error">Impossible de charger les événements de la chronologie. Réessayez.</string>
