@@ -11,15 +11,19 @@ import com.luma.lifeos.domain.usage.UsageIntegration
 import com.luma.lifeos.ui.usage.UsageSettingsRoute
 import com.luma.lifeos.ui.usage.UsageForegroundRefresh
 import androidx.annotation.StringRes
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TextButton
@@ -37,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -75,13 +80,13 @@ private enum class Destination(
     @param:StringRes val label: Int,
     @param:StringRes val heading: Int,
     @param:StringRes val body: Int,
-    val symbol: String,
+    @param:DrawableRes val icon: Int,
 ) {
-    TODAY("today", R.string.today, R.string.today_heading, R.string.today_body, "◉"),
-    TIMELINE("timeline", R.string.timeline, R.string.timeline_heading, R.string.timeline_body, "≡"),
-    PEOPLE("people", R.string.people, R.string.people, R.string.people_intro, "♧"),
-    REVIEW("review", R.string.review, R.string.review_heading, R.string.review_body, "◇"),
-    SETTINGS("settings", R.string.settings, R.string.settings_heading, R.string.settings_body, "⚙"),
+    TODAY("today", R.string.today, R.string.today_heading, R.string.today_body, R.drawable.ic_nav_today),
+    TIMELINE("timeline", R.string.timeline, R.string.timeline_heading, R.string.timeline_body, R.drawable.ic_nav_timeline),
+    PEOPLE("people", R.string.people, R.string.people, R.string.people_intro, R.drawable.ic_nav_people),
+    REVIEW("review", R.string.review, R.string.review_heading, R.string.review_body, R.drawable.ic_nav_review),
+    SETTINGS("settings", R.string.settings, R.string.settings_heading, R.string.settings_body, R.drawable.ic_nav_settings),
 }
 
 @Composable
@@ -97,10 +102,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val eventScreen = backStackEntry?.destination?.route in setOf("mood?eventId={eventId}",
-        "journal?eventId={eventId}", "journal_detail/{eventId}", "memory?eventId={eventId}",
-        "person?personId={personId}", "person_detail/{personId}", "event_detail/{eventId}",
-        "privacy", "places", "place?placeId={placeId}", "place_detail/{placeId}")
+    val primaryScreen = Destination.entries.any { it.route == backStackEntry?.destination?.route }
     fun editEvent(record: LifeEventRecord) {
         if (!record.canEditContent) return
         navController.navigate(when (record.event.type) {
@@ -119,27 +121,33 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
     var capturing by rememberSaveable { mutableStateOf(false) }
     Scaffold(
-        floatingActionButton = {
-            if (!eventScreen) ExtendedFloatingActionButton(onClick = { capturing = true }, modifier = Modifier.testTag("quick_capture")) {
-                Text(stringResource(R.string.quick_capture))
-            }
-        },
         bottomBar = {
-            if (!eventScreen) NavigationBar {
-                Destination.entries.forEach { destination ->
-                    NavigationBarItem(
-                        modifier = Modifier.testTag("nav_${destination.route}"),
-                        selected = backStackEntry?.destination?.route == destination.route,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Text(destination.symbol) },
-                        label = { Text(stringResource(destination.label)) },
-                    )
+            if (primaryScreen) Column {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.End) {
+                    ExtendedFloatingActionButton(onClick = { capturing = true }, modifier = Modifier.testTag("quick_capture")) {
+                        Text(stringResource(R.string.quick_capture))
+                    }
+                }
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ) {
+                    Destination.entries.forEach { destination ->
+                        NavigationBarItem(
+                            modifier = Modifier.testTag("nav_${destination.route}"),
+                            selected = backStackEntry?.destination?.route == destination.route,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(painterResource(destination.icon), contentDescription = null) },
+                            label = { Text(stringResource(destination.label)) },
+                        )
+                    }
                 }
             }
         },

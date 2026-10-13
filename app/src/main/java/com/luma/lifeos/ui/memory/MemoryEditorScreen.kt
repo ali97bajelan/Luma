@@ -10,15 +10,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.mood.MoodTimeControls
+import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.Instant
 import java.time.format.FormatStyle
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: () -> Unit, onRemove: () -> Unit,
     onRetry: () -> Unit, onTitle: (String) -> Unit, onNote: (String) -> Unit, onImportance: (Int?) -> Unit,
@@ -75,12 +77,14 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 modifier = Modifier.fillMaxWidth().testTag("memory_note"))
             Text(stringResource(R.string.memory_importance), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 (1..5).forEach { value ->
+                    val description = stringResource(R.string.memory_importance_value, value)
                     FilterChip(selected = state.draft.importance == value, enabled = enabled,
                         onClick = { onImportance(if (state.draft.importance == value) null else value) },
-                        label = { Text(stringResource(R.string.memory_importance_value, value)) },
-                        modifier = Modifier.testTag("memory_importance_$value"))
+                        label = { Text(NumberFormat.getIntegerInstance().format(value)) },
+                        modifier = Modifier.weight(1f).testTag("memory_importance_$value")
+                            .semantics { contentDescription = description })
                 }
             }
             peopleContent()

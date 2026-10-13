@@ -7,7 +7,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
@@ -42,21 +44,26 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 item(key = "heading") {
                     Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineLarge)
                     Text(stringResource(R.string.review_saved_explanation))
-                    TextButton(onClick = { picking = true }, modifier = Modifier.testTag("review_picker")) {
-                        Text(stringResource(R.string.memory_review_range, period.current.start.format(format), period.current.through.format(format)))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        IconButton(enabled = period.current.start.year > -999999998,
+                            onClick = { selected = period.current.start.minusWeeks(1).toString() }, modifier = Modifier.testTag("review_previous")) {
+                            Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.review_previous_week))
+                        }
+                        TextButton(onClick = { picking = true }, modifier = Modifier.weight(1f).testTag("review_picker")) {
+                            Text(stringResource(R.string.memory_review_range, period.current.start.format(format), period.current.through.format(format)),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        IconButton(onClick = { selected = null }, modifier = Modifier.testTag("review_this_week")) {
+                            Icon(painterResource(R.drawable.ic_nav_today), contentDescription = stringResource(R.string.review_this_week))
+                        }
+                        IconButton(enabled = period.current.start.plusWeeks(1) <= today,
+                            onClick = { selected = period.current.start.plusWeeks(1).toString() }, modifier = Modifier.testTag("review_next")) {
+                            Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.review_next_week))
+                        }
                     }
                     Text(stringResource(R.string.review_comparison_range, period.previous.start.format(format), period.previous.through.format(format)))
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
                     if (period.partial) Text(stringResource(R.string.review_partial))
-                    TextButton(enabled = period.current.start.year > -999999998,
-                        onClick = { selected = period.current.start.minusWeeks(1).toString() }, modifier = Modifier.testTag("review_previous")) {
-                        Text(stringResource(R.string.review_previous_week))
-                    }
-                    TextButton(onClick = { selected = null }, modifier = Modifier.testTag("review_this_week")) { Text(stringResource(R.string.review_this_week)) }
-                    TextButton(enabled = period.current.start.plusWeeks(1) <= today,
-                        onClick = { selected = period.current.start.plusWeeks(1).toString() }, modifier = Modifier.testTag("review_next")) {
-                        Text(stringResource(R.string.review_next_week))
-                    }
                 }
                 when (val current = state) {
                     WeeklyReviewState.Loading -> item(key = "loading") { CircularProgressIndicator() }

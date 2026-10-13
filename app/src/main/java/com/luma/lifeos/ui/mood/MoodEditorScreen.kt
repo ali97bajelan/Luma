@@ -97,12 +97,19 @@ fun MoodEditorScreen(
             }
             if (state.ready) {
                 Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (1..5).forEach { score ->
+                        val description = stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score)))
                         FilterChip(selected = state.draft.score == score, enabled = enabled,
-                            onClick = { onScore(score) }, modifier = Modifier.testTag("mood_score_$score"),
-                            label = { Text(stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score)))) })
+                            onClick = { onScore(score) },
+                            modifier = Modifier.weight(1f).testTag("mood_score_$score")
+                                .semantics { contentDescription = description },
+                            label = { Text(NumberFormat.getIntegerInstance().format(score)) })
                     }
+                }
+                state.draft.score?.let { score ->
+                    Text(stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score))),
+                        style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("mood_score_description"))
                 }
                 Text(stringResource(R.string.mood_emotions), style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.mood_emotions_hint), style = MaterialTheme.typography.bodySmall)
@@ -151,11 +158,11 @@ fun MoodEditorScreen(
 private fun OptionalScale(label: String, tag: String, value: Int?, enabled: Boolean, onValue: (Int?) -> Unit) {
     Text(label, style = MaterialTheme.typography.titleMedium)
     Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         (1..5).forEach { score ->
             val description = stringResource(R.string.mood_scale_description, label, score)
             FilterChip(selected = value == score, enabled = enabled, onClick = { onValue(if (score == value) null else score) },
-                modifier = Modifier.testTag("mood_${tag}_$score").semantics { contentDescription = description },
+                modifier = Modifier.weight(1f).testTag("mood_${tag}_$score").semantics { contentDescription = description },
                 label = { Text(NumberFormat.getIntegerInstance().format(score)) })
         }
     }
