@@ -23,7 +23,6 @@ import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.JournalRepository
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlinx.coroutines.CancellationException
 
@@ -66,7 +65,7 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
             LinkedPeople(entry.people)
             LinkedPlace(entry.place)
             Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
-            Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)))
+            Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
             if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
             entry.memory?.let {
                 MemoryStatus(it)

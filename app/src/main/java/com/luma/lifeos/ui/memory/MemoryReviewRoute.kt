@@ -20,7 +20,6 @@ import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.repository.MemoryRepository
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @Composable
@@ -31,7 +30,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
     key(repository, week, retry) {
         val observation = remember { observeMemoryReview(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(MemoryReviewState.Loading)
-        val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
         Box(Modifier.fillMaxSize().testTag("screen_review")) {
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
@@ -56,7 +55,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                                 LinkedPeople(record.people)
                                 LinkedPlace(record.place)
                             PhotoCount(record.photos.size)
-                                Text(record.event.occurredAt.atZone(zone).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)))
+                                Text(record.event.occurredAt.atZone(zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.SHORT)))
                                 record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
                                 record.journal?.let { Text(it.body, maxLines = 3, overflow = TextOverflow.Ellipsis) }
                                 record.mood?.let {

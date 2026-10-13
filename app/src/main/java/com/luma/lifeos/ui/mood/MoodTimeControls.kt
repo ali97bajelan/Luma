@@ -28,7 +28,6 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,10 +41,10 @@ fun MoodTimeControls(milliseconds: Long, enabled: Boolean, timeError: Boolean,
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.mood_timestamp), style = MaterialTheme.typography.titleMedium)
         TextButton(enabled = enabled, onClick = { dateOpen = true }, modifier = Modifier.testTag("mood_date")) {
-            Text(current.toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
+            Text(current.toLocalDate().format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
         }
         TextButton(enabled = enabled, onClick = { timeOpen = true }, modifier = Modifier.testTag("mood_time")) {
-            Text(current.format(DateTimeFormatter.ofPattern("HH:mm")))
+            Text(current.format(com.luma.lifeos.language.localizedTime()))
         }
         Text(stringResource(R.string.mood_timezone, zone.id, current.offset.toString()), style = MaterialTheme.typography.bodySmall)
     }

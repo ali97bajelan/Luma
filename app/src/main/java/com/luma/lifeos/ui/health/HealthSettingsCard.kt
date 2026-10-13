@@ -20,7 +20,6 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.health.*
 import com.luma.lifeos.integration.health.*
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @Composable
@@ -46,7 +45,7 @@ fun HealthSettingsCard(integration: HealthIntegration) {
             Text(stringResource(state.current.status.label()), modifier = Modifier.testTag("health_status"))
             state.current.importZone?.let { Text(stringResource(R.string.health_zone, it.id)) }
             state.current.lastSync?.let { Text(stringResource(R.string.health_last_sync,
-                it.atZone(state.current.importZone ?: ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)))) }
+                it.atZone(state.current.importZone ?: ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
             if (state.current.enabled) {
                 when (state.current.status) {
                     HealthStatus.ACCESS_REQUIRED -> Button(onClick = {

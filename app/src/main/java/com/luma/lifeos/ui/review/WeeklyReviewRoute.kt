@@ -18,7 +18,6 @@ import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.*
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
 
@@ -32,7 +31,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
     val period = reviewPeriod(restoredReviewDate(selected, today), today, zone)
-    val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+    val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     key(period, retry) {
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
@@ -127,7 +126,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
     }
     Text(stringResource(R.string.review_mood_dates), style = MaterialTheme.typography.titleMedium)
-    val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+    val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     report.current.moodDays.forEach { day ->
         Text(day.date.format(format))
         Text(reviewScale(day.mood?.score))

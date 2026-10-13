@@ -15,6 +15,10 @@ import com.luma.lifeos.ui.theme.LifeOsTheme
 
 /** Native Health Connect privacy links open an explanation without opening the database. */
 class HealthRationaleActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.luma.lifeos.language.AppLanguages.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

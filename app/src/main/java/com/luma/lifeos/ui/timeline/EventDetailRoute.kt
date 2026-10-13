@@ -20,7 +20,6 @@ import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoGallery
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @Composable
@@ -45,7 +44,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                 Text(record.event.title ?: stringResource(record.event.type.label()), style = MaterialTheme.typography.headlineMedium)
                 Text(stringResource(record.event.source.label()))
                 if (!record.canEditContent) Text(stringResource(R.string.event_read_only))
-                val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+                val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)
                 Text(record.event.occurredAt.atZone(zone).format(formatter))
                 record.event.endedAt?.let { Text(stringResource(R.string.event_ended, it.atZone(zone).format(formatter))) }
                 Text(zone.id, style = MaterialTheme.typography.bodySmall)

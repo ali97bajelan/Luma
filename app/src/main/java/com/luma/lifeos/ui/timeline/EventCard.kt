@@ -19,7 +19,6 @@ import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoCount
 import java.text.NumberFormat
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @Composable
@@ -35,7 +34,7 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit, onMemor
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(stringResource(event.type.label()), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                Text(event.occurredAt.atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm")), style = MaterialTheme.typography.labelLarge)
+                Text(event.occurredAt.atZone(zone).format(com.luma.lifeos.language.localizedTime()), style = MaterialTheme.typography.labelLarge)
             }
             event.title?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis) }
             record.mood?.let { MoodContent(it) }
@@ -78,7 +77,7 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
         Text(stringResource(R.string.usage_duration, milliseconds / 3_600_000, (milliseconds / 60_000) % 60,
             format.format((milliseconds % 60_000) / 1000.0)))
         if (full) {
-            val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+            val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)
             Text(stringResource(R.string.event_interval, usage.bucketStart.atZone(zone).format(formatter), usage.bucketEnd.atZone(zone).format(formatter)))
         }
     }

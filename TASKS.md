@@ -639,6 +639,38 @@ Status: pending
 - No mandatory account or AI service exists.
 - Known limitations are documented.
 
+## T21 — App language selection
+
+Status: pending
+
+Requested (2026-10-12): let the user choose English, Persian or French as the app
+language. Implementation and runtime validation have not started.
+
+### Scope
+
+- Add a language selector in Settings with English, فارسی (Persian) and Français (French).
+- Save the selected app language and apply it across navigation, screens, dialogs,
+  validation messages and accessibility labels.
+- Provide English, Persian and French translations for app-owned text, including
+  plural forms, and locale-aware formatting for displayed dates and numbers.
+- Support right-to-left layout for Persian and left-to-right layout for English
+  and French, including navigation icons and mixed-language content.
+- Preserve saved records, user-written content, selected dates and unsaved drafts
+  when switching languages; user-written content is not automatically translated.
+- Before an explicit choice, use a supported device language, falling back to English.
+
+### Acceptance criteria
+
+- User can select each of the three languages in Settings and see app-owned text
+  update throughout the app.
+- The selection survives navigation, activity recreation and app restart,
+  independently of the device language.
+- Persian text and right-to-left navigation render correctly; switching to English
+  or French restores left-to-right layout without clipped controls.
+- Plurals, date/number formatting and accessibility labels match the selected language.
+- Language changes preserve stored data, selected dates and in-progress capture drafts.
+- Unsupported device languages use English before the user makes an explicit choice.
+
 ## Future backlog — do not implement during MVP
 
 - Voice notes and transcription

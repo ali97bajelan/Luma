@@ -16,7 +16,6 @@ import com.luma.lifeos.ui.mood.MoodTimeControls
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -66,7 +65,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 Text(original.journal?.body ?: original.mood?.note ?: original.event.note.orEmpty(), modifier = Modifier.testTag("memory_original"))
                 original.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
                 Text(Instant.ofEpochMilli(state.draft.occurredAtMillis).atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)))
+                    .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
                 Text(stringResource(R.string.memory_source_kept), style = MaterialTheme.typography.bodySmall)
             }
             if (state.direct) OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled,

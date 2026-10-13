@@ -11,7 +11,6 @@ import com.luma.lifeos.R
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -19,7 +18,7 @@ import java.time.format.FormatStyle
 fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () -> Unit) {
     var picking by rememberSaveable { mutableStateOf(false) }
     TextButton(onClick = { picking = true }, modifier = Modifier.testTag("day_picker")) {
-        Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)), modifier = Modifier.testTag("day_selected"))
+        Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)), modifier = Modifier.testTag("day_selected"))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         TextButton(enabled = date != LocalDate.MIN, onClick = { onSelect(date.minusDays(1)) }, modifier = Modifier.testTag("day_previous")) { Text(stringResource(R.string.previous_day)) }

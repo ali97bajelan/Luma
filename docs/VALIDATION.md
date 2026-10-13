@@ -1355,3 +1355,16 @@ Logs: `/tmp/luma-t16-baseline.log`, `/tmp/luma-t16-domain-red.log`,
 `/tmp/luma-t16-checks.log`, `/tmp/luma-t16-checks-green.log`,
 `/tmp/luma-t16-zero-red.log`, `/tmp/luma-t16-zero-green.log`,
 `/tmp/luma-t16-app-health-lint.log`, `/tmp/luma-t16-final-checks.log`.
+
+## T21 — App language selection task added, 2026-10-12
+
+Status: pending. Added T21 to [TASKS.md](../TASKS.md) for a saved Settings choice
+between English, Persian and French, translated app-owned text, locale-aware
+formatting and Persian right-to-left layout. The task includes preserving stored
+content, selected dates and unsaved drafts during language changes.
+
+Planned validation: exercise all three languages across primary screens, capture
+forms, dialogs and accessibility labels; verify language persistence through
+navigation, recreation and restart; check Persian layout and mixed-language text;
+verify plurals, date/number formatting, English fallback and content/draft preservation.
+No language-selection implementation or runtime checks have been performed.

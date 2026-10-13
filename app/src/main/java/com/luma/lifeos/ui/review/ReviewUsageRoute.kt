@@ -15,7 +15,6 @@ import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.ui.usage.UsageDayState
 import com.luma.lifeos.ui.usage.observeUsageDay
 import java.time.*
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /** Read-only saved evidence. Opening this route does not request access or import native data. */
@@ -25,13 +24,13 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
     key(date, zone, retry) {
         val observation = remember(integration) { observeUsageDay(integration, date, zone) }
         val state by observation.collectAsStateWithLifecycle(UsageDayState.Loading)
-        val format = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+        val format = com.luma.lifeos.language.localizedDateTime(FormatStyle.SHORT)
         LazyColumn(Modifier.fillMaxSize().testTag("screen_review_usage"), contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
                 Text(stringResource(R.string.review_saved_usage), style = MaterialTheme.typography.headlineMedium)
-                Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
+                Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
                 Text(zone.id)
                 Text(stringResource(R.string.review_usage_explanation))
             }

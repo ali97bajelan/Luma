@@ -11,7 +11,6 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.domain.usage.*
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.abs
 
@@ -42,7 +41,7 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit) {
         ReviewValue(app.appLabel ?: app.packageName, reviewDuration(currentMillis), reviewDuration(previousMillis), null, "app_${app.packageName}")
         if (app.appLabel != null) Text(app.packageName, style = MaterialTheme.typography.bodySmall)
     }
-    val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+    val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     (a?.days.orEmpty() + b?.days.orEmpty()).sortedBy { it.date }.forEach { day ->
         TextButton(onClick = { onUsage(day.date) }, modifier = Modifier.testTag("review_usage_date_${day.date}")) {
             Text(stringResource(R.string.review_usage_date, day.date.format(format),

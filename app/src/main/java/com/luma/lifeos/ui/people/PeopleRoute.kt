@@ -20,7 +20,6 @@ import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PersonRepository
 import com.luma.lifeos.ui.memory.MemoryStatus
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
 
@@ -96,7 +95,7 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                     Card(Modifier.fillMaxWidth().testTag("person_event_${record.event.id}")) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
-                                .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)))
+                                .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
                             Text(stringResource(when (record.event.type) {
                                 EventType.MOOD -> R.string.event_mood
                                 EventType.JOURNAL -> R.string.event_journal

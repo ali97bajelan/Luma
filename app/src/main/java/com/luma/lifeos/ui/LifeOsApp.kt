@@ -328,6 +328,7 @@ private fun FoundationScreen(destination: Destination, onPlaces: () -> Unit) {
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
         Text(stringResource(destination.heading), style = MaterialTheme.typography.headlineLarge)
         Text(stringResource(destination.body), style = MaterialTheme.typography.bodyLarge)
+        if (destination == Destination.SETTINGS) com.luma.lifeos.language.LanguageSettingsCard()
         if (destination == Destination.SETTINGS) TextButton(onClick = onPlaces, modifier = Modifier.testTag("settings_places")) {
             Text(stringResource(R.string.places))
         }

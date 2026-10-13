@@ -17,7 +17,6 @@ import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @Composable
@@ -25,7 +24,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
     onBack: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: ((LifeEventRecord) -> Unit)? = null) {
     var offset by rememberSaveable(dates, metric) { mutableIntStateOf(0) }
     var retry by remember { mutableIntStateOf(0) }
-    val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+    val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("screen_review_sources")) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         Text(stringResource(R.string.review_source_heading), style = MaterialTheme.typography.headlineMedium)

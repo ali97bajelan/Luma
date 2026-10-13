@@ -26,6 +26,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    // All three languages must be available for offline switching after installation.
+    bundle { language { enableSplit = false } }
     buildFeatures { compose = true }
     testOptions { animationsDisabled = true }
 }

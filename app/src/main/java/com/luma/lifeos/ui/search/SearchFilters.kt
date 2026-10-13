@@ -14,7 +14,6 @@ import com.luma.lifeos.domain.search.SearchOption
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
 
@@ -67,7 +66,7 @@ private fun SearchDate(label: String, date: LocalDate?, tag: String, onPick: () 
     Column {
         Text(label, style = MaterialTheme.typography.labelLarge)
         TextButton(onClick = onPick, modifier = Modifier.testTag(tag)) {
-            Text(date?.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)) ?: stringResource(R.string.search_any_date))
+            Text(date?.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)) ?: stringResource(R.string.search_any_date))
         }
         if (date != null) TextButton(onClick = onClear, modifier = Modifier.testTag("${tag}_clear")) {
             Text(stringResource(R.string.search_clear_date, label))

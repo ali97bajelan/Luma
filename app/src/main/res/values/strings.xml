@@ -330,4 +330,10 @@
     <string name="review_all_memories">Browse all memories</string>
     <string name="review_catalog_detail">Open details</string>
     <string name="review_duration_change">%1$s%2$s</string>
+    <string name="language_title">App language</string>
+    <string name="language_description">Choose the language for Luma.</string>
+    <string name="language_english">English</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_french">Français</string>
+    <string name="language_save_error">Could not save the language. Try again.</string>
 </resources>

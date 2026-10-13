@@ -24,7 +24,6 @@ import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.SearchRepository
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlinx.coroutines.awaitCancellation
 
@@ -77,7 +76,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 }
                 items(state.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { record ->
                     Column {
-                        Text(record.event.occurredAt.atZone(zone).toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)), style = MaterialTheme.typography.labelLarge)
+                        Text(record.event.occurredAt.atZone(zone).toLocalDate().format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)), style = MaterialTheme.typography.labelLarge)
                         EventCard(record, zone, onOpen = { vm.rememberResult(record.event.id); onEvent(record) })
                     }
                 }

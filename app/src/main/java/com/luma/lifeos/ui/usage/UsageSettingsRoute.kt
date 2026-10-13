@@ -22,7 +22,6 @@ import com.luma.lifeos.ui.timeline.DayNavigation
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @Composable
@@ -45,6 +44,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                 Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineLarge)
                 TextButton(onClick = onPlaces, modifier = Modifier.testTag("settings_places")) { Text(stringResource(R.string.places)) }
             }
+            item { com.luma.lifeos.language.LanguageSettingsCard() }
             item {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -58,7 +58,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                         if (state.loading || state.busy) CircularProgressIndicator(Modifier.testTag("usage_busy"))
                         Text(stringResource(state.current.status.label()), modifier = Modifier.testTag("usage_status"))
                         state.current.lastSync?.let { Text(stringResource(R.string.usage_last_sync,
-                            it.atZone(zone).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)))) }
+                            it.atZone(zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
                         if (state.current.enabled) {
                             TextButton(onClick = { settingsMissing = !openUsageAccessSettings(context) }, modifier = Modifier.testTag("usage_access")) {
                                 Text(stringResource(R.string.usage_manage_access))
@@ -117,7 +117,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(session.appLabel ?: session.packageName, style = MaterialTheme.typography.titleMedium)
                                 if (session.appLabel != null) Text(session.packageName, style = MaterialTheme.typography.bodySmall)
-                                val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                                val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.SHORT)
                                 Text(stringResource(R.string.usage_session_times, session.start.atZone(zone).format(formatter),
                                     session.end.atZone(zone).format(formatter)))
                                 if (session.openedAt < session.start) Text(stringResource(R.string.usage_session_continued,
