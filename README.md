@@ -110,14 +110,17 @@ Sleep, workouts and background health reads are deferred.
 Today shares the event previews and date controls, excluding screen-time event
 rows. Event counts on Today, Timeline and saved summaries exclude screen time;
 usage views and aggregate usage metrics remain available. Its saved daily summary shows
-entry/journal/memory counts, mood/energy/stress averages with sample counts,
+compact entry/journal/memory counts, mood/energy/stress averages,
 foreground usage totals and per-app durations, and activity totals by type, unit
 and source. Missing measurements display as unavailable; recorded zero stays zero.
 Memory promotion keeps one underlying entry. Summaries use the selected day's
-timezone, with usage assigned by native interval starts, and cache only derived
+timezone. Usage shares Settings and Review's saved-session totals, clipped to the
+local day, with native daily aggregates as a fallback. Summaries cache only derived
 values that can be rebuilt from saved records. They describe saved observations,
 not complete provider coverage. Summary errors expose retry while entries remain
-available. Quick Capture
+available. “About this summary” reveals sample counts, full app package names,
+activity details and data explanations. Usage and Health Connect settings place
+controls above expandable import explanations. Quick Capture
 creates mood, journal and memory records offline; journals include a full detail
 view. Existing moods/journals can be remembered without copying their content.
 People can be linked during capture/edit; person detail shows shared history,

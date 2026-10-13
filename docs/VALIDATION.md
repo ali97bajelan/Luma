@@ -1753,3 +1753,42 @@ Settings and Review usage views keep their existing formats.
 
 The emulator tests used `com.luma.lifeos.validationrun`; the installed
 `com.luma.lifeos` app and its data were left untouched.
+
+## Three high-priority UX audit fixes — 2026-10-13
+
+Today now shares Settings and Review's saved-session usage selection, including
+local-day clipping and native aggregate fallback. Summary cache version 4 keeps
+coverage metadata and rebuilds older summaries. The collapsed summary contains
+compact counts, available mood scales and three ranked app names/durations;
+sample counts, full package names, activities and explanations are expandable.
+The entry feed uses a heading instead of a second count card. Usage and Health
+Connect controls precede expandable explanations in all three app languages.
+
+- PASS: 278 JVM tests (95 domain, 141 app, 23 data, 13 usage, 6 health), with no
+  failures, errors or skips.
+- PASS: all 112 Room instrumentation tests. New regression coverage checks
+  session totals replacing stale aggregate zero, session-only observation
+  refreshes, cache reloads, unavailable versus measured zero, and midnight
+  clipping. The four new cases failed against the original implementation.
+- PASS: all five Today screen tests at system font scale 1.3. A populated fixture
+  includes three apps, all three mood scales and two activities; the entry title
+  and note are visible before scrolling. Expanded details retain activities and
+  the full identifier of an unlabeled app. The initial viewport regression failed
+  against the original summary layout with the real navigation-bar inset.
+- PASS: debug and release builds and app/data debug lint, with no lint errors.
+- PASS: full app instrumentation rerun on API 36: 53 passed, one native usage
+  test skipped because the isolated package lacks Android Usage access. The
+  runner reports `OK (54 tests)`. The first full run timed out while locating a
+  remembered journal in Weekly Review; all three Weekly Review tests and the
+  complete suite then passed unchanged. Both run logs are retained.
+- PASS: live emulator inspection in English, Persian RTL and French, plus Today
+  in dark mode. Today shows `1 h 58 min`, matching Settings' saved total of
+  `1 h 58 min 3.499 s` at its whole-minute precision. The first stored mood entry
+  is visible without scrolling, and both import disclosures expand below their
+  controls. Captures are under `/tmp/luma-ux-audit/after-*`.
+- PASS: the normal app was updated with `adb install -r -t` without clearing its
+  data. English, light mode and font scale 1.0 were restored; the app is on Today.
+
+Validation logs and isolated APK copies are in `/tmp/luma-high-priority`.
+Instrumentation runs use `com.luma.lifeos.validationrun` and
+`com.luma.lifeos.data.test`; tests do not clear the normal app's saved data.

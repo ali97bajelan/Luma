@@ -373,7 +373,7 @@
     <string name="privacy_app_settings">Ouvrir les paramètres Android de Luma</string>
     <string name="privacy_settings_missing">Les paramètres Android de l’application sont indisponibles sur cet appareil.</string>
     <string name="integration_permission_retention">Cet accès est facultatif. Annuler laisse la saisie et la consultation disponibles. Désactiver les importations conserve les données et ne révoque pas l’autorisation Android. Gérez l’accès dans les paramètres Android ; supprimez les copies locales dans Confidentialité et données locales.</string>
-    <string name="usage_privacy_retention">Désactiver les importations empêche de nouvelles demandes et annule les actualisations planifiées. L’historique est conservé et l’accès aux données d’utilisation Android n’est pas révoqué. Une requête en cours peut se terminer ; ses résultats sont ignorés tant que les importations restent désactivées. Gérez l’accès ci-dessous pour le révoquer.</string>
+    <string name="usage_privacy_retention">Désactiver les importations empêche de nouvelles demandes et annule les actualisations planifiées. L’historique est conservé et l’accès aux données d’utilisation Android n’est pas révoqué. Une requête en cours peut se terminer ; ses résultats sont ignorés tant que les importations restent désactivées. Gérez l’accès pour le révoquer.</string>
     <string name="permission_continue">Continuer</string>
     <string name="usage_refresh">Actualiser l’état de l’accès</string>
     <string name="emotion_happy">Heureux</string>
@@ -390,4 +390,12 @@
     <string name="emotion_overwhelmed">Débordé</string>
     <string name="activity_steps">Pas</string>
     <string name="activity_count">nombre</string>
+    <string name="summary_count_entries">Entrées</string>
+    <string name="summary_count_journals">Journaux</string>
+    <string name="summary_count_memories">Souvenirs</string>
+    <string name="summary_scale_value">%1$s : %2$s/5</string>
+    <string name="summary_usage_partial">Historique d’utilisation partiel</string>
+    <string name="summary_details">À propos de ce résumé</string>
+    <string name="imports_details">À propos de ces importations</string>
+    <string name="hide_details">Masquer les détails</string>
 </resources>

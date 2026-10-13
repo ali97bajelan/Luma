@@ -19,6 +19,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.integration.usage.openUsageAccessSettings
 import com.luma.lifeos.ui.timeline.DayNavigation
+import com.luma.lifeos.ui.common.DetailsDisclosure
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -53,8 +54,6 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(stringResource(R.string.usage_title), style = MaterialTheme.typography.titleLarge)
-                        Text(stringResource(R.string.usage_access_explanation))
-                        Text(stringResource(R.string.usage_privacy_retention))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(R.string.usage_enable), modifier = Modifier.weight(1f))
                             Switch(checked = state.current.enabled, enabled = !state.loading && (!state.busy || state.current.enabled),
@@ -76,6 +75,10 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                         if (settingsMissing) Text(stringResource(R.string.usage_settings_missing))
                         if (state.actionError) Text(stringResource(R.string.usage_action_error), modifier = Modifier.testTag("usage_action_error"))
                         TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
+                        DetailsDisclosure(R.string.imports_details, "usage_details") {
+                            Text(stringResource(R.string.usage_access_explanation))
+                            Text(stringResource(R.string.usage_privacy_retention))
+                        }
                     }
                 }
             }

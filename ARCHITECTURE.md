@@ -500,7 +500,8 @@ Visits are clipped to local civil-day boundaries, including DST; same-package
 overlaps are unioned before calculating both views. Separate visits remain
 chronological and totals sort by duration. Unused apps are excluded from Settings
 and summary app lists; measured aggregate zero is retained without a zero-use row.
-Summary algorithm version 3 rebuilds older caches. When no visits exist but native
+Summary algorithm version 4 rebuilds older caches and uses the same saved-usage
+selection as Settings and Review. When no visits exist but native
 totals remain, Settings retains those legacy totals with an unavailable-history
 explanation. Partial/empty/unavailable histories have distinct messages.
 
@@ -513,8 +514,8 @@ rows. Timeline app usage is hidden by default behind a persisted user switch;
 when enabled, only records longer than one minute qualify. The predicate runs
 before LIMIT/OFFSET and is reused for the paging count, while the raw day count
 stays unchanged. Both counts and page rows are read in one transaction. Summary
-version 3 replaces older cached counts without changing stored usage data or
-foreground-time metrics.
+version 3 excluded usage from cached entry counts; version 4 aligns saved usage
+totals and coverage across views while preserving raw records.
 
 Native bucket starts can change when Android corrects wall time, including shifts
 that do not overlap old short intervals. The importer persists the initial wall,
@@ -600,19 +601,26 @@ ordering. Conflicting snapshots, duplicate activity identities and ambiguous nat
 usage intervals fail instead of fabricating metrics.
 
 Occurrence bounds follow half-open civil days in the requested timezone, including
-DST and skipped dates. Usage follows native interval starts without proration.
-Room queries both indexed occurrence and usage-start ranges, deduplicates identical
-projections and loads only metric relations. The version 1 `daily_summary` table
-stores derived counts/sums/totals/labels keyed by date and timezone; journal bodies,
-memory notes and media are excluded. Fresh compatible cache reads are reused;
+DST and skipped dates. The pure aggregate calculator dates usage by native starts;
+Room replaces that metric with the shared saved-usage report, preferring sessions
+clipped to the local day and using native aggregates as a fallback. Empty partial
+session history is unavailable; complete empty history and explicit aggregate zero
+retain their measured zero. Room queries indexed occurrence and usage ranges and
+loads only metric relations. The version 1 `daily_summary` table
+stores derived counts/sums/totals/labels and usage coverage keyed by date and timezone;
+individual visits, journal bodies, memory notes and media are excluded. Fresh compatible cache reads are reused;
 stale, incompatible, old-version or malformed values rebuild from source records.
 Forced recalculation produces the same metrics and failures preserve the prior cache.
 
-Observation watches raw metric tables and recomputes on collection restart and
+Observation watches raw metric tables, including usage sessions and query windows,
+and recomputes on collection restart and
 source changes. Cache writes cannot trigger their own observation loop. Production
 writes invalidate cached rows within their transactions, including health/usage
 imports. Today renders a separate loading/data/error card with retry, per-app usage
-attribution, sample counts and localized values; browsing remains available after
+attribution and localized values. Its collapsed view keeps compact counts, available
+mood scales and the three ranked app names/durations; the disclosure contains sample
+counts, full package identifiers, activity groups and explanations. Entry counts
+above the feed use a plain heading rather than a second summary card. Browsing remains available after
 summary errors. These metrics describe saved observations, not provider completeness.
 No database migration, dependency or permission is added by T14.
 

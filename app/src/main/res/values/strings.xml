@@ -368,7 +368,7 @@
     <string name="privacy_app_settings">Open Luma’s Android settings</string>
     <string name="privacy_settings_missing">Android app settings are unavailable on this device.</string>
     <string name="integration_permission_retention">This access is optional. Cancelling keeps capture and browsing available. Turning imports off keeps saved data and does not revoke Android permission. Manage access in Android settings; delete local copies from Privacy and local data.</string>
-    <string name="usage_privacy_retention">Turning imports off prevents new import requests and cancels scheduled refreshes. It keeps saved history and does not revoke Android Usage access. A usage query already in progress may finish; its results are discarded while imports stay off. Manage access below to revoke it.</string>
+    <string name="usage_privacy_retention">Turning imports off prevents new import requests and cancels scheduled refreshes. It keeps saved history and does not revoke Android Usage access. A usage query already in progress may finish; its results are discarded while imports stay off. Use Manage access to revoke it.</string>
     <string name="permission_continue">Continue</string>
     <string name="usage_refresh">Refresh access status</string>
     <string name="emotion_happy">Happy</string>
@@ -385,4 +385,12 @@
     <string name="emotion_overwhelmed">Overwhelmed</string>
     <string name="activity_steps">Steps</string>
     <string name="activity_count">count</string>
+    <string name="summary_count_entries">Entries</string>
+    <string name="summary_count_journals">Journals</string>
+    <string name="summary_count_memories">Memories</string>
+    <string name="summary_scale_value">%1$s: %2$s/5</string>
+    <string name="summary_usage_partial">Partial usage history</string>
+    <string name="summary_details">About this summary</string>
+    <string name="imports_details">About these imports</string>
+    <string name="hide_details">Hide details</string>
 </resources>

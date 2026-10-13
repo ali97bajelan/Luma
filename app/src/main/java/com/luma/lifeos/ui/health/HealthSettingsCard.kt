@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.health.*
 import com.luma.lifeos.integration.health.*
+import com.luma.lifeos.ui.common.DetailsDisclosure
 import java.time.ZoneId
 import java.time.format.FormatStyle
 
@@ -35,8 +36,6 @@ fun HealthSettingsCard(integration: HealthIntegration) {
     Card(Modifier.fillMaxWidth().testTag("health_card")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.health_title), style = MaterialTheme.typography.titleLarge)
-            Text(stringResource(R.string.health_explanation))
-            Text(stringResource(R.string.health_privacy_retention), modifier = Modifier.testTag("health_retention"))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(stringResource(R.string.health_enable), modifier = Modifier.weight(1f))
                 Switch(checked = state.current.enabled, enabled = !state.loading && (!state.busy || state.current.enabled),
@@ -65,6 +64,10 @@ fun HealthSettingsCard(integration: HealthIntegration) {
             TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("health_refresh")) { Text(stringResource(R.string.health_refresh)) }
             if (settingsMissing) Text(stringResource(R.string.health_settings_missing))
             if (state.actionError) Text(stringResource(R.string.health_action_error), modifier = Modifier.testTag("health_action_error"))
+            DetailsDisclosure(R.string.imports_details, "health_details") {
+                Text(stringResource(R.string.health_explanation))
+                Text(stringResource(R.string.health_privacy_retention), modifier = Modifier.testTag("health_retention"))
+            }
         }
     }
     if (showPermissionExplanation) com.luma.lifeos.ui.privacy.PermissionExplanationDialog(

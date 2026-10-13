@@ -7,6 +7,8 @@ import com.luma.lifeos.data.entity.*
 import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.summary.*
+import com.luma.lifeos.domain.time.TimeRange
+import com.luma.lifeos.domain.usage.*
 import java.time.*
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -28,6 +30,66 @@ class DailySummaryPersistenceTest {
         summaries = RoomDailySummaryRepository(db, clock)
     }
     @After fun tearDown() { db.close() }
+    @Test fun savedSessionsReplaceAggregateUsageAndSurviveCacheReload() = runBlocking {
+        val start = date.atStartOfDay(zone).toInstant()
+        val usage = RoomUsageRepository(db).also { it.setEnabled(true) }
+        usage.commit(listOf(UsageBucket("org.example.reader", start, now, 0, "Reader")), now, now)
+        assertEquals(0L, summaries.get(date, zone).usage!!.totalMillis)
+        usage.commitImport(emptyList(), UsageSessionBatch(TimeRange(start, now), listOf(
+            UsageSession("org.example.reader", now.minusSeconds(180), now, "Reader"),
+        )), now, now)
+
+        val result = summaries.get(date, zone)
+        assertEquals(180_000L, result.usage!!.totalMillis)
+        assertEquals("Reader", result.usage!!.apps.single().appLabel)
+        assertEquals(UsageHistory.PARTIAL, result.usage!!.history)
+        assertTrue(result.usage!!.sessions.isEmpty()) // The summary caches derived totals, not visits.
+        assertEquals(result, RoomDailySummaryRepository(db, clock).get(date, zone))
+        assertEquals(result, summaries.recalculate(date, zone))
+    }
+    @Test fun summaryObservationRefreshesAfterASessionOnlyImport() = runBlocking {
+        val start = date.atStartOfDay(zone).toInstant()
+        val usage = RoomUsageRepository(db).also { it.setEnabled(true) }
+        usage.commit(listOf(UsageBucket("org.example.reader", start, now, 0)), now, now)
+        withTimeout(10_000) {
+            val initial = CompletableDeferred<Unit>()
+            val changed = async {
+                summaries.observe(date, zone).onEach { if (it.usage?.totalMillis == 0L) initial.complete(Unit) }
+                    .first { it.usage?.totalMillis == 180_000L }
+            }
+            initial.await()
+            usage.commitImport(emptyList(), UsageSessionBatch(TimeRange(start, now), listOf(
+                UsageSession("org.example.reader", now.minusSeconds(180), now, "Reader"),
+            )), now, now)
+            assertEquals(180_000L, changed.await().usage!!.totalMillis)
+        }
+    }
+    @Test fun partialEmptySessionHistoryIsUnavailableButCompleteEmptyHistoryIsZero() = runBlocking {
+        val start = date.atStartOfDay(zone).toInstant()
+        val end = date.plusDays(1).atStartOfDay(zone).toInstant()
+        val usage = RoomUsageRepository(db).also { it.setEnabled(true) }
+        usage.commitImport(emptyList(), UsageSessionBatch(TimeRange(start, now), emptyList()), now, now)
+        assertNull(summaries.get(date, zone).usage)
+        usage.commitImport(emptyList(), UsageSessionBatch(TimeRange(start, end), emptyList(), UsageHistory.COMPLETE), end, end)
+        val result = summaries.get(date, zone)
+        assertNotNull("A complete empty history is a measured zero", result.usage)
+        assertEquals(0L, result.usage!!.totalMillis)
+        assertEquals(UsageHistory.COMPLETE, result.usage!!.history)
+        assertEquals(result, RoomDailySummaryRepository(db, clock).get(date, zone))
+    }
+    @Test fun sessionsCrossingMidnightCountOnlyTheSelectedDaysTime() = runBlocking {
+        val start = date.atStartOfDay(zone).toInstant()
+        val usage = RoomUsageRepository(db).also { it.setEnabled(true) }
+        usage.commitImport(emptyList(), UsageSessionBatch(TimeRange(start.minusSeconds(60), now), listOf(
+            UsageSession("org.example.reader", start.minusSeconds(60), start.plusSeconds(120), "Reader"),
+        )), now, now)
+        val today = summaries.get(date, zone).usage
+        val yesterday = summaries.get(date.minusDays(1), zone).usage
+        assertNotNull("Saved visits must contribute to today's summary", today)
+        assertNotNull("Saved visits must contribute to yesterday's summary", yesterday)
+        assertEquals(120_000L, today!!.totalMillis)
+        assertEquals(60_000L, yesterday!!.totalMillis)
+    }
     @Test fun mixedMetricsAreCachedWithoutPrivateContentAndRebuildIdentically() = runBlocking {
         val mood = EventId.new(); RoomMoodRepository(db, clock).create(mood, MoodInput(4, now, energy = 2))
         val journal = EventId.new(); RoomJournalRepository(db, clock).create(journal, JournalInput("private-body-do-not-cache", now))
@@ -72,7 +134,7 @@ class DailySummaryPersistenceTest {
     @Test fun nativeUsageStartIsIncludedEvenWithAnOutsideParentOccurrence() = runBlocking {
         val start = date.atStartOfDay(zone).toInstant()
         val event = LifeEvent(EventId.new(), EventType.APP_USAGE, start.minusSeconds(86_400), now,
-            source = EventSource.USAGE_STATS, sourceReference = "legacy-usage")
+            source = EventSource.USAGE_STATS, sourceReference = "usage:daily:org.example:${start.toEpochMilli()}")
         RoomLifeEventRepository(db).upsert(event)
         db.content().insertAppUsage(AppUsageRecordEntity(UUID.randomUUID().toString(), event.id.toString(), start.toEpochMilli(), now.toEpochMilli(), "org.example", 5_125))
         val result = summaries.get(date, zone)
@@ -98,7 +160,7 @@ class DailySummaryPersistenceTest {
         source.commit(listOf(com.luma.lifeos.domain.usage.UsageBucket("org.example", start, now, 5_125)), now, now)
         summaries.get(date, zone); val previous = db.derived().summary(date.toString(), zone.id)!!
         val event = LifeEvent(EventId.new(), EventType.APP_USAGE, start, now, endedAt = now.plusSeconds(1),
-            source = EventSource.USAGE_STATS, sourceReference = "conflicting-legacy-usage")
+            source = EventSource.USAGE_STATS, sourceReference = "usage:daily:org.example:conflicting-legacy-usage")
         RoomLifeEventRepository(db).upsert(event)
         db.content().insertAppUsage(AppUsageRecordEntity(UUID.randomUUID().toString(), event.id.toString(), start.toEpochMilli(), now.plusSeconds(1).toEpochMilli(), "org.example", 6_000))
         assertTrue(runCatching { summaries.recalculate(date, zone) }.isFailure)

@@ -10,6 +10,7 @@ import com.luma.lifeos.data.mapping.usageLabel
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.DailySummaryRepository
 import com.luma.lifeos.domain.summary.*
+import com.luma.lifeos.domain.usage.UsageHistory
 import java.time.*
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ import kotlinx.coroutines.withContext
 class RoomDailySummaryRepository(private val database: LumaDatabase, private val clock: Clock = Clock.systemUTC()) : DailySummaryRepository {
     override fun observe(date: LocalDate, zone: ZoneId) = database.invalidationTracker.createFlow(
         "life_event", "mood_entry", "journal_entry", "memory", "activity_record", "app_usage_record",
+        "usage_session", "usage_session_window",
     ).map { recalculate(date, zone) }.distinctUntilChanged()
 
     override suspend fun get(date: LocalDate, zone: ZoneId) = load(date, zone, force = false)
@@ -34,8 +36,13 @@ class RoomDailySummaryRepository(private val database: LumaDatabase, private val
             // Equal bounds on a skipped civil day produce an empty indexed query, not an invalid TimeRange.
             val start = date.atStartOfDay(zone).toInstant().toEpochMilli()
             val end = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            val rows = database.lifeEvents().summarySources(start, end) + database.lifeEvents().summaryUsageSources(start, end)
-            val result = calculateDailySummary(date, zone, rows.map { it.snapshot() })
+            val rows = database.lifeEvents().summarySources(start, end)
+            // Match Settings and Review: prefer retained visits, then fall back to native totals.
+            // Cache only derived app totals/coverage; an empty partial query is not a measured zero.
+            val usage = RoomUsageRepository(database).loadDaily(date, zone)
+                ?.takeUnless { it.history == UsageHistory.PARTIAL && it.apps.isEmpty() }
+                ?.copy(sessions = emptyList())
+            val result = calculateDailySummary(date, zone, rows.map { it.snapshot() }).copy(usage = usage)
             derived.upsertSummary(DailySummaryEntity(date.toString(), zone.id, SummaryCacheCodec.encode(result), DAILY_SUMMARY_VERSION, clock.millis()))
             result
         }

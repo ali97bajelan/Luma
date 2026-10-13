@@ -492,8 +492,9 @@ memory counts, mood/energy/stress averages and sample counts, foreground usage
 totals and labeled per-app durations, and activity totals grouped by type/unit/
 source. Promotions retain one underlying entry. Civil-day occurrence bounds and
 native usage-start dates remain distinct. Missing signals are unavailable while
-recorded zero is retained. Versioned derived-only Room caches rebuild after source
-changes, collection restart, corruption or incompatible versions; reads and cache
+recorded zero is retained. Today omits mood, energy, or stress mean rows when
+their values are unavailable. Versioned derived-only Room caches rebuild after
+source changes, collection restart, corruption or incompatible versions; reads and cache
 writes are transactional. Summary errors retain source browsing and expose retry.
 
 Validation (2026-10-12): all eight summary Room cases and three Compose

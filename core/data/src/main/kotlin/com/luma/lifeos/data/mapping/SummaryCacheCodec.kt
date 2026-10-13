@@ -4,6 +4,7 @@ import com.luma.lifeos.domain.model.EventSource
 import com.luma.lifeos.domain.summary.*
 import com.luma.lifeos.domain.usage.AppUsageTotal
 import com.luma.lifeos.domain.usage.DailyUsageReport
+import com.luma.lifeos.domain.usage.UsageHistory
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.ZoneId
@@ -18,6 +19,7 @@ internal object SummaryCacheCodec {
         put("mood", summary.mood?.let { JSONObject().put("score", it.score.json())
             .put("energy", it.energy?.json() ?: JSONObject.NULL).put("stress", it.stress?.json() ?: JSONObject.NULL) } ?: JSONObject.NULL)
         put("usage", summary.usage?.let { usage -> JSONObject().put("total", usage.totalMillis)
+            .put("history", usage.history.name)
             .put("apps", JSONArray().apply { usage.apps.forEach { put(JSONObject().put("package", it.packageName)
                 .put("label", it.appLabel ?: JSONObject.NULL).put("duration", it.durationMillis)) } }) } ?: JSONObject.NULL)
         put("activities", summary.activities?.let { JSONArray().apply { it.forEach { total -> put(JSONObject()
@@ -34,7 +36,7 @@ internal object SummaryCacheCodec {
             val apps = it.getJSONArray("apps").objects().map { app -> AppUsageTotal(app.string("package"),
                 app.nullable("label") { label -> label as String }, app.long("duration")) }
                 .sortedWith(compareByDescending<AppUsageTotal> { app -> app.durationMillis }.thenBy { app -> app.packageName })
-            DailyUsageReport(date, zone, apps, it.long("total"))
+            DailyUsageReport(date, zone, apps, it.long("total"), history = UsageHistory.valueOf(it.string("history")))
         } }
         val activities = root.nullable("activities") { value -> (value as JSONArray).objects().map {
             val decimal = it.string("total")

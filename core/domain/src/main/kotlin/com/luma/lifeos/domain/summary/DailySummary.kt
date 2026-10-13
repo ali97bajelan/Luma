@@ -7,7 +7,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-const val DAILY_SUMMARY_VERSION = 3
+const val DAILY_SUMMARY_VERSION = 4
 
 /** Only metric inputs: no private body text, attachments or unrelated catalog relations. */
 data class SummaryRecord(val id: EventId, val occurredAt: Instant, val mood: MoodSample? = null,

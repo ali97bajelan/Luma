@@ -51,17 +51,21 @@ class DailySummaryFlowTest {
                 onJournalClick = { opened = it }, summaries = repository) }
         }
     }
-    @Test fun realMetricsRefreshAndEmptyDatesShowUnavailableSignals() {
-        show(); awaitText("summary_records", "Saved entries: 2")
-        awaitText("summary_memories", "Memories, including remembered entries: 1")
+    @Test fun realMetricsRefreshAndOmitUnavailableMoodMeans() {
+        show(); awaitText("summary_records", "2")
+        awaitText("summary_memories", "1")
         awaitText("summary_mood", "4/5", substring = true)
+        awaitText("summary_energy", "2/5", substring = true)
+        compose.onNodeWithTag("summary_stress").assertDoesNotExist()
         awaitText("summary_usage", "unavailable", substring = true)
         runBlocking { RoomMoodRepository(db, clock).update(mood, MoodInput(5, now, energy = 2)) }
         awaitText("summary_mood", "5/5", substring = true)
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("day_previous"))
         compose.onNodeWithTag("day_previous").performClick()
-        awaitText("summary_records", "Saved entries: 0")
-        awaitText("summary_mood", "unavailable", substring = true)
+        awaitText("summary_records", "0")
+        compose.onNodeWithTag("summary_mood").assertDoesNotExist()
+        compose.onNodeWithTag("summary_energy").assertDoesNotExist()
+        compose.onNodeWithTag("summary_stress").assertDoesNotExist()
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("today_empty"))
         compose.onNodeWithTag("today_empty").assertIsDisplayed()
     }
@@ -79,7 +83,7 @@ class DailySummaryFlowTest {
         compose.runOnIdle { assertEquals(journal, opened) }
         failed = false; scrollToTag("daily_summary_retry")
         compose.onNodeWithTag("daily_summary_retry").performClick()
-        awaitText("summary_records", "Saved entries: 2")
+        awaitText("summary_records", "2")
         compose.onNodeWithTag("daily_summary_error").assertDoesNotExist()
     }
     @Test fun usageRowsShowLabelsPackagesAndTheirOwnDurationsByNativeDate() {
@@ -98,8 +102,9 @@ class DailySummaryFlowTest {
         show()
         awaitText("summary_usage", "Saved foreground usage: 0 h 1 min · apps shown: 1")
         awaitText("summary_usage_label_org.example.reader", "Reader")
-        awaitText("summary_usage_package_org.example.reader", "org.example.reader")
         awaitText("summary_usage_duration_org.example.reader", "0 h 1 min")
+        scrollToTag("summary_details"); compose.onNodeWithTag("summary_details").performClick()
+        awaitText("summary_usage_package_org.example.reader", "org.example.reader")
         compose.onNodeWithTag("summary_usage_label_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_duration_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_package_org.example.empty").assertDoesNotExist()
@@ -112,12 +117,12 @@ class DailySummaryFlowTest {
         }
         val id = runBlocking { db.lifeEvents().findBySource(EventSource.USAGE_STATS, usage.sourceReference)!!.id }
         show()
-        awaitText("summary_records", "Saved entries: 2")
+        awaitText("summary_records", "2")
         scrollToTag("today_summary")
         compose.onNodeWithText("2 events this day").assertIsDisplayed()
         compose.onNodeWithTag("event_$id").assertDoesNotExist()
         runBlocking { RoomLifeEventRepository(db).delete(mood); RoomLifeEventRepository(db).delete(journal) }
-        awaitText("summary_records", "Saved entries: 0")
+        awaitText("summary_records", "0")
         scrollToTag("today_empty")
         compose.onNodeWithTag("event_$id").assertDoesNotExist()
         assertNotNull(runBlocking { db.lifeEvents().get(id) })

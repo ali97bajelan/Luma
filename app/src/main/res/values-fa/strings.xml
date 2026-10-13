@@ -382,7 +382,15 @@
     <string name="privacy_app_settings">باز کردن تنظیمات Android مربوط به Luma</string>
     <string name="privacy_settings_missing">تنظیمات برنامه در Android روی این دستگاه در دسترس نیست.</string>
     <string name="integration_permission_retention">این دسترسی اختیاری است. با لغو کردن، ثبت و مرور همچنان در دسترس می‌مانند. غیرفعال کردن ورود داده‌ها، داده‌های ذخیره‌شده را حفظ می‌کند و مجوز Android را لغو نمی‌کند. دسترسی را در تنظیمات Android مدیریت کنید؛ نسخه‌های محلی را از حریم خصوصی و داده‌های محلی حذف کنید.</string>
-    <string name="usage_privacy_retention">غیرفعال کردن ورود داده‌ها از درخواست‌های جدید جلوگیری می‌کند و به‌روزرسانی‌های زمان‌بندی‌شده را لغو می‌کند. سابقهٔ ذخیره‌شده حفظ می‌شود و دسترسی به داده‌های استفاده در Android لغو نمی‌شود. خواندن داده‌های استفاده که از قبل در حال انجام است ممکن است کامل شود؛ تا زمانی که ورود داده‌ها غیرفعال باشد، نتیجه‌ها کنار گذاشته می‌شوند. برای لغو دسترسی، از مدیریت دسترسی در پایین استفاده کنید.</string>
+    <string name="usage_privacy_retention">غیرفعال کردن ورود داده‌ها از درخواست‌های جدید جلوگیری می‌کند و به‌روزرسانی‌های زمان‌بندی‌شده را لغو می‌کند. سابقهٔ ذخیره‌شده حفظ می‌شود و دسترسی به داده‌های استفاده در Android لغو نمی‌شود. خواندن داده‌های استفاده که از قبل در حال انجام است ممکن است کامل شود؛ تا زمانی که ورود داده‌ها غیرفعال باشد، نتیجه‌ها کنار گذاشته می‌شوند. برای لغو دسترسی، از مدیریت دسترسی استفاده کنید.</string>
     <string name="permission_continue">ادامه</string>
     <string name="usage_refresh">به‌روزرسانی وضعیت دسترسی</string>
+    <string name="summary_count_entries">نوشته‌ها</string>
+    <string name="summary_count_journals">یادداشت‌ها</string>
+    <string name="summary_count_memories">خاطره‌ها</string>
+    <string name="summary_scale_value">%1$s: %2$s/۵</string>
+    <string name="summary_usage_partial">سابقهٔ استفاده ناقص است</string>
+    <string name="summary_details">دربارهٔ این خلاصه</string>
+    <string name="imports_details">دربارهٔ ورود این داده‌ها</string>
+    <string name="hide_details">پنهان کردن جزئیات</string>
 </resources>

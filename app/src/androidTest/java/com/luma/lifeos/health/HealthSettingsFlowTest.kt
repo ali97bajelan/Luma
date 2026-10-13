@@ -50,6 +50,7 @@ class HealthSettingsFlowTest {
         assertEquals(80.0, runBlocking { db.lifeEvents().getDetails(saved.id)!!.activities.single().value }, 0.0)
         scroll("health_enabled"); compose.onNodeWithTag("health_enabled").performClick()
         awaitText("Step imports are off")
+        scroll("health_details"); compose.onNodeWithTag("health_details").performClick()
         scroll("health_retention"); compose.onNodeWithTag("health_retention").assertIsDisplayed()
         assertFalse(runBlocking { RoomHealthRepository(db).state().enabled })
         assertNotNull(runBlocking { db.lifeEvents().get(saved.id) })

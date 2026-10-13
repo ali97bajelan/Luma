@@ -88,16 +88,14 @@ fun TodayScreen(
             }
             is TodayUiState.Data -> {
                 item {
-                    Card(Modifier.fillMaxWidth().testTag("today_summary")) {
-                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.fillMaxWidth().testTag("today_summary"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(pluralStringResource(R.plurals.daily_events, state.events.size, state.events.size),
                                 style = MaterialTheme.typography.titleLarge)
-                            EventType.entries.forEach { type ->
+                            if (summaryState !is DailySummaryState.Data) EventType.entries.forEach { type ->
                                 state.counts[type]?.let { count ->
                                     Text(stringResource(R.string.event_type_count, stringResource(type.label()), count))
                                 }
                             }
-                        }
                     }
                 }
                 items(state.events, key = { it.id.toString() }) { event ->

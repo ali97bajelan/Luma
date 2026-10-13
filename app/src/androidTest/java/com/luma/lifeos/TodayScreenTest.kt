@@ -1,15 +1,26 @@
 package com.luma.lifeos
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasTestTag
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
+import com.luma.lifeos.domain.model.EventSource
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.summary.DailySummary
+import com.luma.lifeos.domain.summary.MoodSummary
+import com.luma.lifeos.domain.summary.ScaleTotal
+import com.luma.lifeos.domain.summary.ActivityTotal
 import com.luma.lifeos.domain.usage.AppUsageTotal
 import com.luma.lifeos.domain.usage.DailyUsageReport
 import com.luma.lifeos.ui.summary.DailySummaryState
@@ -19,12 +30,46 @@ import com.luma.lifeos.ui.today.TodayUiState
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.math.BigDecimal
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
 class TodayScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun anEntryPreviewIsVisibleWithoutScrollingPastTheDailySummary() {
+        val day = LocalDate.parse("2026-10-11")
+        val zone = ZoneId.of("UTC")
+        val instant = Instant.parse("2026-10-11T08:30:00Z")
+        val event = LifeEvent(EventId.new(), EventType.MOOD, instant, instant, title = "A calm afternoon",
+            note = "A short walk helped me recharge.")
+        val summary = DailySummary(day, zone, 1, 0, 0,
+            mood = MoodSummary(ScaleTotal(1, 4), ScaleTotal(1, 2), ScaleTotal(1, 3)),
+            usage = DailyUsageReport(day, zone, listOf(AppUsageTotal("example.reader", "Reader", 180_000),
+                AppUsageTotal("example.music", "Music", 120_000), AppUsageTotal("example.maps.long.package.name", null, 90_000)), 390_000),
+            activities = listOf(ActivityTotal("steps", "count", EventSource.HEALTH_CONNECT, 1, BigDecimal("1200")),
+                ActivityTotal("distance", "km", EventSource.MANUAL, 1, BigDecimal("4.5"))))
+        compose.setContent {
+            LifeOsTheme {
+                Scaffold(bottomBar = { NavigationBar {} }) { padding ->
+                    Box(Modifier.padding(padding)) {
+                        TodayScreen(day, zone, TodayUiState.Data(listOf(event)), {}, {}, {},
+                            summaryState = DailySummaryState.Data(summary))
+                    }
+                }
+            }
+        }
+        compose.onNodeWithText("A calm afternoon").assertIsDisplayed()
+        compose.onNodeWithText("A short walk helped me recharge.").assertIsDisplayed()
+        compose.onNodeWithTag("summary_activity_steps_count_HEALTH_CONNECT").assertDoesNotExist()
+        compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_details"))
+        compose.onNodeWithTag("summary_details").performClick()
+        compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_usage_package_example.maps.long.package.name"))
+        compose.onNodeWithTag("summary_usage_package_example.maps.long.package.name").assertIsDisplayed()
+        compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_activity_steps_count_HEALTH_CONNECT"))
+        compose.onNodeWithTag("summary_activity_steps_count_HEALTH_CONNECT").assertIsDisplayed()
+    }
 
     @Test fun todayShowsOnlyTheThreeHighestUsageAppsOverOneMinute() {
         val day = LocalDate.parse("2026-10-11")
