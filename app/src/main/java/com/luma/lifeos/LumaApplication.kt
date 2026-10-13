@@ -10,6 +10,7 @@ import com.luma.lifeos.usage.UsageWorker
 
 class LumaApplication : Application() {
     // Construction is lazy; the database opens off the main thread on the first suspend/Flow query.
+    val appDataReset: com.luma.lifeos.ui.privacy.AppDataReset by lazy { com.luma.lifeos.ui.privacy.AndroidAppDataReset(this) }
     val storage: LumaStorage by lazy { LumaStorage(this) }
     val usage: UsageIntegration by lazy {
         UsageSyncer(AndroidUsageSource(this), storage.usage, UsageWorkScheduler(this, UsageWorker::class.java))

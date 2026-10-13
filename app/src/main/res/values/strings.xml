@@ -352,4 +352,21 @@
     <string name="backup_preview">%1$s events · %2$s photos\nBackup created %3$s</string>
     <string name="backup_replace_warning">This replaces all saved life records, catalogs, and imported history with this backup. Export your current data first if you want to keep it. App language and Android permissions stay as they are. Imports will be turned off.</string>
     <string name="backup_replace">Replace and restore</string>
+    <string name="privacy_title">Privacy and local data</string>
+    <string name="privacy_local_storage">Life records, names and private photo copies stay in Luma’s private storage on this device. Luma has no account, ads or telemetry and makes no network requests. Core capture and browsing work without optional permissions.</string>
+    <string name="privacy_optional_access">Usage Access optionally reads app names and foreground usage; enabled imports can refresh in the background. Health Connect access is optional and reads only daily step totals while Luma is open. Luma does not write health data. Turning imports off prevents new import requests and keeps saved history. A usage query already in progress may finish; its results are discarded while imports stay off. Use the integration’s Android settings to manage or revoke permission. Photos use the system picker; Luma copies selected images into private storage without broad media access.</string>
+    <string name="privacy_backup_policy">Automatic cloud backup and device transfer are disabled. Manual backups include private records and photos and are not encrypted. Your chosen document provider controls where exports are stored. Deleting Luma’s local data does not delete exported backups or original photos and provider records. Manage those copies separately.</string>
+    <string name="privacy_delete_title">Delete all local data?</string>
+    <string name="privacy_delete_description">Reset Luma to remove all saved life records, catalogs, imported history, private photos, unsaved drafts, caches and app preferences. Luma will close. Export a backup first if you want to keep your data.</string>
+    <string name="privacy_delete">Delete all local data</string>
+    <string name="privacy_delete_warning">This cannot be undone. Android will reset Luma’s app data and close Luma, including removing saved records, private photos, drafts and settings. Export a backup first if needed. This does not delete shared backup files, original photos, Android usage history or Health Connect records. Android also resets runtime permissions and file-access grants.</string>
+    <string name="privacy_delete_confirm">Delete and reset Luma</string>
+    <string name="privacy_reset_requested">Android accepted the reset request. Luma will close; open it again after it closes.</string>
+    <string name="privacy_reset_failed">Android could not start the reset. Try again, or open Luma’s Android settings and use Storage → Clear storage. Device policies may restrict deletion.</string>
+    <string name="privacy_app_settings">Open Luma’s Android settings</string>
+    <string name="privacy_settings_missing">Android app settings are unavailable on this device.</string>
+    <string name="integration_permission_retention">This access is optional. Cancelling keeps capture and browsing available. Turning imports off keeps saved data and does not revoke Android permission. Manage access in Android settings; delete local copies from Privacy and local data.</string>
+    <string name="usage_privacy_retention">Turning imports off prevents new import requests and cancels scheduled refreshes. It keeps saved history and does not revoke Android Usage access. A usage query already in progress may finish; its results are discarded while imports stay off. Manage access below to revoke it.</string>
+    <string name="permission_continue">Continue</string>
+    <string name="usage_refresh">Refresh access status</string>
 </resources>

@@ -41,6 +41,15 @@ class UsageSettingsFlowTest {
         }
     }
     @After fun tearDown() { db.close() }
+    @Test fun accessManagementIsAvailableWhileImportsAreOffAndExplanationCanBeCancelled() {
+        awaitText("Imports are off")
+        scrollToTag("usage_access")
+        compose.onNodeWithTag("usage_access").assertIsEnabled().performClick()
+        compose.onNodeWithTag("permission_continue").assertExists()
+        compose.onNodeWithTag("permission_cancel").performClick()
+        compose.onNodeWithTag("permission_continue").assertDoesNotExist()
+        assertFalse(runBlocking { repository.state().enabled })
+    }
     @Test fun optionalAccessImportAndOptOutKeepDurableDailyValues() {
         awaitText("Imports are off")
         compose.onNodeWithTag("usage_enabled").performClick()

@@ -724,6 +724,26 @@ reset, and health timezone/revision safety is retained. No migration, dependency
 permission or network service is added. Full format, resource bounds and native
 validation limitations are in [docs/BACKUP_FORMAT.md](docs/BACKUP_FORMAT.md).
 
+## Privacy and app-data reset (T18)
+
+Settings exposes a dedicated privacy route and native integration-management
+controls. Read-only policy content is shared with HealthRationaleActivity. Usage
+Access remains manageable while imports are disabled; permission launches are
+preceded by explicit Continue/Cancel explanations. Existing foreground checks and
+before/after-read guards retain saved observations on revocation. Usage imports
+also re-check opt-out after a suspended access check before starting their query.
+
+AppDataReset is a narrow external boundary wired by LumaApplication to
+ActivityManager.clearApplicationUserData. PrivacyViewModel consumes one explicit
+confirmation, prevents duplicate requests and runs the call off-main without replay
+after process restoration. Android owns app-wide clearing/stopping, including
+open stores, private/draft photos, caches, preferences and work state; no selective
+SQL deletion or writer coordination protocol is introduced. A true response means
+request accepted, not verified erasure. Failure exposes retry and native app
+settings. Provider originals and shared backup documents are outside this reset.
+The app/dependency audit adds no logging, network, telemetry, permissions, schema
+or product dependency. See [docs/PRIVACY.md](docs/PRIVACY.md) for full boundaries.
+
 ## Validation
 
 Run JVM domain tests independently, Android lint and debug/unit builds in CI,

@@ -1445,3 +1445,78 @@ Logs: `/tmp/luma-t17-baseline.log`, `/tmp/luma-t17-codec-red.log`,
 `/tmp/luma-t17-ui-green.log`, `/tmp/luma-t17-review-regressions-red.log`,
 `/tmp/luma-t17-json-red.log`, `/tmp/luma-t17-review-green.log`,
 `/tmp/luma-t17-native-bounds-red.log`, `/tmp/luma-t17-final-checks.log`.
+
+## T18 — Privacy, permissions and settings, 2026-10-13
+
+Implemented the privacy policy/route, explicit native permission explanations,
+off-state Usage Access management and confirmed Android app-data reset. Policy and
+reset boundaries are in [PRIVACY.md](PRIVACY.md). No real app data was erased, app
+installed, permission granted, dependency/schema changed, or Git mutation performed.
+Preexisting untracked release/schema/fixture artifacts were preserved.
+
+Verified in this session:
+
+- PASS: **266 JVM tests**, forced to execute: 95 domain, 131 app, 21 data, 13 usage,
+  6 health. Zero failures, errors or skipped tests. T18 adds six JVM cases: five
+  reset/confirmation/lifecycle cases and one opt-out/access-check regression.
+- PASS: debug APK and app/data instrumentation APK builds. Five new/extended
+  Compose cases compile: delete confirmation cancellation, accepted-request state,
+  permission dialog Cancel and Continue callbacks, and Usage access management
+  while imports are off. These tests never invoke the real destructive reset.
+- PASS: app/data/usage/health lint, zero errors. App retains its 11 target/dependency/
+  locale-config/quantity warnings; data/usage/health have no issues.
+- PASS: merged debug manifest audit. Declared permissions are PACKAGE_USAGE_STATS,
+  health.READ_STEPS, WAKE_LOCK, RECEIVE_BOOT_COMPLETED and the app's signature-only
+  DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION. No INTERNET, ACCESS_NETWORK_STATE,
+  location, camera or broad media permission. allowBackup/fullBackupContent are
+  false and data_extraction_rules excludes cloud backup and device transfer.
+- PASS: runtime dependency graph/source audit finds no telemetry/advertising SDK,
+  HTTP client or app network request code. Production sources contain no logging
+  or exception printing of private records. Only native Settings/Play document-
+  provider activities may hand control to another app; this is not a claim about
+  other apps' telemetry. No new SDK or suppression was introduced.
+- PASS: new English/French privacy/permission resource names match.
+- PASS: `git diff --check`.
+
+The reset ViewModel requires a live confirmation, consumes it once, distinguishes
+accepted request from completed deletion and handles rejection/exception with a
+new explicit confirmation for retry. A confirmed OS request continues if its
+ViewModel is cleared. The platform boundary is substituted in JVM tests; its
+return value cannot establish actual storage deletion. Existing domain/native
+adapter tests still verify denied/unsupported access, mid-query revocation, opt-out,
+retained checkpoints/history and no provider reads while initially disabled.
+
+Independent read-only review found no Critical/Important defect, but identified
+wording that overstated immediate query cancellation. English/French policy now
+states that already-started native usage queries may finish and results are
+rejected while imports remain off. Additional inspection found opt-out during a
+suspended usage access check could still start a query afterward. The regression
+`disablingDuringImportAccessCheckStartsNoNativeUsageRead` failed on that side effect;
+a post-access enabled-state check fixes it, and the full suite passes. Health's
+existing revision/read cancellation behavior is retained.
+
+Pending: escalated `adb devices -l` reports **no connected device**. Actual Android
+reset/erasure/process shutdown, reopen with empty records/photos/preferences and
+imports off, preservation of external backups/provider originals, real provider
+permission dialogs/revocation, activity/process restoration and visual/accessibility
+checks remain unexecuted. The shared-dialog tests do not establish the real Health
+permission launch/stale-state branch. Native destructive reset validation must use
+an isolated disposable application ID; it was not run on the user's app. T18 is
+**implemented (validation pending)**; other task acceptance follow-ups remain.
+
+Final commands:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t18-force-tests.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleDebugAndroidTest \
+  :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug \
+  :integration:usage:lintDebug :integration:health:lintDebug
+bash gradlew --offline :app:dependencies --configuration debugRuntimeClasspath
+```
+
+The temporary init forces JVM test execution without changing dependencies.
+Logs: `/tmp/luma-t18-baseline.log`, `/tmp/luma-t18-state-red.log`,
+`/tmp/luma-t18-state-green.log`, `/tmp/luma-t18-optout-red.log`,
+`/tmp/luma-t18-dependencies.log`, `/tmp/luma-t18-final-checks.log`.

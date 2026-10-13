@@ -28,6 +28,7 @@ fun HealthSettingsCard(integration: HealthIntegration) {
     val vm: HealthSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showPermissionExplanation by rememberSaveable { mutableStateOf(false) }
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
     val contract = remember { PermissionController.createRequestPermissionResultContract() }
     val permissions = rememberLauncherForActivityResult(contract) { vm.refresh() }
@@ -48,10 +49,7 @@ fun HealthSettingsCard(integration: HealthIntegration) {
                 it.atZone(state.current.importZone ?: ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
             if (state.current.enabled) {
                 when (state.current.status) {
-                    HealthStatus.ACCESS_REQUIRED -> Button(onClick = {
-                        settingsMissing = try { permissions.launch(stepReadPermissions); false }
-                        catch (_: ActivityNotFoundException) { true } catch (_: SecurityException) { true }
-                    }, enabled = !state.busy, modifier = Modifier.testTag("health_access")) { Text(stringResource(R.string.health_grant)) }
+                    HealthStatus.ACCESS_REQUIRED -> Button(onClick = { showPermissionExplanation = true }, enabled = !state.busy, modifier = Modifier.testTag("health_access")) { Text(stringResource(R.string.health_grant)) }
                     HealthStatus.UPDATE_REQUIRED -> TextButton(onClick = { settingsMissing = !openHealthProviderInstall(context) },
                         modifier = Modifier.testTag("health_install")) { Text(stringResource(R.string.health_install)) }
                     else -> Unit
@@ -69,6 +67,16 @@ fun HealthSettingsCard(integration: HealthIntegration) {
             if (state.actionError) Text(stringResource(R.string.health_action_error), modifier = Modifier.testTag("health_action_error"))
         }
     }
+    if (showPermissionExplanation) com.luma.lifeos.ui.privacy.PermissionExplanationDialog(
+        R.string.health_title, R.string.health_explanation,
+        onContinue = {
+            showPermissionExplanation = false
+            if (state.current.enabled && !state.busy && !state.loading && state.current.status == HealthStatus.ACCESS_REQUIRED) {
+                settingsMissing = try { permissions.launch(stepReadPermissions); false }
+                    catch (_: ActivityNotFoundException) { true } catch (_: SecurityException) { true }
+            }
+        }, onCancel = { showPermissionExplanation = false })
+
 }
 private fun HealthStatus.label(): Int = when (this) {
     HealthStatus.DISABLED -> R.string.health_disabled

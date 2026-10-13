@@ -28,11 +28,12 @@ import java.time.format.FormatStyle
 fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneId,
     onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onPlaces: () -> Unit,
     health: com.luma.lifeos.domain.health.HealthIntegration? = null,
-    backup: com.luma.lifeos.domain.backup.BackupService? = null) {
+    backup: com.luma.lifeos.domain.backup.BackupService? = null, onPrivacy: (() -> Unit)? = null) {
     val factory = remember(integration) { viewModelFactory { initializer { UsageSettingsViewModel(integration) } } }
     val vm: UsageSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showAccessExplanation by rememberSaveable { mutableStateOf(false) }
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
     var showTimeline by rememberSaveable { mutableStateOf(false) }
     key(date, zone) {
@@ -43,6 +44,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
                 Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineLarge)
+                if (onPrivacy != null) TextButton(onClick = onPrivacy, modifier = Modifier.testTag("settings_privacy")) { Text(stringResource(R.string.privacy_title)) }
                 TextButton(onClick = onPlaces, modifier = Modifier.testTag("settings_places")) { Text(stringResource(R.string.places)) }
             }
             item { com.luma.lifeos.language.LanguageSettingsCard() }
@@ -52,6 +54,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(stringResource(R.string.usage_title), style = MaterialTheme.typography.titleLarge)
                         Text(stringResource(R.string.usage_access_explanation))
+                        Text(stringResource(R.string.usage_privacy_retention))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(R.string.usage_enable), modifier = Modifier.weight(1f))
                             Switch(checked = state.current.enabled, enabled = !state.loading && (!state.busy || state.current.enabled),
@@ -61,10 +64,10 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                         Text(stringResource(state.current.status.label()), modifier = Modifier.testTag("usage_status"))
                         state.current.lastSync?.let { Text(stringResource(R.string.usage_last_sync,
                             it.atZone(zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
+                        TextButton(onClick = { showAccessExplanation = true }, modifier = Modifier.testTag("usage_access")) {
+                            Text(stringResource(R.string.usage_manage_access))
+                        }
                         if (state.current.enabled) {
-                            TextButton(onClick = { settingsMissing = !openUsageAccessSettings(context) }, modifier = Modifier.testTag("usage_access")) {
-                                Text(stringResource(R.string.usage_manage_access))
-                            }
                             Button(onClick = vm::importNow, enabled = !state.busy && !state.loading && state.current.status in
                                 setOf(UsageSyncStatus.READY, UsageSyncStatus.NO_DATA, UsageSyncStatus.ERROR, UsageSyncStatus.INTERVAL_CHANGED), modifier = Modifier.testTag("usage_import")) {
                                 Text(stringResource(R.string.usage_import_now))
@@ -72,8 +75,7 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
                         }
                         if (settingsMissing) Text(stringResource(R.string.usage_settings_missing))
                         if (state.actionError) Text(stringResource(R.string.usage_action_error), modifier = Modifier.testTag("usage_action_error"))
-                        if (state.actionError || state.current.status in setOf(UsageSyncStatus.ERROR, UsageSyncStatus.UNAVAILABLE, UsageSyncStatus.LOCKED))
-                            TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.retry)) }
+                        TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
                     }
                 }
             }
@@ -141,6 +143,10 @@ fun UsageSettingsRoute(integration: UsageIntegration, date: LocalDate, zone: Zon
             }
         }
     }
+    if (showAccessExplanation) com.luma.lifeos.ui.privacy.PermissionExplanationDialog(
+        R.string.usage_title, R.string.usage_access_explanation,
+        onContinue = { showAccessExplanation = false; settingsMissing = !openUsageAccessSettings(context) },
+        onCancel = { showAccessExplanation = false })
 }
 @Composable
 private fun usageDuration(millis: Long): String {

@@ -79,6 +79,17 @@ class UsageSyncerTest {
         assertEquals(listOf(row), repo.rows); assertEquals(now, repo.current.checkpoint)
         assertEquals(UsageSyncStatus.INTERVAL_CHANGED, repo.current.status)
     }
+    @Test fun disablingDuringImportAccessCheckStartsNoNativeUsageRead() = runBlocking {
+        val source = Source(); val repo = MemoryRepo(); val sync = UsageSyncer(source, repo, Jobs(), Clock.fixed(now, ZoneOffset.UTC))
+        sync.setEnabled(true)
+        source.accessGate = CompletableDeferred()
+        val pending = async { sync.importNow() }; yield()
+        sync.setEnabled(false)
+        source.accessGate!!.complete(Unit)
+        assertEquals(UsageSyncOutcome.DISABLED, pending.await())
+        assertNull("A native query started after opt-out during its access check", source.range)
+        assertNull(repo.current.checkpoint)
+    }
     @Test fun optOutDuringAnAccessRefreshCannotRescheduleWork() = runBlocking {
         val repo = MemoryRepo(); val source = Source(); val jobs = Jobs()
         val sync = UsageSyncer(source, repo, jobs, Clock.fixed(now, ZoneOffset.UTC))

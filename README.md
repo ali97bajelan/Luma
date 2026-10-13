@@ -4,7 +4,7 @@ A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
 mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, optional Health Connect step imports, saved daily summaries, simple local lookup, and deterministic weekly reviews.
-Remaining privacy, reliability and release work follows [TASKS.md](TASKS.md).
+Remaining reliability and release work follows [TASKS.md](TASKS.md).
 
 ## Build and run
 
@@ -53,6 +53,12 @@ Export saves a versioned archive of records and referenced photos through the
 system file picker. Restore validates the archive before confirming replacement
 of current saved data. Archives are unencrypted; choose a trusted destination.
 Native backup/restore acceptance remains pending device validation.
+
+Settings → [Privacy and local data](docs/PRIVACY.md) explains optional permissions
+and retained copies, and offers a confirmed full app-data reset. Reset removes
+private records/photos/drafts and app preferences, then closes Luma. Shared backup
+files and original provider records must be managed separately. Native reset and
+permission acceptance remain pending device validation.
 
 ## Project references
 
@@ -115,6 +121,6 @@ and activity grouped by type/unit/source. Source actions open contributing entri
 catalog details and saved daily usage evidence. Missing measurements remain
 unavailable, including empty partial session history; explicit aggregate zero is
 retained. Reviews run offline with AI disabled. Device execution and full repository
-timing for T16 remain pending; see docs/VALIDATION.md. Privacy Settings remain
-assigned to T18. No future backlog features, network
+timing for T16 remain pending; see docs/VALIDATION.md. Privacy Settings and confirmed local-data reset are implemented in T18;
+native acceptance remains pending. No future backlog features, network
 permission, telemetry, or mandatory AI service are included.

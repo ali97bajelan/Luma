@@ -29,6 +29,7 @@ class HealthRationaleActivity : ComponentActivity() {
                         Text(stringResource(R.string.health_privacy_title), style = MaterialTheme.typography.headlineMedium)
                         Text(stringResource(R.string.health_explanation))
                         Text(stringResource(R.string.health_privacy_retention))
+                        com.luma.lifeos.ui.privacy.PrivacyPolicyContent()
                         Button(onClick = { finish() }) { Text(stringResource(R.string.health_close)) }
                     }
                 }

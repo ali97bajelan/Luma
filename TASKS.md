@@ -608,7 +608,33 @@ power-loss acceptance remain pending. See docs/VALIDATION.md.
 
 ## T18 — Privacy, permissions, and settings
 
-Status: pending
+Status: implemented (validation pending)
+
+Implementation (2026-10-13): Settings opens Privacy and local data with local
+storage, optional permissions, private photo copies, backup and retention policy.
+The native Health Connect rationale reuses the read-only policy. Usage Access
+management remains reachable while imports are off, and Usage/Health permission
+launches require an explanation and explicit Continue. Existing foreground and
+before/after-read access guards remain; a pending Usage access check now exits
+before querying if the user turns imports off. Opt-out wording distinguishes
+in-progress native queries from future import requests and retained history.
+
+Delete and reset Luma explicitly confirms a full Android app-data reset, including
+records, catalogs, imported copies, private/draft photos, caches, backup staging and
+preferences. Android owns process shutdown and erasure; the app reports only
+request acceptance, suppresses duplicates and offers retry/native Settings for
+rejection. Exported backups and original provider data are outside this reset.
+See docs/PRIVACY.md for boundaries and native acceptance steps.
+
+Validation: all 266 JVM tests pass, including reset confirmation/cancellation,
+rejection/retry, lifecycle and the RED→GREEN delayed-access opt-out regression.
+Debug and both instrumentation APKs build; app/data/usage/health lint has zero
+errors. Five new/extended Compose cases compile. Built manifest/source/dependency
+audit finds no Internet permission, telemetry SDK or production content logging;
+backup and device-transfer extraction remain disabled. No device is connected,
+so actual reset/termination/reopen, provider permission dialogs, native lifecycle,
+external-copy preservation and visual acceptance remain pending. No real data was
+reset, app installed, permission granted or Git mutation performed in this task.
 
 
 ### Scope

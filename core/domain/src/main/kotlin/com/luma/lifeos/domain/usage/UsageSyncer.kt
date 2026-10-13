@@ -53,6 +53,7 @@ class UsageSyncer(private val source: UsageSource, private val repository: Usage
             if (access != UsageAccess.GRANTED) return@withLock unavailable(access)
             val now = Instant.ofEpochMilli(clock.millis())
             val state = repository.state()
+            if (!state.enabled) return@withLock UsageSyncOutcome.DISABLED
             val beforeClock = source.clockAnchor()
             if (beforeClock != null && state.clockAnchor?.let { usageClockDiscontinuity(it, beforeClock) } == true)
                 return@withLock quarantine(beforeClock)
