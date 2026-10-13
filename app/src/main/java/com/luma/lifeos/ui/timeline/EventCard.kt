@@ -12,6 +12,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
+import com.luma.lifeos.language.activityTypeDisplayName
+import com.luma.lifeos.language.activityUnitDisplayName
+import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.ui.mood.moodScoreLabel
 import com.luma.lifeos.ui.people.LinkedPeople
@@ -59,7 +62,7 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit, onMemor
 @Composable
 fun MoodContent(mood: MoodDetails) {
     Text(stringResource(R.string.mood_score_value, mood.score, stringResource(moodScoreLabel(mood.score))), style = MaterialTheme.typography.titleMedium)
-    if (mood.emotions.isNotEmpty()) Text(mood.emotions.joinToString(", ") { it.name })
+    if (mood.emotions.isNotEmpty()) Text(mood.emotions.map { emotionDisplayName(it) }.joinToString(", "))
     mood.energy?.let { Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_energy), it)) }
     mood.stress?.let { Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_stress), it)) }
 }
@@ -68,7 +71,9 @@ fun MoodContent(mood: MoodDetails) {
 fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
     val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 3 }
     val activities = if (full) record.activities else record.activities.take(3)
-    activities.forEach { Text(stringResource(R.string.activity_value, it.type, format.format(it.value), it.unit)) }
+    activities.forEach { Text(stringResource(R.string.activity_value,
+        activityTypeDisplayName(it.type, it.unit, it.source), format.format(it.value),
+        activityUnitDisplayName(it.type, it.unit, it.source))) }
     if (!full && record.activities.size > 3) Text(stringResource(R.string.activity_more, record.activities.size - 3))
     record.appUsage?.let { usage ->
         Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)

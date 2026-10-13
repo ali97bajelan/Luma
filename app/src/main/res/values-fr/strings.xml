@@ -24,6 +24,7 @@
     <string name="today_error">Impossible de charger votre journée. Réessayez.</string>
     <plurals name="daily_events">
         <item quantity="one">%d événement ce jour</item>
+        <item quantity="many">%d événements ce jour</item>
         <item quantity="other">%d événements ce jour</item>
     </plurals>
     <string name="event_type_count">%1$s : %2$d</string>
@@ -186,6 +187,7 @@
     <string name="photo_limits">Jusqu’à 20 photos de 25 Mo chacune. Les photos restent sur cet appareil.</string>
     <plurals name="photo_count">
         <item quantity="one">%d photo</item>
+        <item quantity="many">%d photos</item>
         <item quantity="other">%d photos</item>
     </plurals>
     <string name="event_edit">Modifier</string>
@@ -372,4 +374,18 @@
     <string name="usage_privacy_retention">Désactiver les importations empêche de nouvelles demandes et annule les actualisations planifiées. L’historique est conservé et l’accès aux données d’utilisation Android n’est pas révoqué. Une requête en cours peut se terminer ; ses résultats sont ignorés tant que les importations restent désactivées. Gérez l’accès ci-dessous pour le révoquer.</string>
     <string name="permission_continue">Continuer</string>
     <string name="usage_refresh">Actualiser l’état de l’accès</string>
+    <string name="emotion_happy">Heureux</string>
+    <string name="emotion_calm">Calme</string>
+    <string name="emotion_grateful">Reconnaissant</string>
+    <string name="emotion_excited">Enthousiaste</string>
+    <string name="emotion_hopeful">Plein d’espoir</string>
+    <string name="emotion_proud">Fier</string>
+    <string name="emotion_sad">Triste</string>
+    <string name="emotion_anxious">Anxieux</string>
+    <string name="emotion_angry">En colère</string>
+    <string name="emotion_lonely">Seul</string>
+    <string name="emotion_tired">Fatigué</string>
+    <string name="emotion_overwhelmed">Débordé</string>
+    <string name="activity_steps">Pas</string>
+    <string name="activity_count">nombre</string>
 </resources>

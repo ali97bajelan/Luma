@@ -1520,3 +1520,83 @@ The temporary init forces JVM test execution without changing dependencies.
 Logs: `/tmp/luma-t18-baseline.log`, `/tmp/luma-t18-state-red.log`,
 `/tmp/luma-t18-state-green.log`, `/tmp/luma-t18-optout-red.log`,
 `/tmp/luma-t18-dependencies.log`, `/tmp/luma-t18-final-checks.log`.
+
+## T21 — App language selection completed, 2026-10-13
+
+Status: complete, with acceptance exercised on API 36.1. The partial implementation
+already supplied locale policy/context wrapping, native/private language persistence,
+Settings radio choices and French resources. This task adds the complete Persian
+bundle, French `many` plurals, display-only built-in vocabulary localization and
+native/resource/formatting regressions. Every bundle has 379 strings and 2 plurals.
+
+Verified:
+
+- **277 JVM tests**, forced to execute: 95 domain, 140 app, 23 data, 13 usage,
+  6 health; zero failures/errors/skips. The data total includes two preexisting
+  untracked reliability cases; their sources and schema artifacts were preserved.
+- **Nine new JVM cases**: six canonical/custom vocabulary cases, two locale date/time
+  cases and one complete bundle/format/plural contract. The missing Persian bundle
+  and missing canonical vocabulary mapping were observed RED before their fixes.
+  The catalog checker initially omitted precision specifiers (`%1$.5f`); its regex
+  was corrected to exercise the existing real formatting contract.
+- Normal debug APK and both app/data instrumentation APKs build. App/data/usage/
+  health lint: **zero errors**; app retains nine warnings, other modules none.
+  `git diff --check` passes. No product dependency, schema or permission change.
+- **Five native tests pass**: all Settings choices and primary routes, Quick Capture,
+  selected-day/recreation retention, mixed-language journal draft/title/tag/date
+  retention across changes, translated discard dialogs, save/detail/edit preserving
+  exact text, Persian plural/digit/accessibility values and native date/time pickers,
+  new activity launch persistence, native locale changes and return to device default.
+  The first run had one test-selector failure from two Cancel buttons; restricting
+  the match to the dialog resolves it. Final result: `OK (5 tests)`.
+- Separate native `cmd locale` / force-stop / relaunch checks establish **cold process
+  restart** persistence for en/fa/fr while the device language is Persian. A cleared
+  explicit selection with German device locale uses English; Persian device locale
+  uses Persian. Navigation positions reverse in Persian and return to LTR in en/fr.
+- Settings screenshots at **font scale 1.3**, native Persian calendar screenshot and
+  saved mixed-language journal screenshot were inspected. Persian shaping, RTL,
+  calendar arrows/digits, autonyms, French accents, user text and controls render.
+  UI hierarchy includes translated native calendar labels and Persian day numbers.
+  French bottom navigation wraps words at enlarged text size; all controls remain
+  accessible. Responsive label polish is a minor T19 follow-up.
+- Independent read-only review found no Critical/Important defect. Its minor
+  evidence gaps for process restart and native picker/bidi rendering were addressed
+  by the separate probes and screenshot inspection above.
+
+Runtime checks used a temporary `-read-only -no-snapshot -no-window` copy of the
+existing API 36.1 AVD. An init script applies `.t21validation` through AGP's final DSL
+hook for isolated test APKs. The initial hook ran too early and was overwritten by
+build.gradle; those APKs were installed only inside the disposable emulator and
+its runner failed to launch. After correcting the hook, all native tests/probes
+used `com.luma.lifeos.t21validation`. The persisted AVD and user's stored app data
+were not changed. Device locale/font changes were restored before shutting down
+this temporary emulator. Final normal APK outputs use `com.luma.lifeos` again.
+
+The API 28–32 preference/recreation branch was reviewed, and locale resolution has
+JVM coverage, but no legacy system image was available for native execution.
+Exhaustive TalkBack, all screen sizes and extreme font scales remain T19 follow-ups.
+Dates continue to use the existing Gregorian calendar with localized month names
+and digits; this task does not change calendar storage or timezone boundaries.
+
+Commands:
+
+```sh
+bash gradlew --offline -I /tmp/luma-t18-force-tests.init.gradle \
+  :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest \
+  :integration:usage:testDebugUnitTest :integration:health:testDebugUnitTest \
+  :app:assembleDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest \
+  :app:lintDebug :core:data:lintDebug :integration:usage:lintDebug :integration:health:lintDebug
+bash gradlew --offline -I /tmp/luma-t21-validation.init.gradle \
+  :app:assembleDebug :app:assembleDebugAndroidTest
+adb -s emulator-5554 shell am instrument -w -r \
+  -e class com.luma.lifeos.language.LanguageFlowTest,com.luma.lifeos.language.PlatformLanguageTest \
+  com.luma.lifeos.t21validation.test/androidx.test.runner.AndroidJUnitRunner
+python3 /tmp/luma-t21-native-probe.py
+python3 /tmp/luma-t21-visual-probe.py
+```
+
+Logs: `/tmp/luma-t21-catalog-red.log`, `/tmp/luma-t21-language-green.log`,
+`/tmp/luma-t21-final-checks.log`, `/tmp/luma-t21-final-app.log`,
+`/tmp/luma-t21-device-tests.log`, `/tmp/luma-t21-native-probe.log`,
+`/tmp/luma-t21-visual-probe.log`. Screenshots: `/tmp/luma-t21-{en,fa,fr}-settings.png`,
+`/tmp/luma-t21-fa-datepicker.png`, `/tmp/luma-t21-fa-journal.png`.

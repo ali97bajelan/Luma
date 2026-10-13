@@ -10,6 +10,8 @@ import com.luma.lifeos.ui.timeline.label
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.domain.usage.*
+import com.luma.lifeos.language.activityTypeDisplayName
+import com.luma.lifeos.language.activityUnitDisplayName
 import java.time.LocalDate
 import java.time.format.FormatStyle
 import kotlin.math.abs
@@ -64,11 +66,13 @@ internal fun ReviewActivities(report: WeeklyReview, onSources: (ReviewDates, Rev
     groups.forEach { group ->
         val a = current.firstOrNull { key(it) == group }; val b = previous.firstOrNull { key(it) == group }
         val metric = ReviewMetric(ReviewMetricKind.ACTIVITY, activity = group)
+        val displayType = activityTypeDisplayName(group.type, group.unit, group.source)
+        val displayUnit = activityUnitDisplayName(group.type, group.unit, group.source)
         @Composable fun value(row: ReviewActivity?): String = row?.let {
-            stringResource(R.string.review_activity_value, reviewNumber(it.total.total), it.total.unit, it.total.samples, it.dates)
+            stringResource(R.string.review_activity_value, reviewNumber(it.total.total), displayUnit, it.total.samples, it.dates)
         } ?: stringResource(R.string.review_unavailable)
-        ReviewValue("${group.type} · ${stringResource(group.source.label())}", value(a), value(b),
-            if (a != null && b != null) (if (a.total.total > b.total.total) "+" else "") + reviewNumber(a.total.total - b.total.total) + " " + group.unit else null,
+        ReviewValue("$displayType · ${stringResource(group.source.label())}", value(a), value(b),
+            if (a != null && b != null) (if (a.total.total > b.total.total) "+" else "") + reviewNumber(a.total.total - b.total.total) + " " + displayUnit else null,
             "activity_${group.type}_${group.unit}_${group.source}",
             a?.let { { onSources(report.period.current, metric) } }, b?.let { { onSources(report.period.previous, metric) } })
     }

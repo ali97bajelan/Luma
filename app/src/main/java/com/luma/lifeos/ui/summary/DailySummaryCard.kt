@@ -9,6 +9,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.summary.ScaleTotal
+import com.luma.lifeos.language.activityTypeDisplayName
+import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.ui.timeline.label
 import java.text.NumberFormat
 
@@ -57,7 +59,9 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                         // Preserve small nonzero recorded values instead of displaying a rounded zero.
                         val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 340 }
                         activity.forEach { total ->
-                            Text(stringResource(R.string.summary_activity_value, total.type, format.format(total.total), total.unit,
+                            Text(stringResource(R.string.summary_activity_value,
+                                activityTypeDisplayName(total.type, total.unit, total.source), format.format(total.total),
+                                activityUnitDisplayName(total.type, total.unit, total.source),
                                 stringResource(total.source.label()), total.samples), modifier = Modifier.testTag("summary_activity_${total.type}_${total.unit}_${total.source}"))
                         }
                     }

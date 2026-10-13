@@ -33,6 +33,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.language.emotionDisplayName
+import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.UUID
@@ -108,7 +110,7 @@ fun MoodEditorScreen(
                     state.emotions.forEach { emotion ->
                         FilterChip(selected = emotion.id in state.draft.emotionIds, enabled = enabled,
                             onClick = { onEmotion(emotion.id) }, modifier = Modifier.testTag("mood_emotion_${emotion.name}"),
-                            label = { Text(emotion.name) })
+                            label = { Text(emotionDisplayName(emotion)) })
                     }
                 }
                 TextButton(onClick = { more = !more }, enabled = !state.busy, modifier = Modifier.testTag("mood_more")) {
@@ -154,7 +156,7 @@ private fun OptionalScale(label: String, tag: String, value: Int?, enabled: Bool
             val description = stringResource(R.string.mood_scale_description, label, score)
             FilterChip(selected = value == score, enabled = enabled, onClick = { onValue(if (score == value) null else score) },
                 modifier = Modifier.testTag("mood_${tag}_$score").semantics { contentDescription = description },
-                label = { Text(score.toString()) })
+                label = { Text(NumberFormat.getIntegerInstance().format(score)) })
         }
     }
 }

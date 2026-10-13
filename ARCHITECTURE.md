@@ -744,6 +744,25 @@ settings. Provider originals and shared backup documents are outside this reset.
 The app/dependency audit adds no logging, network, telemetry, permissions, schema
 or product dependency. See [docs/PRIVACY.md](docs/PRIVACY.md) for full boundaries.
 
+## App language (T21)
+
+`AppLanguage` resolves an explicit English/Persian/French tag first, then the
+first supported device language, otherwise English. `AppLanguages` wraps both
+activity contexts before creation and sets the process formatting locale and
+layout direction. Android 13+ uses `LocaleManager.applicationLocales`, including
+native Settings changes and returning to device default. API 28–32 commits a
+private preference before requesting activity recreation. Normal saved-state
+navigation and editor ViewModels retain dates, drafts, tags and content.
+
+English, Persian and French resource bundles are packaged together with language
+splits disabled, so switching works offline. Display-only date/time formatters
+use the selected locale and decimal style; ISO persistence and civil-day/timezone
+boundaries remain unchanged. Dates use the existing Gregorian calendar, with
+localized month names and digits. Seeded emotion labels translate only when both
+their stable UUID and original canonical name match. Health Connect's canonical
+steps/count pair translates only for that source. User-authored names, text and
+arbitrary imported labels remain intact. No schema, permission or SDK is added.
+
 ## Validation
 
 Run JVM domain tests independently, Android lint and debug/unit builds in CI,

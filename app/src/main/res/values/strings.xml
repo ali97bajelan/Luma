@@ -369,4 +369,18 @@
     <string name="usage_privacy_retention">Turning imports off prevents new import requests and cancels scheduled refreshes. It keeps saved history and does not revoke Android Usage access. A usage query already in progress may finish; its results are discarded while imports stay off. Manage access below to revoke it.</string>
     <string name="permission_continue">Continue</string>
     <string name="usage_refresh">Refresh access status</string>
+    <string name="emotion_happy">Happy</string>
+    <string name="emotion_calm">Calm</string>
+    <string name="emotion_grateful">Grateful</string>
+    <string name="emotion_excited">Excited</string>
+    <string name="emotion_hopeful">Hopeful</string>
+    <string name="emotion_proud">Proud</string>
+    <string name="emotion_sad">Sad</string>
+    <string name="emotion_anxious">Anxious</string>
+    <string name="emotion_angry">Angry</string>
+    <string name="emotion_lonely">Lonely</string>
+    <string name="emotion_tired">Tired</string>
+    <string name="emotion_overwhelmed">Overwhelmed</string>
+    <string name="activity_steps">Steps</string>
+    <string name="activity_count">count</string>
 </resources>

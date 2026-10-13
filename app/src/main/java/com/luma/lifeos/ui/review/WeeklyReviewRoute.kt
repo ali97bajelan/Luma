@@ -14,6 +14,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.review.*
+import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
@@ -149,7 +150,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         val a = current.firstOrNull { it.name.id == name.name.id }?.records ?: 0
         val b = previous.firstOrNull { it.name.id == name.name.id }?.records ?: 0
         val metric = ReviewMetric(kind, name.name.id)
-        ReviewValue(name.name.name, stringResource(R.string.review_frequency, a), stringResource(R.string.review_frequency, b),
+        val displayName = if (kind == ReviewMetricKind.EMOTION) emotionDisplayName(name.name.id, name.name.name) else name.name.name
+        ReviewValue(displayName, stringResource(R.string.review_frequency, a), stringResource(R.string.review_frequency, b),
             reviewChange(a.toDouble(), b.toDouble()), "${kind.name.lowercase()}_${name.name.id}",
             { onSources(period.current, metric) }, { onSources(period.previous, metric) })
         onDetails?.let { TextButton(onClick = { it(name.name.id) }) { Text(stringResource(R.string.review_catalog_detail)) } }

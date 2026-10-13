@@ -687,10 +687,29 @@ Status: pending
 
 ## T21 — App language selection
 
-Status: pending
+Status: complete
 
 Requested (2026-10-12): let the user choose English, Persian or French as the app
-language. Implementation and runtime validation have not started.
+language.
+
+Implementation (2026-10-13): completed offline English/Persian/French bundles,
+including plurals, validation, privacy, integration and accessibility text.
+Settings saves the app language through native Android 13+ LocaleManager or a
+committed preference on API 28–32; activity context wrapping applies formatting
+and layout before creation. Built-in emotion and native step labels translate at
+display time, preserving canonical identities and arbitrary user names/content.
+Localized dates retain the existing Gregorian calendar and stored ISO values.
+
+Validation: all 277 JVM tests pass, normal debug/test APKs build and all module
+lint checks have zero errors. Five native cases pass on a temporary API 36.1
+emulator, covering every language, primary navigation, recreation, date and journal
+draft/tag/content retention, save/detail, plurals, accessibility and pickers.
+Separate force-stop/relaunch probes verify language persistence independently of
+device language, supported Persian default and unsupported German → English.
+Screenshots verify Persian RTL, native calendar labels/digits, mixed-language text
+and restored LTR. Settings remains operable at 130% text size; French navigation
+labels wrap awkwardly, recorded for T19. Legacy API 28–32 native execution and
+exhaustive TalkBack/device-size audits remain platform follow-ups. See docs/VALIDATION.md.
 
 ### Scope
 

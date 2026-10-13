@@ -6,6 +6,11 @@ a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timel
 mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, optional Health Connect step imports, saved daily summaries, simple local lookup, and deterministic weekly reviews.
 Remaining reliability and release work follows [TASKS.md](TASKS.md).
 
+Settings → App language offers English, فارسی and Français, including offline
+translations and Persian right-to-left layout. Before choosing, Luma uses a
+supported device language or English. The choice applies only to Luma; saved
+records, user text, selected dates and capture drafts are preserved.
+
 ## Build and run
 
 Use Android Studio with support for AGP 8.7.3, JDK 17, and Android SDK Platform 35. Open this directory, let Gradle sync, then run the `app`
