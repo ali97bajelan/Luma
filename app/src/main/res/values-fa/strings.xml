@@ -73,6 +73,8 @@
     <string name="mood_emotions_hint">اختیاری است. هر تعداد که می‌خواهید انتخاب کنید.</string>
     <string name="mood_more_details">جزئیات بیشتر</string>
     <string name="mood_fewer_details">جزئیات کمتر</string>
+    <string name="capture_more_details">جزئیات بیشتر</string>
+    <string name="capture_fewer_details">جزئیات کمتر</string>
     <string name="mood_energy">انرژی</string>
     <string name="mood_stress">استرس</string>
     <string name="mood_scale_hint">اختیاری: ۱ کم و ۵ زیاد است. برای پاک کردن، دوباره بزنید.</string>

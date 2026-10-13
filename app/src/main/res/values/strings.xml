@@ -61,6 +61,8 @@
     <string name="mood_emotions_hint">Optional. Choose as many as you like.</string>
     <string name="mood_more_details">More details</string>
     <string name="mood_fewer_details">Fewer details</string>
+    <string name="capture_more_details">More details</string>
+    <string name="capture_fewer_details">Fewer details</string>
     <string name="mood_energy">Energy</string>
     <string name="mood_stress">Stress</string>
     <string name="mood_scale_hint">Optional: 1 is low, 5 is high. Tap again to clear.</string>

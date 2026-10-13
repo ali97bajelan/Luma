@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,9 +33,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.language.emotionDisplayName
+import com.luma.lifeos.ui.common.EditorTopBar
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -65,12 +69,21 @@ fun MoodEditorScreen(
         if (state.busy) return
         if (state.hasChanges) discarding = true else onCancel()
     }
+    var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.ready, editing, state.draft.personIds, state.draft.placeId) {
+        if (state.ready && !contextExpansionInitialized) {
+            more = editing || state.draft.personIds.isNotEmpty() || state.draft.placeId != null
+            contextExpansionInitialized = true
+        }
+    }
     BackHandler { close() }
     Scaffold(
         modifier = Modifier.testTag("screen_mood"),
+        topBar = {
+            EditorTopBar(stringResource(if (editing) R.string.mood_edit else R.string.mood_capture), "mood_cancel", !state.busy, ::close)
+        },
         bottomBar = {
             Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(enabled = !state.busy, onClick = { close() }) { Text(stringResource(R.string.cancel)) }
                 if (editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("mood_delete")) {
                     Text(stringResource(R.string.delete))
                 }
@@ -83,8 +96,6 @@ fun MoodEditorScreen(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(if (editing) R.string.mood_edit else R.string.mood_capture),
-                style = MaterialTheme.typography.headlineMedium)
             if (state.loading) CircularProgressIndicator(Modifier.testTag("mood_loading"))
             state.error?.let {
                 Text(stringResource(when (it) {
@@ -128,11 +139,12 @@ fun MoodEditorScreen(
                     OptionalScale(stringResource(R.string.mood_stress), "stress", state.draft.stress, enabled, onStress)
                     OutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled,
                         label = { Text(stringResource(R.string.mood_note)) }, minLines = 3,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
                         modifier = Modifier.fillMaxWidth().testTag("mood_note"))
+                    peopleContent()
+                    placeContent()
+                    MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
                 }
-                peopleContent()
-                placeContent()
-                MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
             }
         }
     }

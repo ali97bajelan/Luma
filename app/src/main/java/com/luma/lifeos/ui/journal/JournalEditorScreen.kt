@@ -3,22 +3,30 @@ package com.luma.lifeos.ui.journal
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.domain.model.JournalTextLimits
+import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.mood.MoodTimeControls
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave: () -> Unit,
     onDelete: () -> Unit, onRetry: () -> Unit, onTitle: (String) -> Unit, onBody: (String) -> Unit,
@@ -28,17 +36,27 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
     var discarding by rememberSaveable { mutableStateOf(false) }
     var tagText by rememberSaveable { mutableStateOf("") }
     var tagError by rememberSaveable { mutableStateOf(false) }
+    var more by rememberSaveable { mutableStateOf(false) }
+    var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
+    val bodyFocus = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     val enabled = state.ready && !state.busy && !state.completed
     fun close() {
         if (state.busy) return
         if (state.hasChanges || tagText.isNotBlank()) discarding = true else onCancel()
     }
+    LaunchedEffect(state.ready, state.editing, state.draft.personIds, state.draft.placeId, state.draft.photos) {
+        if (state.ready && !contextExpansionInitialized) {
+            more = state.editing || state.draft.personIds.isNotEmpty() || state.draft.placeId != null || state.draft.photos.isNotEmpty()
+            contextExpansionInitialized = true
+        }
+    }
     BackHandler { close() }
-    Scaffold(modifier = Modifier.testTag("screen_journal"), bottomBar = {
+    Scaffold(modifier = Modifier.testTag("screen_journal"), topBar = {
+        EditorTopBar(stringResource(if (state.editing) R.string.journal_edit else R.string.journal_capture),
+            "journal_cancel", !state.busy, ::close)
+    }, bottomBar = {
         Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(enabled = !state.busy, onClick = { close() }, modifier = Modifier.testTag("journal_cancel")) {
-                Text(stringResource(R.string.cancel))
-            }
             if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("journal_delete")) {
                 Text(stringResource(R.string.delete))
             }
@@ -52,8 +70,6 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(if (state.editing) R.string.journal_edit else R.string.journal_capture),
-                style = MaterialTheme.typography.headlineMedium)
             if (state.loading) CircularProgressIndicator()
             state.error?.let { error ->
                 Text(stringResource(when (error) {
@@ -67,12 +83,15 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 if (error == JournalEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             // Restored text remains visible even if loading fails.
-            OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled,
+            OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled, singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { bodyFocus.requestFocus() }),
                 label = { Text(stringResource(R.string.journal_title)) }, modifier = Modifier.fillMaxWidth().testTag("journal_title"))
             OutlinedTextField(value = state.draft.body, onValueChange = onBody, enabled = enabled,
                 label = { Text(stringResource(R.string.journal_body)) }, minLines = 8,
                 supportingText = { Text(stringResource(R.string.journal_body_hint)) },
-                modifier = Modifier.fillMaxWidth().testTag("journal_body"))
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                modifier = Modifier.fillMaxWidth().focusRequester(bodyFocus).testTag("journal_body"))
             Text(stringResource(R.string.journal_tags), style = MaterialTheme.typography.titleMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 state.draft.tagNames.forEach { name ->
@@ -84,6 +103,11 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 OutlinedTextField(value = tagText, onValueChange = {
                     if (it.length <= JournalTextLimits.TAG) { tagText = it; tagError = false } else tagError = true
                 }, enabled = enabled, singleLine = true, isError = tagError,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        if (tagText.isBlank()) keyboardController?.hide()
+                        else if (onAddTag(tagText)) { tagText = ""; tagError = false; keyboardController?.hide() }
+                    }),
                     supportingText = { if (tagError) Text(stringResource(R.string.journal_tag_size_error)) },
                     label = { Text(stringResource(R.string.journal_tag_name)) },
                     modifier = Modifier.weight(1f).testTag("journal_tag_input"))
@@ -96,10 +120,15 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                     FilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
                 }
             }
-            peopleContent()
-            placeContent()
-            photosContent()
-            MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == JournalEditorError.TIME, onTime)
+            TextButton(onClick = { more = !more }, enabled = enabled, modifier = Modifier.testTag("journal_more")) {
+                Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
+            }
+            if (more) {
+                peopleContent()
+                placeContent()
+                photosContent()
+                MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == JournalEditorError.TIME, onTime)
+            }
         }
     }
     if (deleting) AlertDialog(onDismissRequest = { deleting = false },

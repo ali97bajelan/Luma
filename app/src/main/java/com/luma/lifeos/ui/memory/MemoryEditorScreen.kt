@@ -3,17 +3,23 @@ package com.luma.lifeos.ui.memory
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.mood.MoodTimeControls
 import java.text.NumberFormat
 import java.time.LocalDateTime
@@ -27,15 +33,27 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {}) {
     var removing by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
+    var more by rememberSaveable { mutableStateOf(false) }
+    var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
+    val noteFocus = remember { FocusRequester() }
     val enabled = state.ready && !state.busy && !state.completed
     fun close() {
         if (state.busy) return
         if (state.hasChanges) discarding = true else onCancel()
     }
+    LaunchedEffect(state.ready, state.editing, state.original, state.draft.personIds, state.draft.placeId, state.draft.photos) {
+        if (state.ready && !contextExpansionInitialized) {
+            more = state.editing || state.original != null || state.draft.personIds.isNotEmpty() ||
+                state.draft.placeId != null || state.draft.photos.isNotEmpty()
+            contextExpansionInitialized = true
+        }
+    }
     BackHandler { close() }
-    Scaffold(modifier = Modifier.testTag("screen_memory"), bottomBar = {
+    Scaffold(modifier = Modifier.testTag("screen_memory"), topBar = {
+        EditorTopBar(stringResource(if (state.editing) R.string.memory_edit else if (state.direct) R.string.memory_capture else R.string.memory_promote),
+            "memory_cancel", !state.busy, ::close)
+    }, bottomBar = {
         Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(enabled = !state.busy, onClick = { close() }) { Text(stringResource(R.string.cancel)) }
             if (state.editing) TextButton(enabled = enabled, onClick = { removing = true }, modifier = Modifier.testTag("memory_remove")) {
                 Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark))
             }
@@ -47,8 +65,6 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(if (state.editing) R.string.memory_edit else if (state.direct) R.string.memory_capture else R.string.memory_promote),
-                style = MaterialTheme.typography.headlineMedium)
             if (state.loading) CircularProgressIndicator()
             state.error?.let { error ->
                 Text(stringResource(when (error) {
@@ -70,11 +86,14 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
                 Text(stringResource(R.string.memory_source_kept), style = MaterialTheme.typography.bodySmall)
             }
-            if (state.direct) OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled,
+            if (state.direct) OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled, singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
                 label = { Text(stringResource(R.string.memory_title)) }, modifier = Modifier.fillMaxWidth().testTag("memory_title"))
             OutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled, minLines = 4,
                 label = { Text(stringResource(if (state.direct) R.string.memory_note else R.string.memory_marker_note)) },
-                modifier = Modifier.fillMaxWidth().testTag("memory_note"))
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                modifier = Modifier.fillMaxWidth().focusRequester(noteFocus).testTag("memory_note"))
             Text(stringResource(R.string.memory_importance), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -87,10 +106,15 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                             .semantics { contentDescription = description })
                 }
             }
-            peopleContent()
-            placeContent()
-            photosContent()
-            if (state.direct) MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MemoryEditorError.TIME, onTime)
+            TextButton(onClick = { more = !more }, enabled = enabled, modifier = Modifier.testTag("memory_more")) {
+                Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
+            }
+            if (more) {
+                peopleContent()
+                placeContent()
+                photosContent()
+                if (state.direct) MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MemoryEditorError.TIME, onTime)
+            }
         }
     }
     if (removing) AlertDialog(onDismissRequest = { removing = false },

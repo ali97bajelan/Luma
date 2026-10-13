@@ -62,6 +62,8 @@
     <string name="mood_emotions_hint">Facultatif. Choisissez-en autant que vous voulez.</string>
     <string name="mood_more_details">Plus de détails</string>
     <string name="mood_fewer_details">Moins de détails</string>
+    <string name="capture_more_details">Plus de détails</string>
+    <string name="capture_fewer_details">Moins de détails</string>
     <string name="mood_energy">Énergie</string>
     <string name="mood_stress">Stress</string>
     <string name="mood_scale_hint">Facultatif : 1 correspond à un niveau faible, 5 à un niveau élevé. Appuyez à nouveau pour effacer.</string>

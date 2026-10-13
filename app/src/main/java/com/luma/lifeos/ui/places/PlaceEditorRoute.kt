@@ -8,15 +8,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.domain.repository.PlaceRepository
 import java.util.UUID
 
@@ -36,12 +42,15 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
     onDelete: () -> Unit, onRetry: () -> Unit, onName: (String) -> Unit, onNote: (String) -> Unit) {
     var deleting by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
+    val noteFocus = remember { FocusRequester() }
     val enabled = state.ready && !state.busy && !state.completed
     fun close() { if (!state.busy) { if (state.hasChanges) discarding = true else onCancel() } }
     BackHandler { close() }
-    Scaffold(modifier = Modifier.testTag("screen_place_editor"), bottomBar = {
+    Scaffold(modifier = Modifier.testTag("screen_place_editor"), topBar = {
+        EditorTopBar(stringResource(if (state.editing) R.string.place_edit else R.string.place_create),
+            "place_cancel", !state.busy, ::close)
+    }, bottomBar = {
         Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(enabled = !state.busy, onClick = { close() }) { Text(stringResource(R.string.cancel)) }
             if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("place_delete")) {
                 Text(stringResource(R.string.delete))
             }
@@ -53,8 +62,6 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(if (state.editing) R.string.place_edit else R.string.place_create),
-                style = MaterialTheme.typography.headlineMedium)
             if (state.loading) CircularProgressIndicator()
             state.error?.let { error ->
                 Text(stringResource(when (error) {
@@ -66,9 +73,12 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
                 if (error == PlaceEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             OutlinedTextField(state.draft.name, onName, enabled = enabled, singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
                 label = { Text(stringResource(R.string.place_name)) }, modifier = Modifier.fillMaxWidth().testTag("place_name"))
             OutlinedTextField(state.draft.note, onNote, enabled = enabled, minLines = 4,
-                label = { Text(stringResource(R.string.place_note)) }, modifier = Modifier.fillMaxWidth().testTag("place_note"))
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                label = { Text(stringResource(R.string.place_note)) }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus).testTag("place_note"))
         }
     }
     if (deleting) AlertDialog(onDismissRequest = { deleting = false },
