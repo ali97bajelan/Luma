@@ -407,7 +407,7 @@
     <string name="summary_count_memories">خاطره‌ها</string>
     <string name="summary_scale_value">%1$s: %2$s/۵</string>
     <string name="summary_usage_partial">سابقهٔ استفاده ناقص است</string>
-    <string name="summary_details">دربارهٔ این خلاصه</string>
+    <string name="summary_details">شمارش‌ها و جزئیات</string>
     <string name="imports_details">دربارهٔ ورود این داده‌ها</string>
     <string name="hide_details">پنهان کردن جزئیات</string>
 </resources>

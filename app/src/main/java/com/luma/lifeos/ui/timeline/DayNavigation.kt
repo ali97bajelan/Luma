@@ -29,7 +29,7 @@ fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () ->
         }
         TextButton(onClick = onToday, modifier = Modifier.testTag("day_today")) { Text(stringResource(R.string.today), maxLines = 1) }
         IconButton(enabled = date != LocalDate.MAX, onClick = { onSelect(date.plusDays(1)) }, modifier = Modifier.testTag("day_next")) {
-            Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.next_day))
+            Icon(painterResource(R.drawable.ic_chevron_forward), contentDescription = stringResource(R.string.next_day))
         }
     }
     if (picking) {

@@ -67,6 +67,37 @@ class TimelineViewModelTest {
         assertTrue(vm.state.value.records.isEmpty())
         assertEquals(0, vm.state.value.totalCount)
     }
+    @Test fun countChangingPaginationKeepsHiddenUsageRowsOutOfTheFallbackWindow() = runTest(dispatcher) {
+        val repo = StoredRecords(170)
+        val vm = TimelineViewModel(repo, SavedStateHandle())
+        vm.selectDay(day, zone); advanceUntilIdle()
+
+        repo.records.removeAt(0)
+        val now = Instant.parse("2026-10-11T08:00:00Z")
+        repo.records += LifeEventRecord(LifeEvent(EventId(UUID(0, 1_000)), EventType.APP_USAGE, now, now))
+        vm.loadLater(); advanceUntilIdle()
+
+        assertFalse(vm.state.value.showAppUsage)
+        assertEquals(169, vm.state.value.totalCount)
+        assertTrue(vm.state.value.records.none { it.event.type == EventType.APP_USAGE })
+    }
+    @Test fun emptyOffsetRecoveryKeepsHiddenUsageRowsOutOfTheRecenteredWindow() = runTest(dispatcher) {
+        val repo = StoredRecords(1_000)
+        repo.records.indices.filter { it % 3 == 0 }.forEach { index ->
+            repo.records[index] = repo.records[index].copy(event = repo.records[index].event.copy(type = EventType.APP_USAGE))
+        }
+        val vm = TimelineViewModel(repo, SavedStateHandle())
+        vm.selectDay(day, zone); advanceUntilIdle()
+        repeat(4) { vm.loadLater(); advanceUntilIdle() }
+        assertTrue(vm.state.value.offset > 0)
+
+        repo.records.subList(20, repo.records.size).clear()
+        repo.changes.emit(Unit); advanceUntilIdle()
+
+        assertFalse(vm.state.value.showAppUsage)
+        assertTrue(vm.state.value.records.none { it.event.type == EventType.APP_USAGE })
+        assertEquals(13, vm.state.value.totalCount)
+    }
     @Test fun exhaustedShortPageStopsLoadingAndErrorsRetryWithoutLosingRows() = runTest(dispatcher) {
         val repo = StoredRecords(170)
         val vm = TimelineViewModel(repo, SavedStateHandle()); vm.selectDay(day, zone); advanceUntilIdle()

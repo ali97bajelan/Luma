@@ -58,7 +58,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         }
                         IconButton(enabled = period.current.start.plusWeeks(1) <= today,
                             onClick = { selected = period.current.start.plusWeeks(1).toString() }, modifier = Modifier.testTag("review_next")) {
-                            Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.review_next_week))
+                            Icon(painterResource(R.drawable.ic_chevron_forward), contentDescription = stringResource(R.string.review_next_week))
                         }
                     }
                     Text(stringResource(R.string.review_comparison_range, period.previous.start.format(format), period.previous.through.format(format)))

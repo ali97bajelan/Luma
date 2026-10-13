@@ -138,11 +138,11 @@ class TimelineViewModel(private val repository: TimelineRepository, private val 
                 var replace = mode == TimelineError.LOAD
                 if (range != null && !replace && page.totalCount != current.totalCount) {
                     // A write may commit just before its invalidation reaches us. Re-read one coherent window.
-                    page = repository.page(range, current.offset, minOf(MAXIMUM, current.records.size + PAGE))
+                    page = repository.page(range, current.offset, minOf(MAXIMUM, current.records.size + PAGE), current.showAppUsage)
                     replace = true
                 }
                 if (range != null && replace && page.records.isEmpty() && page.totalCount > 0 && page.offset > 0)
-                    page = repository.page(range, maxOf(0, page.totalCount - limit), limit)
+                    page = repository.page(range, maxOf(0, page.totalCount - limit), limit, current.showAppUsage)
                 ensureActive()
                 if (token != sequence) return@launch
                 val merged = if (replace) page.records else if (mode == TimelineError.LATER) current.records + page.records

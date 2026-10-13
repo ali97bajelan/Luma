@@ -62,9 +62,21 @@ class TodayScreenTest {
         }
         compose.onNodeWithText("A calm afternoon").assertIsDisplayed()
         compose.onNodeWithText("A short walk helped me recharge.").assertIsDisplayed()
+        compose.onNodeWithTag("summary_records").assertIsDisplayed()
+        compose.onNodeWithTag("summary_mood").assertIsDisplayed()
+        compose.onNodeWithTag("summary_usage").assertIsDisplayed()
+        compose.onNodeWithTag("summary_journals").assertDoesNotExist()
+        compose.onNodeWithTag("summary_memories").assertDoesNotExist()
+        compose.onNodeWithTag("summary_energy").assertDoesNotExist()
+        compose.onNodeWithTag("summary_stress").assertDoesNotExist()
+        compose.onNodeWithTag("summary_usage_app_example.reader").assertDoesNotExist()
         compose.onNodeWithTag("summary_activity_steps_count_HEALTH_CONNECT").assertDoesNotExist()
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_details"))
         compose.onNodeWithTag("summary_details").performClick()
+        compose.onNodeWithTag("summary_journals").assertExists()
+        compose.onNodeWithTag("summary_memories").assertExists()
+        compose.onNodeWithTag("summary_energy").assertExists()
+        compose.onNodeWithTag("summary_stress").assertExists()
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_usage_package_example.maps.long.package.name"))
         compose.onNodeWithTag("summary_usage_package_example.maps.long.package.name").assertIsDisplayed()
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_activity_steps_count_HEALTH_CONNECT"))
@@ -90,7 +102,12 @@ class TodayScreenTest {
         }
 
         listOf("example.beta", "example.alpha", "example.gamma").forEach { packageName ->
-            compose.onNodeWithTag("summary_usage_app_$packageName").assertIsDisplayed()
+            compose.onNodeWithTag("summary_usage_app_$packageName").assertDoesNotExist()
+        }
+        compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_details"))
+        compose.onNodeWithTag("summary_details").performClick()
+        listOf("example.beta", "example.alpha", "example.gamma").forEach { packageName ->
+            compose.onNodeWithTag("summary_usage_app_$packageName").assertExists()
         }
         listOf("example.delta", "example.epsilon", "example.short").forEach { packageName ->
             compose.onNodeWithTag("summary_usage_app_$packageName").assertDoesNotExist()

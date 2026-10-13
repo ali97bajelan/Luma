@@ -53,11 +53,14 @@ class DailySummaryFlowTest {
     }
     @Test fun realMetricsRefreshAndOmitUnavailableMoodMeans() {
         show(); awaitText("summary_records", "2")
-        awaitText("summary_memories", "1")
+        compose.onNodeWithTag("summary_memories").assertDoesNotExist()
         awaitText("summary_mood", "4/5", substring = true)
-        awaitText("summary_energy", "2/5", substring = true)
+        compose.onNodeWithTag("summary_energy").assertDoesNotExist()
         compose.onNodeWithTag("summary_stress").assertDoesNotExist()
         awaitText("summary_usage", "unavailable", substring = true)
+        scrollToTag("summary_details"); compose.onNodeWithTag("summary_details").performClick()
+        compose.onNodeWithTag("summary_memories").assertTextContains("1", substring = true)
+        compose.onNodeWithTag("summary_energy").assertTextContains("2/5", substring = true)
         runBlocking { RoomMoodRepository(db, clock).update(mood, MoodInput(5, now, energy = 2)) }
         awaitText("summary_mood", "5/5", substring = true)
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("day_previous"))
@@ -101,10 +104,11 @@ class DailySummaryFlowTest {
         }
         show()
         awaitText("summary_usage", "Saved foreground usage: 0 h 1 min · apps shown: 1")
-        awaitText("summary_usage_label_org.example.reader", "Reader")
-        awaitText("summary_usage_duration_org.example.reader", "0 h 1 min")
+        compose.onNodeWithTag("summary_usage_label_org.example.reader").assertDoesNotExist()
         scrollToTag("summary_details"); compose.onNodeWithTag("summary_details").performClick()
-        awaitText("summary_usage_package_org.example.reader", "org.example.reader")
+        compose.onNodeWithTag("summary_usage_label_org.example.reader").assertTextEquals("Reader")
+        compose.onNodeWithTag("summary_usage_duration_org.example.reader").assertTextEquals("0 h 1 min")
+        compose.onNodeWithTag("summary_usage_package_org.example.reader").assertTextEquals("org.example.reader")
         compose.onNodeWithTag("summary_usage_label_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_duration_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_package_org.example.empty").assertDoesNotExist()

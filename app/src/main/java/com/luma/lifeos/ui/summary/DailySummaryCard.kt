@@ -22,7 +22,6 @@ import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.domain.usage.UsageHistory
 import java.text.NumberFormat
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
     Card(Modifier.fillMaxWidth().testTag("daily_summary")) {
@@ -36,17 +35,9 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                 }
                 is DailySummaryState.Data -> {
                     val summary = state.summary
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CountMetric(R.string.summary_count_entries, summary.records, "summary_records", Modifier.weight(1f))
-                        CountMetric(R.string.summary_count_journals, summary.journals, "summary_journals", Modifier.weight(1f))
-                        CountMetric(R.string.summary_count_memories, summary.memories, "summary_memories", Modifier.weight(1f))
-                    }
+                    CountMetric(R.string.summary_count_entries, summary.records, "summary_records", Modifier)
                     val mood = summary.mood
-                    if (mood != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ScaleLine(stringResource(R.string.summary_mood), mood.score, "summary_mood")
-                        ScaleLine(stringResource(R.string.summary_energy), mood.energy, "summary_energy")
-                        ScaleLine(stringResource(R.string.summary_stress), mood.stress, "summary_stress")
-                    }
+                    if (mood != null) ScaleLine(stringResource(R.string.summary_mood), mood.score, "summary_mood")
                     val usage = summary.usage
                     val displayedApps = usage?.apps.orEmpty()
                         .filter { it.durationMillis > APP_USAGE_DISPLAY_THRESHOLD_MILLIS }
@@ -59,30 +50,34 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                     if (usage != null) {
                         if (usage.history == UsageHistory.PARTIAL) Text(stringResource(R.string.summary_usage_partial),
                             style = MaterialTheme.typography.labelMedium)
-                        displayedApps.forEach { app ->
-                            Row(Modifier.fillMaxWidth().testTag("summary_usage_app_${app.packageName}"),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(app.appLabel ?: app.packageName, style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f).testTag("summary_usage_label_${app.packageName}"))
-                                Text(appUsageDuration(app.durationMillis), style = MaterialTheme.typography.labelLarge,
-                                    modifier = Modifier.testTag("summary_usage_duration_${app.packageName}"))
-                            }
-                        }
                     }
                     val activity = summary.activities
                     DetailsDisclosure(R.string.summary_details, "summary_details") {
                         Text(stringResource(R.string.summary_saved_only), style = MaterialTheme.typography.bodySmall)
-                        Text(stringResource(R.string.summary_memories, summary.memories), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.summary_journals, summary.journals),
+                            modifier = Modifier.testTag("summary_journals"), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.summary_memories, summary.memories),
+                            modifier = Modifier.testTag("summary_memories"), style = MaterialTheme.typography.bodySmall)
                         val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 2 }
                         listOf(R.string.summary_mood to summary.mood?.score, R.string.summary_energy to summary.mood?.energy,
                             R.string.summary_stress to summary.mood?.stress).forEach { (label, scale) ->
                             if (scale != null) Text(stringResource(R.string.summary_average, stringResource(label), format.format(scale.average), scale.samples),
-                                style = MaterialTheme.typography.bodySmall)
+                                modifier = Modifier.testTag(when (label) {
+                                    R.string.summary_energy -> "summary_energy"
+                                    R.string.summary_stress -> "summary_stress"
+                                    else -> "summary_mood_average"
+                                }), style = MaterialTheme.typography.bodySmall)
                         }
                         if (usage != null) {
                             displayedApps.forEach { app ->
-                                app.appLabel?.let { Text(it, style = MaterialTheme.typography.labelLarge) }
+                                Row(Modifier.fillMaxWidth().testTag("summary_usage_app_${app.packageName}"),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(app.appLabel ?: app.packageName, style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f).testTag("summary_usage_label_${app.packageName}"))
+                                    Text(appUsageDuration(app.durationMillis), style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.testTag("summary_usage_duration_${app.packageName}"))
+                                }
                                 Text(app.packageName, style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.testTag("summary_usage_package_${app.packageName}"))
                             }

@@ -407,7 +407,7 @@
     <string name="summary_count_memories">Memories</string>
     <string name="summary_scale_value">%1$s: %2$s/5</string>
     <string name="summary_usage_partial">Partial usage history</string>
-    <string name="summary_details">About this summary</string>
+    <string name="summary_details">Counts and details</string>
     <string name="imports_details">About these imports</string>
     <string name="hide_details">Hide details</string>
 </resources>

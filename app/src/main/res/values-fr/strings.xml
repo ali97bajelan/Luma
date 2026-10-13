@@ -412,7 +412,7 @@
     <string name="summary_count_memories">Souvenirs</string>
     <string name="summary_scale_value">%1$s : %2$s/5</string>
     <string name="summary_usage_partial">Historique d’utilisation partiel</string>
-    <string name="summary_details">À propos de ce résumé</string>
+    <string name="summary_details">Décomptes et détails</string>
     <string name="imports_details">À propos de ces importations</string>
     <string name="hide_details">Masquer les détails</string>
 </resources>
