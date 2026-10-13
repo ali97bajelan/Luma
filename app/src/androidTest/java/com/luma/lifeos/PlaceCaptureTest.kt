@@ -36,8 +36,6 @@ class PlaceCaptureTest {
         awaitText("$name edited")
         compose.onNodeWithTag("place_detail_back").performClick()
         awaitTag("places_ready")
-        compose.onNodeWithTag("places_back").performClick()
-        awaitTag("screen_settings")
         compose.onNodeWithTag("nav_today").performClick()
         awaitTag("today_summary")
         compose.onNodeWithTag("screen_today").performScrollToNode(hasText(body))
@@ -66,8 +64,6 @@ class PlaceCaptureTest {
         compose.onNodeWithTag("places_create").performClick()
         fillPlace(name)
         awaitTag("places_ready")
-        compose.onNodeWithTag("places_back").performClick()
-        awaitTag("screen_settings")
         compose.onNodeWithTag("quick_capture").performClick()
         compose.onNodeWithTag("capture_memory").performClick()
         awaitTag("memory_note")
@@ -76,11 +72,9 @@ class PlaceCaptureTest {
         awaitText(name)
         compose.onNodeWithText(name).performScrollTo().performClick()
         compose.onNodeWithTag("memory_save").performClick()
-        awaitTag("screen_settings")
+        awaitTag("places_ready")
         openPlace(name)
         deletePlace()
-        compose.onNodeWithTag("places_back").performClick()
-        awaitTag("screen_settings")
         compose.onNodeWithTag("nav_today").performClick()
         awaitTag("today_summary")
         compose.onNodeWithTag("screen_today").performScrollToNode(hasText(note))
@@ -102,8 +96,8 @@ class PlaceCaptureTest {
         compose.onNodeWithTag("place_save").performClick()
     }
     private fun openPlaces() {
-        compose.onNodeWithTag("nav_settings").performClick()
-        compose.onNodeWithTag("settings_places").performScrollTo().performClick()
+        compose.onNodeWithTag("nav_people").performClick()
+        compose.onNodeWithTag("catalog_places").performClick()
         awaitTag("places_ready")
     }
     private fun openPlace(name: String) {

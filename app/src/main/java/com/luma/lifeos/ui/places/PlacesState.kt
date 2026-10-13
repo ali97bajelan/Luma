@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.places
 
 import com.luma.lifeos.domain.model.Place
+import com.luma.lifeos.domain.model.PlaceHistory
 import com.luma.lifeos.domain.repository.PlaceRepository
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -28,3 +29,15 @@ fun observePlace(repository: PlaceRepository, id: UUID): Flow<PlaceDetailState> 
     emit(PlaceDetailState.Loading)
     repository.observePlace(id).collect { emit(it?.let(PlaceDetailState::Data) ?: PlaceDetailState.Missing) }
 }.catch { if (it is CancellationException) throw it; emit(PlaceDetailState.Error) }
+
+sealed interface PlaceHistoryState {
+    data object Loading : PlaceHistoryState
+    data object Error : PlaceHistoryState
+    data object Missing : PlaceHistoryState
+    data class Data(val history: PlaceHistory) : PlaceHistoryState
+}
+
+fun observePlaceHistory(repository: PlaceRepository, id: UUID): Flow<PlaceHistoryState> = flow<PlaceHistoryState> {
+    emit(PlaceHistoryState.Loading)
+    repository.observeHistory(id).collect { emit(it?.let(PlaceHistoryState::Data) ?: PlaceHistoryState.Missing) }
+}.catch { if (it is CancellationException) throw it; emit(PlaceHistoryState.Error) }

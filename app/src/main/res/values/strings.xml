@@ -438,4 +438,9 @@
     <string name="settings_privacy_description">Review local storage, access, and data deletion.</string>
     <string name="settings_integrations_title">Integrations</string>
     <string name="settings_integrations_description">Manage optional imports and provider access.</string>
+    <string name="catalog_people">People</string>
+    <string name="catalog_places">Places</string>
+    <string name="place_history">Linked entries</string>
+    <string name="place_history_empty_heading">Build place history</string>
+    <string name="place_history_empty">Link this place to check-ins, journals, or memories to see them here.</string>
 </resources>

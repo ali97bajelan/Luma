@@ -27,3 +27,6 @@ data class PlaceInput(val name: String, val note: String? = null) {
 
 /** Absent selection preserves a link; a selection with a null ID explicitly clears it. */
 data class PlaceSelection(val id: UUID?)
+
+/** A committed catalog snapshot and the saved records linked to it, oldest first. */
+data class PlaceHistory(val place: Place, val events: List<LifeEventRecord>)

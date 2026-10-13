@@ -1,6 +1,7 @@
 package com.luma.lifeos.domain.repository
 
 import com.luma.lifeos.domain.model.Place
+import com.luma.lifeos.domain.model.PlaceHistory
 import com.luma.lifeos.domain.model.PlaceInput
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -9,6 +10,8 @@ interface PlaceRepository {
     fun observePlaces(): Flow<List<Place>>
     /** Missing or deleted place emits null. */
     fun observePlace(id: UUID): Flow<Place?>
+    /** Place and linked records emit together; missing or deleted place emits null. */
+    fun observeHistory(id: UUID): Flow<PlaceHistory?>
     suspend fun get(id: UUID): Place?
     /** Equal names can have distinct IDs; identical retained-ID creates are idempotent. */
     suspend fun create(id: UUID, input: PlaceInput): UUID

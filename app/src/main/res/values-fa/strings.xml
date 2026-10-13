@@ -438,4 +438,9 @@
     <string name="settings_privacy_description">ذخیره‌سازی محلی، دسترسی‌ها و حذف داده‌ها را بررسی کنید.</string>
     <string name="settings_integrations_title">اتصال‌ها</string>
     <string name="settings_integrations_description">دریافت اختیاری داده‌ها و دسترسی به سرویس‌ها را مدیریت کنید.</string>
+    <string name="catalog_people">افراد</string>
+    <string name="catalog_places">مکان‌ها</string>
+    <string name="place_history">نوشته‌های پیوندشده</string>
+    <string name="place_history_empty_heading">پیشینهٔ مکان را بسازید</string>
+    <string name="place_history_empty">این مکان را به حال‌وهوای ثبت‌شده، یادداشت روزانه یا خاطره پیوند دهید تا اینجا نمایش داده شود.</string>
 </resources>

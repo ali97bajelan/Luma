@@ -179,8 +179,10 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             heading = destination.label, screenTag = "screen_${destination.route}",
                             onEventClick = { navController.navigate("event_detail/$it") }, summaries = summaries)
                     } else if (destination == Destination.PEOPLE) {
-                        PeopleRoute(people, onCreate = { navController.navigate("person") },
-                            onPerson = { navController.navigate("person_detail/$it") })
+                        PeopleRoute(people, places, onCreatePerson = { navController.navigate("person") },
+                            onPerson = { navController.navigate("person_detail/$it") },
+                            onCreatePlace = { navController.navigate("place") },
+                            onPlace = { navController.navigate("place_detail/$it") })
                     } else if (destination == Destination.REVIEW) {
                         if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
                             onSources = { dates, metric ->
@@ -263,7 +265,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
             composable("place_detail/{placeId}", arguments = listOf(navArgument("placeId") { type = NavType.StringType })) { entry ->
                 val id = UUID.fromString(requireNotNull(entry.arguments?.getString("placeId")))
                 PlaceDetailRoute(places, id, onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate("place?placeId=$id") })
+                    onEdit = { navController.navigate("place?placeId=$id") }, onEvent = ::openEvent)
             }
             composable("person?personId={personId}", arguments = listOf(navArgument("personId") {
                 type = NavType.StringType; nullable = true; defaultValue = null

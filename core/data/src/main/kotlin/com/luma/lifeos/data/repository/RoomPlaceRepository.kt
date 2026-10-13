@@ -3,6 +3,7 @@ package com.luma.lifeos.data.repository
 import androidx.room.withTransaction
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.entity.PlaceEntity
+import com.luma.lifeos.data.mapping.toRecord
 import com.luma.lifeos.data.mapping.toDomainPlace
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PlaceRepository
@@ -13,6 +14,10 @@ class RoomPlaceRepository(private val database: LumaDatabase) : PlaceRepository 
     private val catalog = database.catalog()
     override fun observePlaces() = catalog.observePlaces().map { rows -> rows.map { it.toDomainPlace() } }
     override fun observePlace(id: UUID) = catalog.observePlace(id.toString()).map { it?.toDomainPlace() }
+    override fun observeHistory(id: UUID) = catalog.observePlaceHistory(id.toString()).map { graph ->
+        graph?.let { PlaceHistory(it.place.toDomainPlace(), it.events.map { event -> event.toRecord() }
+            .sortedWith { first, second -> LifeEvent.chronologicalOrder.compare(first.event, second.event) }) }
+    }
     override suspend fun get(id: UUID): Place? = catalog.place(id.toString())?.toDomainPlace()
     override suspend fun create(id: UUID, input: PlaceInput): UUID = database.withTransaction {
         val previous = catalog.place(id.toString())

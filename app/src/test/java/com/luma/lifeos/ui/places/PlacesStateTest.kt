@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.places
 
 import com.luma.lifeos.domain.model.Place
+import com.luma.lifeos.domain.model.PlaceHistory
 import com.luma.lifeos.domain.model.PlaceInput
 import com.luma.lifeos.domain.repository.PlaceRepository
 import java.util.UUID
@@ -14,6 +15,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PlacesStateTest {
+    @Test fun historyDistinguishesMissingFromLoadingAndError() = runTest {
+        val repo = TestPlaces()
+        val id = UUID.randomUUID()
+        val history = PlaceHistory(Place(id, "Cafe"), emptyList())
+        val renamed = history.copy(place = history.place.copy(name = "Renamed"))
+        repo.history = flowOf(null, history, renamed, null)
+        assertEquals(listOf(PlaceHistoryState.Loading, PlaceHistoryState.Missing,
+            PlaceHistoryState.Data(history), PlaceHistoryState.Data(renamed), PlaceHistoryState.Missing),
+            observePlaceHistory(repo, id).toList())
+        repo.failed = true
+        assertEquals(listOf(PlaceHistoryState.Loading, PlaceHistoryState.Error), observePlaceHistory(repo, id).toList())
+        repo.failed = false
+        repo.history = flowOf(history)
+        assertEquals(listOf(PlaceHistoryState.Loading, PlaceHistoryState.Data(history)), observePlaceHistory(repo, id).toList())
+    }
     @Test fun catalogFailuresSurfaceErrorAndNewObservationCanRetry() = runTest {
         val repo = TestPlaces()
         repo.failed = true
@@ -32,13 +48,15 @@ class PlacesStateTest {
     }
     @Test fun navigationCancellationIsNotRenderedAsLoadFailure() = runTest {
         val repo = TestPlaces().apply { cancelled = true }
-        for (observation in listOf(observePlaces(repo), observePlace(repo, UUID.randomUUID()))) {
+        for (observation in listOf(observePlaces(repo), observePlace(repo, UUID.randomUUID()), observePlaceHistory(repo, UUID.randomUUID()))) {
             try { observation.toList(); fail("Cancellation should propagate") } catch (_: CancellationException) { }
         }
     }
     private class TestPlaces : PlaceRepository {
         var failed = false
         var cancelled = false
+        var history: Flow<PlaceHistory?> = flowOf(null)
+        override fun observeHistory(id: UUID) = flow { check(); history.collect { emit(it) } }
         var detail: Flow<Place?> = flowOf(null)
         private fun check() { if (cancelled) throw CancellationException(); if (failed) error("Unavailable") }
         override fun observePlaces() = flow<List<Place>> { check(); emit(emptyList()) }

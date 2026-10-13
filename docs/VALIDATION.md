@@ -1792,3 +1792,33 @@ Connect controls precede expandable explanations in all three app languages.
 Validation logs and isolated APK copies are in `/tmp/luma-high-priority`.
 Instrumentation runs use `com.luma.lifeos.validationrun` and
 `com.luma.lifeos.data.test`; tests do not clear the normal app's saved data.
+
+## UX review finding 15 — People and Places catalog, 2026-10-13
+
+Implemented the saveable People/Places catalog selector, shared Places list,
+transactional PlaceHistory observation through existing Room links, and lazy
+oldest-first place history with existing event actions. English, Persian and
+French copy is included. Capture tests now enter Places through People.
+No schema, permission or dependency change was made.
+
+- PASS: four PlacesStateTest cases using the cached Kotlin compiler and JUnit.
+  The temporary test copy substitutes `runBlocking` for unavailable `runTest`;
+  these flow tests use no virtual time. All domain sources and production
+  PlacesState.kt compile. Missing history/state APIs were observed failing
+  compilation before implementation, then all four cases passed.
+- PASS: resource XML parsing and equal English/Persian/French keys, all new
+  labels and string references, retained CRLF, and scoped added-line whitespace.
+- PENDING: Android app/data builds, generated Room relation verification and
+  instrumentation. The wrapper distribution is unavailable locally. Retrying
+  with cached Gradle 9.6 and local socket access stops at unresolved Android
+  Gradle Plugin 8.7.3 in offline mode, before project compilation.
+- ADDED, NOT RUN: Room tests for stable chronology, live committed place/link/
+  event updates, missing-place emission and event retention; Compose tests for
+  catalog switching/create actions, creation save/cancel/restoration, linked
+  entry opening and empty/deleted detail. Real RTL, large-font, keyboard and
+  TalkBack checks require Android execution.
+- Independent read-only review: no Critical/Important findings. Deferred minor
+  test gaps: checking consistency on every intermediate history emission and
+  asserting relative UI order more strictly when both event cards are visible.
+
+Logs and the scoped diff are under `/tmp/luma-ux15-*`. Work remains uncommitted.

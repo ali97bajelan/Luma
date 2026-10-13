@@ -116,6 +116,7 @@ class PlaceEditorTest {
         var failDelete = false
         var failAfterDelete = false
         override fun observePlaces() = flowOf(records.values.toList())
+        override fun observeHistory(id: UUID): kotlinx.coroutines.flow.Flow<com.luma.lifeos.domain.model.PlaceHistory?> = flowOf(null)
         override fun observePlace(id: UUID) = flowOf(records[id])
         override suspend fun get(id: UUID): Place? { if (failLoad) error("Unavailable"); return records[id] }
         override suspend fun create(id: UUID, input: PlaceInput): UUID {

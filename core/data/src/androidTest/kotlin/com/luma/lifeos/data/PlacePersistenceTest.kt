@@ -32,6 +32,61 @@ class PlacePersistenceTest {
     }
     @After fun tearDown() { database.close() }
 
+    @Test fun placeHistoryUsesStableChronologicalOrder() = runBlocking {
+        val place = UUID.randomUUID()
+        places.create(place, PlaceInput("Cafe"))
+        val journals = RoomJournalRepository(database)
+        val high = EventId.parse("00000000-0000-0000-0000-000000000003")
+        val low = EventId.parse("00000000-0000-0000-0000-000000000002")
+        val early = EventId.parse("00000000-0000-0000-0000-000000000001")
+        for ((id, time) in listOf(high to now, low to now, early to now.minusSeconds(60))) {
+            journals.create(id, JournalInput("Entry $id", time, placeSelection = PlaceSelection(place)))
+        }
+        val history = places.observeHistory(place).first()!!
+        assertEquals(places.get(place), history.place)
+        assertEquals(listOf(early, low, high), history.events.map { it.event.id })
+        assertTrue(history.events.all { it.place == history.place && it.journal != null })
+        assertNull(places.observeHistory(UUID.randomUUID()).first())
+    }
+
+    @Test fun placeHistoryTracksCommittedLinkAndEventChanges() = runBlocking {
+        val place = UUID.randomUUID()
+        places.create(place, PlaceInput("Cafe"))
+        val journals = RoomJournalRepository(database)
+        val id = EventId.new()
+        coroutineScope {
+            val snapshots = Channel<PlaceHistory?>(Channel.UNLIMITED)
+            val observer = launch { places.observeHistory(place).collect { snapshots.send(it) } }
+            suspend fun awaitHistory(matches: (PlaceHistory?) -> Boolean) = withTimeout(5_000) {
+                var value = snapshots.receive()
+                while (!matches(value)) value = snapshots.receive()
+                value
+            }
+            try {
+                awaitHistory { it?.events?.isEmpty() == true }
+                journals.create(id, JournalInput("Before", now, placeSelection = PlaceSelection(place)))
+                awaitHistory { it?.events?.singleOrNull()?.journal?.body == "Before" }
+                places.update(place, PlaceInput("Renamed"))
+                val renamed = awaitHistory { it?.place?.name == "Renamed" }!!
+                assertEquals(renamed.place, renamed.events.single().place)
+                journals.update(id, JournalInput("After", now.minusSeconds(120)))
+                val edited = awaitHistory { it?.events?.singleOrNull()?.journal?.body == "After" }!!
+                assertEquals(now.minusSeconds(120), edited.events.single().event.occurredAt)
+                assertEquals(edited.place, edited.events.single().place)
+                journals.update(id, JournalInput("After", now, placeSelection = PlaceSelection(null)))
+                awaitHistory { it?.events?.isEmpty() == true }
+                journals.update(id, JournalInput("After", now, placeSelection = PlaceSelection(place)))
+                awaitHistory { it?.events?.singleOrNull()?.event?.id == id }
+                places.delete(place)
+                awaitHistory { it == null }
+                assertEquals("After", journals.get(id)!!.journal!!.body)
+                assertNull(journals.get(id)!!.place)
+            } finally {
+                observer.cancel(); snapshots.close()
+            }
+        }
+    }
+
     @Test fun retriesAndEqualNamesKeepIdentityAndEditingPreservesCoordinates() = runBlocking {
         val id = UUID.randomUUID(); val other = UUID.randomUUID()
         places.create(id, PlaceInput("  Cafe  ", "  Near home  "))
@@ -93,7 +148,9 @@ class PlacePersistenceTest {
         journals.create(id, JournalInput("Keep", now, tagNames = setOf("Work"), personIds = setOf(person), placeSelection = PlaceSelection(place)))
         RoomMemoryRepository(database).saveMarker(id, MemoryMarkerInput(5, "Marker"))
         val original = database.lifeEvents().getDetails(id.toString())!!
+        assertEquals(id, places.observeHistory(place).first()!!.events.single().event.id)
         places.delete(place)
+        assertNull(places.observeHistory(place).first())
         assertEquals(original.copy(places = emptyList()), database.lifeEvents().getDetails(id.toString()))
         assertNull(journals.get(id)!!.place)
         assertEquals("Keep", journals.get(id)!!.journal!!.body)

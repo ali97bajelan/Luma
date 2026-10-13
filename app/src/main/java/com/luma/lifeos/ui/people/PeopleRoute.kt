@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -20,18 +21,38 @@ import com.luma.lifeos.ui.common.EmptyStateCard
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PersonRepository
+import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.ui.places.PlacesListContent
 import com.luma.lifeos.ui.memory.MemoryStatus
 import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.util.UUID
 
 @Composable
-fun PeopleRoute(repository: PersonRepository, onCreate: () -> Unit, onPerson: (UUID) -> Unit) {
+fun PeopleRoute(people: PersonRepository, places: PlaceRepository, onCreatePerson: () -> Unit,
+    onPerson: (UUID) -> Unit, onCreatePlace: () -> Unit, onPlace: (UUID) -> Unit) {
+    // Owned by this destination so navigation's saveable state restores the selected catalog.
+    var placesSelected by rememberSaveable { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = if (placesSelected) 1 else 0) {
+            Tab(selected = !placesSelected, onClick = { placesSelected = false },
+                modifier = Modifier.testTag("catalog_people"), text = { Text(stringResource(R.string.catalog_people)) })
+            Tab(selected = placesSelected, onClick = { placesSelected = true },
+                modifier = Modifier.testTag("catalog_places"), text = { Text(stringResource(R.string.catalog_places)) })
+        }
+        if (placesSelected) PlacesListContent(places, onCreatePlace, onPlace, modifier = Modifier.weight(1f))
+        else PeopleListContent(people, onCreatePerson, onPerson, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit,
+    onPerson: (UUID) -> Unit, modifier: Modifier = Modifier) {
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, retry) { observePeople(repository) }
     val state by observation.collectAsStateWithLifecycle(PeopleState.Loading)
     val empty = (state as? PeopleState.Data)?.people?.isEmpty() == true
-    LazyColumn(Modifier.fillMaxSize().testTag("screen_people"),
+    LazyColumn(modifier.fillMaxSize().testTag("screen_people"),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {

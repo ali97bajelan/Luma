@@ -443,4 +443,9 @@
     <string name="settings_privacy_description">Consultez le stockage local, les accès et la suppression des données.</string>
     <string name="settings_integrations_title">Intégrations</string>
     <string name="settings_integrations_description">Gérez les imports facultatifs et les accès aux fournisseurs.</string>
+    <string name="catalog_people">Personnes</string>
+    <string name="catalog_places">Lieux</string>
+    <string name="place_history">Entrées associées</string>
+    <string name="place_history_empty_heading">Créez un historique du lieu</string>
+    <string name="place_history_empty">Associez ce lieu à un point sur l’humeur, une entrée de journal ou un souvenir pour les afficher ici.</string>
 </resources>
