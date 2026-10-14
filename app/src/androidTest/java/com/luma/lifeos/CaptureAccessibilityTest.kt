@@ -1,0 +1,186 @@
+package com.luma.lifeos
+
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.platform.testTag
+import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.journal.JournalDraft
+import com.luma.lifeos.ui.journal.JournalEditorError
+import com.luma.lifeos.ui.journal.JournalEditorScreen
+import com.luma.lifeos.ui.journal.JournalEditorState
+import com.luma.lifeos.ui.journal.JournalTextField
+import com.luma.lifeos.ui.mood.MoodDraft
+import com.luma.lifeos.ui.mood.MoodEditorScreen
+import com.luma.lifeos.ui.mood.MoodEditorState
+import com.luma.lifeos.ui.mood.MoodTimeControls
+import com.luma.lifeos.domain.model.PhotoAttachment
+import com.luma.lifeos.domain.repository.PhotoRepository
+import com.luma.lifeos.ui.photos.PhotoEditor
+import com.luma.lifeos.ui.theme.LifeOsTheme
+import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+
+class CaptureAccessibilityTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test fun editorSectionsAreHeadings() {
+        compose.setContent {
+            LifeOsTheme {
+                JournalEditorScreen(
+                    state = JournalEditorState(JournalDraft(Instant.parse("2026-10-14T08:00:00Z").toEpochMilli(), body = "Entry"), ready = true),
+                    onCancel = {}, onSave = {}, onDelete = {}, onRetry = {}, onTitle = {}, onBody = {},
+                    onAddTag = { true }, onRemoveTag = {}, onTime = { _, _ -> true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("editor_title").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+        compose.onNodeWithTag("journal_tags").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+    }
+
+    @Test fun disclosureNamesContentsAndKeepsTimestampVisible() {
+        compose.setContent {
+            LifeOsTheme {
+                MoodEditorScreen(
+                    state = MoodEditorState(MoodDraft(Instant.parse("2026-10-14T08:00:00Z").toEpochMilli(), score = 3), ready = true),
+                    editing = false, onCancel = {}, onSave = {}, onDelete = {}, onRetry = {}, onScore = {},
+                    onEmotion = {}, onEnergy = {}, onStress = {}, onNote = {}, onTime = { _, _ -> true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("mood_date").assertIsDisplayed()
+        compose.onNodeWithTag("mood_question").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+        compose.onNodeWithTag("mood_more").assertTextContains("Note and context").performClick()
+        compose.onNodeWithTag("mood_more").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.StateDescription))
+        compose.onNodeWithTag("mood_note").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("mood_date").assertExists()
+    }
+
+    @Test fun fieldErrorsBelongToFieldNodes() {
+        compose.setContent {
+            LifeOsTheme {
+                JournalEditorScreen(
+                    state = JournalEditorState(
+                        JournalDraft(Instant.parse("2026-10-14T08:00:00Z").toEpochMilli(), body = "Kept body"),
+                        ready = true, textErrors = setOf(JournalTextField.BODY),
+                    ),
+                    onCancel = {}, onSave = {}, onDelete = {}, onRetry = {}, onTitle = {}, onBody = {},
+                    onAddTag = { false }, onRemoveTag = {}, onTime = { _, _ -> true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("journal_body").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
+        compose.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite), useUnmergedTree = true)
+            .assertCountEquals(1)
+    }
+
+    @Test fun saveFailureStaysVisibleWithScrolledBody() {
+        compose.setContent {
+            LifeOsTheme {
+                JournalEditorScreen(
+                    state = JournalEditorState(
+                        JournalDraft(Instant.parse("2026-10-14T08:00:00Z").toEpochMilli(), body = "Long entry\n".repeat(200)),
+                        ready = true, error = JournalEditorError.SAVE,
+                    ),
+                    onCancel = {}, onSave = {}, onDelete = {}, onRetry = {}, onTitle = {}, onBody = {},
+                    onAddTag = { true }, onRemoveTag = {}, onTime = { _, _ -> true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("journal_body").performScrollTo()
+        compose.onNodeWithTag("journal_error").assertIsDisplayed()
+        compose.onNodeWithTag("journal_save").assertIsDisplayed()
+    }
+
+    @Test fun photoFailureRevealsContextAndRetry() {
+        val retries = AtomicInteger()
+        val previewRepository = object : PhotoRepository {
+            override suspend fun import(draftId: java.util.UUID, id: java.util.UUID, source: String): PhotoAttachment = error("unused")
+            override suspend fun retainDraft(draftId: java.util.UUID, photos: List<PhotoAttachment>) = Unit
+            override suspend fun releaseDraft(draftId: java.util.UUID) = Unit
+            override suspend fun preview(photo: PhotoAttachment): ByteArray? = null
+            override suspend fun cleanup() = Unit
+        }
+        compose.setContent {
+            LifeOsTheme {
+                JournalEditorScreen(
+                    state = JournalEditorState(
+                        JournalDraft(Instant.parse("2026-10-14T08:00:00Z").toEpochMilli(), body = "Entry"),
+                        ready = true, error = JournalEditorError.PHOTO,
+                    ),
+                    onCancel = {}, onSave = {}, onDelete = {}, onRetry = {}, onTitle = {}, onBody = {},
+                    onAddTag = { true }, onRemoveTag = {}, onTime = { _, _ -> true },
+                    photosContent = { PhotoEditor(previewRepository, emptyList(), true, {}, {},
+                        { retries.incrementAndGet() }, importFailed = true) },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("photo_import_error").assertIsDisplayed()
+        compose.onNodeWithTag("photo_retry_import").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1, retries.get()) }
+    }
+
+    @Test fun failedPhotoRemovalShowsLocalFeedbackAndKeepsTheAttachmentVisible() {
+        val attachment = PhotoAttachment(java.util.UUID.randomUUID(), "photos/kept.img")
+        val repository = object : PhotoRepository {
+            override suspend fun import(draftId: java.util.UUID, id: java.util.UUID, source: String): PhotoAttachment = error("unused")
+            override suspend fun retainDraft(draftId: java.util.UUID, photos: List<PhotoAttachment>) = Unit
+            override suspend fun releaseDraft(draftId: java.util.UUID) = Unit
+            override suspend fun preview(photo: PhotoAttachment): ByteArray? = null
+            override suspend fun cleanup() = Unit
+        }
+        compose.setContent {
+            LifeOsTheme {
+                JournalEditorScreen(
+                    state = JournalEditorState(
+                        JournalDraft(Instant.parse("2026-10-14T08:00:00Z").toEpochMilli(), body = "Entry", photos = listOf(attachment)),
+                        ready = true, error = JournalEditorError.PHOTO,
+                    ),
+                    onCancel = {}, onSave = {}, onDelete = {}, onRetry = {}, onTitle = {}, onBody = {},
+                    onAddTag = { true }, onRemoveTag = {}, onTime = { _, _ -> true },
+                    photosContent = { PhotoEditor(repository, listOf(attachment), true, {}, {}, {},
+                        importFailed = false, operationFailed = true) },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("photo_operation_error").assertIsDisplayed()
+        compose.onNodeWithTag("photo_remove_${attachment.id}").assertExists()
+        compose.onNodeWithTag("photo_retry_import").assertDoesNotExist()
+    }
+
+    @Test fun timestampDialogHasOneAnnouncementOwner() {
+        var timeError by mutableStateOf(false)
+        compose.setContent {
+            LifeOsTheme {
+                MoodTimeControls(
+                    Instant.parse("2026-10-14T08:00:00Z").toEpochMilli(), enabled = true,
+                    timeError = timeError, onTime = { _, _ -> timeError = true; false },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("mood_date").performClick()
+        compose.onAllNodesWithText("Select date").filterToOne(hasClickAction()).performClick()
+        compose.onAllNodesWithTag("mood_time_error", useUnmergedTree = true).assertCountEquals(1)
+        compose.onNodeWithTag("mood_time_error", useUnmergedTree = true).assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
+        compose.onNodeWithTag("mood_time_error", useUnmergedTree = true).assert(
+            SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
+        compose.onAllNodesWithText("Cancel").filterToOne(hasClickAction()).performClick()
+        compose.onAllNodesWithTag("mood_time_error", useUnmergedTree = true).assertCountEquals(1)
+        compose.onNodeWithTag("mood_time_error", useUnmergedTree = true).assertIsDisplayed()
+    }
+}

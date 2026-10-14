@@ -18,6 +18,8 @@ data class SearchInput(
     val tagIds: Set<UUID> = emptySet(), val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null,
 ) {
     val invalidDates get() = from != null && through != null && from.isAfter(through)
+    val activeFilterCount get() = tagIds.size + personIds.size + (if (placeId == null) 0 else 1) +
+        (if (from == null) 0 else 1) + (if (through == null) 0 else 1)
     fun query() = SearchQuery(text, from, through, tagIds, personIds, placeId)
 }
 
@@ -113,6 +115,20 @@ class SearchViewModel(private val repository: SearchRepository, private val save
     }
     fun toggleTag(id: UUID) = update(state.value.input.copy(tagIds = toggle(state.value.input.tagIds, id)))
     fun togglePerson(id: UUID) = update(state.value.input.copy(personIds = toggle(state.value.input.personIds, id)))
+    internal fun removeFilter(key: SearchFilterKey) {
+        val input = state.value.input
+        val updated = when (key.kind) {
+            SearchFilterKind.FROM -> input.copy(from = null)
+            SearchFilterKind.THROUGH -> input.copy(through = null)
+            SearchFilterKind.TAG -> key.id?.let { input.copy(tagIds = input.tagIds - it) } ?: input
+            SearchFilterKind.PERSON -> key.id?.let { input.copy(personIds = input.personIds - it) } ?: input
+            SearchFilterKind.PLACE -> if (input.placeId == key.id) input.copy(placeId = null) else input
+        }
+        update(updated)
+    }
+    fun clearFilters() = update(state.value.input.copy(
+        from = null, through = null, tagIds = emptySet(), personIds = emptySet(), placeId = null,
+    ))
     fun clear() = update(SearchInput())
     fun rememberResult(id: com.luma.lifeos.domain.model.EventId) {
         val current = state.value

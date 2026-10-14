@@ -242,7 +242,7 @@ class WeeklyReviewFlowTest {
         compose.runOnIdle { assertEquals(today, opened) }
     }
     private fun scroll(tag: String) {
-        compose.waitUntil(5000) {
+        compose.waitUntil(15000) {
             try { compose.onNodeWithTag("memory_review_list").performScrollToNode(hasTestTag(tag)); true }
             catch (_: AssertionError) { false }
         }

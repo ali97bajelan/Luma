@@ -32,12 +32,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.common.EditorTopBar
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -83,13 +86,21 @@ fun MoodEditorScreen(
             EditorTopBar(stringResource(if (editing) R.string.mood_edit else R.string.mood_capture), "mood_cancel", !state.busy, ::close)
         },
         bottomBar = {
-            Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("mood_delete")) {
-                    Text(stringResource(R.string.delete))
+            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val actionError = when (state.error) {
+                    MoodEditorError.SAVE -> stringResource(R.string.mood_save_error)
+                    MoodEditorError.DELETE -> stringResource(R.string.mood_delete_error)
+                    else -> null
                 }
-                Button(enabled = enabled && state.draft.score != null, onClick = onSave,
-                    modifier = Modifier.weight(1f).testTag("mood_save")) {
-                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                actionError?.let { AccessibleFeedback(it, Modifier.testTag("mood_error")) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("mood_delete")) {
+                        Text(stringResource(R.string.delete))
+                    }
+                    Button(enabled = enabled && state.draft.score != null, onClick = onSave,
+                        modifier = Modifier.weight(1f).testTag("mood_save")) {
+                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                    }
                 }
             }
         },
@@ -97,18 +108,14 @@ fun MoodEditorScreen(
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.loading) CircularProgressIndicator(Modifier.testTag("mood_loading"))
-            state.error?.let {
-                Text(stringResource(when (it) {
-                    MoodEditorError.LOAD -> R.string.mood_load_error
-                    MoodEditorError.SAVE -> R.string.mood_save_error
-                    MoodEditorError.DELETE -> R.string.mood_delete_error
-                    MoodEditorError.TIME -> R.string.mood_time_error
-                }), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("mood_error"))
-                if (it == MoodEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            if (state.error == MoodEditorError.LOAD) {
+                AccessibleFeedback(stringResource(R.string.mood_load_error), Modifier.testTag("mood_error"))
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             if (state.ready) {
                 MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
-                Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() }.testTag("mood_question"))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(stringResource(R.string.mood_very_low), style = MaterialTheme.typography.bodySmall)
                     Text(stringResource(R.string.mood_great), style = MaterialTheme.typography.bodySmall)
@@ -127,7 +134,8 @@ fun MoodEditorScreen(
                     Text(stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score))),
                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("mood_score_description"))
                 }
-                Text(stringResource(R.string.mood_emotions), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.mood_emotions), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() }.testTag("mood_emotions"))
                 Text(stringResource(R.string.mood_emotions_hint), style = MaterialTheme.typography.bodySmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     state.emotions.forEach { emotion ->
@@ -136,9 +144,12 @@ fun MoodEditorScreen(
                             label = { Text(emotionDisplayName(emotion)) })
                     }
                 }
-                TextButton(onClick = { more = !more }, enabled = !state.busy, modifier = Modifier.testTag("mood_more")) {
+                val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
+                TextButton(onClick = { more = !more }, enabled = !state.busy,
+                    modifier = Modifier.testTag("mood_more").semantics { stateDescription = disclosureState }) {
                     Text(stringResource(if (more) R.string.mood_fewer_details else R.string.mood_more_details))
                 }
+                Text(stringResource(R.string.mood_context_help), style = MaterialTheme.typography.bodySmall)
                 if (more) {
                     OptionalScale(stringResource(R.string.mood_energy), "energy", state.draft.energy, enabled, onEnergy)
                     OptionalScale(stringResource(R.string.mood_stress), "stress", state.draft.stress, enabled, onStress)
@@ -172,7 +183,7 @@ fun MoodEditorScreen(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OptionalScale(label: String, tag: String, value: Int?, enabled: Boolean, onValue: (Int?) -> Unit) {
-    Text(label, style = MaterialTheme.typography.titleMedium)
+    Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
     Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         (1..5).forEach { score ->

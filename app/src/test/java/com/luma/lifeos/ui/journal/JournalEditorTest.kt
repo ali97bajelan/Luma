@@ -58,6 +58,17 @@ class JournalEditorTest {
         assertEquals(Instant.parse("2026-10-10T12:30:00Z").toEpochMilli(), restored.state.value.draft.occurredAtMillis)
     }
 
+    @Test fun rejectedTagInputKeepsItsErrorUntilTheTextChanges() {
+        val rejected = reduceJournalTagInput("", hasError = false, proposed = "x".repeat(JournalTextLimits.TAG + 1))
+        assertEquals("" to true, rejected)
+
+        val unchangedCallback = reduceJournalTagInput(rejected.first, rejected.second, rejected.first)
+        assertEquals("" to true, unchangedCallback)
+
+        val corrected = reduceJournalTagInput(unchangedCallback.first, unchangedCallback.second, "Tag")
+        assertEquals("Tag" to false, corrected)
+    }
+
     @Test fun ambiguousCommittedSaveRestoresAsEditAndPreservesNewerText() = runTest(dispatcher) {
         val repo = TestJournalRepository().apply { failAfterCreate = true }
         val handle = SavedStateHandle()
@@ -293,6 +304,55 @@ class JournalEditorTest {
         assertEquals(JournalEditorError.LOAD, restored.state.value.error)
         assertEquals(listOf(photo), restored.state.value.draft.photos)
         assertTrue(files.leases.values.any { photo in it })
+    }
+
+    @Test fun rejectionIdentifiesFieldAndKeepsAcceptedText() = runTest(dispatcher) {
+        val editor = JournalEditorViewModel(TestJournalRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle(); editor.setTitle("Accepted"); editor.setBody("Body")
+        editor.setTitle("x".repeat(201))
+        assertEquals("Accepted", editor.state.value.draft.title)
+        assertEquals(setOf(JournalTextField.TITLE), editor.state.value.textErrors)
+    }
+
+    @Test fun sameValueAndUnrelatedEditKeepRejection() = runTest(dispatcher) {
+        val editor = JournalEditorViewModel(TestJournalRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle(); editor.setTitle("Title"); editor.setBody("Body")
+        editor.setTitle("x".repeat(201)); editor.setTitle("Title"); editor.setBody("Changed")
+        assertEquals(setOf(JournalTextField.TITLE), editor.state.value.textErrors)
+    }
+
+    @Test fun twoRejectedFieldsClearIndependently() = runTest(dispatcher) {
+        val editor = JournalEditorViewModel(TestJournalRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle(); editor.setTitle("Title"); editor.setBody("Body")
+        editor.setTitle("x".repeat(201)); editor.setBody("x".repeat(50_001))
+        assertEquals(setOf(JournalTextField.TITLE, JournalTextField.BODY), editor.state.value.textErrors)
+        editor.setTitle("Corrected")
+        assertEquals(setOf(JournalTextField.BODY), editor.state.value.textErrors)
+    }
+
+    @Test fun recreationRestoresFieldFlags() = runTest(dispatcher) {
+        val handle = SavedStateHandle(); val repo = TestJournalRepository()
+        val editor = JournalEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle(); editor.setBody("Kept body"); editor.setBody("x".repeat(50_001))
+        val restored = JournalEditorViewModel(repo, null, handle, clock)
+        assertEquals(setOf(JournalTextField.BODY), restored.state.value.textErrors)
+        advanceUntilIdle()
+        assertEquals("Kept body", restored.state.value.draft.body)
+    }
+
+    @Test fun unknownRestoredFieldNameIsIgnored() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf("text_error_fields" to arrayListOf("FUTURE_FIELD")))
+        val editor = JournalEditorViewModel(TestJournalRepository(), null, handle, clock)
+        assertTrue(editor.state.value.textErrors.isEmpty())
+    }
+
+    @Test fun acceptedTagClearsOnlyTagFlag() = runTest(dispatcher) {
+        val editor = JournalEditorViewModel(TestJournalRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle(); editor.setBody("x".repeat(50_001)); editor.addTag("Work")
+        assertFalse(editor.addTag("x".repeat(51)))
+        assertEquals(setOf(JournalTextField.BODY, JournalTextField.TAG), editor.state.value.textErrors)
+        assertTrue(editor.addTag(" work "))
+        assertEquals(setOf(JournalTextField.BODY), editor.state.value.textErrors)
     }
 
     private class TestJournalRepository : JournalRepository {

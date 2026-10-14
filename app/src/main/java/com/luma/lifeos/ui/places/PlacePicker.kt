@@ -7,11 +7,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Place
 import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.util.UUID
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -23,7 +26,8 @@ fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
     val observation = remember(repository, retry) { observePlaces(repository) }
     val state by observation.collectAsStateWithLifecycle(PlacesState.Loading)
     val catalog = (state as? PlacesState.Data)?.places.orEmpty()
-    Text(stringResource(R.string.place_optional), style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.place_optional), style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.semantics { heading() }.testTag("place_heading"))
     if (selected != null) {
         val place = catalog.firstOrNull { it.id == selected }
         InputChip(selected = true, enabled = enabled, onClick = { onSelect(null) },
@@ -43,7 +47,7 @@ fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
         when (state) {
             PlacesState.Loading -> CircularProgressIndicator()
             PlacesState.Error -> {
-                Text(stringResource(R.string.places_load_error), color = MaterialTheme.colorScheme.error)
+                AccessibleFeedback(stringResource(R.string.places_load_error), Modifier.testTag("place_picker_error"))
                 TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
             is PlacesState.Data -> {

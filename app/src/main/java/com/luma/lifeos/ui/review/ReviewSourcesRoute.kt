@@ -9,12 +9,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.review.*
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -27,7 +30,8 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
     val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("screen_review_sources")) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-        Text(stringResource(R.string.review_source_heading), style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.review_source_heading), style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() })
         Text(stringResource(metric.kind.label()))
         Text(stringResource(R.string.memory_review_range, dates.start.format(format), dates.through.format(format)))
         Text(zone.id, style = MaterialTheme.typography.bodySmall)
@@ -39,12 +43,13 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                 when (val current = state) {
                     ReviewSourcesState.Loading -> item { CircularProgressIndicator() }
                     ReviewSourcesState.Error -> item {
-                        Text(stringResource(R.string.review_error))
+                        AccessibleFeedback(stringResource(R.string.review_error))
                         TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
                     is ReviewSourcesState.Data -> {
                         val page = current.page
-                        item { Text(stringResource(R.string.search_results, page.totalCount), modifier = Modifier.testTag("review_source_count")) }
+                        item { AccessibleFeedback(stringResource(R.string.search_results, page.totalCount),
+                            Modifier.testTag("review_source_count"), isError = false) }
                         if (page.records.isEmpty()) item { Text(stringResource(R.string.review_no_sources)) }
                         if (page.offset > 0) item { TextButton(onClick = { offset = maxOf(0, page.offset - 50) }, modifier = Modifier.testTag("review_source_previous")) { Text(stringResource(R.string.search_earlier)) } }
                         items(page.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { row ->

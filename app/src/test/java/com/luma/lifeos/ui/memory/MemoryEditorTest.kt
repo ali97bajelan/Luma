@@ -322,6 +322,46 @@ class MemoryEditorTest {
         assertEquals(original.journal, repo.records.getValue(original.event.id).journal)
     }
 
+    @Test fun rejectionIdentifiesFieldAndKeepsAcceptedText() = runTest(dispatcher) {
+        val editor = MemoryEditorViewModel(TestMemoryRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle(); editor.setTitle("Accepted"); editor.setNote("Note")
+        editor.setTitle("x".repeat(201))
+        assertEquals("Accepted", editor.state.value.draft.title)
+        assertEquals(setOf(MemoryTextField.TITLE), editor.state.value.textErrors)
+    }
+
+    @Test fun sameValueAndUnrelatedEditKeepRejection() = runTest(dispatcher) {
+        val editor = MemoryEditorViewModel(TestMemoryRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle(); editor.setTitle("Title"); editor.setNote("Note")
+        editor.setTitle("x".repeat(201)); editor.setTitle("Title"); editor.setNote("Changed")
+        assertEquals(setOf(MemoryTextField.TITLE), editor.state.value.textErrors)
+    }
+
+    @Test fun twoRejectedFieldsClearIndependently() = runTest(dispatcher) {
+        val editor = MemoryEditorViewModel(TestMemoryRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle(); editor.setTitle("Title"); editor.setNote("Note")
+        editor.setTitle("x".repeat(201)); editor.setNote("x".repeat(10_001))
+        assertEquals(setOf(MemoryTextField.TITLE, MemoryTextField.NOTE), editor.state.value.textErrors)
+        editor.setTitle("Corrected")
+        assertEquals(setOf(MemoryTextField.NOTE), editor.state.value.textErrors)
+    }
+
+    @Test fun recreationRestoresFieldFlags() = runTest(dispatcher) {
+        val handle = SavedStateHandle(); val repo = TestMemoryRepository()
+        val editor = MemoryEditorViewModel(repo, null, handle, clock)
+        advanceUntilIdle(); editor.setNote("Kept note"); editor.setNote("x".repeat(10_001))
+        val restored = MemoryEditorViewModel(repo, null, handle, clock)
+        assertEquals(setOf(MemoryTextField.NOTE), restored.state.value.textErrors)
+        advanceUntilIdle()
+        assertEquals("Kept note", restored.state.value.draft.note)
+    }
+
+    @Test fun unknownRestoredFieldNameIsIgnored() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf("text_error_fields" to arrayListOf("FUTURE_FIELD")))
+        val editor = MemoryEditorViewModel(TestMemoryRepository(), null, handle, clock)
+        assertTrue(editor.state.value.textErrors.isEmpty())
+    }
+
     private class TestMemoryRepository : MemoryRepository {
         val records = mutableMapOf<EventId, LifeEventRecord>()
         var creates = 0

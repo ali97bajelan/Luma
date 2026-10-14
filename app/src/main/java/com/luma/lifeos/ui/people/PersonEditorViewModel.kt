@@ -15,10 +15,12 @@ import kotlinx.coroutines.launch
 
 data class PersonDraft(val name: String = "", val note: String = "")
 enum class PersonEditorError { LOAD, SAVE, DELETE, TEXT }
+enum class PersonTextField { NAME, NOTE }
 data class PersonEditorState(
     val draft: PersonDraft, val loading: Boolean = true, val ready: Boolean = false,
     val busy: Boolean = false, val editing: Boolean = false, val completed: Boolean = false,
     val deleted: Boolean = false, val hasChanges: Boolean = false, val error: PersonEditorError? = null,
+    val textErrors: Set<PersonTextField> = emptySet(),
 )
 
 class PersonEditorViewModel(private val repository: PersonRepository, private val personId: UUID?,
@@ -29,7 +31,8 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
     private var loadingJob: Job? = null
     private val mutableState = MutableStateFlow(PersonEditorState(readDraft(), editing = personId != null,
         completed = saved["completed"] ?: false, deleted = saved["deleted"] ?: false,
-        hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true)))
+        hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true),
+        textErrors = readTextErrors()))
     val state = mutableState.asStateFlow()
     init { if (!state.value.completed) load() }
 
@@ -60,16 +63,19 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
         }
     }
     fun setName(name: String) {
-        if (name.length > PersonTextLimits.NAME) { rejectText(); return }
-        change { it.copy(name = name) }
+        if (name.length > PersonTextLimits.NAME) { rejectText(PersonTextField.NAME); return }
+        change(clearTextField = PersonTextField.NAME) { it.copy(name = name) }
     }
     fun setNote(note: String) {
-        if (note.length > PersonTextLimits.NOTE) { rejectText(); return }
-        change { it.copy(note = note) }
+        if (note.length > PersonTextLimits.NOTE) { rejectText(PersonTextField.NOTE); return }
+        change(clearTextField = PersonTextField.NOTE) { it.copy(note = note) }
     }
-    private fun rejectText() {
-        if (state.value.ready && !state.value.busy && !state.value.completed)
-            mutableState.value = state.value.copy(error = PersonEditorError.TEXT)
+    private fun rejectText(field: PersonTextField) {
+        if (state.value.ready && !state.value.busy && !state.value.completed) {
+            val errors = state.value.textErrors + field
+            persistTextErrors(errors)
+            mutableState.value = state.value.copy(textErrors = errors, error = PersonEditorError.TEXT)
+        }
     }
     fun save() {
         val current = state.value
@@ -105,16 +111,27 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
         saved["completed"] = true; saved["deleted"] = deleted; saved["pending_delete"] = false
         mutableState.value = state.value.copy(busy = false, completed = true, deleted = deleted, error = null)
     }
-    private fun change(transform: (PersonDraft) -> PersonDraft) {
-        if (!state.value.ready || state.value.busy || state.value.completed) return
-        val draft = transform(state.value.draft)
-        if (draft != state.value.draft) saved["pending_delete"] = false
+    private fun change(clearTextField: PersonTextField? = null, transform: (PersonDraft) -> PersonDraft) {
+        val current = state.value
+        if (!current.ready || current.busy || current.completed) return
+        val draft = transform(current.draft)
+        if (draft == current.draft) return
+        saved["pending_delete"] = false
         persist(draft)
-        mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
+        val errors = clearTextField?.let { current.textErrors - it } ?: current.textErrors
+        persistTextErrors(errors)
+        mutableState.value = current.copy(draft = draft, textErrors = errors,
+            error = if (errors.isNotEmpty()) PersonEditorError.TEXT else null, hasChanges = draft != baseline)
     }
     private fun persist(draft: PersonDraft) {
         saved["has_draft"] = true; saved["dirty"] = draft != baseline
         saved["name"] = draft.name; saved["note"] = draft.note
+    }
+    private fun readTextErrors(): Set<PersonTextField> = saved.get<ArrayList<String>>("text_error_fields")
+        .orEmpty().mapNotNull { runCatching { PersonTextField.valueOf(it) }.getOrNull() }.toSet()
+
+    private fun persistTextErrors(errors: Set<PersonTextField>) {
+        saved["text_error_fields"] = ArrayList(errors.map { it.name }.sorted())
     }
     private fun readDraft() = PersonDraft(saved.get<String>("name") ?: "", saved.get<String>("note") ?: "")
 }

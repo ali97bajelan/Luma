@@ -6,6 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
@@ -15,6 +17,7 @@ import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.ui.timeline.label
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.time.format.FormatStyle
 
 internal fun mostSampledActivity(activities: List<ReviewActivity>): ReviewActivity? =
@@ -40,13 +43,14 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
     val current = report.current
     Card(Modifier.fillMaxWidth().testTag("review_overview")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.review_overview), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.review_overview), style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() }.testTag("review_overview_heading"))
             Text(stringResource(R.string.review_missing_context), style = MaterialTheme.typography.bodySmall)
             Text(stringResource(R.string.review_overview_mood, reviewScale(current.mood?.score)),
                 Modifier.testTag("review_overview_mood"))
             LatestMemory(report, repository, onEvent)
-            Text(stringResource(R.string.review_overview_usage, reviewDuration(current.usage?.totalMillis)),
-                Modifier.testTag("review_overview_usage"))
+            AccessibleFeedback(stringResource(R.string.review_overview_usage, reviewDuration(current.usage?.totalMillis)),
+                Modifier.testTag("review_overview_usage"), isError = false)
             Text(reviewUsageCoverageSummary(report), Modifier.testTag("review_overview_usage_coverage"))
             val activity = mostSampledActivity(current.activities)
             val value = activity?.total?.let {
@@ -94,7 +98,7 @@ private fun LatestMemory(report: WeeklyReview, repository: WeeklyReviewRepositor
     when (val current = state) {
         ReviewSourcesState.Loading -> CircularProgressIndicator(Modifier.testTag("review_overview_memory_loading"))
         ReviewSourcesState.Error -> {
-            Text(stringResource(R.string.review_error))
+            AccessibleFeedback(stringResource(R.string.review_error))
             TextButton(onClick = { retry++ }, modifier = Modifier.testTag("review_overview_memory_retry")) {
                 Text(stringResource(R.string.retry))
             }

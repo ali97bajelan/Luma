@@ -20,6 +20,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.review.*
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.today.pickerDate
@@ -49,7 +50,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = listState,
                 contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item(key = "heading") {
-                    Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineLarge)
+                    Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineLarge,
+                        modifier = Modifier.semantics { heading() }.testTag("review_weekly_heading"))
                     Text(stringResource(R.string.review_saved_explanation))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                         IconButton(enabled = period.current.start.year > -999999998,
@@ -74,7 +76,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 when (val current = state) {
                     WeeklyReviewState.Loading -> item(key = "loading") { CircularProgressIndicator() }
                     WeeklyReviewState.Error -> item(key = "error") {
-                        Text(stringResource(R.string.review_error), color = MaterialTheme.colorScheme.error)
+                        AccessibleFeedback(stringResource(R.string.review_error))
                         TextButton(onClick = { retry++ }, modifier = Modifier.testTag("review_retry")) { Text(stringResource(R.string.retry)) }
                     }
                     is WeeklyReviewState.Data -> {
@@ -198,7 +200,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     when (val current = state) {
         ReviewSourcesState.Loading -> CircularProgressIndicator()
         ReviewSourcesState.Error -> {
-            Text(stringResource(R.string.review_error))
+            AccessibleFeedback(stringResource(R.string.review_error))
             TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
         }
         is ReviewSourcesState.Data -> {

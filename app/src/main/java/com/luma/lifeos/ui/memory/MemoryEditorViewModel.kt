@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 
 data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null, val photos: List<PhotoAttachment> = emptyList())
 enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT, PHOTO }
+enum class MemoryTextField { TITLE, NOTE }
 data class MemoryEditorState(
     val draft: MemoryDraft,
     val original: LifeEventRecord? = null,
@@ -35,6 +36,7 @@ data class MemoryEditorState(
     val removed: Boolean = false,
     val hasChanges: Boolean = false,
     val error: MemoryEditorError? = null,
+    val textErrors: Set<MemoryTextField> = emptySet(),
 )
 
 class MemoryEditorViewModel(private val repository: MemoryRepository, private val eventId: EventId?,
@@ -48,7 +50,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     private var loadingJob: Job? = null
     private val mutableState = MutableStateFlow(MemoryEditorState(readDraft(), direct = saved["direct"] ?: true,
         completed = saved["completed"] ?: false, removed = saved["removed"] ?: false,
-        hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true)))
+        hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true),
+        textErrors = readTextErrors()))
     val state = mutableState.asStateFlow()
 
     private val photoSession = PhotoDraftSession(photoRepository, saved, viewModelScope, captureId.value,
@@ -113,20 +116,23 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
 
     fun setTitle(title: String) {
         if (!state.value.direct) return
-        if (title.length > MemoryTextLimits.TITLE) { rejectText(); return }
-        change { it.copy(title = title) }
+        if (title.length > MemoryTextLimits.TITLE) { rejectText(MemoryTextField.TITLE); return }
+        change(clearTextField = MemoryTextField.TITLE) { it.copy(title = title) }
     }
     fun setNote(note: String) {
-        if (note.length > MemoryTextLimits.NOTE) { rejectText(); return }
-        change { it.copy(note = note) }
+        if (note.length > MemoryTextLimits.NOTE) { rejectText(MemoryTextField.NOTE); return }
+        change(clearTextField = MemoryTextField.NOTE) { it.copy(note = note) }
     }
     fun setImportance(value: Int?) {
         require(value == null || value in 1..5)
         change { it.copy(importance = value) }
     }
-    private fun rejectText() {
-        if (state.value.ready && !state.value.busy && !state.value.completed)
-            mutableState.value = state.value.copy(error = MemoryEditorError.TEXT)
+    private fun rejectText(field: MemoryTextField) {
+        if (state.value.ready && !state.value.busy && !state.value.completed) {
+            val errors = state.value.textErrors + field
+            persistTextErrors(errors)
+            mutableState.value = state.value.copy(textErrors = errors, error = MemoryEditorError.TEXT)
+        }
     }
     fun setLocalTime(local: LocalDateTime, zone: ZoneId): Boolean {
         if (!state.value.direct || !state.value.ready || state.value.busy || state.value.completed) return false
@@ -181,12 +187,17 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["pending_remove"] = null
         mutableState.value = state.value.copy(busy = false, completed = true, removed = removed, error = null)
     }
-    private fun change(transform: (MemoryDraft) -> MemoryDraft) {
-        if (!state.value.ready || state.value.busy || state.value.completed) return
-        val draft = transform(state.value.draft)
-        if (draft != state.value.draft) saved["pending_remove"] = null
+    private fun change(clearTextField: MemoryTextField? = null, transform: (MemoryDraft) -> MemoryDraft) {
+        val current = state.value
+        if (!current.ready || current.busy || current.completed) return
+        val draft = transform(current.draft)
+        if (draft == current.draft) return
+        saved["pending_remove"] = null
         persist(draft)
-        mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
+        val errors = clearTextField?.let { current.textErrors - it } ?: current.textErrors
+        persistTextErrors(errors)
+        mutableState.value = current.copy(draft = draft, textErrors = errors,
+            error = if (errors.isNotEmpty()) MemoryEditorError.TEXT else null, hasChanges = draft != baseline)
     }
     fun setPlace(id: UUID?) = change { it.copy(placeId = id) }
 
@@ -205,6 +216,12 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["title"] = draft.title
         saved["note"] = draft.note
         saved["importance"] = draft.importance
+    }
+    private fun readTextErrors(): Set<MemoryTextField> = saved.get<ArrayList<String>>("text_error_fields")
+        .orEmpty().mapNotNull { runCatching { MemoryTextField.valueOf(it) }.getOrNull() }.toSet()
+
+    private fun persistTextErrors(errors: Set<MemoryTextField>) {
+        saved["text_error_fields"] = ArrayList(errors.map { it.name }.sorted())
     }
     private fun readDraft() = MemoryDraft(saved.get<Long>("time") ?: initialTime, saved.get<String>("title") ?: "",
         saved.get<String>("note") ?: "", saved["importance"],

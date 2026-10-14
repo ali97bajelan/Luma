@@ -11,13 +11,17 @@ class TestPhotoRepository : PhotoRepository {
     var failImport = false
     var failAfterCopy = false
     var failRelease = false
+    var failRetainDraft = false
     override suspend fun import(draftId: UUID, id: UUID, source: String): PhotoAttachment {
         if (failImport) error("Source unavailable")
         val photo = files.getOrPut(id) { PhotoAttachment(id, "photos/$id.img", PhotoMetadata("image/png", 4, 2, 2)) }
         if (failAfterCopy) error("Completed copy result unavailable")
         return photo
     }
-    override suspend fun retainDraft(draftId: UUID, photos: List<PhotoAttachment>) { leases[draftId] = photos }
+    override suspend fun retainDraft(draftId: UUID, photos: List<PhotoAttachment>) {
+        if (failRetainDraft) error("Draft lease update unavailable")
+        leases[draftId] = photos
+    }
     override suspend fun releaseDraft(draftId: UUID) { if (failRelease) error("Cleanup unavailable"); leases.remove(draftId) }
     override suspend fun preview(photo: PhotoAttachment): ByteArray? = null
     override suspend fun cleanup() = Unit

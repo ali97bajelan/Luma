@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.SearchRepository
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -48,14 +49,15 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
             label = { Text(stringResource(R.string.search_text_hint)) },
             supportingText = { Text(stringResource(R.string.search_text_help, state.input.text.length)) },
             modifier = Modifier.fillMaxWidth().testTag("search_text"))
-        val count = state.input.tagIds.size + state.input.personIds.size + (if (state.input.placeId == null) 0 else 1) +
-            (if (state.input.from == null) 0 else 1) + (if (state.input.through == null) 0 else 1)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        val count = state.input.activeFilterCount
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) { Text(stringResource(R.string.search_filter_count, count)) }
-            TextButton(onClick = vm::clear, modifier = Modifier.testTag("search_clear")) { Text(stringResource(R.string.search_clear)) }
+            TextButton(onClick = vm::clearFilters, enabled = count > 0, modifier = Modifier.testTag("search_reset_filters")) { Text(stringResource(R.string.search_reset_filters)) }
+            TextButton(onClick = vm::clear, enabled = state.input.text.isNotEmpty() || count > 0,
+                modifier = Modifier.testTag("search_clear")) { Text(stringResource(R.string.search_clear)) }
         }
-        if (state.invalidDates) Text(stringResource(R.string.search_invalid_dates), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("search_invalid_dates"))
-        if (state.loaded) Text(stringResource(R.string.search_results, state.totalCount), modifier = Modifier.testTag("search_result_count"))
+        if (state.loaded) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
+            Modifier.testTag("search_result_count"), isError = false)
         key(state.input, zone) {
             val list = rememberLazyListState()
             LaunchedEffect(list, state.windowVersion) {
@@ -63,10 +65,11 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
             }
             LazyColumn(state = list, modifier = Modifier.weight(1f).testTag("search_results_list"),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item(key = "active_filters") { ActiveSearchFilters(state, vm::removeFilter) }
                 if (state.loading) item(key = "loading") { CircularProgressIndicator(Modifier.testTag("search_loading")) }
                 if (state.error) item(key = "error") {
                     Column(Modifier.testTag("search_error")) {
-                        Text(stringResource(R.string.search_error))
+                        AccessibleFeedback(stringResource(R.string.search_error))
                         TextButton(onClick = vm::retry) { Text(stringResource(R.string.retry)) }
                     }
                 }

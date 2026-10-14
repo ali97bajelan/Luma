@@ -38,5 +38,7 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
         editor::setTitle, editor::setNote, editor::setImportance, editor::setLocalTime, peopleContent = { PersonPicker(people, state.draft.personIds, state.ready && !state.busy && !state.completed, editor::togglePerson, onCreatePerson) },
         placeContent = { PlacePicker(places, state.draft.placeId, state.ready && !state.busy && !state.completed, editor::setPlace, onCreatePlace) },
         photosContent = { PhotoEditor(photos, state.draft.photos, state.ready && !state.busy && !state.completed,
-            editor::importPhoto, editor::removePhoto, editor::retryPhoto, state.error == MemoryEditorError.PHOTO && editor.hasPendingPhotoImport()) })
+            editor::importPhoto, editor::removePhoto, editor::retryPhoto,
+            importFailed = state.error == MemoryEditorError.PHOTO && editor.hasPendingPhotoImport(),
+            operationFailed = state.error == MemoryEditorError.PHOTO && !editor.hasPendingPhotoImport()) })
 }

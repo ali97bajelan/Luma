@@ -108,6 +108,46 @@ class PersonEditorTest {
         advanceUntilIdle(); assertFalse(legacy.state.value.ready)
     }
 
+    @Test fun rejectionIdentifiesFieldAndKeepsAcceptedText() = runTest(dispatcher) {
+        val editor = PersonEditorViewModel(TestPeople(), null, SavedStateHandle())
+        advanceUntilIdle(); editor.setName("Accepted"); editor.setNote("Note")
+        editor.setName("x".repeat(201))
+        assertEquals("Accepted", editor.state.value.draft.name)
+        assertEquals(setOf(PersonTextField.NAME), editor.state.value.textErrors)
+    }
+
+    @Test fun sameValueAndUnrelatedEditKeepRejection() = runTest(dispatcher) {
+        val editor = PersonEditorViewModel(TestPeople(), null, SavedStateHandle())
+        advanceUntilIdle(); editor.setName("Name"); editor.setNote("Note")
+        editor.setName("x".repeat(201)); editor.setName("Name"); editor.setNote("Changed")
+        assertEquals(setOf(PersonTextField.NAME), editor.state.value.textErrors)
+    }
+
+    @Test fun twoRejectedFieldsClearIndependently() = runTest(dispatcher) {
+        val editor = PersonEditorViewModel(TestPeople(), null, SavedStateHandle())
+        advanceUntilIdle(); editor.setName("Name"); editor.setNote("Note")
+        editor.setName("x".repeat(201)); editor.setNote("x".repeat(10_001))
+        assertEquals(setOf(PersonTextField.NAME, PersonTextField.NOTE), editor.state.value.textErrors)
+        editor.setName("Corrected")
+        assertEquals(setOf(PersonTextField.NOTE), editor.state.value.textErrors)
+    }
+
+    @Test fun recreationRestoresFieldFlags() = runTest(dispatcher) {
+        val handle = SavedStateHandle(); val repo = TestPeople()
+        val editor = PersonEditorViewModel(repo, null, handle)
+        advanceUntilIdle(); editor.setNote("Kept note"); editor.setNote("x".repeat(10_001))
+        val restored = PersonEditorViewModel(repo, null, handle)
+        assertEquals(setOf(PersonTextField.NOTE), restored.state.value.textErrors)
+        advanceUntilIdle()
+        assertEquals("Kept note", restored.state.value.draft.note)
+    }
+
+    @Test fun unknownRestoredFieldNameIsIgnored() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf("text_error_fields" to arrayListOf("FUTURE_FIELD")))
+        val editor = PersonEditorViewModel(TestPeople(), null, handle)
+        assertTrue(editor.state.value.textErrors.isEmpty())
+    }
+
     private class TestPeople : PersonRepository {
         val records = mutableMapOf<UUID, Person>()
         var creates = 0

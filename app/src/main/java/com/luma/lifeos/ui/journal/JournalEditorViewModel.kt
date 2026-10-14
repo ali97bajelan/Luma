@@ -40,6 +40,7 @@ data class JournalDraft(
 )
 
 enum class JournalEditorError { LOAD, SAVE, DELETE, TIME, TEXT, PHOTO }
+enum class JournalTextField { TITLE, BODY, TAG }
 
 data class JournalEditorState(
     val draft: JournalDraft,
@@ -52,6 +53,7 @@ data class JournalEditorState(
     val editing: Boolean = false,
     val hasChanges: Boolean = false,
     val error: JournalEditorError? = null,
+    val textErrors: Set<JournalTextField> = emptySet(),
 )
 
 class JournalEditorViewModel(
@@ -70,7 +72,8 @@ class JournalEditorViewModel(
     private var loadingJob: Job? = null
     private val mutableState = MutableStateFlow(JournalEditorState(readDraft(), completed = saved["completed"] ?: false,
         deleted = saved["deleted"] ?: false, editing = eventId != null,
-        hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true)))
+        hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true),
+        textErrors = readTextErrors()))
     val state: StateFlow<JournalEditorState> = mutableState.asStateFlow()
 
     private val photoSession = PhotoDraftSession(photoRepository, saved, viewModelScope, captureId.value,
@@ -133,16 +136,19 @@ class JournalEditorViewModel(
     }
 
     fun setTitle(title: String) {
-        if (title.length > JournalTextLimits.TITLE) { rejectText(); return }
-        change { it.copy(title = title) }
+        if (title.length > JournalTextLimits.TITLE) { rejectText(JournalTextField.TITLE); return }
+        change(clearTextField = JournalTextField.TITLE) { it.copy(title = title) }
     }
     fun setBody(body: String) {
-        if (body.length > JournalTextLimits.BODY) { rejectText(); return }
-        change { it.copy(body = body) }
+        if (body.length > JournalTextLimits.BODY) { rejectText(JournalTextField.BODY); return }
+        change(clearTextField = JournalTextField.BODY) { it.copy(body = body) }
     }
-    private fun rejectText() {
-        if (state.value.ready && !state.value.busy && !state.value.completed)
-            mutableState.value = state.value.copy(error = JournalEditorError.TEXT)
+    private fun rejectText(field: JournalTextField) {
+        if (state.value.ready && !state.value.busy && !state.value.completed) {
+            val errors = state.value.textErrors + field
+            persistTextErrors(errors)
+            mutableState.value = state.value.copy(textErrors = errors, error = JournalEditorError.TEXT)
+        }
     }
     fun addTag(name: String): Boolean {
         if (!state.value.ready || state.value.busy || name.isBlank()) return false
@@ -150,7 +156,7 @@ class JournalEditorViewModel(
         if (trimmed.length > JournalTextLimits.TAG ||
             (state.value.draft.tagNames.size >= JournalTextLimits.TAG_COUNT &&
                 state.value.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(trimmed) })) {
-            rejectText()
+            rejectText(JournalTextField.TAG)
             return false
         }
         val catalogName = state.value.tags.firstOrNull { Tag.normalize(it.name) == Tag.normalize(trimmed) }?.name ?: trimmed
@@ -158,6 +164,7 @@ class JournalEditorViewModel(
             if (draft.tagNames.any { Tag.normalize(it) == Tag.normalize(catalogName) }) draft
             else draft.copy(tagNames = draft.tagNames + catalogName)
         }
+        clearTextError(JournalTextField.TAG)
         return true
     }
     fun removeTag(name: String) = change { it.copy(tagNames = it.tagNames - name) }
@@ -217,15 +224,35 @@ class JournalEditorViewModel(
         }
     }
 
-    private fun change(transform: (JournalDraft) -> JournalDraft) {
-        if (!state.value.ready || state.value.busy || state.value.completed) return
-        val draft = transform(state.value.draft)
+    private fun change(clearTextField: JournalTextField? = null, transform: (JournalDraft) -> JournalDraft) {
+        val current = state.value
+        if (!current.ready || current.busy || current.completed) return
+        val draft = transform(current.draft)
         // TextField can echo the retained value after rejecting an oversized edit.
         // Keep its validation error visible until the user actually changes the draft.
-        if (draft == state.value.draft) return
+        if (draft == current.draft) return
         saved["pending_delete"] = false
         persist(draft)
-        mutableState.value = state.value.copy(draft = draft, error = null, hasChanges = draft != baseline)
+        val errors = clearTextField?.let { current.textErrors - it } ?: current.textErrors
+        persistTextErrors(errors)
+        mutableState.value = current.copy(draft = draft, textErrors = errors,
+            error = if (errors.isNotEmpty()) JournalEditorError.TEXT else null, hasChanges = draft != baseline)
+    }
+
+    private fun clearTextError(field: JournalTextField) {
+        val current = state.value
+        if (field !in current.textErrors) return
+        val errors = current.textErrors - field
+        persistTextErrors(errors)
+        mutableState.value = current.copy(textErrors = errors,
+            error = if (errors.isNotEmpty()) JournalEditorError.TEXT else null)
+    }
+
+    private fun readTextErrors(): Set<JournalTextField> = saved.get<ArrayList<String>>("text_error_fields")
+        .orEmpty().mapNotNull { runCatching { JournalTextField.valueOf(it) }.getOrNull() }.toSet()
+
+    private fun persistTextErrors(errors: Set<JournalTextField>) {
+        saved["text_error_fields"] = ArrayList(errors.map { it.name }.sorted())
     }
 
     fun setPlace(id: UUID?) = change { it.copy(placeId = id) }

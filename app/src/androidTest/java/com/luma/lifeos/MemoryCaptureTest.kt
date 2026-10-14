@@ -27,15 +27,23 @@ class MemoryCaptureTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("timeline_loading").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText(note))
         compose.onNodeWithText(note).performClick()
+        awaitTag("event_edit")
+        compose.onNodeWithTag("event_edit").performClick()
         awaitTag("memory_note")
         compose.onNodeWithTag("memory_note").performTextReplacement("$note edited")
         compose.onNodeWithTag("memory_save").performClick()
+        awaitTag("screen_event_detail")
+        compose.onNodeWithText("Back").performClick()
         awaitTag("screen_timeline")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText("$note edited"))
         compose.onNodeWithText("$note edited").performClick()
+        awaitTag("event_edit")
+        compose.onNodeWithTag("event_edit").performClick()
         awaitTag("memory_remove")
         compose.onNodeWithTag("memory_remove").performClick()
         compose.onNodeWithTag("memory_confirm_remove").performClick()
+        awaitTag("screen_event_detail")
+        compose.onNodeWithText("Back").performClick()
         awaitTag("screen_timeline")
         compose.waitUntil(5_000) { compose.onAllNodesWithText("$note edited").fetchSemanticsNodes().isEmpty() }
     }

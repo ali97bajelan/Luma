@@ -12,6 +12,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardActions
@@ -22,8 +24,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.domain.model.PersonTextLimits
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.domain.repository.PersonRepository
+import java.text.NumberFormat
 import java.util.UUID
 
 @Composable
@@ -50,13 +55,20 @@ fun PersonEditorScreen(state: PersonEditorState, onCancel: () -> Unit, onSave: (
         EditorTopBar(stringResource(if (state.editing) R.string.person_edit else R.string.person_create),
             "person_cancel", !state.busy, ::close)
     }, bottomBar = {
-        Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("person_delete")) {
-                Text(stringResource(R.string.delete))
+        Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            when (state.error) {
+                PersonEditorError.SAVE -> AccessibleFeedback(stringResource(R.string.person_save_error), Modifier.testTag("person_action_error"))
+                PersonEditorError.DELETE -> AccessibleFeedback(stringResource(R.string.person_delete_error), Modifier.testTag("person_action_error"))
+                else -> Unit
             }
-            Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
-                modifier = Modifier.weight(1f).testTag("person_save")) {
-                Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("person_delete")) {
+                    Text(stringResource(R.string.delete))
+                }
+                Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
+                    modifier = Modifier.weight(1f).testTag("person_save")) {
+                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                }
             }
         }
     }) { padding ->
@@ -64,21 +76,32 @@ fun PersonEditorScreen(state: PersonEditorState, onCancel: () -> Unit, onSave: (
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.loading) CircularProgressIndicator()
             state.error?.let { error ->
-                Text(stringResource(when (error) {
+                val message = stringResource(when (error) {
                     PersonEditorError.LOAD -> R.string.people_load_error
                     PersonEditorError.SAVE -> R.string.person_save_error
                     PersonEditorError.DELETE -> R.string.person_delete_error
                     PersonEditorError.TEXT -> R.string.person_text_error
-                }), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("person_error"))
+                })
+                if (error == PersonEditorError.LOAD || (error == PersonEditorError.TEXT && state.textErrors.isEmpty())) {
+                    AccessibleFeedback(message, Modifier.testTag("person_error"))
+                }
                 if (error == PersonEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
+            val nameError = if (PersonTextField.NAME in state.textErrors)
+                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PersonTextLimits.NAME)) else null
             OutlinedTextField(state.draft.name, onName, enabled = enabled, singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
-                label = { Text(stringResource(R.string.person_name)) }, modifier = Modifier.fillMaxWidth().testTag("person_name"))
+                isError = nameError != null, supportingText = { nameError?.let { AccessibleFeedback(it) } },
+                label = { Text(stringResource(R.string.person_name)) }, modifier = Modifier.fillMaxWidth()
+                    .semantics { nameError?.let { error(it) } }.testTag("person_name"))
+            val noteError = if (PersonTextField.NOTE in state.textErrors)
+                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PersonTextLimits.NOTE)) else null
             OutlinedTextField(state.draft.note, onNote, enabled = enabled, minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                label = { Text(stringResource(R.string.person_note)) }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus).testTag("person_note"))
+                isError = noteError != null, supportingText = { noteError?.let { AccessibleFeedback(it) } },
+                label = { Text(stringResource(R.string.person_note)) }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
+                    .semantics { noteError?.let { error(it) } }.testTag("person_note"))
         }
     }
     if (deleting) AlertDialog(onDismissRequest = { deleting = false },

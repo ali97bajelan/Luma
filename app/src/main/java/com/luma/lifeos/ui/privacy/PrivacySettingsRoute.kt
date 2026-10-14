@@ -11,12 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AccessibleFeedback
 
 @Composable
 fun PrivacySettingsRoute(reset: AppDataReset, onBack: () -> Unit) {
@@ -46,7 +49,8 @@ private fun PrivacySection(@StringRes heading: Int, @StringRes description: Int,
     content: @Composable ColumnScope.() -> Unit = {}) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(heading), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(heading), style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() })
             Text(stringResource(description), modifier = Modifier.testTag(tag))
             content()
         }
@@ -62,16 +66,18 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
         TextButton(onClick = onBack, enabled = !state.busy, modifier = Modifier.testTag("privacy_back")) {
             Text(stringResource(R.string.back))
         }
-        Text(stringResource(R.string.privacy_title), style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(R.string.privacy_title), style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.semantics { heading() }.testTag("privacy_heading"))
         PrivacyPolicyContent {
             TextButton(onClick = onAppSettings, enabled = !state.busy, modifier = Modifier.testTag("privacy_app_settings")) {
                 Text(stringResource(R.string.privacy_app_settings))
             }
-            if (settingsMissing) Text(stringResource(R.string.privacy_settings_missing))
+            if (settingsMissing) AccessibleFeedback(stringResource(R.string.privacy_settings_missing), Modifier.testTag("privacy_settings_missing"))
         }
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.privacy_delete_section), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.privacy_delete_section), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() })
                 Text(stringResource(R.string.privacy_delete_description))
                 Button(onClick = onDelete, enabled = !state.busy && !state.requestAccepted,
                     modifier = Modifier.testTag("privacy_delete"),
@@ -80,9 +86,9 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
                     Text(stringResource(R.string.privacy_delete))
                 }
                 if (state.busy) CircularProgressIndicator(Modifier.testTag("privacy_busy"))
-                if (state.requestAccepted) Text(stringResource(R.string.privacy_reset_requested), modifier = Modifier.testTag("privacy_requested"))
-                if (state.actionError) Text(stringResource(R.string.privacy_reset_failed),
-                    color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("privacy_error"))
+                if (state.requestAccepted) AccessibleFeedback(stringResource(R.string.privacy_reset_requested),
+                    Modifier.testTag("privacy_requested"), isError = false)
+                if (state.actionError) AccessibleFeedback(stringResource(R.string.privacy_reset_failed), Modifier.testTag("privacy_error"))
             }
         }
     }

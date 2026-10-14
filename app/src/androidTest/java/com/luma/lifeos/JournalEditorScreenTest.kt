@@ -2,6 +2,7 @@ package com.luma.lifeos
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
 import com.luma.lifeos.ui.journal.JournalDraft
 import com.luma.lifeos.ui.journal.JournalEditorScreen
 import com.luma.lifeos.ui.journal.JournalEditorState
@@ -36,5 +37,6 @@ class JournalEditorScreenTest {
         compose.onNodeWithTag("screen_journal").assertExists()
         compose.onNodeWithTag("journal_tag_input").assertTextContains("Unaccepted").assertIsDisplayed()
         compose.onNodeWithText("Use up to 50 characters and no more than 50 tags. Your tag text is retained.").assertExists()
+        compose.onNodeWithTag("journal_tag_input").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
     }
 }

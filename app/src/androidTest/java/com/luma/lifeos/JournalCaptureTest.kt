@@ -2,6 +2,7 @@ package com.luma.lifeos
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
 import org.junit.Rule
 import org.junit.Test
 
@@ -48,7 +49,7 @@ class JournalCaptureTest {
         compose.onNodeWithTag("journal_body").performTextInput("Unsaved")
         compose.onNodeWithTag("journal_body").performTextReplacement("x".repeat(50_001))
         compose.onNodeWithTag("journal_body").assertTextContains("Unsaved")
-        compose.onNodeWithTag("journal_error").assertExists()
+        compose.onNodeWithTag("journal_body").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
         compose.activityRule.scenario.recreate()
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_body").assertTextContains("Unsaved")

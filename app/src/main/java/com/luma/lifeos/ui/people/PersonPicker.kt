@@ -7,12 +7,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Person
 import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.domain.repository.PersonRepository
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.util.UUID
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -24,7 +27,8 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
     val observation = remember(repository, retry) { observePeople(repository) }
     val state by observation.collectAsStateWithLifecycle(PeopleState.Loading)
     val catalog = (state as? PeopleState.Data)?.people.orEmpty()
-    Text(stringResource(R.string.people), style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.people), style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.semantics { heading() }.testTag("people_heading"))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         selected.forEach { id ->
             val person = catalog.firstOrNull { it.id == id }
@@ -46,7 +50,7 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
         when (state) {
             PeopleState.Loading -> CircularProgressIndicator()
             PeopleState.Error -> {
-                Text(stringResource(R.string.people_load_error), color = MaterialTheme.colorScheme.error)
+                AccessibleFeedback(stringResource(R.string.people_load_error), Modifier.testTag("people_picker_error"))
                 TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
             is PeopleState.Data -> {
@@ -60,7 +64,8 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
                 }
             }
         }
-        if (selected.size >= PersonTextLimits.SELECTION) Text(stringResource(R.string.people_selection_limit, PersonTextLimits.SELECTION))
+        if (selected.size >= PersonTextLimits.SELECTION) AccessibleFeedback(
+            stringResource(R.string.people_selection_limit, PersonTextLimits.SELECTION), Modifier.testTag("people_selection_limit"))
     }
 }
 

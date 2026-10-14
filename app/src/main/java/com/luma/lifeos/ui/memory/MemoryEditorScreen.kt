@@ -2,6 +2,8 @@ package com.luma.lifeos.ui.memory
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,11 +17,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.domain.model.MemoryTextLimits
 import com.luma.lifeos.ui.common.EditorTopBar
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.mood.MoodTimeControls
 import java.text.NumberFormat
 import java.time.LocalDateTime
@@ -34,6 +41,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     var more by rememberSaveable { mutableStateOf(false) }
     var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
     val noteFocus = remember { FocusRequester() }
+    val photosBringIntoViewRequester = remember { BringIntoViewRequester() }
     val enabled = state.ready && !state.busy && !state.completed
     fun close() {
         if (state.busy) return
@@ -41,23 +49,37 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     }
     LaunchedEffect(state.ready, state.editing, state.original, state.draft.personIds, state.draft.placeId, state.draft.photos) {
         if (state.ready && !contextExpansionInitialized) {
-            more = state.editing || state.original != null || state.draft.personIds.isNotEmpty() ||
+            more = state.error == MemoryEditorError.PHOTO || state.editing || state.original != null || state.draft.personIds.isNotEmpty() ||
                 state.draft.placeId != null || state.draft.photos.isNotEmpty()
             contextExpansionInitialized = true
         }
+    }
+    LaunchedEffect(state.error) {
+        if (state.error == MemoryEditorError.PHOTO) more = true
+    }
+    LaunchedEffect(state.error, more) {
+        if (state.error == MemoryEditorError.PHOTO && more) photosBringIntoViewRequester.bringIntoView()
     }
     BackHandler { close() }
     Scaffold(modifier = Modifier.testTag("screen_memory"), topBar = {
         EditorTopBar(stringResource(if (state.editing) R.string.memory_edit else if (state.direct) R.string.memory_capture else R.string.memory_promote),
             "memory_cancel", !state.busy, ::close)
     }, bottomBar = {
-        Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (state.editing) TextButton(enabled = enabled, onClick = { removing = true }, modifier = Modifier.testTag("memory_remove")) {
-                Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark))
+        Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val actionError = when (state.error) {
+                MemoryEditorError.SAVE -> stringResource(R.string.memory_save_error)
+                MemoryEditorError.REMOVE -> stringResource(R.string.memory_remove_error)
+                else -> null
             }
-            Button(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
-                modifier = Modifier.weight(1f).testTag("memory_save")) {
-                Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+            actionError?.let { AccessibleFeedback(it, Modifier.testTag("memory_action_error")) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.editing) TextButton(enabled = enabled, onClick = { removing = true }, modifier = Modifier.testTag("memory_remove")) {
+                    Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark))
+                }
+                Button(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
+                    modifier = Modifier.weight(1f).testTag("memory_save")) {
+                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                }
             }
         }
     }) { padding ->
@@ -65,34 +87,51 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.loading) CircularProgressIndicator()
             state.error?.let { error ->
-                Text(stringResource(when (error) {
+                val message = stringResource(when (error) {
                     MemoryEditorError.LOAD -> R.string.memory_load_error
                     MemoryEditorError.SAVE -> R.string.memory_save_error
                     MemoryEditorError.REMOVE -> R.string.memory_remove_error
                     MemoryEditorError.TIME -> R.string.mood_time_error
                     MemoryEditorError.PHOTO -> R.string.photo_error
                     MemoryEditorError.TEXT -> R.string.memory_text_error
-                }), color = MaterialTheme.colorScheme.error)
+                })
+                val showBodyError = when {
+                    error == MemoryEditorError.SAVE || error == MemoryEditorError.REMOVE -> false
+                    error == MemoryEditorError.TIME || error == MemoryEditorError.PHOTO -> false
+                    error == MemoryEditorError.TEXT && state.textErrors.isNotEmpty() -> false
+                    else -> true
+                }
+                if (showBodyError) AccessibleFeedback(message, Modifier.testTag("memory_error"))
                 if (error == MemoryEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             if (state.ready) MoodTimeControls(state.draft.occurredAtMillis, enabled && state.direct,
                 state.error == MemoryEditorError.TIME, onTime)
             state.original?.let { original ->
-                Text(stringResource(R.string.memory_original), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.memory_original), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() }.testTag("memory_original_heading"))
                 original.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
                 Text(original.journal?.body ?: original.mood?.note ?: original.event.note.orEmpty(), modifier = Modifier.testTag("memory_original"))
                 original.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
                 Text(stringResource(R.string.memory_source_kept), style = MaterialTheme.typography.bodySmall)
             }
+            val titleError = if (MemoryTextField.TITLE in state.textErrors)
+                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(MemoryTextLimits.TITLE)) else null
             if (state.direct) OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled, singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
-                label = { Text(stringResource(R.string.memory_title)) }, modifier = Modifier.fillMaxWidth().testTag("memory_title"))
+                isError = titleError != null, supportingText = { titleError?.let { AccessibleFeedback(it) } },
+                label = { Text(stringResource(R.string.memory_title)) }, modifier = Modifier.fillMaxWidth()
+                    .semantics { titleError?.let { error(it) } }.testTag("memory_title"))
+            val noteError = if (MemoryTextField.NOTE in state.textErrors)
+                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(MemoryTextLimits.NOTE)) else null
             OutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled, minLines = 4,
                 label = { Text(stringResource(if (state.direct) R.string.memory_note else R.string.memory_marker_note)) },
+                isError = noteError != null, supportingText = { noteError?.let { AccessibleFeedback(it) } },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                modifier = Modifier.fillMaxWidth().focusRequester(noteFocus).testTag("memory_note"))
-            Text(stringResource(R.string.memory_importance), style = MaterialTheme.typography.titleMedium)
+                modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
+                    .semantics { noteError?.let { error(it) } }.testTag("memory_note"))
+            Text(stringResource(R.string.memory_importance), style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() }.testTag("memory_importance"))
             Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 (1..5).forEach { value ->
@@ -104,13 +143,16 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                             .semantics { contentDescription = description })
                 }
             }
-            TextButton(onClick = { more = !more }, enabled = enabled, modifier = Modifier.testTag("memory_more")) {
+            val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
+            TextButton(onClick = { more = !more }, enabled = enabled,
+                modifier = Modifier.testTag("memory_more").semantics { stateDescription = disclosureState }) {
                 Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
             }
+            Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
             if (more) {
                 peopleContent()
                 placeContent()
-                photosContent()
+                Column(Modifier.bringIntoViewRequester(photosBringIntoViewRequester)) { photosContent() }
             }
         }
     }

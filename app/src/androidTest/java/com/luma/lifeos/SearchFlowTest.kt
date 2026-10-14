@@ -2,10 +2,12 @@ package com.luma.lifeos
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
 import com.luma.lifeos.domain.model.*
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -58,7 +60,25 @@ class SearchFlowTest {
                 compose.onNodeWithTag("search_options_done").performClick()
             }
             compose.onNodeWithTag("search_filters_done").performClick(); awaitTag("event_$id")
+            compose.onNodeWithTag("search_text").performTextReplacement("Simple title"); awaitTag("event_$id")
+            val tagId = runBlocking { storage().search.observeOptions().first().tags.single { it.name == tag }.id }
+            val tagChip = "search_filter_tag_$tagId"
+            val personChip = "search_filter_person_$person"
+            val placeChip = "search_filter_place_$place"
+            awaitTag(personChip); awaitTag(placeChip)
+            compose.activityRule.scenario.recreate(); awaitTag("screen_search"); awaitTag(personChip)
+            compose.onNodeWithTag("event_$id").performClick(); awaitTag("screen_journal_detail")
+            compose.onNodeWithText("Back").performClick(); awaitTag("screen_search"); awaitTag(personChip)
+            compose.onNodeWithTag(personChip).assertIsDisplayed().performClick()
+            compose.onNodeWithTag(personChip).assertDoesNotExist()
+            compose.onNodeWithTag(placeChip).assertExists()
+            compose.onNodeWithTag(tagChip).assertExists()
+            compose.onNodeWithTag("search_reset_filters").performClick()
+            compose.onNodeWithTag("search_text").assertTextContains("Simple title")
+            compose.onNodeWithTag("search_no_active_filters").assertExists()
             compose.onNodeWithTag("search_clear").performClick()
+            compose.onNodeWithTag("search_text").assert(
+                SemanticsMatcher.expectValue(SemanticsProperties.EditableText, androidx.compose.ui.text.AnnotatedString("")))
             compose.onNodeWithTag("search_filters").assertTextEquals("Filters (0)")
         } finally {
             runBlocking { storage().lifeEvents.delete(id); storage().people.delete(person); storage().places.delete(place) }

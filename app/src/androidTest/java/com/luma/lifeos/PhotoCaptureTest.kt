@@ -55,6 +55,7 @@ class PhotoCaptureTest {
         var editor by mutableStateOf(JournalEditorViewModel(journals, null, handle, photoRepository = photos))
         show { editor }
         compose.waitUntil(5_000) { editor.state.value.ready }
+        compose.onNodeWithTag("journal_more").performScrollTo().performClick()
         compose.runOnIdle { editor.setBody("Keep this entry"); editor.addTag("family"); editor.importPhoto("content://fixture/photo") }
         compose.waitUntil(5_000) { editor.state.value.draft.photos.size == 1 && !editor.state.value.busy }
         val photo = editor.state.value.draft.photos.single()

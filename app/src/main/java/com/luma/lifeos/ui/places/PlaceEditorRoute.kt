@@ -12,6 +12,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardActions
@@ -22,8 +24,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.domain.model.PlaceTextLimits
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.domain.repository.PlaceRepository
+import java.text.NumberFormat
 import java.util.UUID
 
 @Composable
@@ -50,13 +55,20 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
         EditorTopBar(stringResource(if (state.editing) R.string.place_edit else R.string.place_create),
             "place_cancel", !state.busy, ::close)
     }, bottomBar = {
-        Row(Modifier.fillMaxWidth().imePadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("place_delete")) {
-                Text(stringResource(R.string.delete))
+        Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            when (state.error) {
+                PlaceEditorError.SAVE -> AccessibleFeedback(stringResource(R.string.place_save_error), Modifier.testTag("place_action_error"))
+                PlaceEditorError.DELETE -> AccessibleFeedback(stringResource(R.string.place_delete_error), Modifier.testTag("place_action_error"))
+                else -> Unit
             }
-            Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
-                modifier = Modifier.weight(1f).testTag("place_save")) {
-                Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("place_delete")) {
+                    Text(stringResource(R.string.delete))
+                }
+                Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
+                    modifier = Modifier.weight(1f).testTag("place_save")) {
+                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                }
             }
         }
     }) { padding ->
@@ -64,21 +76,32 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.loading) CircularProgressIndicator()
             state.error?.let { error ->
-                Text(stringResource(when (error) {
+                val message = stringResource(when (error) {
                     PlaceEditorError.LOAD -> R.string.places_load_error
                     PlaceEditorError.SAVE -> R.string.place_save_error
                     PlaceEditorError.DELETE -> R.string.place_delete_error
                     PlaceEditorError.TEXT -> R.string.place_text_error
-                }), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("place_error"))
+                })
+                if (error == PlaceEditorError.LOAD || (error == PlaceEditorError.TEXT && state.textErrors.isEmpty())) {
+                    AccessibleFeedback(message, Modifier.testTag("place_error"))
+                }
                 if (error == PlaceEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
+            val nameError = if (PlaceTextField.NAME in state.textErrors)
+                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PlaceTextLimits.NAME)) else null
             OutlinedTextField(state.draft.name, onName, enabled = enabled, singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
-                label = { Text(stringResource(R.string.place_name)) }, modifier = Modifier.fillMaxWidth().testTag("place_name"))
+                isError = nameError != null, supportingText = { nameError?.let { AccessibleFeedback(it) } },
+                label = { Text(stringResource(R.string.place_name)) }, modifier = Modifier.fillMaxWidth()
+                    .semantics { nameError?.let { error(it) } }.testTag("place_name"))
+            val noteError = if (PlaceTextField.NOTE in state.textErrors)
+                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PlaceTextLimits.NOTE)) else null
             OutlinedTextField(state.draft.note, onNote, enabled = enabled, minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                label = { Text(stringResource(R.string.place_note)) }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus).testTag("place_note"))
+                isError = noteError != null, supportingText = { noteError?.let { AccessibleFeedback(it) } },
+                label = { Text(stringResource(R.string.place_note)) }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
+                    .semantics { noteError?.let { error(it) } }.testTag("place_note"))
         }
     }
     if (deleting) AlertDialog(onDismissRequest = { deleting = false },

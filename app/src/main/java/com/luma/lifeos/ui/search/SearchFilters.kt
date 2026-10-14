@@ -8,9 +8,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.search.SearchOption
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.LocalDate
@@ -29,10 +32,12 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
                 LazyColumn(Modifier.heightIn(max = 450.dp).testTag("search_filter_panel"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
                         Text(stringResource(R.string.search_filters_help), style = MaterialTheme.typography.bodySmall)
-                        SearchDate(stringResource(R.string.search_from), input.from, "search_from", onPick = { datePicking = "from" }, onClear = { vm.setFrom(null) })
-                        SearchDate(stringResource(R.string.search_through), input.through, "search_through", onPick = { datePicking = "through" }, onClear = { vm.setThrough(null) })
+                        SearchDate(stringResource(R.string.search_from), input.from, "search_from", state.invalidDates,
+                            onPick = { datePicking = "from" }, onClear = { vm.setFrom(null) })
+                        SearchDate(stringResource(R.string.search_through), input.through, "search_through", state.invalidDates,
+                            onPick = { datePicking = "through" }, onClear = { vm.setThrough(null) })
                         Text(state.zone.id, style = MaterialTheme.typography.bodySmall)
-                        if (state.invalidDates) Text(stringResource(R.string.search_invalid_dates), color = MaterialTheme.colorScheme.error)
+                        if (state.invalidDates) AccessibleFeedback(stringResource(R.string.search_invalid_dates), Modifier.testTag("search_invalid_dates_dialog"))
                     }
                     item { SelectionButton(stringResource(R.string.journal_tags), "search_tags", state.options.tags, input.tagIds) { picking = "tags" } }
                     item { SelectionButton(stringResource(R.string.people), "search_people", state.options.people, input.personIds) { picking = "people" } }
@@ -64,10 +69,11 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
 }
 
 @Composable
-private fun SearchDate(label: String, date: LocalDate?, tag: String, onPick: () -> Unit, onClear: () -> Unit) {
+private fun SearchDate(label: String, date: LocalDate?, tag: String, invalid: Boolean, onPick: () -> Unit, onClear: () -> Unit) {
     Column {
         Text(label, style = MaterialTheme.typography.labelLarge)
-        TextButton(onClick = onPick, modifier = Modifier.testTag(tag)) {
+        val invalidMessage = if (invalid) stringResource(R.string.search_invalid_dates) else null
+        TextButton(onClick = onPick, modifier = Modifier.semantics { invalidMessage?.let { error(it) } }.testTag(tag)) {
             Text(date?.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)) ?: stringResource(R.string.search_any_date))
         }
         if (date != null) TextButton(onClick = onClear, modifier = Modifier.testTag("${tag}_clear")) {

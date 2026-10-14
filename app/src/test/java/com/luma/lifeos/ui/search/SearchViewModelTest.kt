@@ -108,6 +108,59 @@ class SearchViewModelTest {
         assertEquals((1L..50L).toList(), ids)
         assertEquals(ids.size, ids.distinct().size); assertEquals(0, vm.state.value.offset); vm.stop()
     }
+    @Test fun removalIsIdempotentAndResetKeepsText() = runTest(dispatcher) {
+        val first = UUID(0, 1); val second = UUID(0, 2)
+        val vm = SearchViewModel(Fixture(), SavedStateHandle()); vm.start(zone); runCurrent()
+        vm.setText("Older"); vm.togglePerson(first); vm.togglePerson(second); vm.setPlace(first)
+        vm.setFrom(LocalDate.parse("2026-10-13")); runCurrent()
+
+        val person = SearchFilterKey(SearchFilterKind.PERSON, first)
+        vm.removeFilter(person); vm.removeFilter(person); runCurrent()
+
+        assertEquals(setOf(second), vm.state.value.input.personIds)
+        assertEquals(first, vm.state.value.input.placeId)
+        vm.clearFilters(); runCurrent()
+        assertEquals(SearchInput(text = "Older"), vm.state.value.input)
+        vm.clear(); runCurrent()
+        assertEquals(SearchInput(), vm.state.value.input)
+        vm.stop()
+    }
+    @Test fun resetSupersedesAnUncancellableOldQuery() = runTest(dispatcher) {
+        val repo = Fixture(); val vm = SearchViewModel(repo, SavedStateHandle())
+        vm.start(zone); runCurrent()
+        vm.togglePerson(UUID(0, 1)); vm.setText("Older"); runCurrent()
+        val blocked = CompletableDeferred<Unit>(); repo.block = blocked
+        advanceTimeBy(300); runCurrent()
+
+        repo.block = null
+        vm.setText("Newer"); vm.clearFilters(); advanceTimeBy(300); runCurrent()
+        blocked.complete(Unit); runCurrent()
+
+        assertEquals("Newer", vm.state.value.input.text)
+        assertTrue(vm.state.value.input.personIds.isEmpty())
+        assertEquals(0, vm.state.value.offset)
+        assertEquals("Newer", vm.state.value.records.single().event.title)
+        vm.stop()
+    }
+    @Test fun removeDateRepairsRangeAndRestoresInputs() = runTest(dispatcher) {
+        val saved = SavedStateHandle(); val vm = SearchViewModel(Fixture(), saved)
+        vm.start(zone); runCurrent()
+        vm.setText("Older")
+        vm.setFrom(LocalDate.parse("2026-10-13"))
+        vm.setThrough(LocalDate.parse("2026-10-12")); runCurrent()
+        assertTrue(vm.state.value.invalidDates)
+
+        vm.removeFilter(SearchFilterKey(SearchFilterKind.FROM)); runCurrent()
+        assertFalse(vm.state.value.invalidDates)
+        assertNull(vm.state.value.input.from)
+        assertEquals(LocalDate.parse("2026-10-12"), vm.state.value.input.through)
+        vm.stop()
+
+        val restored = SearchViewModel(Fixture(), saved)
+        assertEquals("Older", restored.state.value.input.text)
+        assertNull(restored.state.value.input.from)
+        assertEquals(LocalDate.parse("2026-10-12"), restored.state.value.input.through)
+    }
     private class Fixture(count: Int = 2) : SearchRepository {
         val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 10)
         var fail = false

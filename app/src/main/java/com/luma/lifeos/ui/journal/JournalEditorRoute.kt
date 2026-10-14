@@ -43,5 +43,7 @@ fun JournalEditorRoute(repository: JournalRepository, eventId: EventId?, onCance
         onTime = editor::setLocalTime, peopleContent = { PersonPicker(people, state.draft.personIds, state.ready && !state.busy && !state.completed, editor::togglePerson, onCreatePerson) },
         placeContent = { PlacePicker(places, state.draft.placeId, state.ready && !state.busy && !state.completed, editor::setPlace, onCreatePlace) },
         photosContent = { PhotoEditor(photos, state.draft.photos, state.ready && !state.busy && !state.completed,
-            editor::importPhoto, editor::removePhoto, editor::retryPhoto, state.error == JournalEditorError.PHOTO && editor.hasPendingPhotoImport()) })
+            editor::importPhoto, editor::removePhoto, editor::retryPhoto,
+            importFailed = state.error == JournalEditorError.PHOTO && editor.hasPendingPhotoImport(),
+            operationFailed = state.error == JournalEditorError.PHOTO && !editor.hasPendingPhotoImport()) })
 }

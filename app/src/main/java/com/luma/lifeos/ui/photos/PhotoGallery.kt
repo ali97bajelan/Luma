@@ -15,6 +15,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -23,6 +25,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.model.PhotoLimits
 import com.luma.lifeos.domain.repository.PhotoRepository
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -30,15 +33,24 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun PhotoEditor(repository: PhotoRepository, photos: List<PhotoAttachment>, enabled: Boolean,
-    onImport: (String) -> Unit, onRemove: (UUID) -> Unit, onRetry: () -> Unit, importFailed: Boolean) {
+    onImport: (String) -> Unit, onRemove: (UUID) -> Unit, onRetry: () -> Unit, importFailed: Boolean,
+    operationFailed: Boolean = false) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let { onImport(it.toString()) } }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.photos), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.photos), style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() }.testTag("photo_heading"))
         Text(stringResource(R.string.photo_limits), style = MaterialTheme.typography.bodySmall)
         TextButton(enabled = enabled && photos.size < PhotoLimits.COUNT, onClick = {
             picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
         }, modifier = Modifier.testTag("photo_add")) { Text(stringResource(R.string.photo_add)) }
-        if (importFailed) TextButton(enabled = enabled, onClick = onRetry) { Text(stringResource(R.string.photo_retry_import)) }
+        if (importFailed) {
+            AccessibleFeedback(stringResource(R.string.photo_error), Modifier.testTag("photo_import_error"))
+            TextButton(enabled = enabled, onClick = onRetry, modifier = Modifier.testTag("photo_retry_import")) {
+                Text(stringResource(R.string.photo_retry_import))
+            }
+        } else if (operationFailed) {
+            AccessibleFeedback(stringResource(R.string.photo_error), Modifier.testTag("photo_operation_error"))
+        }
         PhotoGallery(repository, photos, enabled, onRemove)
     }
 }
@@ -89,7 +101,7 @@ private fun PhotoPreview(repository: PhotoRepository, photo: PhotoAttachment, nu
         Image(bitmap, contentDescription = stringResource(R.string.photo_number, number),
             modifier = Modifier.fillMaxWidth().height(240.dp).testTag("photo_preview_${photo.id}"), contentScale = ContentScale.Fit)
     } ?: Column(Modifier.testTag("photo_unavailable_${photo.id}")) {
-        Text(stringResource(R.string.photo_unavailable))
+        AccessibleFeedback(stringResource(R.string.photo_unavailable), Modifier.testTag("photo_preview_error"))
         TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
     }
 }

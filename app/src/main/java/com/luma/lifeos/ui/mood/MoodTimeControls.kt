@@ -20,8 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.Instant
@@ -36,17 +40,26 @@ fun MoodTimeControls(milliseconds: Long, enabled: Boolean, timeError: Boolean,
     onTime: (LocalDateTime, ZoneId) -> Boolean) {
     val zone = ZoneId.systemDefault()
     val current = Instant.ofEpochMilli(milliseconds).atZone(zone)
+    val timeErrorMessage = stringResource(R.string.mood_time_error)
     var dateOpen by rememberSaveable { mutableStateOf(false) }
     var timeOpen by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.mood_timestamp), style = MaterialTheme.typography.titleMedium)
-        TextButton(enabled = enabled, onClick = { dateOpen = true }, modifier = Modifier.testTag("mood_date")) {
+        Text(stringResource(R.string.mood_timestamp), style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() }.testTag("mood_timestamp"))
+        TextButton(enabled = enabled, onClick = { dateOpen = true }, modifier = Modifier.testTag("mood_date").semantics {
+            if (timeError) error(timeErrorMessage)
+        }) {
             Text(current.toLocalDate().format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
         }
-        TextButton(enabled = enabled, onClick = { timeOpen = true }, modifier = Modifier.testTag("mood_time")) {
+        TextButton(enabled = enabled, onClick = { timeOpen = true }, modifier = Modifier.testTag("mood_time").semantics {
+            if (timeError) error(timeErrorMessage)
+        }) {
             Text(current.format(com.luma.lifeos.language.localizedTime()))
         }
         Text(stringResource(R.string.mood_timezone, zone.id, current.offset.toString()), style = MaterialTheme.typography.bodySmall)
+        if (timeError && !dateOpen && !timeOpen) {
+            AccessibleFeedback(timeErrorMessage, Modifier.testTag("mood_time_error"))
+        }
     }
     if (dateOpen) {
         val date = rememberDatePickerState(initialSelectedDateMillis = pickerMillis(current.toLocalDate()),
@@ -63,7 +76,7 @@ fun MoodTimeControls(milliseconds: Long, enabled: Boolean, timeError: Boolean,
         ) {
             Column {
                 DatePicker(state = date)
-                if (timeError) Text(stringResource(R.string.mood_time_error), color = MaterialTheme.colorScheme.error)
+                if (timeError) AccessibleFeedback(timeErrorMessage, Modifier.testTag("mood_time_error"))
             }
         }
     }
@@ -73,7 +86,7 @@ fun MoodTimeControls(milliseconds: Long, enabled: Boolean, timeError: Boolean,
             text = {
                 Column {
                     TimeInput(state = time)
-                    if (timeError) Text(stringResource(R.string.mood_time_error), color = MaterialTheme.colorScheme.error)
+                    if (timeError) AccessibleFeedback(timeErrorMessage, Modifier.testTag("mood_time_error"))
                 }
             },
             confirmButton = { TextButton(onClick = {

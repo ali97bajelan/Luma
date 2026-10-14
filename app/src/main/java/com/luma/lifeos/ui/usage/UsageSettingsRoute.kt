@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.integration.usage.openUsageAccessSettings
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -42,7 +43,11 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId) {
                 Switch(checked = state.current.enabled, enabled = canToggle, onCheckedChange = null)
             }
             if (state.loading || state.busy) CircularProgressIndicator(Modifier.testTag("usage_busy"))
-            Text(stringResource(state.current.status.label()), modifier = Modifier.testTag("usage_status"))
+            val statusMessage = stringResource(state.current.status.label())
+            if (!state.loading && !state.busy) AccessibleFeedback(statusMessage,
+                Modifier.testTag("usage_status"), isError = state.current.status in setOf(
+                    UsageSyncStatus.ACCESS_REQUIRED, UsageSyncStatus.LOCKED, UsageSyncStatus.UNAVAILABLE, UsageSyncStatus.ERROR))
+            else Text(statusMessage, modifier = Modifier.testTag("usage_status"))
             state.current.lastSync?.let { Text(stringResource(R.string.usage_last_sync,
                 it.atZone(zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
             TextButton(onClick = { showAccessExplanation = true }, modifier = Modifier.testTag("usage_access")) {
@@ -54,8 +59,8 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId) {
                     Text(stringResource(R.string.usage_import_now))
                 }
             }
-            if (settingsMissing) Text(stringResource(R.string.usage_settings_missing))
-            if (state.actionError) Text(stringResource(R.string.usage_action_error), modifier = Modifier.testTag("usage_action_error"))
+            if (settingsMissing) AccessibleFeedback(stringResource(R.string.usage_settings_missing), Modifier.testTag("usage_settings_missing"))
+            if (state.actionError) AccessibleFeedback(stringResource(R.string.usage_action_error), Modifier.testTag("usage_action_error"))
             TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
             DetailsDisclosure(R.string.imports_details, "usage_details") {
                 Text(stringResource(R.string.usage_access_explanation))

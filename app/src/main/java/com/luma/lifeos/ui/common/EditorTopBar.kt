@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import com.luma.lifeos.R
 
@@ -19,7 +21,8 @@ import com.luma.lifeos.R
 @Composable
 fun EditorTopBar(title: String, closeTag: String, closeEnabled: Boolean, onClose: () -> Unit) {
     TopAppBar(
-        title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("editor_title")) },
+        title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.semantics { heading() }.testTag("editor_title")) },
         navigationIcon = {
             IconButton(onClick = onClose, enabled = closeEnabled, modifier = Modifier.testTag(closeTag)) {
                 Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.cancel))

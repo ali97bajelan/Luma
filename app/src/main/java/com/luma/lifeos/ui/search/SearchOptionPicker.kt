@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.search.SearchOption
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.util.UUID
 
 @Composable
@@ -35,7 +36,7 @@ internal fun SearchOptionPicker(title: String, options: List<SearchOption>, sele
                 TextButton(onClick = onClear) { Text(stringResource(R.string.search_clear_selection)) }
                 if (loading) CircularProgressIndicator()
                 if (error) {
-                    Text(stringResource(R.string.search_options_error))
+                    AccessibleFeedback(stringResource(R.string.search_options_error))
                     TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
                 if (!loading && visible.isEmpty()) Text(stringResource(R.string.search_no_options))

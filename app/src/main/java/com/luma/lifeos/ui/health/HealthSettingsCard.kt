@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.health.*
 import com.luma.lifeos.integration.health.*
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -46,7 +47,11 @@ fun HealthSettingsCard(integration: HealthIntegration) {
                 Switch(checked = state.current.enabled, enabled = canToggle, onCheckedChange = null)
             }
             if (state.loading || state.busy) CircularProgressIndicator(Modifier.testTag("health_busy"))
-            Text(stringResource(state.current.status.label()), modifier = Modifier.testTag("health_status"))
+            val statusMessage = stringResource(state.current.status.label())
+            if (!state.loading && !state.busy) AccessibleFeedback(statusMessage,
+                Modifier.testTag("health_status"), isError = state.current.status in setOf(
+                    HealthStatus.ACCESS_REQUIRED, HealthStatus.UPDATE_REQUIRED, HealthStatus.UNAVAILABLE, HealthStatus.ERROR))
+            else Text(statusMessage, modifier = Modifier.testTag("health_status"))
             state.current.importZone?.let { Text(stringResource(R.string.health_zone, it.id)) }
             state.current.lastSync?.let { Text(stringResource(R.string.health_last_sync,
                 it.atZone(state.current.importZone ?: ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
@@ -66,8 +71,8 @@ fun HealthSettingsCard(integration: HealthIntegration) {
                 Text(stringResource(R.string.health_manage))
             }
             TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("health_refresh")) { Text(stringResource(R.string.health_refresh)) }
-            if (settingsMissing) Text(stringResource(R.string.health_settings_missing))
-            if (state.actionError) Text(stringResource(R.string.health_action_error), modifier = Modifier.testTag("health_action_error"))
+            if (settingsMissing) AccessibleFeedback(stringResource(R.string.health_settings_missing), Modifier.testTag("health_settings_missing"))
+            if (state.actionError) AccessibleFeedback(stringResource(R.string.health_action_error), Modifier.testTag("health_action_error"))
             DetailsDisclosure(R.string.imports_details, "health_details") {
                 Text(stringResource(R.string.health_explanation))
                 Text(stringResource(R.string.health_privacy_retention), modifier = Modifier.testTag("health_retention"))

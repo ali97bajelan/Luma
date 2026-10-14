@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.usage.*
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.usage.UsageDayState
 import com.luma.lifeos.ui.usage.observeUsageDay
 import java.time.*
@@ -37,7 +38,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
             when (val current = state) {
                 UsageDayState.Loading -> item { CircularProgressIndicator() }
                 UsageDayState.Error -> item {
-                    Text(stringResource(R.string.review_error))
+                    AccessibleFeedback(stringResource(R.string.review_error))
                     TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
                 UsageDayState.Empty -> item { Text(stringResource(R.string.usage_daily_empty)) }

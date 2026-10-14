@@ -1822,3 +1822,32 @@ No schema, permission or dependency change was made.
   asserting relative UI order more strictly when both event cards are visible.
 
 Logs and the scoped diff are under `/tmp/luma-ux15-*`. Work remains uncommitted.
+
+## Search filters and accessible capture feedback — 2026-10-14
+
+Findings 13, 14 and 16 add removable, identity-safe active Search filters; independent field validation and accessible local/action feedback; descriptive capture disclosures; and headings/status feedback across Search, Privacy, Review, Usage and Health. English, French and Persian copy is included. Search Reset preserves text while Clear all removes it. No schema, permission, dependency or network change was made.
+
+- PASS: 313 shared JVM tests (176 app, 95 domain, 23 data, 13 usage, 6 health), zero failures/errors/skips; debug app and Android test APK builds; and app lint.
+- PASS: 33 targeted AndroidJUnitRunner tests, output `OK (33 tests)`, on API 36 emulator `sdk_gphone64_x86_64`. The disposable target was `com.luma.lifeos.uxvalidation`; only its app data was cleared. The tests cover Search filter identity/layout and Search flows, including unavailable-selection removal during catalog loading/failure; capture/accessibility feedback including dismissed timestamp errors and failed photo removal with retained attachments; Journal tag rejection; and Weekly Review navigation/status.
+- One earlier combined run hit the Review test helper's 5-second scroll timeout; the same test passed alone in 3 seconds. Its wait was raised to 15 seconds without changing the asserted navigation behavior, and the final combined run passed all 33 tests.
+- The Search many-filter test forces a 320 dp Compose surface, font scale 2.0 and RTL. This is automated layout coverage, not a native system language/direction check. The emulator is 1080×2400 at 420 dpi; the Review test sets `Locale.US`.
+- PASS: `:app:assembleDebugAndroidTest` after the final Android test source change. The affected app/build/lint command and shared JVM sweep both pass.
+- Minor coverage remains deferred for a production SearchRoute viewport with 203 filters, the interactive invalid-date correction UI, save-failure visibility with a live keyboard, and accepted Privacy reset-request UI with a fake service. VM and component behavior is covered; device checks remain pending.
+- PENDING: TalkBack speech/navigation, keyboard behavior, native language switching and RTL, physical compact/landscape layouts, and manual draft-restoration walkthroughs. See [the acceptance checklist](UX_ACCEPTANCE_2026-10-14.md).
+
+Tested source snapshot: base HEAD `391e7a4e5f1b87164f797c41eb776810a2935692` plus the current uncommitted working tree. No commit was created; the user requested a generated commit message.
+
+The final instrumentation invocation used `emulator-5554` and this class list:
+`com.luma.lifeos.ActiveSearchFiltersTest`, `CaptureAccessibilityTest`,
+`FeedbackAccessibilityTest`, `JournalCaptureTest`,
+`JournalEditorScreenTest`, `MemoryCaptureTest`, `MoodCaptureTest`,
+`PhotoCaptureTest`, `SearchFlowTest`, and
+`com.luma.lifeos.review.WeeklyReviewFlowTest`.
+
+```sh
+adb -s emulator-5554 shell am instrument -w -r \
+  -e class com.luma.lifeos.ActiveSearchFiltersTest,com.luma.lifeos.CaptureAccessibilityTest,com.luma.lifeos.FeedbackAccessibilityTest,com.luma.lifeos.JournalCaptureTest,com.luma.lifeos.JournalEditorScreenTest,com.luma.lifeos.MemoryCaptureTest,com.luma.lifeos.MoodCaptureTest,com.luma.lifeos.PhotoCaptureTest,com.luma.lifeos.SearchFlowTest,com.luma.lifeos.review.WeeklyReviewFlowTest \
+  com.luma.lifeos.uxvalidation.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+The run used the isolated app/test APKs, cleared only `com.luma.lifeos.uxvalidation`, and left the installed `com.luma.lifeos` app and its data untouched. The runner output for the final invocation was `OK (33 tests)`; this dated entry is its result record. Work remains uncommitted for review.
