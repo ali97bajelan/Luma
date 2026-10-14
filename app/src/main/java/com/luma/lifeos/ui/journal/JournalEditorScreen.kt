@@ -2,6 +2,8 @@ package com.luma.lifeos.ui.journal
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,8 +38,10 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
     var discarding by rememberSaveable { mutableStateOf(false) }
     var tagText by rememberSaveable { mutableStateOf("") }
     var tagError by rememberSaveable { mutableStateOf(false) }
+    var tagInputBringIntoViewRequest by remember { mutableIntStateOf(0) }
     var more by rememberSaveable { mutableStateOf(false) }
     var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
+    val tagInputBringIntoViewRequester = remember { BringIntoViewRequester() }
     val bodyFocus = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val enabled = state.ready && !state.busy && !state.completed
@@ -51,6 +55,20 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
             contextExpansionInitialized = true
         }
     }
+    LaunchedEffect(tagInputBringIntoViewRequest) {
+        if (tagInputBringIntoViewRequest > 0) tagInputBringIntoViewRequester.bringIntoView()
+    }
+    fun addPendingTag(): Boolean {
+        if (tagText.isBlank()) return true
+        if (onAddTag(tagText)) {
+            tagText = ""
+            tagError = false
+            return true
+        }
+        tagError = true
+        tagInputBringIntoViewRequest++
+        return false
+    }
     BackHandler { close() }
     Scaffold(modifier = Modifier.testTag("screen_journal"), topBar = {
         EditorTopBar(stringResource(if (state.editing) R.string.journal_edit else R.string.journal_capture),
@@ -61,8 +79,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 Text(stringResource(R.string.delete))
             }
             Button(enabled = enabled && state.draft.body.isNotBlank(), onClick = {
-                if (tagText.isNotBlank() && onAddTag(tagText)) tagText = ""
-                onSave()
+                if (addPendingTag()) onSave()
             }, modifier = Modifier.weight(1f).testTag("journal_save")) {
                 Text(stringResource(if (state.busy) R.string.saving else R.string.save))
             }
@@ -108,13 +125,13 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
                         if (tagText.isBlank()) keyboardController?.hide()
-                        else if (onAddTag(tagText)) { tagText = ""; tagError = false; keyboardController?.hide() }
+                        else if (addPendingTag()) keyboardController?.hide()
                     }),
                     supportingText = { if (tagError) Text(stringResource(R.string.journal_tag_size_error)) },
                     label = { Text(stringResource(R.string.journal_tag_name)) },
-                    modifier = Modifier.weight(1f).testTag("journal_tag_input"))
+                    modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester).testTag("journal_tag_input"))
                 TextButton(enabled = enabled && tagText.isNotBlank(), onClick = {
-                    if (onAddTag(tagText)) tagText = ""
+                    addPendingTag()
                 }, modifier = Modifier.testTag("journal_add_tag")) { Text(stringResource(R.string.add)) }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

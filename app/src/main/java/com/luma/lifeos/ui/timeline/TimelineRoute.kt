@@ -60,7 +60,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
             if (!state.loaded || state.busy || state.error != null || !state.canLoadLater) return@LaunchedEffect
             snapshotFlow { list.layoutInfo.visibleItemsInfo.lastOrNull()?.key }.collect { key ->
                 val index = state.records.indexOfFirst { it.event.id.toString() == key }
-                if (index >= maxOf(0, state.records.size - 10) || key == "later") pager.loadLater()
+                if (index >= maxOf(0, state.records.size - 10) || key == "earlier") pager.loadLater()
             }
         }
         LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("screen_timeline"),

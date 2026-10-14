@@ -109,6 +109,41 @@ class TimelineFlowTest {
         compose.onNodeWithText("Cancel").performClick()
     }
 
+    @Test fun manualMoodAndMemoryOpenInReadingDetailBeforeEdit() {
+        val moodId = EventId.new()
+        val memoryId = EventId.new()
+        runBlocking {
+            RoomMoodRepository(db, clock).create(moodId, MoodInput(4, time, note = "Mood note"))
+            RoomMemoryRepository(db, clock).saveMarker(moodId, MemoryMarkerInput(4, "Marker reason"))
+            RoomMemoryRepository(db, clock).create(memoryId, MemoryInput("Direct memory note", time, "Direct memory"))
+        }
+        show()
+        compose.onNodeWithTag("nav_timeline").performClick()
+        awaitTag("event_$moodId")
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_$moodId"))
+        compose.onNodeWithTag("event_$moodId").performClick()
+        awaitTag("screen_event_detail")
+        awaitText("Mood note")
+        compose.onNodeWithTag("event_edit").assertExists()
+        compose.onNodeWithTag("event_promote").assertExists()
+        compose.onNodeWithTag("memory_status").assertExists()
+        compose.onNodeWithText("Marker reason").assertExists()
+        compose.onNodeWithTag("event_edit").performClick()
+        awaitTag("screen_mood")
+        compose.onNodeWithTag("mood_save").assertExists()
+        compose.onNodeWithTag("mood_cancel").performClick()
+        awaitTag("screen_event_detail")
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_$memoryId"))
+        compose.onNodeWithTag("event_$memoryId").performClick()
+        awaitTag("screen_event_detail")
+        awaitText("Direct memory note")
+        compose.onNodeWithTag("event_edit").assertExists()
+        compose.onNodeWithTag("event_edit").performClick()
+        awaitTag("screen_memory")
+        compose.onNodeWithTag("memory_save").assertExists()
+    }
+
     @Test fun appUsageRowsAreHiddenByDefault() {
         val usage = saveUsage("org.example.browser", 60_001)
         show()

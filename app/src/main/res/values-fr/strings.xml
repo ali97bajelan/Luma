@@ -103,7 +103,7 @@
     <string name="add">Ajouter</string>
     <string name="back">Retour</string>
     <string name="journal_text_error">Le brouillon précédent est conservé. Utilisez au maximum 50 000 caractères pour le journal, 200 pour son titre et 50 étiquettes de 50 caractères chacune.</string>
-    <string name="journal_tag_size_error">Utilisez au maximum 50 caractères. Le texte précédent de l’étiquette est conservé.</string>
+    <string name="journal_tag_size_error">Utilisez au maximum 50 caractères et 50 étiquettes. Le texte de l’étiquette est conservé.</string>
     <string name="memory_capture">Enregistrer un souvenir</string>
     <string name="memory_promote">Garder en souvenir</string>
     <string name="memory_edit">Modifier le souvenir</string>

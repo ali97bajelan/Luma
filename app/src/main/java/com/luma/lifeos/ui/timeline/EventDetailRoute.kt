@@ -31,7 +31,14 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().testTag("screen_event_detail").verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+            (state as? EventDetailState.Data)?.record?.takeIf { it.canEditContent }?.let { record ->
+                TextButton(onClick = { onEdit(record) }, modifier = Modifier.testTag("event_edit")) {
+                    Text(stringResource(R.string.event_edit))
+                }
+            }
+        }
         when (val current = state) {
             EventDetailState.Loading -> CircularProgressIndicator()
             EventDetailState.Missing -> Text(stringResource(R.string.event_missing), modifier = Modifier.testTag("event_missing"))
@@ -64,7 +71,6 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                 }
                 LinkedPeople(record.people); LinkedPlace(record.place)
                 PhotoGallery(photos, record.photos)
-                if (record.canEditContent) TextButton(onClick = { onEdit(record) }, modifier = Modifier.testTag("event_edit")) { Text(stringResource(R.string.event_edit)) }
                 if (record.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("event_promote")) {
                     Text(stringResource(if (record.memory == null) R.string.memory_promote else R.string.memory_edit))
                 }

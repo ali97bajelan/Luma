@@ -114,7 +114,7 @@
     <string name="add">افزودن</string>
     <string name="back">بازگشت</string>
     <string name="journal_text_error">پیش‌نویس قبلی محفوظ است. برای یادداشت روزانه حداکثر ۵۰٬۰۰۰ نویسه، برای عنوان ۲۰۰ نویسه و برای برچسب‌ها حداکثر ۵۰ برچسب با حداکثر ۵۰ نویسه برای هرکدام وارد کنید.</string>
-    <string name="journal_tag_size_error">حداکثر ۵۰ نویسه وارد کنید. متن قبلی برچسب محفوظ است.</string>
+    <string name="journal_tag_size_error">حداکثر ۵۰ نویسه و ۵۰ برچسب وارد کنید. متن برچسب شما محفوظ است.</string>
     <string name="memory_capture">ثبت خاطره</string>
     <string name="memory_promote">نگه داشتن به‌عنوان خاطره</string>
     <string name="memory_edit">ویرایش خاطره</string>

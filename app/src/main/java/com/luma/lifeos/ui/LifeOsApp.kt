@@ -116,7 +116,6 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     }
     fun openEvent(record: LifeEventRecord) {
         if (record.canEditContent && record.journal != null) navController.navigate("journal_detail/${record.event.id}")
-        else if (record.canEditContent) editEvent(record)
         else navController.navigate("event_detail/${record.event.id}")
     }
     val currentDay by rememberCurrentDay()
