@@ -95,28 +95,52 @@ class RoomUsageRepository(private val database: LumaDatabase) : UsageRepository 
     }.distinctUntilChanged()
 
     internal suspend fun loadDaily(date: LocalDate, zone: ZoneId): DailyUsageReport? {
-        val start = date.atStartOfDay(zone).toInstant(); val end = date.plusDays(1).atStartOfDay(zone).toInstant()
-        if (start == end) return null
-        val visits = database.usageSessions().forDay(start.toEpochMilli(), end.toEpochMilli())
-        val windows = database.usageSessions().windows(start.toEpochMilli(), end.toEpochMilli())
-        var coveredUntil = start.toEpochMilli()
-        windows.filter { it.complete }.forEach { window ->
-            if (window.queryStart <= coveredUntil) coveredUntil = maxOf(coveredUntil, window.queryEnd)
-        }
-        val history = if (coveredUntil >= end.toEpochMilli()) UsageHistory.COMPLETE else UsageHistory.PARTIAL
-        val report = sessionUsageReport(visits.map { UsageSession(it.packageName,
-            Instant.ofEpochMilli(it.startedAt), Instant.ofEpochMilli(it.endedAt), it.appLabel, it.ongoing) }, date, zone, history)
-        if (visits.isNotEmpty() || history == UsageHistory.COMPLETE) return report
+        return loadDailyReports(listOf(date), zone)[date]
+    }
 
-        val rows = database.lifeEvents().nativeUsageSources(start.storageBoundary(), end.storageBoundary()).map { record ->
+    /** Loads every requested date from one bounded set of session, coverage and import queries. */
+    internal suspend fun loadDailyReports(dates: List<LocalDate>, zone: ZoneId): Map<LocalDate, DailyUsageReport?> {
+        val requested = dates.distinct().sorted()
+        if (requested.isEmpty()) return emptyMap()
+        val start = requested.first().atStartOfDay(zone).toInstant()
+        val end = requested.last().plusDays(1).atStartOfDay(zone).toInstant()
+        if (start == end) return requested.associateWith { null }
+
+        val startMillis = start.toEpochMilli()
+        val endMillis = end.toEpochMilli()
+        val sessions = database.usageSessions().forRange(startMillis, endMillis)
+        val windows = database.usageSessions().windows(startMillis, endMillis)
+        val buckets = database.lifeEvents().nativeUsageSources(start.storageBoundary(), end.storageBoundary()).map { record ->
             val usage = record.usage
             UsageBucket(usage.packageName, Instant.ofEpochMilli(usage.bucketStart), Instant.ofEpochMilli(usage.bucketEnd),
                 usage.durationMs, record.metadataJson.usageLabel())
         }
-        val legacy = dailyUsageReport(rows, date, zone)
-        // Requested query bounds do not establish retention. An empty partial query
-        // must not hide real saved totals when Android has already lost the events.
-        return selectSavedUsageReport(report, legacy, windows.isNotEmpty())
+
+        return requested.associateWith { date ->
+            val dayStart = date.atStartOfDay(zone).toInstant()
+            val dayEnd = date.plusDays(1).atStartOfDay(zone).toInstant()
+            if (dayStart == dayEnd) return@associateWith null
+            val dayStartMillis = dayStart.toEpochMilli()
+            val dayEndMillis = dayEnd.toEpochMilli()
+            val dayWindows = windows.filter { it.queryStart < dayEndMillis && it.queryEnd > dayStartMillis }
+            var coveredUntil = dayStartMillis
+            dayWindows.filter { it.complete }.forEach { window ->
+                if (window.queryStart <= coveredUntil) coveredUntil = maxOf(coveredUntil, window.queryEnd)
+            }
+            val history = if (coveredUntil >= dayEndMillis) UsageHistory.COMPLETE else UsageHistory.PARTIAL
+            val visits = sessions.asSequence().filter { it.startedAt < dayEndMillis && it.endedAt > dayStartMillis }
+                .map { UsageSession(it.packageName, Instant.ofEpochMilli(it.startedAt), Instant.ofEpochMilli(it.endedAt),
+                    it.appLabel, it.ongoing) }.toList()
+            val report = sessionUsageReport(visits, date, zone, history)
+            if (visits.isNotEmpty() || history == UsageHistory.COMPLETE) report
+            else {
+                val legacyRows = buckets.filter { it.start >= dayStart && it.start < dayEnd }
+                val legacy = dailyUsageReport(legacyRows, date, zone)
+                // Requested query bounds do not establish retention. An empty partial query
+                // must not hide real saved totals when Android has already lost the events.
+                selectSavedUsageReport(report, legacy, dayWindows.isNotEmpty())
+            }
+        }
     }
     private suspend fun saveState(state: UsageImportState) {
         val checkpoint = JSONObject().put("v", 1).put("enabled", state.enabled).put("status", state.status.name)

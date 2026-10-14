@@ -20,8 +20,17 @@ private const val TIMELINE_VISIBLE = """(type != 'APP_USAGE' OR (:showAppUsage A
 @Dao
 interface LifeEventDao {
     @Transaction
-    @Query("SELECT id, occurred_at FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE' ORDER BY occurred_at, id")
-    suspend fun reviewSources(start: Long, end: Long): List<com.luma.lifeos.data.entity.ReviewSource>
+    @Query("""SELECT id, occurred_at FROM life_event
+        WHERE type != 'APP_USAGE' AND (
+            (occurred_at >= :previousStart AND occurred_at < :previousEnd) OR
+            (occurred_at >= :currentStart AND occurred_at < :currentEnd)
+        ) ORDER BY occurred_at, id""")
+    suspend fun reviewSources(
+        previousStart: Long,
+        previousEnd: Long,
+        currentStart: Long,
+        currentEnd: Long,
+    ): List<com.luma.lifeos.data.entity.ReviewSource>
 
     @Query("""SELECT app_usage_record.*, life_event.metadata_json FROM app_usage_record
         INNER JOIN life_event ON life_event.id = app_usage_record.life_event_id

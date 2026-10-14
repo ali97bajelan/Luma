@@ -28,10 +28,15 @@ class RoomWeeklyReviewRepository(private val database: LumaDatabase) : WeeklyRev
     override fun observe(period: ReviewPeriod) = observeChanges().map {
         withContext(Dispatchers.IO) {
             database.withTransaction {
-                val rows = database.lifeEvents().reviewSources(period.previous.startInstant(period.zone).toEpochMilli(),
-                    period.current.endInstant(period.zone).toEpochMilli())
+                val rows = database.lifeEvents().reviewSources(
+                    previousStart = period.previous.startInstant(period.zone).toEpochMilli(),
+                    previousEnd = period.previous.endInstant(period.zone).toEpochMilli(),
+                    currentStart = period.current.startInstant(period.zone).toEpochMilli(),
+                    currentEnd = period.current.endInstant(period.zone).toEpochMilli(),
+                )
                 val usage = RoomUsageRepository(database)
-                val days = (period.previous.dates + period.current.dates).mapNotNull { usage.loadDaily(it, period.zone) }
+                val dates = period.previous.dates + period.current.dates
+                val days = usage.loadDailyReports(dates, period.zone).values.filterNotNull()
                 calculateWeeklyReview(period, rows.map { it.snapshot() }, days)
             }
         }
