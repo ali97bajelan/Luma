@@ -336,8 +336,9 @@
     <string name="search_selection_count">%1$d مورد انتخاب‌شده · حداکثر ۱۰۰</string>
     <string name="review_weekly_title">مرور هفتگی</string>
     <string name="review_saved_explanation">بر اساس مشاهده‌های ذخیره‌شده. تفاوت‌ها فقط اطلاعات ثبت‌شده را توصیف می‌کنند و نشان‌دهندهٔ علت‌ها یا پوشش کامل نیستند.</string>
-    <string name="review_comparison_range">مقایسه: %1$s – %2$s</string>
-    <string name="review_partial">این هفته تا این لحظه، شامل مشاهده‌های ناقص امروز. مقایسه با روزهای مشابه هفتهٔ قبل انجام شده؛ امروز هنوز ادامه دارد.</string>
+    <string name="review_comparison_range">مقایسه با %1$s – %2$s · %3$s</string>
+    <string name="review_local_time">به وقت محلی</string>
+    <string name="review_partial">هفته در جریان است · داده‌های ناقص امروز هم آمده و مقایسه تا همین روز در هفتهٔ قبل است.</string>
     <string name="review_this_week">این هفته</string>
     <string name="review_previous_week">هفتهٔ قبل</string>
     <string name="review_next_week">هفتهٔ بعد</string>
@@ -345,7 +346,7 @@
     <string name="review_current_period">این بازه</string>
     <string name="review_previous_period">بازهٔ قبل</string>
     <string name="review_previous_value">بازهٔ قبل: %1$s</string>
-    <string name="review_change">تغییر مشاهده‌های ذخیره‌شده: %1$s</string>
+    <string name="review_change">تغییر: %1$s</string>
     <string name="review_scale_samples">%1$s / ۵ · نمونه‌ها: %2$d</string>
     <string name="review_view_sources">دیدن منابع این بازه</string>
     <string name="review_view_previous_sources">دیدن منابع بازهٔ قبل</string>
@@ -353,6 +354,7 @@
     <string name="review_no_sources">اطلاعاتی که در این انتخاب سهم داشته باشند باقی نمانده است.</string>
     <string name="review_error">مرور ذخیره‌شده بارگذاری نشد. اطلاعات شما محفوظ‌اند.</string>
     <string name="review_empty">نوشته یا اندازه‌گیری ذخیره‌شده‌ای در این بازه وجود ندارد.</string>
+    <string name="review_empty_previous">هفتهٔ قبل: %1$s نوشتهٔ ذخیره‌شده.</string>
     <string name="review_entries">نوشته‌های ذخیره‌شده</string>
     <string name="review_journals">یادداشت‌های روزانه</string>
     <string name="review_memories">خاطره‌های مهم</string>
@@ -363,8 +365,10 @@
     <string name="review_top_emotions">احساسات ثبت‌شده همراه حال‌وهوا · حداکثر ۱۰</string>
     <string name="review_frequency">نوشته‌های پیوندخورده: %1$d</string>
     <string name="review_no_patterns">مشاهدهٔ ذخیره‌شده‌ای در دسترس نیست.</string>
+    <string name="review_activity_no_data">هیچ اندازه‌گیری فعالیتی برای این هفته ذخیره نشده است.</string>
     <string name="review_usage">رفتار دیجیتال</string>
     <string name="review_usage_total">استفادهٔ ذخیره‌شده از برنامه‌ها در پیش‌زمینه</string>
+    <string name="review_usage_no_data">مجموع قابل‌استفاده‌ای از استفادهٔ برنامه‌ها برای این هفته در دسترس نیست.</string>
     <string name="review_usage_explanation">زمان استفاده از برنامه‌ها در پیش‌زمینه می‌تواند هم‌پوشانی داشته باشد. مجموع‌ها در صورت وجود از دفعات استفادهٔ نگه‌داشته‌شده و در غیر این صورت از مجموع‌های روزانهٔ ذخیره‌شده محاسبه می‌شوند؛ این زمان، مدت روشن بودن صفحه‌نمایش دستگاه نیست. حداکثر ۱۰ برنامهٔ پراستفاده نمایش داده می‌شود.</string>
     <string name="review_usage_coverage">روزهای دارای سابقهٔ ذخیره‌شده: %1$d · کامل: %2$d · ناقص: %3$d · فقط مجموع: %4$d</string>
     <string name="review_usage_date">%1$s · %2$s</string>
@@ -428,14 +432,10 @@
     <string name="hide_details">پنهان کردن جزئیات</string>
     <string name="review_overview">هفته در یک نگاه</string>
     <string name="review_missing_context">اندازه‌گیری‌های ثبت‌نشده در دسترس نیستند؛ صفر ثبت‌شده همچنان صفر است.</string>
-    <string name="review_overview_mood">حال‌وهوا · %1$s</string>
     <string name="review_latest_memory">تازه‌ترین خاطرهٔ ثبت‌شده</string>
-    <string name="review_overview_usage">استفادهٔ ثبت‌شده از برنامه‌ها · %1$s</string>
     <string name="review_usage_summary">تاریخ‌های دارای سابقه: %1$d از %2$d · کامل: %3$d</string>
-    <string name="review_overview_activity">معیار فعالیت با بیشترین نمونه · %1$s</string>
     <string name="review_overview_activity_value">%1$s · %2$s %3$s · نمونه‌ها: %4$d · %5$s</string>
     <string name="review_overview_catalog">افراد پیوندخورده: %1$d · مکان‌های پیوندخورده: %2$d</string>
-    <string name="review_overview_linked_explanation">این تعداد، افراد و مکان‌های پیوندخورده به نوشته‌های ثبت‌شده را نشان می‌دهد، نه زمان باهم‌بودن یا تعداد بازدیدها.</string>
     <string name="review_people_places">افراد / مکان‌ها</string>
     <string name="review_sources">منابع</string>
     <string name="review_methodology">این مشاهدات چگونه محاسبه می‌شوند</string>

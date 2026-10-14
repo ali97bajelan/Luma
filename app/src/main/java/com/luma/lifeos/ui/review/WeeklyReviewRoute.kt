@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.review
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.distinctUntilChanged
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
@@ -29,7 +31,7 @@ import java.time.*
 import java.time.format.FormatStyle
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone: ZoneId,
     onSources: (ReviewDates, ReviewMetric) -> Unit, onEvent: (LifeEventRecord) -> Unit,
@@ -46,55 +48,84 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     key(period, retry) {
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
+        val report = (state as? WeeklyReviewState.Data)?.report
+        val empty = report?.let { it.current.records == 0 && it.current.usage?.totalMillis == null && it.current.activities.isEmpty() } == true
+        val keys = report?.let {
+            listOf("heading", "overview", "sections") + (if (empty) listOf("empty") else emptyList()) +
+                listOf("counts", "mood", "memories", "catalog", "usage", "activity")
+        }
+        LaunchedEffect(keys) {
+            val itemKeys = keys ?: return@LaunchedEffect
+            val sectionKeys = listOf("mood", "memories", "catalog", "usage", "activity")
+            snapshotFlow {
+                listState.layoutInfo.visibleItemsInfo
+                    .filter { it.key != "sections" }
+                    .minByOrNull { it.offset }
+                    ?.index
+            }.distinctUntilChanged().collect { firstVisibleIndex ->
+                val active = firstVisibleIndex?.let { first ->
+                    sectionKeys.lastOrNull { key -> itemKeys.indexOf(key) in 0..first }
+                }
+                if (section != active) section = active
+            }
+        }
         Box(Modifier.fillMaxSize().testTag("screen_review")) {
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = listState,
                 contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item(key = "heading") {
-                    Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineLarge,
-                        modifier = Modifier.semantics { heading() }.testTag("review_weekly_heading"))
-                    Text(stringResource(R.string.review_saved_explanation))
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                        IconButton(enabled = period.current.start.year > -999999998,
-                            onClick = { selected = period.current.start.minusWeeks(1).toString() }, modifier = Modifier.testTag("review_previous")) {
-                            Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.review_previous_week))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineLarge,
+                            modifier = Modifier.semantics { heading() }.testTag("review_weekly_heading"))
+                        Text(stringResource(R.string.review_saved_explanation), style = MaterialTheme.typography.bodySmall)
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            IconButton(enabled = period.current.start.year > -999999998,
+                                onClick = { selected = period.current.start.minusWeeks(1).toString() }, modifier = Modifier.testTag("review_previous")) {
+                                Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.review_previous_week))
+                            }
+                            TextButton(onClick = { picking = true }, modifier = Modifier.weight(1f).testTag("review_picker")) {
+                                Text(stringResource(R.string.memory_review_range, period.current.start.format(format), period.current.through.format(format)))
+                            }
+                            IconButton(onClick = { selected = null }, modifier = Modifier.testTag("review_this_week")) {
+                                Icon(painterResource(R.drawable.ic_nav_today), contentDescription = stringResource(R.string.review_this_week))
+                            }
+                            IconButton(enabled = period.current.start.plusWeeks(1) <= today,
+                                onClick = { selected = period.current.start.plusWeeks(1).toString() }, modifier = Modifier.testTag("review_next")) {
+                                Icon(painterResource(R.drawable.ic_chevron_forward), contentDescription = stringResource(R.string.review_next_week))
+                            }
                         }
-                        TextButton(onClick = { picking = true }, modifier = Modifier.weight(1f).testTag("review_picker")) {
-                            Text(stringResource(R.string.memory_review_range, period.current.start.format(format), period.current.through.format(format)))
-                        }
-                        IconButton(onClick = { selected = null }, modifier = Modifier.testTag("review_this_week")) {
-                            Icon(painterResource(R.drawable.ic_nav_today), contentDescription = stringResource(R.string.review_this_week))
-                        }
-                        IconButton(enabled = period.current.start.plusWeeks(1) <= today,
-                            onClick = { selected = period.current.start.plusWeeks(1).toString() }, modifier = Modifier.testTag("review_next")) {
-                            Icon(painterResource(R.drawable.ic_chevron_forward), contentDescription = stringResource(R.string.review_next_week))
-                        }
+                        Text(stringResource(R.string.review_comparison_range, period.previous.start.format(format),
+                            period.previous.through.format(format), stringResource(R.string.review_local_time)),
+                            style = MaterialTheme.typography.bodySmall)
+                        if (period.partial) Text(stringResource(R.string.review_partial), style = MaterialTheme.typography.bodySmall)
                     }
-                    Text(stringResource(R.string.review_comparison_range, period.previous.start.format(format), period.previous.through.format(format)))
-                    Text(zone.id, style = MaterialTheme.typography.bodySmall)
-                    if (period.partial) Text(stringResource(R.string.review_partial))
                 }
                 when (val current = state) {
                     WeeklyReviewState.Loading -> item(key = "loading") { CircularProgressIndicator() }
                     WeeklyReviewState.Error -> item(key = "error") {
                         AccessibleFeedback(stringResource(R.string.review_error))
-                        TextButton(onClick = { retry++ }, modifier = Modifier.testTag("review_retry")) { Text(stringResource(R.string.retry)) }
+                        TextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_retry")) { Text(stringResource(R.string.retry)) }
                     }
                     is WeeklyReviewState.Data -> {
                         val report = current.report
                         val a = report.current; val b = report.previous
-                        val empty = a.records == 0 && a.usage?.totalMillis == null && a.activities.isEmpty()
-                        val keys = listOf("heading", "overview", "sections") +
-                            (if (empty) listOf("empty") else emptyList()) +
-                            listOf("counts", "mood", "memories", "catalog", "usage", "activity")
                         item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources) }
-                        item(key = "sections") {
-                            ReviewSectionNavigation(section) { key ->
-                                section = key
-                                scope.launch { listState.animateScrollToItem(keys.indexOf(key)) }
+                        stickyHeader(key = "sections") {
+                            Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
+                                ReviewSectionNavigation(section) { key ->
+                                    section = key
+                                    val targetIndex = keys?.indexOf(key) ?: -1
+                                    if (targetIndex >= 0) scope.launch { listState.animateScrollToItem(targetIndex) }
+                                }
                             }
                         }
                         if (empty) item(key = "empty") {
-                            Text(stringResource(R.string.review_empty), modifier = Modifier.testTag("review_empty"))
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(stringResource(R.string.review_empty), modifier = Modifier.testTag("review_empty"))
+                                if (b.records > 0) Text(
+                                    stringResource(R.string.review_empty_previous, reviewNumber(b.records)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.testTag("review_empty_previous"))
+                            }
                         }
                         item(key = "counts") {
                             ReviewCounts(report, onSources)
@@ -104,7 +135,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                             Text(stringResource(R.string.review_memories), style = MaterialTheme.typography.titleLarge,
                                 modifier = Modifier.testTag("review_heading_memories").semantics { heading() })
                             MemoryHighlights(repository, period, onEvent, onMemory)
-                            TextButton(onClick = { onSources(period.current, ReviewMetric(ReviewMetricKind.MEMORIES)) }) { Text(stringResource(R.string.review_all_memories)) }
+                            TextButton(onClick = { onSources(period.current, ReviewMetric(ReviewMetricKind.MEMORIES)) },
+                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.review_all_memories)) }
                         }
                         item(key = "catalog") {
                             Text(stringResource(R.string.review_people_places), style = MaterialTheme.typography.titleLarge,
@@ -131,31 +163,35 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         DatePickerDialog(onDismissRequest = { picking = false },
             confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { selected = minOf(pickerDate(it), today).toString() }; picking = false
-            }) { Text(stringResource(R.string.select_date)) } },
-            dismissButton = { TextButton(onClick = { picking = false }) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
+            }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.select_date)) } },
+            dismissButton = { TextButton(onClick = { picking = false }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
     }
 }
 
 @Composable private fun ReviewCounts(report: WeeklyReview, onSources: (ReviewDates, ReviewMetric) -> Unit) {
-    listOf(ReviewMetricKind.ENTRIES to (report.current.records to report.previous.records),
-        ReviewMetricKind.JOURNALS to (report.current.journals to report.previous.journals),
-        ReviewMetricKind.MEMORIES to (report.current.memories to report.previous.memories)).forEach { (kind, counts) ->
-        val metric = ReviewMetric(kind)
-        ReviewValue(stringResource(kind.label()), reviewNumber(counts.first), reviewNumber(counts.second),
-            reviewChange(counts.first.toDouble(), counts.second.toDouble()), kind.name.lowercase(),
-            { onSources(report.period.current, metric) }, { onSources(report.period.previous, metric) })
+    ReviewValueGroup {
+        listOf(ReviewMetricKind.ENTRIES to (report.current.records to report.previous.records),
+            ReviewMetricKind.JOURNALS to (report.current.journals to report.previous.journals),
+            ReviewMetricKind.MEMORIES to (report.current.memories to report.previous.memories)).forEach { (kind, counts) ->
+            val metric = ReviewMetric(kind)
+            ReviewValue(stringResource(kind.label()), reviewNumber(counts.first), reviewNumber(counts.second),
+                reviewChange(counts.first.toDouble(), counts.second.toDouble()), kind.name.lowercase(),
+                { onSources(report.period.current, metric) }, { onSources(report.period.previous, metric) })
+        }
     }
 }
 @Composable private fun ReviewMood(report: WeeklyReview, onSources: (ReviewDates, ReviewMetric) -> Unit) {
     Text(stringResource(R.string.review_mood_patterns), style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.testTag("review_heading_mood").semantics { heading() })
-    listOf(ReviewMetricKind.MOOD to (report.current.mood?.score to report.previous.mood?.score),
-        ReviewMetricKind.ENERGY to (report.current.mood?.energy to report.previous.mood?.energy),
-        ReviewMetricKind.STRESS to (report.current.mood?.stress to report.previous.mood?.stress)).forEach { (kind, scales) ->
-        ReviewValue(stringResource(kind.label()), reviewScale(scales.first), reviewScale(scales.second),
-            reviewChange(scales.first?.average, scales.second?.average), kind.name.lowercase(),
-            scales.first?.let { { onSources(report.period.current, ReviewMetric(kind)) } },
-            scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
+    ReviewValueGroup {
+        listOf(ReviewMetricKind.MOOD to (report.current.mood?.score to report.previous.mood?.score),
+            ReviewMetricKind.ENERGY to (report.current.mood?.energy to report.previous.mood?.energy),
+            ReviewMetricKind.STRESS to (report.current.mood?.stress to report.previous.mood?.stress)).forEach { (kind, scales) ->
+            ReviewValue(stringResource(kind.label()), reviewScale(scales.first), reviewScale(scales.second),
+                reviewChange(scales.first?.average, scales.second?.average), kind.name.lowercase(),
+                scales.first?.let { { onSources(report.period.current, ReviewMetric(kind)) } },
+                scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
+        }
     }
     DetailsDisclosure(R.string.review_daily_evidence, "review_mood_daily_details", keepTitle = true) {
         Text(stringResource(R.string.review_mood_dates), style = MaterialTheme.typography.titleMedium)
@@ -163,7 +199,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         report.current.moodDays.forEach { day ->
             Text(day.date.format(format))
             Text(reviewScale(day.mood?.score))
-            if (day.mood != null) TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) }) {
+            if (day.mood != null) TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) },
+                modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                 Text(stringResource(R.string.review_view_sources))
             }
         }
@@ -173,22 +210,27 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
 }
 @Composable private fun CatalogPatterns(heading: String, current: List<NamedFrequency>, previous: List<NamedFrequency>, period: ReviewPeriod,
     kind: ReviewMetricKind, onSources: (ReviewDates, ReviewMetric) -> Unit, onDetails: ((UUID) -> Unit)?) {
-    Text(heading, style = MaterialTheme.typography.titleLarge)
+    Text(heading, style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.semantics { heading() })
     if (kind != ReviewMetricKind.EMOTION) Text(stringResource(R.string.review_linked_explanation))
     val names = (current + previous).distinctBy { it.name.id }.sortedWith(compareByDescending<NamedFrequency> {
         current.firstOrNull { row -> row.name.id == it.name.id }?.records ?: 0
     }.thenBy { it.name.name }.thenBy { it.name.id }).take(10)
     if (names.isEmpty()) Text(stringResource(R.string.review_no_patterns))
-    names.forEach { name ->
-        val a = current.firstOrNull { it.name.id == name.name.id }?.records ?: 0
-        val b = previous.firstOrNull { it.name.id == name.name.id }?.records ?: 0
-        val metric = ReviewMetric(kind, name.name.id)
-        val displayName = if (kind == ReviewMetricKind.EMOTION) emotionDisplayName(name.name.id, name.name.name) else name.name.name
-        ReviewValue(displayName, stringResource(R.string.review_frequency, a), stringResource(R.string.review_frequency, b),
-            reviewChange(a.toDouble(), b.toDouble()), "${kind.name.lowercase()}_${name.name.id}",
-            if (a > 0) ({ onSources(period.current, metric) }) else null,
-            if (b > 0) ({ onSources(period.previous, metric) }) else null)
-        onDetails?.let { TextButton(onClick = { it(name.name.id) }) { Text(stringResource(R.string.review_catalog_detail)) } }
+    else ReviewValueGroup {
+        names.forEach { name ->
+            val a = current.firstOrNull { it.name.id == name.name.id }?.records ?: 0
+            val b = previous.firstOrNull { it.name.id == name.name.id }?.records ?: 0
+            val metric = ReviewMetric(kind, name.name.id)
+            val displayName = if (kind == ReviewMetricKind.EMOTION) emotionDisplayName(name.name.id, name.name.name) else name.name.name
+            ReviewValue(displayName, stringResource(R.string.review_frequency, a), stringResource(R.string.review_frequency, b),
+                reviewChange(a.toDouble(), b.toDouble()), "${kind.name.lowercase()}_${name.name.id}",
+                if (a > 0) ({ onSources(period.current, metric) }) else null,
+                if (b > 0) ({ onSources(period.previous, metric) }) else null)
+            onDetails?.let { TextButton(onClick = { it(name.name.id) }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                Text(stringResource(R.string.review_catalog_detail))
+            } }
+        }
     }
 }
 @Composable private fun MemoryHighlights(repository: WeeklyReviewRepository, period: ReviewPeriod,
@@ -201,7 +243,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         ReviewSourcesState.Loading -> CircularProgressIndicator()
         ReviewSourcesState.Error -> {
             AccessibleFeedback(stringResource(R.string.review_error))
-            TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+            TextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.retry)) }
         }
         is ReviewSourcesState.Data -> {
             if (current.page.records.isEmpty()) Text(stringResource(R.string.memory_review_empty))

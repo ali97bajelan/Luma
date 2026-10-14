@@ -327,8 +327,9 @@
     <string name="search_selection_count">%1$d sélectionnés · maximum 100</string>
     <string name="review_weekly_title">Bilan hebdomadaire</string>
     <string name="review_saved_explanation">À partir des observations enregistrées. Les différences décrivent les données, sans expliquer leurs causes ni garantir une couverture complète.</string>
-    <string name="review_comparison_range">Comparaison : %1$s – %2$s</string>
-    <string name="review_partial">Cette semaine jusqu’à présent, y compris les observations partielles d’aujourd’hui. Comparaison avec les mêmes jours de la semaine dernière ; la journée d’aujourd’hui est toujours en cours.</string>
+    <string name="review_comparison_range">Comparaison avec %1$s – %2$s · %3$s</string>
+    <string name="review_local_time">heure locale</string>
+    <string name="review_partial">Semaine en cours · données partielles d’aujourd’hui incluses ; comparaison jusqu’au même jour de la semaine passée.</string>
     <string name="review_this_week">Cette semaine</string>
     <string name="review_previous_week">Semaine précédente</string>
     <string name="review_next_week">Semaine suivante</string>
@@ -336,7 +337,7 @@
     <string name="review_current_period">Cette période</string>
     <string name="review_previous_period">Période précédente</string>
     <string name="review_previous_value">Période précédente : %1$s</string>
-    <string name="review_change">Évolution des observations enregistrées : %1$s</string>
+    <string name="review_change">Écart : %1$s</string>
     <string name="review_scale_samples">%1$s / 5 · Observations : %2$d</string>
     <string name="review_view_sources">Voir les sources de cette période</string>
     <string name="review_view_previous_sources">Voir les sources précédentes</string>
@@ -344,6 +345,7 @@
     <string name="review_no_sources">Aucune donnée contribuant à cette sélection n’est encore disponible.</string>
     <string name="review_error">Impossible de charger le bilan enregistré. Vos données sont conservées.</string>
     <string name="review_empty">Aucune entrée ni mesure enregistrée pour cette période.</string>
+    <string name="review_empty_previous">Semaine précédente : %1$s entrées enregistrées.</string>
     <string name="review_entries">Entrées enregistrées</string>
     <string name="review_journals">Entrées de journal</string>
     <string name="review_memories">Souvenirs marquants</string>
@@ -354,8 +356,10 @@
     <string name="review_top_emotions">Émotions notées dans les points sur l’humeur · jusqu’à 10</string>
     <string name="review_frequency">Entrées associées : %1$d</string>
     <string name="review_no_patterns">Aucune observation enregistrée disponible.</string>
+    <string name="review_activity_no_data">Aucune mesure d’activité n’est enregistrée pour cette semaine.</string>
     <string name="review_usage">Habitudes numériques</string>
     <string name="review_usage_total">Utilisation des applications au premier plan enregistrée</string>
+    <string name="review_usage_no_data">Aucun total d’utilisation des applications exploitable n’est disponible pour cette semaine.</string>
     <string name="review_usage_explanation">Les durées d’utilisation des applications au premier plan peuvent se chevaucher. Les totaux utilisent les sessions conservées lorsqu’elles sont disponibles et les agrégats quotidiens enregistrés dans les autres cas ; ils ne correspondent pas à la durée pendant laquelle l’écran de l’appareil est allumé. Jusqu’à 10 applications parmi les plus utilisées sont affichées.</string>
     <string name="review_usage_coverage">Dates avec un historique enregistré : %1$d · Complet : %2$d · Partiel : %3$d · Agrégats uniquement : %4$d</string>
     <string name="review_usage_date">%1$s · %2$s</string>
@@ -433,14 +437,10 @@
     <string name="hide_details">Masquer les détails</string>
     <string name="review_overview">La semaine en bref</string>
     <string name="review_missing_context">Les mesures absentes sont indisponibles ; un zéro enregistré reste zéro.</string>
-    <string name="review_overview_mood">Humeur · %1$s</string>
     <string name="review_latest_memory">Dernier souvenir enregistré</string>
-    <string name="review_overview_usage">Utilisation enregistrée des applications · %1$s</string>
     <string name="review_usage_summary">Historique enregistré : %1$d dates sur %2$d · Complètes : %3$d</string>
-    <string name="review_overview_activity">Mesure d’activité avec le plus d’échantillons · %1$s</string>
     <string name="review_overview_activity_value">%1$s · %2$s %3$s · Échantillons : %4$d · %5$s</string>
     <string name="review_overview_catalog">Personnes liées : %1$d · Lieux liés : %2$d</string>
-    <string name="review_overview_linked_explanation">Ces nombres décrivent les personnes et les lieux liés aux entrées enregistrées, pas le temps passé ensemble ni les visites.</string>
     <string name="review_people_places">Personnes / Lieux</string>
     <string name="review_sources">Sources</string>
     <string name="review_methodology">Comment ces observations sont calculées</string>
