@@ -5,9 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -15,11 +20,7 @@ import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.language.emotionDisplayName
-import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.ui.mood.moodScoreLabel
-import com.luma.lifeos.ui.people.LinkedPeople
-import com.luma.lifeos.ui.places.LinkedPlace
-import com.luma.lifeos.ui.photos.PhotoCount
 import com.luma.lifeos.ui.usage.appUsageDuration
 import java.text.NumberFormat
 import java.time.ZoneId
@@ -35,29 +36,68 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit, onMemor
         else -> R.string.event_open
     })
     Card(Modifier.fillMaxWidth().testTag("event_${event.id}").clickable(onClickLabel = action, onClick = onOpen)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(event.type.label()), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 Text(event.occurredAt.atZone(zone).format(com.luma.lifeos.language.localizedTime()), style = MaterialTheme.typography.labelLarge)
-            }
-            event.title?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis) }
-            record.mood?.let { MoodContent(it) }
-            (record.journal?.body ?: record.mood?.note ?: event.note ?: record.memory?.note)?.takeIf { it.isNotBlank() }?.let {
-                Text(it.take(500), maxLines = 3, overflow = TextOverflow.Ellipsis)
-            }
-            record.journal?.tags?.takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(", ") { tag -> tag.name }, maxLines = 2, overflow = TextOverflow.Ellipsis) }
-            SignalContent(record, zone, full = false)
-            LinkedPeople(record.people); LinkedPlace(record.place); PhotoCount(record.photos.size)
-            record.memory?.let { MemoryStatus(it) }
-            if (event.type != EventType.MEMORY) record.memory?.note?.let { Text(it.take(500), maxLines = 3, overflow = TextOverflow.Ellipsis) }
-            if (onMemory != null && (record.canPromoteToMemory || (event.type == EventType.MEMORY && record.canEditContent)))
-                TextButton(onClick = onMemory, modifier = Modifier.testTag("event_memory_${event.id}")) {
-                    Text(stringResource(if (record.memory == null) R.string.memory_promote else R.string.memory_edit))
+                if (onMemory != null && (record.canPromoteToMemory || (event.type == EventType.MEMORY && record.canEditContent))) {
+                    val memoryState = record.memory?.let { memory ->
+                        memory.importance?.let { stringResource(R.string.memory_status_importance, it) }
+                            ?: stringResource(R.string.memory_status)
+                    }
+                    IconButton(onClick = onMemory, modifier = Modifier.testTag("event_memory_${event.id}")
+                        .semantics { memoryState?.let { stateDescription = it } }) {
+                        Icon(painterResource(if (record.memory == null) R.drawable.ic_bookmark_outline else R.drawable.ic_bookmark),
+                            contentDescription = stringResource(if (record.memory == null) R.string.memory_promote else R.string.memory_edit),
+                            tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
-            Text(action, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Text(stringResource(event.source.label()), style = MaterialTheme.typography.labelMedium)
+            }
+            // Usage already supplies its app name as the primary content.
+            if (record.appUsage == null) event.title?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            record.mood?.let { mood ->
+                Text(stringResource(R.string.mood_score_value, mood.score, stringResource(moodScoreLabel(mood.score))),
+                    style = MaterialTheme.typography.titleMedium)
+            }
+            val body = record.journal?.body ?: record.mood?.note ?: event.note ?: record.memory?.note
+            body?.takeIf { it.isNotBlank() }?.let {
+                Text(it.take(500), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            // Some browsing surfaces only open the source mood editor. Keep its marker
+            // preview until those callers offer a separate memory action.
+            if (onMemory == null && record.mood != null) {
+                record.memory?.note?.takeIf { it.isNotBlank() && it != body }?.let {
+                    Text(it.take(500), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            SignalContent(record, zone, full = false)
+            EventContext(record)
         }
     }
+}
+
+@Composable
+private fun EventContext(record: LifeEventRecord) {
+    val context = buildList {
+        record.mood?.emotions?.takeIf { it.isNotEmpty() }?.let { emotions ->
+            add(emotions.map { emotionDisplayName(it) }.joinToString(", "))
+        }
+        if (record.people.isNotEmpty()) add(stringResource(R.string.people_linked, record.people.joinToString(", ") { it.name }))
+        record.place?.let { add(stringResource(R.string.place_linked, it.name)) }
+        if (record.photos.isNotEmpty()) add(pluralStringResource(R.plurals.photo_count, record.photos.size, record.photos.size))
+        record.journal?.tags?.takeIf { it.isNotEmpty() }?.let { add(it.joinToString(", ") { tag -> tag.name }) }
+        record.memory?.let { memory ->
+            add(memory.importance?.let { stringResource(R.string.memory_status_importance, it) }
+                ?: stringResource(R.string.memory_status))
+        }
+        if (record.event.source != EventSource.MANUAL) add(stringResource(record.event.source.label()))
+    }
+    if (context.isNotEmpty()) Text(context.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.testTag("event_context_${record.event.id}"))
 }
 
 @Composable
@@ -71,11 +111,11 @@ fun MoodContent(mood: MoodDetails) {
 @Composable
 fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
     val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 3 }
-    val activities = if (full) record.activities else record.activities.take(3)
+    val activities = if (full) record.activities else record.activities.take(1)
     activities.forEach { Text(stringResource(R.string.activity_value,
         activityTypeDisplayName(it.type, it.unit, it.source), format.format(it.value),
         activityUnitDisplayName(it.type, it.unit, it.source))) }
-    if (!full && record.activities.size > 3) Text(stringResource(R.string.activity_more, record.activities.size - 3))
+    if (!full && record.activities.size > 1) Text(stringResource(R.string.activity_more, record.activities.size - 1))
     record.appUsage?.let { usage ->
         if (full) {
             val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)
@@ -91,8 +131,8 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
                 }
             }
         } else {
-            Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
-            if (usage.appLabel != null) Text(usage.packageName, style = MaterialTheme.typography.bodySmall)
+            Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(appUsageDuration(usage.durationMillis))
         }
     }

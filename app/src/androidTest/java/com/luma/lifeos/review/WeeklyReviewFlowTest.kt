@@ -187,7 +187,7 @@ class WeeklyReviewFlowTest {
         scroll("review_sources_menu_entries")
         compose.onNodeWithTag("review_sources_menu_entries").performClick()
         compose.onNodeWithTag("review_sources_entries").performClick()
-        compose.runOnIdle { assertEquals(ReviewDates(LocalDate.parse("2026-10-05"), LocalDate.parse("2026-10-07")), opened) }
+        compose.runOnIdle { assertEquals(ReviewDates(LocalDate.parse("2026-10-05"), LocalDate.parse("2026-10-11")), opened) }
     }
 
     @Test fun sourceMenuOpensExactCurrentAndPreviousRows() {

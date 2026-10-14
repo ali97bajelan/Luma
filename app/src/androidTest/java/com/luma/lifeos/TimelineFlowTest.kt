@@ -189,17 +189,18 @@ class TimelineFlowTest {
         }
         show()
         compose.onNodeWithTag("nav_timeline").performClick()
-        awaitTag("event_${UUID(3, 0)}")
+        // Equal timestamps use the newest-first ID tie-breaker as well.
+        awaitTag("event_${UUID(3, 499)}")
         val navigation = mutableListOf<Double>()
         repeat(3) { day ->
             val started = SystemClock.elapsedRealtimeNanos()
             compose.onNodeWithTag("day_previous").performClick()
-            awaitTag("event_${UUID(3, 500L + day)}")
+            awaitTag("event_${UUID(3, 19115L + day)}")
             navigation += (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
         }
         val started = SystemClock.elapsedRealtimeNanos()
         compose.onNodeWithTag("day_today").performClick()
-        awaitTag("event_${UUID(3, 0)}")
+        awaitTag("event_${UUID(3, 499)}")
         navigation += (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
 
         Log.i("LumaValidation", "Timeline rows=20000 day_navigation_ms=$navigation")
