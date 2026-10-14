@@ -207,8 +207,11 @@
     <string name="activity_more">%1$d more measurements</string>
     <string name="activity_unavailable">Activity details unavailable</string>
     <string name="usage_duration">%1$d h %2$d min %3$s s</string>
+    <string name="usage_exact_duration">Exact duration: %1$s</string>
     <string name="app_usage_duration">%1$d h %2$d min</string>
     <string name="app_usage_duration_seconds">%1$s sec</string>
+    <string name="app_usage_duration_minutes">%1$s min</string>
+    <string name="app_usage_duration_hours_minutes">%1$s h %2$s min</string>
     <string name="app_usage_duration_under_second">&lt;1 sec</string>
     <string name="usage_unavailable">App usage details unavailable</string>
     <string name="timeline_empty_heading">No events for this day yet</string>
@@ -217,6 +220,8 @@
     <string name="timeline_earlier">Earlier events</string>
     <string name="timeline_later">Later events</string>
     <string name="timeline_show_app_usage">Show app usage</string>
+    <string name="entry_order_newest_first">Newest first</string>
+    <string name="entry_order_oldest_first">Oldest first</string>
     <string name="usage_title">Screen-time imports</string>
     <string name="usage_access_explanation">Luma can periodically read app names and foreground time with Android Usage access. Imports stay on this device. You can revoke access at any time. Turning imports off keeps previously saved records.</string>
     <string name="usage_enable">Enable screen-time imports</string>
@@ -452,6 +457,10 @@
     <string name="catalog_people">People</string>
     <string name="catalog_places">Places</string>
     <string name="place_history">Linked entries</string>
+    <string name="event_detail_title">Event</string>
+    <string name="person_detail_title">Person</string>
+    <string name="place_detail_title">Place</string>
+    <string name="detail_edit">Edit</string>
     <string name="place_history_empty_heading">Build place history</string>
     <string name="place_history_empty">Link this place to check-ins, journals, or memories to see them here.</string>
 </resources>

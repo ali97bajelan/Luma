@@ -50,6 +50,10 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                         val page = current.page
                         item { AccessibleFeedback(stringResource(R.string.search_results, page.totalCount),
                             Modifier.testTag("review_source_count"), isError = false) }
+                        if (page.totalCount > 0) item {
+                            Text(stringResource(R.string.entry_order_oldest_first), style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.testTag("review_source_order"))
+                        }
                         if (page.records.isEmpty()) item { Text(stringResource(R.string.review_no_sources)) }
                         if (page.offset > 0) item { TextButton(onClick = { offset = maxOf(0, page.offset - 50) }, modifier = Modifier.testTag("review_source_previous")) { Text(stringResource(R.string.search_earlier)) } }
                         items(page.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { row ->

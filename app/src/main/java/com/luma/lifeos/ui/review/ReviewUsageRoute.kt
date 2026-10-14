@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.exactDuration
 import com.luma.lifeos.ui.usage.UsageDayState
 import com.luma.lifeos.ui.usage.observeUsageDay
 import java.time.*
@@ -66,6 +67,8 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                                 Text(session.appLabel ?: session.packageName)
                                 Text(stringResource(R.string.usage_session_times, session.start.atZone(zone).format(format), session.end.atZone(zone).format(format)))
                                 Text(reviewDuration(session.durationMillis))
+                                Text(stringResource(R.string.usage_exact_duration, exactDuration(session.durationMillis)),
+                                    style = MaterialTheme.typography.bodySmall)
                                 if (session.openedAt < session.start) Text(stringResource(R.string.usage_session_continued, session.openedAt.atZone(zone).format(format)))
                                 if (session.ongoing) Text(stringResource(R.string.usage_session_ongoing))
                             }

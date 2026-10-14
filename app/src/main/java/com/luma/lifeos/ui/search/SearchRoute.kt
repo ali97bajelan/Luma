@@ -58,6 +58,8 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
         }
         if (state.loaded) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
             Modifier.testTag("search_result_count"), isError = false)
+        if (state.loaded && state.records.isNotEmpty()) Text(stringResource(R.string.entry_order_newest_first),
+            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("search_order"))
         key(state.input, zone) {
             val list = rememberLazyListState()
             LaunchedEffect(list, state.windowVersion) {

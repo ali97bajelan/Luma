@@ -1,5 +1,6 @@
 package com.luma.lifeos
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -12,6 +13,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.ui.people.PeopleRoute
+import com.luma.lifeos.ui.people.PersonDetailRoute
 import com.luma.lifeos.ui.places.PlaceDetailRoute
 import com.luma.lifeos.ui.places.PlaceEditorRoute
 import com.luma.lifeos.ui.theme.LifeOsTheme
@@ -111,10 +113,16 @@ class PlaceCatalogFlowTest {
             PlaceDetailRoute(places, place, onBack = {}, onEdit = {}, onEvent = { opened = it.event.id })
         } }
         awaitTag("place_detail_ready")
-        compose.onNodeWithTag("screen_place_detail").performScrollToIndex(2)
+        compose.onNodeWithTag("place_history_order").assertTextEquals("Oldest first")
+        val earlyTop = compose.onNodeWithTag("place_event_$early").fetchSemanticsNode().boundsInRoot.top
+        val lateTop = compose.onNodeWithTag("place_event_$late").fetchSemanticsNode().boundsInRoot.top
+        assertTrue("Place history sorts by occurrence time, not insertion order", earlyTop < lateTop)
+        compose.onNodeWithTag("place_detail_content").performScrollToNode(hasTestTag("place_event_$early"))
         compose.onNodeWithTag("event_$early").assertIsDisplayed()
-        compose.onNodeWithTag("screen_place_detail").performScrollToIndex(3)
+        compose.onNodeWithTag("place_detail_content").performScrollToNode(hasTestTag("place_event_$late"))
         compose.onNodeWithTag("event_$late").assertIsDisplayed()
+        compose.onNodeWithTag("place_detail_back").assertIsDisplayed()
+        compose.onNodeWithTag("place_edit").assertIsDisplayed()
         compose.onNodeWithTag("event_$late").performClick()
         compose.runOnIdle { assertEquals(late, opened) }
     }
@@ -130,6 +138,73 @@ class PlaceCatalogFlowTest {
         awaitTag("place_detail_missing")
         compose.onNodeWithTag("place_detail_name").assertDoesNotExist()
         compose.onNodeWithTag("place_edit").assertDoesNotExist()
+        compose.onNodeWithTag("place_detail_back").assertIsDisplayed()
+    }
+
+    @Test fun deletedPersonKeepsBackAndRemovesEditAction() {
+        val person = UUID.randomUUID()
+        runBlocking { people.create(person, PersonInput("Temporary person")) }
+        compose.setContent { LifeOsTheme {
+            PersonDetailRoute(people, person, onBack = {}, onEdit = {}, onEvent = {})
+        } }
+        awaitTag("person_detail_ready")
+        runBlocking { people.delete(person) }
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("This person is no longer available.").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("person_detail_back").assertIsDisplayed()
+        compose.onNodeWithTag("person_edit").assertDoesNotExist()
+    }
+
+    @Test fun personAndPlaceActionsStayVisibleAtTheEndOfLongHistories() {
+        val person = UUID.randomUUID()
+        val place = UUID.randomUUID()
+        val time = Instant.parse("2026-10-13T10:00:00Z")
+        val eventIds = mutableListOf<EventId>()
+        runBlocking {
+            people.create(person, PersonInput("History person"))
+            places.create(place, PlaceInput("History place"))
+            val journals = RoomJournalRepository(db)
+            repeat(60) { index ->
+                val id = EventId.new()
+                eventIds += id
+                journals.create(id, JournalInput("Entry $index", time.plusSeconds((59 - index).toLong()),
+                    personIds = setOf(person), placeSelection = PlaceSelection(place)))
+            }
+        }
+
+        val showingPlace = mutableStateOf(false)
+        compose.setContent { LifeOsTheme {
+            if (showingPlace.value) PlaceDetailRoute(places, place, onBack = {}, onEdit = {}, onEvent = {})
+            else PersonDetailRoute(people, person, onBack = {}, onEdit = {}, onEvent = {})
+        } }
+        awaitTag("person_detail_ready")
+        compose.onNodeWithTag("person_history_order").assertTextEquals("Oldest first")
+        val personOldest = "person_event_${eventIds.last()}"
+        val personNext = "person_event_${eventIds[eventIds.lastIndex - 1]}"
+        compose.onNodeWithTag(personOldest).assertIsDisplayed()
+        compose.onNodeWithTag(personNext).assertIsDisplayed()
+        assertTrue("Person history sorts by occurrence time, not insertion order",
+            compose.onNodeWithTag(personOldest).fetchSemanticsNode().boundsInRoot.top <
+                compose.onNodeWithTag(personNext).fetchSemanticsNode().boundsInRoot.top)
+        compose.onNodeWithTag("person_detail_content").performScrollToNode(hasTestTag("person_event_${eventIds.last()}"))
+        compose.onNodeWithTag("person_detail_content").performScrollToNode(hasTestTag("person_event_${eventIds.first()}"))
+        compose.onNodeWithTag("person_detail_back").assertIsDisplayed()
+        compose.onNodeWithTag("person_edit").assertIsDisplayed()
+
+        compose.runOnIdle { showingPlace.value = true }
+        awaitTag("place_detail_ready")
+        compose.onNodeWithTag("place_history_order").assertTextEquals("Oldest first")
+        val placeOldest = "place_event_${eventIds.last()}"
+        val placeNext = "place_event_${eventIds[eventIds.lastIndex - 1]}"
+        compose.onNodeWithTag(placeOldest).assertIsDisplayed()
+        compose.onNodeWithTag(placeNext).assertIsDisplayed()
+        assertTrue("Place history sorts by occurrence time, not insertion order",
+            compose.onNodeWithTag(placeOldest).fetchSemanticsNode().boundsInRoot.top <
+                compose.onNodeWithTag(placeNext).fetchSemanticsNode().boundsInRoot.top)
+        compose.onNodeWithTag("place_detail_content").performScrollToNode(hasTestTag("place_event_${eventIds.first()}"))
+        compose.onNodeWithTag("place_detail_back").assertIsDisplayed()
+        compose.onNodeWithTag("place_edit").assertIsDisplayed()
     }
 
     private fun awaitTag(tag: String) {

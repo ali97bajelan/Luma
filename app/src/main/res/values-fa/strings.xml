@@ -221,8 +221,11 @@
     <string name="activity_more">%1$d اندازه‌گیری دیگر</string>
     <string name="activity_unavailable">جزئیات فعالیت در دسترس نیست</string>
     <string name="usage_duration">%1$d ساعت %2$d دقیقه %3$s ثانیه</string>
+    <string name="usage_exact_duration">مدت دقیق: %1$s</string>
     <string name="app_usage_duration">%1$d ساعت %2$d دقیقه</string>
     <string name="app_usage_duration_seconds">%1$s ثانیه</string>
+    <string name="app_usage_duration_minutes">%1$s دقیقه</string>
+    <string name="app_usage_duration_hours_minutes">%1$s ساعت %2$s دقیقه</string>
     <string name="app_usage_duration_under_second">کمتر از ۱ ثانیه</string>
     <string name="usage_unavailable">جزئیات استفاده از برنامه‌ها در دسترس نیست</string>
     <string name="timeline_empty_heading">هنوز رویدادی برای این روز ثبت نشده</string>
@@ -231,6 +234,8 @@
     <string name="timeline_earlier">رویدادهای قدیمی‌تر</string>
     <string name="timeline_later">رویدادهای جدیدتر</string>
     <string name="timeline_show_app_usage">نمایش استفاده از برنامه‌ها</string>
+    <string name="entry_order_newest_first">از جدید به قدیم</string>
+    <string name="entry_order_oldest_first">از قدیم به جدید</string>
     <string name="usage_title">وارد کردن زمان استفاده از صفحه‌نمایش</string>
     <string name="usage_access_explanation">Luma با دسترسی به داده‌های استفاده در Android می‌تواند نام برنامه‌ها و زمان استفاده از آن‌ها در پیش‌زمینه را به‌صورت دوره‌ای بخواند. داده‌های واردشده روی این دستگاه می‌مانند. هر زمان می‌توانید دسترسی را لغو کنید. با غیرفعال کردن ورود داده‌ها، اطلاعات ذخیره‌شدهٔ قبلی حفظ می‌شوند.</string>
     <string name="usage_enable">فعال کردن ورود داده‌های زمان استفاده از صفحه‌نمایش</string>
@@ -452,6 +457,10 @@
     <string name="catalog_people">افراد</string>
     <string name="catalog_places">مکان‌ها</string>
     <string name="place_history">نوشته‌های پیوندشده</string>
+    <string name="event_detail_title">رویداد</string>
+    <string name="person_detail_title">فرد</string>
+    <string name="place_detail_title">مکان</string>
+    <string name="detail_edit">ویرایش</string>
     <string name="place_history_empty_heading">پیشینهٔ مکان را بسازید</string>
     <string name="place_history_empty">این مکان را به حال‌وهوای ثبت‌شده، یادداشت روزانه یا خاطره پیوند دهید تا اینجا نمایش داده شود.</string>
 </resources>

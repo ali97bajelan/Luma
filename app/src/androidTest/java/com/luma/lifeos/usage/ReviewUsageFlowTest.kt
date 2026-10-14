@@ -63,18 +63,20 @@ class ReviewUsageFlowTest {
         val restoration = StateRestorationTester(compose)
         var selected by mutableStateOf(date)
         restoration.setContent { LifeOsTheme { ReviewUsageRoute(integration, selected, zone, {}) } }
-        scrollText("0 h 3 min 0 s")
-        compose.onAllNodesWithText("0 h 3 min 0 s").assertCountEquals(2)
-        scrollText("0 h 1 min 0 s")
-        compose.onNodeWithText("0 h 1 min 0 s").assertIsDisplayed()
-        scrollText("0 h 2 min 0 s")
-        compose.onNodeWithText("0 h 2 min 0 s").assertIsDisplayed()
+        scrollText("3 min")
+        compose.onAllNodesWithText("3 min").assertCountEquals(2)
+        scrollText("1 min")
+        compose.onNodeWithText("1 min").assertIsDisplayed()
+        scrollText("2 min")
+        compose.onNodeWithText("2 min").assertIsDisplayed()
+        scrollText("Exact duration: 0 h 1 min 0 s")
+        compose.onNodeWithText("Exact duration: 0 h 1 min 0 s").assertIsDisplayed()
         compose.onNodeWithText("Unused app").assertDoesNotExist()
         restoration.emulateSavedInstanceStateRestore()
-        scrollText("0 h 3 min 0 s")
+        scrollText("3 min")
         compose.runOnIdle { selected = date.minusDays(1) }
-        scrollText("0 h 0 min 30 s")
-        compose.onAllNodesWithText("0 h 0 min 30 s").assertCountEquals(3)
+        scrollText("30 sec")
+        compose.onAllNodesWithText("30 sec").assertCountEquals(3)
         listOf("usage_enabled", "usage_access", "usage_import", "usage_refresh", "day_previous", "usage_view_timeline", "usage_view_totals")
             .forEach { compose.onNodeWithTag(it).assertDoesNotExist() }
         compose.runOnIdle {
@@ -88,8 +90,8 @@ class ReviewUsageFlowTest {
     @Test fun legacyTotalsRemainVisibleWithoutInventedSessions() {
         runBlocking { repository.commit(listOf(UsageBucket("org.example.app", start, now, 5_125, "Example app")), now, now) }
         compose.setContent { LifeOsTheme { ReviewUsageRoute(integration, date, zone, {}) } }
-        scrollText("0 h 0 min 5.125 s")
-        compose.onAllNodesWithText("0 h 0 min 5.125 s").assertCountEquals(2)
+        scrollText("5 sec")
+        compose.onAllNodesWithText("5 sec").assertCountEquals(2)
         compose.onAllNodes(SemanticsMatcher("Saved usage session") {
             it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("review_usage_session_") == true
         }).assertCountEquals(0)

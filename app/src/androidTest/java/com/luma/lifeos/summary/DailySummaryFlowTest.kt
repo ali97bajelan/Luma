@@ -103,11 +103,11 @@ class DailySummaryFlowTest {
             events.upsert(parent.copy(occurredAt = day.minusDays(1).atStartOfDay(zone).toInstant()))
         }
         show()
-        awaitText("summary_usage", "Saved foreground usage: 0 h 1 min · apps shown: 1")
+        awaitText("summary_usage", "Saved foreground usage: 1 min · apps shown: 1")
         compose.onNodeWithTag("summary_usage_label_org.example.reader").assertDoesNotExist()
         scrollToTag("summary_details"); compose.onNodeWithTag("summary_details").performClick()
         compose.onNodeWithTag("summary_usage_label_org.example.reader").assertTextEquals("Reader")
-        compose.onNodeWithTag("summary_usage_duration_org.example.reader").assertTextEquals("0 h 1 min")
+        compose.onNodeWithTag("summary_usage_duration_org.example.reader").assertTextEquals("1 min")
         compose.onNodeWithTag("summary_usage_package_org.example.reader").assertTextEquals("org.example.reader")
         compose.onNodeWithTag("summary_usage_label_org.example.empty").assertDoesNotExist()
         compose.onNodeWithTag("summary_usage_duration_org.example.empty").assertDoesNotExist()

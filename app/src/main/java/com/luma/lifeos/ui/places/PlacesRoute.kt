@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.EmptyStateCard
+import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
@@ -84,42 +86,54 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
     val state by observation.collectAsStateWithLifecycle(PlaceHistoryState.Loading)
     val zone = ZoneId.systemDefault()
     BackHandler(onBack = onBack)
-    LazyColumn(Modifier.fillMaxSize().testTag("screen_place_detail"), contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item {
-            Row(Modifier.fillMaxWidth().testTag(if (state is PlaceHistoryState.Data) "place_detail_ready" else "place_detail_header"),
-                horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(onClick = onBack, modifier = Modifier.testTag("place_detail_back")) { Text(stringResource(R.string.back)) }
-                if (state is PlaceHistoryState.Data) TextButton(onClick = onEdit, modifier = Modifier.testTag("place_edit")) {
-                    Text(stringResource(R.string.place_edit))
+    val canEdit = state is PlaceHistoryState.Data
+    Scaffold(
+        modifier = Modifier.testTag("screen_place_detail"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            DetailTopBar(
+                title = stringResource(R.string.place_detail_title),
+                backTag = "place_detail_back",
+                onBack = onBack,
+                editTag = if (canEdit) "place_edit" else null,
+                editLabel = if (canEdit) stringResource(R.string.place_edit) else null,
+                onEdit = if (canEdit) onEdit else null,
+                modifier = Modifier.testTag(if (canEdit) "place_detail_ready" else "place_detail_header"),
+            )
+        },
+    ) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("place_detail_content"), contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            when (val current = state) {
+                PlaceHistoryState.Loading -> item { CircularProgressIndicator() }
+                PlaceHistoryState.Missing -> item { Text(stringResource(R.string.place_missing), modifier = Modifier.testTag("place_detail_missing")) }
+                PlaceHistoryState.Error -> item {
+                    Text(stringResource(R.string.places_load_error), color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
-            }
-        }
-        when (val current = state) {
-            PlaceHistoryState.Loading -> item { CircularProgressIndicator() }
-            PlaceHistoryState.Missing -> item { Text(stringResource(R.string.place_missing), modifier = Modifier.testTag("place_detail_missing")) }
-            PlaceHistoryState.Error -> item {
-                Text(stringResource(R.string.places_load_error), color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
-            }
-            is PlaceHistoryState.Data -> {
-                item {
-                    val place = current.history.place
-                    Text(place.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.testTag("place_detail_name"))
-                    place.note?.let { Text(it, modifier = Modifier.testTag("place_detail_note")) }
-                    place.latitude?.let { latitude ->
-                        Text(stringResource(R.string.place_coordinates, latitude, requireNotNull(place.longitude)))
+                is PlaceHistoryState.Data -> {
+                    val events = current.history.events.sortedWith(
+                        compareBy<LifeEventRecord, LifeEvent>(LifeEvent.chronologicalOrder) { it.event })
+                    item {
+                        val place = current.history.place
+                        Text(place.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.testTag("place_detail_name"))
+                        place.note?.let { Text(it, modifier = Modifier.testTag("place_detail_note")) }
+                        place.latitude?.let { latitude ->
+                            Text(stringResource(R.string.place_coordinates, latitude, requireNotNull(place.longitude)))
+                        }
+                        Text(stringResource(R.string.place_history), style = MaterialTheme.typography.titleLarge)
+                        if (events.isNotEmpty()) Text(stringResource(R.string.entry_order_oldest_first),
+                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place_history_order"))
+                        if (events.isEmpty()) EmptyStateCard(R.drawable.ic_nav_places,
+                            R.string.place_history_empty_heading, R.string.place_history_empty, "place_history_empty")
                     }
-                    Text(stringResource(R.string.place_history), style = MaterialTheme.typography.titleLarge)
-                    if (current.history.events.isEmpty()) EmptyStateCard(R.drawable.ic_nav_places,
-                        R.string.place_history_empty_heading, R.string.place_history_empty, "place_history_empty")
-                }
-                items(current.history.events, key = { it.event.id.toString() }) { record ->
-                    Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(record.event.occurredAt.atZone(zone)
-                            .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
-                        EventCard(record, zone, onOpen = { onEvent(record) })
+                    items(events, key = { it.event.id.toString() }) { record ->
+                        Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(record.event.occurredAt.atZone(zone)
+                                .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
+                            EventCard(record, zone, onOpen = { onEvent(record) })
+                        }
                     }
                 }
             }

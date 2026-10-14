@@ -3,11 +3,39 @@ package com.luma.lifeos
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.semantics.SemanticsProperties
+import com.luma.lifeos.domain.model.EventId
+import com.luma.lifeos.domain.model.JournalInput
+import java.time.Instant
+import java.time.ZoneId
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 
 class JournalCaptureTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test fun journalBackAndEditStayVisibleAtEndOfLongEntry() {
+        val id = EventId.new()
+        val body = "A long remembered entry. ".repeat(390)
+        val time = Instant.now()
+        val storage = (compose.activity.application as LumaApplication).storage
+        runBlocking { storage.journals.create(id, JournalInput(body, time, "Long entry")) }
+        try {
+            compose.onNodeWithTag("nav_timeline").performClick()
+            awaitTag("event_$id")
+            compose.onNodeWithTag("event_$id").performClick()
+            awaitTag("journal_detail_content")
+            compose.onNodeWithTag("journal_detail_content").performTouchInput {
+                repeat(12) { swipeUp() }
+            }
+            compose.onNodeWithTag("journal_detail_body").assertIsDisplayed()
+            compose.onNodeWithTag("journal_detail_back").assertIsDisplayed()
+            compose.onNodeWithTag("journal_edit").assertIsDisplayed()
+        } finally {
+            runBlocking { storage.lifeEvents.delete(id) }
+        }
+    }
+
     @Test fun captureRestoresDraftAndOpensDetailThenEditsAndDeletes() {
         val body = "Journal test ${System.nanoTime()}"
         compose.onNodeWithTag("quick_capture").performClick()

@@ -212,8 +212,11 @@
     <string name="activity_more">%1$d mesures supplémentaires</string>
     <string name="activity_unavailable">Détails de l’activité indisponibles</string>
     <string name="usage_duration">%1$d h %2$d min %3$s s</string>
+    <string name="usage_exact_duration">Durée exacte : %1$s</string>
     <string name="app_usage_duration">%1$d h %2$d min</string>
     <string name="app_usage_duration_seconds">%1$s s</string>
+    <string name="app_usage_duration_minutes">%1$s min</string>
+    <string name="app_usage_duration_hours_minutes">%1$s h %2$s min</string>
     <string name="app_usage_duration_under_second">&lt;1 s</string>
     <string name="usage_unavailable">Détails de l’utilisation des applications indisponibles</string>
     <string name="timeline_empty_heading">Aucun événement pour cette journée pour le moment</string>
@@ -222,6 +225,8 @@
     <string name="timeline_earlier">Événements précédents</string>
     <string name="timeline_later">Événements suivants</string>
     <string name="timeline_show_app_usage">Afficher l’utilisation des applications</string>
+    <string name="entry_order_newest_first">Les plus récents d’abord</string>
+    <string name="entry_order_oldest_first">Les plus anciens d’abord</string>
     <string name="usage_title">Importation du temps d’écran</string>
     <string name="usage_access_explanation">Luma peut lire régulièrement les noms des applications et leur durée d’utilisation au premier plan grâce à l’accès aux données d’utilisation d’Android. Les données importées restent sur cet appareil. Vous pouvez révoquer cet accès à tout moment. La désactivation des importations conserve les données déjà enregistrées.</string>
     <string name="usage_enable">Activer l’importation du temps d’écran</string>
@@ -457,6 +462,10 @@
     <string name="catalog_people">Personnes</string>
     <string name="catalog_places">Lieux</string>
     <string name="place_history">Entrées associées</string>
+    <string name="event_detail_title">Événement</string>
+    <string name="person_detail_title">Personne</string>
+    <string name="place_detail_title">Lieu</string>
+    <string name="detail_edit">Modifier</string>
     <string name="place_history_empty_heading">Créez un historique du lieu</string>
     <string name="place_history_empty">Associez ce lieu à un point sur l’humeur, une entrée de journal ou un souvenir pour les afficher ici.</string>
 </resources>

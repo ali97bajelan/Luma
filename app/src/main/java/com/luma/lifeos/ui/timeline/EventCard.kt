@@ -22,6 +22,7 @@ import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.mood.moodScoreLabel
 import com.luma.lifeos.ui.usage.appUsageDuration
+import com.luma.lifeos.ui.common.exactDuration
 import java.text.NumberFormat
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -124,6 +125,8 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
                     Text(appUsageDuration(usage.durationMillis), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.usage_exact_duration, exactDuration(usage.durationMillis)),
+                        style = MaterialTheme.typography.bodySmall)
                     Text(stringResource(R.string.event_interval, usage.bucketStart.atZone(zone).format(formatter), usage.bucketEnd.atZone(zone).format(formatter)))
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
                     Text(stringResource(record.event.source.label()), style = MaterialTheme.typography.labelMedium)

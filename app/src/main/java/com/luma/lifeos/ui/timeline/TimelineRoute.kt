@@ -84,6 +84,8 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
                     if (state.loaded) Text(pluralStringResource(R.plurals.daily_events, state.eventCount, state.eventCount),
                         modifier = Modifier.testTag("timeline_event_count"))
+                    Text(stringResource(R.string.entry_order_newest_first),
+                        style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("timeline_order"))
                 }
             }
             if (state.loading) item(key = "loading") { CircularProgressIndicator(Modifier.testTag("timeline_loading")) }

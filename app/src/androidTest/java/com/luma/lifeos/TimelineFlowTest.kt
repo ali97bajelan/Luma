@@ -69,25 +69,28 @@ class TimelineFlowTest {
         awaitTag("event_${activity.id}")
         compose.onNodeWithTag("event_${unused.id}").assertDoesNotExist()
         compose.onNodeWithTag("timeline_event_count").assertTextEquals("1 event this day")
+        compose.onNodeWithTag("timeline_order").assertTextEquals("Newest first")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${activity.id}"))
         compose.onNodeWithTag("event_${activity.id}").performClick()
         awaitTag("screen_event_detail")
         awaitText("Steps: 123 count")
         compose.onNodeWithTag("event_edit").assertDoesNotExist()
+        compose.onNodeWithTag("event_detail_back").assertIsDisplayed()
         compose.onNodeWithTag("event_promote").assertDoesNotExist()
         runBlocking { RoomEventStore(db).save(EventWrite(activity.copy(updatedAt = time.plusSeconds(1)), activities = listOf(measurement.copy(value = 124.0)))) }
         awaitText("Steps: 124 count")
         runBlocking { RoomLifeEventRepository(db).delete(activity.id) }
         awaitTag("event_missing")
-        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("event_detail_back").performClick()
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_event_count"))
         compose.onNodeWithTag("timeline_event_count").assertTextEquals("0 events this day")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${usage.id}"))
-        awaitText("0 h 2 min")
+        awaitText("2 min")
         compose.onNodeWithTag("event_${usage.id}").performClick()
-        awaitTag("screen_event_detail"); awaitText("org.example.browser"); awaitText("0 h 2 min")
+        awaitTag("screen_event_detail"); awaitText("org.example.browser"); awaitText("2 min")
+        awaitText("Exact duration: 0 h 2 min 5.125 s")
         compose.onNodeWithTag("event_edit").assertDoesNotExist()
-        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("event_detail_back").performClick()
         runBlocking {
             db.withTransaction {
                 db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 0 WHERE life_event_id = ?", arrayOf(usage.id.toString()))
@@ -102,7 +105,7 @@ class TimelineFlowTest {
         compose.onNodeWithTag("event_$journal").performClick()
         awaitTag("screen_journal_detail"); awaitText("Earlier journal body")
         compose.onNodeWithTag("journal_edit").assertExists()
-        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("journal_detail_back").performClick()
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("day_picker"))
         compose.onNodeWithTag("day_picker").performClick()
         compose.onNodeWithTag("date_picker_dialog").assertExists()
@@ -133,7 +136,7 @@ class TimelineFlowTest {
         compose.onNodeWithTag("mood_save").assertExists()
         compose.onNodeWithTag("mood_cancel").performClick()
         awaitTag("screen_event_detail")
-        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("event_detail_back").performClick()
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_$memoryId"))
         compose.onNodeWithTag("event_$memoryId").performClick()
         awaitTag("screen_event_detail")
@@ -142,6 +145,24 @@ class TimelineFlowTest {
         compose.onNodeWithTag("event_edit").performClick()
         awaitTag("screen_memory")
         compose.onNodeWithTag("memory_save").assertExists()
+    }
+
+    @Test fun eventBackAndEditStayVisibleAfterLongReadingScroll() {
+        val moodId = EventId.new()
+        val note = "A long check-in note. ".repeat(420)
+        runBlocking { RoomMoodRepository(db, clock).create(moodId, MoodInput(4, time, note = note)) }
+        show()
+        compose.onNodeWithTag("nav_timeline").performClick()
+        awaitTag("event_$moodId")
+        compose.onNodeWithTag("event_$moodId").performClick()
+        awaitTag("event_detail_content")
+        compose.onNodeWithTag("event_detail_content").performTouchInput {
+            repeat(12) { swipeUp() }
+        }
+        compose.onNodeWithTag("event_detail_body").assertIsDisplayed()
+        compose.onNodeWithTag("event_detail_back").assertIsDisplayed()
+        compose.onNodeWithTag("event_edit").assertIsDisplayed()
+        compose.onNodeWithTag("event_promote").assertIsDisplayed()
     }
 
     @Test fun appUsageRowsAreHiddenByDefault() {

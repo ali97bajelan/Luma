@@ -58,6 +58,7 @@ class WeeklyReviewFlowTest {
         scroll("review_metric_mood"); compose.onNodeWithTag("review_metric_mood").assertTextContains("4", substring = true)
         scroll("review_sources_mood"); compose.onNodeWithTag("review_sources_mood").performClick()
         compose.waitUntil(5000) { compose.onAllNodesWithTag("event_$mood").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("review_source_order").assertTextEquals("Oldest first")
         compose.onNodeWithTag("event_$journal").assertDoesNotExist()
         compose.onNodeWithTag("event_$mood").performClick()
         compose.runOnIdle { assertEquals(mood, opened) }

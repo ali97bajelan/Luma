@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoCount
 import com.luma.lifeos.ui.common.EmptyStateCard
+import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PersonRepository
@@ -98,55 +99,67 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
     val observation = remember(repository, personId, retry) { observePersonHistory(repository, personId) }
     val state by observation.collectAsStateWithLifecycle(PersonHistoryState.Loading)
     BackHandler(onBack = onBack)
-    LazyColumn(Modifier.fillMaxSize().testTag("screen_person_detail"), contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item {
-            Row(Modifier.fillMaxWidth().testTag(if (state is PersonHistoryState.Data) "person_detail_ready" else "person_detail_header"),
-                horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                if (state is PersonHistoryState.Data) TextButton(onClick = onEdit, modifier = Modifier.testTag("person_edit")) {
-                    Text(stringResource(R.string.person_edit))
+    val canEdit = state is PersonHistoryState.Data
+    Scaffold(
+        modifier = Modifier.testTag("screen_person_detail"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            DetailTopBar(
+                title = stringResource(R.string.person_detail_title),
+                backTag = "person_detail_back",
+                onBack = onBack,
+                editTag = if (canEdit) "person_edit" else null,
+                editLabel = if (canEdit) stringResource(R.string.person_edit) else null,
+                onEdit = if (canEdit) onEdit else null,
+                modifier = Modifier.testTag(if (canEdit) "person_detail_ready" else "person_detail_header"),
+            )
+        },
+    ) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("person_detail_content"), contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            when (val current = state) {
+                PersonHistoryState.Loading -> item { CircularProgressIndicator() }
+                PersonHistoryState.Missing -> item { Text(stringResource(R.string.person_missing)) }
+                PersonHistoryState.Error -> item {
+                    Text(stringResource(R.string.people_load_error), color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
-            }
-        }
-        when (val current = state) {
-            PersonHistoryState.Loading -> item { CircularProgressIndicator() }
-            PersonHistoryState.Missing -> item { Text(stringResource(R.string.person_missing)) }
-            PersonHistoryState.Error -> item {
-                Text(stringResource(R.string.people_load_error), color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
-            }
-            is PersonHistoryState.Data -> {
-                item {
-                    Text(current.history.person.name, style = MaterialTheme.typography.headlineMedium)
-                    current.history.person.note?.let { Text(it) }
-                    Text(stringResource(R.string.person_history), style = MaterialTheme.typography.titleLarge)
-                    if (current.history.events.isEmpty()) EmptyStateCard(R.drawable.ic_nav_people,
-                        R.string.person_history_empty_heading, R.string.person_history_empty,
-                        "person_history_empty")
-                }
-                items(current.history.events, key = { it.event.id.toString() }) { record ->
-                    Card(Modifier.fillMaxWidth().testTag("person_event_${record.event.id}")) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
-                                .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
-                            Text(stringResource(when (record.event.type) {
-                                EventType.MOOD -> R.string.event_mood
-                                EventType.JOURNAL -> R.string.event_journal
-                                EventType.MEMORY -> R.string.event_memory
-                                EventType.ACTIVITY -> R.string.event_activity
-                                EventType.APP_USAGE -> R.string.event_app_usage
-                            }), style = MaterialTheme.typography.labelLarge)
-                            record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
-                            record.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
-                            (record.journal?.body ?: record.mood?.note ?: record.event.note)?.let {
-                                Text(it, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                is PersonHistoryState.Data -> {
+                    val events = current.history.events.sortedWith(
+                        compareBy<LifeEventRecord, LifeEvent>(LifeEvent.chronologicalOrder) { it.event })
+                    item {
+                        Text(current.history.person.name, style = MaterialTheme.typography.headlineMedium)
+                        current.history.person.note?.let { Text(it) }
+                        Text(stringResource(R.string.person_history), style = MaterialTheme.typography.titleLarge)
+                        if (events.isNotEmpty()) Text(stringResource(R.string.entry_order_oldest_first),
+                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("person_history_order"))
+                        if (events.isEmpty()) EmptyStateCard(R.drawable.ic_nav_people,
+                            R.string.person_history_empty_heading, R.string.person_history_empty,
+                            "person_history_empty")
+                    }
+                    items(events, key = { it.event.id.toString() }) { record ->
+                        Card(Modifier.fillMaxWidth().testTag("person_event_${record.event.id}")) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
+                                    .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
+                                Text(stringResource(when (record.event.type) {
+                                    EventType.MOOD -> R.string.event_mood
+                                    EventType.JOURNAL -> R.string.event_journal
+                                    EventType.MEMORY -> R.string.event_memory
+                                    EventType.ACTIVITY -> R.string.event_activity
+                                    EventType.APP_USAGE -> R.string.event_app_usage
+                                }), style = MaterialTheme.typography.labelLarge)
+                                record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
+                                record.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
+                                (record.journal?.body ?: record.mood?.note ?: record.event.note)?.let {
+                                    Text(it, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                                }
+                                record.memory?.let { MemoryStatus(it) }
+                                LinkedPeople(record.people)
+                                LinkedPlace(record.place)
+                                PhotoCount(record.photos.size)
+                                TextButton(onClick = { onEvent(record) }) { Text(stringResource(R.string.person_open_event)) }
                             }
-                            record.memory?.let { MemoryStatus(it) }
-                            LinkedPeople(record.people)
-                            LinkedPlace(record.place)
-                            PhotoCount(record.photos.size)
-                            TextButton(onClick = { onEvent(record) }) { Text(stringResource(R.string.person_open_event)) }
                         }
                     }
                 }

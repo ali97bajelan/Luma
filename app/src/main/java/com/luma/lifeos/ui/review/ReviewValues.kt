@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.summary.ScaleTotal
+import com.luma.lifeos.ui.common.humanReadableDuration
 import java.text.NumberFormat
 
 internal fun reviewNumber(value: Number): String = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 2 }.format(value)
@@ -20,8 +21,7 @@ internal fun reviewChange(current: Double?, previous: Double?): String? = if (cu
 @Composable internal fun reviewScale(scale: ScaleTotal?): String = if (scale == null) stringResource(R.string.review_unavailable)
     else stringResource(R.string.review_scale_samples, reviewNumber(scale.average), scale.samples)
 @Composable internal fun reviewDuration(millis: Long?): String = if (millis == null) stringResource(R.string.review_unavailable)
-    else stringResource(R.string.usage_duration, millis / 3_600_000, millis / 60_000 % 60,
-        NumberFormat.getNumberInstance().apply { maximumFractionDigits = 3 }.format(millis % 60_000 / 1000.0))
+    else humanReadableDuration(millis)
 
 @Composable
 internal fun ReviewValue(label: String, current: String, previous: String, change: String?, tag: String,

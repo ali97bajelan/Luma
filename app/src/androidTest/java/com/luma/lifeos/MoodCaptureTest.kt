@@ -45,7 +45,7 @@ class MoodCaptureTest {
         compose.onNodeWithTag("mood_score_2").performClick()
         compose.onNodeWithTag("mood_save").performClick()
         awaitTag("screen_event_detail")
-        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("event_detail_back").performClick()
         awaitTag("screen_timeline")
         awaitText(note, "screen_timeline")
         compose.onNodeWithText(note).performClick()
@@ -56,7 +56,7 @@ class MoodCaptureTest {
         compose.onNodeWithTag("mood_delete").performClick()
         compose.onNodeWithTag("mood_confirm_delete").performClick()
         awaitTag("screen_event_detail")
-        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithTag("event_detail_back").performClick()
         awaitTag("screen_timeline")
         compose.waitUntil(5_000) { compose.onAllNodesWithText(note).fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("screen_timeline").assertIsDisplayed()

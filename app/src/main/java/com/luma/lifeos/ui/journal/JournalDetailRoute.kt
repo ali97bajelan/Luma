@@ -17,6 +17,7 @@ import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.ui.photos.PhotoGallery
+import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.domain.model.EventId
@@ -47,39 +48,49 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
         }
     }
     BackHandler(onBack = onBack)
-    Column(Modifier.fillMaxSize().testTag("screen_journal_detail").verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-            if (!loading && record?.event?.isEditable == true) TextButton(onClick = onEdit, modifier = Modifier.testTag("journal_edit")) {
-                Text(stringResource(R.string.journal_edit))
+    val canEdit = !loading && record?.event?.isEditable == true
+    Scaffold(
+        modifier = Modifier.testTag("screen_journal_detail"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            DetailTopBar(
+                title = stringResource(R.string.event_journal),
+                backTag = "journal_detail_back",
+                onBack = onBack,
+                editTag = if (canEdit) "journal_edit" else null,
+                editLabel = if (canEdit) stringResource(R.string.journal_edit) else null,
+                onEdit = if (canEdit) onEdit else null,
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp)
+            .testTag("journal_detail_content"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (loading) CircularProgressIndicator()
+            if (failed) {
+                Text(stringResource(R.string.journal_load_error), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
-        }
-        if (loading) CircularProgressIndicator()
-        if (failed) {
-            Text(stringResource(R.string.journal_load_error), color = MaterialTheme.colorScheme.error)
-            TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
-        }
-        if (!loading) record?.let { entry ->
-            val journal = requireNotNull(entry.journal)
-            Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
-            Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
-            if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
-            Card(Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                Text(journal.body, style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp).testTag("journal_detail_body"))
+            if (!loading) record?.let { entry ->
+                val journal = requireNotNull(entry.journal)
+                Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
+                Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
+                if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
+                Card(Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    Text(journal.body, style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp).testTag("journal_detail_body"))
+                }
+                LinkedPeople(entry.people)
+                LinkedPlace(entry.place)
+                entry.memory?.let {
+                    MemoryStatus(it)
+                    it.note?.let { note -> Text(note) }
+                }
+                if (entry.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("journal_memory")) {
+                    Text(stringResource(if (entry.memory == null) R.string.memory_promote else R.string.memory_edit))
+                }
+                PhotoGallery(photos, entry.photos)
             }
-            LinkedPeople(entry.people)
-            LinkedPlace(entry.place)
-            entry.memory?.let {
-                MemoryStatus(it)
-                it.note?.let { note -> Text(note) }
-            }
-            if (entry.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("journal_memory")) {
-                Text(stringResource(if (entry.memory == null) R.string.memory_promote else R.string.memory_edit))
-            }
-            PhotoGallery(photos, entry.photos)
         }
     }
 }

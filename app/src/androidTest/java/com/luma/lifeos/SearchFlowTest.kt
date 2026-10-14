@@ -6,11 +6,13 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import com.luma.lifeos.domain.model.*
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.Instant
 import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertTrue
 
 /** Run using the disposable validation application ID, never against personal app data. */
 class SearchFlowTest {
@@ -19,6 +21,29 @@ class SearchFlowTest {
     private fun awaitTag(tag: String) {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     }
+
+    @Test fun searchLabelsAndUsesNewestFirstOrder() {
+        val older = EventId.new(); val newer = EventId.new()
+        val token = "Order ${UUID.randomUUID()}"
+        val time = Instant.now()
+        runBlocking {
+            storage().journals.create(older, JournalInput("Older body", time.minusSeconds(60), token))
+            storage().journals.create(newer, JournalInput("Newer body", time, token))
+        }
+        try {
+            compose.onNodeWithTag("nav_timeline").performClick()
+            compose.onNodeWithTag("timeline_search").performClick(); awaitTag("screen_search")
+            compose.onNodeWithTag("search_text").performTextReplacement(token)
+            awaitTag("event_$older"); awaitTag("event_$newer")
+            compose.onNodeWithTag("search_order").assertTextEquals("Newest first")
+            val newestTop = compose.onNodeWithTag("event_$newer").fetchSemanticsNode().boundsInRoot.top
+            val oldestTop = compose.onNodeWithTag("event_$older").fetchSemanticsNode().boundsInRoot.top
+            assertTrue("Search results are displayed newest first", newestTop < oldestTop)
+        } finally {
+            runBlocking { storage().lifeEvents.delete(older); storage().lifeEvents.delete(newer) }
+        }
+    }
+
     @Test fun titleLookupOpensSourceRetainsQueryThroughRecreationAndReflectsDeletion() {
         val id = EventId.new(); val token = "Lookup ${UUID.randomUUID()}"
         val time = LocalDate.now(ZoneId.systemDefault()).atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant()
@@ -27,11 +52,12 @@ class SearchFlowTest {
             compose.onNodeWithTag("nav_timeline").performClick()
             compose.onNodeWithTag("timeline_search").performClick(); awaitTag("screen_search")
             compose.onNodeWithTag("search_text").performTextReplacement(token); awaitTag("event_$id")
+            compose.onNodeWithTag("search_order").assertTextEquals("Newest first")
             compose.activityRule.scenario.recreate(); awaitTag("screen_search"); awaitTag("event_$id")
             compose.onNodeWithTag("search_text").assertTextContains(token)
             compose.onNodeWithTag("event_$id").performClick(); awaitTag("screen_journal_detail")
             compose.onNodeWithText("Private source text").assertExists()
-            compose.onNodeWithText("Back").performClick(); awaitTag("screen_search"); awaitTag("event_$id")
+            compose.onNodeWithTag("journal_detail_back").performClick(); awaitTag("screen_search"); awaitTag("event_$id")
             runBlocking { storage().lifeEvents.delete(id) }
             awaitTag("search_empty"); compose.onNodeWithTag("event_$id").assertDoesNotExist()
         } finally { runBlocking { storage().lifeEvents.delete(id) } }
@@ -60,6 +86,7 @@ class SearchFlowTest {
                 compose.onNodeWithTag("search_options_done").performClick()
             }
             compose.onNodeWithTag("search_filters_done").performClick(); awaitTag("event_$id")
+            compose.onNodeWithTag("search_order").assertTextEquals("Newest first")
             compose.onNodeWithTag("search_text").performTextReplacement("Simple title"); awaitTag("event_$id")
             val tagId = runBlocking { storage().search.observeOptions().first().tags.single { it.name == tag }.id }
             val tagChip = "search_filter_tag_$tagId"
@@ -68,7 +95,7 @@ class SearchFlowTest {
             awaitTag(personChip); awaitTag(placeChip)
             compose.activityRule.scenario.recreate(); awaitTag("screen_search"); awaitTag(personChip)
             compose.onNodeWithTag("event_$id").performClick(); awaitTag("screen_journal_detail")
-            compose.onNodeWithText("Back").performClick(); awaitTag("screen_search"); awaitTag(personChip)
+            compose.onNodeWithTag("journal_detail_back").performClick(); awaitTag("screen_search"); awaitTag(personChip)
             compose.onNodeWithTag(personChip).assertIsDisplayed().performClick()
             compose.onNodeWithTag(personChip).assertDoesNotExist()
             compose.onNodeWithTag(placeChip).assertExists()
