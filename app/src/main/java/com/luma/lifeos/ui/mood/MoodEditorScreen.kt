@@ -109,6 +109,10 @@ fun MoodEditorScreen(
             if (state.ready) {
                 MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
                 Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(stringResource(R.string.mood_very_low), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.mood_great), style = MaterialTheme.typography.bodySmall)
+                }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (1..5).forEach { score ->
                         val description = stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score)))
