@@ -35,7 +35,7 @@ internal fun mostSampledActivity(activities: List<ReviewActivity>): ReviewActivi
 @Composable
 internal fun ReviewSectionNavigation(selected: String?, onSection: (String) -> Unit) {
     val sections = listOf("mood" to R.string.review_mood, "memories" to R.string.review_memories,
-        "catalog" to R.string.review_people_places, "usage" to R.string.review_saved_usage,
+        "catalog" to R.string.review_people_places, "usage" to R.string.review_usage,
         "activity" to R.string.review_activity)
     val requesters = remember { sections.associate { (key, _) -> key to BringIntoViewRequester() } }
     LaunchedEffect(selected) { selected?.let { requesters[it]?.bringIntoView() } }

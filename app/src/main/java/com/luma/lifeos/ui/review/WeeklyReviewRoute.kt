@@ -63,8 +63,10 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             val itemKeys = keys ?: return@LaunchedEffect
             val sectionKeys = listOf("mood", "memories", "catalog", "usage", "activity")
             snapshotFlow {
-                // visibleItemsInfo can include the previous item behind the sticky header.
-                if (sectionTarget != null || listState.layoutInfo.totalItemsCount == 0) null
+                // Short sections near the end cannot always align at the top. Keep the
+                // chosen/restored tab until scrolling resumes, rather than clearing it
+                // when a programmatic jump is clamped to the end of the list.
+                if (sectionTarget != null || !listState.isScrollInProgress || listState.layoutInfo.totalItemsCount == 0) null
                 else listState.firstVisibleItemIndex
             }.distinctUntilChanged().collect { firstVisibleIndex ->
                 val first = firstVisibleIndex ?: return@collect
@@ -113,19 +115,26 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         }
                         item(key = "mood") { ReviewMood(report, onSources) }
                         item(key = "memories") {
-                            Text(stringResource(R.string.review_memories), style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.testTag("review_heading_memories").semantics { heading() })
-                            MemoryHighlights(repository, period, onEvent, onMemory)
-                            TextButton(onClick = { onSources(period.current, ReviewMetric(ReviewMetricKind.MEMORIES)) },
-                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.review_all_memories)) }
+                            ReviewSection(R.string.review_memories, R.drawable.ic_bookmark_outline, "memories") {
+                                MemoryHighlights(repository, period, onEvent, onMemory)
+                                if (a.memories > 0) TextButton(onClick = { onSources(period.current, ReviewMetric(ReviewMetricKind.MEMORIES)) },
+                                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.review_all_memories)) }
+                            }
                         }
                         item(key = "catalog") {
-                            Text(stringResource(R.string.review_people_places), style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.testTag("review_heading_catalog").semantics { heading() })
-                            CatalogPatterns(stringResource(R.string.people), a.people, b.people, period,
-                            ReviewMetricKind.PERSON, onSources, onPerson)
-                            CatalogPatterns(stringResource(R.string.places), a.places, b.places, period,
-                            ReviewMetricKind.PLACE, onSources, onPlace) }
+                            ReviewSection(R.string.review_people_places, R.drawable.ic_nav_people, "catalog",
+                                explanation = R.string.review_linked_explanation) {
+                                if ((a.people + b.people + a.places + b.places).isEmpty()) {
+                                    ReviewEmpty(R.string.review_catalog_empty, "review_catalog_empty")
+                                } else {
+                                    CatalogPatterns(stringResource(R.string.people), a.people, b.people, period,
+                                        ReviewMetricKind.PERSON, onSources, onPerson)
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                    CatalogPatterns(stringResource(R.string.places), a.places, b.places, period,
+                                        ReviewMetricKind.PLACE, onSources, onPlace)
+                                }
+                            }
+                        }
                         item(key = "usage") { ReviewDigital(report, onUsage) }
                         item(key = "activity") { ReviewActivities(report, onSources) }
                     }
@@ -162,42 +171,48 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     }
 }
 @Composable private fun ReviewMood(report: WeeklyReview, onSources: (ReviewDates, ReviewMetric) -> Unit) {
-    Text(stringResource(R.string.review_mood_patterns), style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.testTag("review_heading_mood").semantics { heading() })
-    ReviewValueGroup {
-        listOf(ReviewMetricKind.MOOD to (report.current.mood?.score to report.previous.mood?.score),
-            ReviewMetricKind.ENERGY to (report.current.mood?.energy to report.previous.mood?.energy),
-            ReviewMetricKind.STRESS to (report.current.mood?.stress to report.previous.mood?.stress)).forEach { (kind, scales) ->
-            ReviewValue(stringResource(kind.label()), reviewScale(scales.first), reviewScale(scales.second),
-                reviewChange(scales.first?.average, scales.second?.average), kind.name.lowercase(),
-                scales.first?.let { { onSources(report.period.current, ReviewMetric(kind)) } },
-                scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
-        }
-    }
-    DetailsDisclosure(R.string.review_daily_evidence, "review_mood_daily_details", keepTitle = true) {
-        Text(stringResource(R.string.review_mood_dates), style = MaterialTheme.typography.titleMedium)
-        val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
-        report.current.moodDays.forEach { day ->
-            Text(day.date.format(format))
-            Text(reviewScale(day.mood?.score))
-            if (day.mood != null) TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) },
-                modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                Text(stringResource(R.string.review_view_sources))
+    ReviewSection(R.string.review_mood, R.drawable.ic_review_mood, "mood",
+        explanation = R.string.review_mood_explanation) {
+        if (report.current.mood == null && report.previous.mood == null) {
+            ReviewEmpty(R.string.review_mood_empty, "review_mood_empty")
+        } else ReviewValueGroup {
+            listOf(ReviewMetricKind.MOOD to (report.current.mood?.score to report.previous.mood?.score),
+                ReviewMetricKind.ENERGY to (report.current.mood?.energy to report.previous.mood?.energy),
+                ReviewMetricKind.STRESS to (report.current.mood?.stress to report.previous.mood?.stress)).forEach { (kind, scales) ->
+                if (scales.first != null || scales.second != null) ReviewValue(
+                    stringResource(kind.label()), reviewScale(scales.first), reviewScale(scales.second),
+                    reviewChange(scales.first?.average, scales.second?.average), kind.name.lowercase(),
+                    scales.first?.let { { onSources(report.period.current, ReviewMetric(kind)) } },
+                    scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
             }
         }
+        if (report.current.moodDays.any { it.mood != null }) {
+            DetailsDisclosure(R.string.review_daily_evidence, "review_mood_daily_details", keepTitle = true) {
+                val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
+                report.current.moodDays.filter { it.mood != null }.forEach { day ->
+                    Text(day.date.format(format))
+                    Text(reviewScale(day.mood?.score))
+                    TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) },
+                        modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                        Text(stringResource(R.string.review_view_sources))
+                    }
+                }
+            }
+        }
+        if (report.current.emotions.isNotEmpty() || report.previous.emotions.isNotEmpty()) {
+            CatalogPatterns(stringResource(R.string.review_top_emotions), report.current.emotions, report.previous.emotions,
+                report.period, ReviewMetricKind.EMOTION, onSources, null)
+        }
     }
-    CatalogPatterns(stringResource(R.string.review_top_emotions), report.current.emotions, report.previous.emotions,
-        report.period, ReviewMetricKind.EMOTION, onSources, null)
 }
 @Composable private fun CatalogPatterns(heading: String, current: List<NamedFrequency>, previous: List<NamedFrequency>, period: ReviewPeriod,
     kind: ReviewMetricKind, onSources: (ReviewDates, ReviewMetric) -> Unit, onDetails: ((UUID) -> Unit)?) {
     Text(heading, style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.semantics { heading() })
-    if (kind != ReviewMetricKind.EMOTION) Text(stringResource(R.string.review_linked_explanation))
     val names = (current + previous).distinctBy { it.name.id }.sortedWith(compareByDescending<NamedFrequency> {
         current.firstOrNull { row -> row.name.id == it.name.id }?.records ?: 0
     }.thenBy { it.name.name }.thenBy { it.name.id }).take(10)
-    if (names.isEmpty()) Text(stringResource(R.string.review_no_patterns))
+    if (names.isEmpty()) ReviewEmpty(R.string.review_no_patterns, "review_empty_${kind.name.lowercase()}")
     else ReviewValueGroup {
         names.forEach { name ->
             val a = current.firstOrNull { it.name.id == name.name.id }?.records ?: 0
@@ -227,7 +242,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             TextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.retry)) }
         }
         is ReviewSourcesState.Data -> {
-            if (current.page.records.isEmpty()) Text(stringResource(R.string.memory_review_empty))
+            if (current.page.records.isEmpty()) ReviewEmpty(R.string.review_memory_empty_short, "review_memories_empty")
             current.page.records.forEach { row ->
                 EventCard(row, period.zone, { onEvent(row) }, onMemory?.let { { it(row) } })
                 Spacer(Modifier.height(8.dp))
