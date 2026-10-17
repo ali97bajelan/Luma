@@ -9,11 +9,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import kotlinx.coroutines.launch
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,63 +39,47 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
     val period = reviewPeriod(restoredReviewDate(selected, today), today, zone)
-    val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     var section by rememberSaveable { mutableStateOf<String?>(null) }
+    var sectionTarget by rememberSaveable { mutableStateOf<String?>(null) }
     key(period, retry) {
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
         val report = (state as? WeeklyReviewState.Data)?.report
+        // A short loading/error list must not clamp the report's restored scroll position.
+        val placeholderListState = rememberLazyListState()
         val empty = report?.let { it.current.records == 0 && it.current.usage?.totalMillis == null && it.current.activities.isEmpty() } == true
         val keys = report?.let {
             listOf("heading", "overview", "sections") + (if (empty) listOf("empty") else emptyList()) +
                 listOf("counts", "mood", "memories", "catalog", "usage", "activity")
         }
+        LaunchedEffect(keys, sectionTarget) {
+            val target = sectionTarget ?: return@LaunchedEffect
+            val targetIndex = keys?.indexOf(target) ?: return@LaunchedEffect
+            if (targetIndex >= 0) listState.scrollToItem(targetIndex)
+            sectionTarget = null
+        }
         LaunchedEffect(keys) {
             val itemKeys = keys ?: return@LaunchedEffect
             val sectionKeys = listOf("mood", "memories", "catalog", "usage", "activity")
             snapshotFlow {
-                listState.layoutInfo.visibleItemsInfo
-                    .filter { it.key != "sections" }
-                    .minByOrNull { it.offset }
-                    ?.index
+                // visibleItemsInfo can include the previous item behind the sticky header.
+                if (sectionTarget != null || listState.layoutInfo.totalItemsCount == 0) null
+                else listState.firstVisibleItemIndex
             }.distinctUntilChanged().collect { firstVisibleIndex ->
-                val active = firstVisibleIndex?.let { first ->
-                    sectionKeys.lastOrNull { key -> itemKeys.indexOf(key) in 0..first }
-                }
+                val first = firstVisibleIndex ?: return@collect
+                val active = sectionKeys.lastOrNull { key -> itemKeys.indexOf(key) in 0..first }
                 if (section != active) section = active
             }
         }
         Box(Modifier.fillMaxSize().testTag("screen_review")) {
-            LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = listState,
+            LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = if (report == null) placeholderListState else listState,
                 contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item(key = "heading") {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineLarge,
-                            modifier = Modifier.semantics { heading() }.testTag("review_weekly_heading"))
-                        Text(stringResource(R.string.review_saved_explanation), style = MaterialTheme.typography.bodySmall)
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            IconButton(enabled = period.current.start.year > -999999998,
-                                onClick = { selected = period.current.start.minusWeeks(1).toString() }, modifier = Modifier.testTag("review_previous")) {
-                                Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.review_previous_week))
-                            }
-                            TextButton(onClick = { picking = true }, modifier = Modifier.weight(1f).testTag("review_picker")) {
-                                Text(stringResource(R.string.memory_review_range, period.current.start.format(format), period.current.through.format(format)))
-                            }
-                            IconButton(onClick = { selected = null }, modifier = Modifier.testTag("review_this_week")) {
-                                Icon(painterResource(R.drawable.ic_nav_today), contentDescription = stringResource(R.string.review_this_week))
-                            }
-                            IconButton(enabled = period.current.start.plusWeeks(1) <= today,
-                                onClick = { selected = period.current.start.plusWeeks(1).toString() }, modifier = Modifier.testTag("review_next")) {
-                                Icon(painterResource(R.drawable.ic_chevron_forward), contentDescription = stringResource(R.string.review_next_week))
-                            }
-                        }
-                        Text(stringResource(R.string.review_comparison_range, period.previous.start.format(format),
-                            period.previous.through.format(format), stringResource(R.string.review_local_time)),
-                            style = MaterialTheme.typography.bodySmall)
-                        if (period.partial) Text(stringResource(R.string.review_partial), style = MaterialTheme.typography.bodySmall)
-                    }
+                    ReviewHeader(period,
+                        onPrevious = { selected = period.current.start.minusWeeks(1).toString() },
+                        onNext = { selected = period.current.start.plusWeeks(1).toString() },
+                        onThisWeek = { selected = null }, onPick = { picking = true })
                 }
                 when (val current = state) {
                     WeeklyReviewState.Loading -> item(key = "loading") { CircularProgressIndicator() }
@@ -113,8 +95,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                             Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
                                 ReviewSectionNavigation(section) { key ->
                                     section = key
-                                    val targetIndex = keys?.indexOf(key) ?: -1
-                                    if (targetIndex >= 0) scope.launch { listState.animateScrollToItem(targetIndex) }
+                                    sectionTarget = key
                                 }
                             }
                         }

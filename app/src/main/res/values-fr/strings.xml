@@ -331,6 +331,12 @@
     <string name="search_options_error">Impossible de charger les noms enregistrés.</string>
     <string name="search_selection_count">%1$d sélectionnés · maximum 100</string>
     <string name="review_weekly_title">Bilan hebdomadaire</string>
+    <string name="review_about">À propos de ce bilan</string>
+    <string name="review_in_progress">Semaine en cours</string>
+    <string name="review_compare_short">Comparaison avec %1$s</string>
+    <string name="review_scale_value">%1$s / 5</string>
+    <string name="review_sample_count">Échantillons : %1$d</string>
+    <string name="review_memory_empty_short">Aucun souvenir enregistré cette semaine</string>
     <string name="review_saved_explanation">À partir des observations enregistrées. Les différences décrivent les données, sans expliquer leurs causes ni garantir une couverture complète.</string>
     <string name="review_comparison_range">Comparaison avec %1$s – %2$s · %3$s</string>
     <string name="review_local_time">heure locale</string>

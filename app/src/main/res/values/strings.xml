@@ -326,6 +326,12 @@
     <string name="search_options_error">Could not load saved names.</string>
     <string name="search_selection_count">%1$d selected · maximum 100</string>
     <string name="review_weekly_title">Weekly Review</string>
+    <string name="review_about">About this review</string>
+    <string name="review_in_progress">Week in progress</string>
+    <string name="review_compare_short">Compared with %1$s</string>
+    <string name="review_scale_value">%1$s / 5</string>
+    <string name="review_sample_count">Samples: %1$d</string>
+    <string name="review_memory_empty_short">No saved memories this week</string>
     <string name="review_saved_explanation">Based on saved observations. Differences describe records, not causes or complete coverage.</string>
     <string name="review_comparison_range">Compared with %1$s – %2$s · %3$s</string>
     <string name="review_local_time">local time</string>

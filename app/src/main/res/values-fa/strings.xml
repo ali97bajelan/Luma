@@ -340,6 +340,12 @@
     <string name="search_options_error">نام‌های ذخیره‌شده بارگذاری نشدند.</string>
     <string name="search_selection_count">%1$d مورد انتخاب‌شده · حداکثر ۱۰۰</string>
     <string name="review_weekly_title">مرور هفتگی</string>
+    <string name="review_about">دربارهٔ این مرور</string>
+    <string name="review_in_progress">هفته در جریان است</string>
+    <string name="review_compare_short">مقایسه با %1$s</string>
+    <string name="review_scale_value">%1$s / ۵</string>
+    <string name="review_sample_count">نمونه‌ها: %1$d</string>
+    <string name="review_memory_empty_short">این هفته خاطره‌ای ذخیره نشده است</string>
     <string name="review_saved_explanation">بر اساس مشاهده‌های ذخیره‌شده. تفاوت‌ها فقط اطلاعات ثبت‌شده را توصیف می‌کنند و نشان‌دهندهٔ علت‌ها یا پوشش کامل نیستند.</string>
     <string name="review_comparison_range">مقایسه با %1$s – %2$s · %3$s</string>
     <string name="review_local_time">به وقت محلی</string>

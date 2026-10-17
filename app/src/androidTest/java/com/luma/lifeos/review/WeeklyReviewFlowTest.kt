@@ -14,6 +14,7 @@ import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.domain.summary.MoodSample
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import kotlinx.coroutines.flow.flowOf
 import com.luma.lifeos.ui.review.*
 import com.luma.lifeos.ui.theme.LifeOsTheme
@@ -44,6 +45,23 @@ class WeeklyReviewFlowTest {
         }
     }
     @After fun close() { db.close(); Locale.setDefault(oldLocale) }
+    @Test fun reviewExplanationsOpenOnDemandWithoutLosingTheSelectedWeek() {
+        compose.setContent { LifeOsTheme { WeeklyReviewRoute(repo, today, zone,
+            onSources = { _, _ -> }, onEvent = {}) } }
+        compose.onNodeWithText("Based on saved observations.", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("review_about").performClick()
+        compose.onNodeWithText("Based on saved observations.", substring = true).assertIsDisplayed()
+        compose.onNodeWithTag("review_missing_context").assertIsDisplayed()
+        compose.onNodeWithText("Week in progress · includes partial data", substring = true).assertIsDisplayed()
+        compose.onNodeWithTag("review_about_close").performClick()
+        compose.onNodeWithTag("review_previous").performClick()
+        compose.onNodeWithTag("review_about").performClick()
+        compose.onNodeWithText("Week in progress · includes partial data", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("review_about_close").performClick()
+        compose.onNodeWithTag("review_next").assertIsEnabled()
+        compose.onNodeWithTag("review_this_week").performClick()
+        compose.onNodeWithTag("review_next").assertIsNotEnabled()
+    }
     @Test fun statisticsOpenExactSourcesAndThenStoredContent() {
         var opened: EventId? = null
         compose.setContent {
@@ -246,6 +264,19 @@ class WeeklyReviewFlowTest {
         compose.waitUntil(15000) {
             try { compose.onNodeWithTag("memory_review_list").performScrollToNode(hasTestTag(tag)); true }
             catch (_: AssertionError) { false }
+        }
+        if (!tag.startsWith("review_section_")) {
+            // ScrollToNode can align a control behind the sticky section row.
+            // Move it into the unobscured viewport before sending a touch.
+            val list = compose.onNodeWithTag("memory_review_list")
+            val header = compose.onAllNodesWithTag("review_section_mood").fetchSemanticsNodes().firstOrNull()?.boundsInRoot
+            val target = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+            if (header != null && header.top <= list.fetchSemanticsNode().boundsInRoot.top &&
+                target.top < header.bottom && target.bottom > header.top) {
+                list.performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy ->
+                    scrollBy(0f, target.top - header.bottom - 1f)
+                }
+            }
         }
     }
     private fun awaitText(tag: String, value: String) {
