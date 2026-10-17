@@ -57,7 +57,8 @@ class RoomBackupService(private val context: Context, private val database: Luma
         var staged: LumaDatabase? = null
         try {
             val manifest = BackupArchive.read(input, File(work, "payload"))
-            require(manifest.names.filter { it.startsWith("tables/") }.toSet() == backupTables(manifest.schemaVersion).map { "tables/$it.tsv" }.toSet()) { "Backup tables do not match its schema version" }
+            val archiveTables = backupTables(manifest.schemaVersion)
+            require(manifest.names.filter { it.startsWith("tables/") }.toSet() == archiveTables.map { "tables/$it.tsv" }.toSet()) { "Backup tables do not match its schema version" }
             val stage = Room.databaseBuilder(context.applicationContext, LumaDatabase::class.java, File(work, "stage.db").path)
                 .setJournalMode(androidx.room.RoomDatabase.JournalMode.TRUNCATE).build()
             staged = stage
@@ -86,16 +87,18 @@ class RoomBackupService(private val context: Context, private val database: Luma
                 paths.forEach { path -> AndroidPhotoCodec.inspect(File(work, "payload/$path")) }
             }
             val count = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM life_event").use { it.moveToFirst(); it.getLong(0) }
+            val habitCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM habit").use { it.moveToFirst(); it.getLong(0) }
+            val habitLogCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM habit_log").use { it.moveToFirst(); it.getLong(0) }
             val paths = referencedPhotos(stage.openHelper.readableDatabase)
             // Validate timestamp before handing ownership to the retained preview.
-            val preview = BackupPreview(count, paths.size, Instant.ofEpochMilli(manifest.createdAt))
-            StagedBackup(stage, work, paths, preview)
+            val preview = BackupPreview(count, paths.size, Instant.ofEpochMilli(manifest.createdAt), habitCount, habitLogCount)
+            StagedBackup(stage, work, paths, manifest.schemaVersion, preview)
         } catch (failure: Throwable) {
             staged?.close(); work.deleteRecursively(); throw failure
         }
     }
     private inner class StagedBackup(private val stage: LumaDatabase, private val work: File,
-        private val paths: Set<String>, override val preview: BackupPreview) : PreparedBackup {
+        private val paths: Set<String>, private val schemaVersion: Int, override val preview: BackupPreview) : PreparedBackup {
         private val claimed = AtomicBoolean(false)
         override fun close() { if (claimed.compareAndSet(false, true)) dispose() }
         private fun dispose() { stage.close(); work.deleteRecursively() }
@@ -123,7 +126,8 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                 val target = database.openHelper.writableDatabase
                                 val liveHealthRevision = healthCheckpoint(target).optLong("revision", 0).coerceAtLeast(0)
                                 BackupSql.deleteStatements.forEach(target::execSQL)
-                                for (table in BACKUP_TABLES) {
+                                for (table in backupTables(schemaVersion)) {
+                                    if (table == "habit_reminder_runtime") continue
                                     stage.openHelper.readableDatabase.query("SELECT * FROM `$table`").use { cursor ->
                                         val names = cursor.columnNames.toList()
                                         target.compileStatement(BackupSql.insert(table, names)).use { statement ->
@@ -132,11 +136,18 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                                 if (table == "media_attachment") {
                                                     val index = names.indexOf("relative_path"); row[index] = mapping.getValue(row[index] as String)
                                                 }
+                                                if (table == "habit_reminder") {
+                                                    row[names.indexOf("enabled")] = 0L
+                                                    row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
+                                                }
                                                 bind(statement, row); statement.executeInsert()
                                             }
                                         }
                                     }
                                 }
+                                target.execSQL("""INSERT INTO habit_reminder_runtime
+                                    (habit_id, revision_token, last_delivered_slot, consumed_action_token, snooze_slot, snooze_until, needs_reconcile)
+                                    SELECT habit_id, revision_token, NULL, NULL, NULL, NULL, 1 FROM habit_reminder""")
                                 target.execSQL("UPDATE daily_summary SET freshness = 'STALE'")
                                 // Retain saved observations/last sync, but cross-device consent/cursors are not portable.
                                 val health = healthCheckpoint(target)

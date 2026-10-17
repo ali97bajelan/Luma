@@ -8,6 +8,12 @@ import java.util.UUID
 import java.time.Instant
 import com.luma.lifeos.domain.usage.UsageBucket
 import com.luma.lifeos.domain.usage.UsageSession
+import com.luma.lifeos.data.habit.*
+import com.luma.lifeos.domain.habit.HabitLifecycle
+import com.luma.lifeos.domain.habit.HabitLog
+import com.luma.lifeos.domain.habit.weekdaysFromMask
+import java.time.LocalDate
+import java.time.ZoneId
 
 /** Checks entity/domain invariants which SQLite's generated schema does not enforce. */
 internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
@@ -19,8 +25,10 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
     fun optionalInt(name: String) = long(name)?.let { require(it in Int.MIN_VALUE..Int.MAX_VALUE); it.toInt() }
     fun number(name: String) = row[name] as Double
     fun source() = EventSource.valueOf(s("source"))
+    fun date(name: String) = LocalDate.parse(s(name)).also { require(it.toString() == s(name)) { "Invalid civil date" } }
+    fun zone(name: String) = ZoneId.of(s(name)).also { require(it.id == s(name)) { "Invalid timezone identifier" } }
     row.forEach { (name, value) ->
-        if (value != null && (name == "id" || (name.endsWith("_id") && name != "zone_id")))
+        if (value != null && (name == "id" || (name.endsWith("_id") && name !in setOf("zone_id", "tracking_zone_id", "setting_id"))))
             require(UUID.fromString(value as String).toString() == value) { "Invalid record identity" }
         if (value != null && name.endsWith("_json")) { requireSafeJsonDepth(value as String); JSONObject(value) }
     }
@@ -52,7 +60,62 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
             UsageSession(s("package_name"), Instant.ofEpochMilli(l("started_at")), Instant.ofEpochMilli(l("ended_at")), text("app_label"), l("ongoing") == 1L)
         }
         "usage_session_window" -> { require(l("query_end") > l("query_start")); require(l("complete") in 0..1) }
+        "habit_settings" -> HabitSettingsEntity(int("setting_id"), zone("tracking_zone_id").id)
+        "habit" -> HabitEntity(s("id"), s("name"), text("unit_label"), date("start_date").toString(), l("created_at"), l("updated_at"))
+        "habit_schedule" -> HabitScheduleEntity(s("id"), s("habit_id"), date("effective_from").toString(),
+            int("target"), int("weekday_mask"), s("state")).also { weekdaysFromMask(it.weekdayMask); HabitLifecycle.valueOf(it.state) }
+        "habit_log" -> {
+            val entity = HabitLogEntity(s("id"), s("habit_id"), date("habit_date").toString(), zone("zone_id").id,
+                long("occurred_at"), l("recorded_at"), l("updated_at"))
+            HabitLog(UUID.fromString(entity.id), UUID.fromString(entity.habitId), date("habit_date"), zone("zone_id"),
+                entity.occurredAt?.let(Instant::ofEpochMilli), Instant.ofEpochMilli(entity.recordedAt), Instant.ofEpochMilli(entity.updatedAt))
+        }
+        "habit_day_choice" -> {
+            require(l("skip_remaining") in 0..1)
+            HabitDayChoiceEntity(s("habit_id"), date("habit_date").toString(), l("skip_remaining") == 1L, l("updated_at"))
+        }
+        "habit_reminder" -> validateHabitReminder(row)
+        "habit_reminder_runtime" -> {
+            require(l("needs_reconcile") in 0..1)
+            text("last_delivered_slot")?.let { require(it.isNotBlank()) }
+            HabitReminderRuntimeEntity(s("habit_id"), s("revision_token"), text("last_delivered_slot"),
+                text("consumed_action_token"), text("snooze_slot"), long("snooze_until"), l("needs_reconcile") == 1L)
+        }
     }
+}
+
+private fun validateHabitReminder(row: Map<String, Any?>) {
+    fun s(name: String) = row[name] as String
+    fun nullableInt(name: String) = (row[name] as Long?)?.let { require(it in Int.MIN_VALUE..Int.MAX_VALUE); it.toInt() }
+    val enabled = row["enabled"] as Long
+    require(enabled in 0..1)
+    val timesJson = s("times_json")
+    requireSafeJsonDepth(timesJson)
+    val times = org.json.JSONArray(timesJson)
+    val slots = (0 until times.length()).map { index ->
+        val value = times.get(index) as? Number ?: error("Reminder time must be an integer")
+        val number = value.toDouble()
+        require(number.isFinite() && number == number.toInt().toDouble())
+        number.toInt()
+    }
+    when (s("mode")) {
+        "TIMES" -> {
+            require(nullableInt("interval_minutes") == null && nullableInt("start_minute") == null && nullableInt("end_minute") == null)
+            require(slots.size in 1..24 && slots.all { it in 0..1439 })
+            require(slots == slots.distinct().sorted())
+        }
+        "INTERVAL" -> {
+            require(slots.isEmpty())
+            val interval = requireNotNull(nullableInt("interval_minutes"))
+            val start = requireNotNull(nullableInt("start_minute"))
+            val end = requireNotNull(nullableInt("end_minute"))
+            require(interval in 15..720 && interval % 15 == 0)
+            require(start in 0..1439 && end in 1..1440 && start < end)
+        }
+        else -> error("Unknown reminder mode")
+    }
+    HabitReminderEntity(s("habit_id"), enabled == 1L, s("mode"), timesJson, nullableInt("interval_minutes"),
+        nullableInt("start_minute"), nullableInt("end_minute"), s("revision_token"))
 }
 
 /** Protect Android's recursive JSON parser before it receives untrusted text. */

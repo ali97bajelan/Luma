@@ -5,7 +5,13 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.time.Instant
 
-data class BackupPreview(val eventCount: Long, val photoCount: Int, val createdAt: Instant)
+data class BackupPreview(
+    val eventCount: Long,
+    val photoCount: Int,
+    val createdAt: Instant,
+    val habitCount: Long = 0,
+    val habitLogCount: Long = 0,
+)
 interface BackupService {
     /** Caller owns document streams. Export completes only when every referenced photo exists. */
     suspend fun export(output: OutputStream)

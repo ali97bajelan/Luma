@@ -77,6 +77,8 @@ internal fun BackupCardContent(state: BackupUiState, onExport: () -> Unit, onRes
             text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.backup_preview, NumberFormat.getIntegerInstance().format(preview.eventCount),
                     NumberFormat.getIntegerInstance().format(preview.photoCount),
+                    NumberFormat.getIntegerInstance().format(preview.habitCount),
+                    NumberFormat.getIntegerInstance().format(preview.habitLogCount),
                     preview.createdAt.atZone(ZoneId.systemDefault()).format(localizedDateTime(FormatStyle.MEDIUM))))
                 Text(stringResource(R.string.backup_replace_warning))
             } },

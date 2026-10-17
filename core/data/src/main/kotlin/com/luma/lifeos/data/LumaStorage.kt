@@ -18,6 +18,8 @@ import com.luma.lifeos.domain.repository.PersonRepository
 import com.luma.lifeos.data.repository.RoomPersonRepository
 import com.luma.lifeos.domain.repository.MemoryRepository
 import com.luma.lifeos.data.repository.RoomMemoryRepository
+import com.luma.lifeos.domain.habit.HabitRepository
+import com.luma.lifeos.data.repository.RoomHabitRepository
 import com.luma.lifeos.domain.repository.JournalRepository
 import com.luma.lifeos.data.repository.RoomJournalRepository
 import com.luma.lifeos.domain.repository.MoodRepository
@@ -45,6 +47,7 @@ class LumaStorage(context: Context) {
     val moods: MoodRepository = RoomMoodRepository(database)
     val journals: JournalRepository = RoomJournalRepository(database)
     val memories: MemoryRepository = RoomMemoryRepository(database)
+    val habits: HabitRepository = RoomHabitRepository(database)
     val places: PlaceRepository = RoomPlaceRepository(database)
     val people: PersonRepository = RoomPersonRepository(database)
     val events = RoomEventStore(database)

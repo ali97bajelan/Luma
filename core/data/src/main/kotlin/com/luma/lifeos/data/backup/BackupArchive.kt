@@ -8,13 +8,17 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-internal val BACKUP_TABLES = listOf("life_event", "emotion", "person", "place", "tag",
+internal val BACKUP_TABLES_V1 = listOf("life_event", "emotion", "person", "place", "tag",
     "mood_entry", "journal_entry", "memory", "activity_record", "app_usage_record",
     "media_attachment", "mood_emotion", "event_person", "event_place", "event_tag",
-    "daily_summary", "integration_state", "usage_session", "usage_session_window")
-internal fun backupTables(version: Int) = when (version) {
-    1 -> BACKUP_TABLES.dropLast(2)
-    2 -> BACKUP_TABLES
+    "daily_summary", "integration_state")
+internal val BACKUP_TABLES_V2 = BACKUP_TABLES_V1 + listOf("usage_session", "usage_session_window")
+internal val HABIT_BACKUP_TABLES = listOf("habit_settings", "habit", "habit_schedule", "habit_log",
+    "habit_day_choice", "habit_reminder", "habit_reminder_runtime")
+internal val BACKUP_TABLES = BACKUP_TABLES_V2 + HABIT_BACKUP_TABLES
+internal fun backupTables(version: Int): List<String> = when (version) {
+    1 -> BACKUP_TABLES_V1
+    2 -> BACKUP_TABLES_V2
     else -> error("Unsupported database schema version")
 }
 data class ArchiveManifest(val formatVersion: Int, val schemaVersion: Int, val createdAt: Long, val names: Set<String>)

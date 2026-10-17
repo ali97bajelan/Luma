@@ -8,6 +8,22 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class BackupCodecTest {
+    @Test fun archiveInventoriesRemainExplicitAndAdditiveAcrossSchemaVersions() {
+        val original = listOf(
+            "life_event", "emotion", "person", "place", "tag", "mood_entry", "journal_entry",
+            "memory", "activity_record", "app_usage_record", "media_attachment", "mood_emotion",
+            "event_person", "event_place", "event_tag", "daily_summary", "integration_state",
+        )
+        val usage = listOf("usage_session", "usage_session_window")
+        val habits = listOf(
+            "habit_settings", "habit", "habit_schedule", "habit_log", "habit_day_choice",
+            "habit_reminder", "habit_reminder_runtime",
+        )
+        assertEquals(original, backupTables(1))
+        assertEquals(original + usage, backupTables(2))
+        assertEquals(original + usage + habits, backupTables(3))
+    }
+
     @Test fun duplicateArchiveEntryNamesAreRejected() {
         val root = Files.createTempDirectory("backup-duplicate").toFile()
         try {
