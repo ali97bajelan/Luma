@@ -1851,3 +1851,50 @@ adb -s emulator-5554 shell am instrument -w -r \
 ```
 
 The run used the isolated app/test APKs, cleared only `com.luma.lifeos.uxvalidation`, and left the installed `com.luma.lifeos` app and its data untouched. The runner output for the final invocation was `OK (33 tests)`; this dated entry is its result record. Work remains uncommitted for review.
+
+## T19 accessibility and language follow-up — 2026-10-17
+
+French primary navigation now displays compact labels (`Jour`, `Parcours`,
+`Contacts`, `Bilan`, `Options`) with discretionary line breaks in long words. Each
+tab keeps its existing complete localized name as its accessibility content
+description. Route order, icons, selected state, tags, navigation restoration and
+callbacks remain in the extracted `PrimaryNavigationBar`.
+
+- PASS: `PrimaryNavigationAccessibilityTest` on API 36, output `OK (1 test)`. Its
+  Compose matrix covers English, French and Persian at 320/411 dp and font scales
+  1.0/1.3/2.0. It checks the visible label, full localized accessible name, tab
+  role, selected state, click action, at-most-two-line layout, rendered line widths
+  and containment within the tab. Persian is composed with RTL direction. Evidence:
+  `/tmp/luma-t19-final-api36.log` (`OK (10 tests)` including the language and route
+  cases below).
+- PASS: `AppNavigationTest`, output `OK (4 tests)`, covering route navigation,
+  Quick Capture reachability, selected-day preservation and route restoration.
+  Evidence: `/tmp/luma-t19-final-api36.log`.
+- PASS: `PlatformLanguageTest` and `LanguageFlowTest`, output `OK (5 tests)` on API
+  36. They cover locale choices, activity recreation, Persian RTL, selected-day
+  preservation and an in-progress journal draft. Evidence:
+  `/tmp/luma-t19-final-api36.log`. This is API 33+ LocaleManager coverage; it
+  does not exercise the legacy SharedPreferences implementation.
+- PASS: focused JVM `AppLanguageTest` and `TranslationCatalogTest`, including
+  resource completeness for the new English/French/Persian compact-label keys.
+- BLOCKED: API 28 and API 32 native tests and force-stop relaunch. Only
+  `android-36.1/google_apis_playstore/x86_64` and the AVD
+  `Medium_Phone_API_36.1` are installed locally. Evidence:
+  `/tmp/luma-t19-device-inventory.log`. The existing AVD data was not wiped and no
+  legacy system image was downloaded or created.
+- NOT RUN: actual TalkBack speech/focus traversal, conventional keyboard
+  walkthrough, physical compact/normal-width and landscape layouts, insets, and
+  remaining route-specific manual accessibility checks. The emulator was
+  headless; semantics and Compose layout tests do not certify spoken output or
+  manual device acceptance. The checklist rows remain open.
+
+The emulator was `sdk_gphone64_x86_64`, API 36, 1080×2400 at 420 dpi, portrait,
+system configuration `en-US`, system font scale 1.0. Tests used only the disposable
+application ID `com.luma.lifeos.uxvalidation`; language-flow fixtures wrote only to
+that package. Compose tests forced their stated locales, widths and scales without
+changing device-wide language, display or accessibility settings. The temporary
+emulator was launched without wiping data or saving a changed snapshot.
+
+T19 remains pending: the legacy/manual checks above and the separate Timeline,
+Search and Weekly Review performance criteria remain open. No dependency,
+permission, schema, network or product-scope changes were made.

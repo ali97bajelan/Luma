@@ -716,6 +716,14 @@ passed. Large Timeline day navigation measured 116–150 ms, but Search text sca
 measured 2.0–2.2 seconds and Weekly Review p95 measured 364 ms against 300 ms. Smooth
 scrolling, broad TalkBack/screen-size audit and the performance targets remain open.
 
+Accessibility/language follow-up (2026-10-17): French primary navigation now uses
+compact visible labels with full localized accessible names. Compose semantics and
+layout pass for English/French/Persian at 320/411 dp and font scales 1.0/1.3/2.0;
+API 36 language, selected-day, draft-retention and primary-route instrumentation
+passes. API 28/32 execution is BLOCKED because the local SDK contains only the API
+36.1 image. Manual TalkBack/keyboard/device-size acceptance and all T19 performance
+targets remain open. See [VALIDATION.md](docs/VALIDATION.md).
+
 
 ### Scope
 
@@ -776,9 +784,16 @@ draft/tag/content retention, save/detail, plurals, accessibility and pickers.
 Separate force-stop/relaunch probes verify language persistence independently of
 device language, supported Persian default and unsupported German → English.
 Screenshots verify Persian RTL, native calendar labels/digits, mixed-language text
-and restored LTR. Settings remains operable at 130% text size; French navigation
-labels wrap awkwardly, recorded for T19. Legacy API 28–32 native execution and
-exhaustive TalkBack/device-size audits remain platform follow-ups. See docs/VALIDATION.md.
+and restored LTR. Settings remains operable at 130% text size. French navigation
+wrapping was the T19 follow-up addressed on 2026-10-17 below. Legacy API 28–32
+native execution and exhaustive TalkBack/device-size audits remain platform
+follow-ups. See docs/VALIDATION.md.
+
+T19 follow-up (2026-10-17): the French navigation labels are now compact and their
+full localized names remain accessible. API 36 language and route flows pass; API
+28/32 native language testing remains BLOCKED because those emulator images are
+unavailable. The broader manual TalkBack/device-size audit remains NOT RUN; details
+and evidence are in [VALIDATION.md](docs/VALIDATION.md).
 
 ### Scope
 

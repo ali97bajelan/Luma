@@ -41,7 +41,7 @@ class PrimaryNavigationAccessibilityTest {
 
     @Test fun labelsFitAtNarrowWidthAndKeepFullLocalizedTabNames() {
         val base = InstrumentationRegistry.getInstrumentation().targetContext
-        val cases = listOf(
+        val languages = listOf(
             LanguageCase(
                 tag = "en",
                 visible = listOf("Today", "Timeline", "People", "Review", "Settings"),
@@ -59,6 +59,13 @@ class PrimaryNavigationAccessibilityTest {
                 direction = LayoutDirection.Rtl,
             ),
         )
+        val cases = languages.flatMap { language ->
+            listOf(320, 411).flatMap { widthDp ->
+                listOf(1f, 1.3f, 2f).map { fontScale ->
+                    language.copy(widthDp = widthDp, fontScale = fontScale)
+                }
+            }
+        }
         val routes = listOf("today", "timeline", "people", "review", "settings")
 
         val activeCase = mutableStateOf(cases.first())
@@ -71,14 +78,14 @@ class PrimaryNavigationAccessibilityTest {
             CompositionLocalProvider(
                 LocalContext provides localized,
                 LocalConfiguration provides localized.resources.configuration,
-                LocalDensity provides Density(density.density, fontScale = 2f),
+                LocalDensity provides Density(density.density, fontScale = case.fontScale),
                 LocalLayoutDirection provides case.direction,
             ) {
                 LifeOsTheme {
                     PrimaryNavigationBar(
                         selectedRoute = "timeline",
                         onNavigate = { route -> navigated.add(route) },
-                        modifier = Modifier.width(320.dp),
+                        modifier = Modifier.width(case.widthDp.dp),
                     )
                 }
             }
@@ -95,7 +102,8 @@ class PrimaryNavigationAccessibilityTest {
             routes.forEachIndexed { index, route ->
                 val item = compose.onNodeWithTag("nav_$route")
                 val itemNode = item.fetchSemanticsNode()
-                assertEquals("${case.tag}/$route tab role", Role.Tab, itemNode.config[SemanticsProperties.Role])
+                assertEquals("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route tab role",
+                    Role.Tab, itemNode.config[SemanticsProperties.Role])
                 item.assertHasClickAction()
                 if (route == "timeline") item.assertIsSelected() else item.assertIsNotSelected()
                 item.assertContentDescriptionEquals(case.full[index])
@@ -105,24 +113,26 @@ class PrimaryNavigationAccessibilityTest {
                 val laidOutText = labelNode.config[SemanticsProperties.Text]
                     .joinToString(separator = "") { it.text }
                     .replace("\u00ad", "")
-                assertEquals("${case.tag}/$route visible label", case.visible[index], laidOutText)
+                assertEquals("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route visible label",
+                    case.visible[index], laidOutText)
                 val layoutResults = mutableListOf<TextLayoutResult>()
                 val layoutAction = labelNode.config[SemanticsActions.GetTextLayoutResult]
-                assertTrue("${case.tag}/$route text layout is available",
+                assertTrue("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route text layout is available",
                     layoutAction.action?.invoke(layoutResults) == true && layoutResults.isNotEmpty())
-                assertTrue("${case.tag}/$route label has more than two lines: ${layoutResults.single().lineCount}",
+                assertTrue("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route label has more than two lines: ${layoutResults.single().lineCount}",
                     layoutResults.single().lineCount <= 2)
                 val textLayout = layoutResults.single()
                 val itemBounds = itemNode.boundsInRoot
                 val labelBounds = labelNode.boundsInRoot
                 (0 until textLayout.lineCount).forEach { line ->
                     val lineWidth = textLayout.getLineRight(line) - textLayout.getLineLeft(line)
-                    assertTrue("${case.tag}/$route line $line exceeds its text box: " +
+                    assertTrue("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route line $line exceeds its text box: " +
                         "lineWidth=$lineWidth textWidth=${textLayout.size.width}",
                         lineWidth <= textLayout.size.width)
                 }
-                assertTrue("${case.tag}/$route label is clipped vertically", !textLayout.didOverflowHeight)
-                assertTrue("${case.tag}/$route label escaped its tab bounds",
+                assertTrue("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route label is clipped vertically",
+                    !textLayout.didOverflowHeight)
+                assertTrue("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route label escaped its tab bounds",
                     labelBounds.left >= itemBounds.left && labelBounds.top >= itemBounds.top &&
                         labelBounds.right <= itemBounds.right && labelBounds.bottom <= itemBounds.bottom)
                 label.performClick()
@@ -144,6 +154,8 @@ class PrimaryNavigationAccessibilityTest {
         val visible: List<String>,
         val full: List<String>,
         val direction: LayoutDirection = LayoutDirection.Ltr,
+        val widthDp: Int = 320,
+        val fontScale: Float = 2f,
     )
 
     private companion object {

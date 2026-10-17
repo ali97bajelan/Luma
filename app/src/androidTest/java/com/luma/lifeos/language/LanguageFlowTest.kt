@@ -39,7 +39,7 @@ class LanguageFlowTest {
             awaitLanguage(language)
             compose.onNodeWithTag("screen_settings_language").assertIsDisplayed()
             compose.onNodeWithTag("settings_back").performClick()
-            compose.onNodeWithTag("nav_settings").assertTextContains(settings)
+            compose.onNodeWithTag("nav_settings").assertContentDescriptionEquals(settings)
             compose.onNodeWithTag("screen_settings").assertIsDisplayed()
             compose.onNodeWithTag("nav_today").performClick()
             compose.onNodeWithTag("day_selected", useUnmergedTree = true)

@@ -1,15 +1,16 @@
 # UX acceptance checklist and validation runbook
 
-Status as of 14 October 2026: all findings have implementation changes. Tasks 17 and 18 have targeted JVM and isolated-emulator regressions passing; manual acceptance remains open. Historical results stay in [the UX review](UX_REVIEW_2026-10-13.md) and [VALIDATION.md](VALIDATION.md); this checklist does not replace that evidence.
+Status as of 17 October 2026: all findings have implementation changes. Tasks 17 and 18 have targeted JVM and isolated-emulator regressions passing. T19's French navigation behavior has automated layout/semantics coverage; broader manual acceptance remains open. Historical results stay in [the UX review](UX_REVIEW_2026-10-13.md) and [VALIDATION.md](VALIDATION.md); this checklist does not replace that evidence.
 
 Read [the development handoff](UX_DEVELOPMENT_READY_2026-10-14.md) before implementation or acceptance. Record the tested source snapshot, device/API, app ID, language, layout direction, font scale, keyboard/assistive technology, result and evidence path for every run. Use PASS, FAIL, BLOCKED or NOT RUN; never infer manual acceptance from compilation.
 
-Tested source snapshot: base HEAD `b52b9a7` plus the current uncommitted working tree. No commit was created; the implementation request did not ask for one.
+Snapshot for the 14 October runs: base HEAD `b52b9a7` plus that run's uncommitted working tree. No commit was created for that dated run.
 
 ## New implementation acceptance
 
 | Finding / criteria | Fixture and operation | Expected result | Result / evidence |
 | --- | --- | --- | --- |
+| T19/T21 / French primary navigation | English/French/Persian resources at 320/411 dp and font scales 1.0/1.3/2.0; assert labels, full accessible names, tab roles/state/actions and text bounds | French uses compact readable labels; all full localized names remain accessible; labels fit within two lines | Automated PASS on API 36.1, isolated `com.luma.lifeos.uxvalidation`; see `/tmp/luma-t19-final-api36.log`. Forced Compose layout does not certify TalkBack speech or physical-device layout. |
 | 13 / S13.1–S13.3 | Text + two dates + two same-name people + tag + place; close dialog, remove one, Reset filters, Clear all | Named chips; identity-safe removal; text retained only by Reset; explicit no-filter state | Automated PASS for chip identity, removal, reset/clear and empty-state regressions; full walkthrough pending |
 | 13 / S13.4–S13.5 | Recreate/return from detail; delete a selected catalog row; fail options; invalid dates; finish an old uncancellable query | Selections retained/identified; correction possible; current generation wins | Automated targeted Search tests PASS, including removal while options load/fail; correction UI and manual lifecycle/provider walkthrough pending |
 | 13 / S13.6 | 100 tags + 100 people + place + two dates at 320 dp/scale 2.0/RTL | Filter section scrolls with results; fixed controls operable | Automated PASS in forced Compose component layout; full production SearchRoute and native device walkthrough pending |
@@ -123,6 +124,16 @@ The exact instrumentation class list and run notes are in [VALIDATION.md](VALIDA
 
 - Layout coverage includes a shared detail-bar test at 320 dp, RTL and 2.0 font scale, plus long-scroll route tests. It is automated Compose geometry/semantics coverage, not manual device, keyboard or TalkBack acceptance.
 - NOT RUN: actual TalkBack speech/traversal, system locale switching, physical landscape/narrow layouts, keyboard interactions, manual inset inspection, Review source 51+ page union/equal-timestamp UI fixture, or the complete N18 route retry/loading/error matrix.
+
+## T19 accessibility and language update — 17 October 2026
+
+- PASS: primary-navigation Compose regression across English/French/Persian, 320/411 dp and font scales 1.0/1.3/2.0. It checks visible strings, full localized content descriptions, tab role, selected state, click action, text line count/width and containment inside each tab. Persian resources and RTL composition are included. Evidence: `/tmp/luma-t19-final-api36.log`.
+- PASS: `AppNavigationTest`, four tests covering all primary routes, Quick Capture reachability, selected-day preservation and route restoration. Evidence: `/tmp/luma-t19-final-api36.log`.
+- PASS: `PlatformLanguageTest` and `LanguageFlowTest`, five tests on API 36 covering app-language choices, Persian RTL, activity recreation, selected-day retention and an in-progress journal draft. Evidence: `/tmp/luma-t19-final-api36.log`. These exercise API 33+ LocaleManager behavior, not the legacy SharedPreferences branch.
+- PASS: focused JVM `AppLanguageTest` and `TranslationCatalogTest`; compact-label keys exist in English, French and Persian.
+- BLOCKED: API 28 and API 32 native language tests and force-stop relaunch. The local SDK has only `android-36.1/google_apis_playstore/x86_64` and the only AVD is `Medium_Phone_API_36.1`; inventory: `/tmp/luma-t19-device-inventory.log`. No legacy emulator was created and no existing AVD data was wiped.
+- NOT RUN: actual TalkBack speech/focus traversal, conventional keyboard walkthrough, physical 320 dp/normal-size layouts, landscape, insets, and the outstanding route-specific manual matrix. The API 36 emulator was headless, and Compose semantics/layout tests do not substitute for spoken-output or manual acceptance.
+- T19 remains pending for the manual acceptance, legacy API validation and separate Timeline/Search/Review performance targets. No dependency, permission, schema, network or product-scope change was made.
 
 ## Exit criteria
 

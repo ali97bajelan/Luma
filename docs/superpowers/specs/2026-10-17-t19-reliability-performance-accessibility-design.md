@@ -1,6 +1,8 @@
 # T19 — Reliability, Performance, Accessibility
 
-Status: proposed design. Implementation and acceptance have not started.
+Status: design approved. Accessibility/language implementation and API 36
+instrumentation began on 2026-10-17; legacy API 28/32 and manual acceptance remain
+open, as do the T19 performance targets.
 
 ## Intent and scope
 

@@ -1,6 +1,6 @@
 # Remaining work
 
-Status reconciled on 14 October 2026 from [`TASKS.md`](TASKS.md), the UX review,
+Status reconciled on 17 October 2026 from [`TASKS.md`](TASKS.md), the UX review,
 its acceptance checklist, validation notes, and the implementation plans under
 [`docs/superpowers/plans/`](docs/superpowers/plans/). “Open” means the source
 documents still record an acceptance result, performance target, or implementation
@@ -16,7 +16,7 @@ step as incomplete. Historical test results are not treated as new results.
 | T16 — Weekly Review | Implemented; validation pending | Optimize the 50,000-row/five-year repository case: p95 was 364 ms against the documented 300 ms target. Retest and record results. | [`TASKS.md`](TASKS.md), [`VALIDATION.md`](docs/VALIDATION.md) |
 | T17 — Backup, export, restore | Implemented; validation pending | Complete process-lifecycle, concurrent cleanup, and power-loss acceptance. Room round-trip/replacement/rollback cases and the native document-picker flow have passed on the isolated validation install. | [`TASKS.md`](TASKS.md), [`BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md) |
 | T18 — Privacy, permissions, settings | Implemented; validation pending | Verify Android app-data reset through termination and reopen, native provider permission/revocation flows, lifecycle behavior, and preservation of exported backup copies. The reset boundary is currently mocked; no real reset or provider grant was performed. | [`TASKS.md`](TASKS.md), [`PRIVACY.md`](docs/PRIVACY.md) |
-| T19 — Reliability, performance, accessibility | Pending | Close the Timeline, Search, and Review performance work above; complete broad TalkBack and screen-size checks; investigate the French navigation-label wrapping and record legacy API 28–32 language behavior. | [`TASKS.md`](TASKS.md), [`VALIDATION.md`](docs/VALIDATION.md) |
+| T19 — Reliability, performance, accessibility | Pending | Close Timeline/Search/Review performance work and broad manual TalkBack/screen-size acceptance; record API 28/32 language behavior (BLOCKED: only API 36.1 system image is installed). French navigation wrapping is implemented and automated layout/semantics coverage passes. | [`TASKS.md`](TASKS.md), [`VALIDATION.md`](docs/VALIDATION.md) |
 | T20 — MVP release readiness | Pending | Run and record the complete fresh-install journey. It depends on the Health Connect known-data check, backup and reset acceptance, outstanding performance work, and known Android/API limitations being documented. | [`TASKS.md`](TASKS.md), [`VALIDATION.md`](docs/VALIDATION.md) |
 
 ## UX review acceptance still open
@@ -46,6 +46,15 @@ switching, Persian RTL, 320 dp and normal widths, portrait/landscape, text scale
 1.0/1.3/2.0, light/dark where relevant, conventional keyboard operation,
 TalkBack speech, draft restoration, and injected failure/retry behavior. The
 checklist has the exact steps and evidence fields; record each result there.
+
+T19 accessibility/language update (17 October): compact French primary-tab labels
+now keep their full localized accessible names. The automated Compose matrix passes
+for English/French/Persian at 320 dp and 411 dp and font scales 1.0, 1.3 and 2.0.
+Native API 36 language flows also pass, including Persian RTL, selected-day
+restoration and journal-draft retention. API 28/32 native execution is BLOCKED
+because no corresponding system image or AVD is installed. Manual TalkBack speech,
+keyboard and route walkthroughs remain NOT RUN; T19 stays open for those checks and
+the performance targets.
 
 ## Additional plan acceptance
 
