@@ -4,6 +4,11 @@
     <string name="timeline">خط زمانی</string>
     <string name="review">مرور</string>
     <string name="settings">تنظیمات</string>
+    <string name="nav_today_compact">امروز</string>
+    <string name="nav_timeline_compact">خط زمانی</string>
+    <string name="nav_people_compact">افراد</string>
+    <string name="nav_review_compact">مرور</string>
+    <string name="nav_settings_compact">تنظیمات</string>
     <string name="today_heading">جایی برای زندگی شما</string>
     <string name="today_body">با فعال شدن امکان ثبت، رویدادهای زندگی روزانه‌تان اینجا نمایش داده می‌شوند.</string>
     <string name="timeline_heading">زندگی شما، روز به روز</string>

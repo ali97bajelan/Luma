@@ -4,6 +4,11 @@
     <string name="timeline">Chronologie</string>
     <string name="review">Bilan</string>
     <string name="settings">Paramètres</string>
+    <string name="nav_today_compact">Jour</string>
+    <string name="nav_timeline_compact">Par&#173;cours</string>
+    <string name="nav_people_compact">Con&#173;tacts</string>
+    <string name="nav_review_compact">Bilan</string>
+    <string name="nav_settings_compact">Op&#173;tions</string>
     <string name="today_heading">Un espace pour votre vie</string>
     <string name="today_body">Le récit de votre quotidien apparaîtra ici à mesure que la saisie sera disponible.</string>
     <string name="timeline_heading">Votre vie, jour après jour</string>

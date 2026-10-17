@@ -41,6 +41,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -81,15 +83,16 @@ import java.time.ZoneId
 private enum class Destination(
     val route: String,
     @param:StringRes val label: Int,
+    @param:StringRes val compactLabel: Int,
     @param:StringRes val heading: Int,
     @param:StringRes val body: Int,
     @param:DrawableRes val icon: Int,
 ) {
-    TODAY("today", R.string.today, R.string.today_heading, R.string.today_body, R.drawable.ic_nav_today),
-    TIMELINE("timeline", R.string.timeline, R.string.timeline_heading, R.string.timeline_body, R.drawable.ic_nav_timeline),
-    PEOPLE("people", R.string.people, R.string.people, R.string.people_intro, R.drawable.ic_nav_people),
-    REVIEW("review", R.string.review, R.string.review_heading, R.string.review_body, R.drawable.ic_nav_review),
-    SETTINGS("settings", R.string.settings, R.string.settings_heading, R.string.settings_body, R.drawable.ic_nav_settings),
+    TODAY("today", R.string.today, R.string.nav_today_compact, R.string.today_heading, R.string.today_body, R.drawable.ic_nav_today),
+    TIMELINE("timeline", R.string.timeline, R.string.nav_timeline_compact, R.string.timeline_heading, R.string.timeline_body, R.drawable.ic_nav_timeline),
+    PEOPLE("people", R.string.people, R.string.nav_people_compact, R.string.people, R.string.people_intro, R.drawable.ic_nav_people),
+    REVIEW("review", R.string.review, R.string.nav_review_compact, R.string.review_heading, R.string.review_body, R.drawable.ic_nav_review),
+    SETTINGS("settings", R.string.settings, R.string.nav_settings_compact, R.string.settings_heading, R.string.settings_body, R.drawable.ic_nav_settings),
 }
 
 @Composable
@@ -131,26 +134,16 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         Text(stringResource(R.string.quick_capture))
                     }
                 }
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ) {
-                    Destination.entries.forEach { destination ->
-                        NavigationBarItem(
-                            modifier = Modifier.testTag("nav_${destination.route}"),
-                            selected = backStackEntry?.destination?.route == destination.route,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(painterResource(destination.icon), contentDescription = null) },
-                            label = { Text(stringResource(destination.label)) },
-                        )
-                    }
-                }
+                PrimaryNavigationBar(
+                    selectedRoute = backStackEntry?.destination?.route,
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
             }
         },
     ) { padding ->
@@ -352,6 +345,38 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     }, onMemory = { date ->
         openCapture("memory", date)
     })
+}
+
+@Composable
+internal fun PrimaryNavigationBar(
+    selectedRoute: String?,
+    onNavigate: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    NavigationBar(
+        modifier = modifier.testTag("primary_navigation"),
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Destination.entries.forEach { destination ->
+            val fullLabel = stringResource(destination.label)
+            NavigationBarItem(
+                modifier = Modifier.testTag("nav_${destination.route}"),
+                selected = selectedRoute == destination.route,
+                onClick = { onNavigate(destination.route) },
+                icon = { Icon(painterResource(destination.icon), contentDescription = null) },
+                label = {
+                    Text(
+                        text = stringResource(destination.compactLabel),
+                        modifier = Modifier
+                            .testTag("nav_label_${destination.route}")
+                            .semantics { contentDescription = fullLabel },
+                        maxLines = 2,
+                    )
+                },
+            )
+        }
+    }
 }
 
 private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {
