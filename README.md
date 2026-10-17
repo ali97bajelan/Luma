@@ -73,7 +73,8 @@ data was reset or optional health access granted during validation.
 ## Project references
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): stack, module boundaries, relational schema, privacy, and phases.
-- [TASKS.md](TASKS.md): all 21 ordered tasks with acceptance criteria and status.
+- [TASKS.md](TASKS.md): original T01–T21 and approved extension T22–T29, with acceptance criteria and status.
+- [Habits handoff](docs/HABITS_TASKS.md): agreed counted habits, per-completion Timeline records, optional local reminders and revised navigation; spec, three plans and ordered tasks are prepared. Implementation has not started.
 - Original `.docx` files: product specification and implementation task source.
 - `docs/`: readable source extracts and validation evidence.
 
@@ -140,5 +141,5 @@ unavailable, including empty partial session history; explicit aggregate zero is
 retained. Reviews run offline with AI disabled. API 36 Room/UI checks pass, but a
 50,000-row repository run measured a 364 ms p95 against the 300 ms target, so T16
 remains open. Privacy Settings and confirmed local-data reset are implemented in
-T18; native reset and provider-permission acceptance remain pending. No future backlog features, network
+T18; native reset and provider-permission acceptance remain pending. No unimplemented extension or future backlog features, network
 permission, telemetry, or mandatory AI service are included.

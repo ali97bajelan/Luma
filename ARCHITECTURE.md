@@ -1,5 +1,13 @@
 # Luma architecture
 
+Planned extension (17 October 2026): the user-approved counted-habits,
+reminders and navigation handoff is in [docs/HABITS_TASKS.md](docs/HABITS_TASKS.md).
+Its [specification](docs/superpowers/specs/2026-10-17-habits-and-navigation-design.md)
+defines additive schema 3, standalone habit logs with optional occurrence time,
+a mixed Timeline read model, separate habit counts and app-local reminders.
+Current code remains schema 2 with the original navigation; the extension has
+not been implemented. The current architecture below describes implemented code.
+
 ## Product contract
 
 The project definition v0.1 and ordered task document supplied by the user define

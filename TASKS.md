@@ -1,7 +1,9 @@
 # Ordered implementation tasks
 
-Based on the supplied Word task document and product definition v0.1.
-Original source documents remain unchanged; readable extracts are in `docs/`.
+Based on the supplied Word task document and product definition v0.1, plus the
+user-approved counted-habits extension of 17 October 2026. Original Word documents
+remain unchanged; the readable product definition has a clearly marked section 14
+addendum. T01–T21 are the original baseline; T22–T29 are the approved extension.
 
 Status: pending, in progress, implemented (validation pending), or complete.
 A task is complete only after its acceptance criteria have been verified.
@@ -820,10 +822,131 @@ and evidence are in [VALIDATION.md](docs/VALIDATION.md).
 - Language changes preserve stored data, selected dates and in-progress capture drafts.
 - Unsupported device languages use English before the user makes an explicit choice.
 
-## Future backlog — do not implement during MVP
+## Approved extension — counted habits, reminders and navigation
+
+Approved 17 October 2026. Implementation has not started. Read
+[the specification](docs/superpowers/specs/2026-10-17-habits-and-navigation-design.md)
+and [task handoff](docs/HABITS_TASKS.md). Existing release validation remains open.
+Execute T22–T29 in order; task plans include exact files, interfaces, tests and checks.
+
+### T22 — Counted habit domain and historical date rules
+
+Status: pending
+
+Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T22.
+
+Scope: pure models/contracts, positive integer targets, one-log-per-action
+identity, schedule versions, daily states, saved zone and optional time precision.
+
+Acceptance: domain-only tests verify above-target states, valid action identities,
+partial skip, tomorrow-effective changes, pre-start edits, future/DST/date-only handling
+and preserved historical eligibility. No Android/Room dependency in core:domain.
+
+### T23 — Habit persistence, schema migration and portable backup
+
+Status: pending
+
+Depends on: T22. Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T23.
+
+Scope: seven additive schema-3 tables, indexed transactional repository, schema
+1/2/3 archive inventories, graph validation and separate habit/log preview counts.
+
+Acceptance: retries/concurrent counts and per-log deletion are correct after
+reopening; 1→3/2→3 preserve existing records; schema-1/2/3 replacement and rollback
+pass. Unknown/corrupt archives do not replace data. Restored reminders are off
+with fresh revisions/runtime cleared. Generated schemas are retained; no data loss.
+
+### T24 — Habit capture, daily progress and editable history
+
+Status: pending
+
+Depends on: T23. Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T24.
+
+Scope: functional list/create/detail/history, per-log +1/edit/delete/Undo, daily
+states and compact Today access, with durable drafts and queued action identities.
+
+Acceptance: repeated intentional logs persist individually; retry/recreation does
+not duplicate; count may exceed target; partial skip preserves logs; future-date
+guards and true time precision work. Navigation/language changes retain date and
+drafts. Errors keep prior data usable; all three languages and accessible actions.
+
+### T25 — Habit completions in Timeline and weekly Review
+
+Status: pending
+
+Depends on: T24. Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T25.
+
+Scope: mixed Timeline feed with one item per completion, separate unknown-time
+group, bounded SQL paging and separate historical per-habit Review projections.
+
+Acceptance: every completion appears once and opens its source; edits/Undo update
+the same item; no fabricated occurrence time. Mixed 500-row paging preserves
+50/150/300 windows, filter-aware fallback and stable source keys. Review preserves
+historical targets/partial states; old entry/journal/memory/usage metrics do not change.
+
+### T26 — Habits primary destination and More navigation hub
+
+Status: pending
+
+Depends on: T25. Plan: [navigation](docs/superpowers/plans/2026-10-17-habits-navigation.md).
+
+Scope: Today, Timeline, Habits, Review, More; reuse People & Places and Settings
+as secondary routes; preserve existing source links and Quick Capture.
+
+Acceptance: exactly five usable destinations, correct origin-aware Back,
+legacy-route recreation, selected-day/scroll/draft preservation, direct catalog
+links and English/French/Persian large-text/RTL/accessibility checks. No placeholder tab.
+
+### T27 — Reminder planning and durable configuration
+
+Status: pending
+
+Depends on: T26 in execution order (T22/T23 technically).
+Plan: [reminders](docs/superpowers/plans/2026-10-17-habit-reminders.md), T27.
+
+Scope: pure selected-time/interval grids, saved fixed-zone configuration, slot
+expiry, snooze and transactional eligibility/revision/action-token handling.
+
+Acceptance: reminder times remain independent of targets; DST/future starts,
+skip/target suppression, no catch-up and ten-minute snooze boundaries are correct.
+Stale/replayed actions, including replay after Undo, never duplicate a log. Off/edit
+rotates revisions and preserves history; malformed configurations fail validation.
+
+### T28 — Android reminders, notifications and controls
+
+Status: pending
+
+Depends on: T27. Plan: [reminders](docs/superpowers/plans/2026-10-17-habit-reminders.md), T28.
+
+Scope: normal inexact local notifications, optional permission flow, readable
+configuration/status, Log one/Snooze/Open actions and lifecycle reconciliation.
+
+Acceptance: off by default; denial/channel blocks keep habits usable. Off/edit
+cancels obsolete alarms/notifications immediately; reboot/clock/restore/delete
+reconciliation rejects stale callbacks and avoids bursts. Only explicit Log one
+records one real-time completion. No network, exact/full-screen/foreground permission.
+Actual OS permission/background behavior has device evidence or remains open.
+
+### T29 — Habit feature integration and release acceptance
+
+Status: pending
+
+Depends on: T22–T28.
+Plan: [reminders](docs/superpowers/plans/2026-10-17-habit-reminders.md), T29.
+
+Scope: full automated/native regression, migration/archive fixtures, feature
+journey, real notification lifecycle, accessibility/localization and measured history.
+
+Acceptance: required checks pass with dated device/API/package evidence; unavailable
+checks remain BLOCKED/NOT RUN. Full offline journey retains old records/counts,
+supports per-log history and disabled-reminder restore, and works in all supported
+languages/layouts/TalkBack. Current docs describe actual implementation. Older
+T11/T13/T15–T20 release gaps stay separately tracked until independently verified.
+
+## Future backlog — outside the original MVP and approved habit extension
 
 - Voice notes and transcription
-- Goals and habit tracking
+- Goal management and habit capabilities beyond the approved counted-habit slice
 - Ask My Life conversational retrieval
 - Semantic/vector search
 - Monthly/yearly AI narratives

@@ -19,6 +19,20 @@ step as incomplete. Historical test results are not treated as new results.
 | T19 — Reliability, performance, accessibility | Pending | Close Timeline/Search/Review performance work and broad manual TalkBack/screen-size acceptance; record API 28/32 language behavior (BLOCKED: only API 36.1 system image is installed). French navigation wrapping is implemented and automated layout/semantics coverage passes. | [`TASKS.md`](TASKS.md), [`VALIDATION.md`](docs/VALIDATION.md) |
 | T20 — MVP release readiness | Pending | Run and record the complete fresh-install journey. It depends on the Health Connect known-data check, backup and reset acceptance, outstanding performance work, and known Android/API limitations being documented. | [`TASKS.md`](TASKS.md), [`VALIDATION.md`](docs/VALIDATION.md) |
 
+## Approved habit extension — ready for implementation
+
+On 17 October 2026 the user approved counted habits, individual Timeline logs,
+optional repeating normal notifications and Today/Timeline/Habits/Review/More
+navigation, then requested the spec, plans and tasks. Documentation is prepared;
+implementation has not started. This is additional authorized work, not evidence
+that the original release checks above are complete.
+
+See [HABITS_TASKS.md](docs/HABITS_TASKS.md) for the full ordered handoff.
+T22 domain is the first implementation slice, followed by T23 persistence/backup,
+T24 capture/history, T25 Timeline/Review, T26 navigation, T27 reminder rules,
+T28 Android reminder delivery/controls and T29 integration/device acceptance.
+All eight tasks are pending in [TASKS.md](TASKS.md).
+
 ## UX review acceptance still open
 
 All 18 findings in [`UX_REVIEW_2026-10-13.md`](docs/UX_REVIEW_2026-10-13.md)
@@ -94,6 +108,7 @@ with assumptions.
 The task tracker marks T01–T10, T12, T14, and T21 complete. The original
 [`audit.md`](audit.md) findings are historical; the later UX review and handoff
 record their implementation follow-ups and current acceptance gaps. The future
-backlog in `TASKS.md`—voice notes, habits, conversational retrieval, semantic
-search, AI narratives, and encrypted cloud sync—is explicitly outside the MVP and
-is not counted as remaining release work here.
+backlog in `TASKS.md`—voice notes, goal management beyond the approved habit slice,
+conversational retrieval, semantic search, AI narratives, and encrypted cloud
+sync—remains outside the original MVP. The newly authorized counted-habit slice
+is tracked separately above rather than being left in the unapproved backlog.
