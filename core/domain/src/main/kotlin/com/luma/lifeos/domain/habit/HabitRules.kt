@@ -70,7 +70,12 @@ fun replaceScheduleAtEffectiveDate(
         }
         require(validEffectiveDate) { "A schedule version cannot rewrite a past or current date" }
         val replaced = versions.singleOrNull { it.effectiveFrom == replacement.effectiveFrom }
-        require(replaced?.lifecycle != HabitLifecycle.ARCHIVED || replacement.lifecycle == HabitLifecycle.ARCHIVED) {
+        val replacingFutureStartInitialVersion = today.isBefore(start) && replacement.effectiveFrom == start
+        require(
+            !replacingFutureStartInitialVersion ||
+                replaced?.lifecycle != HabitLifecycle.ARCHIVED ||
+                replacement.lifecycle == HabitLifecycle.ARCHIVED,
+        ) {
             "An archived habit schedule cannot be reactivated"
         }
     }

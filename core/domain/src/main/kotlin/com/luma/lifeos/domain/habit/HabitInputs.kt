@@ -53,13 +53,14 @@ data class HabitSaveInput private constructor(
             unitLabel = unitLabel?.trim()?.takeUnless(String::isEmpty),
             start = start,
             target = target,
-            weekdays = weekdays.toSet(),
+            weekdays = immutableHabitWeekdays(weekdays),
             zone = zone,
         )
     }
 }
 
-data class HabitScheduleInput(
+@ConsistentCopyVisibility
+data class HabitScheduleInput private constructor(
     val target: Int,
     val weekdays: Set<DayOfWeek>,
     val lifecycle: HabitLifecycle,
@@ -69,6 +70,18 @@ data class HabitScheduleInput(
             "Habit target must be between ${HabitTextLimits.MIN_TARGET} and ${HabitTextLimits.MAX_TARGET}"
         }
         require(weekdays.isNotEmpty()) { "At least one habit weekday is required" }
+    }
+
+    companion object {
+        operator fun invoke(
+            target: Int,
+            weekdays: Set<DayOfWeek>,
+            lifecycle: HabitLifecycle,
+        ): HabitScheduleInput = HabitScheduleInput(
+            target = target,
+            weekdays = immutableHabitWeekdays(weekdays),
+            lifecycle = lifecycle,
+        )
     }
 }
 

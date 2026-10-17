@@ -4,7 +4,13 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Collections
+import java.util.LinkedHashSet
 import java.util.UUID
+import kotlin.ConsistentCopyVisibility
+
+internal fun immutableHabitWeekdays(weekdays: Set<DayOfWeek>): Set<DayOfWeek> =
+    Collections.unmodifiableSet(LinkedHashSet(weekdays))
 
 enum class HabitLifecycle { ACTIVE, PAUSED, ARCHIVED }
 
@@ -38,7 +44,8 @@ data class HabitDefinition(
     }
 }
 
-data class HabitSchedule(
+@ConsistentCopyVisibility
+data class HabitSchedule private constructor(
     val id: UUID,
     val habitId: UUID,
     val effectiveFrom: LocalDate,
@@ -51,6 +58,24 @@ data class HabitSchedule(
             "Habit target must be between ${HabitTextLimits.MIN_TARGET} and ${HabitTextLimits.MAX_TARGET}"
         }
         require(weekdays.isNotEmpty()) { "At least one habit weekday is required" }
+    }
+
+    companion object {
+        operator fun invoke(
+            id: UUID,
+            habitId: UUID,
+            effectiveFrom: LocalDate,
+            target: Int,
+            weekdays: Set<DayOfWeek>,
+            lifecycle: HabitLifecycle,
+        ): HabitSchedule = HabitSchedule(
+            id = id,
+            habitId = habitId,
+            effectiveFrom = effectiveFrom,
+            target = target,
+            weekdays = immutableHabitWeekdays(weekdays),
+            lifecycle = lifecycle,
+        )
     }
 }
 

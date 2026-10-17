@@ -7,9 +7,10 @@ approved habits plan. Device and UI checks remain assigned to later tasks.
 
 | Case | Result | Environment and evidence |
 | --- | --- | --- |
-| Counted progress, skip independence, schedule versions, effective dates, input limits and weekday masks | PASS | 11 tests in `HabitRulesTest`; JDK 17, Gradle 9.1.0, JVM-only domain module. Device/API/package/locale/width/font scale: N/A. |
+| Counted progress, skip independence, schedule versions, effective dates, input limits and weekday masks | PASS | 13 tests in `HabitRulesTest`; JDK 17, Gradle 9.1.0, JVM-only domain module. Device/API/package/locale/width/font scale: N/A. |
 | Date-only occurrence, future-date/instant rejection, DST gap and overlap offsets | PASS | 5 tests in `HabitTimeTest`; JDK 17, Gradle 9.1.0, JVM-only domain module. Device/API/package/locale/width/font scale: N/A. |
-| Existing domain regressions | PASS | `:core:domain:test` completed successfully with `-PdomainOnly=true`. Device/API/package/locale/width/font scale: N/A. |
+| Pending archive replacement and caller-owned weekday mutation | PASS | Regression tests prove a pending archive can be replaced for a started habit, while defensive immutable snapshots preserve schedule inputs and historical day state. Included in `HabitRulesTest`. |
+| Existing domain regressions | PASS | `:core:domain:test` completed successfully with `-PdomainOnly=true`: 113 tests, 0 failures, 0 errors, 0 skipped. Device/API/package/locale/width/font scale: N/A. |
 
 Commands used:
 

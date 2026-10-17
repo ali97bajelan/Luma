@@ -12,11 +12,14 @@ interface HabitRepository {
     suspend fun get(id: UUID): HabitDefinition?
     suspend fun schedules(id: UUID): List<HabitSchedule>
     suspend fun getLog(id: UUID): HabitLog?
+    /** Reusing [id] with the same input returns the existing habit; a changed payload conflicts. */
     suspend fun create(id: UUID, input: HabitSaveInput): HabitDefinition
     suspend fun rename(id: UUID, name: String, unitLabel: String?)
     suspend fun schedule(id: UUID, input: HabitScheduleInput): HabitSchedule
     suspend fun cancelPendingSchedule(id: UUID)
+    /** Reusing [id] with the same input returns the existing log; a changed payload conflicts. */
     suspend fun log(id: UUID, input: HabitLogInput): HabitLog
+    /** Corrects an existing log while preserving its ID, habit ID and recorded-at audit time. */
     suspend fun updateLog(id: UUID, input: HabitLogInput): HabitLog
     suspend fun deleteLog(id: UUID)
     suspend fun setSkipRemaining(id: UUID, date: LocalDate, skip: Boolean)

@@ -4,6 +4,7 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.EnumSet
 import java.util.UUID
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,9 +59,9 @@ class HabitRulesTest {
     @Test fun dayStateSeparatesNoRecordsFromNotScheduledPausedAndArchived() {
         val habit = habit(id(1))
         val active = schedule(habit.id, today, target = 2)
-        val paused = active.copy(lifecycle = HabitLifecycle.PAUSED)
-        val archived = active.copy(lifecycle = HabitLifecycle.ARCHIVED)
-        val wrongWeekday = active.copy(weekdays = setOf(today.plusDays(1).dayOfWeek))
+        val paused = schedule(habit.id, today, target = 2, lifecycle = HabitLifecycle.PAUSED)
+        val archived = schedule(habit.id, today, target = 2, lifecycle = HabitLifecycle.ARCHIVED)
+        val wrongWeekday = schedule(habit.id, today, target = 2, weekdays = setOf(today.plusDays(1).dayOfWeek))
 
         assertEquals(HabitDayState.NO_RECORDS, HabitDay(habit, today, zone, active, 0, false).state)
         assertEquals(HabitDayState.PAUSED, HabitDay(habit, today, zone, paused, 3, false).state)
@@ -119,6 +120,29 @@ class HabitRulesTest {
         }
     }
 
+    @Test fun weekdayInputsAndSchedulesSnapshotCallerOwnedSets() {
+        val callerWeekdays = EnumSet.of(today.dayOfWeek, DayOfWeek.MONDAY)
+        val expectedWeekdays = callerWeekdays.toSet()
+        val saveInput = HabitSaveInput("Reading", null, today, 1, callerWeekdays, zone)
+        val scheduleInput = HabitScheduleInput(1, callerWeekdays, HabitLifecycle.ACTIVE)
+        val habit = habit(id(1))
+        val schedule = schedule(habit.id, today, weekdays = callerWeekdays)
+        val day = HabitDay(habit, today, zone, schedule, count = 0, skipRemaining = false)
+
+        callerWeekdays.clear()
+
+        assertEquals(expectedWeekdays, saveInput.weekdays)
+        assertEquals(expectedWeekdays, scheduleInput.weekdays)
+        assertEquals(expectedWeekdays, schedule.weekdays)
+        assertEquals(HabitDayState.NO_RECORDS, day.state)
+        assertThrows(UnsupportedOperationException::class.java) {
+            (scheduleInput.weekdays as MutableSet).clear()
+        }
+        assertThrows(UnsupportedOperationException::class.java) {
+            (schedule.weekdays as MutableSet).clear()
+        }
+    }
+
     @Test fun dayAndWeekRejectMismatchedHabitIds() {
         val habit = habit(id(1))
         val otherHabitSchedule = schedule(id(2), today)
@@ -170,6 +194,26 @@ class HabitRulesTest {
         assertThrows(IllegalArgumentException::class.java) {
             replaceScheduleAtEffectiveDate(versions, active, today)
         }
+    }
+
+    @Test fun startedHabitCanReplacePendingArchiveWithAnotherLifecycleChange() {
+        val habitId = id(1)
+        val active = schedule(habitId, today, target = 8)
+        val pendingArchive = scheduleVersion(
+            id = id(2), habitId = habitId, start = today, now = now, zone = zone,
+            versions = listOf(active), input = HabitScheduleInput(8, weekdays, HabitLifecycle.ARCHIVED),
+        )
+        val archivedVersions = replaceScheduleAtEffectiveDate(listOf(active), pendingArchive, today)
+        val pendingPause = scheduleVersion(
+            id = id(3), habitId = habitId, start = today, now = now, zone = zone,
+            versions = archivedVersions, input = HabitScheduleInput(8, weekdays, HabitLifecycle.PAUSED),
+        )
+
+        val replaced = replaceScheduleAtEffectiveDate(archivedVersions, pendingPause, today)
+
+        assertEquals(2, replaced.size)
+        assertEquals(HabitLifecycle.ACTIVE, scheduleFor(today, replaced)!!.lifecycle)
+        assertEquals(HabitLifecycle.PAUSED, scheduleFor(today.plusDays(1), replaced)!!.lifecycle)
     }
 
     @Test fun futureStartEditsKeepInitialDateRejectPauseAndCannotUndoArchive() {

@@ -840,7 +840,7 @@ resolution and mutation rules, weekday masks, derived daily states, Unicode-awar
 input validation and optional occurrence-time handling. No Android or Room types
 were added to `core:domain`.
 
-Validation (2026-10-17): all 16 focused habit-domain tests and the full
+Validation (2026-10-17): all 18 focused habit-domain tests and the full
 domain-only JVM suite pass. See [the habits acceptance log](docs/HABITS_ACCEPTANCE_2026-10-17.md).
 
 Scope: pure models/contracts, positive integer targets, one-log-per-action
