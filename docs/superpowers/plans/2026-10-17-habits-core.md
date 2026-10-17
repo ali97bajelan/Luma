@@ -112,7 +112,7 @@ Observe methods emit committed snapshots; clear cancelled coroutines normally.
 - Consumes: `Clock`, `Instant`, `LocalDate`, `ZoneId`, `DayOfWeek`, UUID.
 - Produces: shared types/contract above; `scheduleFor(date: LocalDate, versions: List<HabitSchedule>): HabitSchedule?`, `habitLogTime(date: LocalDate, time: LocalTime?, zone: ZoneId, now: Instant, preferredOffset: ZoneOffset? = null): Instant?`, and `nextHabitEffectiveDate(now: Instant, zone: ZoneId): LocalDate`.
 
-- [ ] **Step 1: Write failing domain tests.** Pin these assertions:
+- [x] **Step 1: Write failing domain tests.** Pin these assertions:
 
 ```kotlin
 assertEquals(8, scheduleFor(today, versionsWithTomorrowTarget10)!!.target)
@@ -133,10 +133,13 @@ with earlier +02:00/later +01:00 offsets and a clock after each tested date.
 For future-start habits, edits preserve the start/initial effective date,
 Pause/Resume rejects, and pre-start Archive cannot be reversed by an old ACTIVE
 version. Blank unit normalizes to null; a supplied label remains user text.
-- [ ] **Step 2: Run red.** `./gradlew -PdomainOnly=true :core:domain:test --tests 'com.luma.lifeos.domain.habit.*'`; expect missing new types/rules, not an unrelated toolchain failure.
-- [ ] **Step 3: Implement values/rules and repository contracts.** Resolve the latest effective schedule even when inactive, then separately derive eligibility/state by weekday/lifecycle; Monday is weekday-mask bit 0 in persistence. Blank unit becomes null, explicit unit length uses Unicode code points. A scheduled date with no logs has count zero and missing evidence, not inferred failure. `habitLogTime` returns null only for unknown time; invalid time raises validation failure. A skip flag never overwrites count/target or derived progress state.
-- [ ] **Step 4: Run green.** Repeat the focused command and full `./gradlew -PdomainOnly=true :core:domain:test`; both exit 0.
-- [ ] **Step 5: Commit only domain implementation/tests and update T22 evidence.** Suggested message: `feat(habits): define counted logs and historical schedules`.
+- [x] **Step 2: Run red.** `./gradlew -PdomainOnly=true :core:domain:test --tests 'com.luma.lifeos.domain.habit.*'`; expect missing new types/rules, not an unrelated toolchain failure.
+- [x] **Step 3: Implement values/rules and repository contracts.** Resolve the latest effective schedule even when inactive, then separately derive eligibility/state by weekday/lifecycle; Monday is weekday-mask bit 0 in persistence. Blank unit becomes null, explicit unit length uses Unicode code points. A scheduled date with no logs has count zero and missing evidence, not inferred failure. `habitLogTime` returns null only for unknown time; invalid time raises validation failure. A skip flag never overwrites count/target or derived progress state.
+- [x] **Step 4: Run green.** Repeat the focused command and full `./gradlew -PdomainOnly=true :core:domain:test`; both exit 0.
+- [x] **Step 5: Commit only domain implementation/tests and update T22 evidence.** Suggested message: `feat(habits): define counted logs and historical schedules`.
+
+T22 evidence (2026-10-17): focused `HabitRulesTest`/`HabitTimeTest` and the full
+domain-only JVM suite pass. See [the acceptance log](../../HABITS_ACCEPTANCE_2026-10-17.md).
 
 ### T23: Room schema 3, repository and complete backup
 

@@ -824,16 +824,24 @@ and evidence are in [VALIDATION.md](docs/VALIDATION.md).
 
 ## Approved extension — counted habits, reminders and navigation
 
-Approved 17 October 2026. Implementation has not started. Read
+Approved 17 October 2026. T22 is complete; T23–T29 remain pending. Read
 [the specification](docs/superpowers/specs/2026-10-17-habits-and-navigation-design.md)
 and [task handoff](docs/HABITS_TASKS.md). Existing release validation remains open.
 Execute T22–T29 in order; task plans include exact files, interfaces, tests and checks.
 
 ### T22 — Counted habit domain and historical date rules
 
-Status: pending
+Status: complete
 
 Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T22.
+
+Implementation: pure habit values and repository contracts, historical schedule
+resolution and mutation rules, weekday masks, derived daily states, Unicode-aware
+input validation and optional occurrence-time handling. No Android or Room types
+were added to `core:domain`.
+
+Validation (2026-10-17): all 16 focused habit-domain tests and the full
+domain-only JVM suite pass. See [the habits acceptance log](docs/HABITS_ACCEPTANCE_2026-10-17.md).
 
 Scope: pure models/contracts, positive integer targets, one-log-per-action
 identity, schedule versions, daily states, saved zone and optional time precision.

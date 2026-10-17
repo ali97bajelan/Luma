@@ -1,9 +1,9 @@
 # Habits implementation handoff
 
-Prepared: 17 October 2026. Status: documentation prepared; all implementation
-tasks pending. The user approved the richer counted-habits/navigation proposal
-and requested the specification, plans and tasks. This handoff records that scope;
-it does not claim any new screen, schema, reminder or validation is implemented.
+Prepared: 17 October 2026. Status: T22 complete; T23–T29 pending. The user
+approved the richer counted-habits/navigation proposal and requested the
+specification, plans and tasks. This handoff records the approved scope and the
+current implementation evidence.
 
 ## Read first
 
@@ -21,7 +21,7 @@ the master tracker together using actual execution evidence.
 
 | ID | Deliverable | Dependencies | Status | Start condition |
 | --- | --- | --- | --- | --- |
-| T22 | Pure counted-habit/domain and historical date rules | Existing baseline | Pending | Ready for implementation |
+| T22 | Pure counted-habit/domain and historical date rules | Existing baseline | Complete | Focused and full domain-only checks pass |
 | T23 | Room schema 3, transactional repository, backup compatibility | T22 | Pending | T22 checks pass; review existing schema exports |
 | T24 | Habit creation/logging/history, Today access | T23 | Pending | Persistence/backup contracts available |
 | T25 | Each completion in mixed Timeline and weekly Review | T24 | Pending | Counted logs and source detail usable |
@@ -68,8 +68,9 @@ stays open independently of this extension.
 
 ## First execution slice
 
-Start at **T22** in the core plan. Implement only the pure models/contracts and
-count/date/history rules, then run the domain-only suite. T23 is the first schema
+**T22 is complete.** It adds only pure models/contracts and deterministic
+count/date/history rules; the focused habit cases and full domain-only suite pass.
+See [the acceptance log](HABITS_ACCEPTANCE_2026-10-17.md). T23 is the first schema
 change and must retain reviewed generated schema 1/2 files before version 3.
 Recommended execution is native task-by-task with a final independent review;
 the two existing senior roles remain available for focused product/UX review.
