@@ -482,7 +482,7 @@
     <string name="more_people_places">Personnes et lieux</string>
     <string name="more_people_places_description">Parcourez les personnes et les lieux associés à votre vie.</string>
     <string name="more_settings">Paramètres</string>
-    <string name="more_settings_description">Langue, sauvegarde, confidentialité et intégrations.</string>
+    <string name="more_settings_description">Langue, thème, sauvegarde, confidentialité et intégrations.</string>
     <string name="settings_language_title">Langue</string>
     <string name="settings_language_description">Choisissez la langue utilisée par Luma.</string>
     <string name="settings_backup_title">Sauvegarde</string>
@@ -588,4 +588,9 @@
     <string name="habit_discard_title">Abandonner les modifications ?</string>
     <string name="habit_discard_body">Les changements non enregistrés de l’habitude seront perdus.</string>
     <string name="habit_accessibility_target">Objectif</string>
+    <string name="theme_title">Thème</string>
+    <string name="theme_description">Choisissez l’apparence de Luma.</string>
+    <string name="theme_system">Paramètres du système</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
 </resources>

@@ -1,11 +1,18 @@
 package com.luma.lifeos.ui.theme
 
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 
 private val LightColors = lightColorScheme(
     primary = Color(0xFF245E51),
@@ -86,8 +93,30 @@ private val DarkColors = darkColorScheme(
 
 @Composable
 fun LifeOsTheme(content: @Composable () -> Unit) {
+    val darkTheme = when (rememberAppTheme()) {
+        AppTheme.SYSTEM -> isSystemInDarkTheme()
+        AppTheme.LIGHT -> false
+        AppTheme.DARK -> true
+    }
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            view.context.activity()?.enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT) { darkTheme },
+                // Match Activity's default scrims, resolving their contrast from the app choice.
+                navigationBarStyle = SystemBarStyle.auto(0xE6FFFFFF.toInt(), 0x801B1B1B.toInt()) { darkTheme },
+            )
+        }
+    }
     MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
         content = content,
     )
+}
+
+private tailrec fun Context.activity(): ComponentActivity? = when (this) {
+    is ComponentActivity -> this
+    is ContextWrapper -> baseContext.activity()
+    else -> null
 }

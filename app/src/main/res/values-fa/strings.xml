@@ -476,7 +476,7 @@
     <string name="more_people_places">افراد و مکان‌ها</string>
     <string name="more_people_places_description">افراد و مکان‌های پیوندخورده با زندگی‌تان را ببینید.</string>
     <string name="more_settings">تنظیمات</string>
-    <string name="more_settings_description">زبان، پشتیبان‌گیری، حریم خصوصی و اتصال‌ها.</string>
+    <string name="more_settings_description">زبان، پوسته، پشتیبان‌گیری، حریم خصوصی و یکپارچه‌سازی‌ها.</string>
     <string name="settings_language_title">زبان</string>
     <string name="settings_language_description">زبان نمایش لوما را انتخاب کنید.</string>
     <string name="settings_backup_title">پشتیبان‌گیری</string>
@@ -581,4 +581,9 @@
     <string name="habit_discard_title">تغییرات عادت دور انداخته شود؟</string>
     <string name="habit_discard_body">تغییرات ذخیره‌نشده عادت از دست می‌روند.</string>
     <string name="habit_accessibility_target">هدف</string>
+    <string name="theme_title">پوسته</string>
+    <string name="theme_description">ظاهر لوما را انتخاب کنید.</string>
+    <string name="theme_system">پیش‌فرض سیستم</string>
+    <string name="theme_light">روشن</string>
+    <string name="theme_dark">تیره</string>
 </resources>
