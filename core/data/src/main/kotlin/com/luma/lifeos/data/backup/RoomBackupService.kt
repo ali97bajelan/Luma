@@ -89,9 +89,10 @@ class RoomBackupService(private val context: Context, private val database: Luma
             val count = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM life_event").use { it.moveToFirst(); it.getLong(0) }
             val habitCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM habit").use { it.moveToFirst(); it.getLong(0) }
             val habitLogCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM habit_log").use { it.moveToFirst(); it.getLong(0) }
+            val todoCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM todo_task").use { it.moveToFirst(); it.getLong(0) }
             val paths = referencedPhotos(stage.openHelper.readableDatabase)
             // Validate timestamp before handing ownership to the retained preview.
-            val preview = BackupPreview(count, paths.size, Instant.ofEpochMilli(manifest.createdAt), habitCount, habitLogCount)
+            val preview = BackupPreview(count, paths.size, Instant.ofEpochMilli(manifest.createdAt), habitCount, habitLogCount, todoCount)
             StagedBackup(stage, work, paths, manifest.schemaVersion, preview)
         } catch (failure: Throwable) {
             staged?.close(); work.deleteRecursively(); throw failure
@@ -138,6 +139,9 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                                 }
                                                 if (table == "habit_reminder") {
                                                     row[names.indexOf("enabled")] = 0L
+                                                    row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
+                                                }
+                                                if (table == "todo_task") {
                                                     row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
                                                 }
                                                 bind(statement, row); statement.executeInsert()

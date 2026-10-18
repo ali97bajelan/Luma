@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.backup
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.backup.*
@@ -55,13 +56,20 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
             mutable.value = BackupUiState()
         }
     }
-    fun confirmRestore() {
+    fun confirmRestore(onRestored: () -> Unit = {}) {
         if (state.value.busy) return
         val candidate = prepared ?: return
         prepared = null; mutable.value = BackupUiState(busy = true)
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                withContext(io + NonCancellable) { candidate.use { it.restore() } }
+                withContext(io + NonCancellable) {
+                    candidate.use { it.restore() }
+                    try {
+                        withContext(Dispatchers.Main.immediate) { onRestored() }
+                    } catch (failure: Exception) {
+                        Log.e("BackupViewModel", "Restore committed, but its success callback failed", failure)
+                    }
+                }
                 mutable.value = BackupUiState(message = BackupMessage.RESTORED)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure

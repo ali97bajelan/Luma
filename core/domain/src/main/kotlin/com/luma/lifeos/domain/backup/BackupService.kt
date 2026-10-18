@@ -11,6 +11,7 @@ data class BackupPreview(
     val createdAt: Instant,
     val habitCount: Long = 0,
     val habitLogCount: Long = 0,
+    val todoCount: Long = 0,
 )
 interface BackupService {
     /** Caller owns document streams. Export completes only when every referenced photo exists. */

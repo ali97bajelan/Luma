@@ -15,13 +15,16 @@ internal val BACKUP_TABLES_V1 = listOf("life_event", "emotion", "person", "place
 internal val BACKUP_TABLES_V2 = BACKUP_TABLES_V1 + listOf("usage_session", "usage_session_window")
 internal val HABIT_BACKUP_TABLES = listOf("habit_settings", "habit", "habit_schedule", "habit_log",
     "habit_day_choice", "habit_reminder", "habit_reminder_runtime")
-internal val BACKUP_TABLES = BACKUP_TABLES_V2 + HABIT_BACKUP_TABLES
+internal val BACKUP_TABLES_V3 = BACKUP_TABLES_V2 + HABIT_BACKUP_TABLES
+internal val BACKUP_TABLES_V4 = BACKUP_TABLES_V3 + listOf("todo_task")
+internal val BACKUP_TABLES = BACKUP_TABLES_V4
 /** Keep archive versioning tied to its table inventory and restore behavior, not Room. */
-internal const val CURRENT_BACKUP_SCHEMA_VERSION = 3
+internal const val CURRENT_BACKUP_SCHEMA_VERSION = 4
 internal fun backupTables(version: Int): List<String> = when (version) {
     1 -> BACKUP_TABLES_V1
     2 -> BACKUP_TABLES_V2
-    3 -> BACKUP_TABLES
+    3 -> BACKUP_TABLES_V3
+    4 -> BACKUP_TABLES_V4
     else -> error("Unsupported database schema version")
 }
 data class ArchiveManifest(val formatVersion: Int, val schemaVersion: Int, val createdAt: Long, val names: Set<String>)

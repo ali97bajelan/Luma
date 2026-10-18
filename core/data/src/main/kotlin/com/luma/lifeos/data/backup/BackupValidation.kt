@@ -9,6 +9,8 @@ import java.time.Instant
 import com.luma.lifeos.domain.usage.UsageBucket
 import com.luma.lifeos.domain.usage.UsageSession
 import com.luma.lifeos.data.habit.*
+import com.luma.lifeos.data.todo.TodoEntity
+import com.luma.lifeos.data.todo.toDomain
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitLog
 import com.luma.lifeos.domain.habit.weekdaysFromMask
@@ -88,6 +90,16 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
             HabitReminderRuntimeEntity(s("habit_id"), s("revision_token"), text("last_delivered_slot"),
                 text("consumed_action_token"), text("snooze_slot"), long("snooze_until"), l("needs_reconcile") == 1L)
         }
+        "todo_task" -> TodoEntity(
+            id = s("id"),
+            title = s("title"),
+            note = text("note"),
+            dueDate = text("due_date"),
+            completedAt = long("completed_at"),
+            createdAt = l("created_at"),
+            updatedAt = l("updated_at"),
+            revisionToken = s("revision_token"),
+        ).toDomain()
     }
 }
 

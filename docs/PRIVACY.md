@@ -4,9 +4,9 @@ Settings → Privacy and local data explains Luma's storage, optional permission
 backup copies and full reset. The same read-only policy appears in the native
 Health Connect rationale activity.
 
-Life records, names, imported observations and private photo copies are stored on
-this device. The app has no account, advertising or telemetry SDK and makes no
-network requests. The built debug manifest does not request Internet access.
+Life records, task titles and notes, names, imported observations and private photo
+copies are stored on this device. The app has no account, advertising or telemetry
+SDK and makes no network requests. The built debug manifest does not request Internet access.
 Automatic cloud backup and device-transfer extraction are disabled; manual backup
 is explicit and unencrypted. A chosen document provider controls its destination.
 This describes Luma's own behavior, not other apps or device services.
@@ -54,8 +54,8 @@ Luma uses Android's
 [clearApplicationUserData API](https://developer.android.com/reference/android/app/ActivityManager#clearApplicationUserData()).
 Android resets the calling app's private storage and app-owned external storage,
 without uninstalling it. It also revokes runtime permissions, clears notifications
-and removes URI grants. This covers the database, imported copies/catalogs,
-private photos and protected drafts, caches, backup staging, preferences and
+and removes URI grants. This covers the database, saved tasks and their protected drafts, imported
+copies/catalogs, private photos, caches, backup staging, preferences and
 WorkManager storage together. The system stops the app so an open store or pending
 writer cannot recreate only part of its data in the same running process.
 
@@ -65,8 +65,10 @@ Android to close Luma. False results or exceptions display generic retry guidanc
 and a link to Luma's Android app settings, without logging content or exceptions.
 Reopen Luma after it closes; imports start with their default off state.
 
-Original provider records, original picked photos and backups exported to shared
-or other-provider storage are outside Luma's reset. Manage those copies separately.
+The existing full app-data reset also clears the task table and its private drafts;
+no separate task reset is needed. Original provider records, original picked photos
+and backups exported to shared or other-provider storage are outside Luma's reset.
+Manage those copies separately.
 The app does not promise forensic erasure or reset every provider's special-access
 state; native controls remain available to review access after a reset.
 

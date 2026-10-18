@@ -24,10 +24,11 @@ import java.time.ZoneId
 import java.time.format.FormatStyle
 
 @Composable
-fun BackupSettingsCard(service: BackupService) {
+fun BackupSettingsCard(service: BackupService, onRestored: () -> Unit = {}) {
     val factory = remember(service) { viewModelFactory { initializer { BackupViewModel(service) } } }
     val vm: BackupViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
+    val currentOnRestored by rememberUpdatedState(onRestored)
     val resolver = LocalContext.current.applicationContext.contentResolver
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         if (uri != null) vm.export { requireNotNull(resolver.openOutputStream(uri, "wt")) }
@@ -40,7 +41,7 @@ fun BackupSettingsCard(service: BackupService) {
     }, onRestore = {
         try { restore.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed")) }
         catch (_: ActivityNotFoundException) { vm.pickerUnavailable() }
-    }, onConfirm = vm::confirmRestore, onCancel = vm::cancelRestore)
+    }, onConfirm = { vm.confirmRestore { currentOnRestored() } }, onCancel = vm::cancelRestore)
 }
 
 @Composable
@@ -79,8 +80,10 @@ internal fun BackupCardContent(state: BackupUiState, onExport: () -> Unit, onRes
                     NumberFormat.getIntegerInstance().format(preview.photoCount),
                     NumberFormat.getIntegerInstance().format(preview.habitCount),
                     NumberFormat.getIntegerInstance().format(preview.habitLogCount),
+                    NumberFormat.getIntegerInstance().format(preview.todoCount),
                     preview.createdAt.atZone(ZoneId.systemDefault()).format(localizedDateTime(FormatStyle.MEDIUM))))
                 Text(stringResource(R.string.backup_replace_warning))
+                if (preview.todoCount == 0L) Text(stringResource(R.string.backup_no_tasks_warning))
             } },
             confirmButton = { TextButton(onClick = onConfirm, modifier = Modifier.testTag("backup_confirm")) { Text(stringResource(R.string.backup_replace)) } },
             dismissButton = { TextButton(onClick = onCancel, modifier = Modifier.testTag("backup_cancel")) { Text(stringResource(R.string.cancel)) } })
