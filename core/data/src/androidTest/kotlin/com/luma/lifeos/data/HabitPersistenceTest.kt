@@ -34,13 +34,17 @@ class HabitPersistenceTest {
     private val now = Instant.parse("2026-10-17T08:00:00Z")
     private lateinit var database: LumaDatabase
     private lateinit var habits: RoomHabitRepository
+    private var persistentFile: String? = null
 
     @Before fun setUp() {
         database = Room.inMemoryDatabaseBuilder(context, LumaDatabase::class.java).build()
         habits = RoomHabitRepository(database, Clock.fixed(now, ZoneOffset.UTC))
     }
 
-    @After fun tearDown() { database.close() }
+    @After fun tearDown() {
+        database.close()
+        persistentFile?.let(context::deleteDatabase)
+    }
 
     private fun input(start: LocalDate = today.minusDays(2), target: Int = 2,
         weekdays: Set<DayOfWeek> = DayOfWeek.entries.toSet()) =
@@ -98,6 +102,33 @@ class HabitPersistenceTest {
         assertTrue(day.skipRemaining)
         assertNull(habits.getLog(first.id))
         assertEquals(1, habits.history(id, today, 0, 10).total)
+    }
+
+    @Test fun deletingOneOfThreeLogsAfterReopeningLeavesTwoAndRetainsSkipChoice() = runBlocking {
+        val fileName = "habit-reopen-${UUID.randomUUID()}.db"
+        persistentFile = fileName
+        database.close()
+        database = Room.databaseBuilder(context, LumaDatabase::class.java, fileName).build()
+        habits = RoomHabitRepository(database, Clock.fixed(now, ZoneOffset.UTC))
+
+        val habitId = UUID.randomUUID()
+        habits.create(habitId, input(start = today.minusDays(3)))
+        val input = HabitLogInput(habitId, today, zone, null)
+        val logs = (1..3).map { habits.log(UUID.randomUUID(), input) }
+        habits.setSkipRemaining(habitId, today, true)
+        database.close()
+
+        database = Room.databaseBuilder(context, LumaDatabase::class.java, fileName).build()
+        habits = RoomHabitRepository(database, Clock.fixed(now, ZoneOffset.UTC))
+        habits.deleteLog(logs.first().id)
+
+        val day = habits.observeDay(today).first().single()
+        assertEquals(2, day.count)
+        assertTrue(day.skipRemaining)
+        assertEquals(2, habits.history(habitId, today, 0, 10).total)
+        assertNull(habits.getLog(logs.first().id))
+        assertEquals(logs[1], habits.log(logs[1].id, input))
+        assertEquals(2, habits.observeDay(today).first().single().count)
     }
 
     @Test fun zoneAndHistoricalScheduleMismatchesAreRejected() = runBlocking {

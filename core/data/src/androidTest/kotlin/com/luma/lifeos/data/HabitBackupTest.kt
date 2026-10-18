@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.data.backup.BackupArchive
 import com.luma.lifeos.data.backup.BackupRows
 import com.luma.lifeos.data.backup.RoomBackupService
+import com.luma.lifeos.data.backup.validateBackupRow
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.data.repository.RoomHabitRepository
@@ -24,6 +25,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import org.junit.After
@@ -56,6 +58,20 @@ class HabitBackupTest {
 
     private suspend fun export(): ByteArray = ByteArrayOutputStream().also { backup.export(it) }.toByteArray()
 
+    @Test fun objectJsonFieldsRejectArrayRoots() {
+        val attachment = mapOf(
+            "id" to UUID.randomUUID().toString(),
+            "life_event_id" to UUID.randomUUID().toString(),
+            "relative_path" to "photos/${UUID.randomUUID()}.img",
+            "type" to "image",
+            "metadata_json" to "{}",
+        )
+        validateBackupRow("media_attachment", attachment)
+        assertTrue(runCatching {
+            validateBackupRow("media_attachment", attachment + ("metadata_json" to "[]"))
+        }.isFailure)
+    }
+
     private suspend fun createHabit(name: String = "Water"): UUID {
         val id = UUID.randomUUID()
         habits.create(id, HabitSaveInput(name, "glasses", today.minusDays(2), 2, DayOfWeek.entries.toSet(), zone))
@@ -70,6 +86,29 @@ class HabitBackupTest {
             "tables/$table.tsv" to File(folder, "tables/$table.tsv")
         } + manifest.names.filter { it.startsWith("photos/") }.associateWith { File(folder, it) }
         val result = ByteArrayOutputStream().also { BackupArchive.write(it, files, version, manifest.createdAt) }.toByteArray()
+        folder.deleteRecursively()
+        return result
+    }
+
+    private fun archiveWithChangedRow(
+        bytes: ByteArray,
+        table: String,
+        change: (List<String>, MutableList<Any?>) -> Unit,
+    ): ByteArray {
+        val folder = File(root, "changed-${UUID.randomUUID()}")
+        val manifest = BackupArchive.read(ByteArrayInputStream(bytes), folder)
+        val file = File(folder, "tables/$table.tsv")
+        val header = file.readLines().first().split('\t')
+        val rows = mutableListOf<List<Any?>>()
+        BackupRows.read(file, header) { rows += it }
+        val changed = rows.single().toMutableList().also { change(header, it) }
+        file.outputStream().use { BackupRows.write(it, header, sequenceOf(changed)) }
+        val files = com.luma.lifeos.data.backup.backupTables(manifest.schemaVersion).associate { name ->
+            "tables/$name.tsv" to File(folder, "tables/$name.tsv")
+        } + manifest.names.filter { it.startsWith("photos/") }.associateWith { File(folder, it) }
+        val result = ByteArrayOutputStream().also {
+            BackupArchive.write(it, files, manifest.schemaVersion, manifest.createdAt)
+        }.toByteArray()
         folder.deleteRecursively()
         return result
     }
@@ -142,18 +181,14 @@ class HabitBackupTest {
         journal.create(eventId, JournalInput("Keep current", now))
         val habitId = createHabit()
         val original = export()
-        val folder = File(root, "tamper-${UUID.randomUUID()}")
-        val manifest = BackupArchive.read(ByteArrayInputStream(original), folder)
-        val file = File(folder, "tables/habit_log.tsv")
-        val header = file.readLines().first().split('\t')
-        val rows = mutableListOf<List<Any?>>()
-        BackupRows.read(file, header) { rows += it }
-        val changed = rows.single().toMutableList().also { it[header.indexOf("zone_id")] = "UTC" }
-        file.outputStream().use { BackupRows.write(it, header, sequenceOf(changed)) }
-        val payloads = com.luma.lifeos.data.backup.backupTables(3).associate { "tables/$it.tsv" to File(folder, "tables/$it.tsv") }
-        val invalid = ByteArrayOutputStream().also { BackupArchive.write(it, payloads, 3, manifest.createdAt) }.toByteArray()
-
-        assertTrue(runCatching { backup.prepare(ByteArrayInputStream(invalid)) }.isFailure)
+        val invalidZone = archiveWithChangedRow(original, "habit_log") { header, row ->
+            row[header.indexOf("zone_id")] = "UTC"
+        }
+        assertTrue(runCatching { backup.prepare(ByteArrayInputStream(invalidZone)) }.isFailure)
+        val invalidRuntimeGraph = archiveWithChangedRow(original, "habit_reminder_runtime") { header, row ->
+            row[header.indexOf("revision_token")] = UUID.randomUUID().toString()
+        }
+        assertTrue(runCatching { backup.prepare(ByteArrayInputStream(invalidRuntimeGraph)) }.isFailure)
         assertEquals("Keep current", journal.get(eventId)!!.journal!!.body)
         assertEquals("Water", habits.get(habitId)!!.name)
     }
@@ -167,6 +202,11 @@ class HabitBackupTest {
 
         journal.update(eventId, JournalInput("Current journal", now))
         val currentHabit = createHabit("Current habit")
+        habits.setSkipRemaining(currentHabit, today, true)
+        database.openHelper.writableDatabase.execSQL(
+            "UPDATE habit_reminder_runtime SET consumed_action_token = 'retained-action', needs_reconcile = 0 WHERE habit_id = ?",
+            arrayOf(currentHabit.toString()),
+        )
         database.openHelper.writableDatabase.execSQL(
             "CREATE TRIGGER reject_habit_restore BEFORE INSERT ON habit_log BEGIN SELECT RAISE(ABORT, 'injected restore failure'); END",
         )
@@ -177,5 +217,15 @@ class HabitBackupTest {
         assertEquals("Current journal", journal.get(eventId)!!.journal!!.body)
         assertEquals("Current habit", habits.get(currentHabit)!!.name)
         assertEquals("Archived habit", habits.get(archivedHabit)!!.name)
+        assertEquals(1, habits.history(currentHabit, today, 0, 10).total)
+        assertTrue(habits.observeDay(today).first().single { it.habit.id == currentHabit }.skipRemaining)
+        database.openHelper.readableDatabase.query(
+            "SELECT consumed_action_token, needs_reconcile FROM habit_reminder_runtime WHERE habit_id = ?",
+            arrayOf(currentHabit.toString()),
+        ).use {
+            assertTrue(it.moveToFirst())
+            assertEquals("retained-action", it.getString(0))
+            assertEquals(0, it.getInt(1))
+        }
     }
 }

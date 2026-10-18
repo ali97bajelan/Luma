@@ -1,13 +1,12 @@
 # Room schema history
 
-`LumaDatabase` starts at version 1 and exports its schema through the Room Gradle
-plugin. The first build generates `1.json` under this directory, in the plugin's
-variant/database package folders. Commit the compiler-generated JSON files after
-that build; do not hand-author identity hashes or edit an exported historical version.
+`LumaDatabase` started at version 1 and exports its schema through the Room Gradle
+plugin. Commit the compiler-generated JSON snapshots for each released version;
+do not hand-author identity hashes or edit an exported historical version.
 
-Versions 1 and 2 have compiler-generated JSON snapshots. Include both in version
-control. Room's Gradle plugin makes the schema directory available to instrumentation
-tests after the current build exports its schema.
+Versions 1, 2 and 3 have compiler-generated JSON snapshots. Include all three in
+version control. Room's Gradle plugin makes the schema directory available to
+instrumentation tests after the current build exports its schema.
 
 When changing an existing table, increment `LumaDatabase.VERSION`, register a
 data-preserving `Migration` in `LumaDatabase.MIGRATIONS`, and retain every older
@@ -23,3 +22,9 @@ Version 2 adds separate app-session observations and query-window metadata. The
 1→2 migration retains all existing tables and content, adds the indexed session
 tables, and marks derived summary caches stale. The migration test checks old
 journal content and new session writes across database reopening.
+
+Version 3 adds seven habit tables for the fixed tracking zone, habit definitions,
+effective-dated schedules, individual logs, day choices, reminder configuration
+and bounded reminder runtime. The 2→3 migration is additive and keeps reminders
+disabled until the user enables them. `HabitMigrationTest` checks both 1→3 and
+2→3 upgrades without dropping legacy rows.

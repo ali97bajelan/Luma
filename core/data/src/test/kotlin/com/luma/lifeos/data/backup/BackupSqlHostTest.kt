@@ -1,5 +1,6 @@
 package com.luma.lifeos.data.backup
 
+import com.luma.lifeos.data.db.LumaDatabase
 import java.io.File
 import java.util.Base64
 import org.junit.Test
@@ -16,7 +17,7 @@ class BackupSqlHostTest {
                 BackupSql.invalidGraphQueries.joinToString("\n") { "V\t" + b64(it) } + "\n" +
                 "I\t" + b64(BackupSql.insert("life_event", listOf("id", "type", "occurred_at", "created_at", "updated_at", "source"))))
             script.writeText(requireNotNull(javaClass.getResource("/backup_sql_check.py")).readText())
-            val schema = File("schemas/com.luma.lifeos.data.db.LumaDatabase/2.json").absolutePath
+            val schema = File("schemas/com.luma.lifeos.data.db.LumaDatabase/${LumaDatabase.VERSION}.json").absolutePath
             val process = ProcessBuilder("python3", script.path, instructions.path, schema).redirectErrorStream(true).start()
             val output = process.inputStream.bufferedReader().readText()
             assertEquals(output, 0, process.waitFor())

@@ -1,6 +1,6 @@
 # Habits implementation handoff
 
-Prepared: 17 October 2026. Status: T22 complete; T23–T29 pending. The user
+Prepared: 17 October 2026. Status: T22–T23 complete; T24–T29 pending. The user
 approved the richer counted-habits/navigation proposal and requested the
 specification, plans and tasks. This handoff records the approved scope and the
 current implementation evidence.
@@ -22,7 +22,7 @@ the master tracker together using actual execution evidence.
 | ID | Deliverable | Dependencies | Status | Start condition |
 | --- | --- | --- | --- | --- |
 | T22 | Pure counted-habit/domain and historical date rules | Existing baseline | Complete | Focused and full domain-only checks pass |
-| T23 | Room schema 3, transactional repository, backup compatibility | T22 | Pending | T22 checks pass; review existing schema exports |
+| T23 | Room schema 3, transactional repository, backup compatibility | T22 | Complete | JVM/build checks and 13 Room persistence/migration/backup instrumentation tests pass |
 | T24 | Habit creation/logging/history, Today access | T23 | Pending | Persistence/backup contracts available |
 | T25 | Each completion in mixed Timeline and weekly Review | T24 | Pending | Counted logs and source detail usable |
 | T26 | Today · Timeline · Habits · Review · More | T25 | Pending | Functional Habits route; no placeholder tab |
@@ -68,9 +68,9 @@ stays open independently of this extension.
 
 ## First execution slice
 
-**T22 is complete.** It adds only pure models/contracts and deterministic
-count/date/history rules; the focused habit cases and full domain-only suite pass.
-See [the acceptance log](HABITS_ACCEPTANCE_2026-10-17.md). T23 is the first schema
-change and must retain reviewed generated schema 1/2 files before version 3.
+**T22 and T23 are complete.** T22 adds pure models/contracts and deterministic
+count/date/history rules. T23 adds schema 3, transactional persistence and archive
+compatibility; its JVM/build checks and 13 Room instrumentation tests pass. See
+[the acceptance log](HABITS_ACCEPTANCE_2026-10-17.md). T24 can now proceed.
 Recommended execution is native task-by-task with a final independent review;
 the two existing senior roles remain available for focused product/UX review.

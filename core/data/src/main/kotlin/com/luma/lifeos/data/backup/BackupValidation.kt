@@ -30,7 +30,14 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
     row.forEach { (name, value) ->
         if (value != null && (name == "id" || (name.endsWith("_id") && name !in setOf("zone_id", "tracking_zone_id", "setting_id"))))
             require(UUID.fromString(value as String).toString() == value) { "Invalid record identity" }
-        if (value != null && name.endsWith("_json")) { requireSafeJsonDepth(value as String); JSONObject(value) }
+        if (value != null && name.endsWith("_json")) {
+            val json = value as String
+            requireSafeJsonDepth(json)
+            when {
+                table == "habit_reminder" && name == "times_json" -> org.json.JSONArray(json)
+                else -> JSONObject(json)
+            }
+        }
     }
     when (table) {
         "life_event" -> LifeEventEntity(s("id"), EventType.valueOf(s("type")), l("occurred_at"), l("created_at"), l("updated_at"),

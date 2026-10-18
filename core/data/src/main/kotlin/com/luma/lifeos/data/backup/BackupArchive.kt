@@ -19,6 +19,7 @@ internal val BACKUP_TABLES = BACKUP_TABLES_V2 + HABIT_BACKUP_TABLES
 internal fun backupTables(version: Int): List<String> = when (version) {
     1 -> BACKUP_TABLES_V1
     2 -> BACKUP_TABLES_V2
+    3 -> BACKUP_TABLES
     else -> error("Unsupported database schema version")
 }
 data class ArchiveManifest(val formatVersion: Int, val schemaVersion: Int, val createdAt: Long, val names: Set<String>)

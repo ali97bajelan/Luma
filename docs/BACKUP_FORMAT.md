@@ -2,8 +2,9 @@
 
 Settings → Backup and restore exports saved application tables and referenced
 photos using the system file picker. Choose backup to restore validates a file and
-shows its creation time, event count and photo count before asking to replace the
-current saved data. There is no merge mode. Export current data first to retain it.
+shows its creation time, event count, photo count, habit count and repetition count
+before asking to replace the current saved data. There is no merge mode. Export
+current data first to retain it.
 
 Backups are unencrypted and contain private text, names and photos. No automatic
 upload occurs; the selected document provider controls the destination. No broad
@@ -16,7 +17,7 @@ referenced photos abort export rather than silently omitting them.
 ## Archive layout
 
 - `manifest.properties`: Java Properties syntax. Required `format=luma-backup`,
-  `format_version=1`, `schema_version=1` or `2`, `created_at` (UTC epoch milliseconds),
+  `format_version=1`, `schema_version=1`, `2` or `3`, `created_at` (UTC epoch milliseconds),
   and `file_count`. Every payload has `size.<path>` and `sha256.<path>` entries.
 - `tables/<table>.tsv`: one file per application table. Header is the exact column
   list from that Room schema. Subsequent lines have a typed cell per column,
@@ -38,14 +39,16 @@ Unicode, newlines and tabs remain inside the encoded string. No SQL, schema DDL,
 serialized JVM objects or archive-provided code is executed. SHA-256 detects
 payload changes and corruption; it is not a signature or authenticity guarantee.
 
-Schema 2 includes all 19 application tables: life_event, emotion, person, place,
-tag, mood_entry, journal_entry, memory, activity_record, app_usage_record,
-media_attachment, mood_emotion, event_person, event_place, event_tag, daily_summary,
-integration_state, usage_session and usage_session_window. Schema 1 omits the final
-two tables. Import into the generated current Room schema provides that additive
-compatibility, keeping older aggregate usage without inventing sessions. Unknown
-format/schema versions fail safely; future versions require an explicit reader.
-The live database schema remains version 2.
+Schema 1 contains the original 17 application tables. Schema 2 adds
+`usage_session` and `usage_session_window`, for 19 tables total. Schema 3 adds
+`habit_settings`, `habit`, `habit_schedule`, `habit_log`, `habit_day_choice`,
+`habit_reminder` and `habit_reminder_runtime`, for 26 tables total. Import uses the
+generated current Room schema, so older archives leave newer tables empty while
+retaining their legacy data. Schema 3 preserves habit history and configuration,
+but restored reminders are disabled with rotated revisions and fresh runtime
+marked for reconciliation. Schema 1/2 replacement clears any current habits.
+Unknown format/schema versions fail safely; future versions require an explicit
+reader. The live database schema is version 3.
 
 ## Validation and replacement
 
@@ -59,9 +62,11 @@ requires private staging disk space for extracted payloads and the validation DB
 Rows enter a separate generated Room database using bound statements. Column names,
 nullability, SQLite value types, stable UUIDs, entity/domain invariants, foreign
 keys, existing child/parent type/source, database integrity and exact photo
-coverage are checked. Incomplete event envelopes remain supported. Native usage bounds remain independent of historical event timestamps, as in
-the existing usage views. No live record
-is replaced during preparation or when its confirmation is cancelled.
+coverage are checked. Habit records must also satisfy their tracking-zone,
+schedule, log, choice and reminder-runtime relationships. Incomplete event
+envelopes remain supported. Native usage bounds remain independent of historical
+event timestamps, as in the existing usage views. No live record is replaced
+during preparation or when its confirmation is cancelled.
 
 Export reads all tables and copies photos within one Room transaction while holding
 the shared photo-store mutex; this includes committed WAL data and does not copy
@@ -81,6 +86,11 @@ advanced revision to reject old requests. Last-sync evidence and saved observati
 remain. The user may re-enable imports through Settings; Android permissions,
 app language and external person photo URI availability are not transferred.
 Unsaved editor drafts are not backup payloads.
+
+Schema 3 restores retain habit definitions, schedules, logs, choices and reminder
+preferences. Reminder preferences are forced off, revisions rotate, and transient
+reminder runtime is discarded so restore cannot replay an old notification action.
+Older schema 1/2 restores replace the current habit tables with empty tables.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss
 checks remain pending device validation; see [VALIDATION.md](VALIDATION.md).

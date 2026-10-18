@@ -824,7 +824,7 @@ and evidence are in [VALIDATION.md](docs/VALIDATION.md).
 
 ## Approved extension — counted habits, reminders and navigation
 
-Approved 17 October 2026. T22 is complete; T23–T29 remain pending. Read
+Approved 17 October 2026. T22–T23 are complete; T24–T29 remain pending. Read
 [the specification](docs/superpowers/specs/2026-10-17-habits-and-navigation-design.md)
 and [task handoff](docs/HABITS_TASKS.md). Existing release validation remains open.
 Execute T22–T29 in order; task plans include exact files, interfaces, tests and checks.
@@ -852,7 +852,7 @@ and preserved historical eligibility. No Android/Room dependency in core:domain.
 
 ### T23 — Habit persistence, schema migration and portable backup
 
-Status: pending
+Status: complete
 
 Depends on: T22. Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T23.
 
@@ -863,6 +863,10 @@ Acceptance: retries/concurrent counts and per-log deletion are correct after
 reopening; 1→3/2→3 preserve existing records; schema-1/2/3 replacement and rollback
 pass. Unknown/corrupt archives do not replace data. Restored reminders are off
 with fresh revisions/runtime cleared. Generated schemas are retained; no data loss.
+
+Validation (2026-10-18): 24 data JVM tests and 13 Room persistence, migration and
+backup instrumentation tests pass on API 36. The debug app and data test APK build
+successfully. See [the habits acceptance log](docs/HABITS_ACCEPTANCE_2026-10-17.md).
 
 ### T24 — Habit capture, daily progress and editable history
 
