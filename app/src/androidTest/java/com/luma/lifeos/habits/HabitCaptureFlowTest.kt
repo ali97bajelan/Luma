@@ -134,13 +134,13 @@ class HabitCaptureFlowTest {
         compose.onNodeWithTag("habit_detail_back").performClick()
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("habit_log_$habitId")).fetchSemanticsNodes().isNotEmpty() }
         repeat(9) { compose.onNodeWithTag("habit_log_$habitId").performClick() }
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("9 / 8 pages").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("9 of 8").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("habit_progress_$habitId", useUnmergedTree = true)
             .assertIsDisplayed().assertContentDescriptionEquals("Read, 9 of target 8 pages")
-        compose.onNodeWithText("9 / 8 pages").assertIsDisplayed()
+        compose.onNodeWithText("9 of 8").assertIsDisplayed()
         compose.onNodeWithTag("habit_undo").performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("8 / 8 pages").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("8 / 8 pages").assertIsDisplayed()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("8 of 8").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("8 of 8").assertIsDisplayed()
 
         compose.onNodeWithTag("habit_open_$habitId").performClick()
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("screen_habit_detail")).fetchSemanticsNodes().isNotEmpty() }
@@ -545,7 +545,7 @@ class HabitCaptureFlowTest {
             }
         }
 
-        compose.onNodeWithText("0 / 2 times").assertIsDisplayed()
+        compose.onNodeWithText("0 of 2").assertIsDisplayed()
         compose.onNodeWithTag("habit_log_$id", useUnmergedTree = true)
             .assertContentDescriptionEquals("Log one Read time")
     }

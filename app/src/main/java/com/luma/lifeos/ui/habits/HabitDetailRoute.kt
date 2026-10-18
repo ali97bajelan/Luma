@@ -143,7 +143,7 @@ fun HabitDetailScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), style = MaterialTheme.typography.titleLarge)
                         day?.let {
-                            ProgressText(it)
+                            HabitProgressContent(it)
                             Text(stringResource(stateLabel(it)), style = MaterialTheme.typography.bodyMedium)
                             if (it.skipRemaining) Text(stringResource(if (it.count == 0) R.string.habit_state_skipped else R.string.habit_remaining_skipped))
                         }

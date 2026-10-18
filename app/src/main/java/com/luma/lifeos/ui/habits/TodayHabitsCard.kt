@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
-import com.luma.lifeos.domain.habit.HabitDayState
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -69,9 +68,7 @@ fun TodayHabitsCard(
                 }
             }
             if (state.days.isNotEmpty()) {
-                val scheduled = state.days.filter { it.day.state !in setOf(
-                    HabitDayState.NOT_SCHEDULED, HabitDayState.PAUSED, HabitDayState.ARCHIVED,
-                ) }
+                val scheduled = splitHabitRows(state.days).scheduled
                 val visible = scheduled.take(3)
                 if (visible.isEmpty()) Text(stringResource(R.string.habit_no_scheduled),
                     modifier = Modifier.testTag("today_habits_none_scheduled"))
