@@ -1,6 +1,6 @@
 # Tasks feature planning handoff
 
-Prepared: 19 October 2026. Status: TD01 complete; TD02 in progress (schema export and verification pending); TD03 in progress (implementation written; verification pending); TD04–TD07 not started.
+Prepared: 19 October 2026. Status: TD01 complete; TD02 in progress (schema export and verification pending); TD03 in progress (implementation written; verification pending); TD04 in progress (editor implementation written; verification pending); TD05–TD07 not started.
 
 The user requested investigation by a senior product manager and a senior UI/UX
 designer, with direct discussion to produce specifications, plans and tasks. They
@@ -35,7 +35,7 @@ and counted habits remain distinct.
 
 Priorities express proposed release scope, not implementation evidence. TD01's
 focused and full domain suites pass. TD02 remains in progress; TD03 is **In progress** (implementation written;
-verification pending); TD04–TD07 remain **Not started**. Every slice includes its owning tests and all three language catalogs where
+verification pending); TD04 is **In progress** (editor implementation written; verification pending); TD05–TD07 remain **Not started**. Every slice includes its owning tests and all three language catalogs where
 UI is introduced.
 
 | ID | Status | Priority | Deliverable | Depends on | Acceptance coverage | Done when |
@@ -43,7 +43,7 @@ UI is introduced.
 | TD01 | Complete | P0 | Pure Kotlin task models, validation, civil-date buckets and repository contracts | Existing baseline | TODO-AC-01–04; UX-TODO-02/06/07 | Unicode/date/ordering tests and full domain suite pass |
 | TD02 | In progress (schema export and verification pending) | P0 | Room table, schema 4, transactional CRUD, revisions and bounded observation | TD01 | TODO-AC-03/04/07–09 | Persistence/retry/conflict tests and populated migrations 1–3→4 pass; schema exported |
 | TD03 | In progress (verification pending) | P0 | Backup/restore, preview counts and reset contract | TD02 | TODO-AC-09/10; UX-TODO-15 | New archive round trip, old replacement, malformed/cancelled restore and existing backup regressions pass |
-| TD04 | Not started | P0 | Shared create/edit screen with reliable drafts/status/delete | TD02/03 | TODO-AC-01–03/07/08/12; UX-TODO-06–11/14 | JVM draft/conflict tests and editor interaction checks pass in localized UI |
+| TD04 | In progress (verification pending) | P0 | Shared create/edit screen with reliable drafts/status/delete | TD02/03 | TODO-AC-01–03/07/08/12; UX-TODO-06–11/14 | JVM draft/conflict tests and editor interaction checks pass in localized UI |
 | TD05 | Not started | P0 | Tasks lists, More access, Task in existing Quick Capture and completion Undo | TD04 | TODO-AC-04/05/07/08/12; UX-TODO-01–03/05/11/12/15 | >50-row live list, retry/Undo and navigation/capture regressions pass |
 | TD06 | Not started | P0 | Compact Today card and date/zone lifecycle | TD05 | TODO-AC-02/05/06/07/13; UX-TODO-04/05/12 | Cap/count/eligibility, hidden historical card, midnight/travel and independent failure checks pass |
 | TD07 | Not started | P0 | Integrated language/accessibility/device acceptance and documentation | TD01–06 | All product/UX criteria; especially TODO-AC-11/13, UX-TODO-13/14/15 | Required automated/native checks have evidence; unresolved exceptions are explicit |
@@ -88,6 +88,11 @@ replacement restore, preview counts and revision rotation. Per request, no Gradl
 emulator tests were run for this slice; keep TD03 in progress until its archive,
 restore, UI and existing backup regression checks have evidence. The task table is
 already part of Android's full app-data reset; no separate reset path was added.
+
+TD04 now adds the shared task editor route, primitive saved draft and pending-operation state,
+revision-safe create/edit/status/delete handling, conflict/reload behavior, and EN/FA/FR editor
+copy. Per request, no Gradle or emulator tests were run or added for this slice. Keep TD04 in
+progress until its JVM draft/conflict checks and localized editor interaction checks have evidence.
 
 No app build, emulator test, usability session, performance benchmark or native
 TalkBack check has run as part of feature implementation.
