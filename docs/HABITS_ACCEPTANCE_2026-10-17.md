@@ -1,7 +1,8 @@
 # Habits acceptance log
 
 Validation started: 17 October 2026. This log records execution evidence for the
-approved habits plan. Device and UI checks remain assigned to later tasks.
+approved habits plan. T22–T25 checks are recorded below; later platform and
+release acceptance remains assigned to T26–T29.
 
 ## T22 — Pure domain rules
 
@@ -82,7 +83,50 @@ navigation remains unchanged for T25/T26. The tracking zone stays fixed for
 civil dates, individual logs retain correction and deletion paths, and custom
 unit labels remain user text without machine pluralization.
 
+## T25 — Mixed Timeline and weekly habit Review
+
+| Case | Result | Environment and evidence |
+| --- | --- | --- |
+| Domain, data and app JVM regressions | PASS | `:core:domain:test`: 115 tests; `:core:data:testDebugUnitTest`: 24 tests; `:app:testDebugUnitTest`: 202 tests. Zero failures, errors or skips. The repository-wide `./gradlew --offline test` also passed debug and release variants. The app suite includes the translation catalog with English, French and Persian T25 strings. JDK 17, Gradle 9.1.0. |
+| Mixed feed SQL, bounded paging, usage visibility and separate source counts | PASS | `HabitTimelineTest` (3) and `HabitReviewPersistenceTest` (1): `OK (4 tests)`. A 550-row mixed fixture spans 350 events and 200 logs over eleven 50-row pages; it checks date-only ordering, colliding source IDs, usage filtering before paging, skipped civil dates and separate counts. |
+| Timeline, Review and existing adjacent UI regressions | PASS | `HabitTimelineFlowTest`, `HabitReviewFlowTest`, `TimelinePagingRouteTest`, and `TimelineFlowTest`: `OK (10 tests)`. `WeeklyReviewFlowTest` and `DailySummaryFlowTest`: `OK (15 tests)`. The existing 500-row day paging and 20,000-row stored-history tests passed. |
+| Large stored-history day navigation | PASS | Emulator log: `Timeline rows=20000 day_navigation_ms=[152.14682, 151.836844, 148.604995, 147.626349]` for three previous-day moves and return to Today; observed range 147.6–152.1 ms on this test device. This is a fixture measurement, not a broader performance claim. |
+| Standard app and test APKs | PASS | `:core:data:assembleDebugAndroidTest :app:assembleDebug :app:assembleDebugAndroidTest` completed after restoring the standard `com.luma.lifeos` application ID. |
+
+Device evidence: `sdk_gphone64_x86_64`, API 36, 1080×2400, en-US, font scale
+1.0, on `emulator-5554`. App UI instrumentation used isolated
+`com.luma.lifeos.t25sandbox` / `.test` packages; Room tests used
+`com.luma.lifeos.data.test`. The standard production app ID was built but never
+installed or replaced on the emulator.
+
+Direct app instrumentation commands:
+
+```text
+adb -s emulator-5554 shell am instrument -w -r -e timeout_msec 180000 \
+  -e class com.luma.lifeos.habits.HabitTimelineFlowTest,com.luma.lifeos.habits.HabitReviewFlowTest,com.luma.lifeos.TimelinePagingRouteTest,com.luma.lifeos.TimelineFlowTest \
+  com.luma.lifeos.t25sandbox.test/androidx.test.runner.AndroidJUnitRunner
+adb -s emulator-5554 shell am instrument -w -r -e timeout_msec 120000 \
+  -e class com.luma.lifeos.review.WeeklyReviewFlowTest,com.luma.lifeos.summary.DailySummaryFlowTest \
+  com.luma.lifeos.t25sandbox.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Direct Room instrumentation command:
+
+```text
+adb -s emulator-5554 shell am instrument -w -r -e timeout_msec 90000 \
+  -e class com.luma.lifeos.data.HabitTimelineTest,com.luma.lifeos.data.HabitReviewPersistenceTest \
+  com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+T25 acceptance is complete. Each habit completion has a stable, separately
+prefixed Timeline item; date-only logs remain outside timed ordering and retain
+their tracking-zone label. Weekly Review compares the matching elapsed civil
+days, preserves historical targets and skip state, and opens the selected
+habit/date. Existing entry counts, usage filtering and Daily Summary behavior
+passed their regression suites. The verified T25 changes remain uncommitted on
+the current `main` branch pending the repository integration choice.
+
 ## Later acceptance
 
-T25–T29: NOT RUN. Mixed Timeline/Review, OS reminders, full integration/release,
-native TalkBack speech and later device acceptance remain open.
+T26–T29: NOT RUN. Primary navigation, OS reminders, full release acceptance and
+native TalkBack speech remain open.

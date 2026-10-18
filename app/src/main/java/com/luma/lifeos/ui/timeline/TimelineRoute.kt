@@ -27,15 +27,17 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
+import com.luma.lifeos.domain.habit.TimelineFeedItem
 import com.luma.lifeos.domain.repository.TimelineRepository
 import com.luma.lifeos.ui.common.EmptyStateCard
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.UUID
 
 @Composable
 fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
     onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: (EventId) -> Unit,
-    onSearch: (() -> Unit)? = null) {
+    onSearch: (() -> Unit)? = null, onHabit: (UUID, LocalDate, UUID?) -> Unit = { _, _, _ -> }) {
     val context = LocalContext.current.applicationContext
     val usagePreference = remember(context) { TimelineUsagePreference(context) }
     val initialShowAppUsage = remember(usagePreference) { usagePreference.showAppUsage() }
@@ -59,8 +61,8 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
         LaunchedEffect(list, state.records.size, state.offset, state.busy, state.error) {
             if (!state.loaded || state.busy || state.error != null || !state.canLoadLater) return@LaunchedEffect
             snapshotFlow { list.layoutInfo.visibleItemsInfo.lastOrNull()?.key }.collect { key ->
-                val index = state.records.indexOfFirst { it.event.id.toString() == key }
-                if (index >= maxOf(0, state.records.size - 10) || key == "earlier") pager.loadLater()
+                val index = state.items.indexOfFirst { it.key == key }
+                if (index >= maxOf(0, state.items.size - 10) || key == "earlier") pager.loadLater()
             }
         }
         LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("screen_timeline"),
@@ -84,6 +86,9 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
                     if (state.loaded) Text(pluralStringResource(R.plurals.daily_events, state.eventCount, state.eventCount),
                         modifier = Modifier.testTag("timeline_event_count"))
+                    if (state.loaded && state.habitLogCount > 0) Text(
+                        pluralStringResource(R.plurals.timeline_habit_logs, state.habitLogCount, state.habitLogCount),
+                        modifier = Modifier.testTag("timeline_habit_count"))
                     Text(stringResource(R.string.entry_order_newest_first),
                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("timeline_order"))
                 }
@@ -95,15 +100,34 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     TextButton(onClick = pager::retry) { Text(stringResource(R.string.retry)) }
                 }
             }
-            if (state.loaded && state.records.isEmpty()) item(key = "empty") {
+            if (state.loaded && state.items.isEmpty()) item(key = "empty") {
                 EmptyStateCard(R.drawable.ic_nav_timeline, R.string.timeline_empty_heading, R.string.timeline_empty,
                     "timeline_empty")
             }
             if (state.canLoadEarlier) item(key = "later") {
                 TextButton(enabled = !state.busy, onClick = pager::loadEarlier, modifier = Modifier.testTag("timeline_later")) { Text(stringResource(R.string.timeline_later)) }
             }
-            items(state.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { record ->
-                EventCard(record, zone, onOpen = { onEvent(record) }, onMemory = { onMemory(record.event.id) })
+            val firstTimed = state.items.indexOfFirst { item ->
+                item !is TimelineFeedItem.Habit || item.log.occurredAt != null
+            }
+            val dateOnlyCount = if (firstTimed < 0) state.items.size else firstTimed
+            if (dateOnlyCount > 0) item(key = "date_only_group") {
+                Text(stringResource(R.string.habit_time_not_recorded), style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.testTag("timeline_date_only_group"))
+            }
+            items(state.items, key = { it.key }, contentType = { item ->
+                when (item) {
+                    is TimelineFeedItem.Entry -> item.record.event.type
+                    is TimelineFeedItem.Habit -> "habit"
+                }
+            }) { item ->
+                when (item) {
+                    is TimelineFeedItem.Entry -> EventCard(item.record, zone, onOpen = { onEvent(item.record) },
+                        onMemory = { onMemory(item.record.event.id) })
+                    is TimelineFeedItem.Habit -> HabitTimelineCard(item, zone) {
+                        onHabit(item.log.habitId, item.log.date, item.log.id)
+                    }
+                }
             }
             if (state.busy && state.loaded) item(key = "busy") { CircularProgressIndicator() }
             if (state.canLoadLater) item(key = "earlier") {

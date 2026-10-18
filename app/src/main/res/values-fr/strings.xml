@@ -230,6 +230,11 @@
     <string name="timeline_earlier">Événements précédents</string>
     <string name="timeline_later">Événements suivants</string>
     <string name="timeline_show_app_usage">Afficher l’utilisation des applications</string>
+    <plurals name="timeline_habit_logs">
+        <item quantity="one">%1$d réalisation d’habitude</item>
+        <item quantity="many">%1$d réalisations d’habitude</item>
+        <item quantity="other">%1$d réalisations d’habitude</item>
+    </plurals>
     <string name="entry_order_newest_first">Les plus récents d’abord</string>
     <string name="entry_order_oldest_first">Les plus anciens d’abord</string>
     <string name="usage_title">Importation du temps d’écran</string>
@@ -375,6 +380,13 @@
     <string name="review_usage_coverage">Dates avec un historique enregistré : %1$d · Complet : %2$d · Partiel : %3$d · Agrégats uniquement : %4$d</string>
     <string name="review_usage_date">%1$s · %2$s</string>
     <string name="review_activity">Activité</string>
+    <string name="review_habits">Habitudes</string>
+    <string name="review_habits_empty">Aucune habitude n’est disponible pour cette semaine.</string>
+    <string name="review_habits_current_total">Cette semaine : %1$d répétitions · %2$d jours prévus</string>
+    <string name="review_habits_previous_total">Même période précédente : %1$d répétitions · %2$d jours prévus</string>
+    <string name="review_habits_day">%1$s · %2$s</string>
+    <string name="review_habits_repetitions">Répétitions : %1$d %2$s</string>
+    <string name="review_habits_open">Voir l’historique de l’habitude</string>
     <string name="review_activity_value">%1$s %2$s · Observations : %3$d · Dates : %4$d</string>
     <string name="review_activity_explanation">Les totaux sont regroupés par type, unité et source. Les dates manquantes sont indiquées comme indisponibles ; les données de différents fournisseurs ne sont pas additionnées.</string>
     <string name="review_saved_usage">Utilisation des applications enregistrée</string>
@@ -483,6 +495,7 @@
     <string name="review_mood_empty">Aucune humeur enregistrée cette semaine</string>
     <string name="review_mood_explanation">Les moyennes utilisent les humeurs enregistrées. Les 10 émotions les plus fréquentes au maximum sont affichées.</string>
     <string name="habit_title">Habitudes</string>
+    <string name="habit_timeline_completion">Une réalisation · %1$s</string>
     <string name="habit_add">Ajouter une habitude</string>
     <string name="habit_empty_heading">Commencez par une habitude</string>
     <string name="habit_empty_body">Suivez les répétitions que vous choisissez. Chaque enregistrement ajoute une réalisation.</string>

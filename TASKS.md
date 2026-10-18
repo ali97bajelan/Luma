@@ -11,7 +11,7 @@ A task is complete only after its acceptance criteria have been verified.
 
 ## T01 — Bootstrap the Android project
 
-Status: complete
+Status: complete (uncommitted)
 
 Validation (2026-10-12): application build/launch and all primary navigation,
 route/date recreation and Quick Capture checks pass on the existing API 36 emulator.
@@ -895,7 +895,7 @@ speech remains NOT RUN.
 
 ### T25 — Habit completions in Timeline and weekly Review
 
-Status: pending
+Status: complete (uncommitted)
 
 Depends on: T24. Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T25.
 

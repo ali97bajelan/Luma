@@ -33,10 +33,15 @@ internal fun mostSampledActivity(activities: List<ReviewActivity>): ReviewActivi
         .thenBy { it.total.type }.thenBy { it.total.unit }.thenBy { it.total.source.name })
 
 @Composable
-internal fun ReviewSectionNavigation(selected: String?, onSection: (String) -> Unit) {
-    val sections = listOf("mood" to R.string.review_mood, "memories" to R.string.review_memories,
-        "catalog" to R.string.review_people_places, "usage" to R.string.review_usage,
-        "activity" to R.string.review_activity)
+internal fun ReviewSectionNavigation(selected: String?, onSection: (String) -> Unit, includeHabits: Boolean = false) {
+    val sections = buildList {
+        add("mood" to R.string.review_mood)
+        add("memories" to R.string.review_memories)
+        add("catalog" to R.string.review_people_places)
+        add("usage" to R.string.review_usage)
+        add("activity" to R.string.review_activity)
+        if (includeHabits) add("habits" to R.string.review_habits)
+    }
     val requesters = remember { sections.associate { (key, _) -> key to BringIntoViewRequester() } }
     LaunchedEffect(selected) { selected?.let { requesters[it]?.bringIntoView() } }
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

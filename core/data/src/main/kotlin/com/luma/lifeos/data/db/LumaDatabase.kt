@@ -14,6 +14,7 @@ import com.luma.lifeos.data.dao.LifeEventDao
 import com.luma.lifeos.data.dao.UsageSessionDao
 import com.luma.lifeos.data.entity.*
 import com.luma.lifeos.data.habit.HabitDao
+import com.luma.lifeos.data.habit.HabitTimelineSql
 import com.luma.lifeos.data.habit.HabitDayChoiceEntity
 import com.luma.lifeos.data.habit.HabitEntity
 import com.luma.lifeos.data.habit.HabitLogEntity
@@ -45,6 +46,7 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun derived(): DerivedDataDao
     abstract fun usageSessions(): UsageSessionDao
     abstract fun habits(): HabitDao
+    abstract fun habitTimeline(): HabitTimelineSql
 
     companion object {
         const val VERSION = 3

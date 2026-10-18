@@ -225,6 +225,10 @@
     <string name="timeline_earlier">Earlier events</string>
     <string name="timeline_later">Later events</string>
     <string name="timeline_show_app_usage">Show app usage</string>
+    <plurals name="timeline_habit_logs">
+        <item quantity="one">%1$d habit completion</item>
+        <item quantity="other">%1$d habit completions</item>
+    </plurals>
     <string name="entry_order_newest_first">Newest first</string>
     <string name="entry_order_oldest_first">Oldest first</string>
     <string name="usage_title">Screen-time imports</string>
@@ -370,6 +374,13 @@
     <string name="review_usage_coverage">Dates with saved history: %1$d · Complete: %2$d · Partial: %3$d · Aggregate-only: %4$d</string>
     <string name="review_usage_date">%1$s · %2$s</string>
     <string name="review_activity">Activity</string>
+    <string name="review_habits">Habits</string>
+    <string name="review_habits_empty">No habits are available for this week.</string>
+    <string name="review_habits_current_total">This week: %1$d repetitions · %2$d scheduled days</string>
+    <string name="review_habits_previous_total">Matching previous days: %1$d repetitions · %2$d scheduled days</string>
+    <string name="review_habits_day">%1$s · %2$s</string>
+    <string name="review_habits_repetitions">Repetitions: %1$d %2$s</string>
+    <string name="review_habits_open">View habit history</string>
     <string name="review_activity_value">%1$s %2$s · Observations: %3$d · Dates: %4$d</string>
     <string name="review_activity_explanation">Totals are grouped by type, unit and source. Missing dates are unavailable; different providers are not added together.</string>
     <string name="review_saved_usage">Saved app usage</string>
@@ -478,6 +489,7 @@
     <string name="review_mood_empty">No check-ins saved this week</string>
     <string name="review_mood_explanation">Averages use saved check-ins. Up to 10 most recorded emotions are shown.</string>
     <string name="habit_title">Habits</string>
+    <string name="habit_timeline_completion">One completion · %1$s</string>
     <string name="habit_add">Add habit</string>
     <string name="habit_empty_heading">Start with one habit</string>
     <string name="habit_empty_body">Track small repetitions you choose. A log records one completion.</string>

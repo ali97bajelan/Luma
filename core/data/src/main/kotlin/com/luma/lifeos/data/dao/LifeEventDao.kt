@@ -83,6 +83,10 @@ interface LifeEventDao {
     @Query("SELECT * FROM life_event WHERE id = :id")
     suspend fun getDetails(id: String): EventWithDetails?
 
+    @Transaction
+    @Query("SELECT * FROM life_event WHERE id IN (:ids)")
+    suspend fun detailsByIds(ids: List<String>): List<EventWithDetails>
+
     @Query("SELECT * FROM life_event WHERE source = :source AND source_ref = :reference LIMIT 1")
     suspend fun findBySource(source: EventSource, reference: String): LifeEventEntity?
 

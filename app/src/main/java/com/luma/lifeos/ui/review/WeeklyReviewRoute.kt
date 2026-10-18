@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
+import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.language.emotionDisplayName
@@ -34,7 +35,8 @@ import java.util.UUID
 fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone: ZoneId,
     onSources: (ReviewDates, ReviewMetric) -> Unit, onEvent: (LifeEventRecord) -> Unit,
     onPerson: (UUID) -> Unit = {}, onPlace: (UUID) -> Unit = {}, onUsage: (LocalDate) -> Unit = {},
-    onMemory: ((LifeEventRecord) -> Unit)? = null) {
+    onMemory: ((LifeEventRecord) -> Unit)? = null, habits: HabitRepository? = null,
+    onHabit: (UUID, LocalDate) -> Unit = { _, _ -> }) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -48,10 +50,11 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         val report = (state as? WeeklyReviewState.Data)?.report
         // A short loading/error list must not clamp the report's restored scroll position.
         val placeholderListState = rememberLazyListState()
-        val empty = report?.let { it.current.records == 0 && it.current.usage?.totalMillis == null && it.current.activities.isEmpty() } == true
+        val empty = report?.let { it.current.records == 0 && it.current.usage?.totalMillis == null && it.current.activities.isEmpty() } == true && habits == null
         val keys = report?.let {
             listOf("heading", "overview", "sections") + (if (empty) listOf("empty") else emptyList()) +
-                listOf("counts", "mood", "memories", "catalog", "usage", "activity")
+                listOf("counts", "mood", "memories", "catalog", "usage", "activity") +
+                (if (habits != null) listOf("habits") else emptyList())
         }
         LaunchedEffect(keys, sectionTarget) {
             val target = sectionTarget ?: return@LaunchedEffect
@@ -61,7 +64,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         }
         LaunchedEffect(keys) {
             val itemKeys = keys ?: return@LaunchedEffect
-            val sectionKeys = listOf("mood", "memories", "catalog", "usage", "activity")
+            val sectionKeys = listOf("mood", "memories", "catalog", "usage", "activity") +
+                (if (habits != null) listOf("habits") else emptyList())
             snapshotFlow {
                 // Short sections near the end cannot always align at the top. Keep the
                 // chosen/restored tab until scrolling resumes, rather than clearing it
@@ -95,10 +99,10 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources) }
                         stickyHeader(key = "sections") {
                             Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
-                                ReviewSectionNavigation(section) { key ->
+                                ReviewSectionNavigation(section, onSection = { key ->
                                     section = key
                                     sectionTarget = key
-                                }
+                                }, includeHabits = habits != null)
                             }
                         }
                         if (empty) item(key = "empty") {
@@ -137,6 +141,9 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         }
                         item(key = "usage") { ReviewDigital(report, onUsage) }
                         item(key = "activity") { ReviewActivities(report, onSources) }
+                        if (habits != null) item(key = "habits") {
+                            ReviewHabits(habits, period.current.start, period.current.through, onHabit)
+                        }
                     }
                 }
             }

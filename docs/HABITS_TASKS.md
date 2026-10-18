@@ -1,6 +1,6 @@
 # Habits implementation handoff
 
-Prepared: 17 October 2026. Status: T22–T24 complete; T25–T29 pending. The user
+Prepared: 17 October 2026. Status: T22–T25 complete; T26–T29 pending. The user
 approved the richer counted-habits/navigation proposal and requested the
 specification, plans and tasks. This handoff records the approved scope and the
 current implementation evidence.
@@ -24,7 +24,7 @@ the master tracker together using actual execution evidence.
 | T22 | Pure counted-habit/domain and historical date rules | Existing baseline | Complete | Focused and full domain-only checks pass |
 | T23 | Room schema 3, transactional repository, backup compatibility | T22 | Complete | JVM/build checks and 13 Room persistence/migration/backup instrumentation tests pass |
 | T24 | Habit creation/logging/history, Today access | T23 | Complete | 200 app JVM tests and 21 isolated device navigation/habit/language tests pass; standard APKs build |
-| T25 | Each completion in mixed Timeline and weekly Review | T24 | Pending | Counted logs and source detail usable |
+| T25 | Each completion in mixed Timeline and weekly Review | T24 | Complete (uncommitted) | 115 domain, 24 data and 202 app JVM tests pass; 4 Room and 25 UI instrumentation tests pass; standard APKs build |
 | T26 | Today · Timeline · Habits · Review · More | T25 | Pending | Functional Habits route; no placeholder tab |
 | T27 | Pure reminder planner and persistent configuration | T26 (execution order); T22/T23 (technical) | Pending | Shared date/count contracts stable |
 | T28 | Android reminders, permission/status UI, notification actions | T27 | Pending | Planner and transactional action handling verified |
@@ -73,6 +73,8 @@ count/date/history rules. T23 adds schema 3, transactional persistence and archi
 compatibility; its JVM/build checks and 13 Room instrumentation tests pass. See
 [the acceptance log](HABITS_ACCEPTANCE_2026-10-17.md). T24 adds functional
 capture, per-log history and Today access; its 200 app JVM tests and 21 device
-tests pass. T25 can now proceed.
+tests pass. T25 now adds every completion to the mixed Timeline and a separate
+weekly Review section; its verification is recorded in the
+[acceptance log](HABITS_ACCEPTANCE_2026-10-17.md). T26 is next.
 Recommended execution is native task-by-task with a final independent review;
 the two existing senior roles remain available for focused product/UX review.

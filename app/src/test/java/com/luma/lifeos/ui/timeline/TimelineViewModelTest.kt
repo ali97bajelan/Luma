@@ -2,11 +2,15 @@ package com.luma.lifeos.ui.timeline
 
 import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.domain.model.*
+import com.luma.lifeos.domain.habit.HabitLog
+import com.luma.lifeos.domain.habit.TimelineFeedItem
+import com.luma.lifeos.domain.habit.TimelineFeedPage
 import com.luma.lifeos.domain.repository.TimelineRepository
 import com.luma.lifeos.domain.time.TimeRange
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -177,6 +181,45 @@ class TimelineViewModelTest {
         assertEquals(Instant.parse("2026-03-09T04:00:00Z"), dst.endExclusive)
     }
 
+    @Test fun mixedFeedKeepsDateOnlyLogsFirstAndReconcilesWritesDuringPaging() = runTest(dispatcher) {
+        val repo = MixedFeed(170, 50)
+        val vm = TimelineViewModel(repo, SavedStateHandle())
+        vm.selectDay(day, zone); advanceUntilIdle()
+
+        assertEquals(150, vm.state.value.items.size)
+        assertEquals(219, vm.state.value.totalCount)
+        assertEquals(169, vm.state.value.eventCount)
+        assertEquals(50, vm.state.value.habitLogCount)
+        assertTrue(vm.state.value.items.take(10).all { it is TimelineFeedItem.Habit && it.log.occurredAt == null })
+        assertEquals(vm.state.value.items.count { it is TimelineFeedItem.Entry }, vm.state.value.records.size)
+        assertTrue(vm.state.value.items.any { it.key == "habit:${UUID(0, 0)}" })
+        val fullFeed = repo.feed(day, zone, 0, 300, showAppUsage = false).items
+        assertTrue(fullFeed.any { it.key == "event:${UUID(0, 0)}" })
+        assertTrue(fullFeed.any { it.key == "habit:${UUID(0, 0)}" })
+
+        repo.removeOne()
+        vm.loadLater(); advanceUntilIdle()
+
+        assertEquals(218, vm.state.value.totalCount)
+        assertEquals(0, vm.state.value.offset)
+        assertEquals(150, vm.state.value.items.size)
+        assertEquals(vm.state.value.items.size, vm.state.value.items.map { it.key }.distinct().size)
+        while (vm.state.value.canLoadLater) { vm.loadLater(); advanceUntilIdle() }
+        assertEquals(218, vm.state.value.offset + vm.state.value.items.size)
+    }
+
+    @Test fun mixedFeedStillLoadsDateOnlyHabitsOnSkippedCivilDay() = runTest(dispatcher) {
+        val skipped = LocalDate.parse("2011-12-30")
+        val skippedZone = ZoneId.of("Pacific/Apia")
+        val repo = MixedFeed(0, 1, date = skipped, zone = skippedZone)
+        val vm = TimelineViewModel(repo, SavedStateHandle())
+        vm.selectDay(skipped, skippedZone); advanceUntilIdle()
+
+        assertTrue(vm.state.value.loaded)
+        assertEquals(1, vm.state.value.totalCount)
+        assertTrue(vm.state.value.items.single() is TimelineFeedItem.Habit)
+    }
+
     @Test fun stoppedScreensDoNotRefreshUntilForegroundObservationRestarts() = runTest(dispatcher) {
         val repo = StoredRecords(1)
         val vm = TimelineViewModel(repo, SavedStateHandle()); vm.selectDay(day, zone); advanceUntilIdle()
@@ -189,6 +232,45 @@ class TimelineViewModelTest {
     }
 
     private fun ids(vm: TimelineViewModel) = vm.state.value.records.map { it.event.id.value.leastSignificantBits }
+
+    private class MixedFeed(eventCount: Int, habitCount: Int,
+        private val date: LocalDate = LocalDate.parse("2026-10-11"),
+        private val zone: ZoneId = ZoneOffset.UTC) : TimelineRepository {
+        private val changed = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+        private val base = Instant.parse("2026-10-11T08:00:00Z")
+        val items = buildList {
+            repeat(eventCount) { index ->
+                val occurred = base.plusSeconds((index / 2).toLong())
+                add(TimelineFeedItem.Entry(LifeEventRecord(LifeEvent(EventId(UUID(0, index.toLong())),
+                    if (index == 5) EventType.APP_USAGE else EventType.ACTIVITY, occurred, occurred))))
+            }
+            repeat(habitCount) { index ->
+                val id = UUID(0, index.toLong())
+                val occurred = if (index < 10) null else base.plusSeconds((index / 2).toLong())
+                add(TimelineFeedItem.Habit(HabitLog(id, UUID(1, 1), date, zone, occurred, base, base), "Read", "pages"))
+            }
+        }.toMutableList()
+
+        override fun observeChanges() = changed
+        override suspend fun page(range: TimeRange, offset: Int, limit: Int, showAppUsage: Boolean) = TimelinePage(emptyList(), offset, 0)
+        override suspend fun get(id: EventId): LifeEventRecord? = null
+        override suspend fun feed(date: LocalDate, zone: ZoneId, offset: Int, limit: Int,
+            showAppUsage: Boolean): TimelineFeedPage {
+            val visible = items.filterNot { it is TimelineFeedItem.Entry && !showAppUsage && it.record.event.type == EventType.APP_USAGE }
+                .sortedWith(compareBy<TimelineFeedItem> { if (it is TimelineFeedItem.Habit && it.log.occurredAt == null) 0 else 1 }
+                    .thenByDescending { item -> when (item) {
+                        is TimelineFeedItem.Entry -> item.record.event.occurredAt
+                        is TimelineFeedItem.Habit -> item.log.occurredAt ?: item.log.recordedAt
+                    } }
+                    .thenBy { if (it is TimelineFeedItem.Entry) 0 else 1 }
+                    .thenBy { it.key.substringAfter(':') })
+            return TimelineFeedPage(visible.drop(offset).take(limit), offset, visible.size,
+                visible.filterIsInstance<TimelineFeedItem.Entry>().count { it.record.event.type != EventType.APP_USAGE },
+                visible.count { it is TimelineFeedItem.Habit })
+        }
+        fun removeOne() { items.removeAt(40); changed.tryEmit(Unit) }
+    }
+
     private class StoredRecords(count: Int, initial: Boolean = true) : TimelineRepository {
         val changes = MutableSharedFlow<Unit>(replay = 1).apply { if (initial) tryEmit(Unit) }
         var failure: Exception? = null

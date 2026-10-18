@@ -162,7 +162,10 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                         TimelineRoute(timeline, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
                             onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
                             onEvent = ::openEvent, onMemory = { navController.navigate("memory?eventId=$it") },
-                            onSearch = search?.let { { navController.navigate("search") } })
+                            onSearch = search?.let { { navController.navigate("search") } },
+                            onHabit = { id, habitDate, logId ->
+                                navController.navigate("habit_detail/$id/$habitDate" + (logId?.let { "?logId=$it" } ?: ""))
+                            })
                     } else if (destination == Destination.TODAY) {
                         TodayRoute(repository,
                             date = selectedDate?.let(LocalDate::parse) ?: currentDay.date,
@@ -194,7 +197,9 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             onPerson = { navController.navigate("person_detail/$it") },
                             onPlace = { navController.navigate("place_detail/$it") },
                             onUsage = { navController.navigate("review_usage/$it") },
-                            onMemory = { navController.navigate("memory?eventId=${it.event.id}") })
+                            onMemory = { navController.navigate("memory?eventId=${it.event.id}") },
+                            habits = habits,
+                            onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") })
                         else MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
                             onMemory = { navController.navigate("memory?eventId=$it") },
                             onJournal = { navController.navigate("journal_detail/$it") })
