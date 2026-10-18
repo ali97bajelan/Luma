@@ -2,9 +2,17 @@ package com.luma.lifeos
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import com.luma.lifeos.domain.model.EventId
+import com.luma.lifeos.domain.model.JournalInput
+import com.luma.lifeos.domain.model.PersonInput
+import com.luma.lifeos.domain.model.PlaceInput
+import com.luma.lifeos.domain.model.PlaceSelection
+import kotlinx.coroutines.runBlocking
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.UUID
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -20,8 +28,50 @@ class AppNavigationTest {
             compose.onNodeWithTag("nav_$route").performClick()
             compose.onNodeWithTag("screen_$route").assertIsDisplayed()
         }
+        compose.onNodeWithTag("nav_habits").performClick()
+        compose.onNodeWithTag("screen_habits").assertIsDisplayed()
+        compose.onNodeWithTag("habits_back").assertDoesNotExist()
         compose.onNodeWithTag("nav_people").assertDoesNotExist()
         compose.onNodeWithTag("nav_settings").assertDoesNotExist()
+    }
+
+    @Test fun reviewCatalogDetailsReturnToReviewOrigin() {
+        val storage = (compose.activity.application as LumaApplication).storage
+        val personId = UUID.randomUUID()
+        val placeId = UUID.randomUUID()
+        val journalId = EventId.new()
+        val personName = "Review person ${System.nanoTime()}"
+        val placeName = "Review place ${System.nanoTime()}"
+        runBlocking {
+            storage.people.create(personId, PersonInput(personName))
+            storage.places.create(placeId, PlaceInput(placeName))
+            storage.journals.create(journalId, JournalInput("Review catalog origin", Instant.now(),
+                personIds = setOf(personId), placeSelection = PlaceSelection(placeId)))
+        }
+        try {
+            compose.onNodeWithTag("nav_review").performClick()
+            awaitTag("screen_review")
+            compose.onNodeWithTag("review_section_catalog").performClick()
+            awaitTag("review_heading_catalog")
+            val openDetails = compose.activity.getString(R.string.review_catalog_detail)
+            compose.waitUntil(5_000) { compose.onAllNodesWithText(openDetails).fetchSemanticsNodes().size == 2 }
+
+            compose.onAllNodesWithText(openDetails)[0].performScrollTo().performClick()
+            awaitTag("screen_person_detail")
+            compose.onNodeWithTag("person_detail_back").performClick()
+            awaitTag("screen_review")
+
+            compose.onAllNodesWithText(openDetails)[1].performScrollTo().performClick()
+            awaitTag("screen_place_detail")
+            compose.onNodeWithTag("place_detail_back").performClick()
+            awaitTag("screen_review")
+        } finally {
+            runBlocking {
+                storage.journals.delete(journalId)
+                storage.people.delete(personId)
+                storage.places.delete(placeId)
+            }
+        }
     }
 
     @Test fun moreOpensPeoplePlacesAndSettingsWithBackToMore() {
@@ -81,5 +131,11 @@ class AppNavigationTest {
         compose.onNodeWithTag("day_today").performClick()
         compose.onNodeWithTag("day_selected", useUnmergedTree = true).assertTextEquals(
             LocalDate.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
+    }
+
+    private fun awaitTag(tag: String) {
+        compose.waitUntil(5_000) {
+            compose.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 }

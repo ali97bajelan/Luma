@@ -195,7 +195,6 @@ fun LifeOsApp(
                             onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
                             deviceDate = currentDay.date,
                             deviceZone = currentDay.zone,
-                            onBack = { navController.popBackStack() },
                         )
                         PrimaryDestination.REVIEW -> {
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,

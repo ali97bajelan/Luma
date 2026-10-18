@@ -23,7 +23,7 @@ fun HabitsRoute(
     onHabit: (UUID, LocalDate) -> Unit,
     deviceDate: LocalDate,
     deviceZone: ZoneId,
-    onBack: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val factory = androidx.compose.runtime.remember(repository) {
         viewModelFactory { initializer { HabitsViewModel(repository, createSavedStateHandle()) } }

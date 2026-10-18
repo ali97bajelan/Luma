@@ -47,7 +47,7 @@ fun HabitsScreen(
     state: HabitsUiState,
     date: LocalDate,
     deviceZone: ZoneId,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onSelectDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
     onCreate: () -> Unit,
@@ -61,8 +61,10 @@ fun HabitsScreen(
         modifier = Modifier.testTag("screen_habits"),
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.habit_title)) }, navigationIcon = {
-                TextButton(onClick = onBack, modifier = Modifier.testTag("habits_back")) {
-                    Text(stringResource(R.string.back))
+                onBack?.let { back ->
+                    TextButton(onClick = back, modifier = Modifier.testTag("habits_back")) {
+                        Text(stringResource(R.string.back))
+                    }
                 }
             }, actions = {
                 TextButton(onClick = onCreate, modifier = Modifier.testTag("habit_create")) {
