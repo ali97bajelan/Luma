@@ -68,7 +68,7 @@ class TimelineFlowTest {
         compose.onNodeWithTag("nav_timeline").performClick()
         awaitTag("event_${activity.id}")
         compose.onNodeWithTag("event_${unused.id}").assertDoesNotExist()
-        compose.onNodeWithTag("timeline_event_count").assertTextEquals("1 event this day")
+        compose.onNodeWithTag("timeline_counts").assertTextEquals("1 entry · 0 habit logs")
         compose.onNodeWithTag("timeline_order").assertTextEquals("Newest first")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${activity.id}"))
         compose.onNodeWithTag("event_${activity.id}").performClick()
@@ -82,8 +82,8 @@ class TimelineFlowTest {
         runBlocking { RoomLifeEventRepository(db).delete(activity.id) }
         awaitTag("event_missing")
         compose.onNodeWithTag("event_detail_back").performClick()
-        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_event_count"))
-        compose.onNodeWithTag("timeline_event_count").assertTextEquals("0 events this day")
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("timeline_counts"))
+        compose.onNodeWithTag("timeline_counts").assertTextEquals("0 entries · 0 habit logs")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${usage.id}"))
         awaitText("2 min")
         compose.onNodeWithTag("event_${usage.id}").performClick()
@@ -169,7 +169,7 @@ class TimelineFlowTest {
         val usage = saveUsage("org.example.browser", 60_001)
         show()
         compose.onNodeWithTag("nav_timeline").performClick()
-        awaitTag("timeline_event_count")
+        awaitTag("timeline_counts")
 
         compose.onNodeWithTag("event_${usage.id}").assertDoesNotExist()
     }
@@ -179,7 +179,7 @@ class TimelineFlowTest {
         val overOneMinute = saveUsage("org.example.over-one-minute", 60_001)
         show()
         compose.onNodeWithTag("nav_timeline").performClick()
-        awaitTag("timeline_event_count")
+        awaitTag("timeline_counts")
 
         compose.onNodeWithTag("timeline_show_app_usage").assertIsOff()
         compose.onNodeWithTag("event_${oneMinute.id}").assertDoesNotExist()

@@ -48,6 +48,15 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
         val report = (state as? WeeklyReviewState.Data)?.report
+        var habitRetry by remember { mutableIntStateOf(0) }
+        val habitState = if (habits != null) {
+            val habitObservation = remember(habits, habitRetry) {
+                observeHabitWeek(habits, period.current.start, period.current.through)
+            }
+            val observed by habitObservation.collectAsStateWithLifecycle(ReviewHabitsState.Loading)
+            observed
+        } else null
+        val habitLogCount = (habitState as? ReviewHabitsState.Data)?.comparison?.rows?.sumOf { it.currentRepetitions }
         // A short loading/error list must not clamp the report's restored scroll position.
         val placeholderListState = rememberLazyListState()
         val empty = report?.let { it.current.records == 0 && it.current.usage?.totalMillis == null && it.current.activities.isEmpty() } == true && habits == null
@@ -96,7 +105,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                     is WeeklyReviewState.Data -> {
                         val report = current.report
                         val a = report.current; val b = report.previous
-                        item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources) }
+                        item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount) }
                         stickyHeader(key = "sections") {
                             Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
                                 ReviewSectionNavigation(section, onSection = { key ->
@@ -142,7 +151,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         item(key = "usage") { ReviewDigital(report, onUsage) }
                         item(key = "activity") { ReviewActivities(report, onSources) }
                         if (habits != null) item(key = "habits") {
-                            ReviewHabits(habits, period.current.start, period.current.through, onHabit)
+                            ReviewHabits(requireNotNull(habitState), { habitRetry++ }, onHabit)
                         }
                     }
                 }

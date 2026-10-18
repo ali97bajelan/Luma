@@ -26,7 +26,7 @@
     <string name="select_date">Select date</string>
     <string name="cancel">Cancel</string>
     <string name="retry">Try again</string>
-    <string name="today_no_entries">No entries yet</string>
+    <string name="today_no_entries">No mood, journal or memory entries yet</string>
     <string name="today_capture_mood">Mood</string>
     <string name="today_capture_journal">Journal</string>
     <string name="today_capture_memory">Memory</string>
@@ -34,13 +34,14 @@
     <string name="today_capture_when">When would you like to record this?</string>
     <string name="today_loading">Loading your day…</string>
     <string name="today_selected_date">Entries for %1$s</string>
-    <string name="today_empty_heading">No events for this day yet</string>
+    <string name="today_empty_heading">No mood, journal or memory entries yet</string>
     <string name="today_empty_body">Explore another day or open Quick Capture to record how you feel. No permissions or account are needed.</string>
     <string name="today_error">Your day could not be loaded. Try again.</string>
-    <plurals name="daily_events">
-        <item quantity="one">%d event this day</item>
-        <item quantity="other">%d events this day</item>
+    <plurals name="entry_count">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
     </plurals>
+    <string name="entry_habit_counts">%1$s · %2$s</string>
     <string name="event_type_count">%1$s: %2$d</string>
     <string name="event_mood">Mood</string>
     <string name="event_journal">Journal</string>
@@ -228,15 +229,15 @@
     <string name="app_usage_duration_hours_minutes">%1$s h %2$s min</string>
     <string name="app_usage_duration_under_second">&lt;1 sec</string>
     <string name="usage_unavailable">App usage details unavailable</string>
-    <string name="timeline_empty_heading">No events for this day yet</string>
+    <string name="timeline_empty_heading">No entries or habit logs for this day yet</string>
     <string name="timeline_empty">Browse another date or use Quick Capture to add an entry.</string>
     <string name="timeline_error">Could not load timeline events. Try again.</string>
     <string name="timeline_earlier">Earlier events</string>
     <string name="timeline_later">Later events</string>
     <string name="timeline_show_app_usage">Show app usage</string>
-    <plurals name="timeline_habit_logs">
-        <item quantity="one">%1$d habit completion</item>
-        <item quantity="other">%1$d habit completions</item>
+    <plurals name="habit_log_count">
+        <item quantity="one">%1$d habit log</item>
+        <item quantity="other">%1$d habit logs</item>
     </plurals>
     <string name="entry_order_newest_first">Newest first</string>
     <string name="entry_order_oldest_first">Oldest first</string>
@@ -269,7 +270,7 @@
     <string name="usage_daily_error">Saved usage could not be loaded</string>
     <string name="usage_interval_changed">Android usage intervals changed or the device restarted. Saved totals are preserved; only newly started intervals will import.</string>
     <string name="summary_heading">Saved daily summary</string>
-    <string name="summary_saved_only">From saved records. Unavailable means no observations saved for this day.</string>
+    <string name="summary_saved_only">Entries exclude habit logs and app usage. Metrics use saved records. Unavailable means no observations saved for this day.</string>
     <string name="summary_error">Daily summary could not be calculated. Your saved records remain available.</string>
     <string name="summary_records">Saved entries: %1$d</string>
     <string name="summary_journals">Journal entries: %1$d</string>
@@ -504,7 +505,7 @@
     <string name="review_mood_empty">No check-ins saved this week</string>
     <string name="review_mood_explanation">Averages use saved check-ins. Up to 10 most recorded emotions are shown.</string>
     <string name="habit_title">Habits</string>
-    <string name="habit_timeline_completion">One completion · %1$s</string>
+    <string name="habit_timeline_completion">One habit log · %1$s</string>
     <string name="habit_add">Add habit</string>
     <string name="habit_empty_heading">Start with one habit</string>
     <string name="habit_empty_body">Track small repetitions you choose. A log records one completion.</string>

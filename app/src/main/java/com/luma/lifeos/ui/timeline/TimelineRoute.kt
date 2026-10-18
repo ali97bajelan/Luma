@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -29,6 +28,7 @@ import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.habit.TimelineFeedItem
 import com.luma.lifeos.domain.repository.TimelineRepository
+import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.EmptyStateCard
 import java.time.LocalDate
 import java.time.ZoneId
@@ -84,11 +84,8 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                             .semantics { contentDescription = usageSwitchLabel })
                     }
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
-                    if (state.loaded) Text(pluralStringResource(R.plurals.daily_events, state.eventCount, state.eventCount),
-                        modifier = Modifier.testTag("timeline_event_count"))
-                    if (state.loaded && state.habitLogCount > 0) Text(
-                        pluralStringResource(R.plurals.timeline_habit_logs, state.habitLogCount, state.habitLogCount),
-                        modifier = Modifier.testTag("timeline_habit_count"))
+                    if (state.loaded) Text(entryLogCounts(state.eventCount, state.habitLogCount),
+                        modifier = Modifier.testTag("timeline_counts"))
                     Text(stringResource(R.string.entry_order_newest_first),
                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("timeline_order"))
                 }

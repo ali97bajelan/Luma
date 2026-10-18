@@ -25,6 +25,7 @@ import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.ui.timeline.label
+import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.time.format.FormatStyle
 
@@ -55,7 +56,7 @@ internal fun ReviewSectionNavigation(selected: String?, onSection: (String) -> U
 
 @Composable
 internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewRepository,
-    onEvent: (LifeEventRecord) -> Unit, onSources: (ReviewDates, ReviewMetric) -> Unit) {
+    onEvent: (LifeEventRecord) -> Unit, onSources: (ReviewDates, ReviewMetric) -> Unit, habitLogCount: Int? = null) {
     val current = report.current
     Column(Modifier.fillMaxWidth().testTag("review_overview"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.review_overview), style = MaterialTheme.typography.titleMedium,
@@ -63,6 +64,8 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
             modifier = Modifier.semantics { heading() }.testTag("review_overview_heading"))
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(entryLogCounts(current.records, habitLogCount), style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.testTag("review_overview_counts"))
                 BoxWithConstraints {
                     val stack = maxWidth < 280.dp || LocalDensity.current.fontScale >= 1.5f
                     val mood = current.mood?.score

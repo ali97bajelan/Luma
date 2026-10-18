@@ -1,6 +1,5 @@
 package com.luma.lifeos.ui.summary
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -8,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -18,12 +16,13 @@ import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.ui.timeline.label
 import com.luma.lifeos.ui.usage.appUsageDuration
+import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.domain.usage.UsageHistory
 import java.text.NumberFormat
 
 @Composable
-fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
+fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCount: Int? = null) {
     Card(Modifier.fillMaxWidth().testTag("daily_summary")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.summary_heading), style = MaterialTheme.typography.titleMedium)
@@ -35,7 +34,8 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit) {
                 }
                 is DailySummaryState.Data -> {
                     val summary = state.summary
-                    CountMetric(R.string.summary_count_entries, summary.records, "summary_records", Modifier)
+                    Text(entryLogCounts(summary.records, habitLogCount), style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.testTag("summary_records"))
                     val mood = summary.mood
                     if (mood != null) ScaleLine(stringResource(R.string.summary_mood), mood.score, "summary_mood")
                     val usage = summary.usage
@@ -111,13 +111,5 @@ private fun ScaleLine(label: String, scale: ScaleTotal?, tag: String) {
         val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 2 }
         Text(stringResource(R.string.summary_scale_value, label, format.format(scale.average)),
             modifier = Modifier.testTag(tag), style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
-private fun CountMetric(@StringRes label: Int, count: Int, tag: String, modifier: Modifier) {
-    Column(modifier.testTag(tag).semantics(mergeDescendants = true) {}) {
-        Text(NumberFormat.getIntegerInstance().format(count), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(label), style = MaterialTheme.typography.bodySmall)
     }
 }

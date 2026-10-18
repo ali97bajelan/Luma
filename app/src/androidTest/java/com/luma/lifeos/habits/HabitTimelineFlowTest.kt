@@ -74,7 +74,7 @@ class HabitTimelineFlowTest {
         compose.onNodeWithTag("habit_timeline_zone_$dateOnly", useUnmergedTree = true).assertTextContains("Asia/Tehran")
         compose.onNodeWithTag("habit_timeline_$timed").assertTextContains("09:00")
         compose.onNodeWithTag("habit_timeline_zone_$timed", useUnmergedTree = true).assertTextContains("Asia/Tehran")
-        compose.onNodeWithTag("timeline_habit_count").assertTextContains("2", substring = true)
+        compose.onNodeWithTag("timeline_counts").assertTextEquals("1 entry · 2 habit logs")
         compose.onNodeWithTag("habit_timeline_$dateOnly").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(Triple(habitId, date, dateOnly), opened) }
     }

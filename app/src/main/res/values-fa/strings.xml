@@ -26,7 +26,7 @@
     <string name="select_date">انتخاب تاریخ</string>
     <string name="cancel">لغو</string>
     <string name="retry">تلاش دوباره</string>
-    <string name="today_no_entries">هنوز چیزی ثبت نشده</string>
+    <string name="today_no_entries">هنوز ورودی حال‌وهوا، یادداشت روزانه یا خاطره‌ای ثبت نشده</string>
     <string name="today_capture_mood">حال‌وهوا</string>
     <string name="today_capture_journal">یادداشت</string>
     <string name="today_capture_memory">خاطره</string>
@@ -34,13 +34,14 @@
     <string name="today_capture_when">این مورد را برای چه زمانی ثبت می‌کنید؟</string>
     <string name="today_loading">در حال بارگذاری روز شما…</string>
     <string name="today_selected_date">رویدادهای %1$s</string>
-    <string name="today_empty_heading">هنوز رویدادی برای این روز ثبت نشده</string>
+    <string name="today_empty_heading">هنوز ورودی حال‌وهوا، یادداشت روزانه یا خاطره‌ای ثبت نشده</string>
     <string name="today_empty_body">روز دیگری را ببینید یا برای ثبت حال‌وهوایتان، ثبت سریع را باز کنید. نیازی به مجوز یا حساب کاربری نیست.</string>
     <string name="today_error">اطلاعات این روز بارگذاری نشد. دوباره تلاش کنید.</string>
-    <plurals name="daily_events">
-        <item quantity="one">%d رویداد در این روز</item>
-        <item quantity="other">%d رویداد در این روز</item>
+    <plurals name="entry_count">
+        <item quantity="one">%1$d ورودی</item>
+        <item quantity="other">%1$d ورودی</item>
     </plurals>
+    <string name="entry_habit_counts">%1$s · %2$s</string>
     <string name="event_type_count">%1$s: %2$d</string>
     <string name="event_mood">حال‌وهوا</string>
     <string name="event_journal">یادداشت روزانه</string>
@@ -242,15 +243,15 @@
     <string name="app_usage_duration_hours_minutes">%1$s ساعت %2$s دقیقه</string>
     <string name="app_usage_duration_under_second">کمتر از ۱ ثانیه</string>
     <string name="usage_unavailable">جزئیات استفاده از برنامه‌ها در دسترس نیست</string>
-    <string name="timeline_empty_heading">هنوز رویدادی برای این روز ثبت نشده</string>
+    <string name="timeline_empty_heading">هنوز ورودی یا ثبت عادتی برای این روز وجود ندارد</string>
     <string name="timeline_empty">روز دیگری را ببینید یا برای افزودن نوشته‌ای، ثبت سریع را باز کنید.</string>
     <string name="timeline_error">رویدادهای خط زمانی بارگذاری نشدند. دوباره تلاش کنید.</string>
     <string name="timeline_earlier">رویدادهای قدیمی‌تر</string>
     <string name="timeline_later">رویدادهای جدیدتر</string>
     <string name="timeline_show_app_usage">نمایش استفاده از برنامه‌ها</string>
-    <plurals name="timeline_habit_logs">
-        <item quantity="one">%1$d بار تکمیل عادت</item>
-        <item quantity="other">%1$d بار تکمیل عادت</item>
+    <plurals name="habit_log_count">
+        <item quantity="one">%1$d ثبت عادت</item>
+        <item quantity="other">%1$d ثبت عادت</item>
     </plurals>
     <string name="entry_order_newest_first">از جدید به قدیم</string>
     <string name="entry_order_oldest_first">از قدیم به جدید</string>
@@ -283,7 +284,7 @@
     <string name="usage_daily_error">داده‌های استفادهٔ ذخیره‌شده بارگذاری نشدند</string>
     <string name="usage_interval_changed">بازه‌های استفادهٔ Android تغییر کرده‌اند یا دستگاه دوباره راه‌اندازی شده است. مجموع‌های ذخیره‌شده حفظ می‌شوند؛ فقط بازه‌هایی که تازه آغاز شده‌اند وارد می‌شوند.</string>
     <string name="summary_heading">خلاصهٔ روزانهٔ ذخیره‌شده</string>
-    <string name="summary_saved_only">بر اساس اطلاعات ذخیره‌شده. «در دسترس نیست» یعنی برای این روز مشاهده‌ای ذخیره نشده است.</string>
+    <string name="summary_saved_only">تعداد ورودی‌ها شامل ثبت عادت و مصرف برنامه‌ها نیست. معیارها از اطلاعات ذخیره‌شده محاسبه می‌شوند. «در دسترس نیست» یعنی برای این روز مشاهده‌ای ذخیره نشده است.</string>
     <string name="summary_error">خلاصهٔ روزانه محاسبه نشد. اطلاعات ذخیره‌شدهٔ شما همچنان در دسترس‌اند.</string>
     <string name="summary_records">نوشته‌های ذخیره‌شده: %1$d</string>
     <string name="summary_journals">یادداشت‌های روزانه: %1$d</string>
@@ -504,7 +505,7 @@
     <string name="review_mood_empty">این هفته حال‌وهوایی ثبت نشده</string>
     <string name="review_mood_explanation">میانگین‌ها از حال‌وهواهای ثبت‌شده محاسبه می‌شوند. حداکثر ۱۰ احساس با بیشترین ثبت نمایش داده می‌شود.</string>
     <string name="habit_title">عادت‌ها</string>
-    <string name="habit_timeline_completion">یک تکرار · %1$s</string>
+    <string name="habit_timeline_completion">یک ثبت عادت · %1$s</string>
     <string name="habit_add">افزودن عادت</string>
     <string name="habit_empty_heading">با یک عادت شروع کنید</string>
     <string name="habit_empty_body">تکرارهای کوچکی را که انتخاب می‌کنید ثبت کنید. هر ثبت یک بار انجام را ذخیره می‌کند.</string>

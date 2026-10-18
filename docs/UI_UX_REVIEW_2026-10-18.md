@@ -93,6 +93,10 @@ The counts may be internally correct, but “0 entries” and “No events” ca
 
 **Starting points:** TodayScreen, DailySummaryCard, [TimelineRoute.kt](../app/src/main/java/com/luma/lifeos/ui/timeline/TimelineRoute.kt), Review counts and localized strings.
 
+**Implementation update — 18 October 2026:** Today, the expanded daily summary, Timeline and the weekly Review overview now show separate entry and habit-log totals, for example “0 entries · 1 habit log” or “1 entry · 2 habit logs.” The entry-only empty state names mood, journal and memory entries; Timeline rows say “One habit log” instead of “One completion.” Totals count saved logs, including repetitions beyond a daily target, independently of target progress. Today counts the selected date even when the habit preview follows another tracking-zone date. Review shares one live habit observation between its overview and habit section. Existing summary and comparison calculations retain their scope. Count plurals and updated copy are available in English, Persian and French.
+
+**Implementation validation:** Debug and Android-test APK builds passed, along with 605 JVM tests and 37 targeted emulator tests across the affected flows. New database-backed tests cover a habit-only day, one journal with two habit logs beyond a target of one, live Review updates after deletion, zero logs, the expanded daily summary and differing selected/preview dates. Existing Today density, larger-text/RTL, Timeline paging, summary scope/retry, Review navigation and Persian numeral/plural checks passed. Tests ran through adb with a separate validation application ID. App lint still reports the two pre-existing `ImpliedQuantity` errors in Persian and French `habit_unit_default` plurals.
+
 ### UX-03 — Habit correction exposes storage formats and asks to discard untouched input
 
 **Evidence:** [correction dialog](ux-review-2026-10-18/50-habit-correction.png). Reproduction: Habits → water → Edit beside the recorded repetition. Opening then dismissing without typing also requests discard confirmation. Source confirms both paths.

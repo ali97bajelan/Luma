@@ -52,7 +52,7 @@ class DailySummaryFlowTest {
         }
     }
     @Test fun realMetricsRefreshAndOmitUnavailableMoodMeans() {
-        show(); openSummary(); awaitText("summary_records", "2")
+        show(); openSummary(); awaitText("summary_records", "2 entries", substring = true)
         compose.onNodeWithTag("summary_memories").assertDoesNotExist()
         awaitText("summary_mood", "4/5", substring = true)
         compose.onNodeWithTag("summary_energy").assertDoesNotExist()
@@ -66,7 +66,7 @@ class DailySummaryFlowTest {
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("day_previous"))
         compose.onNodeWithTag("day_previous").performClick()
         openSummary()
-        awaitText("summary_records", "0")
+        awaitText("summary_records", "0 entries", substring = true)
         compose.onNodeWithTag("summary_mood").assertDoesNotExist()
         compose.onNodeWithTag("summary_energy").assertDoesNotExist()
         compose.onNodeWithTag("summary_stress").assertDoesNotExist()
@@ -88,7 +88,7 @@ class DailySummaryFlowTest {
         compose.runOnIdle { assertEquals(journal, opened) }
         failed = false; scrollToTag("daily_summary_retry")
         compose.onNodeWithTag("daily_summary_retry").performClick()
-        awaitText("summary_records", "2")
+        awaitText("summary_records", "2 entries", substring = true)
         compose.onNodeWithTag("daily_summary_error").assertDoesNotExist()
     }
     @Test fun usageRowsShowLabelsPackagesAndTheirOwnDurationsByNativeDate() {
@@ -125,12 +125,12 @@ class DailySummaryFlowTest {
         val id = runBlocking { db.lifeEvents().findBySource(EventSource.USAGE_STATS, usage.sourceReference)!!.id }
         show()
         openSummary()
-        awaitText("summary_records", "2")
+        awaitText("summary_records", "2 entries", substring = true)
         scrollToTag("today_summary")
-        compose.onNodeWithText("2 events this day").assertIsDisplayed()
+        compose.onNodeWithTag("today_summary").assertTextEquals("2 entries").assertIsDisplayed()
         compose.onNodeWithTag("event_$id").assertDoesNotExist()
         runBlocking { RoomLifeEventRepository(db).delete(mood); RoomLifeEventRepository(db).delete(journal) }
-        awaitText("summary_records", "0")
+        awaitText("summary_records", "0 entries", substring = true)
         scrollToTag("today_empty")
         compose.onNodeWithTag("event_$id").assertDoesNotExist()
         assertNotNull(runBlocking { db.lifeEvents().get(id) })

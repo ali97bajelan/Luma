@@ -14,7 +14,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -23,6 +22,7 @@ import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.ui.timeline.DayNavigation
 import com.luma.lifeos.ui.timeline.EventCard
+import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.ui.summary.DailySummaryState
 import com.luma.lifeos.ui.summary.DailySummaryCard
@@ -49,6 +49,7 @@ fun TodayScreen(
     summaryState: DailySummaryState? = null,
     onSummaryRetry: () -> Unit = {},
     habitsState: HabitsUiState? = null,
+    habitLogCount: Int? = null,
     onHabits: () -> Unit = {},
     onCreateHabit: () -> Unit = {},
     onHabit: (UUID, LocalDate) -> Unit = { _, _ -> },
@@ -79,8 +80,8 @@ fun TodayScreen(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.testTag("today_recent_entries"))
-                if (state is TodayUiState.Data) {
-                    Text(pluralStringResource(R.plurals.daily_events, state.events.size, state.events.size),
+                if (state is TodayUiState.Data || state == TodayUiState.Empty) {
+                    Text(entryLogCounts((state as? TodayUiState.Data)?.events?.size ?: 0, habitLogCount),
                         style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("today_summary"))
                 }
             }
@@ -118,7 +119,7 @@ fun TodayScreen(
         }
         summaryState?.let { summary -> item(key = "daily_summary") {
             DetailsDisclosure(R.string.summary_heading, "today_daily_summary", keepTitle = true) {
-                DailySummaryCard(summary, onSummaryRetry)
+                DailySummaryCard(summary, onSummaryRetry, habitLogCount)
             }
         } }
     }

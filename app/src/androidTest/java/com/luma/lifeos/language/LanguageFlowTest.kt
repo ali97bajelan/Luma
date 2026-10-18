@@ -95,8 +95,8 @@ class LanguageFlowTest {
     @Test fun persianResourcesFormatPluralsNumbersAccessibilityAndNativePickers() {
         select(AppLanguage.PERSIAN)
         compose.activityRule.scenario.onActivity { activity ->
-            assertEquals("۱ رویداد در این روز", activity.resources.getQuantityString(R.plurals.daily_events, 1, 1))
-            assertEquals("۲ رویداد در این روز", activity.resources.getQuantityString(R.plurals.daily_events, 2, 2))
+            assertEquals("۱ ورودی", activity.resources.getQuantityString(R.plurals.entry_count, 1, 1))
+            assertEquals("۲ ورودی", activity.resources.getQuantityString(R.plurals.entry_count, 2, 2))
             assertTrue(activity.getString(R.string.mood_scale_description, "انرژی", 4).contains("۴"))
         }
         compose.onNodeWithTag("day_picker").performClick()

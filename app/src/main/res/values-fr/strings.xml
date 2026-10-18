@@ -26,7 +26,7 @@
     <string name="select_date">Choisir une date</string>
     <string name="cancel">Annuler</string>
     <string name="retry">Réessayer</string>
-    <string name="today_no_entries">Aucune entrée pour le moment</string>
+    <string name="today_no_entries">Aucune entrée d’humeur, de journal ou de souvenir pour le moment</string>
     <string name="today_capture_mood">Humeur</string>
     <string name="today_capture_journal">Journal</string>
     <string name="today_capture_memory">Souvenir</string>
@@ -34,14 +34,15 @@
     <string name="today_capture_when">Quand souhaitez-vous enregistrer cette entrée ?</string>
     <string name="today_loading">Chargement de votre journée…</string>
     <string name="today_selected_date">Entrées du %1$s</string>
-    <string name="today_empty_heading">Aucun événement pour cette journée pour le moment</string>
+    <string name="today_empty_heading">Aucune entrée d’humeur, de journal ou de souvenir pour le moment</string>
     <string name="today_empty_body">Explorez une autre journée ou ouvrez la Saisie rapide pour noter votre état d’esprit. Aucune autorisation ni aucun compte ne sont nécessaires.</string>
     <string name="today_error">Impossible de charger votre journée. Réessayez.</string>
-    <plurals name="daily_events">
-        <item quantity="one">%d événement ce jour</item>
-        <item quantity="many">%d événements ce jour</item>
-        <item quantity="other">%d événements ce jour</item>
+    <plurals name="entry_count">
+        <item quantity="one">%1$d entrée</item>
+        <item quantity="many">%1$d entrées</item>
+        <item quantity="other">%1$d entrées</item>
     </plurals>
+    <string name="entry_habit_counts">%1$s · %2$s</string>
     <string name="event_type_count">%1$s : %2$d</string>
     <string name="event_mood">Humeur</string>
     <string name="event_journal">Journal</string>
@@ -233,16 +234,16 @@
     <string name="app_usage_duration_hours_minutes">%1$s h %2$s min</string>
     <string name="app_usage_duration_under_second">&lt;1 s</string>
     <string name="usage_unavailable">Détails de l’utilisation des applications indisponibles</string>
-    <string name="timeline_empty_heading">Aucun événement pour cette journée pour le moment</string>
+    <string name="timeline_empty_heading">Aucune entrée ni aucun enregistrement d’habitude pour cette journée</string>
     <string name="timeline_empty">Choisissez une autre date ou ouvrez la Saisie rapide pour ajouter une entrée.</string>
     <string name="timeline_error">Impossible de charger les événements de la chronologie. Réessayez.</string>
     <string name="timeline_earlier">Événements précédents</string>
     <string name="timeline_later">Événements suivants</string>
     <string name="timeline_show_app_usage">Afficher l’utilisation des applications</string>
-    <plurals name="timeline_habit_logs">
-        <item quantity="one">%1$d réalisation d’habitude</item>
-        <item quantity="many">%1$d réalisations d’habitude</item>
-        <item quantity="other">%1$d réalisations d’habitude</item>
+    <plurals name="habit_log_count">
+        <item quantity="one">%1$d enregistrement d’habitude</item>
+        <item quantity="many">%1$d enregistrements d’habitude</item>
+        <item quantity="other">%1$d enregistrements d’habitude</item>
     </plurals>
     <string name="entry_order_newest_first">Les plus récents d’abord</string>
     <string name="entry_order_oldest_first">Les plus anciens d’abord</string>
@@ -275,7 +276,7 @@
     <string name="usage_daily_error">Impossible de charger les données d’utilisation enregistrées</string>
     <string name="usage_interval_changed">Les intervalles d’utilisation d’Android ont changé ou l’appareil a redémarré. Les totaux enregistrés sont conservés ; seuls les nouveaux intervalles seront importés.</string>
     <string name="summary_heading">Résumé quotidien enregistré</string>
-    <string name="summary_saved_only">À partir des données enregistrées. Indisponible signifie qu’aucune observation n’a été enregistrée pour cette journée.</string>
+    <string name="summary_saved_only">Le nombre d’entrées exclut les enregistrements d’habitudes et l’utilisation des applications. Les mesures utilisent les données enregistrées. Indisponible signifie qu’aucune observation n’a été enregistrée pour cette journée.</string>
     <string name="summary_error">Impossible de calculer le résumé quotidien. Vos données enregistrées restent disponibles.</string>
     <string name="summary_records">Entrées enregistrées : %1$d</string>
     <string name="summary_journals">Entrées de journal : %1$d</string>
@@ -510,7 +511,7 @@
     <string name="review_mood_empty">Aucune humeur enregistrée cette semaine</string>
     <string name="review_mood_explanation">Les moyennes utilisent les humeurs enregistrées. Les 10 émotions les plus fréquentes au maximum sont affichées.</string>
     <string name="habit_title">Habitudes</string>
-    <string name="habit_timeline_completion">Une réalisation · %1$s</string>
+    <string name="habit_timeline_completion">Un enregistrement d’habitude · %1$s</string>
     <string name="habit_add">Ajouter une habitude</string>
     <string name="habit_empty_heading">Commencez par une habitude</string>
     <string name="habit_empty_body">Suivez les répétitions que vous choisissez. Chaque enregistrement ajoute une réalisation.</string>
