@@ -2141,3 +2141,39 @@ Representative instrumentation command:
 `git diff --check` is recorded after the final documentation/status update.
 No commit was created. Suggested messages are recorded in the [capture
 implementation plan](superpowers/plans/2026-10-18-ux-07-08-19-capture.md).
+
+
+## Automatic usage and steps import fix — 2026-10-19
+
+The root foreground hooks previously refreshed access without calling either
+integration’s import operation. They now attempt imports once per RESUMED
+activation after refreshing access and checking enabled state and eligibility.
+The existing syncers retain ownership of permission checks, serialization,
+opt-out, persistence and seven-day import windows.
+
+Added `ForegroundRefreshTest` for the complete enabled/status eligibility
+matrices, post-refresh permission changes, failure/cancellation propagation and
+one attempt per call. Added `ForegroundRefreshFlowTest` for resume/return,
+recomposition, permission grant, cancellation, independent imports and retry on
+the next activation. These tests have not been executed in this environment.
+
+Validation in this session:
+
+- PASS: all English, Persian and French string catalogs parse as XML, contain
+  unique matching resource keys and include both integration explanations.
+- BLOCKED: the focused JVM command below and the combined verification command
+  both exit before Gradle starts because `JAVA_HOME` is unset and no `java`
+  executable is available. No compilation or test pass is claimed.
+
+```sh
+bash gradlew --offline :app:testDebugUnitTest \
+  --tests 'com.luma.lifeos.ui.integrations.ForegroundRefreshTest'
+bash gradlew --offline :app:testDebugUnitTest :core:domain:test \
+  :app:assembleDebug :app:assembleDebugAndroidTest
+```
+
+Pending on a configured Android environment: run the commands above and the
+`com.luma.lifeos.integration.ForegroundRefreshFlowTest` instrumentation suite;
+confirm native Usage Access and Health Connect data update on launch and return
+without a manual import. Permission denial, cancellation and retained history
+still require runtime acceptance. No commit was created.

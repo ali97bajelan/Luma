@@ -101,7 +101,9 @@ starts, with no invented visits. Totals measure foreground app usage rather than
 device screen-on time. Device reboots and clock
 corrections conservatively leave affected intervals incomplete, retaining saved
 history and importing only newly started intervals. Settings also offers optional
-Health Connect read-steps access and foreground imports. Step totals use Health
+Health Connect read-steps access and foreground imports. When enabled and permitted,
+both integrations import automatically each time Luma opens or returns to active
+use; manual imports remain available in Settings. Step totals use Health
 Connect aggregation across sources and refresh the last seven calendar dates in
 a saved import timezone, including today so far. Repeated imports update the same
 records and reconcile source corrections/deletions in that window. Missing data

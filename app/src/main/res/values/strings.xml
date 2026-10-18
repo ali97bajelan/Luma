@@ -258,7 +258,7 @@
     <string name="entry_order_newest_first">Newest first</string>
     <string name="entry_order_oldest_first">Oldest first</string>
     <string name="usage_title">App usage</string>
-    <string name="usage_access_explanation">Luma can periodically read app names and foreground time with Android Usage access. Imports stay on this device. You can revoke access at any time. Turning imports off keeps previously saved records.</string>
+    <string name="usage_access_explanation">When imports are on and Android Usage access is granted, Luma updates app names and foreground usage each time you open or return to the app. Usage can also refresh in the background. You can import manually from Settings. Imports stay on this device. You can revoke access at any time. Turning imports off keeps previously saved records.</string>
     <string name="usage_enable">Automatic app usage imports</string>
     <string name="usage_manage_access">Manage Android Usage access</string>
     <string name="usage_import_now">Import now</string>
@@ -303,7 +303,7 @@
     <string name="summary_activity">Recorded activity</string>
     <string name="summary_activity_value">%1$s: %2$s %3$s · %4$s · saved samples: %5$d</string>
     <string name="health_title">Health Connect steps</string>
-    <string name="health_explanation">Optionally allow Luma to read step totals from Health Connect. Imports run only while Luma is open; tap Import now to refresh the last seven calendar dates, including today so far. Totals stay on this device and appear in Today, Timeline and saved summaries. Health Connect combines overlapping sources. Luma does not write health data or read sleep or workouts.</string>
+    <string name="health_explanation">Optionally allow Luma to read step totals from Health Connect. When imports are on and read-steps access is granted, Luma updates the last seven calendar dates, including today so far, each time you open or return to the app. You can also import manually from Settings. Totals stay on this device and appear in Today, Timeline and saved summaries. Health Connect combines overlapping sources. Luma does not write health data or read sleep or workouts. Step totals reflect data currently available in Health Connect.</string>
     <string name="health_enable">Step imports</string>
     <string name="health_open_imports_to_refresh">Step imports run only while Luma is open. Turn imports on, then tap Import now to refresh.</string>
     <string name="health_disabled">Step imports are off</string>

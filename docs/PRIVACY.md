@@ -18,7 +18,10 @@ media permission. Journals/memories select photos through the system picker and
 copy only selected images into private storage.
 
 Usage Access reads saved foreground app usage and app labels. Enabled usage imports
-can refresh in the background. Settings exposes Android Usage Access management
+run automatically when Luma opens or returns to active use and can also refresh
+in the background. Enabled Health Connect step imports also run on open/return
+when read access is granted. Manual import remains available in Settings.
+Settings exposes Android Usage Access management
 while imports are off as well as on, with an explanation before launching native
 controls. A status refresh is also available. Health Connect reads daily steps
 only while Luma is open; Luma does not write health records. Granting step access

@@ -266,7 +266,7 @@
     <string name="entry_order_newest_first">Les plus récents d’abord</string>
     <string name="entry_order_oldest_first">Les plus anciens d’abord</string>
     <string name="usage_title">Utilisation des applications</string>
-    <string name="usage_access_explanation">Luma peut lire régulièrement les noms des applications et leur durée d’utilisation au premier plan grâce à l’accès aux données d’utilisation d’Android. Les données importées restent sur cet appareil. Vous pouvez révoquer cet accès à tout moment. La désactivation des importations conserve les données déjà enregistrées.</string>
+    <string name="usage_access_explanation">Lorsque les importations sont activées et que l’accès aux données d’utilisation d’Android est accordé, Luma actualise les noms des applications et leur durée d’utilisation au premier plan chaque fois que vous ouvrez l’application ou y revenez. Les données d’utilisation peuvent aussi être actualisées en arrière-plan. Vous pouvez importer manuellement depuis les Paramètres. Les données importées restent sur cet appareil. Vous pouvez révoquer cet accès à tout moment. La désactivation des importations conserve les données déjà enregistrées.</string>
     <string name="usage_enable">Imports automatiques d’utilisation des applications</string>
     <string name="usage_manage_access">Gérer l’accès aux données d’utilisation d’Android</string>
     <string name="usage_import_now">Importer maintenant</string>
@@ -311,7 +311,7 @@
     <string name="summary_activity">Activité enregistrée</string>
     <string name="summary_activity_value">%1$s : %2$s %3$s · %4$s · observations enregistrées : %5$d</string>
     <string name="health_title">Pas issus de Health Connect</string>
-    <string name="health_explanation">Vous pouvez autoriser Luma à lire les totaux de pas dans Health Connect. Les imports ont lieu uniquement lorsque Luma est ouvert ; appuyez sur Importer maintenant pour actualiser les sept derniers jours calendaires, y compris la journée en cours. Les totaux restent sur cet appareil et apparaissent dans Aujourd’hui, la Chronologie et les résumés enregistrés. Health Connect combine les sources qui se chevauchent. Luma n’écrit aucune donnée de santé et ne lit ni le sommeil ni les entraînements.</string>
+    <string name="health_explanation">Vous pouvez autoriser Luma à lire les totaux de pas dans Health Connect. Lorsque les importations sont activées et que l’accès en lecture aux pas est accordé, Luma actualise les sept derniers jours calendaires, y compris la journée en cours, chaque fois que vous ouvrez l’application ou y revenez. Vous pouvez aussi importer manuellement depuis les Paramètres. Les totaux restent sur cet appareil et apparaissent dans Aujourd’hui, la Chronologie et les résumés enregistrés. Health Connect combine les sources qui se chevauchent. Luma n’écrit aucune donnée de santé et ne lit ni le sommeil ni les entraînements. Les totaux de pas reflètent les données actuellement disponibles dans Health Connect.</string>
     <string name="health_enable">Imports de pas</string>
     <string name="health_open_imports_to_refresh">Les pas sont importés uniquement lorsque Luma est ouvert. Activez les imports, puis appuyez sur Importer maintenant.</string>
     <string name="health_disabled">L’importation des pas est désactivée</string>
