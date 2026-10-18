@@ -27,6 +27,7 @@ import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import androidx.compose.ui.unit.Dp
 import java.time.*
 import java.time.format.FormatStyle
 import java.util.UUID
@@ -39,7 +40,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     onMemory: ((LifeEventRecord) -> Unit)? = null, habits: HabitRepository? = null,
     onHabit: (UUID, LocalDate) -> Unit = { _, _ -> },
     integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
-    onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {}) {
+    onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {},
+    captureBottomClearance: Dp = 0.dp) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -101,7 +103,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         }
         Box(Modifier.fillMaxSize().testTag("screen_review")) {
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = if (report == null) placeholderListState else listState,
-                contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                contentPadding = PaddingValues(start = 20.dp, top = 24.dp, end = 20.dp, bottom = captureBottomClearance),
+                verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item(key = "heading") {
                     ReviewHeader(period,
                         onPrevious = { selected = period.current.start.minusWeeks(1).toString() },

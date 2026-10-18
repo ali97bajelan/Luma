@@ -9,8 +9,7 @@ class MemoryCaptureTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun directCaptureRestoresDraftAppearsInReviewAndCanBeEditedAndDeleted() {
         val note = "Memory test ${System.nanoTime()}"
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_memory").performClick()
+        compose.onNodeWithTag("today_capture_memory").performClick()
         awaitTag("memory_note")
         compose.onNodeWithTag("memory_note").performTextInput(note)
         compose.onNodeWithTag("memory_importance_5").performScrollTo().performClick()
@@ -49,8 +48,7 @@ class MemoryCaptureTest {
     }
     @Test fun journalPromotionAndUnmarkingRetainOriginalBody() {
         val body = "Remember journal ${System.nanoTime()}"
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_journal").performClick()
+        compose.onNodeWithTag("today_capture_journal").performClick()
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_body").performTextInput(body)
         compose.onNodeWithTag("journal_save").performClick()
@@ -61,6 +59,7 @@ class MemoryCaptureTest {
         compose.onNodeWithTag("journal_memory").performClick()
         awaitTag("memory_original")
         compose.onNodeWithTag("memory_original").assertTextContains(body)
+        compose.onNodeWithTag("capture_timestamp_change").assertIsNotEnabled()
         compose.onNodeWithTag("memory_save").performClick()
         awaitTag("journal_detail_body")
         compose.onNodeWithTag("memory_status").assertIsDisplayed()

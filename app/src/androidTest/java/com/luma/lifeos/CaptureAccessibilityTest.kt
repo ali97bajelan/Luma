@@ -23,6 +23,7 @@ import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.ui.photos.PhotoEditor
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import java.time.Instant
+import java.time.ZoneId
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -57,12 +58,13 @@ class CaptureAccessibilityTest {
             }
         }
 
-        compose.onNodeWithTag("mood_date").assertIsDisplayed()
+        compose.onNodeWithTag("capture_timestamp_value").assertIsDisplayed()
         compose.onNodeWithTag("mood_question").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+        compose.onNodeWithTag("mood_question").assertIsDisplayed()
         compose.onNodeWithTag("mood_more").assertTextContains("Note and context").performClick()
         compose.onNodeWithTag("mood_more").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.StateDescription))
         compose.onNodeWithTag("mood_note").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("mood_date").assertExists()
+        compose.onNodeWithTag("capture_timestamp_value").assertExists()
     }
 
     @Test fun fieldErrorsBelongToFieldNodes() {
@@ -172,15 +174,39 @@ class CaptureAccessibilityTest {
             }
         }
 
-        compose.onNodeWithTag("mood_date").performClick()
-        compose.onAllNodesWithText("Select date").filterToOne(hasClickAction()).performClick()
+        compose.onNodeWithTag("capture_timestamp_change").performClick()
+        compose.onNodeWithTag("capture_timestamp_done").performClick()
+        compose.onNodeWithTag("capture_timestamp_dialog").assertIsDisplayed()
         compose.onAllNodesWithTag("mood_time_error", useUnmergedTree = true).assertCountEquals(1)
         compose.onNodeWithTag("mood_time_error", useUnmergedTree = true).assert(
             SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
         compose.onNodeWithTag("mood_time_error", useUnmergedTree = true).assert(
             SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
-        compose.onAllNodesWithText("Cancel").filterToOne(hasClickAction()).performClick()
+        compose.onNodeWithTag("capture_timestamp_cancel").performClick()
         compose.onAllNodesWithTag("mood_time_error", useUnmergedTree = true).assertCountEquals(1)
         compose.onNodeWithTag("mood_time_error", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test fun timestampChangeStaysLocalUntilDoneAndSameMinuteRetainsMilliseconds() {
+        val originalMillis = Instant.parse("2026-10-14T08:00:00.123Z").toEpochMilli()
+        val calls = mutableListOf<Pair<java.time.LocalDateTime, java.time.ZoneId>>()
+        compose.setContent {
+            LifeOsTheme {
+                MoodTimeControls(originalMillis, enabled = true, timeError = false,
+                    onTime = { dateTime, zone -> calls += dateTime to zone; true })
+            }
+        }
+
+        compose.onNodeWithTag("capture_timestamp_change").performClick()
+        compose.onNodeWithTag("capture_timestamp_cancel").performClick()
+        compose.runOnIdle { assertEquals(0, calls.size) }
+
+        compose.onNodeWithTag("capture_timestamp_change").performClick()
+        compose.onNodeWithTag("capture_timestamp_done").performClick()
+        compose.runOnIdle {
+            assertEquals(1, calls.size)
+            assertEquals(ZoneId.systemDefault(), calls.single().second)
+            assertEquals(Instant.ofEpochMilli(originalMillis).atZone(ZoneId.systemDefault()).toLocalDateTime(), calls.single().first)
+        }
     }
 }

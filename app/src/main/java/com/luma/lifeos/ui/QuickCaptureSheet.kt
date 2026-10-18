@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
@@ -32,7 +33,8 @@ fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
     onMood: (LocalDate?) -> Unit, onJournal: (LocalDate?) -> Unit, onMemory: (LocalDate?) -> Unit) {
     var useBrowsedDate by rememberSaveable(browsedDate) { mutableStateOf(false) }
     val captureDate = browsedDate.takeIf { useBrowsedDate }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp).testTag("capture_sheet"),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.quick_capture), style = MaterialTheme.typography.headlineSmall)

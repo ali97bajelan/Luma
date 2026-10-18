@@ -38,8 +38,7 @@ class JournalCaptureTest {
 
     @Test fun captureRestoresDraftAndOpensDetailThenEditsAndDeletes() {
         val body = "Journal test ${System.nanoTime()}"
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_journal").performClick()
+        compose.onNodeWithTag("today_capture_journal").performClick()
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_body").performTextInput(body)
         compose.onNodeWithTag("journal_title").performTextInput("A journal")
@@ -71,8 +70,7 @@ class JournalCaptureTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithText("$body edited").fetchSemanticsNodes().isEmpty() }
     }
     @Test fun navigatingBackRequiresExplicitDiscardForChangedText() {
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_journal").performClick()
+        compose.onNodeWithTag("today_capture_journal").performClick()
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_body").performTextInput("Unsaved")
         compose.onNodeWithTag("journal_body").performTextReplacement("x".repeat(50_001))

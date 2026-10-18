@@ -12,15 +12,13 @@ import com.luma.lifeos.ui.settings.SettingsRoute
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 import com.luma.lifeos.ui.settings.IntegrationsSettingsRoute
 import com.luma.lifeos.ui.usage.UsageForegroundRefresh
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.luma.lifeos.domain.repository.PhotoRepository
 import kotlinx.coroutines.CancellationException
@@ -31,9 +29,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.widthIn
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -135,6 +135,11 @@ fun LifeOsApp(
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
     var capturing by rememberSaveable { mutableStateOf(false) }
+    var captureFabHeight by remember { mutableStateOf(0.dp) }
+    val currentRoute = backStackEntry?.destination?.route
+    val showCaptureFab = primaryScreen &&
+        (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
+    val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
     fun openCapture(route: String, date: LocalDate?) {
         capturing = false
         val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
@@ -142,15 +147,9 @@ fun LifeOsApp(
     }
     Scaffold(
         bottomBar = {
-            if (primaryScreen) Column {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.End) {
-                    ExtendedFloatingActionButton(onClick = { capturing = true }, modifier = Modifier.testTag("quick_capture")) {
-                        Text(stringResource(R.string.quick_capture))
-                    }
-                }
+            if (primaryScreen) {
                 PrimaryNavigationBar(
-                    selectedRoute = backStackEntry?.destination?.route,
+                    selectedRoute = currentRoute,
                     onNavigate = { route ->
                         navController.navigate(route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -159,6 +158,20 @@ fun LifeOsApp(
                         }
                     },
                 )
+            }
+        },
+        floatingActionButton = {
+            if (showCaptureFab) {
+                val density = LocalDensity.current
+                ExtendedFloatingActionButton(
+                    onClick = { capturing = true },
+                    modifier = Modifier.widthIn(max = 240.dp).onGloballyPositioned { coordinates ->
+                        val measuredHeight = with(density) { coordinates.size.height.toDp() }
+                        if (captureFabHeight != measuredHeight) captureFabHeight = measuredHeight
+                    }.testTag("quick_capture"),
+                ) {
+                    Text(stringResource(R.string.quick_capture), maxLines = 2)
+                }
             }
         },
     ) { padding ->
@@ -182,6 +195,7 @@ fun LifeOsApp(
                             onHabit = { id, habitDate, logId ->
                                 navController.navigate("habit_detail/$id/$habitDate" + (logId?.let { "?logId=$it" } ?: ""))
                             },
+                            captureBottomClearance = captureBottomClearance,
                         )
                         PrimaryDestination.TODAY -> TodayRoute(
                             repository,
@@ -240,9 +254,11 @@ fun LifeOsApp(
                                 onMemory = { navController.navigate("memory?eventId=${it.event.id}") },
                                 habits = habits,
                                 onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                                captureBottomClearance = captureBottomClearance,
                             ) else MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
                                 onMemory = { navController.navigate("memory?eventId=$it") },
-                                onJournal = { navController.navigate("journal_detail/$it") })
+                                onJournal = { navController.navigate("journal_detail/$it") },
+                                captureBottomClearance = captureBottomClearance)
                         }
                         PrimaryDestination.MORE -> MoreRoute(
                             onPeoplePlaces = { navController.navigate(AppRoutes.PEOPLE) },

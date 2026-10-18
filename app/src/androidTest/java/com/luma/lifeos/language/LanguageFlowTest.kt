@@ -49,9 +49,13 @@ class LanguageFlowTest {
             for (route in listOf("timeline", "habits", "review", "more")) {
                 compose.onNodeWithTag("nav_$route").performClick()
                 compose.onNodeWithTag("screen_$route").assertIsDisplayed()
-                compose.onNodeWithTag("quick_capture").performClick()
-                compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
-                compose.onNodeWithTag("capture_close").performClick()
+                if (route == "timeline" || route == "review") {
+                    compose.onNodeWithTag("quick_capture").performClick()
+                    compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
+                    compose.onNodeWithTag("capture_close").performClick()
+                } else {
+                    compose.onNodeWithTag("quick_capture").assertDoesNotExist()
+                }
             }
             if (language != AppLanguage.ENGLISH) openLanguageSettings()
         }
@@ -59,22 +63,20 @@ class LanguageFlowTest {
 
     @Test fun journalDraftTextTagsAndDateSurviveLanguageChangeThenSaveAndDetail() {
         val body = "یادداشت / Mon texte / My words ${System.nanoTime()}"
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_journal").performClick()
+        compose.onNodeWithTag("today_capture_journal").performClick()
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_title").performTextInput("عنوان / Titre")
         compose.onNodeWithTag("journal_body").performTextInput(body)
         compose.onNodeWithTag("journal_tag_input").performScrollTo().performTextInput("من / Moi")
         compose.onNodeWithTag("journal_add_tag").performScrollTo().performClick()
-        val date = LocalDate.now()
         for (language in listOf(AppLanguage.PERSIAN, AppLanguage.FRENCH, AppLanguage.ENGLISH)) {
             select(language)
             awaitTag("journal_body")
             compose.onNodeWithTag("journal_body").assertTextContains(body)
             compose.onNodeWithTag("journal_title").assertTextContains("عنوان / Titre")
             compose.onNodeWithTag("journal_save").assertTextContains(text(R.string.save))
-            compose.onNodeWithTag("mood_date").performScrollTo()
-                .assertTextContains(date.format(localizedDate(FormatStyle.MEDIUM)))
+            compose.onNodeWithTag("capture_timestamp_value").performScrollTo()
+                .assertTextContains(text(R.string.today), substring = true)
             compose.onNodeWithTag("journal_cancel").performClick()
             compose.onNodeWithText(text(R.string.keep_editing)).assertIsDisplayed().performClick()
         }
@@ -102,15 +104,14 @@ class LanguageFlowTest {
         compose.onNodeWithTag("day_picker").performClick()
         compose.onNodeWithTag("date_picker_dialog").assertIsDisplayed()
         compose.onNode(hasText(text(R.string.cancel)) and hasAnyAncestor(isDialog())).performClick()
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_mood").performClick()
+        compose.onNodeWithTag("today_capture_mood").performClick()
         awaitTag("mood_more")
         compose.onNodeWithTag("mood_more").performClick()
         val description = text(R.string.mood_scale_description, text(R.string.mood_energy), 4)
         compose.onNodeWithContentDescription(description).assertExists()
-        compose.onNodeWithTag("mood_time").performScrollTo().performClick()
-        compose.onNodeWithText(text(R.string.select_time)).assertIsDisplayed()
-        compose.onNode(hasText(text(R.string.cancel)) and hasAnyAncestor(isDialog())).performClick()
+        compose.onNodeWithTag("capture_timestamp_change").performClick()
+        compose.onNodeWithTag("capture_timestamp_time_input").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("capture_timestamp_cancel").performClick()
     }
 
     @Test fun habitListLoadsPersianFrenchAndEnglishLabelsAfterLanguageChanges() {

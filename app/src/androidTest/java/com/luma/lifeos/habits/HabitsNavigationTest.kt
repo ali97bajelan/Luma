@@ -1,6 +1,6 @@
 package com.luma.lifeos.habits
 
-import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -77,7 +77,7 @@ class HabitsNavigationTest {
 
         compose.onNodeWithTag("nav_habits").performClick()
         compose.onNodeWithTag("screen_habits").assertIsDisplayed()
-        compose.onNodeWithTag("quick_capture").assertIsDisplayed()
+        compose.onNodeWithTag("quick_capture").assertDoesNotExist()
         compose.onNodeWithTag("habit_create").performClick()
         compose.onNodeWithTag("habit_name").performTextInput(name)
         compose.onNodeWithTag("habit_save").performClick()

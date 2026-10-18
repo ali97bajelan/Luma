@@ -13,8 +13,7 @@ class PeopleCaptureTest {
         val first = "First person $suffix"
         val second = "Second person $suffix"
         val body = "People journal $suffix"
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_journal").performClick()
+        compose.onNodeWithTag("today_capture_journal").performClick()
         awaitTag("journal_body")
         awaitTag("journal_more")
         compose.onNodeWithTag("journal_body").performTextInput(body)
@@ -73,8 +72,7 @@ class PeopleCaptureTest {
         awaitTag("screen_people")
         compose.onNodeWithTag("people_back").performClick()
         compose.onNodeWithTag("nav_today").performClick()
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_memory").performClick()
+        compose.onNodeWithTag("today_capture_memory").performClick()
         awaitTag("memory_note")
         awaitTag("memory_more")
         compose.onNodeWithTag("memory_note").performTextInput(note)

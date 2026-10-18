@@ -52,7 +52,7 @@
     <string name="source_usage">دسترسی به داده‌های استفاده</string>
     <string name="source_manual">دستی</string>
     <string name="quick_capture">ثبت سریع</string>
-    <string name="capture_intro">حال‌وهوا، یادداشت روزانه یا خاطره‌ای را بدون اینترنت ثبت کنید.</string>
+    <string name="capture_intro">چه چیزی را می‌خواهید ثبت کنید؟</string>
     <string name="capture_use_now">استفاده از زمان فعلی</string>
     <string name="capture_add_to_date">افزودن به %1$s</string>
     <string name="capture_mood">ثبت حال‌وهوا</string>
@@ -104,6 +104,14 @@
     <string name="mood_note">یادداشت (اختیاری)</string>
     <string name="mood_timestamp">زمان</string>
     <string name="mood_timezone">%1$s (%2$s)</string>
+    <string name="capture_timestamp_today">امروز · %1$s</string>
+    <string name="capture_timestamp_value">%1$s · %2$s</string>
+    <string name="capture_timestamp_change">تغییر</string>
+    <string name="capture_timestamp_date">تاریخ</string>
+    <string name="capture_timestamp_time">زمان</string>
+    <string name="capture_timezone">منطقهٔ زمانی</string>
+    <string name="capture_timezone_details">زمان بر اساس منطقهٔ زمانی %1$s نمایش داده می‌شود. اختلاف با UTC: %2$s.</string>
+    <string name="capture_timestamp_done">انجام شد</string>
     <string name="mood_edit_action">ویرایش حال‌وهوا</string>
     <string name="mood_load_error">این حال‌وهوای ثبت‌شده باز نشد. ممکن است حذف شده باشد یا قابل ویرایش نباشد.</string>
     <string name="mood_save_error">حال‌وهوایتان ذخیره نشد. تغییرات شما همچنان محفوظ است. دوباره ذخیره را بزنید.</string>

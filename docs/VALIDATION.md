@@ -2071,3 +2071,73 @@ created.
   same-week detail-return checks. The UX-05/17 acceptance checklist remains
   open.
 - Draft commit message: `feat(review): summarize habits and expose all sections`
+
+## UX-07, UX-08 and UX-19 — Capture layout and navigation — 2026-10-18
+
+UX-07 replaces the three editors' always-expanded time metadata with a shared
+localized timestamp row and a scrollable Date/Time dialog. The dialog keeps
+changes local until Done, retains same-minute precision, preserves the original
+time on date-only changes, and leaves promoted-memory timestamps read-only.
+UX-19 opens the past-day chooser expanded while preserving its current-time
+default and deliberate date choice. UX-08 moves capture out of the global
+bottom-bar row: Today uses its existing inline shortcuts, and only Timeline and
+Review show a labeled FAB. The outer bottom bar now contains primary navigation;
+Timeline, Weekly Review and the memory-review fallback receive measured FAB
+clearance plus 16 dp.
+
+PASS: `CaptureTimestampRowTest` passed 3/3. The debug APK and isolated Android
+test APK assembled successfully. Android device results on API 36.1:
+
+- PASS: `CaptureAccessibilityTest` 8/8, `MoodCaptureTest` 1/1,
+  `JournalCaptureTest` 3/3, `MemoryCaptureTest` 2/2 and
+  `TodayPersistenceTest` 2/2.
+- PASS: `LanguageFlowTest` 4/4, `PlaceCaptureTest` 2/2 and
+  `PeopleCaptureTest` 2/2, using the updated Today shortcuts.
+- PASS: `AppNavigationTest#captureFabAppearsOnlyOnTimelineAndReview` and
+  `AppNavigationTest#pastDayCaptureStartsExpandedAndKeepsEachDateChoice`;
+  after its lazy Review-section lookup was made to wait for loaded content and
+  scroll the correct container, the full `AppNavigationTest` suite passed 8/8.
+  The chooser test also passed at 360 dp and 411 dp with font scales 1.0 and
+  1.3; current-time and explicit past-date initialization were checked for all
+  three capture types.
+- PASS: `TimelinePagingRouteTest#finalTimelineEntryScrollsAboveTheCaptureFab`
+  and `WeeklyReviewFlowTest#finalReviewActionScrollsAboveCaptureFab`; both
+  asserted final-action bounds against a Scaffold FAB.
+- NOT RUN: a real docked keyboard, rotation, TalkBack speech/focus, font scale
+  2.0, the memory-review fallback's final-row bound, manual RTL FAB placement,
+  Back/backdrop dismissal and gesture/system inset inspection. Keep these
+  checklist items open.
+
+The emulator was `sdk_gphone64_x86_64`, API 36.1, 1080×2400 at 420 dpi
+(approximately 411 dp) except for 360 dp chooser checks, English device locale,
+portrait. Instrumentation ran against disposable package
+`com.luma.lifeos.ux0719validation` and its `.test` package only; that app's data
+was cleared between independent runs. The installed `com.luma.lifeos` app and
+its data were untouched. Resolution and font scale were restored to 1080×2400
+and 1.0. Build output used `app/build/ux0719validation`.
+
+Representative build commands (using the existing temporary Gradle setup):
+
+```sh
+GRADLE_USER_HOME=/tmp/luma-gradle-user \
+  /home/bajelan/.gradle/wrapper/dists/gradle-9.1.0-bin/9agqghryom9wkf8r80qlhnts3/gradle-9.1.0/bin/gradle \
+  -I /tmp/luma-ux0719-validation.init.gradle \
+  :app:testDebugUnitTest --tests com.luma.lifeos.ui.common.CaptureTimestampRowTest --offline
+
+GRADLE_USER_HOME=/tmp/luma-gradle-user \
+  /home/bajelan/.gradle/wrapper/dists/gradle-9.1.0-bin/9agqghryom9wkf8r80qlhnts3/gradle-9.1.0/bin/gradle \
+  -I /tmp/luma-ux0719-validation.init.gradle \
+  :app:assembleDebug :app:assembleDebugAndroidTest --offline
+```
+
+Representative instrumentation command:
+
+```sh
+/home/bajelan/Android/Sdk/platform-tools/adb shell am instrument -w -r \
+  -e class com.luma.lifeos.CaptureAccessibilityTest \
+  com.luma.lifeos.ux0719validation.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+`git diff --check` is recorded after the final documentation/status update.
+No commit was created. Suggested messages are recorded in the [capture
+implementation plan](superpowers/plans/2026-10-18-ux-07-08-19-capture.md).

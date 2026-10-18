@@ -29,7 +29,7 @@ import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.domain.model.JournalTextLimits
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.AccessibleFeedback
-import com.luma.lifeos.ui.mood.MoodTimeControls
+import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -134,7 +134,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 if (showBodyError) AccessibleFeedback(message, Modifier.testTag("journal_error"))
                 if (error == JournalEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
-            if (state.ready) MoodTimeControls(state.draft.occurredAtMillis, enabled,
+            if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled,
                 state.error == JournalEditorError.TIME, onTime)
             // Restored text remains visible even if loading fails.
             val titleError = if (JournalTextField.TITLE in state.textErrors)

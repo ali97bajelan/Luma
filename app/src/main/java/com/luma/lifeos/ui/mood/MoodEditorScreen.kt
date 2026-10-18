@@ -41,6 +41,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -113,7 +114,7 @@ fun MoodEditorScreen(
                 TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             if (state.ready) {
-                MoodTimeControls(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
+                CaptureTimestampRow(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
                 Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { heading() }.testTag("mood_question"))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

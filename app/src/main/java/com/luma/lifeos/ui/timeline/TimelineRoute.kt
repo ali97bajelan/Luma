@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -37,7 +38,8 @@ import java.util.UUID
 @Composable
 fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
     onSelectDate: (LocalDate) -> Unit, onToday: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: (EventId) -> Unit,
-    onSearch: (() -> Unit)? = null, onHabit: (UUID, LocalDate, UUID?) -> Unit = { _, _, _ -> }) {
+    onSearch: (() -> Unit)? = null, onHabit: (UUID, LocalDate, UUID?) -> Unit = { _, _, _ -> },
+    captureBottomClearance: Dp = 0.dp) {
     val context = LocalContext.current.applicationContext
     val usagePreference = remember(context) { TimelineUsagePreference(context) }
     val initialShowAppUsage = remember(usagePreference) { usagePreference.showAppUsage() }
@@ -66,7 +68,8 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
             }
         }
         LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("screen_timeline"),
-            contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            contentPadding = PaddingValues(start = 20.dp, top = 24.dp, end = 20.dp, bottom = captureBottomClearance),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item(key = "header") {
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)

@@ -27,7 +27,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.MemoryTextLimits
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.AccessibleFeedback
-import com.luma.lifeos.ui.mood.MoodTimeControls
+import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -104,7 +104,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 if (showBodyError) AccessibleFeedback(message, Modifier.testTag("memory_error"))
                 if (error == MemoryEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
-            if (state.ready) MoodTimeControls(state.draft.occurredAtMillis, enabled && state.direct,
+            if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled && state.direct,
                 state.error == MemoryEditorError.TIME, onTime)
             state.original?.let { original ->
                 Text(stringResource(R.string.memory_original), style = MaterialTheme.typography.titleMedium,

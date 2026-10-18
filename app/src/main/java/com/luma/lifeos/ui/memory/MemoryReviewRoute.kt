@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.people.LinkedPeople
@@ -24,7 +25,8 @@ import java.time.format.FormatStyle
 
 @Composable
 fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneId,
-    onMemory: (EventId) -> Unit, onJournal: (EventId) -> Unit) {
+    onMemory: (EventId) -> Unit, onJournal: (EventId) -> Unit,
+    captureBottomClearance: Dp = 0.dp) {
     var retry by remember { mutableIntStateOf(0) }
     val week = memoryWeekRange(date, zone)
     key(repository, week, retry) {
@@ -33,7 +35,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
         val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
         Box(Modifier.fillMaxSize().testTag("screen_review")) {
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = captureBottomClearance),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item {
                     Text(stringResource(R.string.memory_review_heading), style = MaterialTheme.typography.headlineLarge)

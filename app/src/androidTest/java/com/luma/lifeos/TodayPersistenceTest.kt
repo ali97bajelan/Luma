@@ -1,6 +1,7 @@
 package com.luma.lifeos
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import java.time.format.FormatStyle
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -75,8 +76,8 @@ class TodayPersistenceTest {
             compose.onNodeWithTag("today_capture_$type").performClick()
             compose.onNodeWithTag("today_capture_selected_date").performClick()
             compose.onNodeWithTag("screen_$type").assertIsDisplayed()
-            compose.onNodeWithTag("mood_date").assertTextEquals(
-                yesterday.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
+            compose.onNodeWithTag("capture_timestamp_value").assertTextContains(
+                yesterday.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)), substring = true)
             compose.onNodeWithTag("${type}_cancel").performClick()
             compose.onNodeWithTag("screen_today").assertIsDisplayed()
         }
@@ -85,8 +86,7 @@ class TodayPersistenceTest {
             compose.onNodeWithTag("today_capture_$type").performClick()
             compose.onNodeWithTag("today_capture_date_dialog").assertDoesNotExist()
             compose.onNodeWithTag("screen_$type").assertIsDisplayed()
-            compose.onNodeWithTag("mood_date").assertTextEquals(
-                today.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
+            compose.onNodeWithTag("capture_timestamp_value").assertTextContains("Today", substring = true)
             compose.onNodeWithTag("${type}_cancel").performClick()
         }
     }

@@ -20,8 +20,7 @@ class MoodCaptureTest {
 
     @Test fun capturesMultipleEmotionsRestoresDraftAndEditsAndDeletesFromTimeline() {
         val note = "Mood capture test ${System.nanoTime()}"
-        compose.onNodeWithTag("quick_capture").performClick()
-        compose.onNodeWithTag("capture_mood").performClick()
+        compose.onNodeWithTag("today_capture_mood").performClick()
         awaitTag("mood_score_4")
         compose.onNodeWithTag("mood_score_4").performClick()
         compose.onNodeWithTag("mood_emotion_Calm").performScrollTo().performClick()

@@ -1,8 +1,13 @@
 package com.luma.lifeos.review
 
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
@@ -61,6 +66,30 @@ class WeeklyReviewFlowTest {
         compose.onNodeWithTag("review_next").assertIsEnabled()
         compose.onNodeWithTag("review_this_week").performClick()
         compose.onNodeWithTag("review_next").assertIsNotEnabled()
+    }
+    @Test fun finalReviewActionScrollsAboveCaptureFab() {
+        compose.setContent {
+            LifeOsTheme {
+                Scaffold(
+                    bottomBar = { Box(Modifier.fillMaxWidth().height(80.dp)) },
+                    floatingActionButton = {
+                        Box(Modifier.size(56.dp).testTag("capture_fab_probe"))
+                    },
+                ) { padding ->
+                    Box(Modifier.fillMaxSize().padding(padding)) {
+                        WeeklyReviewRoute(repo, today, zone,
+                            onSources = { _, _ -> }, onEvent = {}, captureBottomClearance = 72.dp)
+                    }
+                }
+            }
+        }
+
+        scroll("review_activity_integrations")
+        val finalAction = compose.onNodeWithTag("review_activity_integrations").fetchSemanticsNode().boundsInRoot
+        val fab = compose.onNodeWithTag("capture_fab_probe").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle {
+            assertTrue("final review action overlaps capture FAB: $finalAction / $fab", finalAction.bottom <= fab.top)
+        }
     }
     @Test fun statisticsOpenExactSourcesAndThenStoredContent() {
         var opened: EventId? = null

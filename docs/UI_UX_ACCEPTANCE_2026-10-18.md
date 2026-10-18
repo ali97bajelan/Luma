@@ -3,7 +3,7 @@
 Scope: UX-03–11 and UX-13–19. Excluded: UX-01, UX-02, UX-12 as new work; use existing UX-01/02 tests for shared-component regressions.
 [Handoff/specs/plans](UI_UX_IMPLEMENTATION_READY_2026-10-18.md).
 
-**Current result:** UX-03/04 are implemented in commit `58d4903`; focused JVM/build checks and 19 isolated API 36 Android tests pass. UX-09/10 are implemented in commit `d43d731`; the debug app assembly passed, but their focused behavior tests and device acceptance were not run. UX-11 is implemented in commit `910a596`; its historical targeted Search UI results are in [VALIDATION.md](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18). UX-06/15 are implemented in the working tree; Gradle compilation was blocked before project configuration by restricted sandbox socket access. UX-05/17 UI changes and focused regression tests are in the working tree; compilation and test execution were blocked before project configuration by the read-only wrapper lock and sandbox wildcard-IP restriction. Broader automated and manual acceptance remain open. Manual acceptance also remains open for UX-03/04 and UX-09/10, including RTL, font-size, keyboard and TalkBack coverage. Other scoped UX work remains unexecuted. See [UX-03/04 validation](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18), [UX-09/10 status](VALIDATION.md#ux-09-and-ux-10--habit-progress-and-other-habits--2026-10-18), [UX-06/15 status](VALIDATION.md#ux-06-and-ux-15--integration-and-metric-states--2026-10-18) and [UX-05/17 status](VALIDATION.md#ux-05-and-ux-17--weekly-review-summaries-and-discovery--2026-10-18).
+**Current result:** UX-03/04 are implemented in commit `58d4903`; focused JVM/build checks and 19 isolated API 36 Android tests pass. UX-09/10 are implemented in commit `d43d731`; the debug app assembly passed, but their focused behavior tests and device acceptance were not run. UX-11 is implemented in commit `910a596`; its historical targeted Search UI results are in [VALIDATION.md](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18). UX-06/15 are implemented in the working tree; Gradle compilation was blocked before project configuration by restricted sandbox socket access. UX-05/17 UI changes and focused regression tests are in the working tree; compilation and test execution were blocked before project configuration by the read-only wrapper lock and sandbox wildcard-IP restriction. UX-07/08/19 are implemented in the working tree; targeted JVM/build and isolated API 36.1 device checks passed. Keyboard/rotation, TalkBack, font scale 2.0 and some inset/gesture acceptance remain open. No commit was created for UX-07/08/19; proposed messages are in the capture plan. Broader automated and manual acceptance remain open. Manual acceptance also remains open for UX-03/04 and UX-09/10, including RTL, font-size, keyboard and TalkBack coverage. Other scoped UX work remains unexecuted. See [UX-03/04 validation](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18), [UX-09/10 status](VALIDATION.md#ux-09-and-ux-10--habit-progress-and-other-habits--2026-10-18), [UX-06/15 status](VALIDATION.md#ux-06-and-ux-15--integration-and-metric-states--2026-10-18), [UX-05/17 status](VALIDATION.md#ux-05-and-ux-17--weekly-review-summaries-and-discovery--2026-10-18) and [UX-07/08/19 validation](VALIDATION.md#ux-07-ux-08-and-ux-19-capture-layout-and-navigation--2026-10-18).
 
 Record per run: commit, date, command, device/API, application ID, locale, width/font/theme, fixture, result and evidence path. Status vocabulary: PASS, FAIL, NOT RUN, BLOCKED (with actual reason). Keep production data untouched; follow the handoff's isolated install procedure.
 
@@ -52,15 +52,21 @@ Record per run: commit, date, command, device/API, application ID, locale, width
 
 ## UX-07 — Editor content
 
+**Implementation status:** Implemented in the working tree. Targeted timestamp unit and device tests pass; manual keyboard/rotation/TalkBack acceptance remains open. No commit created; see [validation record](VALIDATION.md#ux-07-ux-08-and-ux-19-capture-layout-and-navigation--2026-10-18).
+
 - [ ] Mood, Journal and Memory main input is in first viewport; selected date visible before save; timezone explanation available.
-- [ ] Change dialog cancel is clean; Done calls validation once; rejected edit remains visible; same-minute/date-only precision retained.
+- [x] Change dialog cancel is clean; Done calls validation once; rejected edit remains visible; same-minute/date-only precision retained.
 - [ ] Promoted memory timestamp stays read-only. Real docked keyboard keeps focused input/Save accessible; drafts/discard/photo cancel remain correct.
 
 ## UX-08 — Capture/footer
 
-- [ ] Only navigation in outer bottomBar; no reserved capture row. Today uses existing shortcuts; Timeline/Review labeled FAB; Habits/More/secondary no global FAB.
-- [ ] Final Timeline/Review/fallback item and its action scroll above measured FAB clearance; insets applied once; RTL logical-end placement; font 1.3/2.0 wrapping.
-- [ ] Existing Today shortcuts/density and entry/habit-count regressions pass; five tabs/selection/date/scroll restoration intact.
+**Implementation status:** Implemented in the working tree. FAB destination and list-clearance checks pass; large-text/RTL/inset acceptance remains open. No commit created; see [validation record](VALIDATION.md#ux-07-ux-08-and-ux-19-capture-layout-and-navigation--2026-10-18).
+
+- [x] Only navigation in outer bottomBar; no reserved capture row. Today uses existing shortcuts; Timeline/Review labeled FAB; Habits/More/secondary no global FAB.
+- [x] Final Timeline and Weekly Review actions scroll above measured FAB clearance.
+- [ ] Verify fallback final-item clearance, system/gesture insets, RTL logical-end placement and 1.3/2.0-scale FAB wrapping manually.
+- [x] Today shortcuts and five-tab/selected-date navigation regressions pass.
+- [ ] Run the broader UX-01/02 and entry/habit-count regression suites.
 
 ## UX-09 — Habit rows/setup
 
@@ -130,8 +136,10 @@ Record per run: commit, date, command, device/API, application ID, locale, width
 
 ## UX-19 — Chooser
 
-- [ ] Sheet fully expanded initially. All three choices/Close visible at 360/411 dp/fonts 1.0/1.3; extreme sizes scroll clearly.
-- [ ] Default Use current time versus deliberate selected date honored for all types; no unadvertised expansion needed.
+**Implementation status:** Implemented in the working tree. Initial visibility and date-choice tests pass at 360/411 dp and 1.0/1.3 scale. Font 2.0 and Back/backdrop/manual inset acceptance remain open; see [validation record](VALIDATION.md#ux-07-ux-08-and-ux-19-capture-layout-and-navigation--2026-10-18).
+
+- [x] Sheet fully expanded initially. All three choices and Close are visible at 360/411 dp and font scales 1.0/1.3; 2.0-scale scrolling remains open.
+- [x] Default Use current time versus deliberate selected date honored for all types; no unadvertised expansion needed.
 - [ ] Backdrop/Back/Close safely dismiss; correct system padding, single navigation and saved-date return.
 
 ## Targeted automated suites

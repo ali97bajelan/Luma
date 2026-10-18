@@ -53,7 +53,7 @@
     <string name="source_usage">Accès aux données d’utilisation</string>
     <string name="source_manual">Manuel</string>
     <string name="quick_capture">Saisie rapide</string>
-    <string name="capture_intro">Notez une humeur, une entrée de journal ou un souvenir hors ligne.</string>
+    <string name="capture_intro">Que souhaitez-vous noter ?</string>
     <string name="capture_use_now">Utiliser l’heure actuelle</string>
     <string name="capture_add_to_date">Ajouter au %1$s</string>
     <string name="capture_mood">Point sur l’humeur</string>
@@ -93,6 +93,14 @@
     <string name="mood_note">Note (facultatif)</string>
     <string name="mood_timestamp">Date et heure</string>
     <string name="mood_timezone">%1$s (%2$s)</string>
+    <string name="capture_timestamp_today">Aujourd’hui · %1$s</string>
+    <string name="capture_timestamp_value">%1$s · %2$s</string>
+    <string name="capture_timestamp_change">Modifier</string>
+    <string name="capture_timestamp_date">Date</string>
+    <string name="capture_timestamp_time">Heure</string>
+    <string name="capture_timezone">Fuseau horaire</string>
+    <string name="capture_timezone_details">L’heure est affichée dans le fuseau %1$s. Décalage UTC : %2$s.</string>
+    <string name="capture_timestamp_done">Terminé</string>
     <string name="mood_edit_action">Modifier le point sur l’humeur</string>
     <string name="mood_load_error">Impossible d’ouvrir ce point sur l’humeur. Il a peut-être été supprimé ou ne peut pas être modifié.</string>
     <string name="mood_save_error">Impossible d’enregistrer votre point sur l’humeur. Vos modifications sont conservées. Appuyez à nouveau sur Enregistrer.</string>

@@ -51,7 +51,10 @@ class AppNavigationTest {
         try {
             compose.onNodeWithTag("nav_review").performClick()
             awaitTag("screen_review")
-            compose.onNodeWithTag("review_section_catalog").performClick()
+            awaitTag("review_overview")
+            compose.onNodeWithTag("memory_review_list")
+                .performScrollToNode(hasTestTag("review_section_catalog"))
+            compose.onNodeWithTag("review_section_catalog").performScrollTo().performClick()
             awaitTag("review_heading_catalog")
             val openDetails = compose.activity.getString(R.string.review_catalog_detail)
             compose.waitUntil(5_000) { compose.onAllNodesWithText(openDetails).fetchSemanticsNodes().size == 2 }
@@ -106,12 +109,47 @@ class AppNavigationTest {
         compose.onNodeWithTag("screen_more").assertIsDisplayed()
     }
 
-    @Test fun quickCaptureIsReachableFromEveryPrimaryRoute() {
-        listOf("today", "timeline", "habits", "review", "more").forEach { route ->
+    @Test fun captureFabAppearsOnlyOnTimelineAndReview() {
+        listOf("today", "habits", "more").forEach { route ->
             compose.onNodeWithTag("nav_$route").performClick()
+            compose.onNodeWithTag("primary_navigation").assertIsDisplayed()
+            compose.onNodeWithTag("quick_capture").assertDoesNotExist()
+        }
+        compose.onNodeWithTag("nav_today").performClick()
+        compose.onNodeWithTag("today_capture_mood").assertIsDisplayed()
+        listOf("timeline", "review").forEach { route ->
+            compose.onNodeWithTag("nav_$route").performClick()
+            compose.onNodeWithTag("primary_navigation").assertIsDisplayed()
             compose.onNodeWithTag("quick_capture").assertIsDisplayed().performClick()
             compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
             compose.onNodeWithTag("capture_close").performClick()
+            compose.onNodeWithTag("screen_$route").assertIsDisplayed()
+        }
+    }
+
+    @Test fun pastDayCaptureStartsExpandedAndKeepsEachDateChoice() {
+        val yesterday = LocalDate.now().minusDays(1)
+        val yesterdayText = yesterday.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
+        compose.onNodeWithTag("nav_timeline").performClick()
+        compose.onNodeWithTag("day_previous").performClick()
+        listOf("mood", "journal", "memory").forEach { type ->
+            compose.onNodeWithTag("quick_capture").performClick()
+            listOf("capture_now", "capture_on_browsed_date", "capture_mood", "capture_journal", "capture_memory", "capture_close")
+                .forEach { compose.onNodeWithTag(it).assertIsDisplayed() }
+            compose.onNodeWithTag("capture_now").assertIsSelected()
+            compose.onNodeWithTag("capture_$type").performClick()
+            awaitTag("screen_$type")
+            compose.onNodeWithTag("capture_timestamp_value").assertTextContains("Today", substring = true)
+            compose.onNodeWithTag("${type}_cancel").performClick()
+            awaitTag("screen_timeline")
+
+            compose.onNodeWithTag("quick_capture").performClick()
+            compose.onNodeWithTag("capture_on_browsed_date").performClick()
+            compose.onNodeWithTag("capture_$type").performClick()
+            awaitTag("screen_$type")
+            compose.onNodeWithTag("capture_timestamp_value").assertTextContains(yesterdayText, substring = true)
+            compose.onNodeWithTag("${type}_cancel").performClick()
+            awaitTag("screen_timeline")
         }
     }
 

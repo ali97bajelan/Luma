@@ -167,6 +167,10 @@ A “When” heading, separate date/time rows and timezone text precede the main
 
 **Starting points:** MoodTimeControls and the three editor screens. The current date-choice policy should remain unchanged.
 
+**Implementation update — 18 October 2026:** Implemented in the working tree. Mood, Journal and Memory now share a compact localized timestamp row; Change opens a scrollable Date/Time dialog with timezone details behind a disclosure. Cancel/outside dismissal keeps the draft untouched, Done retains same-minute precision and date-only edits preserve the original time. Promoted Memory timestamps remain disabled. English, French and Persian strings were added. The planned UX-16 time-format helper is not present yet, so the row currently follows Android's configured 12/24-hour preference with `DateFormat.is24HourFormat`.
+
+**Validation:** The timestamp unit tests (3), CaptureAccessibilityTest (8), MoodCaptureTest (1), JournalCaptureTest (3), MemoryCaptureTest (2), TodayPersistenceTest (2) and LanguageFlowTest (4) passed individually on the isolated API 36.1 emulator; debug/app-test APK builds passed. The hardware keyboard was unavailable, so docked keyboard, rotation and manual TalkBack checks remain open. See [UX-07/08/19 validation](VALIDATION.md#ux-07-ux-08-and-ux-19-capture-layout-and-navigation--2026-10-18).
+
 ### UX-08 — The global capture action reserves a full extra footer row
 
 **Evidence:** [More](ux-review-2026-10-18/01-more.png), Today, Timeline. Source: the capture button's Row is inside the outer Scaffold `bottomBar` above navigation.
@@ -178,6 +182,10 @@ Approximately 72 dp is reserved for that row across primary destinations. This r
 **Acceptance:** recover the reserved row without covering the last list item. Check gestures, system insets, RTL placement, accessibility focus and 1.3 text. A capture action remains clearly labeled.
 
 **Starting point:** [LifeOsApp.kt](../app/src/main/java/com/luma/lifeos/ui/LifeOsApp.kt). Android documents dedicated Scaffold slots for app bars and floating actions: [Scaffold guidance](https://developer.android.com/develop/ui/compose/components/scaffold).
+
+**Implementation update — 18 October 2026:** Implemented in the working tree. The outer bottom bar now contains only primary navigation. Today retains its three inline capture shortcuts; Timeline and Review show a labeled extended FAB; Habits, More and secondary/editor destinations have no global capture action. Timeline, Weekly Review and the memory-review fallback receive measured FAB height plus 16 dp of list-end clearance.
+
+**Validation:** The FAB route matrix and Today shortcut regressions passed. Route tests verify the final Timeline entry and final Weekly Review action can scroll above the FAB; English/French/Persian navigation and date initialization pass targeted tests. `AppNavigationTest` passed 8/8 after its Review catalog test was updated to wait for loaded content and scroll the lazy list. Large-text FAB wrapping, RTL placement/focus and gesture-inset behavior remain open for manual acceptance. See [UX-07/08/19 validation](VALIDATION.md#ux-07-ux-08-and-ux-19-capture-layout-and-navigation--2026-10-18).
 
 ### UX-09 — Habit rows need compact progress and clearer language
 
@@ -319,10 +327,14 @@ The sheet initially opens at a partial height. At normal size Memory reaches the
 
 **Starting point:** [QuickCaptureSheet.kt](../app/src/main/java/com/luma/lifeos/ui/QuickCaptureSheet.kt).
 
+**Implementation update — 18 October 2026:** Implemented in the working tree. The chooser now skips partial expansion, shortens its introduction and displays all three capture choices and Close together while preserving the current-time default and deliberate past-date option.
+
+**Validation:** `pastDayCaptureStartsExpandedAndKeepsEachDateChoice` passed at 360 dp and 411 dp, each at font scales 1.0 and 1.3. It exercised all three capture types with current-time and selected-date defaults. At 411 dp the chooser also passed the navigation matrix. Font scale 2.0 scrolling, Back/backdrop dismissal and manual system-bar inspection remain open. See [UX-07/08/19 validation](VALIDATION.md#ux-07-ux-08-and-ux-19-capture-layout-and-navigation--2026-10-18).
+
 ## Suggested implementation sequence
 
 1. **Clarify core feedback:** UX-02, UX-03, UX-11 and the plural correction in UX-16. These address specific confusing states with a small surface area.
-2. **Improve daily use:** UX-01, UX-07, UX-08, UX-09 and UX-19. Design and validate Today/capture/habit density together so space is not reclaimed twice or actions duplicated.
+2. **Improve daily use:** UX-01, UX-09 and pending items. UX-07/08/19 are implemented in the working tree; their remaining keyboard, large-text and manual inset acceptance is listed under each finding. Design and validate Today/capture/habit density together so space is not reclaimed twice or actions duplicated.
 3. **Improve reflection:** UX-05 and UX-17 are implemented in the working tree; UX-10 is committed. Use populated mixed-data and empty-data fixtures for acceptance. UX-06 is implemented in the working tree and awaits verification.
 4. **Unify supporting flows:** UX-04, UX-12, UX-13, UX-14, remaining UX-16 formatting, and UX-18. UX-15 is implemented in the working tree and awaits verification.
 
