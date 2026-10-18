@@ -45,7 +45,7 @@ class TodayPersistenceTest {
         val current = event(today, "Current day record")
         val previous = event(today.minusDays(1), "Previous day record")
         runBlocking { repository.upsert(current); repository.upsert(previous) }
-        compose.setContent { LifeOsTheme { LifeOsApp(repository, RoomMoodRepository(database), com.luma.lifeos.data.repository.RoomJournalRepository(database), com.luma.lifeos.data.repository.RoomMemoryRepository(database), com.luma.lifeos.data.repository.RoomPersonRepository(database), com.luma.lifeos.data.repository.RoomPlaceRepository(database), com.luma.lifeos.data.repository.RoomPhotoRepository(database, com.luma.lifeos.data.media.ManagedPhotoFiles(photoDirectory)) { error("No fixture source") }, com.luma.lifeos.data.repository.RoomTimelineRepository(database)) } }
+        compose.setContent { LifeOsTheme { LifeOsApp(repository, RoomMoodRepository(database), com.luma.lifeos.data.repository.RoomJournalRepository(database), com.luma.lifeos.data.repository.RoomMemoryRepository(database), com.luma.lifeos.data.repository.RoomPersonRepository(database), com.luma.lifeos.data.repository.RoomPlaceRepository(database), com.luma.lifeos.data.repository.RoomPhotoRepository(database, com.luma.lifeos.data.media.ManagedPhotoFiles(photoDirectory)) { error("No fixture source") }, com.luma.lifeos.data.repository.RoomTimelineRepository(database), habits = com.luma.lifeos.data.repository.RoomHabitRepository(database)) } }
         awaitText("Current day record")
         compose.onNodeWithText("Previous day record").assertDoesNotExist()
         compose.onNodeWithTag("day_previous").performClick()

@@ -31,10 +31,17 @@ import java.util.UUID
 
 @Composable
 fun PeopleRoute(people: PersonRepository, places: PlaceRepository, onCreatePerson: () -> Unit,
-    onPerson: (UUID) -> Unit, onCreatePlace: () -> Unit, onPlace: (UUID) -> Unit) {
+    onPerson: (UUID) -> Unit, onCreatePlace: () -> Unit, onPlace: (UUID) -> Unit,
+    onBack: (() -> Unit)? = null) {
+    BackHandler(enabled = onBack != null) { onBack?.invoke() }
     // Owned by this destination so navigation's saveable state restores the selected catalog.
     var placesSelected by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
+        if (onBack != null) {
+            TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp).testTag("people_back")) {
+                Text(stringResource(R.string.back))
+            }
+        }
         TabRow(selectedTabIndex = if (placesSelected) 1 else 0) {
             Tab(selected = !placesSelected, onClick = { placesSelected = false },
                 modifier = Modifier.testTag("catalog_people"), text = { Text(stringResource(R.string.catalog_people)) })

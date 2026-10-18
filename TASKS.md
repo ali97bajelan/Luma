@@ -909,7 +909,7 @@ historical targets/partial states; old entry/journal/memory/usage metrics do not
 
 ### T26 — Habits primary destination and More navigation hub
 
-Status: pending
+Status: complete
 
 Depends on: T25. Plan: [navigation](docs/superpowers/plans/2026-10-17-habits-navigation.md).
 
@@ -919,6 +919,14 @@ as secondary routes; preserve existing source links and Quick Capture.
 Acceptance: exactly five usable destinations, correct origin-aware Back,
 legacy-route recreation, selected-day/scroll/draft preservation, direct catalog
 links and English/French/Persian large-text/RTL/accessibility checks. No placeholder tab.
+
+Validation (2026-10-18): all 202 app JVM tests pass; the 29 affected device
+instrumentation cases pass across the broad navigation/date/habit/settings/
+Timeline/accessibility run and a focused rerun of the corrected language and
+People/Places capture flows. Standard `com.luma.lifeos` debug and test APKs build.
+The measured tab matrix covers English, French and Persian/RTL at 320/411 dp and
+font scales 1.0/1.3/2.0. Native TalkBack speech remains NOT RUN; see
+[the habits acceptance log](docs/HABITS_ACCEPTANCE_2026-10-17.md).
 
 ### T27 — Reminder planning and durable configuration
 

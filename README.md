@@ -74,7 +74,7 @@ data was reset or optional health access granted during validation.
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): stack, module boundaries, relational schema, privacy, and phases.
 - [TASKS.md](TASKS.md): original T01–T21 and approved extension T22–T29, with acceptance criteria and status.
-- [Habits handoff](docs/HABITS_TASKS.md): agreed counted habits, per-completion Timeline records, optional local reminders and revised navigation; spec, three plans and ordered tasks are prepared. Implementation has not started.
+- [Habits handoff](docs/HABITS_TASKS.md): counted habits, per-completion Timeline records, and the five-destination navigation with a More hub are implemented; optional reminders and full release acceptance remain open.
 - Original `.docx` files: product specification and implementation task source.
 - `docs/`: readable source extracts and validation evidence.
 
@@ -125,8 +125,9 @@ controls above expandable import explanations. Quick Capture
 creates mood, journal and memory records offline; journals include a full detail
 view. Existing moods/journals can be remembered without copying their content.
 People can be linked during capture/edit; person detail shows shared history,
-and deleting a person keeps the entries. Places can be managed from Settings
-and attached optionally during capture/edit without location permission.
+and deleting a person keeps the entries. People and Places are managed from
+More → People & Places; places can be attached optionally during capture/edit
+without location permission.
 Journal and memory forms can add up to 20 photos (25 MiB each); selected images
 are copied into app-private storage, with unavailable-photo states and safe
 removal. Photos remain on-device; no upload or automatic backup is enabled.

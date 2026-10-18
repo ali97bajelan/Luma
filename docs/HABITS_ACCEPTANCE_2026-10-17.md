@@ -1,8 +1,8 @@
 # Habits acceptance log
 
 Validation started: 17 October 2026. This log records execution evidence for the
-approved habits plan. T22–T25 checks are recorded below; later platform and
-release acceptance remains assigned to T26–T29.
+approved habits plan. T22–T26 checks are recorded below; later platform and
+release acceptance remains assigned to T27–T29.
 
 ## T22 — Pure domain rules
 
@@ -126,7 +126,35 @@ habit/date. Existing entry counts, usage filtering and Daily Summary behavior
 passed their regression suites. The verified T25 changes remain uncommitted on
 the current `main` branch pending the repository integration choice.
 
+## T26 — Habits primary destination and More hub
+
+| Case | Result | Environment and evidence |
+| --- | --- | --- |
+| Five primary routes, More entries, origin-aware Back, route/date restoration, Quick Capture on every primary route, and functional Habits logging | PASS | `AppNavigationTest` and `HabitsNavigationTest`; Today, Timeline, Habits, Review and More appear in order. More opens People & Places and Settings; both return to More. Recreating More→People & Places and More→Settings preserves the secondary route. Selected civil dates survive navigation/recreation. |
+| Existing detail, language, settings, Today, Timeline, People and Places flows | PASS | The complete affected instrumentation set returned `OK (29 tests)`: `AppNavigationTest`, `DetailNavigationTest`, `HabitsNavigationTest`, `LanguageFlowTest`, `PrimaryNavigationAccessibilityTest`, `SettingsHubFlowTest`, `TodayPersistenceTest`, `TimelineFlowTest`, `PeopleCaptureTest` and `PlaceCaptureTest`. |
+| Localized primary-tab labels and accessibility matrix | PASS | English, French and Persian/RTL across 320/411 dp and Compose font scales 1.0/1.3/2.0. Five tab roles, selected state, full localized accessible names, minimum 48 dp actions and label bounds/line count are measured in `PrimaryNavigationAccessibilityTest`. App language switching and People/Places capture flows also pass on device. |
+| App JVM regressions and standard package builds | PASS | `:app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest`; all 202 app JVM tests pass, and both APKs build with `com.luma.lifeos`. |
+| Native TalkBack speech and manual traversal | NOT RUN | Compose semantics and tab traversal are automated; native screen-reader speech was not exercised. |
+
+Device evidence: `sdk_gphone64_x86_64`, API 36 / Android 16, 1080×2400 at
+420 dpi, on the fresh cloned `emulator-5554`. The standard `com.luma.lifeos`
+and `.test` packages were installed only on this disposable emulator, which had
+no existing user app data. Instrumented app-language flows switch English,
+French and Persian; the semantics/layout matrix supplies localized contexts and
+font scales directly. The device system font scale was 1.0. Direct runner command:
+
+```text
+adb -s emulator-5554 shell am instrument --user current -w -r \
+  -e timeout_msec 180000 \
+  -e class com.luma.lifeos.AppNavigationTest,com.luma.lifeos.DetailNavigationTest,com.luma.lifeos.habits.HabitsNavigationTest,com.luma.lifeos.language.LanguageFlowTest,com.luma.lifeos.ui.PrimaryNavigationAccessibilityTest,com.luma.lifeos.settings.SettingsHubFlowTest,com.luma.lifeos.TodayPersistenceTest,com.luma.lifeos.TimelineFlowTest,com.luma.lifeos.PeopleCaptureTest,com.luma.lifeos.PlaceCaptureTest \
+  com.luma.lifeos.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+T26 acceptance is complete. People & Places and Settings remain resolvable as
+secondary routes for saved stacks and existing direct links. Native TalkBack
+speech remains open for the broader T29 device/accessibility acceptance.
+
 ## Later acceptance
 
-T26–T29: NOT RUN. Primary navigation, OS reminders, full release acceptance and
-native TalkBack speech remain open.
+T27–T29: NOT RUN. OS reminders and full release/migration/backup acceptance
+remain open; native TalkBack speech is recorded above for T29.

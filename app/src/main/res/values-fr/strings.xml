@@ -4,11 +4,14 @@
     <string name="timeline">Chronologie</string>
     <string name="review">Bilan</string>
     <string name="settings">Paramètres</string>
+    <string name="more">Plus</string>
     <string name="nav_today_compact">Jour</string>
     <string name="nav_timeline_compact">Par&#173;cours</string>
     <string name="nav_people_compact">Con&#173;tacts</string>
+    <string name="nav_habits_compact">Hab.</string>
     <string name="nav_review_compact">Bilan</string>
     <string name="nav_settings_compact">Op&#173;tions</string>
+    <string name="nav_more_compact">Plus</string>
     <string name="today_heading">Un espace pour votre vie</string>
     <string name="today_body">Le récit de votre quotidien apparaîtra ici à mesure que la saisie sera disponible.</string>
     <string name="timeline_heading">Votre vie, jour après jour</string>
@@ -474,6 +477,10 @@
     <string name="review_details_collapsed">Réduit</string>
     <string name="review_usage_incomplete">Couverture incomplète</string>
     <string name="settings_hub_description">Gérez le fonctionnement de Luma sur cet appareil.</string>
+    <string name="more_people_places">Personnes et lieux</string>
+    <string name="more_people_places_description">Parcourez les personnes et les lieux associés à votre vie.</string>
+    <string name="more_settings">Paramètres</string>
+    <string name="more_settings_description">Langue, sauvegarde, confidentialité et intégrations.</string>
     <string name="settings_language_title">Langue</string>
     <string name="settings_language_description">Choisissez la langue utilisée par Luma.</string>
     <string name="settings_backup_title">Sauvegarde</string>

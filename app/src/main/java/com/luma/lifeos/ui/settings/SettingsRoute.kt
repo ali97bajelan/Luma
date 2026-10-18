@@ -19,17 +19,28 @@ import com.luma.lifeos.R
 
 @Composable
 fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrationsAvailable: Boolean,
-    onLanguage: () -> Unit, onBackup: () -> Unit, onPrivacy: () -> Unit, onIntegrations: () -> Unit) {
-    Column(Modifier.fillMaxSize().testTag("screen_settings").verticalScroll(rememberScrollState()).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.semantics { heading() })
-        Text(stringResource(R.string.settings_hub_description))
-        SettingsRow(R.string.settings_language_title, R.string.settings_language_description, "settings_language", onLanguage)
-        if (backupAvailable) SettingsRow(R.string.settings_backup_title, R.string.settings_backup_description, "settings_backup", onBackup)
-        if (privacyAvailable) SettingsRow(R.string.settings_privacy_title, R.string.settings_privacy_description, "settings_privacy", onPrivacy)
-        if (integrationsAvailable) SettingsRow(R.string.settings_integrations_title, R.string.settings_integrations_description,
-            "settings_integrations", onIntegrations)
+    onLanguage: () -> Unit, onBackup: () -> Unit, onPrivacy: () -> Unit, onIntegrations: () -> Unit,
+    onBack: (() -> Unit)? = null) {
+    BackHandler(enabled = onBack != null) { onBack?.invoke() }
+    Column(Modifier.fillMaxSize()) {
+        if (onBack != null) {
+            TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                .testTag("settings_hub_back")) {
+                Text(stringResource(R.string.back))
+            }
+        }
+        Column(Modifier.weight(1f).fillMaxWidth().testTag("screen_settings")
+            .verticalScroll(rememberScrollState()).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.semantics { heading() })
+            Text(stringResource(R.string.settings_hub_description))
+            SettingsRow(R.string.settings_language_title, R.string.settings_language_description, "settings_language", onLanguage)
+            if (backupAvailable) SettingsRow(R.string.settings_backup_title, R.string.settings_backup_description, "settings_backup", onBackup)
+            if (privacyAvailable) SettingsRow(R.string.settings_privacy_title, R.string.settings_privacy_description, "settings_privacy", onPrivacy)
+            if (integrationsAvailable) SettingsRow(R.string.settings_integrations_title, R.string.settings_integrations_description,
+                "settings_integrations", onIntegrations)
+        }
     }
 }
 

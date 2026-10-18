@@ -65,24 +65,31 @@ class SettingsHubFlowTest {
         val restoration = StateRestorationTester(compose)
         show(restoration, available = true)
         compose.onNodeWithTag("day_previous").performClick()
-        compose.onNodeWithTag("nav_settings").performClick()
-        listOf("language", "backup", "privacy", "integrations").forEach { section ->
+        openSettings()
+        listOf("language", "backup", "privacy", "integrations").forEachIndexed { index, section ->
             compose.onNodeWithTag("settings_$section").performScrollTo().performClick()
             awaitTag(if (section == "privacy") "screen_privacy" else "screen_settings_$section")
-            listOf("today", "timeline", "people", "review", "settings").forEach {
+            listOf("today", "timeline", "habits", "review", "more").forEach {
                 compose.onNodeWithTag("nav_$it").assertDoesNotExist()
             }
             compose.onNodeWithTag("quick_capture").assertDoesNotExist()
             if (section == "language") {
                 restoration.emulateSavedInstanceStateRestore()
                 awaitTag("screen_settings_language")
-                compose.onNodeWithTag("nav_settings").assertDoesNotExist()
+                compose.onNodeWithTag("nav_more").assertDoesNotExist()
             }
             if (section == "integrations") assertNoSavedUsageBrowser()
             compose.onNodeWithTag(if (section == "privacy") "privacy_back" else "settings_back").performClick()
             awaitTag("screen_settings")
-            compose.onNodeWithTag("nav_settings").assertIsSelected()
+            compose.onNodeWithTag("settings_hub_back").assertIsDisplayed()
+            if (index < 3) {
+                compose.onNodeWithTag("settings_hub_back").performClick()
+                awaitTag("screen_more")
+                compose.onNodeWithTag("nav_more").assertIsSelected()
+                compose.onNodeWithTag("more_settings").performClick()
+            }
         }
+        compose.onNodeWithTag("settings_hub_back").performClick()
         compose.onNodeWithTag("nav_today").performClick()
         compose.onNodeWithTag("day_selected", useUnmergedTree = true)
             .assertTextEquals(LocalDate.now().minusDays(1).format(com.luma.lifeos.language.localizedDate(java.time.format.FormatStyle.MEDIUM)))
@@ -92,7 +99,7 @@ class SettingsHubFlowTest {
 
     @Test fun healthWithoutUsageStillHasAnIntegrationPage() {
         show(StateRestorationTester(compose), available = false, withHealth = true)
-        compose.onNodeWithTag("nav_settings").performClick()
+        openSettings()
         compose.onNodeWithTag("settings_backup").assertDoesNotExist()
         compose.onNodeWithTag("settings_privacy").assertDoesNotExist()
         compose.onNodeWithTag("settings_integrations").performClick()
@@ -104,13 +111,15 @@ class SettingsHubFlowTest {
 
     @Test fun appWithoutOptionalServicesKeepsLanguageAvailable() {
         show(StateRestorationTester(compose), available = false)
-        compose.onNodeWithTag("nav_settings").performClick()
+        openSettings()
         listOf("backup", "privacy", "integrations").forEach { compose.onNodeWithTag("settings_$it").assertDoesNotExist() }
         compose.onNodeWithTag("settings_language").performClick()
         awaitTag("screen_settings_language")
         compose.onNodeWithTag("language_en").assertExists()
         compose.onNodeWithTag("settings_back").performClick()
         awaitTag("screen_settings")
+        compose.onNodeWithTag("settings_hub_back").performClick()
+        awaitTag("screen_more")
     }
 
     private fun show(restoration: StateRestorationTester, available: Boolean, withHealth: Boolean = false) {
@@ -136,12 +145,17 @@ class SettingsHubFlowTest {
             LifeOsApp(RoomLifeEventRepository(db), RoomMoodRepository(db), RoomJournalRepository(db),
                 RoomMemoryRepository(db), RoomPersonRepository(db), RoomPlaceRepository(db), photos,
                 RoomTimelineRepository(db), usage = usage.takeIf { available }, backup = backup.takeIf { available },
-                reset = if (available) AppDataReset { resets++; true } else null, health = health.takeIf { withHealth })
+                reset = if (available) AppDataReset { resets++; true } else null, health = health.takeIf { withHealth },
+                habits = RoomHabitRepository(db))
         } }
     }
     private fun assertNoSavedUsageBrowser() {
         listOf("day_previous", "usage_view_timeline", "usage_view_totals", "usage_daily_total", "settings_places")
             .forEach { compose.onNodeWithTag(it).assertDoesNotExist() }
+    }
+    private fun openSettings() {
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_settings").performClick()
     }
     private fun awaitTag(tag: String) {
         compose.waitUntil(5000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }

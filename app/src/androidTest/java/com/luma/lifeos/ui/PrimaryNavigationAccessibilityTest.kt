@@ -13,8 +13,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -27,6 +31,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.luma.lifeos.ui.navigation.PrimaryNavigationBar
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import java.util.Locale
 import org.junit.Assert.assertEquals
@@ -44,18 +49,18 @@ class PrimaryNavigationAccessibilityTest {
         val languages = listOf(
             LanguageCase(
                 tag = "en",
-                visible = listOf("Today", "Timeline", "People", "Review", "Settings"),
-                full = visibleLabels("Today", "Timeline", "People", "Review", "Settings"),
+                visible = listOf("Today", "Timeline", "Habits", "Review", "More"),
+                full = visibleLabels("Today", "Timeline", "Habits", "Review", "More"),
             ),
             LanguageCase(
                 tag = "fr",
-                visible = listOf("Jour", "Parcours", "Contacts", "Bilan", "Options"),
-                full = visibleLabels("Aujourd’hui", "Chronologie", "Personnes", "Bilan", "Paramètres"),
+                visible = listOf("Jour", "Parcours", "Hab.", "Bilan", "Plus"),
+                full = visibleLabels("Aujourd’hui", "Chronologie", "Habitudes", "Bilan", "Plus"),
             ),
             LanguageCase(
                 tag = "fa",
-                visible = listOf("امروز", "خط زمانی", "افراد", "مرور", "تنظیمات"),
-                full = visibleLabels("امروز", "خط زمانی", "افراد", "مرور", "تنظیمات"),
+                visible = listOf("امروز", "خط زمانی", "عادت‌ها", "مرور", "بیشتر"),
+                full = visibleLabels("امروز", "خط زمانی", "عادت‌ها", "مرور", "بیشتر"),
                 direction = LayoutDirection.Rtl,
             ),
         )
@@ -66,7 +71,7 @@ class PrimaryNavigationAccessibilityTest {
                 }
             }
         }
-        val routes = listOf("today", "timeline", "people", "review", "settings")
+        val routes = listOf("today", "timeline", "habits", "review", "more")
 
         val activeCase = mutableStateOf(cases.first())
         val navigated = mutableListOf<String>()
@@ -98,6 +103,8 @@ class PrimaryNavigationAccessibilityTest {
                 navigated.clear()
             }
             compose.waitForIdle()
+            compose.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+                .assertCountEquals(5)
 
             routes.forEachIndexed { index, route ->
                 val item = compose.onNodeWithTag("nav_$route")
@@ -105,6 +112,7 @@ class PrimaryNavigationAccessibilityTest {
                 assertEquals("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route tab role",
                     Role.Tab, itemNode.config[SemanticsProperties.Role])
                 item.assertHasClickAction()
+                item.assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
                 if (route == "timeline") item.assertIsSelected() else item.assertIsNotSelected()
                 item.assertContentDescriptionEquals(case.full[index])
 

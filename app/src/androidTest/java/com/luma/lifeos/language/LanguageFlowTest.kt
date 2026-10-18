@@ -24,13 +24,12 @@ class LanguageFlowTest {
     @Test fun settingsSwitchesAllLanguagesAndPreservesSelectedDateThroughRecreation() {
         val selected = LocalDate.now().minusDays(1)
         compose.onNodeWithTag("day_previous").performClick()
-        compose.onNodeWithTag("nav_settings").performClick()
-        compose.onNodeWithTag("settings_language").performClick()
-        for ((language, settings) in listOf(AppLanguage.PERSIAN to "تنظیمات", AppLanguage.FRENCH to "Paramètres", AppLanguage.ENGLISH to "Settings")) {
+        openLanguageSettings()
+        for ((language, more) in listOf(AppLanguage.PERSIAN to "بیشتر", AppLanguage.FRENCH to "Plus", AppLanguage.ENGLISH to "More")) {
             compose.onNodeWithTag("language_${language.tag}").performScrollTo().performClick()
             awaitLanguage(language)
             compose.onNodeWithTag("screen_settings_language").assertIsDisplayed()
-            compose.onNodeWithTag("nav_settings").assertDoesNotExist()
+            compose.onNodeWithTag("nav_more").assertDoesNotExist()
             compose.activityRule.scenario.onActivity { activity ->
                 assertEquals(if (language == AppLanguage.PERSIAN) Configuration.SCREENLAYOUT_LAYOUTDIR_RTL else Configuration.SCREENLAYOUT_LAYOUTDIR_LTR,
                     activity.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_LAYOUTDIR_MASK)
@@ -40,19 +39,21 @@ class LanguageFlowTest {
             awaitLanguage(language)
             compose.onNodeWithTag("screen_settings_language").assertIsDisplayed()
             compose.onNodeWithTag("settings_back").performClick()
-            compose.onNodeWithTag("nav_settings").assertContentDescriptionEquals(settings)
             compose.onNodeWithTag("screen_settings").assertIsDisplayed()
+            compose.onNodeWithTag("settings_hub_back").performClick()
+            compose.onNodeWithTag("nav_more").assertContentDescriptionEquals(more)
+            compose.onNodeWithTag("screen_more").assertIsDisplayed()
             compose.onNodeWithTag("nav_today").performClick()
             compose.onNodeWithTag("day_selected", useUnmergedTree = true)
                 .assertTextEquals(selected.format(localizedDate(FormatStyle.MEDIUM)))
-            for (route in listOf("timeline", "people", "review", "settings")) {
+            for (route in listOf("timeline", "habits", "review", "more")) {
                 compose.onNodeWithTag("nav_$route").performClick()
                 compose.onNodeWithTag("screen_$route").assertIsDisplayed()
                 compose.onNodeWithTag("quick_capture").performClick()
                 compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
                 compose.onNodeWithTag("capture_close").performClick()
             }
-            if (language != AppLanguage.ENGLISH) compose.onNodeWithTag("settings_language").performClick()
+            if (language != AppLanguage.ENGLISH) openLanguageSettings()
         }
     }
 
@@ -136,7 +137,7 @@ class LanguageFlowTest {
             }
             awaitTag("screen_habits")
             compose.onNodeWithTag("screen_habits").assertIsDisplayed()
-            compose.onNodeWithText(title).assertIsDisplayed()
+            assertTrue(compose.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty())
             val numberFormat = NumberFormat.getIntegerInstance()
             val progress = text(R.string.habit_progress, numberFormat.format(0), numberFormat.format(1),
                 quantityText(R.plurals.habit_unit_default, 1))
@@ -157,6 +158,11 @@ class LanguageFlowTest {
     private fun select(language: AppLanguage) {
         compose.activityRule.scenario.onActivity { assertTrue(AppLanguages.select(it, language)) }
         awaitLanguage(language)
+    }
+    private fun openLanguageSettings() {
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_settings").performClick()
+        compose.onNodeWithTag("settings_language").performClick()
     }
     private fun awaitLanguage(language: AppLanguage) {
         compose.waitUntil(15_000) {

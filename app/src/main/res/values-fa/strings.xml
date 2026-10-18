@@ -4,11 +4,14 @@
     <string name="timeline">خط زمانی</string>
     <string name="review">مرور</string>
     <string name="settings">تنظیمات</string>
+    <string name="more">بیشتر</string>
     <string name="nav_today_compact">امروز</string>
     <string name="nav_timeline_compact">خط زمانی</string>
     <string name="nav_people_compact">افراد</string>
+    <string name="nav_habits_compact">عادت‌ها</string>
     <string name="nav_review_compact">مرور</string>
     <string name="nav_settings_compact">تنظیمات</string>
+    <string name="nav_more_compact">بیشتر</string>
     <string name="today_heading">جایی برای زندگی شما</string>
     <string name="today_body">با فعال شدن امکان ثبت، رویدادهای زندگی روزانه‌تان اینجا نمایش داده می‌شوند.</string>
     <string name="timeline_heading">زندگی شما، روز به روز</string>
@@ -468,6 +471,10 @@
     <string name="review_details_collapsed">بسته</string>
     <string name="review_usage_incomplete">پوشش ناقص</string>
     <string name="settings_hub_description">تنظیمات لوما را در این دستگاه مدیریت کنید.</string>
+    <string name="more_people_places">افراد و مکان‌ها</string>
+    <string name="more_people_places_description">افراد و مکان‌های پیوندخورده با زندگی‌تان را ببینید.</string>
+    <string name="more_settings">تنظیمات</string>
+    <string name="more_settings_description">زبان، پشتیبان‌گیری، حریم خصوصی و اتصال‌ها.</string>
     <string name="settings_language_title">زبان</string>
     <string name="settings_language_description">زبان نمایش لوما را انتخاب کنید.</string>
     <string name="settings_backup_title">پشتیبان‌گیری</string>

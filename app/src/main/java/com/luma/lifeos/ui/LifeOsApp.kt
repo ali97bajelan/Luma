@@ -12,21 +12,12 @@ import com.luma.lifeos.ui.settings.SettingsRoute
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 import com.luma.lifeos.ui.settings.IntegrationsSettingsRoute
 import com.luma.lifeos.ui.usage.UsageForegroundRefresh
-import androidx.annotation.StringRes
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
@@ -41,10 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -74,6 +62,10 @@ import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.ui.habits.HabitsRoute
 import com.luma.lifeos.ui.habits.HabitEditorRoute
 import com.luma.lifeos.ui.habits.HabitDetailRoute
+import com.luma.lifeos.ui.navigation.AppRoutes
+import com.luma.lifeos.ui.navigation.PrimaryDestination
+import com.luma.lifeos.ui.navigation.PrimaryNavigationBar
+import com.luma.lifeos.ui.more.MoreRoute
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.mood.MoodEditorRoute
 import androidx.navigation.NavType
@@ -84,23 +76,25 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-private enum class Destination(
-    val route: String,
-    @param:StringRes val label: Int,
-    @param:StringRes val compactLabel: Int,
-    @param:StringRes val heading: Int,
-    @param:StringRes val body: Int,
-    @param:DrawableRes val icon: Int,
-) {
-    TODAY("today", R.string.today, R.string.nav_today_compact, R.string.today_heading, R.string.today_body, R.drawable.ic_nav_today),
-    TIMELINE("timeline", R.string.timeline, R.string.nav_timeline_compact, R.string.timeline_heading, R.string.timeline_body, R.drawable.ic_nav_timeline),
-    PEOPLE("people", R.string.people, R.string.nav_people_compact, R.string.people, R.string.people_intro, R.drawable.ic_nav_people),
-    REVIEW("review", R.string.review, R.string.nav_review_compact, R.string.review_heading, R.string.review_body, R.drawable.ic_nav_review),
-    SETTINGS("settings", R.string.settings, R.string.nav_settings_compact, R.string.settings_heading, R.string.settings_body, R.drawable.ic_nav_settings),
-}
-
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null, reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository? = null, backup: com.luma.lifeos.domain.backup.BackupService? = null, reset: com.luma.lifeos.ui.privacy.AppDataReset? = null, habits: HabitRepository? = null) {
+fun LifeOsApp(
+    repository: LifeEventRepository,
+    moods: MoodRepository,
+    journals: JournalRepository,
+    memories: MemoryRepository,
+    people: PersonRepository,
+    places: PlaceRepository,
+    photos: PhotoRepository,
+    timeline: TimelineRepository,
+    usage: UsageIntegration? = null,
+    summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null,
+    health: com.luma.lifeos.domain.health.HealthIntegration? = null,
+    search: com.luma.lifeos.domain.repository.SearchRepository? = null,
+    reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository? = null,
+    backup: com.luma.lifeos.domain.backup.BackupService? = null,
+    reset: com.luma.lifeos.ui.privacy.AppDataReset? = null,
+    habits: HabitRepository,
+) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
     val photoScope = rememberCoroutineScope()
@@ -112,7 +106,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val primaryScreen = Destination.entries.any { it.route == backStackEntry?.destination?.route }
+    val primaryScreen = PrimaryDestination.entries.any { it.route == backStackEntry?.destination?.route }
     fun editEvent(record: LifeEventRecord) {
         if (!record.canEditContent) return
         navController.navigate(when (record.event.type) {
@@ -153,21 +147,27 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = Destination.TODAY.route,
+            startDestination = PrimaryDestination.TODAY.route,
             modifier = Modifier.padding(padding),
         ) {
-            Destination.entries.forEach { destination ->
+            PrimaryDestination.entries.forEach { destination ->
                 composable(destination.route) {
-                    if (destination == Destination.TIMELINE) {
-                        TimelineRoute(timeline, selectedDate?.let(LocalDate::parse) ?: currentDay.date, currentDay.zone,
-                            onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
-                            onEvent = ::openEvent, onMemory = { navController.navigate("memory?eventId=$it") },
+                    when (destination) {
+                        PrimaryDestination.TIMELINE -> TimelineRoute(
+                            timeline,
+                            selectedDate?.let(LocalDate::parse) ?: currentDay.date,
+                            currentDay.zone,
+                            onSelectDate = { selectedDate = it.toString() },
+                            onToday = { selectedDate = null },
+                            onEvent = ::openEvent,
+                            onMemory = { navController.navigate("memory?eventId=$it") },
                             onSearch = search?.let { { navController.navigate("search") } },
                             onHabit = { id, habitDate, logId ->
                                 navController.navigate("habit_detail/$id/$habitDate" + (logId?.let { "?logId=$it" } ?: ""))
-                            })
-                    } else if (destination == Destination.TODAY) {
-                        TodayRoute(repository,
+                            },
+                        )
+                        PrimaryDestination.TODAY -> TodayRoute(
+                            repository,
                             date = selectedDate?.let(LocalDate::parse) ?: currentDay.date,
                             zone = currentDay.zone,
                             onSelectDate = { selectedDate = it.toString() },
@@ -175,45 +175,76 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             onMoodClick = { navController.navigate("mood?eventId=$it") },
                             onJournalClick = { navController.navigate("journal_detail/$it") },
                             onMemoryClick = { navController.navigate("memory?eventId=$it") },
-                            heading = destination.label, screenTag = "screen_${destination.route}",
-                            onEventClick = { navController.navigate("event_detail/$it") }, summaries = summaries,
-                            habits = habits, habitsDate = selectedDate?.let(LocalDate::parse), deviceDate = currentDay.date,
-                            onHabits = { navController.navigate("habits") },
-                            onCreateHabit = { navController.navigate("habit_editor") },
-                            onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") })
-                    } else if (destination == Destination.PEOPLE) {
-                        PeopleRoute(people, places, onCreatePerson = { navController.navigate("person") },
-                            onPerson = { navController.navigate("person_detail/$it") },
-                            onCreatePlace = { navController.navigate("place") },
-                            onPlace = { navController.navigate("place_detail/$it") })
-                    } else if (destination == Destination.REVIEW) {
-                        if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
-                            onSources = { dates, metric ->
-                                val activity = metric.activity
-                                navController.navigate("review_sources/${dates.start}/${dates.through}/${metric.kind.name}" +
-                                    "?id=${metric.id ?: ""}&activity=${Uri.encode(activity?.type.orEmpty())}" +
-                                    "&unit=${Uri.encode(activity?.unit.orEmpty())}&source=${activity?.source?.name.orEmpty()}")
-                            }, onEvent = ::openEvent,
-                            onPerson = { navController.navigate("person_detail/$it") },
-                            onPlace = { navController.navigate("place_detail/$it") },
-                            onUsage = { navController.navigate("review_usage/$it") },
-                            onMemory = { navController.navigate("memory?eventId=${it.event.id}") },
+                            heading = destination.label,
+                            screenTag = "screen_${destination.route}",
+                            onEventClick = { navController.navigate("event_detail/$it") },
+                            summaries = summaries,
                             habits = habits,
-                            onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") })
-                        else MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
-                            onMemory = { navController.navigate("memory?eventId=$it") },
-                            onJournal = { navController.navigate("journal_detail/$it") })
-                    } else if (destination == Destination.SETTINGS) {
-                        SettingsRoute(backupAvailable = backup != null, privacyAvailable = reset != null,
-                            integrationsAvailable = usage != null || health != null,
-                            onLanguage = { navController.navigate("settings_language") },
-                            onBackup = { navController.navigate("settings_backup") },
-                            onPrivacy = { navController.navigate("privacy") },
-                            onIntegrations = { navController.navigate("settings_integrations") })
-                    } else {
-                        FoundationScreen(destination)
+                            habitsDate = selectedDate?.let(LocalDate::parse),
+                            deviceDate = currentDay.date,
+                            onHabits = { navController.navigate(AppRoutes.HABITS) },
+                            onCreateHabit = { navController.navigate("habit_editor") },
+                            onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                        )
+                        PrimaryDestination.HABITS -> HabitsRoute(
+                            habits,
+                            selectedDate?.let(LocalDate::parse),
+                            onSelectDate = { selectedDate = it.toString() },
+                            onToday = { selectedDate = null },
+                            onCreate = { navController.navigate("habit_editor") },
+                            onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                            deviceDate = currentDay.date,
+                            deviceZone = currentDay.zone,
+                            onBack = { navController.popBackStack() },
+                        )
+                        PrimaryDestination.REVIEW -> {
+                            if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
+                                onSources = { dates, metric ->
+                                    val activity = metric.activity
+                                    navController.navigate("review_sources/${dates.start}/${dates.through}/${metric.kind.name}" +
+                                        "?id=${metric.id ?: ""}&activity=${Uri.encode(activity?.type.orEmpty())}" +
+                                        "&unit=${Uri.encode(activity?.unit.orEmpty())}&source=${activity?.source?.name.orEmpty()}")
+                                },
+                                onEvent = ::openEvent,
+                                onPerson = { navController.navigate("person_detail/$it") },
+                                onPlace = { navController.navigate("place_detail/$it") },
+                                onUsage = { navController.navigate("review_usage/$it") },
+                                onMemory = { navController.navigate("memory?eventId=${it.event.id}") },
+                                habits = habits,
+                                onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                            ) else MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
+                                onMemory = { navController.navigate("memory?eventId=$it") },
+                                onJournal = { navController.navigate("journal_detail/$it") })
+                        }
+                        PrimaryDestination.MORE -> MoreRoute(
+                            onPeoplePlaces = { navController.navigate(AppRoutes.PEOPLE) },
+                            onSettings = { navController.navigate(AppRoutes.SETTINGS) },
+                        )
                     }
                 }
+            }
+            composable(AppRoutes.PEOPLE) {
+                PeopleRoute(
+                    people,
+                    places,
+                    onCreatePerson = { navController.navigate("person") },
+                    onPerson = { navController.navigate("person_detail/$it") },
+                    onCreatePlace = { navController.navigate("place") },
+                    onPlace = { navController.navigate("place_detail/$it") },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(AppRoutes.SETTINGS) {
+                SettingsRoute(
+                    backupAvailable = backup != null,
+                    privacyAvailable = reset != null,
+                    integrationsAvailable = usage != null || health != null,
+                    onLanguage = { navController.navigate("settings_language") },
+                    onBackup = { navController.navigate("settings_backup") },
+                    onPrivacy = { navController.navigate("privacy") },
+                    onIntegrations = { navController.navigate("settings_integrations") },
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable("review_sources/{start}/{through}/{kind}?id={id}&activity={activity}&unit={unit}&source={source}",
                 arguments = listOf("start", "through", "kind", "id", "activity", "unit", "source").map { name ->
@@ -258,34 +289,24 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                     onCreate = { navController.navigate("place") },
                     onPlace = { navController.navigate("place_detail/$it") })
             }
-            if (habits != null) {
-                composable("habits") {
-                    HabitsRoute(habits, selectedDate?.let(LocalDate::parse),
-                        onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
-                        onCreate = { navController.navigate("habit_editor") },
-                        onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
-                        deviceDate = currentDay.date, deviceZone = currentDay.zone,
-                        onBack = { navController.popBackStack() })
-                }
-                composable("habit_editor?habitId={habitId}", arguments = listOf(navArgument("habitId") {
-                    type = NavType.StringType; nullable = true; defaultValue = null
-                })) { entry ->
-                    HabitEditorRoute(habits, entry.arguments?.getString("habitId")?.let(UUID::fromString),
-                        onDone = { navController.popBackStack() }, onBack = { navController.popBackStack() },
-                        deviceZone = currentDay.zone)
-                }
-                composable("habit_detail/{habitId}/{date}?logId={logId}", arguments = listOf(
-                    navArgument("habitId") { type = NavType.StringType },
-                    navArgument("date") { type = NavType.StringType },
-                    navArgument("logId") { type = NavType.StringType; nullable = true; defaultValue = null },
-                )) { entry ->
-                    val habitId = UUID.fromString(requireNotNull(entry.arguments?.getString("habitId")))
-                    val habitDate = LocalDate.parse(requireNotNull(entry.arguments?.getString("date")))
-                    val logId = entry.arguments?.getString("logId")?.let(UUID::fromString)
-                    HabitDetailRoute(habits, habitId, habitDate, logId,
-                        onEdit = { id -> navController.navigate("habit_editor?habitId=$id") },
-                        onBack = { navController.popBackStack() }, deviceZone = currentDay.zone)
-                }
+            composable("habit_editor?habitId={habitId}", arguments = listOf(navArgument("habitId") {
+                type = NavType.StringType; nullable = true; defaultValue = null
+            })) { entry ->
+                HabitEditorRoute(habits, entry.arguments?.getString("habitId")?.let(UUID::fromString),
+                    onDone = { navController.popBackStack() }, onBack = { navController.popBackStack() },
+                    deviceZone = currentDay.zone)
+            }
+            composable("habit_detail/{habitId}/{date}?logId={logId}", arguments = listOf(
+                navArgument("habitId") { type = NavType.StringType },
+                navArgument("date") { type = NavType.StringType },
+                navArgument("logId") { type = NavType.StringType; nullable = true; defaultValue = null },
+            )) { entry ->
+                val habitId = UUID.fromString(requireNotNull(entry.arguments?.getString("habitId")))
+                val habitDate = LocalDate.parse(requireNotNull(entry.arguments?.getString("date")))
+                val logId = entry.arguments?.getString("logId")?.let(UUID::fromString)
+                HabitDetailRoute(habits, habitId, habitDate, logId,
+                    onEdit = { id -> navController.navigate("habit_editor?habitId=$id") },
+                    onBack = { navController.popBackStack() }, deviceZone = currentDay.zone)
             }
             composable("place?placeId={placeId}", arguments = listOf(navArgument("placeId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
@@ -389,59 +410,7 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
     })
 }
 
-@Composable
-internal fun PrimaryNavigationBar(
-    selectedRoute: String?,
-    onNavigate: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    NavigationBar(
-        modifier = modifier.testTag("primary_navigation"),
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-    ) {
-        Destination.entries.forEach { destination ->
-            val fullLabel = stringResource(destination.label)
-            NavigationBarItem(
-                modifier = Modifier.testTag("nav_${destination.route}"),
-                selected = selectedRoute == destination.route,
-                onClick = { onNavigate(destination.route) },
-                icon = { Icon(painterResource(destination.icon), contentDescription = null) },
-                label = {
-                    Text(
-                        text = stringResource(destination.compactLabel),
-                        modifier = Modifier
-                            .testTag("nav_label_${destination.route}")
-                            .semantics { contentDescription = fullLabel },
-                        maxLines = 2,
-                    )
-                },
-            )
-        }
-    }
-}
-
 private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {
     val now = Instant.now()
     return date.atTime(now.atZone(zone).toLocalTime()).atZone(zone).toInstant().toEpochMilli()
-}
-
-@Composable
-private fun FoundationScreen(destination: Destination) {
-    Column(
-        modifier = Modifier.fillMaxSize()
-            .testTag("screen_${destination.route}")
-            .verticalScroll(rememberScrollState())
-            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
-        Text(stringResource(destination.heading), style = MaterialTheme.typography.headlineLarge)
-        Text(stringResource(destination.body), style = MaterialTheme.typography.bodyLarge)
-        Text(
-            stringResource(R.string.local_first),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
 }

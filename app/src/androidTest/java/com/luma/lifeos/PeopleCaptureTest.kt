@@ -16,6 +16,7 @@ class PeopleCaptureTest {
         compose.onNodeWithTag("quick_capture").performClick()
         compose.onNodeWithTag("capture_journal").performClick()
         awaitTag("journal_body")
+        awaitTag("journal_more")
         compose.onNodeWithTag("journal_body").performTextInput(body)
         compose.onNodeWithTag("journal_more").performScrollTo().performClick()
         createFromPicker(first)
@@ -66,28 +67,32 @@ class PeopleCaptureTest {
     @Test fun deletingLinkedPersonKeepsStandaloneMemory() {
         val name = "Memory person ${System.nanoTime()}"
         val note = "Retained memory ${System.nanoTime()}"
-        compose.onNodeWithTag("nav_people").performClick()
+        openPeople()
         compose.onNodeWithTag("people_create").performClick()
         fillPerson(name)
         awaitTag("screen_people")
+        compose.onNodeWithTag("people_back").performClick()
+        compose.onNodeWithTag("nav_today").performClick()
         compose.onNodeWithTag("quick_capture").performClick()
         compose.onNodeWithTag("capture_memory").performClick()
         awaitTag("memory_note")
+        awaitTag("memory_more")
         compose.onNodeWithTag("memory_note").performTextInput(note)
         compose.onNodeWithTag("memory_more").performScrollTo().performClick()
         compose.onNodeWithTag("people_picker").performScrollTo().performClick()
         awaitText(name)
         compose.onNodeWithText(name).performScrollTo().performClick()
         compose.onNodeWithTag("memory_save").performClick()
-        awaitTag("screen_people")
+        awaitTag("screen_today")
         openPerson(name)
         compose.onNodeWithTag("person_detail_content").performScrollToNode(hasText(note))
         compose.onNodeWithTag("person_detail_back").assertIsDisplayed()
         compose.onNodeWithTag("person_edit").assertIsDisplayed()
         compose.onNodeWithText(note).assertIsDisplayed()
         deleteCurrentPerson()
+        compose.onNodeWithTag("people_back").performClick()
         compose.onNodeWithTag("nav_today").performClick()
-        awaitTag("today_summary")
+        awaitTag("screen_today")
         compose.onNodeWithTag("screen_today").performScrollToNode(hasText(note))
         compose.onNodeWithText(note).performClick()
         awaitTag("memory_note")
@@ -111,7 +116,7 @@ class PeopleCaptureTest {
         compose.onNodeWithTag("person_save").performClick()
     }
     private fun openPerson(name: String) {
-        compose.onNodeWithTag("nav_people").performClick()
+        openPeople()
         awaitTag("people_ready")
         compose.onNodeWithTag("screen_people").performScrollToNode(hasText(name))
         compose.onNodeWithText(name).performClick()
@@ -123,6 +128,12 @@ class PeopleCaptureTest {
         compose.onNodeWithTag("person_delete").performClick()
         compose.onNodeWithTag("person_confirm_delete").performClick()
         awaitTag("screen_people")
+    }
+    private fun openPeople() {
+        if (compose.onAllNodesWithTag("screen_people").fetchSemanticsNodes().isEmpty()) {
+            compose.onNodeWithTag("nav_more").performClick()
+            compose.onNodeWithTag("more_people_places").performClick()
+        }
     }
     private fun awaitText(text: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }

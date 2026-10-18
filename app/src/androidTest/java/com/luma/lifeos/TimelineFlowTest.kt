@@ -274,7 +274,7 @@ class TimelineFlowTest {
     private fun show() {
         compose.setContent { LifeOsTheme { LifeOsApp(RoomLifeEventRepository(db), RoomMoodRepository(db, clock),
             RoomJournalRepository(db, clock), RoomMemoryRepository(db, clock), RoomPersonRepository(db),
-            RoomPlaceRepository(db), photos, RoomTimelineRepository(db)) } }
+            RoomPlaceRepository(db), photos, RoomTimelineRepository(db), habits = RoomHabitRepository(db)) } }
     }
     private fun awaitTag(tag: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }

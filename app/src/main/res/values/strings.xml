@@ -4,11 +4,14 @@
     <string name="timeline">Timeline</string>
     <string name="review">Review</string>
     <string name="settings">Settings</string>
+    <string name="more">More</string>
     <string name="nav_today_compact">Today</string>
     <string name="nav_timeline_compact">Timeline</string>
     <string name="nav_people_compact">People</string>
+    <string name="nav_habits_compact">Habits</string>
     <string name="nav_review_compact">Review</string>
     <string name="nav_settings_compact">Settings</string>
+    <string name="nav_more_compact">More</string>
     <string name="today_heading">A space for your life</string>
     <string name="today_body">Your daily life record will appear here as capture becomes available.</string>
     <string name="timeline_heading">Your life, day by day</string>
@@ -468,6 +471,10 @@
     <string name="review_details_collapsed">Collapsed</string>
     <string name="review_usage_incomplete">Incomplete coverage</string>
     <string name="settings_hub_description">Manage how Luma works on this device.</string>
+    <string name="more_people_places">People &amp; Places</string>
+    <string name="more_people_places_description">Browse the people and places connected to your life.</string>
+    <string name="more_settings">Settings</string>
+    <string name="more_settings_description">Language, backup, privacy and integrations.</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_language_description">Choose the language used by Luma.</string>
     <string name="settings_backup_title">Backup</string>

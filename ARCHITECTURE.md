@@ -153,9 +153,13 @@ Repositories expose Flow for observation and suspend operations for mutations.
 ## Application shell and Today (T04)
 
 `MainActivity` supplies the application's `LifeEventRepository` to `LifeOsApp`.
-The shell retains primary navigation and owns saveable ISO date selection and
-Quick Capture sheet visibility. A null selection follows the system's current
-day; an explicit selection survives navigation and recreation. Foreground date/
+The primary bar is Today, Timeline, Habits, Review and More in that order. More
+opens People & Places and Settings as secondary destinations, each with Back to
+its actual source; Review links and capture pickers retain direct access to
+person/place details and creation. Quick Capture remains available from every primary destination. The
+shell owns saveable ISO date selection and sheet visibility. A null selection
+follows the system's current day; an explicit selection survives navigation and
+recreation. Foreground date/
 zone refresh runs immediately on resume and every 30 seconds to notice midnight
 and timezone changes without background polling.
 
@@ -319,7 +323,8 @@ A missing-person foreign key rolls back the entire capture, including tags and
 summary changes. Promotion keeps the original event ID and source content;
 explicit selections change its shared person links, while unmarking preserves them.
 
-People has a primary tab with list, create, edit and detail. Saved person editors
+The secondary People & Places destination has catalog lists, create, edit and
+detail. Saved person editors
 retain name/note, dirty state and capture identity, recover ambiguous committed
 creates and confirmed deletes, and keep drafts after errors. Capture editors
 retain up to 100 selected UUIDs through `SavedStateHandle`; the shared picker
