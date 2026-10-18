@@ -1,0 +1,105 @@
+package com.luma.lifeos.data.todo
+
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
+
+data class TodoPageRow(
+    @ColumnInfo(name = "task_id") val taskId: String?,
+    val title: String?,
+    val note: String?,
+    @ColumnInfo(name = "due_date") val dueDate: String?,
+    @ColumnInfo(name = "completed_at") val completedAt: Long?,
+    @ColumnInfo(name = "created_at") val createdAt: Long?,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long?,
+    @ColumnInfo(name = "revision_token") val revisionToken: String?,
+    @ColumnInfo(name = "total_count") val totalCount: Int,
+) {
+    fun toEntityOrNull(): TodoEntity? = taskId?.let { id ->
+        TodoEntity(
+            id = id,
+            title = requireNotNull(title),
+            note = note,
+            dueDate = dueDate,
+            completedAt = completedAt,
+            createdAt = requireNotNull(createdAt),
+            updatedAt = requireNotNull(updatedAt),
+            revisionToken = requireNotNull(revisionToken),
+        )
+    }
+}
+
+@Dao
+interface TodoDao {
+    @Query("SELECT * FROM todo_task WHERE id = :id")
+    suspend fun find(id: String): TodoEntity?
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(entity: TodoEntity)
+
+    @Query("""
+        SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
+            task.created_at, task.updated_at, task.revision_token, counts.total_count
+        FROM (SELECT COUNT(*) AS total_count FROM todo_task WHERE completed_at IS NULL) AS counts
+        LEFT JOIN todo_task AS task ON task.completed_at IS NULL
+        ORDER BY CASE WHEN task.due_date IS NULL THEN 1 ELSE 0 END,
+            task.due_date ASC, task.created_at ASC, task.id ASC
+        LIMIT :limit
+    """)
+    fun observeOpen(limit: Int): Flow<List<TodoPageRow>>
+
+    @Query("""
+        SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
+            task.created_at, task.updated_at, task.revision_token, counts.total_count
+        FROM (SELECT COUNT(*) AS total_count FROM todo_task WHERE completed_at IS NOT NULL) AS counts
+        LEFT JOIN todo_task AS task ON task.completed_at IS NOT NULL
+        ORDER BY task.completed_at DESC, task.id ASC
+        LIMIT :limit
+    """)
+    fun observeCompleted(limit: Int): Flow<List<TodoPageRow>>
+
+    @Query("""
+        SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
+            task.created_at, task.updated_at, task.revision_token, counts.total_count
+        FROM (SELECT COUNT(*) AS total_count FROM todo_task
+            WHERE completed_at IS NULL AND due_date <= :date) AS counts
+        LEFT JOIN todo_task AS task ON task.completed_at IS NULL AND task.due_date <= :date
+        ORDER BY task.due_date ASC, task.created_at ASC, task.id ASC
+        LIMIT :limit
+    """)
+    fun observeToday(date: String, limit: Int): Flow<List<TodoPageRow>>
+
+    @Query("""
+        UPDATE todo_task SET title = :title, note = :note, due_date = :dueDate,
+            updated_at = :updatedAt, revision_token = :nextRevision
+        WHERE id = :id AND revision_token = :expectedRevision
+    """)
+    suspend fun update(
+        id: String,
+        expectedRevision: String,
+        nextRevision: String,
+        title: String,
+        note: String?,
+        dueDate: String?,
+        updatedAt: Long,
+    ): Int
+
+    @Query("""
+        UPDATE todo_task SET completed_at = :completedAt, updated_at = :updatedAt,
+            revision_token = :nextRevision
+        WHERE id = :id AND revision_token = :expectedRevision
+    """)
+    suspend fun setCompletion(
+        id: String,
+        expectedRevision: String,
+        nextRevision: String,
+        completedAt: Long?,
+        updatedAt: Long,
+    ): Int
+
+    @Query("DELETE FROM todo_task WHERE id = :id AND revision_token = :expectedRevision")
+    suspend fun delete(id: String, expectedRevision: String): Int
+}

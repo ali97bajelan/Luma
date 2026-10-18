@@ -16,6 +16,8 @@ internal val BACKUP_TABLES_V2 = BACKUP_TABLES_V1 + listOf("usage_session", "usag
 internal val HABIT_BACKUP_TABLES = listOf("habit_settings", "habit", "habit_schedule", "habit_log",
     "habit_day_choice", "habit_reminder", "habit_reminder_runtime")
 internal val BACKUP_TABLES = BACKUP_TABLES_V2 + HABIT_BACKUP_TABLES
+/** Keep archive versioning tied to its table inventory and restore behavior, not Room. */
+internal const val CURRENT_BACKUP_SCHEMA_VERSION = 3
 internal fun backupTables(version: Int): List<String> = when (version) {
     1 -> BACKUP_TABLES_V1
     2 -> BACKUP_TABLES_V2

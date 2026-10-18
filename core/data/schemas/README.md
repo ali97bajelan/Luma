@@ -4,9 +4,9 @@
 plugin. Commit the compiler-generated JSON snapshots for each released version;
 do not hand-author identity hashes or edit an exported historical version.
 
-Versions 1, 2 and 3 have compiler-generated JSON snapshots. Include all three in
-version control. Room's Gradle plugin makes the schema directory available to
-instrumentation tests after the current build exports its schema.
+Versions 1, 2 and 3 have compiler-generated JSON snapshots. Version 4 is pending
+Room compiler export and must be added before TD02 is marked complete. The Room Gradle
+plugin makes the schema directory available to instrumentation tests after export.
 
 When changing an existing table, increment `LumaDatabase.VERSION`, register a
 data-preserving `Migration` in `LumaDatabase.MIGRATIONS`, and retain every older
@@ -28,3 +28,6 @@ effective-dated schedules, individual logs, day choices, reminder configuration
 and bounded reminder runtime. The 2→3 migration is additive and keeps reminders
 disabled until the user enables them. `HabitMigrationTest` checks both 1→3 and
 2→3 upgrades without dropping legacy rows.
+
+Version 4 adds the standalone `todo_task` table and its open/completed ordering indexes.
+The 3→4 migration is additive; existing events, habits and private files remain intact.

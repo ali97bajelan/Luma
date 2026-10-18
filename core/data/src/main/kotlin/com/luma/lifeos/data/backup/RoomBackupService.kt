@@ -49,7 +49,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
                     }
                 }
             }
-            BackupArchive.write(output, payloads, LumaDatabase.VERSION, System.currentTimeMillis())
+            BackupArchive.write(output, payloads, CURRENT_BACKUP_SCHEMA_VERSION, System.currentTimeMillis())
         } finally { work.deleteRecursively() }
     }
     override suspend fun prepare(input: InputStream): PreparedBackup = withContext(Dispatchers.IO) {

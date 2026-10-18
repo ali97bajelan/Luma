@@ -22,6 +22,8 @@ import com.luma.lifeos.data.habit.HabitReminderEntity
 import com.luma.lifeos.data.habit.HabitReminderRuntimeEntity
 import com.luma.lifeos.data.habit.HabitScheduleEntity
 import com.luma.lifeos.data.habit.HabitSettingsEntity
+import com.luma.lifeos.data.todo.TodoDao
+import com.luma.lifeos.data.todo.TodoEntity
 
 @Database(
     entities = [
@@ -33,6 +35,7 @@ import com.luma.lifeos.data.habit.HabitSettingsEntity
         UsageSessionEntity::class, UsageSessionWindowEntity::class,
         HabitSettingsEntity::class, HabitEntity::class, HabitScheduleEntity::class, HabitLogEntity::class,
         HabitDayChoiceEntity::class, HabitReminderEntity::class, HabitReminderRuntimeEntity::class,
+        TodoEntity::class,
     ],
     version = LumaDatabase.VERSION,
     exportSchema = true,
@@ -47,9 +50,10 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun usageSessions(): UsageSessionDao
     abstract fun habits(): HabitDao
     abstract fun habitTimeline(): HabitTimelineSql
+    abstract fun todos(): TodoDao
 
     companion object {
-        const val VERSION = 3
+        const val VERSION = 4
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
@@ -135,6 +139,17 @@ abstract class LumaDatabase : RoomDatabase() {
                         FOREIGN KEY(habit_id, revision_token) REFERENCES habit_reminder(habit_id, revision_token) ON DELETE CASCADE
                     )""")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_habit_reminder_runtime_habit_id_revision_token ON habit_reminder_runtime(habit_id, revision_token)")
+                }
+            },
+            object : Migration(3, 4) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS todo_task (
+                        id TEXT NOT NULL, title TEXT NOT NULL, note TEXT, due_date TEXT,
+                        completed_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+                        revision_token TEXT NOT NULL, PRIMARY KEY(id)
+                    )""")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_completed_at_due_date_created_at_id ON todo_task(completed_at, due_date, created_at, id)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_completed_at_id ON todo_task(completed_at, id)")
                 }
             },
         )
