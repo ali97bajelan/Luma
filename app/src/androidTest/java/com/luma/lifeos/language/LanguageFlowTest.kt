@@ -7,6 +7,7 @@ import com.luma.lifeos.MainActivity
 import com.luma.lifeos.R
 import java.time.LocalDate
 import java.time.format.FormatStyle
+import java.text.NumberFormat
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.After
@@ -111,9 +112,46 @@ class LanguageFlowTest {
         compose.onNode(hasText(text(R.string.cancel)) and hasAnyAncestor(isDialog())).performClick()
     }
 
+    @Test fun habitListLoadsPersianFrenchAndEnglishLabelsAfterLanguageChanges() {
+        select(AppLanguage.PERSIAN)
+        compose.onNodeWithTag("today_habits_card").assertIsDisplayed()
+        compose.onNodeWithTag("habits_view_all").performClick()
+        compose.onNodeWithTag("screen_habits").assertIsDisplayed()
+        compose.onNodeWithTag("habit_create").performClick()
+        awaitTag("screen_habit_editor")
+        compose.onNodeWithTag("habit_name").performTextInput("Read")
+        compose.onNodeWithTag("habit_save").performClick()
+        awaitTag("screen_habits")
+
+        val expectedTitles = listOf(
+            AppLanguage.PERSIAN to "عادت‌ها",
+            AppLanguage.FRENCH to "Habitudes",
+            AppLanguage.ENGLISH to "Habits",
+        )
+        var activeLanguage = AppLanguage.PERSIAN
+        for ((language, title) in expectedTitles) {
+            if (language != activeLanguage) {
+                select(language)
+                activeLanguage = language
+            }
+            awaitTag("screen_habits")
+            compose.onNodeWithTag("screen_habits").assertIsDisplayed()
+            compose.onNodeWithText(title).assertIsDisplayed()
+            val numberFormat = NumberFormat.getIntegerInstance()
+            val progress = text(R.string.habit_progress, numberFormat.format(0), numberFormat.format(1),
+                quantityText(R.plurals.habit_unit_default, 1))
+            assertTrue(compose.onAllNodesWithText(progress).fetchSemanticsNodes().isNotEmpty())
+        }
+    }
+
     private fun text(id: Int, vararg args: Any): String {
         var value = ""
         compose.activityRule.scenario.onActivity { value = it.getString(id, *args) }
+        return value
+    }
+    private fun quantityText(id: Int, quantity: Int): String {
+        var value = ""
+        compose.activityRule.scenario.onActivity { value = it.resources.getQuantityString(id, quantity) }
         return value
     }
     private fun select(language: AppLanguage) {

@@ -25,6 +25,12 @@ class AppNavigationTest {
         }
     }
 
+    @Test fun todayHabitPreviewOpensTheSecondaryHabitsRoute() {
+        compose.onNodeWithTag("today_habits_card").assertIsDisplayed()
+        compose.onNodeWithTag("habits_view_all").performClick()
+        compose.onNodeWithTag("screen_habits").assertIsDisplayed()
+    }
+
     @Test fun recreationRestoresSelectedRoute() {
         compose.onNodeWithTag("nav_settings").performClick()
         compose.activityRule.scenario.recreate()

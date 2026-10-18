@@ -32,6 +32,9 @@ import com.luma.lifeos.ui.summary.DailySummaryCard
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.FormatStyle
+import com.luma.lifeos.ui.habits.HabitsUiState
+import com.luma.lifeos.ui.habits.TodayHabitsCard
+import java.util.UUID
 
 @Composable
 fun TodayScreen(
@@ -49,6 +52,14 @@ fun TodayScreen(
     onEventClick: (EventId) -> Unit = {},
     summaryState: DailySummaryState? = null,
     onSummaryRetry: () -> Unit = {},
+    habitsState: HabitsUiState? = null,
+    onHabits: () -> Unit = {},
+    onCreateHabit: () -> Unit = {},
+    onHabit: (UUID, LocalDate) -> Unit = { _, _ -> },
+    onHabitLog: (UUID) -> Unit = {},
+    onHabitRetryLog: (UUID) -> Unit = {},
+    onHabitRetry: () -> Unit = {},
+    onHabitUndo: (UUID) -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(screenTag),
@@ -66,6 +77,9 @@ fun TodayScreen(
             }
         }
         summaryState?.let { item { DailySummaryCard(it, onSummaryRetry) } }
+        habitsState?.let { item {
+            TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry)
+        } }
         when (state) {
             TodayUiState.Loading -> item {
                 Column(Modifier.testTag("today_loading"), verticalArrangement = Arrangement.spacedBy(8.dp)) {

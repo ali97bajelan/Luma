@@ -824,7 +824,7 @@ and evidence are in [VALIDATION.md](docs/VALIDATION.md).
 
 ## Approved extension — counted habits, reminders and navigation
 
-Approved 17 October 2026. T22–T23 are complete; T24–T29 remain pending. Read
+Approved 17 October 2026. T22–T24 are complete; T25–T29 remain pending. Read
 [the specification](docs/superpowers/specs/2026-10-17-habits-and-navigation-design.md)
 and [task handoff](docs/HABITS_TASKS.md). Existing release validation remains open.
 Execute T22–T29 in order; task plans include exact files, interfaces, tests and checks.
@@ -870,7 +870,7 @@ successfully. See [the habits acceptance log](docs/HABITS_ACCEPTANCE_2026-10-17.
 
 ### T24 — Habit capture, daily progress and editable history
 
-Status: pending
+Status: complete
 
 Depends on: T23. Plan: [core](docs/superpowers/plans/2026-10-17-habits-core.md), T24.
 
@@ -881,6 +881,17 @@ Acceptance: repeated intentional logs persist individually; retry/recreation doe
 not duplicate; count may exceed target; partial skip preserves logs; future-date
 guards and true time precision work. Navigation/language changes retain date and
 drafts. Errors keep prior data usable; all three languages and accessible actions.
+
+Implementation: Room-backed list/create/detail and per-log history, +1 logging,
+correction/deletion/Undo, lifecycle and skip controls, durable editor/action drafts,
+and a compact scheduled-habit preview on Today. Default units use quantity-aware
+resources; custom unit labels remain unchanged.
+
+Validation (2026-10-18): 200 app JVM tests pass; 21 device instrumentation tests
+pass across habit, navigation and language flows on an isolated API 36 emulator;
+standard app and instrumentation APKs assemble with `com.luma.lifeos`. See
+[the habits acceptance log](docs/HABITS_ACCEPTANCE_2026-10-17.md). Native TalkBack
+speech remains NOT RUN.
 
 ### T25 — Habit completions in Timeline and weekly Review
 

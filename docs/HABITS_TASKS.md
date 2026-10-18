@@ -1,6 +1,6 @@
 # Habits implementation handoff
 
-Prepared: 17 October 2026. Status: T22–T23 complete; T24–T29 pending. The user
+Prepared: 17 October 2026. Status: T22–T24 complete; T25–T29 pending. The user
 approved the richer counted-habits/navigation proposal and requested the
 specification, plans and tasks. This handoff records the approved scope and the
 current implementation evidence.
@@ -23,7 +23,7 @@ the master tracker together using actual execution evidence.
 | --- | --- | --- | --- | --- |
 | T22 | Pure counted-habit/domain and historical date rules | Existing baseline | Complete | Focused and full domain-only checks pass |
 | T23 | Room schema 3, transactional repository, backup compatibility | T22 | Complete | JVM/build checks and 13 Room persistence/migration/backup instrumentation tests pass |
-| T24 | Habit creation/logging/history, Today access | T23 | Pending | Persistence/backup contracts available |
+| T24 | Habit creation/logging/history, Today access | T23 | Complete | 200 app JVM tests and 21 isolated device navigation/habit/language tests pass; standard APKs build |
 | T25 | Each completion in mixed Timeline and weekly Review | T24 | Pending | Counted logs and source detail usable |
 | T26 | Today · Timeline · Habits · Review · More | T25 | Pending | Functional Habits route; no placeholder tab |
 | T27 | Pure reminder planner and persistent configuration | T26 (execution order); T22/T23 (technical) | Pending | Shared date/count contracts stable |
@@ -71,6 +71,8 @@ stays open independently of this extension.
 **T22 and T23 are complete.** T22 adds pure models/contracts and deterministic
 count/date/history rules. T23 adds schema 3, transactional persistence and archive
 compatibility; its JVM/build checks and 13 Room instrumentation tests pass. See
-[the acceptance log](HABITS_ACCEPTANCE_2026-10-17.md). T24 can now proceed.
+[the acceptance log](HABITS_ACCEPTANCE_2026-10-17.md). T24 adds functional
+capture, per-log history and Today access; its 200 app JVM tests and 21 device
+tests pass. T25 can now proceed.
 Recommended execution is native task-by-task with a final independent review;
 the two existing senior roles remain available for focused product/UX review.

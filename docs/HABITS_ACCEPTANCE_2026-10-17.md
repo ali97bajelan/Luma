@@ -53,7 +53,36 @@ columns remain object-only.
 T23 acceptance is complete. The schema-3 selector, generated schema exports,
 backup format notes and migration/persistence/rollback coverage are retained.
 
+## T24 — Functional capture, history and Today entry
+
+| Case | Result | Environment and evidence |
+| --- | --- | --- |
+| App JVM regressions, view-model rules and translation catalog | PASS | `:app:testDebugUnitTest`: 200 tests, 0 failures/errors/skips across 28 suites. Includes correction date moves and failed-draft recreation, future-start edit/archive semantics, and supported-language resource/plural checks. JDK 17, Gradle 9.1.0. |
+| Habit capture, daily progress, individual correction/Undo, Today preview and lifecycle controls | PASS | `HabitCaptureFlowTest` (12 tests): repeated 9/8 logging, undo/correct an individual history item, date correction preserving identity/recordedAt, no-habit vs none-scheduled, future guard, scheduled-row preview/cap, Room submillisecond retry reconciliation, detail retry/undo, historical-date lifecycle action, future-start edit/archive, readable archived history, default-unit plural and accessibility, editor semantics, and 320 dp / 2.0 font scale separate 48 dp actions. |
+| Navigation and language switching | PASS | `AppNavigationTest` (5) and `LanguageFlowTest` (4), including Persian/French/English resource refresh with blank stored unit displayed through localized quantity resources. Combined direct runner result: `OK (21 tests)`. |
+| Standard app and test APK builds | PASS | `:app:assembleDebug :app:assembleDebugAndroidTest`, with production application ID `com.luma.lifeos`. |
+
+Device evidence: disposable `sdk_gphone64_x86_64`, API 36, 1080×2400. Tests
+used only the isolated `com.luma.lifeos.t24sandbox` / `.test` packages on
+`emulator-5556`; no production app installation was replaced. The flows switch
+en/fa/fr. The layout test constrains the composition to 320 dp and font scale
+2.0 while verifying distinct name/open and +Log actions at least 48 dp high.
+Compose accessibility semantics were checked; native TalkBack speech was NOT RUN.
+
+Direct device command:
+
+```text
+adb -s emulator-5556 shell am instrument -w -r -e timeout_msec 90000 \
+  -e class com.luma.lifeos.habits.HabitCaptureFlowTest,com.luma.lifeos.AppNavigationTest,com.luma.lifeos.language.LanguageFlowTest \
+  com.luma.lifeos.t24sandbox.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+T24 acceptance is complete. Habits are reachable from Today while primary
+navigation remains unchanged for T25/T26. The tracking zone stays fixed for
+civil dates, individual logs retain correction and deletion paths, and custom
+unit labels remain user text without machine pluralization.
+
 ## Later acceptance
 
-T24–T29: NOT RUN. App flows, OS reminders, navigation, accessibility,
-localization and later device acceptance remain open.
+T25–T29: NOT RUN. Mixed Timeline/Review, OS reminders, full integration/release,
+native TalkBack speech and later device acceptance remain open.

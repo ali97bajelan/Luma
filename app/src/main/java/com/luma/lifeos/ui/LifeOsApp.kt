@@ -70,6 +70,10 @@ import com.luma.lifeos.domain.repository.JournalRepository
 import com.luma.lifeos.ui.journal.JournalEditorRoute
 import com.luma.lifeos.ui.journal.JournalDetailRoute
 import com.luma.lifeos.domain.repository.MoodRepository
+import com.luma.lifeos.domain.habit.HabitRepository
+import com.luma.lifeos.ui.habits.HabitsRoute
+import com.luma.lifeos.ui.habits.HabitEditorRoute
+import com.luma.lifeos.ui.habits.HabitDetailRoute
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.mood.MoodEditorRoute
 import androidx.navigation.NavType
@@ -96,7 +100,7 @@ private enum class Destination(
 }
 
 @Composable
-fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null, reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository? = null, backup: com.luma.lifeos.domain.backup.BackupService? = null, reset: com.luma.lifeos.ui.privacy.AppDataReset? = null) {
+fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: JournalRepository, memories: MemoryRepository, people: PersonRepository, places: PlaceRepository, photos: PhotoRepository, timeline: TimelineRepository, usage: UsageIntegration? = null, summaries: com.luma.lifeos.domain.repository.DailySummaryRepository? = null, health: com.luma.lifeos.domain.health.HealthIntegration? = null, search: com.luma.lifeos.domain.repository.SearchRepository? = null, reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository? = null, backup: com.luma.lifeos.domain.backup.BackupService? = null, reset: com.luma.lifeos.ui.privacy.AppDataReset? = null, habits: HabitRepository? = null) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
     val photoScope = rememberCoroutineScope()
@@ -169,7 +173,11 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                             onJournalClick = { navController.navigate("journal_detail/$it") },
                             onMemoryClick = { navController.navigate("memory?eventId=$it") },
                             heading = destination.label, screenTag = "screen_${destination.route}",
-                            onEventClick = { navController.navigate("event_detail/$it") }, summaries = summaries)
+                            onEventClick = { navController.navigate("event_detail/$it") }, summaries = summaries,
+                            habits = habits, habitsDate = selectedDate?.let(LocalDate::parse), deviceDate = currentDay.date,
+                            onHabits = { navController.navigate("habits") },
+                            onCreateHabit = { navController.navigate("habit_editor") },
+                            onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") })
                     } else if (destination == Destination.PEOPLE) {
                         PeopleRoute(people, places, onCreatePerson = { navController.navigate("person") },
                             onPerson = { navController.navigate("person_detail/$it") },
@@ -244,6 +252,35 @@ fun LifeOsApp(repository: LifeEventRepository, moods: MoodRepository, journals: 
                 PlacesRoute(places, onBack = { navController.popBackStack() },
                     onCreate = { navController.navigate("place") },
                     onPlace = { navController.navigate("place_detail/$it") })
+            }
+            if (habits != null) {
+                composable("habits") {
+                    HabitsRoute(habits, selectedDate?.let(LocalDate::parse),
+                        onSelectDate = { selectedDate = it.toString() }, onToday = { selectedDate = null },
+                        onCreate = { navController.navigate("habit_editor") },
+                        onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                        deviceDate = currentDay.date, deviceZone = currentDay.zone,
+                        onBack = { navController.popBackStack() })
+                }
+                composable("habit_editor?habitId={habitId}", arguments = listOf(navArgument("habitId") {
+                    type = NavType.StringType; nullable = true; defaultValue = null
+                })) { entry ->
+                    HabitEditorRoute(habits, entry.arguments?.getString("habitId")?.let(UUID::fromString),
+                        onDone = { navController.popBackStack() }, onBack = { navController.popBackStack() },
+                        deviceZone = currentDay.zone)
+                }
+                composable("habit_detail/{habitId}/{date}?logId={logId}", arguments = listOf(
+                    navArgument("habitId") { type = NavType.StringType },
+                    navArgument("date") { type = NavType.StringType },
+                    navArgument("logId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                )) { entry ->
+                    val habitId = UUID.fromString(requireNotNull(entry.arguments?.getString("habitId")))
+                    val habitDate = LocalDate.parse(requireNotNull(entry.arguments?.getString("date")))
+                    val logId = entry.arguments?.getString("logId")?.let(UUID::fromString)
+                    HabitDetailRoute(habits, habitId, habitDate, logId,
+                        onEdit = { id -> navController.navigate("habit_editor?habitId=$id") },
+                        onBack = { navController.popBackStack() }, deviceZone = currentDay.zone)
+                }
             }
             composable("place?placeId={placeId}", arguments = listOf(navArgument("placeId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
