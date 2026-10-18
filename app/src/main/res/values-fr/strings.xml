@@ -307,7 +307,7 @@
     <string name="health_close">Fermer</string>
     <string name="search">Rechercher</string>
     <string name="search_text_hint">Titre, étiquette, personne ou lieu</string>
-    <string name="search_text_help">Rechercher dans les titres et les noms associés · %1$d/200</string>
+    <string name="search_text_help">%1$d/200 caractères</string>
     <string name="search_filters">Filtres de recherche</string>
     <string name="search_filter_count">Filtres (%1$d)</string>
     <string name="search_active_filters">Filtres actifs</string>
@@ -327,7 +327,9 @@
     <string name="search_clear_date">Effacer la date %1$s</string>
     <string name="search_category">%1$s (%2$d)</string>
     <string name="search_results">%1$d entrées correspondantes</string>
-    <string name="search_empty">Aucune entrée correspondante. Essayez un autre titre ou nom, ou effacez les filtres.</string>
+    <string name="search_prompt">Recherchez des titres, étiquettes, personnes ou lieux</string>
+    <string name="search_empty_library">Vos entrées enregistrées apparaîtront ici</string>
+    <string name="search_empty">Aucune entrée ne correspond à votre recherche.</string>
     <string name="search_error">Impossible de charger les résultats. Votre recherche et vos filtres sont conservés.</string>
     <string name="search_invalid_dates">La date de début doit être antérieure ou égale à la date de fin.</string>
     <string name="search_earlier">Afficher les résultats plus récents</string>

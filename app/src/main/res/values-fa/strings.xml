@@ -315,7 +315,7 @@
     <string name="health_close">بستن</string>
     <string name="search">جستجو</string>
     <string name="search_text_hint">عنوان، برچسب، فرد یا مکان</string>
-    <string name="search_text_help">جستجوی عنوان‌ها و نام‌های پیوندخورده · %1$d/۲۰۰</string>
+    <string name="search_text_help">%1$d/۲۰۰ نویسه</string>
     <string name="search_filters">فیلترهای جستجو</string>
     <string name="search_filter_count">فیلترها (%1$d)</string>
     <string name="search_active_filters">فیلترهای فعال</string>
@@ -335,7 +335,9 @@
     <string name="search_clear_date">پاک کردن تاریخ %1$s</string>
     <string name="search_category">%1$s (%2$d)</string>
     <string name="search_results">%1$d نوشتهٔ مطابق</string>
-    <string name="search_empty">نوشتهٔ مطابقی پیدا نشد. عنوان یا نام دیگری را امتحان کنید یا فیلترها را پاک کنید.</string>
+    <string name="search_prompt">عنوان نوشته‌ها، برچسب‌ها، افراد یا مکان‌ها را جستجو کنید</string>
+    <string name="search_empty_library">نوشته‌های ذخیره‌شدهٔ شما اینجا نمایش داده می‌شوند</string>
+    <string name="search_empty">هیچ نوشته‌ای با جستجوی شما مطابقت ندارد.</string>
     <string name="search_error">نتیجه‌ها بارگذاری نشدند. جستجو و فیلترهای شما محفوظ‌اند.</string>
     <string name="search_invalid_dates">تاریخ «از» باید پیش از تاریخ «تا» یا برابر با آن باشد.</string>
     <string name="search_earlier">نمایش نتیجه‌های جدیدتر</string>

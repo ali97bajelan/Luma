@@ -1898,3 +1898,40 @@ emulator was launched without wiping data or saving a changed snapshot.
 T19 remains pending: the legacy/manual checks above and the separate Timeline,
 Search and Weekly Review performance criteria remain open. No dependency,
 permission, schema, network or product-scope changes were made.
+
+## UX-11 — Search initial and empty states — 2026-10-18
+
+Search shows an initial prompt alongside unfiltered saved entries, a library-empty
+message when there are no searchable entries, and a no-match message only for an
+actual query or filter. Whitespace follows the repository's empty-query semantics.
+Unfiltered Search no longer announces a matching-result count. The character
+counter appears from 180 characters and the existing 200-character limit remains.
+English, French and Persian resources are updated. Named active-filter chips,
+Reset filters (preserving text), and Clear all (clearing text and filters) remain.
+
+- PASS: 605 JVM tests (404 app, 115 domain, 48 data, 26 usage, 12 health),
+  zero failures, errors or skips; normal debug APK and isolated Android test APK
+  builds. Command: `bash gradlew :core:domain:test :app:testDebugUnitTest
+  :core:data:testDebugUnitTest :integration:usage:testDebugUnitTest
+  :integration:health:testDebugUnitTest :app:assembleDebug --offline`.
+- PASS: `SearchStatesTest`, `SearchFlowTest` and `ActiveSearchFiltersTest`,
+  runner output `OK (11 tests)` on `emulator-5554`. New coverage includes empty
+  versus populated libraries, query/filter-only no matches, whitespace, live
+  deletion, enabled relevant resets, preserved query text, Clear all and counter
+  visibility/input bounds. Before implementation, the four new tests failed at
+  the missing initial/library messages. An initial verification run then needed
+  a test-only selector correction for the text field's merged supporting text.
+- PASS: independent read-only code review found no substantive issues;
+  `git diff --check` passes.
+- LINT: `:app:lintDebug` reports two existing `ImpliedQuantity` errors in
+  `habit_unit_default` in `values-fa` and `values-fr`, plus 65 warnings.
+  Both plural errors are present in HEAD and unrelated to the Search changes.
+- NOT RUN: manual TalkBack, keyboard, localized visual and device font-size
+  walkthroughs for this change. Resource coverage/formatting is checked by the
+  JVM translation suite; existing filter layout coverage includes RTL and 2.0
+  font scale.
+
+Device tests used only `com.luma.lifeos.ux11validation`, built with
+`/tmp/luma-ux11-validation.init.gradle`. The installed `com.luma.lifeos` app and
+its data were untouched. Logs: `/tmp/luma-ux11-final-build.log`,
+`/tmp/luma-ux11-final-tests.log` and `/tmp/luma-ux11-checks.log`. Work is uncommitted.

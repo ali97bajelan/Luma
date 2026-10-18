@@ -42,21 +42,24 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
     val observed by vm.state.collectAsStateWithLifecycle()
     val state = if (observed.zone == zone) observed else observed.copy(records = emptyList(), loaded = false, loading = true)
     var filters by rememberSaveable { mutableStateOf(false) }
+    val count = state.input.activeFilterCount
+    val hasCriteria = state.input.text.isNotBlank() || count > 0
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("screen_search")) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         Text(stringResource(R.string.search), style = MaterialTheme.typography.headlineMedium)
         OutlinedTextField(value = state.input.text, onValueChange = vm::setText, singleLine = true,
             label = { Text(stringResource(R.string.search_text_hint)) },
-            supportingText = { Text(stringResource(R.string.search_text_help, state.input.text.length)) },
+            supportingText = if (state.input.text.length >= 180) {
+                { Text(stringResource(R.string.search_text_help, state.input.text.length), Modifier.testTag("search_text_limit")) }
+            } else null,
             modifier = Modifier.fillMaxWidth().testTag("search_text"))
-        val count = state.input.activeFilterCount
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) { Text(stringResource(R.string.search_filter_count, count)) }
             TextButton(onClick = vm::clearFilters, enabled = count > 0, modifier = Modifier.testTag("search_reset_filters")) { Text(stringResource(R.string.search_reset_filters)) }
             TextButton(onClick = vm::clear, enabled = state.input.text.isNotEmpty() || count > 0,
                 modifier = Modifier.testTag("search_clear")) { Text(stringResource(R.string.search_clear)) }
         }
-        if (state.loaded) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
+        if (state.loaded && hasCriteria) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
             Modifier.testTag("search_result_count"), isError = false)
         if (state.loaded && state.records.isNotEmpty()) Text(stringResource(R.string.entry_order_newest_first),
             style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("search_order"))
@@ -75,7 +78,17 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                         TextButton(onClick = vm::retry) { Text(stringResource(R.string.retry)) }
                     }
                 }
-                if (state.loaded && state.records.isEmpty()) item(key = "empty") { Text(stringResource(R.string.search_empty), modifier = Modifier.testTag("search_empty")) }
+                if (state.loaded && !state.loading && !state.error) {
+                    if (!hasCriteria) item(key = "intro") {
+                        if (state.totalCount == 0) {
+                            Text(stringResource(R.string.search_empty_library), modifier = Modifier.testTag("search_empty_library"))
+                        } else {
+                            Text(stringResource(R.string.search_prompt), modifier = Modifier.testTag("search_prompt"))
+                        }
+                    } else if (state.records.isEmpty()) item(key = "empty") {
+                        Text(stringResource(R.string.search_empty), modifier = Modifier.testTag("search_empty"))
+                    }
+                }
                 if (state.canLoadEarlier) item(key = "earlier") {
                     TextButton(enabled = !state.loading, onClick = vm::loadEarlier, modifier = Modifier.testTag("search_earlier")) { Text(stringResource(R.string.search_earlier)) }
                 }

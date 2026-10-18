@@ -185,6 +185,8 @@ The screen says no habits are scheduled, then shows the habit, “Not scheduled,
 
 ### UX-11 — Search treats an untouched empty library like a failed query
 
+**Implemented 2026-10-18:** Search now distinguishes the initial prompt, an empty searchable library and no matches for active criteria. The counter appears at 180 of 200 characters. English, French and Persian copy is included; named filter chips and reset behavior are preserved. All 11 targeted Search UI tests pass. See [validation results](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18) for checks and remaining manual coverage.
+
 **Evidence:** [initial Search](ux-review-2026-10-18/21-search.png).
 
 With an empty query and no filters, the screen says “No matching entries…or clear filters,” while Clear all and Reset filters are disabled. This suggests a correction the user cannot use.
