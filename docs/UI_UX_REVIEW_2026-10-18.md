@@ -139,6 +139,8 @@ The overview shows unavailable mood/usage/activity and no memories, while the av
 
 **Starting points:** [ReviewHabits.kt](../app/src/main/java/com/luma/lifeos/ui/review/ReviewHabits.kt), [ReviewOverview.kt](../app/src/main/java/com/luma/lifeos/ui/review/ReviewOverview.kt), [WeeklyReviewRoute.kt](../app/src/main/java/com/luma/lifeos/ui/review/WeeklyReviewRoute.kt).
 
+**Implementation update — 18 October 2026:** The overview now shows current repetitions and scheduled habit-days with a View habits jump, using the same live habit-week observation as the entry/log count. Habit cards show seven chronological date states, a single collapsed View history action and saveable per-day details; partial-week future dates are marked Upcoming, not included, previous-only habits report no records for the current period, and zero scheduled denominators do not imply a change. Loading and errors remain distinct from zero. Focused regression cases now cover partial-week slot mapping, off-days, previous-only rows, the habit overview metric, disclosure-based history navigation and section destinations. The UI and tests are in the working tree. The wrapper first failed to create its lock under the read-only global Gradle directory; running the installed Gradle with a writable temporary home then failed before project configuration because the sandbox could not determine a usable wildcard IP. Compilation and test execution are blocked; broader automated and manual acceptance remain open. See the [validation record](VALIDATION.md#ux-05-and-ux-17--weekly-review-summaries-and-discovery--2026-10-18).
+
 ### UX-06 — “Unavailable” needs a reason and a useful next step
 
 **Evidence:** Today and Review overview show unavailable usage/measurements; [Integrations](ux-review-2026-10-18/37-integrations.png) shows imports off. Observed presentation. Other states below are proposed requirements, not reproduced defects.
@@ -293,6 +295,8 @@ The switch, Manage access and Refresh status are presented as similarly prominen
 
 **Starting points:** WeeklyReviewRoute, ReviewSectionNavigation and ReviewHeader.
 
+**Implementation update — 18 October 2026:** Sticky navigation now has a Sections dialog for Overview, Entry counts, Mood, Memories, People & places, App usage, Activity and optional Habits, plus the existing shortcut chips. One section definition supplies dialog destinations, shortcut chips and list tracking. Sticky context shows the selected Gregorian range and in-progress state, with an Overview jump; changing weeks clears stale targets and scrolls to the new week while same-week restoration remains saveable. Focused regression cases cover the exact destination keys, dialog contents, Counts navigation and Overview return. The UI and tests are in the working tree. The wrapper first failed to create its lock under the read-only global Gradle directory; running the installed Gradle with a writable temporary home then failed before project configuration because the sandbox could not determine a usable wildcard IP. Compilation and test execution are blocked; broader automated and manual acceptance remain open. See the [validation record](VALIDATION.md#ux-05-and-ux-17--weekly-review-summaries-and-discovery--2026-10-18).
+
 ### UX-18 — Backup should communicate the last known local action
 
 **Evidence:** [Backup](ux-review-2026-10-18/32-backup.png), [export picker](ux-review-2026-10-18/41-export-picker.png). Source shows operation-result messages but no durable last-export status.
@@ -319,7 +323,7 @@ The sheet initially opens at a partial height. At normal size Memory reaches the
 
 1. **Clarify core feedback:** UX-02, UX-03, UX-11 and the plural correction in UX-16. These address specific confusing states with a small surface area.
 2. **Improve daily use:** UX-01, UX-07, UX-08, UX-09 and UX-19. Design and validate Today/capture/habit density together so space is not reclaimed twice or actions duplicated.
-3. **Improve reflection:** UX-05, UX-10 and UX-17. Use populated mixed-data and empty-data fixtures. UX-06 is implemented in the working tree and awaits verification.
+3. **Improve reflection:** UX-05 and UX-17 are implemented in the working tree; UX-10 is committed. Use populated mixed-data and empty-data fixtures for acceptance. UX-06 is implemented in the working tree and awaits verification.
 4. **Unify supporting flows:** UX-04, UX-12, UX-13, UX-14, remaining UX-16 formatting, and UX-18. UX-15 is implemented in the working tree and awaits verification.
 
 This sequence remains a suggested ordering for pending findings. Expanded search should be scoped independently if selected; the immediate scope-copy improvement does not require it.

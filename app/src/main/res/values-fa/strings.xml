@@ -253,6 +253,14 @@
         <item quantity="one">%1$d ثبت عادت</item>
         <item quantity="other">%1$d ثبت عادت</item>
     </plurals>
+    <plurals name="review_habit_repetitions">
+        <item quantity="one">%1$s تکرار</item>
+        <item quantity="other">%1$s تکرار</item>
+    </plurals>
+    <plurals name="review_habit_scheduled_days">
+        <item quantity="one">%1$s روز برنامه‌ریزی‌شدهٔ عادت</item>
+        <item quantity="other">%1$s روز برنامه‌ریزی‌شدهٔ عادت</item>
+    </plurals>
     <string name="entry_order_newest_first">از جدید به قدیم</string>
     <string name="entry_order_oldest_first">از قدیم به جدید</string>
     <string name="usage_title">استفاده از برنامه‌ها</string>
@@ -403,6 +411,11 @@
     <string name="search_options_error">نام‌های ذخیره‌شده بارگذاری نشدند.</string>
     <string name="search_selection_count">%1$d مورد انتخاب‌شده · حداکثر ۱۰۰</string>
     <string name="review_weekly_title">مرور هفتگی</string>
+    <string name="review_sections">بخش‌ها</string>
+    <string name="review_section_overview">نمای کلی</string>
+    <string name="review_entry_counts">شمار نوشته‌ها</string>
+    <string name="review_overview_action">نمای کلی</string>
+    <string name="review_sticky_week_accessibility">%1$s، %2$s</string>
     <string name="review_about">دربارهٔ این مرور</string>
     <string name="review_in_progress">هفته در جریان است</string>
     <string name="review_compare_short">مقایسه با %1$s</string>
@@ -449,10 +462,21 @@
     <string name="review_activity">فعالیت</string>
     <string name="review_habits">عادت‌ها</string>
     <string name="review_habits_empty">برای این هفته عادتی در دسترس نیست.</string>
+    <string name="review_habits_overview_title">عادت‌های این هفته</string>
+    <string name="review_habits_summary">%1$s · %2$s</string>
+    <string name="review_habits_previous_summary">بازهٔ پیشین: %1$s · %2$s</string>
+    <string name="review_habits_no_records_period">برای این بازه داده‌ای ثبت نشده است</string>
+    <string name="review_habits_no_comparable_days">روزهای برنامه‌ریزی‌شدهٔ قابل‌مقایسه‌ای وجود ندارد</string>
+    <string name="review_habits_upcoming">آینده، در این مرور حساب نشده</string>
+    <string name="review_habits_day_details">جزئیات روزها</string>
+    <string name="review_habits_progress">%1$s از %2$s</string>
+    <string name="review_habits_slot_accessibility">%1$s، %2$s</string>
+    <string name="review_habits_slot_accessibility_detail">%1$s، %2$s، %3$s</string>
+    <string name="review_view_habits">دیدن عادت‌ها</string>
     <string name="review_habits_current_total">این هفته: %1$d تکرار · %2$d روز برنامه‌ریزی‌شده</string>
     <string name="review_habits_previous_total">روزهای مشابه هفته قبل: %1$d تکرار · %2$d روز برنامه‌ریزی‌شده</string>
     <string name="review_habits_day">%1$s · %2$s</string>
-    <string name="review_habits_repetitions">تکرارها: %1$d %2$s</string>
+    <string name="review_habits_repetitions">تکرارها: %1$s %2$s</string>
     <string name="review_habits_open">مشاهده تاریخچه عادت</string>
     <string name="review_activity_value">%1$s %2$s · مشاهده‌ها: %3$d · روزها: %4$d</string>
     <string name="review_activity_explanation">مجموع‌ها بر اساس نوع، واحد و منبع گروه‌بندی می‌شوند. روزهای بدون داده، در دسترس نیستند؛ داده‌های ارائه‌دهندگان مختلف با هم جمع نمی‌شوند.</string>

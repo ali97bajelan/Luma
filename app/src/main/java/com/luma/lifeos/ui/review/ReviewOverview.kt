@@ -1,10 +1,6 @@
 package com.luma.lifeos.ui.review
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -40,31 +37,10 @@ internal fun mostSampledActivity(activities: List<ReviewActivity>): ReviewActivi
         .thenBy { it.total.type }.thenBy { it.total.unit }.thenBy { it.total.source.name })
 
 @Composable
-internal fun ReviewSectionNavigation(selected: String?, onSection: (String) -> Unit, includeHabits: Boolean = false) {
-    val sections = buildList {
-        add("mood" to R.string.review_mood)
-        add("memories" to R.string.review_memories)
-        add("catalog" to R.string.review_people_places)
-        add("usage" to R.string.review_usage)
-        add("activity" to R.string.review_activity)
-        if (includeHabits) add("habits" to R.string.review_habits)
-    }
-    val requesters = remember { sections.associate { (key, _) -> key to BringIntoViewRequester() } }
-    LaunchedEffect(selected) { selected?.let { requesters[it]?.bringIntoView() } }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        sections.forEach { (key, label) ->
-            FilterChip(selected = selected == key, onClick = { onSection(key) },
-                label = { Text(stringResource(label)) }, modifier = Modifier.heightIn(min = 48.dp)
-                    .bringIntoViewRequester(requesters.getValue(key)).testTag("review_section_$key"))
-        }
-    }
-}
-
-@Composable
 internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewRepository,
     onEvent: (LifeEventRecord) -> Unit, onSources: (ReviewDates, ReviewMetric) -> Unit, habitLogCount: Int? = null,
     availability: IntegrationAvailabilityState = IntegrationAvailabilityState(), onIntegrations: () -> Unit = {},
-    onCheckIn: () -> Unit = {}) {
+    onCheckIn: () -> Unit = {}, habitState: ReviewHabitsState? = null, onHabits: () -> Unit = {}) {
     val current = report.current
     Column(Modifier.fillMaxWidth().testTag("review_overview"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.review_overview), style = MaterialTheme.typography.titleMedium,
@@ -74,6 +50,7 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(entryLogCounts(current.records, habitLogCount), style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.testTag("review_overview_counts"))
+                ReviewHabitsOverviewMetric(habitState, onHabits)
                 BoxWithConstraints {
                     val stack = maxWidth < 280.dp || LocalDensity.current.fontScale >= 1.5f
                     val mood = current.mood?.score
@@ -143,6 +120,43 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
                     LatestMemory(report, repository, onEvent)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ReviewHabitsOverviewMetric(state: ReviewHabitsState?, onHabits: () -> Unit) {
+    val comparison = (state as? ReviewHabitsState.Data)?.comparison ?: return
+    val rows = comparison.rows
+    if (rows.isEmpty()) return
+    val repetitions = rows.sumOf { it.currentRepetitions }
+    val scheduledDays = rows.sumOf { it.currentScheduledDays }
+    val repetitionText = pluralStringResource(
+        R.plurals.review_habit_repetitions,
+        repetitions,
+        reviewNumber(repetitions),
+    )
+    val scheduledText = pluralStringResource(
+        R.plurals.review_habit_scheduled_days,
+        scheduledDays,
+        reviewNumber(scheduledDays),
+    )
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    Column(
+        Modifier.fillMaxWidth().testTag("review_overview_habits"),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(stringResource(R.string.review_habits_overview_title),
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.review_habits_summary, repetitionText, scheduledText),
+            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("review_overview_habits_summary"))
+        if (rows.none { it.current != null }) {
+            Text(stringResource(R.string.review_habits_no_records_period),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        TextButton(onClick = onHabits,
+            modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_habits_open")) {
+            Text(stringResource(R.string.review_view_habits))
         }
     }
 }

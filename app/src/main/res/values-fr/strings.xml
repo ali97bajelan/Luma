@@ -245,6 +245,16 @@
         <item quantity="many">%1$d enregistrements d’habitude</item>
         <item quantity="other">%1$d enregistrements d’habitude</item>
     </plurals>
+    <plurals name="review_habit_repetitions">
+        <item quantity="one">%1$s répétition</item>
+        <item quantity="many">%1$s répétitions</item>
+        <item quantity="other">%1$s répétitions</item>
+    </plurals>
+    <plurals name="review_habit_scheduled_days">
+        <item quantity="one">%1$s jour-habitude planifié</item>
+        <item quantity="many">%1$s jours-habitudes planifiés</item>
+        <item quantity="other">%1$s jours-habitudes planifiés</item>
+    </plurals>
     <string name="entry_order_newest_first">Les plus récents d’abord</string>
     <string name="entry_order_oldest_first">Les plus anciens d’abord</string>
     <string name="usage_title">Utilisation des applications</string>
@@ -395,6 +405,11 @@
     <string name="search_options_error">Impossible de charger les noms enregistrés.</string>
     <string name="search_selection_count">%1$d sélectionnés · maximum 100</string>
     <string name="review_weekly_title">Bilan hebdomadaire</string>
+    <string name="review_sections">Sections</string>
+    <string name="review_section_overview">Vue d’ensemble</string>
+    <string name="review_entry_counts">Nombre d’entrées</string>
+    <string name="review_overview_action">Vue d’ensemble</string>
+    <string name="review_sticky_week_accessibility">%1$s, %2$s</string>
     <string name="review_about">À propos de ce bilan</string>
     <string name="review_in_progress">Semaine en cours</string>
     <string name="review_compare_short">Comparaison avec %1$s</string>
@@ -441,10 +456,21 @@
     <string name="review_activity">Activité</string>
     <string name="review_habits">Habitudes</string>
     <string name="review_habits_empty">Aucune habitude n’est disponible pour cette semaine.</string>
+    <string name="review_habits_overview_title">Habitudes cette semaine</string>
+    <string name="review_habits_summary">%1$s · %2$s</string>
+    <string name="review_habits_previous_summary">Période précédente : %1$s · %2$s</string>
+    <string name="review_habits_no_records_period">Aucune donnée pour cette période</string>
+    <string name="review_habits_no_comparable_days">Aucun jour-habitude planifié comparable</string>
+    <string name="review_habits_upcoming">À venir, non inclus</string>
+    <string name="review_habits_day_details">Détails par jour</string>
+    <string name="review_habits_progress">%1$s sur %2$s</string>
+    <string name="review_habits_slot_accessibility">%1$s, %2$s</string>
+    <string name="review_habits_slot_accessibility_detail">%1$s, %2$s, %3$s</string>
+    <string name="review_view_habits">Voir les habitudes</string>
     <string name="review_habits_current_total">Cette semaine : %1$d répétitions · %2$d jours prévus</string>
     <string name="review_habits_previous_total">Même période précédente : %1$d répétitions · %2$d jours prévus</string>
     <string name="review_habits_day">%1$s · %2$s</string>
-    <string name="review_habits_repetitions">Répétitions : %1$d %2$s</string>
+    <string name="review_habits_repetitions">Répétitions : %1$s %2$s</string>
     <string name="review_habits_open">Voir l’historique de l’habitude</string>
     <string name="review_activity_value">%1$s %2$s · Observations : %3$d · Dates : %4$d</string>
     <string name="review_activity_explanation">Les totaux sont regroupés par type, unité et source. Les dates manquantes sont indiquées comme indisponibles ; les données de différents fournisseurs ne sont pas additionnées.</string>

@@ -190,6 +190,29 @@ class WeeklyReviewFlowTest {
         }
     }
 
+    @Test fun sectionsDialogListsEveryDestinationAndOverviewReturnsToTheTop() {
+        compose.setContent { LifeOsTheme { WeeklyReviewRoute(repo, today, zone,
+            onSources = { _, _ -> }, onEvent = {}) } }
+
+        scroll("review_sections_open")
+        compose.onNodeWithTag("review_sections_open").performClick()
+        listOf("overview", "counts", "mood", "memories", "catalog", "usage", "activity").forEach { key ->
+            compose.onNodeWithTag("review_section_destination_$key").assertExists()
+        }
+        compose.onNodeWithTag("review_section_destination_habits").assertDoesNotExist()
+        compose.onNodeWithTag("review_section_destination_counts").performClick()
+        compose.waitUntil(5_000) {
+            try { compose.onNodeWithTag("review_metric_entries").assertIsDisplayed(); true }
+            catch (_: AssertionError) { false }
+        }
+
+        compose.onNodeWithTag("review_overview_action").performClick()
+        compose.waitUntil(5_000) {
+            try { compose.onNodeWithTag("review_overview_mood").assertIsDisplayed(); true }
+            catch (_: AssertionError) { false }
+        }
+    }
+
     @Test fun sectionSelectionRestoresWithoutChangingTheSelectedWeek() {
         val restoration = StateRestorationTester(compose)
         var opened: ReviewDates? = null

@@ -239,6 +239,14 @@
         <item quantity="one">%1$d habit log</item>
         <item quantity="other">%1$d habit logs</item>
     </plurals>
+    <plurals name="review_habit_repetitions">
+        <item quantity="one">%1$s repetition</item>
+        <item quantity="other">%1$s repetitions</item>
+    </plurals>
+    <plurals name="review_habit_scheduled_days">
+        <item quantity="one">%1$s scheduled habit-day</item>
+        <item quantity="other">%1$s scheduled habit-days</item>
+    </plurals>
     <string name="entry_order_newest_first">Newest first</string>
     <string name="entry_order_oldest_first">Oldest first</string>
     <string name="usage_title">App usage</string>
@@ -389,6 +397,11 @@
     <string name="search_options_error">Could not load saved names.</string>
     <string name="search_selection_count">%1$d selected · maximum 100</string>
     <string name="review_weekly_title">Weekly Review</string>
+    <string name="review_sections">Sections</string>
+    <string name="review_section_overview">Overview</string>
+    <string name="review_entry_counts">Entry counts</string>
+    <string name="review_overview_action">Overview</string>
+    <string name="review_sticky_week_accessibility">%1$s, %2$s</string>
     <string name="review_about">About this review</string>
     <string name="review_in_progress">Week in progress</string>
     <string name="review_compare_short">Compared with %1$s</string>
@@ -435,10 +448,21 @@
     <string name="review_activity">Activity</string>
     <string name="review_habits">Habits</string>
     <string name="review_habits_empty">No habits are available for this week.</string>
+    <string name="review_habits_overview_title">Habits this week</string>
+    <string name="review_habits_summary">%1$s · %2$s</string>
+    <string name="review_habits_previous_summary">Previous period: %1$s · %2$s</string>
+    <string name="review_habits_no_records_period">No records for this period</string>
+    <string name="review_habits_no_comparable_days">No comparable scheduled days</string>
+    <string name="review_habits_upcoming">Upcoming, not included</string>
+    <string name="review_habits_day_details">Day details</string>
+    <string name="review_habits_progress">%1$s of %2$s</string>
+    <string name="review_habits_slot_accessibility">%1$s, %2$s</string>
+    <string name="review_habits_slot_accessibility_detail">%1$s, %2$s, %3$s</string>
+    <string name="review_view_habits">View habits</string>
     <string name="review_habits_current_total">This week: %1$d repetitions · %2$d scheduled days</string>
     <string name="review_habits_previous_total">Matching previous days: %1$d repetitions · %2$d scheduled days</string>
     <string name="review_habits_day">%1$s · %2$s</string>
-    <string name="review_habits_repetitions">Repetitions: %1$d %2$s</string>
+    <string name="review_habits_repetitions">Repetitions: %1$s %2$s</string>
     <string name="review_habits_open">View habit history</string>
     <string name="review_activity_value">%1$s %2$s · Observations: %3$d · Dates: %4$d</string>
     <string name="review_activity_explanation">Totals are grouped by type, unit and source. Missing dates are unavailable; different providers are not added together.</string>

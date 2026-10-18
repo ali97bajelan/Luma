@@ -44,9 +44,20 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
     val period = reviewPeriod(restoredReviewDate(selected, today), today, zone)
+    val weekKey = "${period.current.start}|${period.zone.id}"
     val listState = rememberLazyListState()
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     var sectionTarget by rememberSaveable { mutableStateOf<String?>(null) }
+    var retainedWeekKey by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(weekKey) {
+        val previousWeekKey = retainedWeekKey
+        if (previousWeekKey != null && previousWeekKey != weekKey) {
+            section = null
+            sectionTarget = null
+            listState.scrollToItem(0)
+        }
+        retainedWeekKey = weekKey
+    }
     key(period, retry) {
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
@@ -65,8 +76,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         val empty = report?.let { it.current.records == 0 && it.current.usage?.totalMillis == null && it.current.activities.isEmpty() } == true && habits == null
         val keys = report?.let {
             listOf("heading", "overview", "sections") + (if (empty) listOf("empty") else emptyList()) +
-                listOf("counts", "mood", "memories", "catalog", "usage", "activity") +
-                (if (habits != null) listOf("habits") else emptyList())
+                reviewSections(habits != null).drop(1).map { destination -> destination.key }
         }
         LaunchedEffect(keys, sectionTarget) {
             val target = sectionTarget ?: return@LaunchedEffect
@@ -76,8 +86,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         }
         LaunchedEffect(keys) {
             val itemKeys = keys ?: return@LaunchedEffect
-            val sectionKeys = listOf("mood", "memories", "catalog", "usage", "activity") +
-                (if (habits != null) listOf("habits") else emptyList())
+            val sectionKeys = reviewSections(habits != null).map { destination -> destination.key }
             snapshotFlow {
                 // Short sections near the end cannot always align at the top. Keep the
                 // chosen/restored tab until scrolling resumes, rather than clearing it
@@ -109,10 +118,11 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         val report = current.report
                         val a = report.current; val b = report.previous
                         item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount,
-                            integrationAvailability, onIntegrations, onCheckIn) }
+                            integrationAvailability, onIntegrations, onCheckIn, habitState,
+                            onHabits = { section = "habits"; sectionTarget = "habits" }) }
                         stickyHeader(key = "sections") {
                             Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
-                                ReviewSectionNavigation(section, onSection = { key ->
+                                ReviewSectionNavigation(section, period, onSection = { key ->
                                     section = key
                                     sectionTarget = key
                                 }, includeHabits = habits != null)

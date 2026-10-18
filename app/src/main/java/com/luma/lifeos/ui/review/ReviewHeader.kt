@@ -109,7 +109,7 @@ internal fun ReviewHeader(
 }
 
 @Composable
-private fun compactReviewRange(dates: ReviewDates): String {
+internal fun compactReviewRange(dates: ReviewDates): String {
     val locale = Locale.getDefault()
     return remember(dates, locale) {
         // ICU collapses repeated months/years while keeping each language's date order.

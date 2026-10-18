@@ -64,10 +64,25 @@ class HabitReviewFlowTest {
         compose.waitUntil(10_000) {
             compose.onAllNodes(hasTestTag(currentTotal)).fetchSemanticsNodes().isNotEmpty()
         }
+        compose.onNodeWithTag("memory_review_list")
+            .performScrollToNode(hasTestTag("review_overview_habits_summary"))
+        compose.onNodeWithTag("review_overview_habits_summary").assertTextContains("3", substring = true)
+        compose.onNodeWithTag("review_overview_habits_open").performClick()
+        compose.waitUntil(10_000) {
+            try { compose.onNodeWithTag("review_heading_habits").assertIsDisplayed(); true }
+            catch (_: AssertionError) { false }
+        }
         compose.onNodeWithTag("review_empty").assertDoesNotExist()
         compose.onNodeWithTag("review_habits_current_$id").assertTextContains("3", substring = true)
         compose.onNodeWithTag("review_habits_previous_$id").assertTextContains("0", substring = true)
         val dayTag = "review_habit_day_${id}_$today"
+        compose.onNodeWithTag("review_habit_details_$id").assertExists()
+        compose.onNodeWithTag(dayTag).assertDoesNotExist()
+        compose.onNodeWithTag("review_habit_open_${id}_$today").assertDoesNotExist()
+        compose.onNodeWithTag("review_habit_details_$id").performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasTestTag(dayTag)).fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithTag("memory_review_list").performScrollToNode(hasTestTag(dayTag))
         compose.onNodeWithTag(dayTag).assertIsDisplayed()
         compose.onNodeWithText("Remaining skipped").assertExists()

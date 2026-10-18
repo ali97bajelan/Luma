@@ -2033,3 +2033,41 @@ changes remain in the working tree; no commit was created.
 - Manual provider grant/denial, import failure, zero/history retention, RTL,
   large text, TalkBack and physical-device checks remain open in the
   [acceptance checklist](UI_UX_ACCEPTANCE_2026-10-18.md#ux-06--missing-metrics).
+
+## UX-05 and UX-17 — Weekly Review summaries and discovery — 2026-10-18
+
+UX-05 adds a live overview habit metric, a seven-date status strip per habit,
+one collapsed history action, and saveable per-day history details. Focused
+regression tests cover partial-week slot mapping, off-days, previous-only rows,
+the overview metric and expanded exact-date history navigation. Upcoming
+dates, previous-only habits, neutral schedule states and zero-denominator
+comparisons have explicit presentation. The overview reuses the existing
+habit-week observation, so entry/log counts and habit summaries stay in sync.
+UX-17 adds a Sections dialog backed by the same destinations used for shortcut
+chips and scroll tracking, along with sticky selected-week context and an
+Overview jump. Focused tests cover exact destination keys, dialog contents,
+Counts navigation and Overview return. Section targets reset when the selected
+week changes, while same-week list state remains saveable. English, French and
+Persian strings are included. Changes are in the working tree; no commit was
+created.
+
+- BLOCKED: `bash gradlew :app:compileDebugKotlin --offline` failed because the
+  wrapper could not create its lock file under the read-only global Gradle
+  directory (`FileNotFoundException`, `Read-only file system`). Retrying the
+  installed Gradle directly with a writable temporary Gradle home failed before
+  project configuration: `Could not determine a usable wildcard IP for this
+  machine` while creating Gradle's `FileLockContentionHandler`. No Kotlin
+  compilation occurred.
+- PASS: `git diff --check`; English, French and Persian string catalogs parse
+  without duplicate resource names; all Review source resource references exist
+  in the base catalog.
+- BLOCKED: focused JVM tests were authored and attempted with the installed
+  Gradle and a writable temporary home, but Gradle failed before build
+  configuration with `Could not determine a usable wildcard IP for this
+  machine` while creating `FileLockContentionHandler`. No test compilation or
+  execution occurred.
+- NOT RUN: broader automated tests and manual/device acceptance, including card-height,
+  RTL, large-text, TalkBack, empty-section, end-clamped jump, live deletion and
+  same-week detail-return checks. The UX-05/17 acceptance checklist remains
+  open.
+- Draft commit message: `feat(review): summarize habits and expose all sections`

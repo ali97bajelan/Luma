@@ -3,7 +3,7 @@
 Scope: UX-03–11 and UX-13–19. Excluded: UX-01, UX-02, UX-12 as new work; use existing UX-01/02 tests for shared-component regressions.
 [Handoff/specs/plans](UI_UX_IMPLEMENTATION_READY_2026-10-18.md).
 
-**Current result:** UX-03/04 are implemented in commit `58d4903`; focused JVM/build checks and 19 isolated API 36 Android tests pass. UX-09/10 are implemented in commit `d43d731`; the debug app assembly passed, but their focused behavior tests and device acceptance were not run. UX-11 is implemented in commit `910a596`; its historical targeted Search UI results are in [VALIDATION.md](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18). UX-06/15 are implemented in the working tree; Gradle compilation was blocked before project configuration by restricted sandbox socket access. Their test tasks and manual acceptance were not run, so all UX-06/15 acceptance checkboxes remain open. Manual acceptance also remains open for UX-03/04 and UX-09/10, including RTL, font-size, keyboard and TalkBack coverage. Other scoped UX work remains unexecuted. See [UX-03/04 validation](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18), [UX-09/10 status](VALIDATION.md#ux-09-and-ux-10--habit-progress-and-other-habits--2026-10-18) and [UX-06/15 status](VALIDATION.md#ux-06-and-ux-15--integration-and-metric-states--2026-10-18).
+**Current result:** UX-03/04 are implemented in commit `58d4903`; focused JVM/build checks and 19 isolated API 36 Android tests pass. UX-09/10 are implemented in commit `d43d731`; the debug app assembly passed, but their focused behavior tests and device acceptance were not run. UX-11 is implemented in commit `910a596`; its historical targeted Search UI results are in [VALIDATION.md](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18). UX-06/15 are implemented in the working tree; Gradle compilation was blocked before project configuration by restricted sandbox socket access. UX-05/17 UI changes and focused regression tests are in the working tree; compilation and test execution were blocked before project configuration by the read-only wrapper lock and sandbox wildcard-IP restriction. Broader automated and manual acceptance remain open. Manual acceptance also remains open for UX-03/04 and UX-09/10, including RTL, font-size, keyboard and TalkBack coverage. Other scoped UX work remains unexecuted. See [UX-03/04 validation](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18), [UX-09/10 status](VALIDATION.md#ux-09-and-ux-10--habit-progress-and-other-habits--2026-10-18), [UX-06/15 status](VALIDATION.md#ux-06-and-ux-15--integration-and-metric-states--2026-10-18) and [UX-05/17 status](VALIDATION.md#ux-05-and-ux-17--weekly-review-summaries-and-discovery--2026-10-18).
 
 Record per run: commit, date, command, device/API, application ID, locale, width/font/theme, fixture, result and evidence path. Status vocabulary: PASS, FAIL, NOT RUN, BLOCKED (with actual reason). Keep production data untouched; follow the handoff's isolated install procedure.
 
@@ -33,6 +33,8 @@ Record per run: commit, date, command, device/API, application ID, locale, width
 - [ ] Actual pending effective date/Cancel pending remain; future-start and archived restrictions unchanged; log retry/undo and history pagination still work.
 
 ## UX-05 — Weekly habits
+
+**Implementation status:** UI changes and focused regression test additions are in the working tree. Compilation and test execution were blocked before project configuration by the read-only wrapper lock and sandbox wildcard-IP restriction; broader automated and manual acceptance remain open.
 
 - [ ] Habits-only overview shows available metric without changing entry/log scope or adding duplicate week queries.
 - [ ] Short collapsed habit card ≤280 dp at 411 dp/font 1.0; one default View history, optional expanded real-day destinations.
@@ -112,6 +114,8 @@ Record per run: commit, date, command, device/API, application ID, locale, width
 - [ ] Small positive durations remain nonzero; editor selected date/draft survives locale/time changes.
 
 ## UX-17 — Review discovery
+
+**Implementation status:** UI changes and focused regression test additions are in the working tree. Compilation and test execution were blocked before project configuration by the read-only wrapper lock and sandbox wildcard-IP restriction; broader automated and manual acceptance remain open.
 
 - [ ] Sections lists Overview, Entry counts, Mood, Memories, People & places, App usage, Activity, optional Habits without horizontal-gesture knowledge.
 - [ ] Each jump/Overview action works, including empty sections/end-clamping; existing chip selection/auto-scroll intact.
