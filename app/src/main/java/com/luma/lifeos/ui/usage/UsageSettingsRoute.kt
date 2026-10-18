@@ -20,12 +20,16 @@ import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.integration.usage.openUsageAccessSettings
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailsDisclosure
+import com.luma.lifeos.ui.integrations.IntegrationAccessState
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.ui.integrations.needsAccessSecondary
 import java.time.ZoneId
 import java.time.format.FormatStyle
 
 /** Import configuration only. Saved per-day evidence is displayed by ReviewUsageRoute. */
 @Composable
-fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId) {
+fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
+    availability: IntegrationAvailabilityState = IntegrationAvailabilityState(), onRefreshAccess: () -> Unit = {}) {
     val factory = remember(integration) { viewModelFactory { initializer { UsageSettingsViewModel(integration) } } }
     val vm: UsageSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
@@ -35,33 +39,66 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId) {
     Card(Modifier.fillMaxWidth().testTag("usage_integration_card")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.usage_title), style = MaterialTheme.typography.titleLarge)
-            val canToggle = !state.loading && (!state.busy || state.current.enabled)
+            val currentAvailability = availability.usage
+            val canToggle = !state.loading && (!state.busy || state.current.enabled) &&
+                currentAvailability.enabled != null && !currentAvailability.configurationFailed
             Row(Modifier.fillMaxWidth().toggleable(value = state.current.enabled, enabled = canToggle,
                 role = Role.Switch, onValueChange = vm::setEnabled).testTag("usage_enabled"),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text(stringResource(R.string.usage_enable), modifier = Modifier.weight(1f))
                 Switch(checked = state.current.enabled, enabled = canToggle, onCheckedChange = null)
             }
-            if (state.loading || state.busy) CircularProgressIndicator(Modifier.testTag("usage_busy"))
-            val statusMessage = stringResource(state.current.status.label())
-            if (!state.loading && !state.busy) AccessibleFeedback(statusMessage,
-                Modifier.testTag("usage_status"), isError = state.current.status in setOf(
-                    UsageSyncStatus.ACCESS_REQUIRED, UsageSyncStatus.LOCKED, UsageSyncStatus.UNAVAILABLE, UsageSyncStatus.ERROR))
-            else Text(statusMessage, modifier = Modifier.testTag("usage_status"))
-            state.current.lastSync?.let { Text(stringResource(R.string.usage_last_sync,
+            Text(stringResource(if (currentAvailability.enabled == null) R.string.usage_imports_loading
+                else if (currentAvailability.enabled) R.string.usage_imports_on else R.string.usage_imports_off),
+                modifier = Modifier.testTag("usage_import_preference"), style = MaterialTheme.typography.bodyMedium)
+            val accessMessage = stringResource(currentAvailability.access.label())
+            AccessibleFeedback(stringResource(R.string.integration_android_access, accessMessage),
+                Modifier.testTag("usage_status"), isError = currentAvailability.access in setOf(
+                    IntegrationAccessState.REQUIRED, IntegrationAccessState.LOCKED, IntegrationAccessState.UNAVAILABLE,
+                    IntegrationAccessState.UPDATE_REQUIRED, IntegrationAccessState.ERROR))
+            Text(stringResource(R.string.integration_saved_history), style = MaterialTheme.typography.bodySmall)
+            if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
+                CircularProgressIndicator(Modifier.testTag("usage_busy"))
+            currentAvailability.lastSync?.let { Text(stringResource(R.string.usage_last_sync,
                 it.atZone(zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
-            TextButton(onClick = { showAccessExplanation = true }, modifier = Modifier.testTag("usage_access")) {
-                Text(stringResource(R.string.usage_manage_access))
+            when {
+                currentAvailability.access == IntegrationAccessState.REQUIRED ->
+                    Button(onClick = { showAccessExplanation = true }, enabled = !state.busy,
+                        modifier = Modifier.testTag("usage_grant")) { Text(stringResource(R.string.usage_grant)) }
+                state.loading || currentAvailability.configurationFailed || currentAvailability.enabled == null ||
+                    currentAvailability.access == IntegrationAccessState.ERROR || currentAvailability.access == IntegrationAccessState.CHECKING ->
+                    Button(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+                        modifier = Modifier.testTag("usage_refresh_primary")) { Text(stringResource(R.string.usage_refresh)) }
+                currentAvailability.access == IntegrationAccessState.LOCKED ->
+                    Text(stringResource(R.string.usage_locked), modifier = Modifier.testTag("usage_locked_message"))
+                currentAvailability.access == IntegrationAccessState.UNAVAILABLE ->
+                    Text(stringResource(R.string.usage_service_unavailable), modifier = Modifier.testTag("usage_unavailable_message"))
+                currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true ->
+                    Button(onClick = vm::importNow, enabled = !state.busy && !state.loading,
+                        modifier = Modifier.testTag("usage_import")) {
+                        Text(stringResource(if (currentAvailability.importFailed) R.string.usage_retry_import else R.string.usage_import_now))
+                    }
+                currentAvailability.access == IntegrationAccessState.ALLOWED ->
+                    Button(onClick = { showAccessExplanation = true }, enabled = !state.busy,
+                        modifier = Modifier.testTag("usage_manage_primary")) { Text(stringResource(R.string.usage_manage_access)) }
+                else -> Unit
             }
-            if (state.current.enabled) {
-                Button(onClick = vm::importNow, enabled = !state.busy && !state.loading && state.current.status in
-                    setOf(UsageSyncStatus.READY, UsageSyncStatus.NO_DATA, UsageSyncStatus.ERROR, UsageSyncStatus.INTERVAL_CHANGED), modifier = Modifier.testTag("usage_import")) {
-                    Text(stringResource(R.string.usage_import_now))
+            if (currentAvailability.importFailed && currentAvailability.access == IntegrationAccessState.ALLOWED) {
+                AccessibleFeedback(stringResource(R.string.usage_sync_error), Modifier.testTag("usage_import_error"), isError = true)
+            }
+            if (currentAvailability.needsAccessSecondary()) {
+                Text(stringResource(R.string.integration_access_also_needed), modifier = Modifier.testTag("usage_access_secondary"),
+                    style = MaterialTheme.typography.bodySmall)
+            }
+            if (currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true) {
+                TextButton(onClick = { showAccessExplanation = true }, modifier = Modifier.testTag("usage_access")) {
+                    Text(stringResource(R.string.usage_manage_access))
                 }
             }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.usage_settings_missing), Modifier.testTag("usage_settings_missing"))
             if (state.actionError) AccessibleFeedback(stringResource(R.string.usage_action_error), Modifier.testTag("usage_action_error"))
-            TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
+            TextButton(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+                modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
             DetailsDisclosure(R.string.imports_details, "usage_details") {
                 Text(stringResource(R.string.usage_access_explanation))
                 Text(stringResource(R.string.usage_privacy_retention), modifier = Modifier.testTag("usage_retention"))
@@ -73,13 +110,12 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId) {
         onContinue = { showAccessExplanation = false; settingsMissing = !openUsageAccessSettings(context) },
         onCancel = { showAccessExplanation = false })
 }
-private fun UsageSyncStatus.label(): Int = when (this) {
-    UsageSyncStatus.DISABLED -> R.string.usage_disabled
-    UsageSyncStatus.ACCESS_REQUIRED -> R.string.usage_access_required
-    UsageSyncStatus.LOCKED -> R.string.usage_locked
-    UsageSyncStatus.UNAVAILABLE -> R.string.usage_service_unavailable
-    UsageSyncStatus.READY -> R.string.usage_ready
-    UsageSyncStatus.NO_DATA -> R.string.usage_no_data
-    UsageSyncStatus.ERROR -> R.string.usage_sync_error
-    UsageSyncStatus.INTERVAL_CHANGED -> R.string.usage_interval_changed
+private fun IntegrationAccessState.label(): Int = when (this) {
+    IntegrationAccessState.CHECKING -> R.string.integration_access_checking
+    IntegrationAccessState.ALLOWED -> R.string.integration_access_allowed
+    IntegrationAccessState.REQUIRED -> R.string.integration_access_required
+    IntegrationAccessState.LOCKED -> R.string.integration_access_locked
+    IntegrationAccessState.UPDATE_REQUIRED -> R.string.integration_access_update_required
+    IntegrationAccessState.UNAVAILABLE -> R.string.integration_access_unavailable
+    IntegrationAccessState.ERROR -> R.string.integration_access_error
 }

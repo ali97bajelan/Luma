@@ -13,6 +13,7 @@ class HealthSyncer(private val source: HealthSource, private val repository: Hea
     private val controls = Mutex()
     private var activeRead: Deferred<List<StepObservation>>? = null
     override fun observeState() = repository.observeState()
+    override suspend fun access(): HealthAccess = source.access()
     override suspend fun setEnabled(enabled: Boolean) {
         controls.withLock {
             repository.setEnabled(enabled, zone())

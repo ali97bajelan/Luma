@@ -23,54 +23,83 @@ import com.luma.lifeos.domain.health.*
 import com.luma.lifeos.integration.health.*
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailsDisclosure
+import com.luma.lifeos.ui.integrations.IntegrationAccessState
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import java.time.ZoneId
 import java.time.format.FormatStyle
 
 @Composable
-fun HealthSettingsCard(integration: HealthIntegration) {
+fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.systemDefault(),
+    availability: IntegrationAvailabilityState = IntegrationAvailabilityState(), onRefreshAccess: () -> Unit = {}) {
     val factory = remember(integration) { viewModelFactory { initializer { HealthSettingsViewModel(integration) } } }
     val vm: HealthSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val currentAvailability = availability.health
     var showPermissionExplanation by rememberSaveable { mutableStateOf(false) }
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
     val contract = remember { PermissionController.createRequestPermissionResultContract() }
-    val permissions = rememberLauncherForActivityResult(contract) { vm.refresh() }
+    val permissions = rememberLauncherForActivityResult(contract) { onRefreshAccess() }
     Card(Modifier.fillMaxWidth().testTag("health_card")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.health_title), style = MaterialTheme.typography.titleLarge)
-            val canToggle = !state.loading && (!state.busy || state.current.enabled)
+            val canToggle = !state.loading && (!state.busy || state.current.enabled) &&
+                currentAvailability.enabled != null && !currentAvailability.configurationFailed
             Row(Modifier.fillMaxWidth().toggleable(value = state.current.enabled, enabled = canToggle,
                 role = Role.Switch, onValueChange = vm::setEnabled).testTag("health_enabled"),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text(stringResource(R.string.health_enable), modifier = Modifier.weight(1f))
                 Switch(checked = state.current.enabled, enabled = canToggle, onCheckedChange = null)
             }
-            if (state.loading || state.busy) CircularProgressIndicator(Modifier.testTag("health_busy"))
-            val statusMessage = stringResource(state.current.status.label())
-            if (!state.loading && !state.busy) AccessibleFeedback(statusMessage,
-                Modifier.testTag("health_status"), isError = state.current.status in setOf(
-                    HealthStatus.ACCESS_REQUIRED, HealthStatus.UPDATE_REQUIRED, HealthStatus.UNAVAILABLE, HealthStatus.ERROR))
-            else Text(statusMessage, modifier = Modifier.testTag("health_status"))
+            Text(stringResource(if (currentAvailability.enabled == null) R.string.health_imports_loading
+                else if (currentAvailability.enabled) R.string.health_imports_on else R.string.health_imports_off),
+                modifier = Modifier.testTag("health_import_preference"), style = MaterialTheme.typography.bodyMedium)
+            val accessMessage = stringResource(currentAvailability.access.label())
+            AccessibleFeedback(stringResource(R.string.integration_android_access, accessMessage),
+                Modifier.testTag("health_status"), isError = currentAvailability.access in setOf(
+                    IntegrationAccessState.REQUIRED, IntegrationAccessState.UPDATE_REQUIRED,
+                    IntegrationAccessState.UNAVAILABLE, IntegrationAccessState.ERROR))
+            Text(stringResource(R.string.integration_saved_history), style = MaterialTheme.typography.bodySmall)
+            if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
+                CircularProgressIndicator(Modifier.testTag("health_busy"))
+            currentAvailability.lastSync?.let { Text(stringResource(R.string.health_last_sync,
+                it.atZone(state.current.importZone ?: zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
             state.current.importZone?.let { Text(stringResource(R.string.health_zone, it.id)) }
-            state.current.lastSync?.let { Text(stringResource(R.string.health_last_sync,
-                it.atZone(state.current.importZone ?: ZoneId.systemDefault()).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
-            if (state.current.enabled) {
-                when (state.current.status) {
-                    HealthStatus.ACCESS_REQUIRED -> Button(onClick = { showPermissionExplanation = true }, enabled = !state.busy, modifier = Modifier.testTag("health_access")) { Text(stringResource(R.string.health_grant)) }
-                    HealthStatus.UPDATE_REQUIRED -> TextButton(onClick = { settingsMissing = !openHealthProviderInstall(context) },
+            if (currentAvailability.enabled == false) Text(stringResource(R.string.health_open_imports_to_refresh),
+                style = MaterialTheme.typography.bodySmall)
+            when {
+                currentAvailability.access == IntegrationAccessState.REQUIRED ->
+                    Button(onClick = { showPermissionExplanation = true }, enabled = !state.busy,
+                        modifier = Modifier.testTag("health_access")) { Text(stringResource(R.string.health_grant)) }
+                currentAvailability.access == IntegrationAccessState.UPDATE_REQUIRED ->
+                    Button(onClick = { settingsMissing = !openHealthProviderInstall(context) },
                         modifier = Modifier.testTag("health_install")) { Text(stringResource(R.string.health_install)) }
-                    else -> Unit
-                }
-                Button(onClick = vm::importNow, enabled = !state.busy && !state.loading && state.current.status in
-                    setOf(HealthStatus.READY, HealthStatus.NO_DATA, HealthStatus.ERROR), modifier = Modifier.testTag("health_import")) {
-                    Text(stringResource(R.string.health_import))
-                }
+                state.loading || currentAvailability.configurationFailed || currentAvailability.enabled == null ||
+                    currentAvailability.access == IntegrationAccessState.ERROR || currentAvailability.access == IntegrationAccessState.CHECKING ->
+                    Button(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+                        modifier = Modifier.testTag("health_refresh_primary")) { Text(stringResource(R.string.health_refresh)) }
+                currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true ->
+                    Button(onClick = vm::importNow, enabled = !state.busy && !state.loading,
+                        modifier = Modifier.testTag("health_import")) {
+                        Text(stringResource(if (currentAvailability.importFailed) R.string.health_retry_import else R.string.health_import))
+                    }
+                currentAvailability.access == IntegrationAccessState.ALLOWED ->
+                    Button(onClick = { settingsMissing = !openHealthSettings(context) }, enabled = !state.busy,
+                        modifier = Modifier.testTag("health_manage_primary")) { Text(stringResource(R.string.health_manage)) }
+                currentAvailability.access == IntegrationAccessState.LOCKED ->
+                    Text(stringResource(R.string.integration_access_locked), modifier = Modifier.testTag("health_locked_message"))
+                currentAvailability.access == IntegrationAccessState.UNAVAILABLE ->
+                    Text(stringResource(R.string.health_unavailable), modifier = Modifier.testTag("health_unavailable_message"))
+                else -> Unit
+            }
+            if (currentAvailability.importFailed && currentAvailability.access == IntegrationAccessState.ALLOWED) {
+                AccessibleFeedback(stringResource(R.string.health_error), Modifier.testTag("health_import_error"), isError = true)
             }
             TextButton(onClick = { settingsMissing = !openHealthSettings(context) }, modifier = Modifier.testTag("health_manage")) {
                 Text(stringResource(R.string.health_manage))
             }
-            TextButton(onClick = vm::refresh, enabled = !state.busy, modifier = Modifier.testTag("health_refresh")) { Text(stringResource(R.string.health_refresh)) }
+            TextButton(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+                modifier = Modifier.testTag("health_refresh")) { Text(stringResource(R.string.health_refresh)) }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.health_settings_missing), Modifier.testTag("health_settings_missing"))
             if (state.actionError) AccessibleFeedback(stringResource(R.string.health_action_error), Modifier.testTag("health_action_error"))
             DetailsDisclosure(R.string.imports_details, "health_details") {
@@ -83,19 +112,19 @@ fun HealthSettingsCard(integration: HealthIntegration) {
         R.string.health_title, R.string.health_explanation,
         onContinue = {
             showPermissionExplanation = false
-            if (state.current.enabled && !state.busy && !state.loading && state.current.status == HealthStatus.ACCESS_REQUIRED) {
+            if (!state.busy && !state.loading && currentAvailability.access == IntegrationAccessState.REQUIRED) {
                 settingsMissing = try { permissions.launch(stepReadPermissions); false }
                     catch (_: ActivityNotFoundException) { true } catch (_: SecurityException) { true }
             }
         }, onCancel = { showPermissionExplanation = false })
 
 }
-private fun HealthStatus.label(): Int = when (this) {
-    HealthStatus.DISABLED -> R.string.health_disabled
-    HealthStatus.ACCESS_REQUIRED -> R.string.health_required
-    HealthStatus.UPDATE_REQUIRED -> R.string.health_update_required
-    HealthStatus.UNAVAILABLE -> R.string.health_unavailable
-    HealthStatus.READY -> R.string.health_ready
-    HealthStatus.NO_DATA -> R.string.health_no_data
-    HealthStatus.ERROR -> R.string.health_error
+private fun IntegrationAccessState.label(): Int = when (this) {
+    IntegrationAccessState.CHECKING -> R.string.integration_access_checking
+    IntegrationAccessState.ALLOWED -> R.string.integration_access_allowed
+    IntegrationAccessState.REQUIRED -> R.string.integration_access_required
+    IntegrationAccessState.LOCKED -> R.string.integration_access_locked
+    IntegrationAccessState.UPDATE_REQUIRED -> R.string.integration_access_update_required
+    IntegrationAccessState.UNAVAILABLE -> R.string.integration_access_unavailable
+    IntegrationAccessState.ERROR -> R.string.integration_access_error
 }

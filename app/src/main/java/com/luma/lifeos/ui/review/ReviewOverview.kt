@@ -27,6 +27,12 @@ import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.ui.timeline.label
 import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.ui.integrations.MetricAbsence
+import com.luma.lifeos.ui.integrations.MetricPeriod
+import com.luma.lifeos.ui.integrations.label
+import com.luma.lifeos.ui.integrations.metricAbsence
+import com.luma.lifeos.ui.integrations.needsAccessSecondary
 import java.time.format.FormatStyle
 
 internal fun mostSampledActivity(activities: List<ReviewActivity>): ReviewActivity? =
@@ -56,7 +62,9 @@ internal fun ReviewSectionNavigation(selected: String?, onSection: (String) -> U
 
 @Composable
 internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewRepository,
-    onEvent: (LifeEventRecord) -> Unit, onSources: (ReviewDates, ReviewMetric) -> Unit, habitLogCount: Int? = null) {
+    onEvent: (LifeEventRecord) -> Unit, onSources: (ReviewDates, ReviewMetric) -> Unit, habitLogCount: Int? = null,
+    availability: IntegrationAvailabilityState = IntegrationAvailabilityState(), onIntegrations: () -> Unit = {},
+    onCheckIn: () -> Unit = {}) {
     val current = report.current
     Column(Modifier.fillMaxWidth().testTag("review_overview"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.review_overview), style = MaterialTheme.typography.titleMedium,
@@ -69,20 +77,37 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
                 BoxWithConstraints {
                     val stack = maxWidth < 280.dp || LocalDensity.current.fontScale >= 1.5f
                     val mood = current.mood?.score
+                    val usageAbsence = current.usageAbsence(availability)
+                    val usage = current.usage
+                    val usageMissing = if (usage != null && usage.totalMillis == null)
+                        stringResource(R.string.review_usage_partial_total_unknown)
+                    else stringResource((usageAbsence ?: MetricAbsence.NO_SAVED_DATA).label(MetricPeriod.WEEK))
+                    val usageValue = reviewDuration(usage?.totalMillis, usageMissing)
                     val moodValue = mood?.let { stringResource(R.string.review_scale_value, reviewNumber(it.average)) }
-                        ?: stringResource(R.string.review_unavailable)
+                        ?: stringResource(R.string.metric_no_check_ins_week)
                     val samples = mood?.let { stringResource(R.string.review_sample_count, it.samples) }
                     if (stack) Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ReviewOverviewMetric(stringResource(R.string.review_mood), moodValue, "review_overview_mood", detail = samples)
-                        ReviewOverviewMetric(stringResource(R.string.review_saved_usage), reviewDuration(current.usage?.totalMillis), "review_overview_usage")
+                        ReviewOverviewMetric(stringResource(R.string.review_mood), moodValue, "review_overview_mood",
+                            absence = if (mood == null) MetricAbsence.NO_CHECK_INS else null, detail = samples)
+                        ReviewOverviewMetric(stringResource(R.string.review_saved_usage), usageValue,
+                            "review_overview_usage", absence = usageAbsence)
                     } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         ReviewOverviewMetric(stringResource(R.string.review_mood), moodValue, "review_overview_mood",
-                            modifier = Modifier.weight(1f), detail = samples)
-                        ReviewOverviewMetric(stringResource(R.string.review_saved_usage), reviewDuration(current.usage?.totalMillis),
-                            "review_overview_usage", modifier = Modifier.weight(1f))
+                            modifier = Modifier.weight(1f), absence = if (mood == null) MetricAbsence.NO_CHECK_INS else null, detail = samples)
+                        ReviewOverviewMetric(stringResource(R.string.review_saved_usage), usageValue,
+                            "review_overview_usage", modifier = Modifier.weight(1f), absence = usageAbsence)
                     }
                 }
-                if (current.usage != null) Text(reviewUsageCoverageSummary(report), style = MaterialTheme.typography.bodySmall,
+                if (current.mood == null) TextButton(onClick = onCheckIn, modifier = Modifier.testTag("review_overview_checkin")) {
+                    Text(stringResource(R.string.review_checkin_action))
+                }
+                if (current.usage?.totalMillis == null) TextButton(onClick = onIntegrations,
+                    modifier = Modifier.testTag("review_overview_usage_integrations")) {
+                    Text(stringResource(R.string.metric_integrations_action))
+                }
+                if (availability.usage.needsAccessSecondary()) Text(stringResource(R.string.integration_access_also_needed),
+                    modifier = Modifier.testTag("review_overview_usage_access_secondary"), style = MaterialTheme.typography.bodySmall)
+                if (current.usage != null) Text(reviewUsageCoverageSummary(report, availability), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("review_overview_usage_coverage"))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 val activity = mostSampledActivity(current.activities)
@@ -90,8 +115,13 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
                     stringResource(R.string.review_overview_activity_value,
                         activityTypeDisplayName(it.type, it.unit, it.source), reviewNumber(it.total),
                         activityUnitDisplayName(it.type, it.unit, it.source), it.samples, stringResource(it.source.label()))
-                } ?: stringResource(R.string.review_unavailable)
-                ReviewOverviewMetric(stringResource(R.string.review_activity), value, "review_overview_activity", dense = true)
+                } ?: stringResource(R.string.metric_no_saved_measurements)
+                ReviewOverviewMetric(stringResource(R.string.review_activity), value, "review_overview_activity", dense = true,
+                    absence = if (activity == null) MetricAbsence.NO_SAVED_DATA else null)
+                if (activity == null) TextButton(onClick = onIntegrations,
+                    modifier = Modifier.testTag("review_overview_activity_integrations")) {
+                    Text(stringResource(R.string.metric_integrations_action))
+                }
                 activity?.total?.let { total ->
                     TextButton(onClick = { onSources(report.period.current, ReviewMetric(ReviewMetricKind.ACTIVITY,
                         activity = ReviewActivityKey(total.type, total.unit, total.source))) },
@@ -119,8 +149,8 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
 
 @Composable
 private fun ReviewOverviewMetric(label: String, value: String, tag: String, modifier: Modifier = Modifier,
-    dense: Boolean = false, detail: String? = null) {
-    val unavailable = value == stringResource(R.string.review_unavailable)
+    dense: Boolean = false, absence: MetricAbsence? = null, detail: String? = null) {
+    val unavailable = absence != null
     Column(modifier.semantics(mergeDescendants = true) {}.testTag(tag), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = when {
@@ -133,10 +163,19 @@ private fun ReviewOverviewMetric(label: String, value: String, tag: String, modi
     }
 }
 
+private fun ReviewStatistics.usageAbsence(availability: IntegrationAvailabilityState): MetricAbsence? {
+    val savedUsage = usage
+    return if (savedUsage != null && savedUsage.totalMillis == null) MetricAbsence.NO_SAVED_DATA
+    else metricAbsence(false, false, savedUsage?.totalMillis != null, availability.usage)
+}
+
 @Composable
-internal fun reviewUsageCoverageSummary(report: WeeklyReview): String {
+internal fun reviewUsageCoverageSummary(report: WeeklyReview, availability: IntegrationAvailabilityState): String {
     val usage = report.current.usage
-    if (usage == null) return stringResource(R.string.review_usage_no_data)
+    if (usage == null) {
+        val absence = metricAbsence(false, false, false, availability.usage) ?: MetricAbsence.NO_SAVED_DATA
+        return stringResource(absence.label(MetricPeriod.WEEK))
+    }
     val summary = stringResource(R.string.review_usage_summary, usage.days.size, report.period.current.dates.size, usage.completeDates)
     return if (usage.completeDates == report.period.current.dates.size) summary
         else summary + " · " + stringResource(R.string.review_usage_incomplete)

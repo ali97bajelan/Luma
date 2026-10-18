@@ -18,10 +18,10 @@ import java.text.NumberFormat
 internal fun reviewNumber(value: Number): String = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 2 }.format(value)
 internal fun reviewChange(current: Double?, previous: Double?): String? = if (current == null || previous == null) null else
     (if (current - previous > 0) "+" else "") + reviewNumber(current - previous)
-@Composable internal fun reviewScale(scale: ScaleTotal?): String = if (scale == null) stringResource(R.string.review_unavailable)
-    else stringResource(R.string.review_scale_samples, reviewNumber(scale.average), scale.samples)
-@Composable internal fun reviewDuration(millis: Long?): String = if (millis == null) stringResource(R.string.review_unavailable)
-    else humanReadableDuration(millis)
+@Composable internal fun reviewScale(scale: ScaleTotal?, absence: String): String =
+    if (scale == null) absence else stringResource(R.string.review_scale_samples, reviewNumber(scale.average), scale.samples)
+@Composable internal fun reviewDuration(millis: Long?, absence: String): String =
+    if (millis == null) absence else humanReadableDuration(millis)
 
 @Composable
 internal fun ReviewValueGroup(content: @Composable ColumnScope.() -> Unit) {

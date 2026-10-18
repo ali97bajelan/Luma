@@ -3,7 +3,7 @@
 Scope: UX-03–11 and UX-13–19. Excluded: UX-01, UX-02, UX-12 as new work; use existing UX-01/02 tests for shared-component regressions.
 [Handoff/specs/plans](UI_UX_IMPLEMENTATION_READY_2026-10-18.md).
 
-**Current result:** UX-03 and UX-04 are implemented in the working tree. Their focused automated checks pass; see [the UX-03/04 validation record](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18). The checkboxes below remain open for broader acceptance because manual device, RTL, font-size, keyboard and TalkBack checks have not been completed. Other scoped UX work remains unexecuted. UX-11 has existing implementation and historical automated results in [VALIDATION.md](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18); it is not newly accepted by this document.
+**Current result:** UX-03/04 are implemented in commit `58d4903`; focused JVM/build checks and 19 isolated API 36 Android tests pass. UX-09/10 are implemented in commit `d43d731`; the debug app assembly passed, but their focused behavior tests and device acceptance were not run. UX-11 is implemented in commit `910a596`; its historical targeted Search UI results are in [VALIDATION.md](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18). UX-06/15 are implemented in the working tree; Gradle compilation was blocked before project configuration by restricted sandbox socket access. Their test tasks and manual acceptance were not run, so all UX-06/15 acceptance checkboxes remain open. Manual acceptance also remains open for UX-03/04 and UX-09/10, including RTL, font-size, keyboard and TalkBack coverage. Other scoped UX work remains unexecuted. See [UX-03/04 validation](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18), [UX-09/10 status](VALIDATION.md#ux-09-and-ux-10--habit-progress-and-other-habits--2026-10-18) and [UX-06/15 status](VALIDATION.md#ux-06-and-ux-15--integration-and-metric-states--2026-10-18).
 
 Record per run: commit, date, command, device/API, application ID, locale, width/font/theme, fixture, result and evidence path. Status vocabulary: PASS, FAIL, NOT RUN, BLOCKED (with actual reason). Keep production data untouched; follow the handoff's isolated install procedure.
 
@@ -40,6 +40,8 @@ Record per run: commit, date, command, device/API, application ID, locale, width
 - [ ] Partial/prior matching unchanged; zero scheduled denominator says No comparable scheduled days. Previous-only history routes correctly. Live delete updates both count and card; failure is not zero.
 
 ## UX-06 — Missing metrics
+
+**Implementation status:** Implemented in the working tree. Gradle compilation was blocked before project configuration; tests and manual acceptance were not run. Keep these criteria open.
 
 - [ ] Loading/saved read failure/unknown configuration/no check-ins/missing optional energy or stress ratings/imports-off/access-needed/locked/update/unavailable/probe failure/import failure/no saved period all distinct; no generic metric “Unavailable” remains in summary/Review cells.
 - [ ] Zero retained as zero and historical values retained with off/denied status; current and previous periods independent; no fabricated delta.
@@ -94,6 +96,8 @@ Record per run: commit, date, command, device/API, application ID, locale, width
 
 ## UX-15 — Integrations
 
+**Implementation status:** Implemented in the working tree. Gradle compilation was blocked before project configuration; tests and manual acceptance were not run. Keep these criteria open.
+
 - [ ] Android access and imports independent while off and on; each state exposes the specified primary action.
 - [ ] Explicit grant explanation, cancel and return do not enable/import; Health grant while off allowed only after explicit action.
 - [ ] Usage locked/update/unavailable/probe error never reported as zero/denial incorrectly; correct recovery.
@@ -144,4 +148,4 @@ All existing device class names are rooted at com.luma.lifeos unless a subpackag
 
 ## Evidence log
 
-Append real results during execution. No implementation/runtime tests were run for this documentation-only preparation. Keep unchecked manual criteria open; screenshots do not certify speech, keyboard behavior, persistence or provider recovery.
+Append real results during execution. This status update did not run implementation/runtime tests; the recorded results above come from their respective implementation runs. Keep unchecked manual criteria open; screenshots do not certify speech, keyboard behavior, persistence or provider recovery.

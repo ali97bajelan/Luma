@@ -34,6 +34,8 @@ interface UsageRepository {
 interface UsageIntegration {
     fun observeState(): Flow<UsageImportState>
     fun observeDaily(date: LocalDate, zone: ZoneId): Flow<DailyUsageReport?>
+    /** Read current platform access without changing import configuration or reading records. */
+    suspend fun access(): UsageAccess
     suspend fun refreshAccess()
     suspend fun setEnabled(enabled: Boolean)
     suspend fun importNow(): UsageSyncOutcome

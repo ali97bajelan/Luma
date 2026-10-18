@@ -41,9 +41,9 @@ class DurationDisplayTest {
                 Column {
                     values.forEachIndexed { index, value ->
                         Text(appUsageDuration(value), Modifier.testTag("app_$index"))
-                        Text(reviewDuration(value), Modifier.testTag("review_$index"))
+                        Text(reviewDuration(value, "No saved measurement for this period"), Modifier.testTag("review_$index"))
                     }
-                    Text(reviewDuration(null), Modifier.testTag("review_null"))
+                    Text(reviewDuration(null, "No saved measurement for this period"), Modifier.testTag("review_null"))
                     Text(stringResource(R.string.usage_exact_duration, exactDuration(1_001)), Modifier.testTag("exact"))
                 }
             }
@@ -53,7 +53,7 @@ class DurationDisplayTest {
             compose.onNodeWithTag("app_$index").assertTextEquals(value)
             compose.onNodeWithTag("review_$index").assertTextEquals(value)
         }
-        compose.onNodeWithTag("review_null").assertTextEquals("Unavailable")
+        compose.onNodeWithTag("review_null").assertTextEquals("No saved measurement for this period")
         compose.onNodeWithTag("exact").assertTextEquals("Exact duration: 0 h 0 min 1.001 s")
     }
 

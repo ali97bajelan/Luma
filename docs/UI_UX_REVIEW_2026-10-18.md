@@ -1,6 +1,6 @@
 # Luma UI/UX review — 18 October 2026
 
-**Implementation preparation:** [Specs, plans and sequence](UI_UX_IMPLEMENTATION_READY_2026-10-18.md) and [acceptance checklist](UI_UX_ACCEPTANCE_2026-10-18.md) cover every finding except UX-01, UX-02 and UX-12. UX-11 is already implemented and is included for regression/manual acceptance. This preparation adds no app behavior changes.
+**Implementation preparation:** [Specs, plans and sequence](UI_UX_IMPLEMENTATION_READY_2026-10-18.md) and [acceptance checklist](UI_UX_ACCEPTANCE_2026-10-18.md) cover every finding except UX-01, UX-02 and UX-12. UX-11 is already implemented and is included for regression/manual acceptance. At the review checkpoint, no code had been changed for these findings; later implementation status is recorded under each finding.
 
 ## Design assessment
 
@@ -8,7 +8,7 @@ Luma has a calm, consistent visual identity and sensible privacy safeguards. Its
 
 **Recommended first release of improvements:** simplify Today, clarify how habit logs relate to entry counts, improve habit correction, and turn the weekly habit report into a compact summary. Preserve the existing palette, five main destinations, explicit capture-date choice and discard protections.
 
-This is a review and proposed design direction. No application code was changed. Recommendations below are independent of the implementation status recorded in earlier UX reviews.
+At the review checkpoint, no application code had been changed for these findings. Later implementation updates are recorded under the relevant findings. Recommendations below are independent of the implementation status recorded in earlier UX reviews.
 
 ## Method, evidence and limits
 
@@ -111,6 +111,8 @@ The time field is labeled `HH:MM` but displays `13:08:25.276`. The date requires
 
 **Starting points:** [HabitsViewModel.kt](../app/src/main/java/com/luma/lifeos/ui/habits/HabitsViewModel.kt) (`beginCorrection`, `saveCorrection`), [HabitDetailRoute.kt](../app/src/main/java/com/luma/lifeos/ui/habits/HabitDetailRoute.kt), [MoodTimeControls.kt](../app/src/main/java/com/luma/lifeos/ui/mood/MoodTimeControls.kt) as an existing picker reference.
 
+**Implementation update — 18 October 2026:** UX-03 was implemented with typed correction drafts, localized date/time pickers, field-specific feedback, clean no-op Save/dismissal, and preservation of precise timestamps. It was committed with UX-04 in `58d4903`. Focused JVM/build checks and 19 isolated API 36 Android tests passed; manual acceptance remains open. See the [validation record](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18).
+
 ### UX-04 — Habit detail gives management too much prominence
 
 **Evidence:** [habit detail](ux-review-2026-10-18/17-habit-detail.png), [Persian detail](ux-review-2026-10-18/46-persian-habit-detail.png). Observed layout; proposed hierarchy is a design judgment.
@@ -122,6 +124,8 @@ Skip, Pause, Archive and Delete occupy the area between logging and history. The
 **Acceptance:** recent history appears immediately after progress/logging. All management operations remain discoverable through a clearly labeled control. Hiding controls does not remove existing confirmations or pending-change feedback.
 
 **Starting points:** HabitDetailRoute, [HabitHistory.kt](../app/src/main/java/com/luma/lifeos/ui/habits/HabitHistory.kt).
+
+**Implementation update — 18 October 2026:** UX-04 was implemented with history ahead of management, a labeled management disclosure, effective-date/cancel-pending feedback, and preserved action confirmations. It was committed with UX-03 in `58d4903`. The focused automated checks passed; manual acceptance remains open. See the [validation record](VALIDATION.md#ux-03-and-ux-04-habit-correction-and-detail-hierarchy--2026-10-18).
 
 ### UX-05 — Weekly Review should summarize habits rather than repeat seven daily reports
 
@@ -144,6 +148,10 @@ The overview shows unavailable mood/usage/activity and no memories, while the av
 **Acceptance:** every missing metric explains its state without requiring a trip to Settings. Permission denied, disabled imports, historical data retained, genuine zero and read failure have distinct test fixtures. Enabling integrations remains optional.
 
 **Starting points:** DailySummaryCard, ReviewOverview, [ReviewSignals.kt](../app/src/main/java/com/luma/lifeos/ui/review/ReviewSignals.kt), usage/health UI state mappings. This may require passing integration state to summary surfaces.
+
+**Implementation update — 18 October 2026:** UX-06 now uses explicit missing-metric states across Today and Weekly Review, including saved-data/read failures, imports off, access/provider states, import failure, no check-ins and metric-specific missing energy/stress ratings. Check in and Integration settings actions use existing routes; saved zeros and historical values remain visible, and missing comparison values produce no delta. English, French and Persian copy was added.
+
+**Implementation verification:** Implemented in the working tree; no commit created. A source review caught and the implementation corrected in-flight opt-out, shared configuration-observer recovery on Refresh, a stale duration-display test call, and metric-specific rating absence copy. `:app:compileDebugKotlin --offline` could not reach project configuration because Gradle's file-lock service could not obtain a usable wildcard IP under the sandbox. No test tasks or manual RTL, large-text, TalkBack or device acceptance were run. See [validation status](VALIDATION.md#ux-06-and-ux-15--integration-and-metric-states--2026-10-18); UX-06 acceptance remains open.
 
 ### UX-07 — Capture forms should lead with recording
 
@@ -181,6 +189,10 @@ A single habit uses a large card with its name/progress styled as a text button 
 
 **Starting points:** [HabitsScreen.kt](../app/src/main/java/com/luma/lifeos/ui/habits/HabitsScreen.kt), TodayHabitsCard, [HabitEditorRoute.kt](../app/src/main/java/com/luma/lifeos/ui/habits/HabitEditorRoute.kt).
 
+**Implementation update — 18 October 2026:** Habit rows and detail now share exact `count of target` progress text, a clamped indicator and the secondary unit; the count remains exact above target. Habit content and +1 logging use separate named targets, with a stacked layout at narrow widths or larger font scale. The editor explains what is counted and offers Daily, Monday–Friday and Custom schedule presets; timezone details are disclosed after setup, with a mismatch explanation when relevant. English, French and Persian strings were updated.
+
+**Implementation verification:** Committed in `d43d731`. `bash gradlew :app:assembleDebug --offline` and `git diff --check` passed. Focused behavior tests and manual acceptance have not been run; visual density, TalkBack and the full RTL/font-size matrix remain unverified. A read-only code review deferred two minor findings: unusually long progress values can clip because the count is kept on one line, and an empty habit repository does not show the Scheduled heading/zero-scheduled Today action. See the [acceptance checklist](UI_UX_ACCEPTANCE_2026-10-18.md#ux-09--habit-rowssetup); its UX-09 criteria remain open.
+
 ### UX-10 — An unscheduled day should not be dominated by disabled habit cards
 
 **Evidence:** [Habits at larger text on the preceding day](ux-review-2026-10-18/59-large-habits.png).
@@ -193,9 +205,13 @@ The screen says no habits are scheduled, then shows the habit, “Not scheduled,
 
 **Starting points:** HabitsScreen, habit state labels and row rendering.
 
+**Implementation update — 18 October 2026:** Habits are divided using the scheduled review target: Scheduled rows remain visible, while Other habits appear in a collapsed counted section. When no habits are scheduled, a concise state offers a Today action. Other rows remain browsable without a disabled logging control; a pending or failed log forces the section open so Retry remains reachable. The Today preview uses the same grouping and shows only scheduled habits.
+
+**Implementation verification:** Committed in `d43d731`; the debug assembly and diff check passed. Focused behavior tests and manual acceptance have not been run; accessibility, RTL and large-text/device checks remain open. The read-only review also noted that the Scheduled heading and Today action are omitted when the repository has no habit rows. See the [acceptance checklist](UI_UX_ACCEPTANCE_2026-10-18.md#ux-10--other-habits); its UX-10 criteria remain open.
+
 ### UX-11 — Search treats an untouched empty library like a failed query
 
-**Implemented 2026-10-18:** Search now distinguishes the initial prompt, an empty searchable library and no matches for active criteria. The counter appears at 180 of 200 characters. English, French and Persian copy is included; named filter chips and reset behavior are preserved. All 11 targeted Search UI tests pass. See [validation results](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18) for checks and remaining manual coverage.
+**Implemented 2026-10-18 in commit `910a596`:** Search distinguishes the initial prompt, an empty searchable library and no matches for active criteria. The counter appears at 180 of 200 characters. English, French and Persian copy is included; named filter chips and reset behavior are preserved. All 11 targeted Search UI tests pass. See [validation results](VALIDATION.md#ux-11--search-initial-and-empty-states--2026-10-18) for checks and remaining manual coverage.
 
 **Evidence:** [initial Search](ux-review-2026-10-18/21-search.png).
 
@@ -253,6 +269,10 @@ The switch, Manage access and Refresh status are presented as similarly prominen
 
 **Starting points:** [UsageSettingsRoute.kt](../app/src/main/java/com/luma/lifeos/ui/usage/UsageSettingsRoute.kt), [HealthSettingsCard.kt](../app/src/main/java/com/luma/lifeos/ui/health/HealthSettingsCard.kt), their view models.
 
+**Implementation update — 18 October 2026:** UX-15 now displays Android access separately from the import preference and chooses the primary action from the current state. Access probes run without importing or changing preferences, grant return only refreshes access, and Health steps are described as imports that run while Luma is open. An enabled integration can still be turned off during an active import. Saved history and last successful import remain visible; unknown saved bounds are not invented. English, French and Persian copy was updated.
+
+**Implementation verification:** Implemented in the working tree; no commit created. A source review caught and the implementation corrected in-flight opt-out, shared configuration-observer recovery on Refresh, and a stale duration-display test call. The app compile was blocked before project configuration by restricted sandbox socket access. No test tasks or manual provider-grant/revocation checks were run; UX-15 acceptance remains open. See [validation status](VALIDATION.md#ux-06-and-ux-15--integration-and-metric-states--2026-10-18).
+
 ### UX-16 — Formatting localization is incomplete even where RTL layout works
 
 **Evidence:** [Persian habit detail](ux-review-2026-10-18/46-persian-habit-detail.png) mixes Persian day/progress digits with Latin time and recorded-date digits. [English weekly habits](ux-review-2026-10-18/49-review-mood-lower.png) says “1 repetitions · 1 scheduled days.” The main RTL layout and navigation mirroring worked in the checked screens.
@@ -299,10 +319,10 @@ The sheet initially opens at a partial height. At normal size Memory reaches the
 
 1. **Clarify core feedback:** UX-02, UX-03, UX-11 and the plural correction in UX-16. These address specific confusing states with a small surface area.
 2. **Improve daily use:** UX-01, UX-07, UX-08, UX-09 and UX-19. Design and validate Today/capture/habit density together so space is not reclaimed twice or actions duplicated.
-3. **Improve reflection:** UX-05, UX-06, UX-10 and UX-17. Use populated mixed-data and empty-data fixtures.
-4. **Unify supporting flows:** UX-04, UX-12, UX-13, UX-14, UX-15, remaining UX-16 formatting, and UX-18.
+3. **Improve reflection:** UX-05, UX-10 and UX-17. Use populated mixed-data and empty-data fixtures. UX-06 is implemented in the working tree and awaits verification.
+4. **Unify supporting flows:** UX-04, UX-12, UX-13, UX-14, remaining UX-16 formatting, and UX-18. UX-15 is implemented in the working tree and awaits verification.
 
-These are proposed changes, not implementation tasks already completed. Expanded search should be scoped independently if selected; the immediate scope-copy improvement does not require it.
+This sequence remains a suggested ordering for pending findings. Expanded search should be scoped independently if selected; the immediate scope-copy improvement does not require it.
 
 ## Design and validation guardrails
 

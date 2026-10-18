@@ -19,10 +19,18 @@ import com.luma.lifeos.ui.usage.appUsageDuration
 import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.domain.usage.UsageHistory
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.ui.integrations.MetricAbsence
+import com.luma.lifeos.ui.integrations.MetricPeriod
+import com.luma.lifeos.ui.integrations.label
+import com.luma.lifeos.ui.integrations.metricAbsence
+import com.luma.lifeos.ui.integrations.needsAccessSecondary
 import java.text.NumberFormat
 
 @Composable
-fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCount: Int? = null) {
+fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCount: Int? = null,
+    availability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
+    onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {}) {
     Card(Modifier.fillMaxWidth().testTag("daily_summary")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.summary_heading), style = MaterialTheme.typography.titleMedium)
@@ -38,14 +46,28 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                         modifier = Modifier.testTag("summary_records"))
                     val mood = summary.mood
                     if (mood != null) ScaleLine(stringResource(R.string.summary_mood), mood.score, "summary_mood")
+                    else {
+                        Text(stringResource(R.string.metric_no_check_ins_day), modifier = Modifier.testTag("summary_mood_empty"))
+                        TextButton(onClick = onCheckIn, modifier = Modifier.testTag("summary_check_in")) {
+                            Text(stringResource(R.string.summary_checkin_action))
+                        }
+                    }
                     val usage = summary.usage
                     val displayedApps = usage?.apps.orEmpty()
                         .filter { it.durationMillis > APP_USAGE_DISPLAY_THRESHOLD_MILLIS }
                         .sortedWith(compareByDescending<com.luma.lifeos.domain.usage.AppUsageTotal> { it.durationMillis }
                             .thenBy { it.packageName })
                         .take(3)
-                    Text(if (usage == null) stringResource(R.string.summary_unavailable, stringResource(R.string.summary_usage))
-                        else stringResource(R.string.summary_usage_value, appUsageDuration(usage.totalMillis), displayedApps.size),
+                    if (usage == null) {
+                        val absence = metricAbsence(false, false, false, availability.usage) ?: MetricAbsence.NO_SAVED_DATA
+                        Text(stringResource(absence.label(MetricPeriod.DAY)), modifier = Modifier.testTag("summary_usage"),
+                            style = MaterialTheme.typography.bodyMedium)
+                        if (availability.usage.needsAccessSecondary()) Text(stringResource(R.string.integration_access_also_needed),
+                            modifier = Modifier.testTag("summary_usage_access_secondary"), style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = onIntegrations, modifier = Modifier.testTag("summary_usage_integrations")) {
+                            Text(stringResource(R.string.metric_integrations_action))
+                        }
+                    } else Text(stringResource(R.string.summary_usage_value, appUsageDuration(usage.totalMillis), displayedApps.size),
                         modifier = Modifier.testTag("summary_usage"), style = MaterialTheme.typography.bodyMedium)
                     if (usage != null) {
                         if (usage.history == UsageHistory.PARTIAL) Text(stringResource(R.string.summary_usage_partial),
@@ -67,6 +89,11 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                                     R.string.summary_stress -> "summary_stress"
                                     else -> "summary_mood_average"
                                 }), style = MaterialTheme.typography.bodySmall)
+                            else if (label != R.string.summary_mood && summary.mood != null) Text(
+                                stringResource(R.string.summary_rating_empty,
+                                    stringResource(if (label == R.string.summary_energy) R.string.mood_energy else R.string.mood_stress)),
+                                modifier = Modifier.testTag(if (label == R.string.summary_energy) "summary_energy_empty" else "summary_stress_empty"),
+                                style = MaterialTheme.typography.bodySmall)
                         }
                         if (usage != null) {
                             displayedApps.forEach { app ->
@@ -85,8 +112,13 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                             if (usage.history != UsageHistory.COMPLETE) Text(stringResource(if (usage.history == UsageHistory.PARTIAL)
                                 R.string.usage_history_partial else R.string.usage_legacy_totals), style = MaterialTheme.typography.bodySmall)
                         }
-                        if (activity == null) Text(stringResource(R.string.summary_unavailable, stringResource(R.string.summary_activity)),
-                            modifier = Modifier.testTag("summary_activity_unavailable"), style = MaterialTheme.typography.bodySmall)
+                        if (activity == null) {
+                            Text(stringResource(MetricAbsence.NO_SAVED_DATA.label(MetricPeriod.GENERIC)),
+                                modifier = Modifier.testTag("summary_activity_unavailable"), style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = onIntegrations, modifier = Modifier.testTag("summary_activity_integrations")) {
+                                Text(stringResource(R.string.metric_integrations_action))
+                            }
+                        }
                         else {
                             Text(stringResource(R.string.summary_activity), style = MaterialTheme.typography.titleMedium)
                             // Preserve small nonzero recorded values instead of displaying a rounded zero.

@@ -30,6 +30,7 @@ class UsageSettingsViewModel(private val integration: UsageIntegration) : ViewMo
     }
     fun setEnabled(enabled: Boolean) = action(allowWhileBusy = !enabled) { integration.setEnabled(enabled) }
     fun importNow() = action { integration.importNow() }
+    fun retryConfiguration() = observe()
     fun refresh() = action { observe(); integration.refreshAccess() }
     private fun action(allowWhileBusy: Boolean = false, block: suspend () -> Unit) {
         if (state.value.busy && !allowWhileBusy) return

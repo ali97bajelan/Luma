@@ -129,6 +129,7 @@ class SettingsHubFlowTest {
         }
         val health = object : HealthIntegration {
             override fun observeState() = flowOf(HealthState())
+            override suspend fun access() = HealthAccess.REQUIRED
             override suspend fun setEnabled(enabled: Boolean) {}
             override suspend fun refreshAccess() {}
             override suspend fun importNow() = HealthStatus.DISABLED
@@ -136,6 +137,7 @@ class SettingsHubFlowTest {
         val usage = object : UsageIntegration {
             override fun observeState() = flowOf(UsageImportState())
             override fun observeDaily(date: LocalDate, zone: ZoneId) = flowOf<DailyUsageReport?>(null)
+            override suspend fun access() = UsageAccess.REQUIRED
             override suspend fun refreshAccess() {}
             override suspend fun setEnabled(enabled: Boolean) {}
             override suspend fun importNow() = UsageSyncOutcome.DISABLED

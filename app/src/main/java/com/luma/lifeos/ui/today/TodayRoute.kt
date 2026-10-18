@@ -22,6 +22,7 @@ import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.HabitsViewModel
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -45,6 +46,9 @@ fun TodayRoute(
     screenTag: String = "screen_today",
     onEventClick: (EventId) -> Unit = {},
     summaries: DailySummaryRepository? = null,
+    integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
+    onIntegrations: () -> Unit = {},
+    onCheckIn: () -> Unit = {},
     habits: HabitRepository? = null,
     habitsDate: LocalDate? = null,
     deviceDate: LocalDate = date,
@@ -67,7 +71,8 @@ fun TodayRoute(
         if (habits == null) {
             TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
                 onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,
-                summaryState = summary, onSummaryRetry = { summaryRetry++ }, onCapture = onCapture)
+                summaryState = summary, onSummaryRetry = { summaryRetry++ }, onCapture = onCapture,
+                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn)
         } else {
             val habitFactory = remember(habits) {
                 viewModelFactory { initializer { HabitsViewModel(habits, createSavedStateHandle()) } }
@@ -86,6 +91,7 @@ fun TodayRoute(
             TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
                 onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,
                 summaryState = summary, onSummaryRetry = { summaryRetry++ }, habitsState = habitsState,
+                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn,
                 habitLogCount = habitLogCount, onHabits = onHabits, onCreateHabit = onCreateHabit, onHabit = onHabit,
                 onHabitLog = habitViewModel::log, onHabitRetryLog = habitViewModel::retryLog,
                 onHabitRetry = habitViewModel::retry, onHabitUndo = habitViewModel::undoLog, onCapture = onCapture)

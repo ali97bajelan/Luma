@@ -22,6 +22,8 @@ interface HealthRepository {
 }
 interface HealthIntegration {
     fun observeState(): Flow<HealthState>
+    /** Read current provider access without changing import configuration or reading records. */
+    suspend fun access(): HealthAccess
     suspend fun setEnabled(enabled: Boolean)
     suspend fun refreshAccess()
     suspend fun importNow(): HealthStatus

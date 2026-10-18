@@ -52,13 +52,13 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                         }))
                         Text(reviewDuration(current.report.totalMillis.takeUnless {
                             current.report.apps.isEmpty() && current.report.history == UsageHistory.PARTIAL
-                        }))
+                        }, stringResource(R.string.review_usage_partial_total_unknown)))
                     }
                     items(current.report.apps, key = { "app:${it.packageName}" }) { app ->
                         Column {
                             Text(app.appLabel ?: app.packageName)
                             if (app.appLabel != null) Text(app.packageName)
-                            Text(reviewDuration(app.durationMillis))
+                            Text(reviewDuration(app.durationMillis, stringResource(R.string.review_usage_app_missing)))
                         }
                     }
                     items(current.report.sessions, key = { it.identity }) { session ->
@@ -66,7 +66,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                             Column(Modifier.padding(16.dp)) {
                                 Text(session.appLabel ?: session.packageName)
                                 Text(stringResource(R.string.usage_session_times, session.start.atZone(zone).format(format), session.end.atZone(zone).format(format)))
-                                Text(reviewDuration(session.durationMillis))
+                                Text(reviewDuration(session.durationMillis, stringResource(R.string.review_usage_app_missing)))
                                 Text(stringResource(R.string.usage_exact_duration, exactDuration(session.durationMillis)),
                                     style = MaterialTheme.typography.bodySmall)
                                 if (session.openedAt < session.start) Text(stringResource(R.string.usage_session_continued, session.openedAt.atZone(zone).format(format)))

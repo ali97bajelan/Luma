@@ -72,6 +72,12 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.luma.lifeos.ui.today.TodayRoute
 import com.luma.lifeos.ui.today.rememberCurrentDay
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityRefresh
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -97,6 +103,12 @@ fun LifeOsApp(
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
+    val integrationFactory = androidx.compose.runtime.remember(usage, health) {
+        viewModelFactory { initializer { IntegrationAvailabilityViewModel(usage, health) } }
+    }
+    val integrationViewModel: IntegrationAvailabilityViewModel = viewModel(factory = integrationFactory)
+    val integrationAvailability by integrationViewModel.state.collectAsStateWithLifecycle()
+    IntegrationAvailabilityRefresh(integrationViewModel)
     val photoScope = rememberCoroutineScope()
     fun cleanPhotos() { photoScope.launch {
         try { photos.cleanup() } catch (failure: Exception) { if (failure is CancellationException) throw failure }
@@ -184,6 +196,9 @@ fun LifeOsApp(
                             screenTag = "screen_${destination.route}",
                             onEventClick = { navController.navigate("event_detail/$it") },
                             summaries = summaries,
+                            integrationAvailability = integrationAvailability,
+                            onIntegrations = { navController.navigate("settings_integrations") },
+                            onCheckIn = { navController.navigate("mood") },
                             habits = habits,
                             habitsDate = selectedDate?.let(LocalDate::parse),
                             deviceDate = currentDay.date,
@@ -209,6 +224,9 @@ fun LifeOsApp(
                         )
                         PrimaryDestination.REVIEW -> {
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
+                                integrationAvailability = integrationAvailability,
+                                onIntegrations = { navController.navigate("settings_integrations") },
+                                onCheckIn = { navController.navigate("mood") },
                                 onSources = { dates, metric ->
                                     val activity = metric.activity
                                     navController.navigate("review_sources/${dates.start}/${dates.through}/${metric.kind.name}" +
@@ -292,7 +310,10 @@ fun LifeOsApp(
                 com.luma.lifeos.ui.privacy.PrivacySettingsRoute(reset, onBack = { navController.popBackStack() })
             }
             if (usage != null || health != null) composable("settings_integrations") {
-                IntegrationsSettingsRoute(usage, health, currentDay.zone, onBack = { navController.popBackStack() })
+                IntegrationsSettingsRoute(usage, health, currentDay.zone,
+                    onBack = { navController.popBackStack() }, availability = integrationAvailability,
+                    onRefreshAccess = integrationViewModel::refreshAccess,
+                )
             }
             composable("places") {
                 PlacesRoute(places, onBack = { navController.popBackStack() },

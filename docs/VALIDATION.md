@@ -1934,7 +1934,8 @@ Reset filters (preserving text), and Clear all (clearing text and filters) remai
 Device tests used only `com.luma.lifeos.ux11validation`, built with
 `/tmp/luma-ux11-validation.init.gradle`. The installed `com.luma.lifeos` app and
 its data were untouched. Logs: `/tmp/luma-ux11-final-build.log`,
-`/tmp/luma-ux11-final-tests.log` and `/tmp/luma-ux11-checks.log`. Work is uncommitted.
+`/tmp/luma-ux11-final-tests.log` and `/tmp/luma-ux11-checks.log`. The change was
+subsequently committed as `910a596`; manual acceptance remains open.
 
 ## UX-03 and UX-04 habit correction and detail hierarchy — 2026-10-18
 
@@ -1980,7 +1981,8 @@ system `en-US`; the habit flow sets `Locale.US`. The installed `com.luma.lifeos`
 application and its data were untouched. Only the disposable
 `com.luma.lifeos.ux18validation` data was cleared before testing. Build artifacts
 were written under the isolated `app/build/ux18validation` directory. No commit
-was created; a commit message was generated for the user.
+existed when this validation run was recorded; the implementation was later
+committed as `58d4903`.
 
 ```sh
 /home/bajelan/Android/Sdk/platform-tools/adb -s emulator-5554 shell am instrument -w -r \
@@ -1988,5 +1990,46 @@ was created; a commit message was generated for the user.
   com.luma.lifeos.ux18validation.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-Tested source snapshot: base HEAD plus the UX-03/04 working-tree changes. The
-work remains uncommitted.
+Tested source snapshot: base HEAD plus the UX-03/04 changes before commit. The
+implementation was later committed as `58d4903`; manual acceptance remains open.
+
+## UX-09 and UX-10 — Habit progress and other habits — 2026-10-18
+
+UX-09 adds compact progress, distinct habit detail/log actions, translated setup
+guidance and schedule presets. UX-10 separates scheduled habits from browsable
+Other habits, keeps retry visible for pending failures, and offers a Today action
+when no habits are scheduled. Both were committed as `d43d731`.
+
+- PASS (recorded): `bash gradlew :app:assembleDebug --offline` and
+  `git diff --check` passed for this implementation.
+- NOT RUN: the planned `HabitPresentationTest` and focused editor/presentation
+  JVM cases; habit, Today and count device suites; manual RTL, large-text,
+  TalkBack, keyboard and physical-layout acceptance.
+- REVIEW FOLLOW-UP: unusually long progress text may clip, and an empty habit
+  repository omits the Scheduled heading and zero-scheduled Today action. These
+  findings are recorded in the [UX review](UI_UX_REVIEW_2026-10-18.md#ux-09--habit-rows-need-compact-progress-and-clearer-language)
+  and keep the corresponding acceptance checks open.
+
+## UX-06 and UX-15 — Integration and metric states — 2026-10-18
+
+UX-15 separates Android provider access from the saved import preference, uses a
+state-specific primary action and rechecks access on app resume. The new probes
+do not query provider records or change preferences. UX-06 maps missing values
+to saved-data, import, provider, mood and rating states in Today and Review while
+preserving saved zeros and historical values. English, French and Persian copy
+is included, including separate energy and stress rating messages. Enabled
+integrations remain switchable off during an active import, and explicit Refresh
+restarts a failed shared configuration observer. A source review identified
+those issues and a stale instrumented test call site; all were corrected. The
+changes remain in the working tree; no commit was created.
+
+- BLOCKED: `bash gradlew :app:compileDebugKotlin --offline` first stopped at the
+  read-only global Gradle lock location. Retrying with a writable temporary
+  Gradle home reached Gradle startup but failed before project configuration:
+  `Could not determine a usable wildcard IP for this machine` while creating
+  Gradle's `FileLockContentionHandler`. The sandbox denied the required socket.
+- NOT RUN: domain/app JVM tests, UI/device tests and manual acceptance. No test
+  tasks were run for this implementation.
+- Manual provider grant/denial, import failure, zero/history retention, RTL,
+  large text, TalkBack and physical-device checks remain open in the
+  [acceptance checklist](UI_UX_ACCEPTANCE_2026-10-18.md#ux-06--missing-metrics).

@@ -26,6 +26,7 @@ import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import java.time.*
 import java.time.format.FormatStyle
 import java.util.UUID
@@ -36,7 +37,9 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     onSources: (ReviewDates, ReviewMetric) -> Unit, onEvent: (LifeEventRecord) -> Unit,
     onPerson: (UUID) -> Unit = {}, onPlace: (UUID) -> Unit = {}, onUsage: (LocalDate) -> Unit = {},
     onMemory: ((LifeEventRecord) -> Unit)? = null, habits: HabitRepository? = null,
-    onHabit: (UUID, LocalDate) -> Unit = { _, _ -> }) {
+    onHabit: (UUID, LocalDate) -> Unit = { _, _ -> },
+    integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
+    onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {}) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -105,7 +108,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                     is WeeklyReviewState.Data -> {
                         val report = current.report
                         val a = report.current; val b = report.previous
-                        item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount) }
+                        item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount,
+                            integrationAvailability, onIntegrations, onCheckIn) }
                         stickyHeader(key = "sections") {
                             Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
                                 ReviewSectionNavigation(section, onSection = { key ->
@@ -126,7 +130,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         item(key = "counts") {
                             ReviewCounts(report, onSources)
                         }
-                        item(key = "mood") { ReviewMood(report, onSources) }
+                        item(key = "mood") { ReviewMood(report, onSources, onCheckIn) }
                         item(key = "memories") {
                             ReviewSection(R.string.review_memories, R.drawable.ic_bookmark_outline, "memories") {
                                 MemoryHighlights(repository, period, onEvent, onMemory)
@@ -148,8 +152,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                                 }
                             }
                         }
-                        item(key = "usage") { ReviewDigital(report, onUsage) }
-                        item(key = "activity") { ReviewActivities(report, onSources) }
+                        item(key = "usage") { ReviewDigital(report, onUsage, integrationAvailability, onIntegrations) }
+                        item(key = "activity") { ReviewActivities(report, onSources, integrationAvailability.health, onIntegrations) }
                         if (habits != null) item(key = "habits") {
                             ReviewHabits(requireNotNull(habitState), { habitRetry++ }, onHabit)
                         }
@@ -186,20 +190,30 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         }
     }
 }
-@Composable private fun ReviewMood(report: WeeklyReview, onSources: (ReviewDates, ReviewMetric) -> Unit) {
+@Composable private fun ReviewMood(report: WeeklyReview, onSources: (ReviewDates, ReviewMetric) -> Unit, onCheckIn: () -> Unit) {
     ReviewSection(R.string.review_mood, R.drawable.ic_review_mood, "mood",
         explanation = R.string.review_mood_explanation) {
         if (report.current.mood == null && report.previous.mood == null) {
-            ReviewEmpty(R.string.review_mood_empty, "review_mood_empty")
+            ReviewEmpty(R.string.metric_no_check_ins_week, "review_mood_empty")
+            TextButton(onClick = onCheckIn, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_mood_checkin")) {
+                Text(stringResource(R.string.review_checkin_action))
+            }
         } else ReviewValueGroup {
             listOf(ReviewMetricKind.MOOD to (report.current.mood?.score to report.previous.mood?.score),
                 ReviewMetricKind.ENERGY to (report.current.mood?.energy to report.previous.mood?.energy),
                 ReviewMetricKind.STRESS to (report.current.mood?.stress to report.previous.mood?.stress)).forEach { (kind, scales) ->
-                if (scales.first != null || scales.second != null) ReviewValue(
-                    stringResource(kind.label()), reviewScale(scales.first), reviewScale(scales.second),
+                if (scales.first != null || scales.second != null || report.current.mood != null || report.previous.mood != null) {
+                    val currentAbsence = stringResource(if (report.current.mood == null) R.string.metric_no_check_ins_week
+                        else if (kind == ReviewMetricKind.MOOD) R.string.review_no_measurement_period
+                        else if (kind == ReviewMetricKind.ENERGY) R.string.metric_no_energy_week else R.string.metric_no_stress_week)
+                    val previousAbsence = stringResource(if (report.previous.mood == null) R.string.metric_no_check_ins_week
+                        else if (kind == ReviewMetricKind.MOOD) R.string.review_no_measurement_period
+                        else if (kind == ReviewMetricKind.ENERGY) R.string.metric_no_energy_week else R.string.metric_no_stress_week)
+                    ReviewValue(stringResource(kind.label()), reviewScale(scales.first, currentAbsence), reviewScale(scales.second, previousAbsence),
                     reviewChange(scales.first?.average, scales.second?.average), kind.name.lowercase(),
                     scales.first?.let { { onSources(report.period.current, ReviewMetric(kind)) } },
                     scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
+                }
             }
         }
         if (report.current.moodDays.any { it.mood != null }) {
@@ -207,7 +221,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
                 report.current.moodDays.filter { it.mood != null }.forEach { day ->
                     Text(day.date.format(format))
-                    Text(reviewScale(day.mood?.score))
+                    Text(reviewScale(day.mood?.score, stringResource(R.string.metric_no_check_ins_week)))
                     TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) },
                         modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                         Text(stringResource(R.string.review_view_sources))

@@ -40,6 +40,7 @@ class HealthSettingsViewModelTest {
         val flow = MutableStateFlow(HealthState()); var failure: Exception? = null
         var observationFailure = false; var imports = 0; var gate: CompletableDeferred<Unit>? = null
         override fun observeState(): Flow<HealthState> = flow { if (observationFailure) error("storage"); emitAll(this@Integration.flow) }
+        override suspend fun access() = HealthAccess.REQUIRED
         override suspend fun setEnabled(enabled: Boolean) {
             failure?.let { throw it }
             flow.value = flow.value.copy(enabled = enabled, importZone = ZoneId.of("UTC"), status = if (enabled) HealthStatus.READY else HealthStatus.DISABLED)

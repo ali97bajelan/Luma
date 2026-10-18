@@ -30,6 +30,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.TodayHabitsCard
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import java.util.UUID
 
 @Composable
@@ -48,6 +49,9 @@ fun TodayScreen(
     onEventClick: (EventId) -> Unit = {},
     summaryState: DailySummaryState? = null,
     onSummaryRetry: () -> Unit = {},
+    integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
+    onIntegrations: () -> Unit = {},
+    onCheckIn: () -> Unit = {},
     habitsState: HabitsUiState? = null,
     habitLogCount: Int? = null,
     onHabits: () -> Unit = {},
@@ -119,7 +123,7 @@ fun TodayScreen(
         }
         summaryState?.let { summary -> item(key = "daily_summary") {
             DetailsDisclosure(R.string.summary_heading, "today_daily_summary", keepTitle = true) {
-                DailySummaryCard(summary, onSummaryRetry, habitLogCount)
+                DailySummaryCard(summary, onSummaryRetry, habitLogCount, integrationAvailability, onIntegrations, onCheckIn)
             }
         } }
     }

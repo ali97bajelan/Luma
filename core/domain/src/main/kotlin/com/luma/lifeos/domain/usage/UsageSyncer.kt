@@ -17,6 +17,7 @@ class UsageSyncer(private val source: UsageSource, private val repository: Usage
     private val controls = Mutex()
     override fun observeState() = repository.observeState()
     override fun observeDaily(date: LocalDate, zone: ZoneId) = repository.observeDaily(date, zone)
+    override suspend fun access(): UsageAccess = source.access()
     override suspend fun setEnabled(enabled: Boolean) {
         if (!enabled) {
             // Opt-out must not wait behind a platform query. The commit also checks this flag atomically.

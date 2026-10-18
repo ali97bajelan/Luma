@@ -55,6 +55,7 @@ class UsageSettingsViewModelTest {
         var gate: CompletableDeferred<Unit>? = null; var imports = 0; var dailyFailure = false
         override fun observeState() = changes
         override fun observeDaily(date: LocalDate, zone: ZoneId): Flow<DailyUsageReport?> = flow { if (dailyFailure) error("Unavailable"); emit(null) }
+        override suspend fun access() = UsageAccess.REQUIRED
         override suspend fun refreshAccess() { failure?.let { throw it } }
         override suspend fun setEnabled(enabled: Boolean) { failure?.let { throw it }; changes.value = changes.value.copy(enabled = enabled, status = if (enabled) UsageSyncStatus.READY else UsageSyncStatus.DISABLED) }
         override suspend fun importNow(): UsageSyncOutcome { failure?.let { throw it }; imports++; gate?.await(); changes.value = changes.value.copy(lastSync = Instant.parse("2026-10-11T12:00:00Z")); return UsageSyncOutcome.SUCCESS }
