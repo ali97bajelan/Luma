@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
@@ -96,5 +97,7 @@ class HabitsNavigationTest {
 
         compose.onNodeWithTag("habit_open_$id").performClick()
         compose.onNodeWithTag("screen_habit_detail").assertIsDisplayed()
+        compose.onNodeWithTag("habit_manage").performScrollTo().performClick()
+        compose.onNodeWithTag("habit_manage_edit").assertIsDisplayed()
     }
 }

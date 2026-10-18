@@ -15,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,8 +40,11 @@ import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.habit.scheduleFor
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.FormatStyle
+import java.time.format.TextStyle
+import java.util.Locale
 import java.util.UUID
 
 @Composable
@@ -95,14 +97,15 @@ fun HabitDetailScreen(
     onDeleteHabit: () -> Unit,
     onDeleteLog: (UUID) -> Unit,
     onEditLog: (com.luma.lifeos.domain.habit.HabitLog) -> Unit,
-    onChangeDate: (String) -> Unit,
-    onChangeTime: (String) -> Unit,
+    onChangeDate: (LocalDate) -> Unit,
+    onChangeTime: (LocalTime?) -> Unit,
     onSaveCorrection: () -> Unit,
     onCancelCorrection: () -> Unit,
     onRetry: () -> Unit,
 ) {
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by rememberSaveable { mutableStateOf(false) }
+    var correctionPickerOpen by rememberSaveable { mutableStateOf(false) }
     val detail = state.detail
     val habit = detail?.habit
     val day = detail?.day
@@ -116,14 +119,17 @@ fun HabitDetailScreen(
         ?: detail?.schedules?.lastOrNull()?.lifecycle ?: day?.schedule?.lifecycle
     val canSkip = date == today && day?.schedule?.lifecycle == HabitLifecycle.ACTIVE &&
         day.state != HabitDayState.NOT_SCHEDULED && day.state != HabitDayState.PAUSED && day.state != HabitDayState.ARCHIVED
-    BackHandler(enabled = detail?.correction != null) { confirmingDiscard = true }
+    fun requestCorrectionClose() {
+        val current = detail ?: return
+        if (current.correctionBusy) return
+        val draft = current.correction ?: return
+        if (draft.hasChanges) confirmingDiscard = true else onCancelCorrection()
+    }
+    BackHandler(enabled = detail?.correction != null && !correctionPickerOpen) { requestCorrectionClose() }
     Scaffold(modifier = Modifier.testTag("screen_habit_detail"), topBar = {
         TopAppBar(title = { Text(habit?.name ?: stringResource(R.string.habit_title)) },
-            navigationIcon = { TextButton(onClick = { if (detail?.correction != null) confirmingDiscard = true else onBack() },
-                modifier = Modifier.testTag("habit_detail_back")) { Text(stringResource(R.string.back)) } },
-            actions = { TextButton(enabled = habit != null, onClick = onEdit, modifier = Modifier.testTag("habit_edit")) {
-                Text(stringResource(R.string.detail_edit))
-            } })
+            navigationIcon = { TextButton(onClick = { if (detail?.correction != null) requestCorrectionClose() else onBack() },
+                modifier = Modifier.testTag("habit_detail_back")) { Text(stringResource(R.string.back)) } })
     }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("habit_detail_list"), contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -136,7 +142,6 @@ fun HabitDetailScreen(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), style = MaterialTheme.typography.titleLarge)
-                        Text(stringResource(R.string.habit_tracking_zone, trackingZone.id), style = MaterialTheme.typography.bodySmall)
                         day?.let {
                             ProgressText(it)
                             Text(stringResource(stateLabel(it)), style = MaterialTheme.typography.bodyMedium)
@@ -173,50 +178,53 @@ fun HabitDetailScreen(
                         }
                     }
                 }
-                val pendingSchedule = detail.pendingSchedule
-                if (pendingSchedule != null) item {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        val message = if (futureStart && pendingSchedule.effectiveFrom == habit.start) R.string.habit_effective_start
-                            else R.string.habit_effective_tomorrow
-                        Text(stringResource(message,
-                            pendingSchedule.effectiveFrom.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))))
-                        val isFutureInitial = futureStart && pendingSchedule.effectiveFrom == habit.start
-                        if (!isFutureInitial) TextButton(onClick = onCancelPending, modifier = Modifier.heightIn(min = 48.dp)
-                            .testTag("habit_cancel_pending")) { Text(stringResource(R.string.habit_cancel_pending)) }
-                    }
-                }
                 if (canSkip) item {
                     TextButton(onClick = if (day?.skipRemaining == true) onResumeToday else onSkip,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_skip_remaining")) {
                         Text(stringResource(if (day?.skipRemaining == true) R.string.habit_resume_today else R.string.habit_skip_remaining))
                     }
                 }
-                if (!futureStart && lifecycle != HabitLifecycle.ARCHIVED) item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { onPauseResume(if (lifecycle == HabitLifecycle.PAUSED) HabitLifecycle.ACTIVE else HabitLifecycle.PAUSED) },
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("habit_pause_resume")) {
-                            Text(stringResource(if (lifecycle == HabitLifecycle.PAUSED) R.string.habit_resume else R.string.habit_pause))
-                        }
-                        TextButton(onClick = { onPauseResume(HabitLifecycle.ARCHIVED) },
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("habit_archive")) {
-                            Text(stringResource(R.string.habit_archive))
-                        }
-                    }
-                } else if (futureStart && lifecycle != HabitLifecycle.ARCHIVED) item {
-                    TextButton(onClick = { onPauseResume(HabitLifecycle.ARCHIVED) },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_archive")) {
-                        Text(stringResource(R.string.habit_archive))
-                    }
-                }
-                item {
-                    TextButton(onClick = { confirmingDelete = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                        .testTag("habit_delete")) { Text(stringResource(R.string.habit_delete)) }
-                }
                 detail.actionError?.let { item { Text(stringResource(R.string.habit_correction_error),
                     color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_detail_error")) } }
+                if (detail.correction == null && detail.correctionError == HabitCorrectionError.MISSING) item {
+                    Text(stringResource(R.string.habit_correction_missing), color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("habit_correction_missing"))
+                }
                 state.actionError?.let { item { Text(stringResource(R.string.habit_action_error),
                     color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_detail_action_error")) } }
                 item { HabitHistory(detail.history, detail.historyTotal, selectedLogId, trackingZone, onEditLog, onDeleteLog, onLoadMore) }
+                item(key = "schedule-${habit.id}") {
+                    Column(Modifier.fillMaxWidth().testTag("habit_schedule_details"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(stringResource(R.string.habit_schedule_details), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.habit_tracking_zone, trackingZone.id), style = MaterialTheme.typography.bodySmall)
+                        trackingSchedule?.let { schedule ->
+                            Text(stringResource(R.string.habit_schedule_target, schedule.target))
+                            val days = schedule.weekdays.sortedBy { it.value }.joinToString { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
+                            Text(stringResource(R.string.habit_schedule_weekdays, days))
+                        }
+                        detail.pendingSchedule?.let { pendingSchedule ->
+                            val message = if (futureStart && pendingSchedule.effectiveFrom == habit.start) R.string.habit_effective_start
+                                else R.string.habit_effective_tomorrow
+                            Text(stringResource(message,
+                                pendingSchedule.effectiveFrom.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+                                modifier = Modifier.testTag("habit_pending_effective_date"))
+                            val isFutureInitial = futureStart && pendingSchedule.effectiveFrom == habit.start
+                            if (!isFutureInitial) TextButton(onClick = onCancelPending,
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_cancel_pending")) {
+                                Text(stringResource(R.string.habit_cancel_pending))
+                            }
+                        }
+                    }
+                }
+                item(key = "manage-${habit.id}") {
+                    HabitManagementSection(
+                        lifecycle = lifecycle,
+                        futureStart = futureStart,
+                        onEdit = onEdit,
+                        onLifecycle = onPauseResume,
+                        onDelete = { confirmingDelete = true },
+                    )
+                }
             }
         }
     }
@@ -226,25 +234,21 @@ fun HabitDetailScreen(
             modifier = Modifier.testTag("habit_confirm_delete")) { Text(stringResource(R.string.habit_delete)) } },
         dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } })
     detail?.correction?.let { correction ->
-        AlertDialog(onDismissRequest = { confirmingDiscard = true },
-            title = { Text(stringResource(R.string.habit_log_correction)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(correction.date, onChangeDate, singleLine = true,
-                        label = { Text(stringResource(R.string.habit_correction_date)) }, modifier = Modifier.fillMaxWidth().testTag("habit_correction_date"))
-                    OutlinedTextField(correction.time, onChangeTime, singleLine = true,
-                        label = { Text(stringResource(R.string.habit_correction_time)) }, modifier = Modifier.fillMaxWidth().testTag("habit_correction_time"))
-                    detail.actionError?.let { Text(stringResource(R.string.habit_correction_error), color = MaterialTheme.colorScheme.error) }
-                }
-            },
-            confirmButton = { TextButton(onClick = onSaveCorrection, modifier = Modifier.testTag("habit_save_correction")) {
-                Text(stringResource(R.string.save))
-            } },
-            dismissButton = { TextButton(onClick = { confirmingDiscard = true }) { Text(stringResource(R.string.cancel)) } })
+        HabitLogCorrectionDialog(
+            draft = correction,
+            busy = detail.correctionBusy,
+            error = detail.correctionError,
+            onDate = onChangeDate,
+            onTime = onChangeTime,
+            onSave = onSaveCorrection,
+            onRequestClose = ::requestCorrectionClose,
+            onPickerOpenChanged = { correctionPickerOpen = it },
+        )
     }
     if (confirmingDiscard) AlertDialog(onDismissRequest = { confirmingDiscard = false },
-        title = { Text(stringResource(R.string.habit_discard_title)) }, text = { Text(stringResource(R.string.habit_discard_body)) },
-        confirmButton = { TextButton(onClick = { confirmingDiscard = false; onCancelCorrection() }) {
+        title = { Text(stringResource(R.string.habit_correction_discard_title)) }, text = { Text(stringResource(R.string.habit_correction_discard_body)) },
+        confirmButton = { TextButton(enabled = detail?.correctionBusy != true,
+            onClick = { confirmingDiscard = false; onCancelCorrection() }, modifier = Modifier.testTag("habit_discard_correction")) {
             Text(stringResource(R.string.discard))
         } }, dismissButton = { TextButton(onClick = { confirmingDiscard = false }) {
             Text(stringResource(R.string.keep_editing))

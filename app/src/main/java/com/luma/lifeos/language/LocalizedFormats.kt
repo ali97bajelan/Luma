@@ -10,6 +10,7 @@ fun localizedDate(style: FormatStyle): DateTimeFormatter =
     DateTimeFormatter.ofLocalizedDate(style).localizedDigits()
 fun localizedDateTime(style: FormatStyle): DateTimeFormatter =
     DateTimeFormatter.ofLocalizedDateTime(style).localizedDigits()
-fun localizedTime(): DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm").localizedDigits()
+fun localizedTime(use24Hour: Boolean = true): DateTimeFormatter =
+    DateTimeFormatter.ofPattern(if (use24Hour) "HH:mm" else "h:mm a").localizedDigits()
 private fun DateTimeFormatter.localizedDigits(): DateTimeFormatter =
     withLocale(Locale.getDefault()).withDecimalStyle(DecimalStyle.of(Locale.getDefault()))

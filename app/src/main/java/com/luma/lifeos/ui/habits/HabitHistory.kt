@@ -39,7 +39,7 @@ fun HabitHistory(
     onDelete: (UUID) -> Unit,
     onLoadMore: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.testTag("habit_history_section"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.habit_history), style = MaterialTheme.typography.titleLarge)
         if (logs.isEmpty()) Text(stringResource(R.string.habit_history_empty), modifier = Modifier.testTag("habit_history_empty"))
         logs.forEach { log ->

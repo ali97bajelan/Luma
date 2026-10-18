@@ -1,5 +1,9 @@
 package com.luma.lifeos.habits
 
+import android.os.SystemClock
+import android.view.InputDevice
+import android.view.MotionEvent
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,7 +16,6 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
@@ -24,6 +27,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.room.Room
@@ -38,6 +43,8 @@ import com.luma.lifeos.domain.habit.HabitSaveInput
 import com.luma.lifeos.ui.habits.HabitDayRow
 import com.luma.lifeos.ui.habits.HabitDetailScreen
 import com.luma.lifeos.ui.habits.HabitDetailUiState
+import com.luma.lifeos.ui.habits.HabitCorrectionError
+import com.luma.lifeos.ui.habits.HabitLogCorrectionDraft
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.PendingHabitLog
 import com.luma.lifeos.ui.habits.TodayHabitsCard
@@ -54,6 +61,7 @@ import com.luma.lifeos.ui.theme.LifeOsTheme
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -68,12 +76,13 @@ import com.luma.lifeos.ui.habits.HabitsViewModel
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class HabitCaptureFlowTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private lateinit var database: LumaDatabase
     private lateinit var repository: RoomHabitRepository
     private var previousLocale: Locale? = null
@@ -137,17 +146,16 @@ class HabitCaptureFlowTest {
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("screen_habit_detail")).fetchSemanticsNodes().isNotEmpty() }
         val existing = runBlocking { repository.history(habitId, null, 0, 50).logs.first() }
         val recordedAt = existing.recordedAt
-        val correctionTime = java.time.LocalTime.now(zone).minusMinutes(5).format(DateTimeFormatter.ofPattern("HH:mm"))
         compose.onNodeWithTag("habit_detail_list").performScrollToNode(hasTestTag("habit_edit_log_${existing.id}"))
         compose.onNodeWithTag("habit_edit_log_${existing.id}").performClick()
-        compose.onNodeWithTag("habit_correction_time").performTextClearance()
-        compose.onNodeWithTag("habit_correction_time").performTextInput(correctionTime)
+        compose.onNodeWithTag("habit_correction_time").performClick()
+        compose.onNodeWithTag("habit_correction_time_picker").assertIsDisplayed()
+        compose.onNodeWithTag("habit_correction_no_time").performClick()
         compose.onNodeWithTag("habit_save_correction").performClick()
         compose.waitUntil(10_000) {
             runBlocking {
                 repository.getLog(existing.id)?.let { log ->
-                    log.id == existing.id && log.recordedAt == recordedAt &&
-                        log.occurredAt?.atZone(zone)?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) == correctionTime
+                    log.id == existing.id && log.recordedAt == recordedAt && log.occurredAt == null
                 } == true
             }
         }
@@ -251,6 +259,247 @@ class HabitCaptureFlowTest {
         assertEquals(logId, undone)
     }
 
+    @Test fun historyPrecedesCollapsedManagementAndDeleteRemainsConfirmed() {
+        val habitId = UUID.randomUUID()
+        val logId = UUID.randomUUID()
+        val createdAt = Instant.parse("2026-10-01T00:00:00Z")
+        val habit = HabitDefinition(habitId, "Read", "pages", today.minusDays(10), createdAt, createdAt)
+        val schedule = HabitSchedule(UUID.randomUUID(), habitId, habit.start, 8, DayOfWeek.entries.toSet(), HabitLifecycle.ACTIVE)
+        val day = HabitDay(habit, today, zone, schedule, 1, false)
+        var deletes = 0
+        var lifecycleChanges = 0
+        val state = HabitsUiState(trackingZone = zone, days = listOf(HabitDayRow(day, canLog = true)), detail = HabitDetailUiState(
+            habit = habit, day = day, schedules = listOf(schedule), history = listOf(HabitLog(logId, habitId, today, zone, null, createdAt, createdAt)),
+            historyTotal = 1, loading = false,
+        ))
+
+        compose.setContent {
+            LifeOsTheme {
+                HabitDetailScreen(state, habitId, today, null, onBack = {}, onEdit = {}, onLog = {},
+                    onRetryLog = {}, onUndoLog = {}, onSkip = {}, onResumeToday = {}, onPauseResume = { lifecycleChanges++ },
+                    onCancelPending = {}, onLoadMore = {}, onDeleteHabit = { deletes++ }, onDeleteLog = {},
+                    onEditLog = {}, onChangeDate = {}, onChangeTime = {}, onSaveCorrection = {},
+                    onCancelCorrection = {}, onRetry = {})
+            }
+        }
+
+        val history = compose.onNodeWithTag("habit_history_section").fetchSemanticsNode().boundsInRoot
+        val management = compose.onNodeWithTag("habit_manage").fetchSemanticsNode().boundsInRoot
+        assertTrue(history.bottom <= management.top)
+        compose.onNodeWithTag("habit_pause_resume").assertDoesNotExist()
+        compose.onNodeWithTag("habit_manage").performClick()
+        assertEquals(0, lifecycleChanges)
+        compose.onNodeWithTag("habit_manage_edit").assertIsDisplayed()
+        compose.onNodeWithTag("habit_pause_resume").assertIsDisplayed()
+        compose.onNodeWithTag("habit_archive").assertIsDisplayed()
+        compose.onNodeWithTag("habit_delete").performClick()
+        compose.onNodeWithTag("habit_confirm_delete").assertIsDisplayed()
+        compose.onNodeWithText("Cancel").performClick()
+        assertEquals(0, deletes)
+        compose.onNodeWithTag("habit_delete").performClick()
+        compose.onNodeWithTag("habit_confirm_delete").performClick()
+        assertEquals(1, deletes)
+    }
+
+    @Test fun pendingScheduleKeepsEffectiveDateAndCancellationAction() {
+        val habitId = UUID.randomUUID()
+        val createdAt = Instant.parse("2026-10-01T00:00:00Z")
+        val habit = HabitDefinition(habitId, "Read", null, today.minusDays(10), createdAt, createdAt)
+        val active = HabitSchedule(UUID.randomUUID(), habitId, habit.start, 1, DayOfWeek.entries.toSet(), HabitLifecycle.ACTIVE)
+        val pending = HabitSchedule(UUID.randomUUID(), habitId, today.plusDays(1), 2, DayOfWeek.entries.toSet(), HabitLifecycle.PAUSED)
+        val day = HabitDay(habit, today, zone, active, 0, false)
+        var cancelled = 0
+        val state = HabitsUiState(trackingZone = zone, days = listOf(HabitDayRow(day, canLog = true)), detail = HabitDetailUiState(
+            habit = habit, day = day, schedules = listOf(active, pending), pendingSchedule = pending, loading = false,
+        ))
+
+        compose.setContent {
+            LifeOsTheme {
+                HabitDetailScreen(state, habitId, today, null, onBack = {}, onEdit = {}, onLog = {},
+                    onRetryLog = {}, onUndoLog = {}, onSkip = {}, onResumeToday = {}, onPauseResume = {},
+                    onCancelPending = { cancelled++ }, onLoadMore = {}, onDeleteHabit = {}, onDeleteLog = {},
+                    onEditLog = {}, onChangeDate = {}, onChangeTime = {}, onSaveCorrection = {},
+                    onCancelCorrection = {}, onRetry = {})
+            }
+        }
+
+        compose.onNodeWithTag("habit_pending_effective_date").assertIsDisplayed()
+        compose.onNodeWithTag("habit_cancel_pending").performClick()
+        assertEquals(1, cancelled)
+    }
+
+    @Test fun archivedFutureStartHabitDoesNotExposeResumeInManagement() {
+        val habitId = UUID.randomUUID()
+        val createdAt = Instant.parse("2026-10-01T00:00:00Z")
+        val futureStart = today.plusDays(5)
+        val habit = HabitDefinition(habitId, "Future habit", null, futureStart, createdAt, createdAt)
+        val archived = HabitSchedule(UUID.randomUUID(), habitId, futureStart, 1, DayOfWeek.entries.toSet(), HabitLifecycle.ARCHIVED)
+        val day = HabitDay(habit, today, zone, null, 0, false)
+        val state = HabitsUiState(trackingZone = zone, detail = HabitDetailUiState(
+            habit = habit, day = day, schedules = listOf(archived), pendingSchedule = archived, loading = false,
+        ))
+
+        compose.setContent {
+            LifeOsTheme {
+                HabitDetailScreen(state, habitId, today, null, onBack = {}, onEdit = {}, onLog = {},
+                    onRetryLog = {}, onUndoLog = {}, onSkip = {}, onResumeToday = {}, onPauseResume = {},
+                    onCancelPending = {}, onLoadMore = {}, onDeleteHabit = {}, onDeleteLog = {},
+                    onEditLog = {}, onChangeDate = {}, onChangeTime = {}, onSaveCorrection = {},
+                    onCancelCorrection = {}, onRetry = {})
+            }
+        }
+
+        compose.onNodeWithTag("habit_manage").performClick()
+        compose.onNodeWithTag("habit_pause_resume").assertDoesNotExist()
+        compose.onNodeWithTag("habit_resume_today").assertDoesNotExist()
+    }
+
+    @Test fun cancelingAndBackingOutOfUntouchedCorrectionClosesOnceWithoutDiscardPrompt() {
+        val habitId = UUID.randomUUID()
+        val logId = UUID.randomUUID()
+        val createdAt = Instant.parse("2026-10-01T00:00:00Z")
+        val habit = HabitDefinition(habitId, "Read", "pages", today.minusDays(10), createdAt, createdAt)
+        val schedule = HabitSchedule(UUID.randomUUID(), habitId, habit.start, 8, DayOfWeek.entries.toSet(), HabitLifecycle.ACTIVE)
+        val occurrence = today.atTime(8, 0).atZone(zone).toInstant()
+        val log = HabitLog(logId, habitId, today, zone, occurrence, createdAt, createdAt)
+        var correction by mutableStateOf<HabitLogCorrectionDraft?>(null)
+        var cancelled = 0
+        var backed = 0
+
+        compose.setContent {
+            LifeOsTheme {
+                val state = HabitsUiState(trackingZone = zone, detail = HabitDetailUiState(
+                    habit = habit, day = HabitDay(habit, today, zone, schedule, 1, false),
+                    schedules = listOf(schedule), history = listOf(log), loading = false, correction = correction,
+                ))
+                HabitDetailScreen(state, habitId, today, null, onBack = { backed++ }, onEdit = {}, onLog = {},
+                    onRetryLog = {}, onUndoLog = {}, onSkip = {}, onResumeToday = {}, onPauseResume = {},
+                    onCancelPending = {}, onLoadMore = {}, onDeleteHabit = {}, onDeleteLog = {}, onEditLog = {},
+                    onChangeDate = {}, onChangeTime = {}, onSaveCorrection = {}, onCancelCorrection = { cancelled++; correction = null }, onRetry = {})
+            }
+        }
+
+        correction = HabitLogCorrectionDraft(logId, today, log.occurredAt, zone, today, log.occurredAt?.atZone(zone)?.toLocalTime())
+        compose.waitForIdle()
+        compose.onNodeWithTag("habit_correction_date").performClick()
+        compose.onNodeWithTag("habit_correction_date_picker").assertIsDisplayed()
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Edit repetition").assertIsDisplayed()
+        compose.onNodeWithText("Discard correction?").assertDoesNotExist()
+        tapOutsideDialog()
+        compose.waitForIdle()
+        compose.onNodeWithText("Edit repetition").assertDoesNotExist()
+        compose.onNodeWithText("Discard correction?").assertDoesNotExist()
+        assertEquals(1, cancelled)
+        assertEquals(0, backed)
+
+        correction = HabitLogCorrectionDraft(logId, today, log.occurredAt, zone, today, log.occurredAt?.atZone(zone)?.toLocalTime())
+        compose.waitForIdle()
+        compose.onNodeWithText("Cancel").performClick()
+
+        compose.onNodeWithText("Discard correction?").assertDoesNotExist()
+        assertEquals(2, cancelled)
+        assertEquals(0, backed)
+
+        compose.onNodeWithTag("habit_edit_log_$logId").performClick()
+        correction = HabitLogCorrectionDraft(logId, today, log.occurredAt, zone, today, log.occurredAt?.atZone(zone)?.toLocalTime())
+        compose.waitForIdle()
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Discard correction?").assertDoesNotExist()
+        assertEquals(3, cancelled)
+        assertEquals(0, backed)
+    }
+
+    @Test fun leavingDirtyCorrectionAsksOnceAndKeepEditingRetainsDraft() {
+        val habitId = UUID.randomUUID()
+        val logId = UUID.randomUUID()
+        val createdAt = Instant.parse("2026-10-01T00:00:00Z")
+        val habit = HabitDefinition(habitId, "Read", "pages", today.minusDays(10), createdAt, createdAt)
+        val schedule = HabitSchedule(UUID.randomUUID(), habitId, habit.start, 8, DayOfWeek.entries.toSet(), HabitLifecycle.ACTIVE)
+        val original = today.atTime(8, 0).atZone(zone).toInstant()
+        var cancelCount = 0
+        val state = HabitsUiState(trackingZone = zone, detail = HabitDetailUiState(
+            habit = habit, day = HabitDay(habit, today, zone, schedule, 1, false), schedules = listOf(schedule),
+            history = listOf(HabitLog(logId, habitId, today, zone, original, createdAt, createdAt)), loading = false,
+            correction = HabitLogCorrectionDraft(logId, today, original, zone, today.minusDays(1), LocalTime.of(8, 0)),
+        ))
+
+        compose.setContent {
+            LifeOsTheme {
+                HabitDetailScreen(state, habitId, today, null, onBack = {}, onEdit = {}, onLog = {},
+                    onRetryLog = {}, onUndoLog = {}, onSkip = {}, onResumeToday = {}, onPauseResume = {},
+                    onCancelPending = {}, onLoadMore = {}, onDeleteHabit = {}, onDeleteLog = {}, onEditLog = {},
+                    onChangeDate = {}, onChangeTime = {}, onSaveCorrection = {}, onCancelCorrection = { cancelCount++ }, onRetry = {})
+            }
+        }
+
+        compose.onNodeWithTag("habit_cancel_correction").performClick()
+        compose.onNodeWithText("Discard correction?").assertIsDisplayed()
+        compose.onNodeWithText("Keep editing").performClick()
+
+        compose.onNodeWithText("Edit repetition").assertIsDisplayed()
+        compose.onNodeWithText("Discard correction?").assertDoesNotExist()
+        assertEquals(0, cancelCount)
+    }
+
+    private fun tapOutsideDialog() {
+        val metrics = InstrumentationRegistry.getInstrumentation().targetContext.resources.displayMetrics
+        val x = metrics.widthPixels * 0.01f
+        val y = metrics.heightPixels * 0.5f
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val downTime = SystemClock.uptimeMillis()
+        val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0).apply {
+            source = InputDevice.SOURCE_TOUCHSCREEN
+        }
+        assertTrue(instrumentation.uiAutomation.injectInputEvent(down, true))
+        down.recycle()
+        val upTime = SystemClock.uptimeMillis()
+        val up = MotionEvent.obtain(downTime, upTime, MotionEvent.ACTION_UP, x, y, 0).apply {
+            source = InputDevice.SOURCE_TOUCHSCREEN
+        }
+        assertTrue(instrumentation.uiAutomation.injectInputEvent(up, true))
+        up.recycle()
+    }
+
+    @Test fun correctionValidationIsShownOnTheMatchingPickerControl() {
+        val habitId = UUID.randomUUID()
+        val logId = UUID.randomUUID()
+        val createdAt = Instant.parse("2026-10-01T00:00:00Z")
+        val habit = HabitDefinition(habitId, "Read", null, today.minusDays(10), createdAt, createdAt)
+        val schedule = HabitSchedule(UUID.randomUUID(), habitId, habit.start, 1, DayOfWeek.entries.toSet(), HabitLifecycle.ACTIVE)
+        val occurrence = today.atTime(8, 0).atZone(zone).toInstant()
+        var error by mutableStateOf(HabitCorrectionError.DATE)
+        val state = HabitsUiState(trackingZone = zone, detail = HabitDetailUiState(
+            habit = habit, day = HabitDay(habit, today, zone, schedule, 1, false), schedules = listOf(schedule),
+            history = listOf(HabitLog(logId, habitId, today, zone, occurrence, createdAt, createdAt)), loading = false,
+            correction = HabitLogCorrectionDraft(logId, today, occurrence, zone, today, LocalTime.of(8, 0)),
+        ))
+
+        compose.setContent {
+            LifeOsTheme {
+                HabitDetailScreen(state.copy(detail = state.detail?.copy(correctionError = error)), habitId, today, null,
+                    onBack = {}, onEdit = {}, onLog = {}, onRetryLog = {}, onUndoLog = {}, onSkip = {},
+                    onResumeToday = {}, onPauseResume = {}, onCancelPending = {}, onLoadMore = {}, onDeleteHabit = {},
+                    onDeleteLog = {}, onEditLog = {}, onChangeDate = {}, onChangeTime = {}, onSaveCorrection = {},
+                    onCancelCorrection = {}, onRetry = {})
+            }
+        }
+
+        compose.onNodeWithTag("habit_correction_date_error").assertIsDisplayed()
+        compose.onNodeWithTag("habit_correction_time_error").assertDoesNotExist()
+        assertEquals("Choose a date that is not in the future.",
+            compose.onNodeWithTag("habit_correction_date").fetchSemanticsNode().config[SemanticsProperties.Error])
+
+        error = HabitCorrectionError.TIME
+        compose.waitForIdle()
+        compose.onNodeWithTag("habit_correction_time_error").assertIsDisplayed()
+        assertEquals("That time does not exist or is in the future for this timezone.",
+            compose.onNodeWithTag("habit_correction_time").fetchSemanticsNode().config[SemanticsProperties.Error])
+    }
+
     @Test fun historicalDetailUsesTodaysLifecycleForPauseResumeControl() {
         val habitId = UUID.randomUUID()
         val createdAt = Instant.parse("2026-10-01T00:00:00Z")
@@ -275,6 +524,7 @@ class HabitCaptureFlowTest {
             }
         }
 
+        compose.onNodeWithTag("habit_manage").performClick()
         compose.onNodeWithTag("habit_pause_resume").assertIsDisplayed()
         compose.onNodeWithText("Resume starting tomorrow").assertIsDisplayed()
         compose.onNodeWithTag("habit_pause_resume").performClick()
@@ -320,11 +570,12 @@ class HabitCaptureFlowTest {
         compose.onNodeWithTag("habit_target").performTextClearance()
         compose.onNodeWithTag("habit_target").performTextInput("4")
         compose.onNodeWithTag("habit_save").performClick()
-        compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("habit_archive")).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("habit_manage")).fetchSemanticsNodes().isNotEmpty() }
 
         var schedule = runBlocking { repository.schedules(habitId).single() }
         assertEquals(start, schedule.effectiveFrom)
         assertEquals(4, schedule.target)
+        compose.onNodeWithTag("habit_manage").performClick()
         compose.onNodeWithTag("habit_pause_resume").assertDoesNotExist()
         compose.onNodeWithTag("habit_archive").performClick()
         compose.waitUntil(10_000) {
@@ -352,6 +603,7 @@ class HabitCaptureFlowTest {
 
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("habit_log_$logId")).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("habit_log_$logId").assertIsDisplayed()
+        compose.onNodeWithTag("habit_manage").performScrollTo().performClick()
         compose.onNodeWithTag("habit_pause_resume").assertDoesNotExist()
     }
 
@@ -373,8 +625,11 @@ class HabitCaptureFlowTest {
         }
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("habit_edit_log_$logId")).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("habit_edit_log_$logId").performClick()
-        compose.onNodeWithTag("habit_correction_date").performTextClearance()
-        compose.onNodeWithTag("habit_correction_date").performTextInput(correctedDate.toString())
+        compose.onNodeWithTag("habit_correction_date").performClick()
+        val correctedDateLabel = correctedDate.format(DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.FULL)
+            .withLocale(Locale.US))
+        compose.onNodeWithText(correctedDateLabel).performClick()
+        compose.onNodeWithTag("habit_correction_select_date").performClick()
         compose.onNodeWithTag("habit_save_correction").performClick()
         compose.waitUntil(10_000) { runBlocking { repository.getLog(logId)?.date == correctedDate } }
 

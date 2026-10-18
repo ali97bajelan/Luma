@@ -44,6 +44,8 @@ internal class HabitRepositoryFixture(
     var failNextRename = false
     var failNextSchedule = false
     var failNextUpdate = false
+    var blockUpdate: CompletableDeferred<Unit>? = null
+    var updateCalls = 0
     var failHistoryReads = false
     var createCalls = 0
     private val skips = mutableSetOf<Pair<UUID, LocalDate>>()
@@ -112,6 +114,8 @@ internal class HabitRepositoryFixture(
     }
 
     override suspend fun updateLog(id: UUID, input: HabitLogInput): HabitLog {
+        updateCalls++
+        blockUpdate?.await()
         if (failNextUpdate) { failNextUpdate = false; error("update failed") }
         val old = logs.getValue(id)
         return old.copy(date = input.date, zone = input.zone, occurredAt = input.occurredAt, updatedAt = clock.instant())

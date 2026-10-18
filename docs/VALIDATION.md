@@ -1935,3 +1935,58 @@ Device tests used only `com.luma.lifeos.ux11validation`, built with
 `/tmp/luma-ux11-validation.init.gradle`. The installed `com.luma.lifeos` app and
 its data were untouched. Logs: `/tmp/luma-ux11-final-build.log`,
 `/tmp/luma-ux11-final-tests.log` and `/tmp/luma-ux11-checks.log`. Work is uncommitted.
+
+## UX-03 and UX-04 habit correction and detail hierarchy — 2026-10-18
+
+UX-03 now uses typed correction drafts, localized date/time pickers and explicit
+date/time/save/missing-log feedback. Clean Save closes without a write; date-only
+corrections preserve sub-minute precision and the original valid overlap offset.
+Dirty dismissal uses one discard path. UX-04 places history before a collapsed
+Manage habit disclosure, with schedule details, eligible lifecycle actions and a
+confirmed destructive Delete inside that disclosure.
+
+- PASS: 34 focused JVM tests, zero failures/errors/skips: `HabitsViewModelTest`
+  (24), `HabitEditorViewModelTest` (7), `LocalizedFormatsTest` (2) and
+  `TranslationCatalogTest` (1). Command:
+  `bash gradlew :app:testDebugUnitTest --tests '*HabitsViewModelTest' --tests '*HabitEditorViewModelTest' --tests '*LocalizedFormatsTest' --tests '*TranslationCatalogTest' --offline`.
+- PASS: isolated debug app and Android test APK builds. Command:
+  `bash gradlew -I /tmp/luma-ux18-validation.init.gradle :app:assembleDebug :app:assembleDebugAndroidTest --offline`.
+  The disposable application ID and test target were
+  `com.luma.lifeos.ux18validation`; no product dependency or schema change was
+  introduced.
+- PASS: `HabitCaptureFlowTest` and `HabitsNavigationTest`, runner output
+  `OK (19 tests)` on `emulator-5554`, API 36. Coverage includes clean cancel,
+  system Back and outside dismissal; dirty confirmation/Keep editing; picker Back;
+  field-specific errors; date correction retaining log identity and recordedAt;
+  no-time selection; failed-log retry/undo; history before management; a collapsed
+  and expandable management section with no lifecycle mutation on expansion;
+  Delete confirmation; pending effective date/cancel; and archived future-start
+  restrictions. The test-only 48 dp / font-scale 2.0 Today preview also passed.
+- PASS: the duplicate-save regression was first observed when a repository
+  observer refresh reset `correctionBusy`. `refreshDetail()` now keeps the latest
+  live draft and busy state after initial SavedState hydration; the test verifies
+  draft equality across refresh, ignores a second Save, and confirms the draft
+  clears after successful completion. A read-only follow-up review confirmed the
+  race fix.
+- PASS: `git diff --check`.
+- NOT RUN: manual TalkBack speech/focus, real device locale and Persian RTL,
+  physical 360/411 dp and landscape layouts, system font scales, keyboard behavior
+  and actual process-death restoration. The acceptance checklist remains open for
+  those checks; Compose semantics and SavedStateHandle unit tests do not certify
+  the manual cases. Full `:app:lintDebug` was not run.
+
+The emulator was `sdk_gphone64_x86_64`, API 36, 1080×2400 at 420 dpi, portrait,
+system `en-US`; the habit flow sets `Locale.US`. The installed `com.luma.lifeos`
+application and its data were untouched. Only the disposable
+`com.luma.lifeos.ux18validation` data was cleared before testing. Build artifacts
+were written under the isolated `app/build/ux18validation` directory. No commit
+was created; a commit message was generated for the user.
+
+```sh
+/home/bajelan/Android/Sdk/platform-tools/adb -s emulator-5554 shell am instrument -w -r \
+  -e class com.luma.lifeos.habits.HabitCaptureFlowTest,com.luma.lifeos.habits.HabitsNavigationTest \
+  com.luma.lifeos.ux18validation.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Tested source snapshot: base HEAD plus the UX-03/04 working-tree changes. The
+work remains uncommitted.

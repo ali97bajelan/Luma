@@ -5,12 +5,15 @@ import com.luma.lifeos.domain.habit.HabitDefinition
 import com.luma.lifeos.domain.habit.HabitLog
 import com.luma.lifeos.domain.habit.HabitLogInput
 import com.luma.lifeos.domain.habit.HabitSchedule
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.util.UUID
 
 enum class HabitLogDisabledReason { FUTURE_DATE, NOT_SCHEDULED, PAUSED, ARCHIVED }
 enum class HabitUiError { LOAD, ACTION, VALIDATION }
+enum class HabitCorrectionError { DATE, TIME, SAVE, MISSING }
 
 data class HabitDayRow(
     val day: HabitDay,
@@ -26,9 +29,16 @@ data class PendingHabitLog(
 
 data class HabitLogCorrectionDraft(
     val logId: UUID,
-    val date: String,
-    val time: String,
-)
+    val originalDate: LocalDate,
+    val originalOccurredAt: Instant?,
+    val zone: ZoneId,
+    val selectedDate: LocalDate,
+    val selectedTime: LocalTime?,
+    val timeChanged: Boolean = false,
+) {
+    val hasChanges: Boolean
+        get() = selectedDate != originalDate || selectedTime != originalOccurredAt?.atZone(zone)?.toLocalTime()
+}
 
 data class HabitDetailUiState(
     val habit: HabitDefinition? = null,
@@ -42,6 +52,8 @@ data class HabitDetailUiState(
     val error: HabitUiError? = null,
     val actionError: String? = null,
     val correction: HabitLogCorrectionDraft? = null,
+    val correctionError: HabitCorrectionError? = null,
+    val correctionBusy: Boolean = false,
     val deleted: Boolean = false,
 )
 

@@ -1,5 +1,7 @@
 # Luma UI/UX review — 18 October 2026
 
+**Implementation preparation:** [Specs, plans and sequence](UI_UX_IMPLEMENTATION_READY_2026-10-18.md) and [acceptance checklist](UI_UX_ACCEPTANCE_2026-10-18.md) cover every finding except UX-01, UX-02 and UX-12. UX-11 is already implemented and is included for regression/manual acceptance. This preparation adds no app behavior changes.
+
 ## Design assessment
 
 Luma has a calm, consistent visual identity and sensible privacy safeguards. Its biggest opportunity is to make everyday recording and reviewing feel lighter. Large summaries, repeated explanations and management controls currently receive more space than the content or action people came for.

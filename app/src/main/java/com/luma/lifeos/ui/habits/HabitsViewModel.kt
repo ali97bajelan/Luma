@@ -305,11 +305,17 @@ class HabitsViewModel(
             val history = repository.history(id, null, 0, 50)
             val effectiveDate = if (today.isBefore(habit.start)) habit.start else today.plusDays(1)
             val pending = scheduleFor(effectiveDate, schedules)?.takeIf { it.effectiveFrom == effectiveDate }
-            val correction = readCorrection()
-            mutableState.update { it.copy(detail = (it.detail ?: current).copy(habit = habit, day = day,
-                schedules = schedules, pendingSchedule = pending, history = history.logs,
-                historyOffset = history.offset + history.logs.size, historyTotal = history.total,
-                loading = false, error = null, correction = correction)) }
+            val restoredCorrection = if (current.habit == null) readCorrection() else null
+            mutableState.update {
+                val latest = it.detail ?: current
+                val correction = if (latest.habit == null) restoredCorrection ?: CorrectionRestore(null)
+                    else CorrectionRestore(latest.correction, latest.correctionError)
+                it.copy(detail = latest.copy(habit = habit, day = day,
+                    schedules = schedules, pendingSchedule = pending, history = history.logs,
+                    historyOffset = history.offset + history.logs.size, historyTotal = history.total,
+                    loading = false, error = null, correction = correction.draft,
+                    correctionError = correction.error, correctionBusy = latest.correctionBusy))
+            }
         } catch (failure: Exception) {
             if (failure is CancellationException) throw failure
             mutableState.update { it.copy(detail = (it.detail ?: current).copy(loading = false, error = HabitUiError.LOAD)) }
@@ -317,52 +323,99 @@ class HabitsViewModel(
     }
 
     fun beginCorrection(log: HabitLog) {
-        val draft = HabitLogCorrectionDraft(log.id, log.date.toString(), log.occurredAt?.atZone(log.zone)?.toLocalTime()?.toString().orEmpty())
+        val draft = HabitLogCorrectionDraft(
+            logId = log.id,
+            originalDate = log.date,
+            originalOccurredAt = log.occurredAt,
+            zone = log.zone,
+            selectedDate = log.date,
+            selectedTime = log.occurredAt?.atZone(log.zone)?.toLocalTime(),
+        )
         writeCorrection(draft)
-        mutableState.update { it.copy(detail = it.detail?.copy(correction = draft, actionError = null)) }
+        mutableState.update { it.copy(detail = it.detail?.copy(correction = draft, correctionError = null,
+            correctionBusy = false, actionError = null)) }
     }
 
-    fun changeCorrectionDate(value: String) {
+    fun changeCorrectionDate(value: LocalDate) {
         val draft = state.value.detail?.correction ?: return
-        val changed = draft.copy(date = value)
+        val changed = draft.copy(selectedDate = value)
         writeCorrection(changed)
-        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, actionError = null)) }
+        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, correctionError = null, actionError = null)) }
     }
 
-    fun changeCorrectionTime(value: String) {
+    fun changeCorrectionTime(value: LocalTime?) {
         val draft = state.value.detail?.correction ?: return
-        val changed = draft.copy(time = value)
+        val minute = value?.truncatedTo(ChronoUnit.MINUTES)
+        val sameDisplayedMinute = minute != null && draft.selectedTime != null &&
+            minute == draft.selectedTime.truncatedTo(ChronoUnit.MINUTES)
+        val selectedTime = when {
+            value == null -> null
+            sameDisplayedMinute -> draft.selectedTime
+            else -> minute
+        }
+        val changed = draft.copy(selectedTime = selectedTime, timeChanged = draft.timeChanged || !sameDisplayedMinute && value != null ||
+            value == null && draft.originalOccurredAt != null)
         writeCorrection(changed)
-        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, actionError = null)) }
+        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, correctionError = null, actionError = null)) }
     }
 
     fun cancelCorrection() {
-        saved[CORRECTION_ID] = null; saved[CORRECTION_DATE] = null; saved[CORRECTION_TIME] = null
-        mutableState.update { it.copy(detail = it.detail?.copy(correction = null, actionError = null)) }
+        if (state.value.detail?.correctionBusy == true) return
+        clearCorrection()
     }
 
     fun saveCorrection() {
         val draft = state.value.detail?.correction ?: return
+        val detail = state.value.detail ?: return
+        if (detail.correctionBusy) return
+        if (!draft.hasChanges) {
+            clearCorrection()
+            return
+        }
+        val today = LocalDate.now(clock.withZone(draft.zone))
+        if (draft.selectedDate.isAfter(today)) {
+            mutableState.update { it.copy(detail = it.detail?.copy(correctionError = HabitCorrectionError.DATE)) }
+            return
+        }
+        mutableState.update { it.copy(detail = it.detail?.copy(correctionBusy = true, correctionError = null)) }
         viewModelScope.launch {
             try {
-                val log = repository.getLog(draft.logId) ?: error("This repetition is no longer available")
-                val date = LocalDate.parse(draft.date)
-                val time = draft.time.trim().takeIf(String::isNotEmpty)?.let(LocalTime::parse)
-                val now = clock.instant()
-                val previousOffset = log.occurredAt?.atZone(log.zone)?.offset
-                val preferredOffset = if (time == null) null else previousOffset?.takeIf {
-                    it in log.zone.rules.getValidOffsets(date.atTime(time))
+                val log = repository.getLog(draft.logId) ?: run {
+                    mutableState.update { it.copy(detail = it.detail?.copy(correctionBusy = false,
+                        correctionError = HabitCorrectionError.MISSING)) }
+                    return@launch
                 }
-                val occurredAt = habitLogTime(date, time, log.zone, now, preferredOffset)
-                repository.updateLog(log.id, HabitLogInput(log.habitId, date, log.zone, occurredAt))
-                cancelCorrection()
+                val now = clock.instant()
+                val time = draft.selectedTime
+                val previousOffset = draft.originalOccurredAt?.atZone(draft.zone)?.offset
+                val preferredOffset = if (time == null) null else previousOffset?.takeIf {
+                    it in draft.zone.rules.getValidOffsets(draft.selectedDate.atTime(time))
+                }
+                val occurredAt = try {
+                    habitLogTime(draft.selectedDate, time, draft.zone, now, preferredOffset)
+                } catch (failure: IllegalArgumentException) {
+                    val error = if (draft.selectedDate.isAfter(LocalDate.now(clock.withZone(draft.zone))))
+                        HabitCorrectionError.DATE else HabitCorrectionError.TIME
+                    mutableState.update { it.copy(detail = it.detail?.copy(correctionBusy = false, correctionError = error)) }
+                    return@launch
+                }
+                repository.updateLog(log.id, HabitLogInput(log.habitId, draft.selectedDate, draft.zone, occurredAt))
+                clearCorrection()
                 mutableState.update { it.copy(actionError = null) }
                 refreshDetail()
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                mutableState.update { it.copy(detail = it.detail?.copy(actionError = failure.message ?: "Unable to update this repetition")) }
+                mutableState.update { it.copy(detail = it.detail?.copy(correctionBusy = false,
+                    correctionError = HabitCorrectionError.SAVE,
+                    actionError = failure.message ?: "Unable to update this repetition")) }
             }
         }
+    }
+
+    private fun clearCorrection() {
+        CORRECTION_KEYS.forEach { saved.remove<String>(it) }
+        mutableState.update { it.copy(detail = it.detail?.copy(correction = null, correctionError = null,
+            correctionBusy = false, actionError = null)) }
     }
 
     fun deleteHabit(habitId: UUID) {
@@ -377,16 +430,59 @@ class HabitsViewModel(
         }
     }
 
-    private fun readCorrection(): HabitLogCorrectionDraft? {
-        val id = saved.get<String>(CORRECTION_ID)?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: return null
-        if (saved.get<String>(CORRECTION_DATE) == null) return null
-        return HabitLogCorrectionDraft(id, saved.get<String>(CORRECTION_DATE).orEmpty(), saved.get<String>(CORRECTION_TIME).orEmpty())
+    private data class CorrectionRestore(val draft: HabitLogCorrectionDraft?, val error: HabitCorrectionError? = null)
+
+    private suspend fun readCorrection(): CorrectionRestore {
+        val id = saved.get<String>(CORRECTION_ID)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+            ?: return CorrectionRestore(null)
+        if (saved.get<Int>(CORRECTION_TYPED_VERSION) == CORRECTION_VERSION) {
+            val draft = runCatching {
+                HabitLogCorrectionDraft(
+                    logId = id,
+                    originalDate = LocalDate.parse(requireNotNull(saved.get<String>(CORRECTION_ORIGINAL_DATE))),
+                    originalOccurredAt = saved.get<String>(CORRECTION_ORIGINAL_OCCURRED_AT)?.let(java.time.Instant::parse),
+                    zone = ZoneId.of(requireNotNull(saved.get<String>(CORRECTION_ZONE))),
+                    selectedDate = LocalDate.parse(requireNotNull(saved.get<String>(CORRECTION_SELECTED_DATE))),
+                    selectedTime = saved.get<String>(CORRECTION_SELECTED_TIME)?.let(LocalTime::parse),
+                    timeChanged = saved.get<Boolean>(CORRECTION_TIME_CHANGED) ?: false,
+                )
+            }.getOrNull()
+            return if (draft != null) CorrectionRestore(draft) else CorrectionRestore(null, HabitCorrectionError.MISSING)
+        }
+        val legacyDate = saved.get<String>(CORRECTION_DATE) ?: return CorrectionRestore(null)
+        val log = repository.getLog(id) ?: return CorrectionRestore(null, HabitCorrectionError.MISSING)
+        val selectedDate = runCatching { LocalDate.parse(legacyDate) }.getOrNull()
+            ?: return CorrectionRestore(null, HabitCorrectionError.DATE)
+        val originalTime = log.occurredAt?.atZone(log.zone)?.toLocalTime()
+        val legacyTime = saved.get<String>(CORRECTION_TIME).orEmpty()
+        val selectedTime = if (legacyTime.isBlank()) null else runCatching { LocalTime.parse(legacyTime) }.getOrNull()
+            ?: return CorrectionRestore(null, HabitCorrectionError.TIME)
+        val sameMinute = originalTime != null && selectedTime != null &&
+            originalTime.truncatedTo(ChronoUnit.MINUTES) == selectedTime.truncatedTo(ChronoUnit.MINUTES)
+        val hydrated = HabitLogCorrectionDraft(
+            logId = id,
+            originalDate = log.date,
+            originalOccurredAt = log.occurredAt,
+            zone = log.zone,
+            selectedDate = selectedDate,
+            selectedTime = if (sameMinute) originalTime else selectedTime?.truncatedTo(ChronoUnit.MINUTES),
+            timeChanged = !sameMinute && selectedTime != originalTime,
+        )
+        writeCorrection(hydrated)
+        return CorrectionRestore(hydrated)
     }
 
     private fun writeCorrection(draft: HabitLogCorrectionDraft) {
         saved[CORRECTION_ID] = draft.logId.toString()
-        saved[CORRECTION_DATE] = draft.date
-        saved[CORRECTION_TIME] = draft.time
+        saved[CORRECTION_TYPED_VERSION] = CORRECTION_VERSION
+        saved[CORRECTION_ORIGINAL_DATE] = draft.originalDate.toString()
+        saved[CORRECTION_ORIGINAL_OCCURRED_AT] = draft.originalOccurredAt?.toString()
+        saved[CORRECTION_ZONE] = draft.zone.id
+        saved[CORRECTION_SELECTED_DATE] = draft.selectedDate.toString()
+        saved[CORRECTION_SELECTED_TIME] = draft.selectedTime?.toString()
+        saved[CORRECTION_TIME_CHANGED] = draft.timeChanged
+        saved.remove<String>(CORRECTION_DATE)
+        saved.remove<String>(CORRECTION_TIME)
     }
 
     private fun persistPending() {
@@ -416,7 +512,18 @@ class HabitsViewModel(
         private const val PENDING_LOGS = "habit_pending_logs"
         private const val SELECTED_DATE = "habit_selected_date"
         private const val CORRECTION_ID = "habit_correction_log_id"
+        private const val CORRECTION_TYPED_VERSION = "habit_correction_typed_version"
+        private const val CORRECTION_ORIGINAL_DATE = "habit_correction_original_date"
+        private const val CORRECTION_ORIGINAL_OCCURRED_AT = "habit_correction_original_occurred_at"
+        private const val CORRECTION_ZONE = "habit_correction_zone"
+        private const val CORRECTION_SELECTED_DATE = "habit_correction_selected_date"
+        private const val CORRECTION_SELECTED_TIME = "habit_correction_selected_time"
+        private const val CORRECTION_TIME_CHANGED = "habit_correction_time_changed"
         private const val CORRECTION_DATE = "habit_correction_date"
         private const val CORRECTION_TIME = "habit_correction_time"
+        private const val CORRECTION_VERSION = 1
+        private val CORRECTION_KEYS = listOf(CORRECTION_ID, CORRECTION_TYPED_VERSION, CORRECTION_ORIGINAL_DATE,
+            CORRECTION_ORIGINAL_OCCURRED_AT, CORRECTION_ZONE, CORRECTION_SELECTED_DATE, CORRECTION_SELECTED_TIME,
+            CORRECTION_TIME_CHANGED, CORRECTION_DATE, CORRECTION_TIME)
     }
 }
