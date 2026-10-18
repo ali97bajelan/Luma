@@ -17,11 +17,15 @@ data class TodoDraft(
 enum class TodoEditorError { LOAD, SAVE, STATUS, DELETE }
 
 /** A status write result carried back to the list or Today surface that opened the editor. */
-data class TodoEditorResult(
+data class TodoActionResult(
     val taskId: UUID,
     val completed: Boolean,
     val resultingRevision: UUID,
 )
+
+enum class TodoUndoOutcome { UNDONE, RETRYABLE_FAILURE, STALE }
+
+typealias TodoEditorResult = TodoActionResult
 
 data class TodoUiState(
     val draft: TodoDraft = TodoDraft(),

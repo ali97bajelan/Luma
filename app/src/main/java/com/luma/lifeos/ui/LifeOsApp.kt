@@ -16,6 +16,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -59,6 +61,7 @@ import com.luma.lifeos.ui.journal.JournalEditorRoute
 import com.luma.lifeos.ui.journal.JournalDetailRoute
 import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.habit.HabitRepository
+import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.ui.habits.HabitsRoute
 import com.luma.lifeos.ui.habits.HabitEditorRoute
 import com.luma.lifeos.ui.habits.HabitDetailRoute
@@ -66,6 +69,11 @@ import com.luma.lifeos.ui.navigation.AppRoutes
 import com.luma.lifeos.ui.navigation.PrimaryDestination
 import com.luma.lifeos.ui.navigation.PrimaryNavigationBar
 import com.luma.lifeos.ui.more.MoreRoute
+import com.luma.lifeos.ui.todo.TODO_ACTION_RESULT_KEY
+import com.luma.lifeos.ui.todo.TodoActionFeedbackHost
+import com.luma.lifeos.ui.todo.TodoEditorRoute
+import com.luma.lifeos.ui.todo.TodoListRoute
+import com.luma.lifeos.ui.todo.encodeActionResult
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.mood.MoodEditorRoute
 import androidx.navigation.NavType
@@ -100,6 +108,7 @@ fun LifeOsApp(
     backup: com.luma.lifeos.domain.backup.BackupService? = null,
     reset: com.luma.lifeos.ui.privacy.AppDataReset? = null,
     habits: HabitRepository,
+    todos: TodoRepository? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -118,6 +127,7 @@ fun LifeOsApp(
     }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val primaryScreen = PrimaryDestination.entries.any { it.route == backStackEntry?.destination?.route }
     fun editEvent(record: LifeEventRecord) {
         if (!record.canEditContent) return
@@ -135,6 +145,7 @@ fun LifeOsApp(
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
     var capturing by rememberSaveable { mutableStateOf(false) }
+    var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
     var captureFabHeight by remember { mutableStateOf(0.dp) }
     val currentRoute = backStackEntry?.destination?.route
     val showCaptureFab = primaryScreen &&
@@ -145,7 +156,11 @@ fun LifeOsApp(
         val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
         navController.navigate(if (target == null) route else "$route?initialTime=$target")
     }
+    fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null) {
+        navController.navigate("task_editor?taskId=${taskId?.toString().orEmpty()}&dueDate=${dueDate?.toString().orEmpty()}")
+    }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (primaryScreen) {
                 PrimaryNavigationBar(
@@ -263,8 +278,49 @@ fun LifeOsApp(
                         PrimaryDestination.MORE -> MoreRoute(
                             onPeoplePlaces = { navController.navigate(AppRoutes.PEOPLE) },
                             onSettings = { navController.navigate(AppRoutes.SETTINGS) },
+                            onTasks = if (todos != null) ({ navController.navigate(AppRoutes.TASKS) }) else null,
                         )
                     }
+                }
+            }
+            if (todos != null) {
+                composable(AppRoutes.TASKS) {
+                    TodoListRoute(
+                        repository = todos,
+                        today = currentDay.date,
+                        restoreGeneration = todoRestoreGeneration,
+                        snackbarHostState = snackbarHostState,
+                        onBack = { navController.popBackStack() },
+                        onAddTask = { openTodoEditor() },
+                        onOpenTask = { taskId -> openTodoEditor(taskId) },
+                    )
+                }
+                composable(
+                    AppRoutes.TASK_EDITOR,
+                    arguments = listOf(
+                        navArgument("taskId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                        navArgument("dueDate") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    ),
+                ) { entry ->
+                    val taskId = entry.arguments?.getString("taskId")?.takeIf(String::isNotEmpty)?.let(UUID::fromString)
+                    val dueDate = entry.arguments?.getString("dueDate")?.takeIf(String::isNotEmpty)?.let(LocalDate::parse)
+                    TodoEditorRoute(
+                        repository = todos,
+                        taskId = taskId,
+                        initialDueDate = dueDate,
+                        onClose = { result ->
+                            if (navController.currentDestination?.route == AppRoutes.TASK_EDITOR) {
+                                if (result != null) {
+                                    navController.previousBackStackEntry?.savedStateHandle?.set(
+                                        TODO_ACTION_RESULT_KEY,
+                                        result.encodeActionResult(),
+                                    )
+                                }
+                                navController.popBackStack()
+                            }
+                        },
+                        restoreGeneration = todoRestoreGeneration,
+                    )
                 }
             }
             composable(AppRoutes.PEOPLE) {
@@ -320,7 +376,12 @@ fun LifeOsApp(
             }
             if (backup != null) composable("settings_backup") {
                 SettingsSectionPage(R.string.settings_backup_title, onBack = { navController.popBackStack() },
-                    screenTag = "screen_settings_backup") { com.luma.lifeos.ui.backup.BackupSettingsCard(backup) }
+                    screenTag = "screen_settings_backup") {
+                    com.luma.lifeos.ui.backup.BackupSettingsCard(backup) {
+                        todoRestoreGeneration += 1
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                    }
+                }
             }
             if (reset != null) composable("privacy") {
                 com.luma.lifeos.ui.privacy.PrivacySettingsRoute(reset, onBack = { navController.popBackStack() })
@@ -441,6 +502,7 @@ fun LifeOsApp(
                         places = places, onCreatePlace = { navController.navigate("place") })
             }
         }
+        TodoActionFeedbackHost(backStackEntry, todos, snackbarHostState, todoRestoreGeneration)
     }
     val browsedDate = selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
     if (capturing) QuickCaptureSheet(browsedDate = browsedDate, onDismiss = { capturing = false }, onMood = { date ->
@@ -449,7 +511,10 @@ fun LifeOsApp(
         openCapture("journal", date)
     }, onMemory = { date ->
         openCapture("memory", date)
-    })
+    }, onTask = if (todos != null) ({
+        capturing = false
+        openTodoEditor()
+    }) else null)
 }
 
 private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {

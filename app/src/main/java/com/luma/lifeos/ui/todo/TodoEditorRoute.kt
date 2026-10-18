@@ -5,6 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,6 +22,7 @@ fun TodoEditorRoute(
     taskId: UUID?,
     initialDueDate: LocalDate?,
     onClose: (TodoEditorResult?) -> Unit,
+    restoreGeneration: Int = 0,
 ) {
     val factory = remember(repository, taskId, initialDueDate) {
         viewModelFactory {
@@ -31,6 +34,14 @@ fun TodoEditorRoute(
     val editor: TodoEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()
     val latestOnClose by rememberUpdatedState(onClose)
+    val handledRestore = rememberSaveable { mutableStateOf(restoreGeneration) }
+
+    LaunchedEffect(restoreGeneration) {
+        if (handledRestore.value != restoreGeneration) {
+            handledRestore.value = restoreGeneration
+            editor.invalidateAfterRestore()
+        }
+    }
 
     LaunchedEffect(state.finished) {
         if (state.finished) latestOnClose(state.result)

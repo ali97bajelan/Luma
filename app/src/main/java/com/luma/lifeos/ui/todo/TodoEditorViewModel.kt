@@ -43,6 +43,7 @@ class TodoEditorViewModel(
     private var baselineRevision: UUID? = saved.uuid(KEY_BASELINE_REVISION)
     private var baselineCompleted = saved[KEY_BASELINE_COMPLETED] ?: false
     private var loadJob: Job? = null
+    private var mutationJob: Job? = null
 
     private val mutableState = MutableStateFlow(
         TodoUiState(
@@ -73,6 +74,15 @@ class TodoEditorViewModel(
 
     fun setDueDate(value: LocalDate?) = change(TodoField.DUE_DATE) { it.copy(dueDate = value) }
 
+    /** Closes this editor without replaying a draft or mutation after archive replacement. */
+    fun invalidateAfterRestore() {
+        if (!state.value.finished) {
+            loadJob?.cancel()
+            mutationJob?.cancel()
+            finish()
+        }
+    }
+
     fun save() {
         val current = state.value
         if (!current.ready || current.busy || current.finished || current.conflict || current.missing) return
@@ -92,7 +102,7 @@ class TodoEditorViewModel(
 
         mutableState.value = current.copy(busy = true, error = null, fieldErrors = emptyMap())
         persistFieldErrors(emptyMap())
-        viewModelScope.launch {
+        mutationJob = viewModelScope.launch {
             try {
                 saveInput(input)
             } catch (failure: Exception) {
@@ -376,7 +386,7 @@ class TodoEditorViewModel(
     private fun executeStatus(pending: PendingOperation) {
         persistPending(pending)
         mutableState.value = state.value.copy(busy = true, error = null, pendingAction = pending.type.label)
-        viewModelScope.launch {
+        mutationJob = viewModelScope.launch {
             try {
                 val task = repository.setCompleted(
                     operationId,
@@ -398,7 +408,7 @@ class TodoEditorViewModel(
     private fun executeDelete(pending: PendingOperation) {
         persistPending(pending)
         mutableState.value = state.value.copy(busy = true, error = null, pendingAction = PendingType.DELETE.label)
-        viewModelScope.launch {
+        mutationJob = viewModelScope.launch {
             try {
                 repository.delete(operationId, requireNotNull(pending.expectedRevision))
                 finish(deleted = true)

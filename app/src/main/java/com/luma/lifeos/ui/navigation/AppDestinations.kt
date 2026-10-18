@@ -10,6 +10,8 @@ internal object AppRoutes {
     const val HABITS = "habits"
     const val REVIEW = "review"
     const val MORE = "more"
+    const val TASKS = "tasks"
+    const val TASK_EDITOR = "task_editor?taskId={taskId}&dueDate={dueDate}"
 
     // Retained as secondary routes so restored back stacks keep resolving.
     const val PEOPLE = "people"

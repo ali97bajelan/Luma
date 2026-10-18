@@ -30,7 +30,8 @@ import java.time.format.FormatStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
-    onMood: (LocalDate?) -> Unit, onJournal: (LocalDate?) -> Unit, onMemory: (LocalDate?) -> Unit) {
+    onMood: (LocalDate?) -> Unit, onJournal: (LocalDate?) -> Unit, onMemory: (LocalDate?) -> Unit,
+    onTask: (() -> Unit)? = null) {
     var useBrowsedDate by rememberSaveable(browsedDate) { mutableStateOf(false) }
     val captureDate = browsedDate.takeIf { useBrowsedDate }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -39,6 +40,7 @@ fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.quick_capture), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.capture_intro))
+            Text(stringResource(R.string.capture_record_section), style = MaterialTheme.typography.titleSmall)
             if (browsedDate != null) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = !useBrowsedDate, onClick = { useBrowsedDate = false },
@@ -58,6 +60,15 @@ fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
             }
             Button(onClick = { onMemory(captureDate) }, modifier = Modifier.fillMaxWidth().testTag("capture_memory")) {
                 Text(stringResource(R.string.capture_memory))
+            }
+            onTask?.let { action ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.capture_task_section), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.capture_task_description), style = MaterialTheme.typography.bodySmall)
+                    Button(onClick = action, modifier = Modifier.fillMaxWidth().testTag("capture_task")) {
+                        Text(stringResource(R.string.capture_task))
+                    }
+                }
             }
             TextButton(onClick = onDismiss, modifier = Modifier.testTag("capture_close")) {
                 Text(stringResource(R.string.close))

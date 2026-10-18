@@ -30,6 +30,7 @@ import com.luma.lifeos.R
 internal fun MoreRoute(
     onPeoplePlaces: () -> Unit,
     onSettings: () -> Unit,
+    onTasks: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().testTag("screen_more")
@@ -41,6 +42,15 @@ internal fun MoreRoute(
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.semantics { heading() },
         )
+        onTasks?.let { action ->
+            MoreEntry(
+                title = R.string.more_tasks,
+                description = R.string.more_tasks_description,
+                icon = R.drawable.ic_nav_tasks,
+                testTag = "more_tasks",
+                onClick = action,
+            )
+        }
         MoreEntry(
             title = R.string.more_people_places,
             description = R.string.more_people_places_description,
