@@ -409,7 +409,8 @@ class HabitCaptureFlowTest {
         val logBounds = log.fetchSemanticsNode().boundsInRoot
         assertEquals(true, openBounds.height / density >= 48f)
         assertEquals(true, logBounds.height / density >= 48f)
-        assertEquals(true, openBounds.bottom <= logBounds.top || logBounds.bottom <= openBounds.top)
+        assertEquals(true, openBounds.bottom <= logBounds.top || logBounds.bottom <= openBounds.top ||
+            openBounds.right <= logBounds.left || logBounds.right <= openBounds.left)
         assertEquals(true, open.fetchSemanticsNode().config[SemanticsProperties.ContentDescription].joinToString().contains("Read"))
         assertEquals(true, log.fetchSemanticsNode().config[SemanticsProperties.ContentDescription].joinToString().contains("Log one"))
     }

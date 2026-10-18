@@ -26,6 +26,12 @@
     <string name="select_date">انتخاب تاریخ</string>
     <string name="cancel">لغو</string>
     <string name="retry">تلاش دوباره</string>
+    <string name="today_no_entries">هنوز چیزی ثبت نشده</string>
+    <string name="today_capture_mood">حال‌وهوا</string>
+    <string name="today_capture_journal">یادداشت</string>
+    <string name="today_capture_memory">خاطره</string>
+    <string name="today_recent_entries">ثبت‌های اخیر</string>
+    <string name="today_capture_when">این مورد را برای چه زمانی ثبت می‌کنید؟</string>
     <string name="today_loading">در حال بارگذاری روز شما…</string>
     <string name="today_selected_date">رویدادهای %1$s</string>
     <string name="today_empty_heading">هنوز رویدادی برای این روز ثبت نشده</string>

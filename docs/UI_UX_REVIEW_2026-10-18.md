@@ -77,6 +77,10 @@ The zero-entry summary occupies roughly 200 dp vertically, followed by a large h
 
 **Implementation starting points:** [TodayScreen.kt](../app/src/main/java/com/luma/lifeos/ui/today/TodayScreen.kt), [DailySummaryCard.kt](../app/src/main/java/com/luma/lifeos/ui/summary/DailySummaryCard.kt), [TodayHabitsCard.kt](../app/src/main/java/com/luma/lifeos/ui/habits/TodayHabitsCard.kt).
 
+**Implementation update — 18 October 2026:** Today now follows the proposed order, with wrapping Mood / Journal / Memory shortcuts, a compact scheduled-habit preview, a recent-entry heading and the daily summary collapsed below entries. Empty days show “No entries yet” beside the shortcuts. Past-day shortcuts explicitly offer current time or the selected date. Summary expansion survives entry updates and retries; habit logging, retry and undo remain available. New copy is translated into Persian and French.
+
+**Implementation validation:** Debug and Android-test APK builds passed, along with 605 JVM tests and 35 targeted emulator tests. The 1080 × 2400 / 420-dpi emulator at font scale 1.0 shows capture, one scheduled habit and the recent-entry heading without scrolling. Tests cover capture/date choices at font scale 1.3 with RTL, separate habit actions at scale 2.0, actual editor navigation/date initialization, persistence, summary updates/retry, and habit logging/undo. Instrumentation ran directly through adb because Gradle's offline test launcher lacked a cached UTP dependency. App lint still reports the two pre-existing `ImpliedQuantity` errors in the Persian and French `habit_unit_default` plurals.
+
 ### UX-02 — Counts describe different things without explaining the distinction
 
 **Evidence:** [Today: zero entries and one habit log](ux-review-2026-10-18/02-today.png), [Timeline: zero events and one habit completion](ux-review-2026-10-18/03-timeline.png). Observed wording, supported by the separate entry and habit models in source.

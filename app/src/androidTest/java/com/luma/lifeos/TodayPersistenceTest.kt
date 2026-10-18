@@ -1,8 +1,11 @@
 package com.luma.lifeos
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
+import java.time.format.FormatStyle
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -45,7 +48,7 @@ class TodayPersistenceTest {
         val current = event(today, "Current day record")
         val previous = event(today.minusDays(1), "Previous day record")
         runBlocking { repository.upsert(current); repository.upsert(previous) }
-        compose.setContent { LifeOsTheme { LifeOsApp(repository, RoomMoodRepository(database), com.luma.lifeos.data.repository.RoomJournalRepository(database), com.luma.lifeos.data.repository.RoomMemoryRepository(database), com.luma.lifeos.data.repository.RoomPersonRepository(database), com.luma.lifeos.data.repository.RoomPlaceRepository(database), com.luma.lifeos.data.repository.RoomPhotoRepository(database, com.luma.lifeos.data.media.ManagedPhotoFiles(photoDirectory)) { error("No fixture source") }, com.luma.lifeos.data.repository.RoomTimelineRepository(database), habits = com.luma.lifeos.data.repository.RoomHabitRepository(database)) } }
+        showApp()
         awaitText("Current day record")
         compose.onNodeWithText("Previous day record").assertDoesNotExist()
         compose.onNodeWithTag("day_previous").performClick()
@@ -56,11 +59,52 @@ class TodayPersistenceTest {
         compose.onNodeWithText("Previous day record").assertDoesNotExist()
         runBlocking { repository.delete(previous.id) }
         compose.waitUntil(5_000) {
-            compose.onAllNodesWithText("No events for this day yet").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodes(hasTestTag("today_empty")).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithTag("today_empty").assertIsDisplayed()
         compose.onNodeWithTag("day_today").performClick()
         awaitText("Current day record")
+    }
+
+    @Test fun inlineCaptureOpensEachEditorAndPassesTheExplicitDateChoice() {
+        showApp()
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        compose.onNodeWithTag("day_previous").performClick()
+        listOf("mood", "journal", "memory").forEach { type ->
+            compose.onNodeWithTag("today_capture_$type").performClick()
+            compose.onNodeWithTag("today_capture_selected_date").performClick()
+            compose.onNodeWithTag("screen_$type").assertIsDisplayed()
+            compose.onNodeWithTag("mood_date").assertTextEquals(
+                yesterday.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
+            compose.onNodeWithTag("${type}_cancel").performClick()
+            compose.onNodeWithTag("screen_today").assertIsDisplayed()
+        }
+        compose.onNodeWithTag("day_today").performClick()
+        listOf("mood", "journal", "memory").forEach { type ->
+            compose.onNodeWithTag("today_capture_$type").performClick()
+            compose.onNodeWithTag("today_capture_date_dialog").assertDoesNotExist()
+            compose.onNodeWithTag("screen_$type").assertIsDisplayed()
+            compose.onNodeWithTag("mood_date").assertTextEquals(
+                today.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
+            compose.onNodeWithTag("${type}_cancel").performClick()
+        }
+    }
+
+    private fun showApp() {
+        compose.setContent {
+            LifeOsTheme {
+                LifeOsApp(repository, RoomMoodRepository(database),
+                    com.luma.lifeos.data.repository.RoomJournalRepository(database),
+                    com.luma.lifeos.data.repository.RoomMemoryRepository(database),
+                    com.luma.lifeos.data.repository.RoomPersonRepository(database),
+                    com.luma.lifeos.data.repository.RoomPlaceRepository(database),
+                    com.luma.lifeos.data.repository.RoomPhotoRepository(database,
+                        com.luma.lifeos.data.media.ManagedPhotoFiles(photoDirectory)) { error("No fixture source") },
+                    com.luma.lifeos.data.repository.RoomTimelineRepository(database),
+                    habits = com.luma.lifeos.data.repository.RoomHabitRepository(database))
+            }
+        }
     }
 
     private fun awaitText(text: String) {

@@ -52,7 +52,7 @@ class DailySummaryFlowTest {
         }
     }
     @Test fun realMetricsRefreshAndOmitUnavailableMoodMeans() {
-        show(); awaitText("summary_records", "2")
+        show(); openSummary(); awaitText("summary_records", "2")
         compose.onNodeWithTag("summary_memories").assertDoesNotExist()
         awaitText("summary_mood", "4/5", substring = true)
         compose.onNodeWithTag("summary_energy").assertDoesNotExist()
@@ -65,6 +65,7 @@ class DailySummaryFlowTest {
         awaitText("summary_mood", "5/5", substring = true)
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("day_previous"))
         compose.onNodeWithTag("day_previous").performClick()
+        openSummary()
         awaitText("summary_records", "0")
         compose.onNodeWithTag("summary_mood").assertDoesNotExist()
         compose.onNodeWithTag("summary_energy").assertDoesNotExist()
@@ -81,6 +82,7 @@ class DailySummaryFlowTest {
             }
         }
         show(repository)
+        openSummary()
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("daily_summary_error").fetchSemanticsNodes().isNotEmpty() }
         scrollToTag("event_$journal"); compose.onNodeWithTag("event_$journal").performClick()
         compose.runOnIdle { assertEquals(journal, opened) }
@@ -103,6 +105,7 @@ class DailySummaryFlowTest {
             events.upsert(parent.copy(occurredAt = day.minusDays(1).atStartOfDay(zone).toInstant()))
         }
         show()
+        openSummary()
         awaitText("summary_usage", "Saved foreground usage: 1 min · apps shown: 1")
         compose.onNodeWithTag("summary_usage_label_org.example.reader").assertDoesNotExist()
         scrollToTag("summary_details"); compose.onNodeWithTag("summary_details").performClick()
@@ -121,6 +124,7 @@ class DailySummaryFlowTest {
         }
         val id = runBlocking { db.lifeEvents().findBySource(EventSource.USAGE_STATS, usage.sourceReference)!!.id }
         show()
+        openSummary()
         awaitText("summary_records", "2")
         scrollToTag("today_summary")
         compose.onNodeWithText("2 events this day").assertIsDisplayed()
@@ -130,6 +134,10 @@ class DailySummaryFlowTest {
         scrollToTag("today_empty")
         compose.onNodeWithTag("event_$id").assertDoesNotExist()
         assertNotNull(runBlocking { db.lifeEvents().get(id) })
+    }
+    private fun openSummary() {
+        scrollToTag("today_daily_summary")
+        compose.onNodeWithTag("today_daily_summary").performClick()
     }
     private fun scrollToTag(tag: String) {
         compose.waitUntil(5_000) {

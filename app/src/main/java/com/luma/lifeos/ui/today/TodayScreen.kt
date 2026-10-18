@@ -5,11 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,12 +23,11 @@ import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.ui.timeline.DayNavigation
 import com.luma.lifeos.ui.timeline.EventCard
-import com.luma.lifeos.ui.timeline.label
+import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.ui.summary.DailySummaryState
 import com.luma.lifeos.ui.summary.DailySummaryCard
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.FormatStyle
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.TodayHabitsCard
 import java.util.UUID
@@ -60,43 +56,44 @@ fun TodayScreen(
     onHabitRetryLog: (UUID) -> Unit = {},
     onHabitRetry: () -> Unit = {},
     onHabitUndo: (UUID) -> Unit = {},
+    onCapture: (EventType, LocalDate?) -> Unit = { _, _ -> },
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(screenTag),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
-                val dayHeading = if (date == LocalDate.now(zone)) stringResource(heading) else
-                    stringResource(R.string.today_selected_date,
-                        date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
-                Text(dayHeading, style = MaterialTheme.typography.headlineLarge)
+        item(key = "header") {
+            Column {
+                Text(stringResource(heading), style = MaterialTheme.typography.titleLarge)
                 DayNavigation(date, onSelectDate, onToday)
             }
         }
-        summaryState?.let { item { DailySummaryCard(it, onSummaryRetry) } }
-        habitsState?.let { item {
+        item(key = "capture") {
+            TodayCaptureActions(date, zone, empty = state == TodayUiState.Empty, onCapture = onCapture)
+        }
+        habitsState?.let { item(key = "habits") {
             TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry)
         } }
+        item(key = "recent_entries") {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.testTag("today_recent_entries"))
+                if (state is TodayUiState.Data) {
+                    Text(pluralStringResource(R.plurals.daily_events, state.events.size, state.events.size),
+                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("today_summary"))
+                }
+            }
+        }
         when (state) {
-            TodayUiState.Loading -> item {
+            TodayUiState.Loading -> item(key = "loading") {
                 Column(Modifier.testTag("today_loading"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     CircularProgressIndicator()
                     Text(stringResource(R.string.today_loading))
                 }
             }
-            TodayUiState.Empty -> item {
-                Card(Modifier.fillMaxWidth().testTag("today_empty")) {
-                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(stringResource(R.string.today_empty_heading), style = MaterialTheme.typography.titleLarge)
-                        Text(stringResource(R.string.today_empty_body))
-                        Text(stringResource(R.string.local_first), color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-            TodayUiState.Error -> item {
+            TodayUiState.Empty -> Unit
+            TodayUiState.Error -> item(key = "error") {
                 Column(Modifier.testTag("today_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.today_error))
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("today_retry")) {
@@ -105,17 +102,6 @@ fun TodayScreen(
                 }
             }
             is TodayUiState.Data -> {
-                item {
-                    Column(Modifier.fillMaxWidth().testTag("today_summary"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(pluralStringResource(R.plurals.daily_events, state.events.size, state.events.size),
-                                style = MaterialTheme.typography.titleLarge)
-                            if (summaryState !is DailySummaryState.Data) EventType.entries.forEach { type ->
-                                state.counts[type]?.let { count ->
-                                    Text(stringResource(R.string.event_type_count, stringResource(type.label()), count))
-                                }
-                            }
-                    }
-                }
                 items(state.events, key = { it.id.toString() }) { event ->
                     val record = state.records[event.id] ?: LifeEventRecord(event, state.moods[event.id],
                         state.journals[event.id], state.memories[event.id], state.people[event.id].orEmpty(), state.places[event.id])
@@ -130,5 +116,10 @@ fun TodayScreen(
                 }
             }
         }
+        summaryState?.let { summary -> item(key = "daily_summary") {
+            DetailsDisclosure(R.string.summary_heading, "today_daily_summary", keepTitle = true) {
+                DailySummaryCard(summary, onSummaryRetry)
+            }
+        } }
     }
 }

@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.habits
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -157,28 +158,42 @@ internal fun HabitRow(
     val logLabel = stringResource(R.string.habit_log_accessibility, day.habit.name, logUnit)
     Card(Modifier.fillMaxWidth().testTag("habit_row_${day.habit.id}")) {
         Column(Modifier.fillMaxWidth().padding(if (compact) 12.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_open_${day.habit.id}")
-                .semantics { contentDescription = "${day.habit.name}. $openLabel" }) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(day.habit.name, style = MaterialTheme.typography.titleMedium)
-                    ProgressText(day)
-                    Text(stringResource(stateLabel(day)), style = MaterialTheme.typography.bodyMedium)
-                    if (day.skipRemaining && day.count > 0) Text(stringResource(R.string.habit_remaining_skipped),
-                        style = MaterialTheme.typography.bodySmall)
-                    pendingSchedule?.let { schedule ->
-                        val message = if (day.date.isBefore(day.habit.start)) R.string.habit_effective_start else R.string.habit_effective_tomorrow
-                        Text(stringResource(message,
-                            schedule.effectiveFrom.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+            val open: @Composable () -> Unit = {
+                TextButton(onClick = onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_open_${day.habit.id}")
+                    .semantics { contentDescription = "${day.habit.name}. $openLabel" }) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(day.habit.name, style = MaterialTheme.typography.titleMedium)
+                        ProgressText(day)
+                        Text(stringResource(stateLabel(day)), style = MaterialTheme.typography.bodyMedium)
+                        if (day.skipRemaining && day.count > 0) Text(stringResource(R.string.habit_remaining_skipped),
                             style = MaterialTheme.typography.bodySmall)
+                        pendingSchedule?.let { schedule ->
+                            val message = if (day.date.isBefore(day.habit.start)) R.string.habit_effective_start else R.string.habit_effective_tomorrow
+                            Text(stringResource(message,
+                                schedule.effectiveFrom.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+                                style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
             }
-            val disabled = row.disabledReason
-            if (disabled != null) Text(stringResource(disabledLabel(disabled)), style = MaterialTheme.typography.bodySmall)
-            Button(onClick = onLog, enabled = row.canLog, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                .testTag("habit_log_${day.habit.id}")
-                .semantics { contentDescription = logLabel }) {
-                Text(stringResource(R.string.habit_log))
+            val log: @Composable () -> Unit = {
+                Button(onClick = onLog, enabled = row.canLog, modifier = Modifier.then(if (compact) Modifier else Modifier.fillMaxWidth()).heightIn(min = 48.dp)
+                    .testTag("habit_log_${day.habit.id}")
+                    .semantics { contentDescription = logLabel }) {
+                    Text(stringResource(R.string.habit_log))
+                }
+            }
+            if (compact) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f)) { open() }
+                    log()
+                }
+                row.disabledReason?.let { Text(stringResource(disabledLabel(it)), style = MaterialTheme.typography.bodySmall) }
+            } else {
+                open()
+                row.disabledReason?.let { Text(stringResource(disabledLabel(it)), style = MaterialTheme.typography.bodySmall) }
+                log()
             }
             pending.forEach { action ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,

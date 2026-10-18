@@ -123,6 +123,11 @@ fun LifeOsApp(
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
     var capturing by rememberSaveable { mutableStateOf(false) }
+    fun openCapture(route: String, date: LocalDate?) {
+        capturing = false
+        val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
+        navController.navigate(if (target == null) route else "$route?initialTime=$target")
+    }
     Scaffold(
         bottomBar = {
             if (primaryScreen) Column {
@@ -185,6 +190,12 @@ fun LifeOsApp(
                             onHabits = { navController.navigate(AppRoutes.HABITS) },
                             onCreateHabit = { navController.navigate("habit_editor") },
                             onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                            onCapture = { type, date -> openCapture(when (type) {
+                                EventType.MOOD -> "mood"
+                                EventType.JOURNAL -> "journal"
+                                EventType.MEMORY -> "memory"
+                                else -> error("Unsupported capture type: $type")
+                            }, date) },
                         )
                         PrimaryDestination.HABITS -> HabitsRoute(
                             habits,
@@ -395,11 +406,6 @@ fun LifeOsApp(
         }
     }
     val browsedDate = selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
-    fun openCapture(route: String, date: LocalDate?) {
-        capturing = false
-        val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
-        navController.navigate(if (target == null) route else "$route?initialTime=$target")
-    }
     if (capturing) QuickCaptureSheet(browsedDate = browsedDate, onDismiss = { capturing = false }, onMood = { date ->
         openCapture("mood", date)
     }, onJournal = { date ->

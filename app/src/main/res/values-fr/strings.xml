@@ -26,6 +26,12 @@
     <string name="select_date">Choisir une date</string>
     <string name="cancel">Annuler</string>
     <string name="retry">Réessayer</string>
+    <string name="today_no_entries">Aucune entrée pour le moment</string>
+    <string name="today_capture_mood">Humeur</string>
+    <string name="today_capture_journal">Journal</string>
+    <string name="today_capture_memory">Souvenir</string>
+    <string name="today_recent_entries">Entrées récentes</string>
+    <string name="today_capture_when">Quand souhaitez-vous enregistrer cette entrée ?</string>
     <string name="today_loading">Chargement de votre journée…</string>
     <string name="today_selected_date">Entrées du %1$s</string>
     <string name="today_empty_heading">Aucun événement pour cette journée pour le moment</string>

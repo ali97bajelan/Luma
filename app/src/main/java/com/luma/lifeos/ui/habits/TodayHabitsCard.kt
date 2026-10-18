@@ -39,16 +39,16 @@ fun TodayHabitsCard(
     onRetry: () -> Unit,
 ) {
     Card(Modifier.fillMaxWidth().testTag("today_habits_card")) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f))
                 TextButton(onClick = onViewAll, modifier = Modifier.heightIn(min = 48.dp).testTag("habits_view_all")) {
                     Text(stringResource(R.string.habit_view_all))
                 }
             }
             state.trackingZone?.let { zone ->
-                Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.bodySmall)
                 if (zone != deviceZone || (state.deviceDate != null && state.deviceDate != LocalDate.now(zone))) {
                     Text(stringResource(R.string.habit_tracking_elsewhere,
                         LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), zone.id),

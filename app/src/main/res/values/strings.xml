@@ -26,6 +26,12 @@
     <string name="select_date">Select date</string>
     <string name="cancel">Cancel</string>
     <string name="retry">Try again</string>
+    <string name="today_no_entries">No entries yet</string>
+    <string name="today_capture_mood">Mood</string>
+    <string name="today_capture_journal">Journal</string>
+    <string name="today_capture_memory">Memory</string>
+    <string name="today_recent_entries">Recent entries</string>
+    <string name="today_capture_when">When would you like to record this?</string>
     <string name="today_loading">Loading your day…</string>
     <string name="today_selected_date">Entries for %1$s</string>
     <string name="today_empty_heading">No events for this day yet</string>
