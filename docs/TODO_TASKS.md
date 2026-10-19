@@ -126,3 +126,23 @@ unverified. Native SAF export/restore, app-data reset, CRUD isolation and the
 10,000-task benchmark passed. TD07 stays in progress until the suite failures and
 TalkBack gap are fixed or explicitly accepted. Only disposable `emulator-5562`
 was used; the user's existing emulator and saved Luma data were not touched.
+
+## TD07 follow-up checks
+
+The final full APK runs have **16 unresolved failures**: 14 app UI cases and two
+Timeline persistence ordering/page cases. The acceptance record lists each test,
+its observed assertion/timeout and the next diagnostic check. No root cause has
+been established and no failure is accepted as an exception.
+
+- Reproduce the app failures by class and the Timeline failures individually;
+  capture semantics/state and compare isolated runs with full-suite runs.
+- Verify the underlying product/test contract before changing code or assertions,
+  then rerun affected classes and both full APK suites.
+- Decide whether Gradle's connected-test path must be restored or the direct ADB
+  APK workflow is the documented supported path; the UTP host-output artifact is
+  currently unavailable in the local cache.
+- Complete native TalkBack spoken feedback and focus traversal, plus the
+  remaining PARTIAL/NOT RUN acceptance checks listed in the acceptance record.
+
+TD07 remains **In progress** until these checks are resolved or explicitly
+accepted and the remaining acceptance evidence is recorded.

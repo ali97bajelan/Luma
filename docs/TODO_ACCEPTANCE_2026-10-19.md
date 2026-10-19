@@ -186,6 +186,77 @@ in the available repository/cache. The focused app tests and complete app/data
 test APKs were therefore run directly using `adb` on the disposable emulator.
 The full app and data suites have the failures listed above.
 
+## Failure register and checks still needed
+
+This register records the observed failures from the final full APK runs. It is
+not a diagnosis: none of these failures has yet been reproduced individually or
+traced to product code, test assumptions, fixture state or environment. They are
+**unresolved, not accepted exceptions**. The full logs linked above contain the
+complete stack traces.
+
+### Full data instrumentation: 2 failures
+
+| Test | Observed failure | Follow-up |
+| --- | --- | --- |
+| `TimelinePersistenceTest.shortAndMissingUsageAreExcludedBeforePagingWhileLongUsageRemains` (`TimelinePersistenceTest.kt:139`) | Expected IDs `[201, 300]`; received `[300, 201]`. | Check the test's ordering contract against the Room query and fixture timestamps; run the case alone and the class to determine whether ordering is deterministic. |
+| `TimelinePersistenceTest.indexedMixedPagesAreBoundedDeterministicAndExcludeOtherDays` (`TimelinePersistenceTest.kt:45`) | Expected first-page IDs `[0..49]`; received `[2000, 1999, …, 1951]`. | Check fixture timestamps/IDs against the intended sort direction and page contract; run the case alone and the class, then rerun the full data APK. |
+
+These are Timeline persistence checks and do not exercise Tasks. Do not change
+the expected order until the Timeline contract and fixture setup have been
+compared with the actual query.
+
+### Full app instrumentation: 14 failures
+
+| Test | Observed failure | Follow-up |
+| --- | --- | --- |
+| `PeopleCaptureTest.journalKeepsDraftAcrossNewPeopleAndHistoryReflectsExplicitRemoval` (`PeopleCaptureTest.kt:21`, helper line 103) | `performScrollTo()` could not find test tag `people_picker_create`. | Capture the active screen's semantics tree; check route/state and whether the picker action's tag or test setup changed. |
+| `PlaceCaptureTest.journalDraftSurvivesPlaceCreationAndSelectionCanBeRenamedAndCleared` (`PlaceCaptureTest.kt:20`, helper line 103) | `performScrollTo()` could not find test tag `place_picker_create`. | Capture the active screen's semantics tree; check route/state and whether the picker action's tag or test setup changed. |
+| `HabitCaptureFlowTest.noHabitAndNoHabitScheduledAreDifferentStatesAndFutureLogIsDisabled` (`HabitCaptureFlowTest.kt:164,179`) | The assertion for a disabled future log could not find tag `habit_log_64abb4d9-b7ce-4fa5-9bfe-641aee7e64c0`. | Inspect the rendered semantics and scheduled-habit state for this fixture; verify whether the row is absent or its test identifier changed. |
+| `HealthSettingsFlowTest.revokedAccessKeepsSavedStepsAndManagementUsable` (`HealthSettingsFlowTest.kt:84`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Health Connect test state at timeout; rerun the case in isolation. |
+| `HealthSettingsFlowTest.missingUnsupportedAndRevokedDataLeaveCoreSettingsUsable` (`HealthSettingsFlowTest.kt:65`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Health Connect test state at timeout; rerun the case in isolation. |
+| `HealthSettingsFlowTest.permissionStatusImportsCorrectionsAndOptOutPersistAcrossRecreation` (`HealthSettingsFlowTest.kt:45`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Health Connect test state at timeout; rerun the case in isolation. |
+| `WeeklyReviewFlowTest.overviewKeepsMissingAndRecordedZeroDistinct` (`WeeklyReviewFlowTest.kt:161`) | Expected text containing `Unavailable`; the `review_overview_mood` node contained `Mood, No check-ins saved for this week`. | Compare the expected empty-state copy with the current Review contract and fixture; confirm which state the test is meant to assert. |
+| `WeeklyReviewFlowTest.sectionSelectionRestoresWithoutChangingTheSelectedWeek` (`WeeklyReviewFlowTest.kt:260`) | Click failed because test tag `review_sources_entries` was absent. | Capture the rendered semantics and selected Review section/week before the click; check fixture state and tag contract. |
+| `WeeklyReviewFlowTest.overviewShowsSavedSamplesActivitySourceAndLinkedCatalogCounts` (`WeeklyReviewFlowTest.kt:196`) | Expected text containing `Unavailable`; the `review_overview_usage` node contained `Saved app usage, Loading saved data`. | Inspect the usage source state and loading completion in the fixture; determine whether this is a product state issue, async wait issue or stale assertion. |
+| `DailySummaryFlowTest.realMetricsRefreshAndOmitUnavailableMoodMeans` (`DailySummaryFlowTest.kt:60`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and metric source state at timeout; rerun the case in isolation. |
+| `UsageSettingsFlowTest.accessManagementIsAvailableWhileImportsAreOffAndExplanationCanBeCancelled` (`UsageSettingsFlowTest.kt:48`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
+| `UsageSettingsFlowTest.importFailuresKeepAccessRefreshAndRetentionControlsUsable` (`UsageSettingsFlowTest.kt:105`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
+| `UsageSettingsFlowTest.emptyAndRevokedAccessDoNotProduceZeroUsageOrDiscardSavedData` (`UsageSettingsFlowTest.kt:86`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
+| `UsageSettingsFlowTest.optionalAccessImportAndOptOutKeepDurableDailyValues` (`UsageSettingsFlowTest.kt:57`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
+
+### TD07 follow-up checklist
+
+- [ ] Rerun each failing app test by class on a freshly cleared disposable API 36
+  emulator. Save the awaited text or semantics tree and relevant logcat at the
+  point of failure; compare isolated runs with the full-suite run to check for
+  order dependence or state leakage.
+- [ ] Rerun both Timeline failures individually and as a class. Trace expected
+  ordering and page membership through fixture timestamps, SQL ordering and the
+  documented Timeline contract before deciding whether code or assertions need
+  a change.
+- [ ] For each result, classify the evidence as a product regression, a stale
+  test/fixture contract, an asynchronous wait/setup issue or an environment
+  issue. Fix product defects; change tests only after verifying the intended
+  behavior. Then rerun the affected class and the complete app/data APK suites.
+- [ ] Resolve whether the Gradle-managed connected-test task is required in this
+  environment: make its uncached UTP host-output dependency available, or record
+  the approved direct-ADB APK workflow as the supported check. Rerun the chosen
+  workflow and preserve its output.
+- [ ] With native TalkBack active, verify spoken labels/actions and traversal
+  across Tasks list rows, completion/reopen, editor, validation, dialogs and
+  after row removal. The current evidence only confirms that the initial focus
+  ring appeared and that three automated cases passed while TalkBack was active.
+- [ ] Finish the remaining partial/not-run acceptance checks: native layout and
+  target-size combinations; due-date behavior through device-zone travel and
+  dirty-state combinations; failed-write/retry states; retained-route
+  invalidation after restore; remaining editor/list restoration states; and
+  OS permission/network isolation checks. Update the criteria matrix from the
+  resulting evidence.
+- [ ] Keep TD07 **In progress** until the suite failures are fixed or explicitly
+  accepted, all required acceptance gaps have evidence or explicit acceptance,
+  and the chosen integrated test workflow is recorded. No exception is accepted
+  by this register.
+
 **PASS — task CRUD isolation and 10,000-task scale:**
 
 `TodoIsolationAcceptanceTest` seeds an event, mood entry, habit and habit log,
