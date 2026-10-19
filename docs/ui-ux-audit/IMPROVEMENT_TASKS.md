@@ -1,6 +1,6 @@
 # Luma prioritized improvement tasks
 
-Proposed backlog, 19 October 2026. **Nothing in this list has been implemented or verified by this audit.** Implement only after the owner's approval. IDs belong to this audit; older `UX-01` etc. in 13–18 October documents are a different numbering scheme. Refer to tasks as `ui-ux-audit/UX-NN` in future work to prevent collisions.
+Prioritized backlog, 19 October 2026. Some tasks are now implemented; their status and verification are recorded under each task. Work on the remaining tasks within their stated scope. IDs belong to this audit; older `UX-01` etc. in 13–18 October documents are a different numbering scheme. Refer to tasks as `ui-ux-audit/UX-NN` in future work to prevent collisions.
 
 Each task maps to the same-numbered finding in [AUDIT_REPORT.md](AUDIT_REPORT.md). [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) supplies exact presentation/copy conventions. Priority: P0 = critical task integrity/release gate; P1 = major usability/accessibility/recovery; P2 = consistency, friction and localized polish; P3 = optional refinement. A validation task does not claim the proposed defect has been observed.
 
@@ -34,11 +34,13 @@ Shared-file coordination: avoid concurrent edits to `LifeOsApp.kt`, locale resou
 ### UX-33 — Diagnose the recorded full-suite failures before release acceptance
 
 - **Problem / impact:** F33/H; latest task acceptance reports 14 app and 2 data failures. A passing older README record is not a current release baseline.
-- **Affected:** failure register in `docs/TODO_ACCEPTANCE_2026-10-19.md:189`, affected capture/habits/Review/summary/usage instrumentation and `TimelinePersistenceTest`; current implementation and fixtures only if diagnosis warrants it.
+- **Affected:** failure cause/result register and full APK runs in `docs/TODO_ACCEPTANCE_2026-10-19.md`; affected capture/habits/Review/summary/usage instrumentation and `TimelinePersistenceTest`; current implementation and fixtures only if diagnosis warrants it.
 - **Solution:** reproduce named failures individually/by class on a clean disposable application ID; capture awaited state/semantics and logs without private content. Compare actual product contract, fixture setup and timing before deciding code vs test change. Verify newest-first Timeline order from requirements before changing assertions. Maintain a cause/result matrix in the future implementation evidence.
 - **Complexity / dependencies:** Medium, may split diagnosed product defects into follow-up tasks; none. A release acceptance gate, not proof of 16 product defects.
 - **Acceptance:** every reported failure has a reproduced/classified cause or explicit unresolved block; focused corrections have meaningful regression evidence; full app/data suites rerun with counts, skips, build identity and environment recorded. No failure is silently waived or fixed by arbitrary delays/text replacement.
-- **Verification:** exact classes/commands from the existing register, then complete app/data instrumentation on disposable data. Keep reset/provider testing separate; never clear the owner's installed application to obtain a clean fixture.
+- **Status:** Complete (19 October 2026).
+- **Results:** The 14 app and 2 data baseline failures were classified and corrected against the current UI/data contracts. The root causes were stale state/copy/order assertions, missing accessible no-data feedback, and capture controls becoming actionable before disclosure state initialization. Two additional full-suite timing issues in locale restoration and saved-entry observation were also corrected with condition-based waits. UX-33 ends with clean full app/data APK runs; TD07 remains In progress for its separate TalkBack and acceptance gaps.
+- **Verification:** On disposable API 36 `emulator-5562`, app instrumentation passed 169/169 and data instrumentation passed 145/145 with no skipped tests. The two Timeline cases also passed individually and as a class after aligning assertions with newest-first SQL order. Final APK hashes, durations, commands and the failure cause/result matrix are recorded in [TODO_ACCEPTANCE_2026-10-19.md](../TODO_ACCEPTANCE_2026-10-19.md). Gradle-managed `connectedDebugAndroidTest` remains unavailable because its UTP host-output artifact is uncached; UX-33 used the full direct-ADB APK workflow on disposable data.
 
 ## P1 — high-impact usability, trust and accessibility
 

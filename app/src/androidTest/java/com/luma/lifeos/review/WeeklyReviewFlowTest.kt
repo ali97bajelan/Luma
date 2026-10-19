@@ -22,6 +22,9 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.SemanticsActions
 import kotlinx.coroutines.flow.flowOf
 import com.luma.lifeos.ui.review.*
+import com.luma.lifeos.ui.integrations.IntegrationAccessState
+import com.luma.lifeos.ui.integrations.IntegrationAvailability
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import java.time.*
 import java.util.Locale
@@ -158,14 +161,14 @@ class WeeklyReviewFlowTest {
         compose.setContent { LifeOsTheme { WeeklyReviewRoute(repository, today, zone,
             onSources = { _, _ -> }, onEvent = {}) } }
         scroll("review_overview_mood")
-        compose.onNodeWithTag("review_overview_mood").assertTextContains("Unavailable", substring = true)
+        compose.onNodeWithTag("review_overview_mood").assertTextContains("No check-ins saved for this week", substring = true)
         scroll("review_overview_usage")
         compose.onNodeWithTag("review_overview_usage").assertTextContains("0", substring = true)
         scroll("review_overview_usage_coverage")
         compose.onNodeWithTag("review_overview_usage_coverage").assertTextContains("1", substring = true)
         compose.onNodeWithTag("review_overview_usage_coverage").assertTextContains("Incomplete", substring = true)
         scroll("review_overview_activity")
-        compose.onNodeWithTag("review_overview_activity").assertTextContains("Unavailable", substring = true)
+        compose.onNodeWithTag("review_overview_activity").assertTextContains("No saved measurements for this period", substring = true)
         scroll("review_overview_memory_empty")
         compose.onNodeWithTag("review_overview_memory_empty").assertExists()
         scroll("review_overview_catalog")
@@ -188,12 +191,14 @@ class WeeklyReviewFlowTest {
         }
         var opened: Pair<ReviewDates, ReviewMetric>? = null
         compose.setContent { LifeOsTheme { WeeklyReviewRoute(repository, today, zone,
-            onSources = { dates, metric -> opened = dates to metric }, onEvent = {}) } }
+            onSources = { dates, metric -> opened = dates to metric }, onEvent = {},
+            integrationAvailability = IntegrationAvailabilityState(usage = IntegrationAvailability(
+                access = IntegrationAccessState.UNAVAILABLE))) } }
         scroll("review_overview_mood")
         compose.onNodeWithTag("review_overview_mood").assertTextContains("3 / 5", substring = true)
         compose.onNodeWithTag("review_overview_mood").assertTextContains("Samples: 2", substring = true)
         scroll("review_overview_usage")
-        compose.onNodeWithTag("review_overview_usage").assertTextContains("Unavailable", substring = true)
+        compose.onNodeWithTag("review_overview_usage").assertTextContains("provider is unavailable", substring = true)
         scroll("review_overview_activity")
         compose.onNodeWithTag("review_overview_activity").assertTextContains("3 km", substring = true)
         compose.onNodeWithTag("review_overview_activity").assertTextContains("Samples: 2", substring = true)
@@ -256,7 +261,13 @@ class WeeklyReviewFlowTest {
         compose.onNodeWithTag("review_section_mood").assertIsSelected()
         compose.onNodeWithTag("review_section_mood").performClick()
         scroll("review_sources_menu_entries")
+        compose.onNodeWithTag("memory_review_list").performTouchInput {
+            swipeDown(startY = 500f, endY = 900f)
+        }
         compose.onNodeWithTag("review_sources_menu_entries").performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("review_sources_entries").fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithTag("review_sources_entries").performClick()
         compose.runOnIdle { assertEquals(ReviewDates(LocalDate.parse("2026-10-05"), LocalDate.parse("2026-10-11")), opened) }
     }

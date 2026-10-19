@@ -278,7 +278,7 @@
     <string name="usage_locked">Déverrouillez l’appareil pour lire les données d’utilisation</string>
     <string name="usage_service_unavailable">Les données d’utilisation des applications sont indisponibles sur cet appareil</string>
     <string name="usage_ready">L’accès aux données d’utilisation est disponible</string>
-    <string name="usage_no_data">Android n’a encore fourni aucune donnée d’utilisation</string>
+    <string name="usage_no_data">Aucune nouvelle donnée d’utilisation n’a été renvoyée. L’historique enregistré est inchangé.</string>
     <string name="usage_sync_error">L’importation a échoué. Les données d’utilisation enregistrées sont inchangées ; réessayez.</string>
     <string name="usage_settings_missing">Impossible d’ouvrir les paramètres d’accès aux données d’utilisation. Recherchez cet accès dans les paramètres Android.</string>
     <string name="usage_action_error">Impossible de terminer cette action. Réessayez.</string>

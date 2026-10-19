@@ -144,7 +144,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 }
             }
             val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
-            TextButton(onClick = { more = !more }, enabled = enabled,
+            TextButton(onClick = { more = !more }, enabled = enabled && contextExpansionInitialized,
                 modifier = Modifier.testTag("memory_more").semantics { stateDescription = disclosureState }) {
                 Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
             }

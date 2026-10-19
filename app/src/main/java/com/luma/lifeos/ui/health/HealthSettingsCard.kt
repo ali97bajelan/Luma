@@ -60,6 +60,10 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
                     IntegrationAccessState.REQUIRED, IntegrationAccessState.UPDATE_REQUIRED,
                     IntegrationAccessState.UNAVAILABLE, IntegrationAccessState.ERROR))
             Text(stringResource(R.string.integration_saved_history), style = MaterialTheme.typography.bodySmall)
+            if (state.current.status == HealthStatus.NO_DATA &&
+                currentAvailability.access == IntegrationAccessState.ALLOWED) {
+                AccessibleFeedback(stringResource(R.string.health_no_data), Modifier.testTag("health_no_data"))
+            }
             if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
                 CircularProgressIndicator(Modifier.testTag("health_busy"))
             currentAvailability.lastSync?.let { Text(stringResource(R.string.health_last_sync,

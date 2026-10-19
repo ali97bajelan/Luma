@@ -8,9 +8,11 @@ import com.luma.lifeos.MainActivity
 import com.luma.lifeos.R
 import com.luma.lifeos.language.AppLanguage
 import com.luma.lifeos.language.AppLanguages
-import com.luma.lifeos.language.localizedDate
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.format.DecimalStyle
+import java.util.Locale
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -41,10 +43,11 @@ class TodoLanguageFlowTest {
         for (language in listOf(AppLanguage.PERSIAN, AppLanguage.FRENCH, AppLanguage.ENGLISH)) {
             selectLanguage(language)
             awaitEditor()
-
-            compose.onNodeWithTag("todo_editor_title").assertTextContains(title)
-            compose.onNodeWithTag("todo_editor_note").assertTextContains(note)
-            val localizedDueDate = dueDate.format(localizedDate(FormatStyle.LONG))
+            val localizedDueDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
+                .withLocale(language.locale)
+                .withDecimalStyle(DecimalStyle.of(language.locale))
+                .format(dueDate)
+            awaitRestoredDraft(title, note, localizedDueDate)
             compose.onNodeWithTag("todo_editor_due_date_value").assertTextContains(localizedDueDate, substring = true)
             compose.onNodeWithTag("todo_editor_save").assertTextContains(activityString(R.string.save))
 
@@ -62,6 +65,7 @@ class TodoLanguageFlowTest {
                 SemanticsMatcher.keyIsDefined(SemanticsProperties.Error),
             )
             compose.onNodeWithTag("todo_editor_title").performTextInput(title)
+            awaitText("todo_editor_title", title)
         }
 
         compose.activityRule.scenario.onActivity { assertEquals(AppLanguage.ENGLISH, AppLanguages.current(it)) }
@@ -83,7 +87,8 @@ class TodoLanguageFlowTest {
                 val expectedRecreation = previousResourceLanguage == language.tag ||
                     System.identityHashCode(activity) != previousActivityIdentity
                 ready = AppLanguages.current(activity) == language &&
-                    resourceLanguage == language.tag && expectedRecreation
+                    resourceLanguage == language.tag && Locale.getDefault().language == language.tag &&
+                    expectedRecreation
             }
             ready
         }
@@ -95,6 +100,25 @@ class TodoLanguageFlowTest {
             compose.onAllNodesWithTag("screen_todo_editor").fetchSemanticsNodes().isNotEmpty()
         }
         compose.waitForIdle()
+    }
+
+    private fun awaitRestoredDraft(title: String, note: String, localizedDueDate: String) {
+        compose.waitUntil(15_000) {
+            try {
+                compose.onNodeWithTag("todo_editor_title").assertTextContains(title, substring = true)
+                compose.onNodeWithTag("todo_editor_note").assertTextContains(note, substring = true)
+                compose.onNodeWithTag("todo_editor_due_date_value")
+                    .assertTextContains(localizedDueDate, substring = true)
+                true
+            } catch (_: AssertionError) { false }
+        }
+    }
+
+    private fun awaitText(tag: String, text: String) {
+        compose.waitUntil(5_000) {
+            try { compose.onNodeWithTag(tag).assertTextContains(text, substring = true); true }
+            catch (_: AssertionError) { false }
+        }
     }
 
     private fun activityString(resource: Int): String {

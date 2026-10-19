@@ -2,6 +2,7 @@ package com.luma.lifeos
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
 import org.junit.Rule
 import org.junit.Test
 
@@ -17,6 +18,8 @@ class PlaceCaptureTest {
         awaitTag("journal_more")
         compose.onNodeWithTag("journal_body").performTextInput(body)
         compose.onNodeWithTag("journal_more").performScrollTo().performClick()
+        awaitContextExpanded("journal_more")
+        awaitTag("place_picker_create")
         compose.onNodeWithTag("place_picker_create").performScrollTo().performClick()
         fillPlace(name)
         awaitTag("journal_body")
@@ -34,7 +37,8 @@ class PlaceCaptureTest {
         awaitTag("place_name")
         compose.onNodeWithTag("place_name").performTextReplacement("$name edited")
         compose.onNodeWithTag("place_save").performClick()
-        awaitText("$name edited")
+        awaitTag("place_detail_name")
+        compose.onNodeWithTag("place_detail_name").assertTextContains("$name edited")
         compose.onNodeWithTag("place_detail_back").performClick()
         awaitTag("places_ready")
         compose.onNodeWithTag("people_back").performClick()
@@ -127,5 +131,16 @@ class PlaceCaptureTest {
     }
     private fun awaitTag(tag: String) {
         compose.waitUntil(5_000) { compose.onAllNodes(hasTestTag(tag) and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
+    }
+    private fun awaitContextExpanded(tag: String) {
+        val expanded = compose.activity.getString(R.string.review_details_expanded)
+        compose.waitUntil(5_000) {
+            try {
+                compose.onNodeWithTag(tag).assert(
+                    SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, expanded),
+                )
+                true
+            } catch (_: AssertionError) { false }
+        }
     }
 }

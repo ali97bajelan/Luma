@@ -284,7 +284,7 @@
     <string name="usage_locked">برای خواندن داده‌های استفاده، قفل دستگاه را باز کنید</string>
     <string name="usage_service_unavailable">داده‌های استفاده از برنامه‌ها روی این دستگاه در دسترس نیست</string>
     <string name="usage_ready">دسترسی به داده‌های استفاده برقرار است</string>
-    <string name="usage_no_data">Android هنوز داده‌ای دربارهٔ استفاده گزارش نکرده است</string>
+    <string name="usage_no_data">دادهٔ تازه‌ای دربارهٔ استفاده برنگشت. سابقهٔ ذخیره‌شده بدون تغییر ماند.</string>
     <string name="usage_sync_error">ورود داده‌ها ناموفق بود. داده‌های استفادهٔ ذخیره‌شده تغییری نکردند؛ دوباره تلاش کنید.</string>
     <string name="usage_settings_missing">تنظیمات دسترسی به داده‌های استفاده باز نشد. در تنظیمات Android به دنبال دسترسی به داده‌های استفاده بگردید.</string>
     <string name="usage_action_error">این کار کامل نشد. دوباره تلاش کنید.</string>

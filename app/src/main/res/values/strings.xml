@@ -270,7 +270,7 @@
     <string name="usage_locked">Unlock the device to read usage</string>
     <string name="usage_service_unavailable">App usage is unavailable on this device</string>
     <string name="usage_ready">Usage access is available</string>
-    <string name="usage_no_data">Android has no reported usage data yet</string>
+    <string name="usage_no_data">No new usage data was returned. Saved history is unchanged.</string>
     <string name="usage_sync_error">Import failed. Saved usage is unchanged; try again.</string>
     <string name="usage_settings_missing">Usage access settings could not be opened. Look for Usage access in Android Settings.</string>
     <string name="usage_action_error">This action could not finish. Try again.</string>

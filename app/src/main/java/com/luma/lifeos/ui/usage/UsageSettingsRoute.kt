@@ -57,6 +57,10 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
                     IntegrationAccessState.REQUIRED, IntegrationAccessState.LOCKED, IntegrationAccessState.UNAVAILABLE,
                     IntegrationAccessState.UPDATE_REQUIRED, IntegrationAccessState.ERROR))
             Text(stringResource(R.string.integration_saved_history), style = MaterialTheme.typography.bodySmall)
+            if (state.current.status == UsageSyncStatus.NO_DATA &&
+                currentAvailability.access == IntegrationAccessState.ALLOWED) {
+                AccessibleFeedback(stringResource(R.string.usage_no_data), Modifier.testTag("usage_no_data"))
+            }
             if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
                 CircularProgressIndicator(Modifier.testTag("usage_busy"))
             currentAvailability.lastSync?.let { Text(stringResource(R.string.usage_last_sync,

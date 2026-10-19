@@ -45,45 +45,50 @@ class UsageSettingsFlowTest {
     }
     @After fun tearDown() { db.close() }
     @Test fun accessManagementIsAvailableWhileImportsAreOffAndExplanationCanBeCancelled() {
-        awaitText("Imports are off")
-        scrollToTag("usage_access")
-        compose.onNodeWithTag("usage_access").assertIsEnabled().performClick()
+        source.permission = UsageAccess.GRANTED
+        refreshUiAccess()
+        awaitStatus("Android access: Allowed")
+        awaitPreference("Automatic app usage imports: Off")
+        scrollToTag("usage_manage_primary")
+        compose.onNodeWithTag("usage_manage_primary").assertIsEnabled().performClick()
         compose.onNodeWithTag("permission_continue").assertExists()
         compose.onNodeWithTag("permission_cancel").performClick()
         compose.onNodeWithTag("permission_continue").assertDoesNotExist()
         assertFalse(runBlocking { repository.state().enabled })
     }
     @Test fun optionalAccessImportAndOptOutKeepDurableDailyValues() {
-        awaitText("Imports are off")
+        awaitPreference("Automatic app usage imports: Off")
         compose.onNodeWithTag("usage_enabled").performClick()
-        awaitText("Android Usage access is required")
-        compose.onNodeWithTag("usage_import").assertIsNotEnabled()
+        awaitStatus("Android access: Not allowed")
+        compose.onNodeWithTag("usage_import").assertDoesNotExist()
         source.permission = UsageAccess.GRANTED
         source.rows = listOf(UsageBucket("org.example.app", today.atStartOfDay(zone).toInstant(), now, 5_125, "Example app"))
         runBlocking { integration.refreshAccess() }
-        awaitText("Usage access is available")
+        refreshUiAccess()
+        awaitStatus("Android access: Allowed")
         compose.onNodeWithTag("usage_import").performScrollTo()
         compose.onNodeWithTag("usage_import").performClick()
         compose.waitUntil(5_000) { runBlocking { repository.state().lastSync != null } }
         assertNoSavedUsageBrowser()
-        runBlocking { integration.importNow() }
         assertEquals(5_125L, runBlocking { repository.observeDaily(today, zone).firstReport() }!!.totalMillis)
         compose.onNodeWithTag("usage_enabled").performScrollTo()
         compose.onNodeWithTag("usage_enabled").performClick()
-        awaitText("Imports are off")
+        awaitPreference("Automatic app usage imports: Off")
         assertFalse(runBlocking { RoomUsageRepository(db).state().enabled })
         assertEquals(now, runBlocking { repository.state().lastSync })
         assertEquals(5_125L, runBlocking { RoomUsageRepository(db).observeDaily(today, zone).firstReport() }!!.totalMillis)
         assertNoSavedUsageBrowser()
         restoration.emulateSavedInstanceStateRestore()
-        awaitText("Imports are off")
+        awaitPreference("Automatic app usage imports: Off")
         assertEquals(5_125L, runBlocking { repository.observeDaily(today, zone).firstReport() }!!.totalMillis)
     }
     @Test fun emptyAndRevokedAccessDoNotProduceZeroUsageOrDiscardSavedData() {
         compose.waitUntil(5_000) { compose.onNodeWithTag("usage_enabled").fetchSemanticsNode().config.contains(androidx.compose.ui.semantics.SemanticsProperties.ToggleableState) }
         source.permission = UsageAccess.GRANTED
         runBlocking { integration.setEnabled(true); integration.importNow() }
-        awaitText("Android has no reported usage data yet")
+        refreshUiAccess()
+        awaitStatus("Android access: Allowed")
+        awaitTaggedText("usage_no_data", "No new usage data was returned. Saved history is unchanged.")
         compose.onNodeWithTag("usage_daily_total").assertDoesNotExist()
         assertNull(runBlocking { repository.state().checkpoint })
         assertNull(runBlocking { repository.observeDaily(today, zone).firstReport() })
@@ -92,16 +97,20 @@ class UsageSettingsFlowTest {
         assertEquals(5_125L, runBlocking { repository.observeDaily(today, zone).firstReport() }!!.totalMillis)
         source.permission = UsageAccess.REQUIRED
         runBlocking { integration.refreshAccess() }
-        awaitText("Android Usage access is required")
+        refreshUiAccess()
+        awaitStatus("Android access: Not allowed")
         assertEquals(now, runBlocking { repository.state().checkpoint })
-        scrollToTag("usage_access"); compose.onNodeWithTag("usage_access").assertIsEnabled()
+        scrollToTag("usage_grant"); compose.onNodeWithTag("usage_grant").assertIsEnabled()
         scrollToTag("usage_refresh"); compose.onNodeWithTag("usage_refresh").assertIsEnabled()
         assertEquals(5_125L, runBlocking { RoomUsageRepository(db).observeDaily(today, zone).firstReport() }!!.totalMillis)
         assertNoSavedUsageBrowser()
     }
     @Test fun importFailuresKeepAccessRefreshAndRetentionControlsUsable() {
         source.permission = UsageAccess.GRANTED; source.fail = true
-        runBlocking { integration.setEnabled(true); integration.importNow() }
+        runBlocking { integration.setEnabled(true) }
+        refreshUiAccess()
+        awaitStatus("Android access: Allowed")
+        scrollToTag("usage_import"); compose.onNodeWithTag("usage_import").performClick()
         awaitText("Import failed. Saved usage is unchanged; try again.")
         scrollToTag("usage_import"); compose.onNodeWithTag("usage_import").assertIsEnabled()
         scrollToTag("usage_refresh"); compose.onNodeWithTag("usage_refresh").assertIsEnabled().performClick()
@@ -123,6 +132,21 @@ class UsageSettingsFlowTest {
         }
     }
     private fun awaitText(text: String) { compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() } }
+    private fun refreshUiAccess() {
+        compose.waitUntil(5_000) {
+            try { compose.onNodeWithTag("usage_refresh").assertIsEnabled(); true }
+            catch (_: AssertionError) { false }
+        }
+        scrollToTag("usage_refresh"); compose.onNodeWithTag("usage_refresh").performClick()
+    }
+    private fun awaitStatus(text: String) = awaitTaggedText("usage_status", text)
+    private fun awaitPreference(text: String) = awaitTaggedText("usage_import_preference", text)
+    private fun awaitTaggedText(tag: String, text: String) {
+        compose.waitUntil(5_000) {
+            try { compose.onNodeWithTag(tag).assertTextContains(text, substring = true); true }
+            catch (_: AssertionError) { false }
+        }
+    }
     private suspend fun <T> kotlinx.coroutines.flow.Flow<T>.firstReport(): T = first()
     private class Source : UsageSource {
         var permission = UsageAccess.REQUIRED; var rows = emptyList<UsageBucket>(); var fail = false

@@ -13,6 +13,9 @@ import com.luma.lifeos.domain.summary.DailySummary
 import com.luma.lifeos.domain.usage.UsageBucket
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.ui.today.TodayRoute
+import com.luma.lifeos.ui.integrations.IntegrationAccessState
+import com.luma.lifeos.ui.integrations.IntegrationAvailability
+import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import java.time.*
 import java.util.Locale
 import kotlinx.coroutines.flow.Flow
@@ -44,15 +47,19 @@ class DailySummaryFlowTest {
         }
     }
     @After fun tearDown() { db.close(); Locale.setDefault(originalLocale) }
-    private fun show(repository: DailySummaryRepository = summaries) {
+    private fun show(repository: DailySummaryRepository = summaries,
+        integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState()) {
         compose.setContent {
             var date by remember { mutableStateOf(day) }
             LifeOsTheme { TodayRoute(RoomLifeEventRepository(db), date, zone, { date = it }, { date = day },
-                onJournalClick = { opened = it }, summaries = repository) }
+                onJournalClick = { opened = it }, summaries = repository,
+                integrationAvailability = integrationAvailability) }
         }
     }
     @Test fun realMetricsRefreshAndOmitUnavailableMoodMeans() {
-        show(); openSummary(); awaitText("summary_records", "2 entries", substring = true)
+        show(integrationAvailability = IntegrationAvailabilityState(usage = IntegrationAvailability(
+            access = IntegrationAccessState.UNAVAILABLE)))
+        openSummary(); awaitText("summary_records", "2 entries", substring = true)
         compose.onNodeWithTag("summary_memories").assertDoesNotExist()
         awaitText("summary_mood", "4/5", substring = true)
         compose.onNodeWithTag("summary_energy").assertDoesNotExist()

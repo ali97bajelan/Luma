@@ -2,6 +2,7 @@ package com.luma.lifeos
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
 import org.junit.Rule
 import org.junit.Test
 
@@ -18,6 +19,7 @@ class PeopleCaptureTest {
         awaitTag("journal_more")
         compose.onNodeWithTag("journal_body").performTextInput(body)
         compose.onNodeWithTag("journal_more").performScrollTo().performClick()
+        awaitContextExpanded("journal_more")
         createFromPicker(first)
         compose.onNodeWithTag("journal_body").assertTextContains(body)
         createFromPicker(second)
@@ -77,6 +79,7 @@ class PeopleCaptureTest {
         awaitTag("memory_more")
         compose.onNodeWithTag("memory_note").performTextInput(note)
         compose.onNodeWithTag("memory_more").performScrollTo().performClick()
+        awaitContextExpanded("memory_more")
         compose.onNodeWithTag("people_picker").performScrollTo().performClick()
         awaitText(name)
         compose.onNodeWithText(name).performScrollTo().performClick()
@@ -100,6 +103,7 @@ class PeopleCaptureTest {
         awaitTag("screen_today")
     }
     private fun createFromPicker(name: String) {
+        awaitTag("people_picker_create")
         compose.onNodeWithTag("people_picker_create").performScrollTo().performClick()
         fillPerson(name)
         awaitTag("journal_body")
@@ -135,6 +139,17 @@ class PeopleCaptureTest {
     }
     private fun awaitText(text: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+    }
+    private fun awaitContextExpanded(tag: String) {
+        val expanded = compose.activity.getString(R.string.review_details_expanded)
+        compose.waitUntil(5_000) {
+            try {
+                compose.onNodeWithTag(tag).assert(
+                    SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, expanded),
+                )
+                true
+            } catch (_: AssertionError) { false }
+        }
     }
     private fun awaitTag(tag: String) {
         compose.waitUntil(5_000) { compose.onAllNodes(hasTestTag(tag) and isEnabled()).fetchSemanticsNodes().isNotEmpty() }

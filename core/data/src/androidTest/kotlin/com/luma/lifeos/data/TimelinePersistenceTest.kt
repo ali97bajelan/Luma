@@ -42,13 +42,13 @@ class TimelinePersistenceTest {
         }
         val first = timeline.page(range, 0, 50); val next = timeline.page(range, 50, 50)
         assertEquals(2_001, first.totalCount)
-        assertEquals((0L..49L).toList(), first.records.map { it.event.id.value.leastSignificantBits })
-        assertEquals((50L..99L).toList(), next.records.map { it.event.id.value.leastSignificantBits })
-        assertEquals(1, timeline.page(range, 2_000, 50).records.size)
+        assertEquals((2_000L downTo 1_951L).toList(), first.records.map { it.event.id.value.leastSignificantBits })
+        assertEquals((1_950L downTo 1_901L).toList(), next.records.map { it.event.id.value.leastSignificantBits })
+        assertEquals(0L, timeline.page(range, 2_000, 50).records.single().event.id.value.leastSignificantBits)
         assertTrue(timeline.page(range, 2_100, 50).records.isEmpty())
         assertTrue(runCatching { timeline.page(range, -1, 50) }.isFailure)
         assertTrue(runCatching { timeline.page(range, 0, 301) }.isFailure)
-        db.openHelper.readableDatabase.query("EXPLAIN QUERY PLAN SELECT * FROM life_event WHERE occurred_at >= ? AND occurred_at < ? ORDER BY occurred_at, id LIMIT 50 OFFSET 50",
+        db.openHelper.readableDatabase.query("EXPLAIN QUERY PLAN SELECT * FROM life_event WHERE occurred_at >= ? AND occurred_at < ? ORDER BY occurred_at DESC, id DESC LIMIT 50 OFFSET 50",
             arrayOf(range.start.toEpochMilli(), range.endExclusive.toEpochMilli())).use { cursor ->
             val descriptions = buildList { while (cursor.moveToNext()) add(cursor.getString(3)) }
             assertTrue(descriptions.any { "index_life_event_occurred_at_id" in it })
@@ -136,13 +136,13 @@ class TimelinePersistenceTest {
         RoomLifeEventRepository(db).upsert(LifeEvent(EventId(UUID(0, 400)), EventType.APP_USAGE, time, time))
         val first = timeline.page(range, 0, 2); val last = timeline.page(range, 2, 2)
         assertEquals(2, first.totalCount); assertEquals(1, first.eventCount)
-        assertEquals(listOf(201L, 300L), first.records.map { it.event.id.value.leastSignificantBits })
+        assertEquals(listOf(300L, 201L), first.records.map { it.event.id.value.leastSignificantBits })
         assertTrue(last.records.isEmpty())
         assertEquals(0L, timeline.get(EventId(UUID(0, 0)))!!.appUsage!!.durationMillis)
         db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 60_001 WHERE life_event_id = ?",
             arrayOf(EventId(UUID(0, 0)).toString()))
         assertEquals(3, timeline.page(range, 0, 2).totalCount)
-        assertEquals(0L, timeline.page(range, 0, 2).records.first().event.id.value.leastSignificantBits)
+        assertEquals(listOf(0L), timeline.page(range, 2, 2).records.map { it.event.id.value.leastSignificantBits })
     }
     @Test fun aDayOfOnlyUnusedAppsHasNoTimelineRowsOrPagingTotal() = runBlocking {
         val event = LifeEvent(EventId.new(), EventType.APP_USAGE, time, time,

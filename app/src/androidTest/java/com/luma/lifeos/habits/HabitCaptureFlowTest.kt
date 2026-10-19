@@ -176,8 +176,10 @@ class HabitCaptureFlowTest {
 
         compose.onNodeWithTag("habits_none_scheduled").assertIsDisplayed()
         assertEquals(0, compose.onAllNodes(hasTestTag("habits_empty")).fetchSemanticsNodes().size)
-        compose.onNodeWithTag("habit_log_$id").assertIsNotEnabled()
-        compose.onNodeWithText("This habit is not scheduled for this date.").assertIsDisplayed()
+        compose.onNodeWithTag("habit_other_toggle").performClick()
+        compose.onNodeWithTag("habit_row_$id").assertIsDisplayed()
+        compose.onNodeWithTag("habit_open_$id").assertTextContains("Not scheduled", substring = true)
+        compose.onNodeWithTag("habit_log_$id").assertDoesNotExist()
         compose.onNodeWithTag("day_next").performClick()
         compose.onNodeWithText("You cannot log a future date.").assertIsDisplayed()
         compose.onNodeWithTag("habit_log_$id").assertIsNotEnabled()

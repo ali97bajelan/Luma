@@ -1,11 +1,11 @@
 # Tasks acceptance record — 19 October 2026
 
 TD07 is **In progress**. Focused task UI, localization, Room persistence/migration,
-backup, isolation, scale, app builds, and most native UI checks pass. The full app
-and data instrumentation suites still have failures outside the Tasks tests, and
-native TalkBack speech/focus traversal could not be verified. Product/UX criteria are
-aggregate results: each is PASS only when every specified condition has evidence.
-A passing sub-check does not promote an otherwise incomplete criterion to PASS.
+backup, isolation, scale, app builds, and the full app/data instrumentation suites
+pass. Native TalkBack speech/focus traversal and several other acceptance checks
+remain incomplete. Product/UX criteria are aggregate results: each is PASS only
+when every specified condition has evidence. A passing sub-check does not promote
+an otherwise incomplete criterion to PASS.
 
 ## Test environment and commands
 
@@ -141,7 +141,7 @@ The callbacks/draft JVM check used `:app:testDebugUnitTest --tests
 com.luma.lifeos.backup.BackupViewModelTest --tests
 com.luma.lifeos.ui.todo.TodoRestoreInvalidationTest`; all 7 tests passed.
 
-**FAIL — full core:data instrumentation suite:**
+**PASS — full core:data instrumentation suite:**
 
 The complete data test APK was run directly with ADB on `emulator-5562`:
 
@@ -150,16 +150,14 @@ The complete data test APK was run directly with ADB on `emulator-5562`:
   com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-The final complete APK run included the TD07 isolation, duplicate-title and
-scale acceptance cases and ran 145 tests; 143 passed and two
-`TimelinePersistenceTest` cases failed on
-expected ordering/page IDs (`shortAndMissingUsageAreExcludedBeforePagingWhileLongUsageRemains`
-and `indexedMixedPagesAreBoundedDeterministicAndExcludeOtherDays`). Neither test
-touches the Tasks repository, but the full data suite is not green. The focused
-task persistence, migration, backup, isolation and scale cases all pass within
-that run. [Full data output](../.superpowers/sdd/2026-10-19-todo-list/td07-data-full-device-final.log).
+The final complete APK run included the TD07 isolation, duplicate-title and scale
+acceptance cases and passed 145/145 tests with no skips (61.469 seconds). Both
+Timeline ordering/page cases also passed individually and in the full
+`TimelinePersistenceTest` class after matching assertions to the query's
+newest-first contract. [Full data output](../.superpowers/sdd/2026-10-19-ux-33/data-full-after.log),
+[Timeline class output](../.superpowers/sdd/2026-10-19-ux-33/data-timeline-green.log).
 
-**FAIL — full app instrumentation suite:**
+**PASS — full app instrumentation suite:**
 
 After clearing only `com.luma.lifeos` on the disposable emulator, the complete
 app instrumentation APK was run directly:
@@ -169,79 +167,46 @@ app instrumentation APK was run directly:
   com.luma.lifeos.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-It ran 166 tests and reported 14 failures: two capture cases
-(`PeopleCaptureTest.journalKeepsDraftAcrossNewPeopleAndHistoryReflectsExplicitRemoval`
-and `PlaceCaptureTest.journalDraftSurvivesPlaceCreationAndSelectionCanBeRenamedAndCleared`),
-one Habit capture case, three Health Connect settings cases, three Weekly
-Review cases, one Daily Summary case, and four Usage settings cases. No `TodoAccessibilityTest`,
-`TodoAccessibilitySemanticsTest` or `TodoLanguageFlowTest` case failed in this
-full run. The failures are recorded separately from the Tasks-specific results;
-their causes were not investigated as part of TD07. [Full app output](../.superpowers/sdd/2026-10-19-todo-list/td07-app-full-device-current.log).
+The final complete APK run passed 169/169 tests with no skips (454.175 seconds).
+It includes the prior capture, Habit, Health, Review, Summary, Usage, locale and
+saved-entry regressions. [Full app output](../.superpowers/sdd/2026-10-19-ux-33/app-full-verified-final.log).
+The verified APK SHA-256 values are app debug
+`bc56239b76a16e39110dea5b8286f08e53483b27a002362dae5494d80f9bc2ae`, app test
+`1fb111ed77a12d162b9dc107d6d214fa383b76fe071059a5738803a546a38c00`, and data
+test `eaffcc55ed7f8a66ab5b834991537b2eed9fb91aa89fa28d22b8268913611cf8`.
 
-**BLOCKED — Gradle-managed connected app test task:**
+**Environment limitation — Gradle-managed connected app test task:**
 
 `:app:connectedDebugAndroidTest` could not resolve
 `com.android.tools.utp:android-test-plugin-host-additional-test-output:31.7.3`
-in the available repository/cache. The focused app tests and complete app/data
-test APKs were therefore run directly using `adb` on the disposable emulator.
-The full app and data suites have the failures listed above.
+in the available repository/cache. The complete app/data instrumentation APKs
+were run directly using `adb` on disposable `emulator-5562`; both full suites
+passed. This records the available verification path without treating the
+uncached Gradle host-output artifact as an app test failure.
 
-## Failure register and checks still needed
+## UX-33 failure cause and result register
 
-This register records the observed failures from the final full APK runs. It is
-not a diagnosis: none of these failures has yet been reproduced individually or
-traced to product code, test assumptions, fixture state or environment. They are
-**unresolved, not accepted exceptions**. The full logs linked above contain the
-complete stack traces.
+The original 14 app and 2 data failures were reproduced and classified. Corrections
+follow the current UI, accessibility and data contracts in the design system and
+repository; the final full APK runs above include these regressions.
 
-### Full data instrumentation: 2 failures
-
-| Test | Observed failure | Follow-up |
+| Area | Classified cause | Result |
 | --- | --- | --- |
-| `TimelinePersistenceTest.shortAndMissingUsageAreExcludedBeforePagingWhileLongUsageRemains` (`TimelinePersistenceTest.kt:139`) | Expected IDs `[201, 300]`; received `[300, 201]`. | Check the test's ordering contract against the Room query and fixture timestamps; run the case alone and the class to determine whether ordering is deterministic. |
-| `TimelinePersistenceTest.indexedMixedPagesAreBoundedDeterministicAndExcludeOtherDays` (`TimelinePersistenceTest.kt:45`) | Expected first-page IDs `[0..49]`; received `[2000, 1999, …, 1951]`. | Check fixture timestamps/IDs against the intended sort direction and page contract; run the case alone and the class, then rerun the full data APK. |
-
-These are Timeline persistence checks and do not exercise Tasks. Do not change
-the expected order until the Timeline contract and fixture setup have been
-compared with the actual query.
-
-### Full app instrumentation: 14 failures
-
-| Test | Observed failure | Follow-up |
-| --- | --- | --- |
-| `PeopleCaptureTest.journalKeepsDraftAcrossNewPeopleAndHistoryReflectsExplicitRemoval` (`PeopleCaptureTest.kt:21`, helper line 103) | `performScrollTo()` could not find test tag `people_picker_create`. | Capture the active screen's semantics tree; check route/state and whether the picker action's tag or test setup changed. |
-| `PlaceCaptureTest.journalDraftSurvivesPlaceCreationAndSelectionCanBeRenamedAndCleared` (`PlaceCaptureTest.kt:20`, helper line 103) | `performScrollTo()` could not find test tag `place_picker_create`. | Capture the active screen's semantics tree; check route/state and whether the picker action's tag or test setup changed. |
-| `HabitCaptureFlowTest.noHabitAndNoHabitScheduledAreDifferentStatesAndFutureLogIsDisabled` (`HabitCaptureFlowTest.kt:164,179`) | The assertion for a disabled future log could not find tag `habit_log_64abb4d9-b7ce-4fa5-9bfe-641aee7e64c0`. | Inspect the rendered semantics and scheduled-habit state for this fixture; verify whether the row is absent or its test identifier changed. |
-| `HealthSettingsFlowTest.revokedAccessKeepsSavedStepsAndManagementUsable` (`HealthSettingsFlowTest.kt:84`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Health Connect test state at timeout; rerun the case in isolation. |
-| `HealthSettingsFlowTest.missingUnsupportedAndRevokedDataLeaveCoreSettingsUsable` (`HealthSettingsFlowTest.kt:65`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Health Connect test state at timeout; rerun the case in isolation. |
-| `HealthSettingsFlowTest.permissionStatusImportsCorrectionsAndOptOutPersistAcrossRecreation` (`HealthSettingsFlowTest.kt:45`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Health Connect test state at timeout; rerun the case in isolation. |
-| `WeeklyReviewFlowTest.overviewKeepsMissingAndRecordedZeroDistinct` (`WeeklyReviewFlowTest.kt:161`) | Expected text containing `Unavailable`; the `review_overview_mood` node contained `Mood, No check-ins saved for this week`. | Compare the expected empty-state copy with the current Review contract and fixture; confirm which state the test is meant to assert. |
-| `WeeklyReviewFlowTest.sectionSelectionRestoresWithoutChangingTheSelectedWeek` (`WeeklyReviewFlowTest.kt:260`) | Click failed because test tag `review_sources_entries` was absent. | Capture the rendered semantics and selected Review section/week before the click; check fixture state and tag contract. |
-| `WeeklyReviewFlowTest.overviewShowsSavedSamplesActivitySourceAndLinkedCatalogCounts` (`WeeklyReviewFlowTest.kt:196`) | Expected text containing `Unavailable`; the `review_overview_usage` node contained `Saved app usage, Loading saved data`. | Inspect the usage source state and loading completion in the fixture; determine whether this is a product state issue, async wait issue or stale assertion. |
-| `DailySummaryFlowTest.realMetricsRefreshAndOmitUnavailableMoodMeans` (`DailySummaryFlowTest.kt:60`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and metric source state at timeout; rerun the case in isolation. |
-| `UsageSettingsFlowTest.accessManagementIsAvailableWhileImportsAreOffAndExplanationCanBeCancelled` (`UsageSettingsFlowTest.kt:48`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
-| `UsageSettingsFlowTest.importFailuresKeepAccessRefreshAndRetentionControlsUsable` (`UsageSettingsFlowTest.kt:105`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
-| `UsageSettingsFlowTest.emptyAndRevokedAccessDoNotProduceZeroUsageOrDiscardSavedData` (`UsageSettingsFlowTest.kt:86`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
-| `UsageSettingsFlowTest.optionalAccessImportAndOptOutKeepDurableDailyValues` (`UsageSettingsFlowTest.kt:57`) | `awaitText` timed out after 5 seconds. | Record the awaited text, screen semantics and Usage Access state at timeout; rerun the case in isolation. |
+| Timeline persistence (2) | Test expected ascending IDs/pages while the Room query contract is newest-first (`occurred_at DESC, id DESC`). | Corrected fixtures/assertions and query-plan expectations; both cases pass alone and in class/full data suite. |
+| People and Place capture (2) | The disclosure “More” actions could be tapped before saved expansion state initialized, allowing a later initialization emission to overwrite the tap. | Gate the actions until initialization completes; tests wait for expanded semantics and verify the controls. |
+| Habit capture (1) | Fixture expected a disabled Log action for a habit not scheduled on the selected future date. Current design groups it in collapsed Other with “Not scheduled”; scheduled future rows keep disabled Log. | Updated the test to assert the design-system grouping and retained the scheduled-future disabled-action assertion. |
+| Health settings (3) | Tests used stale status/copy assumptions; allowed access with no provider data had no accessible non-error feedback. | Align tests with shared integration availability and refresh behavior; add localized no-data feedback only for allowed access. |
+| Weekly Review (3) | Empty-state wording and loading/unavailable fixture state were stale; the Sources menu test clicked under a sticky header. | Match current empty copy and explicit unavailable fixture; scroll the menu action below the sticky header. |
+| Daily Summary (1) | The default integration fixture remained CHECKING while the test expected an unavailable source. | Make the fixture explicitly unavailable and retain the expected omitted metric behavior. |
+| Usage settings (4) | Tests relied on outdated per-source status/tag/copy contracts; allowed access with no new data lacked accessible feedback. | Use shared availability semantics and refresh; add localized non-error no-data feedback while preserving saved history. |
+| Locale/usage full-suite timing | Persisted language could update before Activity resources, and the usage test proceeded before retyped state appeared. | Wait for resource-locale agreement and the expected rendered text before continuing. |
+| Saved-entry/teardown timing | Mood history observation was asynchronous after save; a Habit date test closed Room while Activity observers were still active. | Wait for the saved entry to become discoverable and close Activity before the database. |
 
 ### TD07 follow-up checklist
 
-- [ ] Rerun each failing app test by class on a freshly cleared disposable API 36
-  emulator. Save the awaited text or semantics tree and relevant logcat at the
-  point of failure; compare isolated runs with the full-suite run to check for
-  order dependence or state leakage.
-- [ ] Rerun both Timeline failures individually and as a class. Trace expected
-  ordering and page membership through fixture timestamps, SQL ordering and the
-  documented Timeline contract before deciding whether code or assertions need
-  a change.
-- [ ] For each result, classify the evidence as a product regression, a stale
-  test/fixture contract, an asynchronous wait/setup issue or an environment
-  issue. Fix product defects; change tests only after verifying the intended
-  behavior. Then rerun the affected class and the complete app/data APK suites.
-- [ ] Resolve whether the Gradle-managed connected-test task is required in this
-  environment: make its uncached UTP host-output dependency available, or record
-  the approved direct-ADB APK workflow as the supported check. Rerun the chosen
-  workflow and preserve its output.
+- [x] Rerun the affected app classes and Timeline cases, then rerun full app/data APK suites.
+- [x] Classify each original failure against product behavior, test assumptions, fixture state, timing or environment; record the cause and correction above.
+- [x] Record the direct-ADB APK workflow used because the Gradle-managed UTP host-output artifact is unavailable in this environment.
 - [ ] With native TalkBack active, verify spoken labels/actions and traversal
   across Tasks list rows, completion/reopen, editor, validation, dialogs and
   after row removal. The current evidence only confirms that the initial focus
@@ -252,10 +217,9 @@ compared with the actual query.
   invalidation after restore; remaining editor/list restoration states; and
   OS permission/network isolation checks. Update the criteria matrix from the
   resulting evidence.
-- [ ] Keep TD07 **In progress** until the suite failures are fixed or explicitly
-  accepted, all required acceptance gaps have evidence or explicit acceptance,
-  and the chosen integrated test workflow is recorded. No exception is accepted
-  by this register.
+- [ ] Keep TD07 **In progress** until all required acceptance gaps have evidence
+  or explicit acceptance. Green app/data instrumentation alone does not complete
+  the remaining TalkBack and product acceptance checks.
 
 **PASS — task CRUD isolation and 10,000-task scale:**
 
@@ -344,7 +308,7 @@ The Compose host reported `Focused=false` even for a minimal Material button
 after `RequestFocus`, so native TalkBack remains a separate acceptance result;
 the TalkBack screenshot documents an initial focus ring, not spoken feedback.
 
-TD07 remains **In progress** until the full app/data suites are green, the
-remaining criteria are run, and the unresolved failures/TalkBack gap are fixed or
-explicitly accepted. Do not mark the Tasks feature release-ready from focused
-results alone.
+TD07 remains **In progress**: the full app/data suites are green, while the
+remaining criteria and TalkBack speech/focus gap still need evidence or explicit
+acceptance. Do not mark the Tasks feature release-ready from focused results
+alone.

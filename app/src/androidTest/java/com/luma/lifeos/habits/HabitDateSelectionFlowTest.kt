@@ -64,7 +64,10 @@ class HabitDateSelectionFlowTest {
         Unit
     }
 
-    @After fun teardown() { database.close() }
+    @After fun teardown() {
+        compose.activityRule.scenario.close()
+        database.close()
+    }
 
     @Test fun habitsRejectsStaleClicksDuringDelayFailureAndReturnToSameDate() = checkTransition(false)
     @Test fun todayRejectsStaleClicksDuringDelayFailureAndReturnToSameDate() = checkTransition(true)
