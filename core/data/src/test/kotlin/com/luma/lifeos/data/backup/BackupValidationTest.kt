@@ -20,4 +20,30 @@ class BackupValidationTest {
             "package_name" to "p".repeat(501), "bucket_start" to 1000L, "bucket_end" to 2000L, "duration_ms" to 100L, "source" to "USAGE_STATS")
         assertThrows(Exception::class.java) { validateBackupRow("app_usage_record", row) }
     }
+    @Test fun taskRowsRequireCanonicalIdentityValidTextDateAndAuditChronology() {
+        val row = mapOf<String, Any?>(
+            "id" to UUID.randomUUID().toString(),
+            "title" to "Task",
+            "note" to "Persian فارسی",
+            "due_date" to "0001-01-01",
+            "completed_at" to 0L,
+            "created_at" to 1L,
+            "updated_at" to 1L,
+            "revision_token" to UUID.randomUUID().toString(),
+        )
+        validateBackupRow("todo_task", row)
+
+        val invalidRows = listOf(
+            row + ("id" to row.getValue("id").toString().uppercase()),
+            row + ("revision_token" to "not-a-uuid"),
+            row + ("title" to " "),
+            row + ("title" to "x".repeat(201)),
+            row + ("note" to "x".repeat(4001)),
+            row + ("due_date" to "2026-2-03"),
+            row + ("updated_at" to 0L),
+        )
+        invalidRows.forEach { invalid ->
+            assertThrows(Exception::class.java) { validateBackupRow("todo_task", invalid) }
+        }
+    }
 }

@@ -22,6 +22,8 @@ class BackupCodecTest {
         assertEquals(original, backupTables(1))
         assertEquals(original + usage, backupTables(2))
         assertEquals(original + usage + habits, backupTables(3))
+        assertEquals(original + usage + habits + "todo_task", backupTables(4))
+        assertEquals(4, CURRENT_BACKUP_SCHEMA_VERSION)
     }
 
     @Test fun duplicateArchiveEntryNamesAreRejected() {

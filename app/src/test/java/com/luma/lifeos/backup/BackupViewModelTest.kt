@@ -39,6 +39,30 @@ class BackupViewModelTest {
         assertEquals(1, service.restores); assertEquals(BackupMessage.RESTORE_FAILED, vm.state.value.message)
         assertFalse(vm.state.value.busy); assertNull(vm.state.value.preview)
     }
+    @Test fun restoreSuccessCallbackRunsOnceAfterCommitAndNeverOnFailure() = runTest(dispatcher) {
+        val successfulService = Fake()
+        val successfulVm = BackupViewModel(successfulService, dispatcher)
+        var successes = 0
+        successfulVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }
+        advanceUntilIdle()
+        assertEquals(0L, successfulVm.state.value.preview?.todoCount)
+        successfulVm.confirmRestore { successes++ }
+        successfulVm.confirmRestore { successes++ }
+        advanceUntilIdle()
+        assertEquals(1, successes)
+        assertEquals(BackupMessage.RESTORED, successfulVm.state.value.message)
+
+        val failedService = Fake()
+        val failedVm = BackupViewModel(failedService, dispatcher)
+        var failures = 0
+        failedVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }
+        advanceUntilIdle()
+        failedService.fail = true
+        failedVm.confirmRestore { failures++ }
+        advanceUntilIdle()
+        assertEquals(0, failures)
+        assertEquals(BackupMessage.RESTORE_FAILED, failedVm.state.value.message)
+    }
     @Test fun duplicateExportIsIgnoredAndStreamsCloseOnFailure() = runTest(dispatcher) {
         val service = Fake().apply { fail = true }; val vm = BackupViewModel(service, dispatcher)
         var closed = false

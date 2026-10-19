@@ -79,13 +79,36 @@ journal, photo reference, usage session and habit data.
 
 **PASS — task backup and legacy replacement:**
 
-`BackupPersistenceTest` passes 14/14 tests. New coverage round-trips open and
-completed tasks through schema 4, checks preview task count and preserved task
-content/status/dates, checks revision-token rotation and replacement of a live
-extra task, and checks that a schema-1 archive preview counts zero tasks and
-clears an existing task on restore. The schema-1 test fixture now includes only
-the schema-1 table inventory plus photos; its earlier filter left schema-3/4
-tables in an archive labeled schema 1.
+`BackupPersistenceTest` passes 14/14 tests. `TodoBackupTest` passes 3/3 tests for
+schema-4 open/completed/undated task round-trip, preview counts, revision-token
+rotation, schema-1/2/3 replacement clearing current tasks, and cancelled or
+malformed task restore retaining live data. The schema-1 fixture contains only
+the schema-1 table inventory plus photos; earlier it retained schema-3/4 tables
+inside an archive labeled schema 1.
+
+The TD02/TD03 follow-up reran `:core:data:testDebugUnitTest` (24/24 pass), built
+the data/app Android test APKs, and ran focused checks on `emulator-5562` (API 36):
+`TodoPersistenceTest`, `TodoMigrationTest`, `TodoBackupTest`,
+`BackupPersistenceTest`, and `HabitBackupTest` passed 29/29 total. App unit tests
+for `BackupViewModelTest` and `TodoRestoreInvalidationTest` passed 7/7; the
+`BackupSettingsFlowTest` preview/count/warning flow passed 3/3. Room schema 4 was
+exported and checked against the entity and indexes.
+
+The follow-up instrumentation commands used only the disposable API 36 device:
+
+```sh
+/home/bajelan/Android/Sdk/platform-tools/adb -s emulator-5562 shell am instrument -w \
+  -e class 'com.luma.lifeos.data.TodoPersistenceTest,com.luma.lifeos.data.TodoMigrationTest,com.luma.lifeos.data.backup.TodoBackupTest,com.luma.lifeos.data.backup.BackupPersistenceTest,com.luma.lifeos.data.HabitBackupTest' \
+  com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
+
+/home/bajelan/Android/Sdk/platform-tools/adb -s emulator-5562 shell am instrument -w \
+  -e class 'com.luma.lifeos.backup.BackupSettingsFlowTest' \
+  com.luma.lifeos.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+The callbacks/draft JVM check used `:app:testDebugUnitTest --tests
+com.luma.lifeos.backup.BackupViewModelTest --tests
+com.luma.lifeos.ui.todo.TodoRestoreInvalidationTest`; all 7 tests passed.
 
 **FAIL — full core:data instrumentation suite:**
 
@@ -139,8 +162,8 @@ The full app and data suites have the failures listed above.
 | TODO-AC-06 | NOT RUN | Today eligibility, three-row cap, full count and historical-date hiding were not tested. |
 | TODO-AC-07 | NOT RUN | Distinct checkbox/body actions and successful completion/reopen are exercised. Failed writes, retry/Undo revisions, commit announcements and create retry behavior remain unverified. |
 | TODO-AC-08 | NOT RUN | Confirmed deletion succeeds. Cancel, dirty Back, missing targets and delete retry behavior remain unverified. |
-| TODO-AC-09 | PASS | `TodoMigrationTest` upgrades populated schema 1–3 databases to 4; `BackupPersistenceTest` round-trips open/completed schema-4 tasks, verifies preview count/revision rotation, verifies schema-1 replacement clears tasks, and covers invalid/cancelled/failed restore retention. |
-| TODO-AC-10 | NOT RUN | Restore preview invalidation and isolated app-data reset were not tested; no destructive reset was performed. |
+| TODO-AC-09 | PASS | `TodoMigrationTest` upgrades populated schema 1–3 databases to 4; task backup tests round-trip schema-4 rows, verify preview count/revision rotation, clear tasks on schema-1/2/3 replacement, and retain live data after cancelled or malformed restore. |
+| TODO-AC-10 | NOT RUN | Focused JVM checks cover success-only restore callback delivery and ensure a retained editor draft cannot write to a same-UUID restored task. End-to-end shell-to-route invalidation and isolated app-data reset remain unverified; no destructive reset was performed. |
 | TODO-AC-11 | NOT RUN | Simulated 320 dp/200% text and localized form behavior pass their focused checks. Full layout matrix, ≥48 dp target measurement, status/overdue color independence and native screen-reader labels/traversal remain unverified. |
 | TODO-AC-12 | NOT RUN | Dirty-draft Activity recreation and validation retention are exercised. Retry states, empty Open/Completed actions and full view restoration remain unverified. |
 | TODO-AC-13 | NOT RUN | No task CRUD isolation checks against events, habits, Timeline, summaries, search, Review, network or permissions were run. |
@@ -163,7 +186,7 @@ The full app and data suites have the failures listed above.
 | UX-TODO-12 | NOT RUN | Successful row actions and validation feedback are exercised. Scoped failures, retries, Undo and native focus behavior remain unverified. |
 | UX-TODO-13 | NOT RUN | Automated semantics checks cover a simulated narrow/large-text layout. Native TalkBack, keyboard/IME, themes and the full locale/width/font matrix were not tested. |
 | UX-TODO-14 | NOT RUN | Translation catalog tests and a dirty-draft flow across EN/FA/FR pass. Persian numerals, Gregorian date rules, RTL mixed-direction rendering and all catalog-format cases are not fully accepted here. |
-| UX-TODO-15 | NOT RUN | Export/restore preview, legacy replacement warning, cancellation/failure and isolated reset were not exercised. |
+| UX-TODO-15 | NOT RUN | Backup settings Compose checks cover task counts and the legacy zero-task replacement warning; data tests cover schema-4 restore and cancelled/malformed restore. Native document-picker flow, integrated shell invalidation and isolated reset remain unverified. |
 
 ## Manual/native and performance checks
 

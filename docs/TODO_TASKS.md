@@ -1,6 +1,6 @@
 # Tasks feature planning handoff
 
-Prepared: 19 October 2026. Status: TD01 complete; TD02 in progress (schema export verification pending; persistence and migration instrumentation pass); TD03 in progress (implementation written; verification pending); TD04 in progress (editor implementation written; verification pending); TD05 in progress (implementation written; verification pending per request); TD06 in progress (implementation written; verification skipped per request); TD07 in progress (focused app/data acceptance and builds pass; full app suite has 12 failures in non-Todo flows and full data suite has two Timeline failures; native accessibility, performance and remaining acceptance are pending).
+Prepared: 19 October 2026. Status: TD01–TD03 complete; TD04 in progress (editor implementation written; verification pending); TD05 in progress (implementation written; verification pending per request); TD06 in progress (implementation written; verification skipped per request); TD07 in progress (focused app/data acceptance and builds pass; full app suite has 12 failures in non-Todo flows and full data suite has two Timeline failures; native accessibility, performance and remaining acceptance are pending).
 
 The user requested investigation by a senior product manager and a senior UI/UX
 designer, with direct discussion to produce specifications, plans and tasks. They
@@ -34,15 +34,15 @@ and counted habits remain distinct.
 ## Ordered delivery tasks
 
 Priorities express proposed release scope, not implementation evidence. TD01's
-focused and full domain suites pass. TD02 remains in progress; TD03 is **In progress** (implementation written;
-verification pending); TD04 is **In progress** (editor implementation written; verification pending); TD05 is **In progress** (implementation written; verification pending per request); TD06 is **In progress** (implementation written; verification skipped per request); TD07 is **In progress** (focused verification has evidence; integrated release acceptance remains incomplete). Every slice includes its owning tests and all three language catalogs where
+focused and full domain suites pass. TD02 and TD03 are complete with schema,
+persistence, migration, backup and restore evidence recorded below. TD04 is **In progress** (editor implementation written; verification pending); TD05 is **In progress** (implementation written; verification pending per request); TD06 is **In progress** (implementation written; verification skipped per request); TD07 is **In progress** (focused verification has evidence; integrated release acceptance remains incomplete). Every slice includes its owning tests and all three language catalogs where
 UI is introduced.
 
 | ID | Status | Priority | Deliverable | Depends on | Acceptance coverage | Done when |
 | --- | --- | --- | --- | --- | --- | --- |
 | TD01 | Complete | P0 | Pure Kotlin task models, validation, civil-date buckets and repository contracts | Existing baseline | TODO-AC-01–04; UX-TODO-02/06/07 | Unicode/date/ordering tests and full domain suite pass |
-| TD02 | In progress (schema export verification pending; persistence/migration tests pass) | P0 | Room table, schema 4, transactional CRUD, revisions and bounded observation | TD01 | TODO-AC-03/04/07–09 | Persistence/retry/conflict tests and populated migrations 1–3→4 pass; schema exported |
-| TD03 | In progress (verification pending) | P0 | Backup/restore, preview counts and reset contract | TD02 | TODO-AC-09/10; UX-TODO-15 | New archive round trip, old replacement, malformed/cancelled restore and existing backup regressions pass |
+| TD02 | Complete | P0 | Room table, schema 4, transactional CRUD, revisions and bounded observation | TD01 | TODO-AC-03/04/07–09 | Persistence/retry/conflict tests and populated migrations 1–3→4 pass; schema exported |
+| TD03 | Complete | P0 | Backup/restore, preview counts and reset contract | TD02 | TODO-AC-09/10; UX-TODO-15 | New archive round trip, old replacement, malformed/cancelled restore and existing backup regressions pass |
 | TD04 | In progress (verification pending) | P0 | Shared create/edit screen with reliable drafts/status/delete | TD02/03 | TODO-AC-01–03/07/08/12; UX-TODO-06–11/14 | JVM draft/conflict tests and editor interaction checks pass in localized UI |
 | TD05 | In progress (implementation written; verification pending per request) | P0 | Tasks lists, More access, Task in existing Quick Capture and completion Undo | TD04 | TODO-AC-04/05/07/08/12; UX-TODO-01–03/05/11/12/15 | >50-row live list, retry/Undo and navigation/capture regressions pass |
 | TD06 | In progress (implementation written; verification skipped per request) | P0 | Compact Today card and date/zone lifecycle | TD05 | TODO-AC-02/05/06/07/13; UX-TODO-04/05/12 | Cap/count/eligibility, hidden historical card, midnight/travel and independent failure checks pass |
@@ -77,17 +77,19 @@ TD01 verification completed with these results:
 - Focused: `bash ./gradlew -PdomainOnly=true :core:domain:test --tests 'com.luma.lifeos.domain.todo.*'` — PASS.
 - Full domain suite: `bash ./gradlew -PdomainOnly=true :core:domain:test` — PASS, 126 tests, 0 failures, 0 errors, 0 skipped.
 
-TD02 persistence code, migration and test sources are in progress. Room schema export
-and verification remain pending. A non-test compile to export schema 4 could not start
-because this environment has no Java runtime (`JAVA_HOME` is unset and `java` is
-unavailable). Keep TD02 in progress until Room exports schema 4 and the owning checks
-have evidence.
+TD02 and TD03 are complete. Room's exported [schema 4](../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/4.json)
+matches the task entity and indexes. The data JVM suite passed 24/24, and both data
+and app Android test APKs assembled. On disposable `emulator-5562` (API 36), focused
+instrumentation passed 29/29 tests across task persistence, populated migrations 1–3,
+schema-4 backup round-trip, schema-1–3 replacement, malformed/cancelled restore,
+revision rotation and existing habit/backup regressions. App checks passed 7/7 focused
+JVM tests for restore callbacks and stale editor invalidation, plus 3/3 backup settings
+Compose tests for task counts and the legacy zero-task replacement warning. Full
+commands and environment are recorded in [`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md).
 
-TD03 implementation now adds archive schema 4 with task rows, staged validation,
-replacement restore, preview counts and revision rotation. Per request, no Gradle or
-emulator tests were run for this slice; keep TD03 in progress until its archive,
-restore, UI and existing backup regression checks have evidence. The task table is
-already part of Android's full app-data reset; no separate reset path was added.
+The task table and protected drafts are covered by Android's full app-data reset;
+there is no separate reset mechanism. Destructive OS reset itself remains outside
+the TD03 verification and is still listed as pending in integrated acceptance.
 
 TD04 now adds the shared task editor route, primitive saved draft and pending-operation state,
 revision-safe create/edit/status/delete handling, conflict/reload behavior, and EN/FA/FR editor
