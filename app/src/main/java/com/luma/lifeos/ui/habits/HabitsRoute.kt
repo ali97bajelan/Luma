@@ -31,9 +31,13 @@ fun HabitsRoute(
     val viewModel: HabitsViewModel = viewModel(factory = factory)
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(date, deviceDate, deviceZone) { viewModel.selectDate(date, deviceZone, deviceDate) }
-    val shownDate = state.date ?: date ?: deviceDate
-    HabitsScreen(state, shownDate, deviceZone, onBack, onSelectDate, onToday, onCreate,
-        onHabit = { id -> onHabit(id, shownDate) }, onLog = viewModel::log,
+    val renderedState = state
+    val shownDate = date ?: renderedState.date ?: deviceDate
+    HabitsScreen(renderedState, shownDate, deviceZone, onBack, onSelectDate, onToday, onCreate,
+        onHabit = { id -> renderedState.rowsFor(shownDate).firstOrNull { it.day.habit.id == id }?.let { row ->
+            viewModel.dateForRow(row)?.let { onHabit(id, it) }
+        } },
+        onLog = { id -> renderedState.rowsFor(shownDate).firstOrNull { it.day.habit.id == id }?.let(viewModel::log) },
         onRetryLog = viewModel::retryLog, onUndo = viewModel::undoLog,
         onRetry = viewModel::retry)
 }

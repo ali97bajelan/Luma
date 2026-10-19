@@ -64,8 +64,9 @@ fun HabitsScreen(
     onUndo: (UUID) -> Unit,
     onRetry: () -> Unit,
 ) {
-    val selectedDate = state.date ?: date
-    val groups = splitHabitRows(state.days)
+    val selectedDate = date
+    val rows = state.rowsFor(selectedDate)
+    val groups = splitHabitRows(rows)
     val trackingDate = LocalDate.now(state.trackingZone ?: deviceZone)
     val forceOtherOpen = groups.other.any { row ->
         state.pendingLogs.any { it.input.habitId == row.day.habit.id }
@@ -107,14 +108,19 @@ fun HabitsScreen(
                         }
                     }
                 }
-                if (state.loading) item { CircularProgressIndicator(Modifier.testTag("habits_loading")) }
+                if (state.loading || (state.date != date && state.error == null)) item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator(Modifier.testTag("habits_loading"))
+                        Text(stringResource(R.string.habit_loading))
+                    }
+                }
                 if (state.error == HabitUiError.LOAD) item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("habits_error")) {
                         Text(stringResource(R.string.habit_load_error))
                         TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                     }
                 }
-                if (!state.loading && state.days.isEmpty() && state.error == null) item {
+                if (!state.loading && state.loadedDate == date && rows.isEmpty() && state.error == null) item {
                     Card(Modifier.fillMaxWidth().testTag("habits_empty")) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(stringResource(R.string.habit_empty_heading), style = MaterialTheme.typography.titleLarge)
@@ -125,7 +131,7 @@ fun HabitsScreen(
                         }
                     }
                 }
-                if (state.days.isNotEmpty()) {
+                if (rows.isNotEmpty()) {
                     item {
                         Text(stringResource(R.string.habit_scheduled_heading), style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.testTag("habits_scheduled_heading"))

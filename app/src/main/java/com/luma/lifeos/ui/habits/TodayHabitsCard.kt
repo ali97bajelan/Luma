@@ -37,6 +37,8 @@ fun TodayHabitsCard(
     onUndo: (UUID) -> Unit,
     onRetry: () -> Unit,
 ) {
+    val shownDate = state.date ?: fallbackDate
+    val rows = state.rowsFor(shownDate)
     Card(Modifier.fillMaxWidth().testTag("today_habits_card")) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
@@ -54,28 +56,31 @@ fun TodayHabitsCard(
                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("today_habit_tracking_day_difference"))
                 }
             }
-            if (state.loading && state.days.isEmpty()) CircularProgressIndicator(Modifier.testTag("today_habits_loading"))
+            if (state.loading) {
+                CircularProgressIndicator(Modifier.testTag("today_habits_loading"))
+                Text(stringResource(R.string.habit_loading))
+            }
             if (state.error == HabitUiError.LOAD) {
                 Text(stringResource(R.string.habit_load_error), color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.retry))
                 }
             }
-            if (!state.loading && state.days.isEmpty() && state.error == null) {
+            if (!state.loading && state.loadedDate == shownDate && rows.isEmpty() && state.error == null) {
                 Text(stringResource(R.string.habit_empty_body))
                 Button(onClick = onCreate, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.habit_add))
                 }
             }
-            if (state.days.isNotEmpty()) {
-                val scheduled = splitHabitRows(state.days).scheduled
+            if (rows.isNotEmpty()) {
+                val scheduled = splitHabitRows(rows).scheduled
                 val visible = scheduled.take(3)
                 if (visible.isEmpty()) Text(stringResource(R.string.habit_no_scheduled),
                     modifier = Modifier.testTag("today_habits_none_scheduled"))
                 visible.forEach { row ->
                     HabitRow(row, state.pendingLogs.filter { it.input.habitId == row.day.habit.id },
                         state.pendingSchedules[row.day.habit.id],
-                        onOpen = { onHabit(row.day.habit.id, state.date ?: fallbackDate) },
+                        onOpen = { onHabit(row.day.habit.id, row.day.date) },
                         onLog = { onLog(row.day.habit.id) }, onRetry = onRetryLog, compact = true)
                 }
             }

@@ -801,4 +801,5 @@
     <string name="todo_undo_stale">Cette tâche a changé ; son état terminé ne peut plus être annulé.</string>
     <string name="todo_feedback_dismiss">Ignorer le message</string>
     <string name="capture_record_section">Éléments de vie</string>
+    <string name="habit_loading">Chargement des habitudes pour cette date…</string>
 </resources>

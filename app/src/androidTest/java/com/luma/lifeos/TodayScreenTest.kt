@@ -60,7 +60,7 @@ class TodayScreenTest {
         val instant = day.atStartOfDay(ZoneId.of("UTC")).toInstant()
         val habit = HabitDefinition(UUID.randomUUID(), "Water", "glasses", day, instant, instant)
         val schedule = HabitSchedule(UUID.randomUUID(), habit.id, day, 10, setOf(day.dayOfWeek), HabitLifecycle.ACTIVE)
-        val habits = HabitsUiState(date = day, trackingZone = ZoneId.of("UTC"), deviceDate = day,
+        val habits = HabitsUiState(date = day, loadedDate = day, trackingZone = ZoneId.of("UTC"), deviceDate = day,
             days = listOf(HabitDayRow(HabitDay(habit, day, ZoneId.of("UTC"), schedule, 1, false), true)), loading = false)
         compose.setContent {
             LifeOsTheme {

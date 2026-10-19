@@ -43,7 +43,7 @@ class HabitsViewModelTest {
         val vm = HabitsViewModel(repo, SavedStateHandle(), clock)
         vm.selectDate(day, zone); advanceUntilIdle()
 
-        repeat(3) { vm.log(repo.habitId()) }
+        repeat(3) { vm.log(vm.state.value.days.single { it.day.habit.id == repo.habitId() }) }
         runCurrent()
 
         val actions = vm.state.value.pendingLogs
@@ -60,7 +60,7 @@ class HabitsViewModelTest {
         val repo = HabitRepositoryFixture(clock).apply { failAfterLog = true }
         val saved = SavedStateHandle()
         val vm = HabitsViewModel(repo, saved, clock)
-        vm.selectDate(day, zone); advanceUntilIdle(); vm.log(repo.habitId()); advanceUntilIdle()
+        vm.selectDate(day, zone); advanceUntilIdle(); vm.log(vm.state.value.days.single { it.day.habit.id == repo.habitId() }); advanceUntilIdle()
 
         val pending = vm.state.value.pendingLogs.single()
         assertEquals(1, repo.logs.size)
@@ -80,7 +80,7 @@ class HabitsViewModelTest {
         val gate = CompletableDeferred<Unit>()
         val repo = HabitRepositoryFixture(clock).apply { blockLog = gate }
         val vm = HabitsViewModel(repo, SavedStateHandle(), clock)
-        vm.selectDate(day, zone); advanceUntilIdle(); vm.log(repo.habitId()); runCurrent()
+        vm.selectDate(day, zone); advanceUntilIdle(); vm.log(vm.state.value.days.single { it.day.habit.id == repo.habitId() }); runCurrent()
         vm.selectDate(day.plusDays(1), zone)
         gate.complete(Unit); advanceUntilIdle()
 
@@ -126,7 +126,7 @@ class HabitsViewModelTest {
         val row = vm.state.value.days.single()
         assertFalse(row.canLog)
         assertEquals(HabitLogDisabledReason.FUTURE_DATE, row.disabledReason)
-        vm.log(repo.habitId())
+        vm.log(vm.state.value.days.single { it.day.habit.id == repo.habitId() })
         advanceUntilIdle()
         assertTrue(repo.logInputs.isEmpty())
     }
@@ -204,7 +204,7 @@ class HabitsViewModelTest {
         val vm = HabitsViewModel(repo, SavedStateHandle(), overlapClock)
         vm.selectDate(overlapDate, overlapZone); advanceUntilIdle()
 
-        vm.log(repo.habitId()); advanceUntilIdle()
+        vm.log(vm.state.value.days.single { it.day.habit.id == repo.habitId() }); advanceUntilIdle()
 
         assertEquals(overlapClock.instant(), repo.logInputs.single().second.occurredAt)
     }

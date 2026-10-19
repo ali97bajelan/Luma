@@ -790,4 +790,5 @@
     <string name="todo_undo_stale">This task changed, so the completion can no longer be undone.</string>
     <string name="todo_feedback_dismiss">Dismiss feedback</string>
     <string name="capture_record_section">Life records</string>
+    <string name="habit_loading">Loading habits for this date…</string>
 </resources>

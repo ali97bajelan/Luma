@@ -191,7 +191,7 @@ class HabitCaptureFlowTest {
         }
         compose.setContent {
             LifeOsTheme {
-                TodayHabitsCard(HabitsUiState(date = today, days = rows, loading = false), today, zone,
+                TodayHabitsCard(HabitsUiState(date = today, loadedDate = today, days = rows, loading = false), today, zone,
                     onViewAll = {}, onCreate = {}, onHabit = { _, _ -> }, onLog = {}, onRetryLog = {},
                     onUndo = {}, onRetry = {})
             }
@@ -236,7 +236,7 @@ class HabitCaptureFlowTest {
         val pending = PendingHabitLog(pendingId, HabitLogInput(habitId, today, zone, null), "write failed")
         var retried: UUID? = null
         var undone: UUID? = null
-        val state = HabitsUiState(date = today, trackingZone = zone,
+        val state = HabitsUiState(date = today, loadedDate = today, loading = false, trackingZone = zone,
             days = listOf(HabitDayRow(day, canLog = true)), actionError = "write failed",
             pendingLogs = listOf(pending), undoableLog = log,
             detail = HabitDetailUiState(habit = habit, day = day, schedules = listOf(schedule), loading = false))
@@ -268,7 +268,7 @@ class HabitCaptureFlowTest {
         val day = HabitDay(habit, today, zone, schedule, 1, false)
         var deletes = 0
         var lifecycleChanges = 0
-        val state = HabitsUiState(trackingZone = zone, days = listOf(HabitDayRow(day, canLog = true)), detail = HabitDetailUiState(
+        val state = HabitsUiState(date = today, loadedDate = today, loading = false, trackingZone = zone, days = listOf(HabitDayRow(day, canLog = true)), detail = HabitDetailUiState(
             habit = habit, day = day, schedules = listOf(schedule), history = listOf(HabitLog(logId, habitId, today, zone, null, createdAt, createdAt)),
             historyTotal = 1, loading = false,
         ))
@@ -309,7 +309,7 @@ class HabitCaptureFlowTest {
         val pending = HabitSchedule(UUID.randomUUID(), habitId, today.plusDays(1), 2, DayOfWeek.entries.toSet(), HabitLifecycle.PAUSED)
         val day = HabitDay(habit, today, zone, active, 0, false)
         var cancelled = 0
-        val state = HabitsUiState(trackingZone = zone, days = listOf(HabitDayRow(day, canLog = true)), detail = HabitDetailUiState(
+        val state = HabitsUiState(date = today, loadedDate = today, loading = false, trackingZone = zone, days = listOf(HabitDayRow(day, canLog = true)), detail = HabitDetailUiState(
             habit = habit, day = day, schedules = listOf(active, pending), pendingSchedule = pending, loading = false,
         ))
 
@@ -647,7 +647,7 @@ class HabitCaptureFlowTest {
             CompositionLocalProvider(LocalDensity provides Density(deviceDensity.density, fontScale = 2f)) {
                 LifeOsTheme {
                     Box(Modifier.width(320.dp)) {
-                        TodayHabitsCard(HabitsUiState(date = today, days = listOf(row), loading = false), today, zone,
+                        TodayHabitsCard(HabitsUiState(date = today, loadedDate = today, days = listOf(row), loading = false), today, zone,
                             onViewAll = {}, onCreate = {}, onHabit = { _, _ -> }, onLog = {}, onRetryLog = {},
                             onUndo = {}, onRetry = {})
                     }

@@ -131,6 +131,11 @@ fun TodayRoute(
             }
             val habitViewModel: HabitsViewModel = viewModel(factory = habitFactory)
             val habitsState by habitViewModel.state.collectAsStateWithLifecycle(initialValue = HabitsUiState())
+            // Hide the previous selection even in the render before LaunchedEffect invalidates it.
+            val displayedHabits = if (habitsState.deviceDate != deviceDate || habitsState.deviceZone != zone ||
+                (habitsDate != null && habitsState.date != habitsDate)) {
+                habitsState.copy(days = emptyList(), loadedDate = null, loading = true, error = null)
+            } else habitsState
             // The habit preview can follow its tracking-zone date; counts belong to the selected date.
             val logCounts = remember(habits, date, retry, summaryRetry, habitsState.loading) {
                 habits.observeDay(date).map<List<HabitDay>, Int?> { days -> days.sumOf { it.count } }.catch { failure ->
@@ -142,10 +147,15 @@ fun TodayRoute(
             LaunchedEffect(habitsDate, deviceDate, zone) { habitViewModel.selectDate(habitsDate, zone, deviceDate) }
             TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
                 onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,
-                summaryState = summary, onSummaryRetry = { summaryRetry++ }, habitsState = habitsState,
+                summaryState = summary, onSummaryRetry = { summaryRetry++ }, habitsState = displayedHabits,
                 integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn,
-                habitLogCount = habitLogCount, onHabits = onHabits, onCreateHabit = onCreateHabit, onHabit = onHabit,
-                onHabitLog = habitViewModel::log, onHabitRetryLog = habitViewModel::retryLog,
+                habitLogCount = habitLogCount, onHabits = onHabits, onCreateHabit = onCreateHabit,
+                onHabit = { id, rowDate -> displayedHabits.rowsFor(rowDate).firstOrNull { it.day.habit.id == id }?.let { row ->
+                    habitViewModel.dateForRow(row)?.let { onHabit(id, it) }
+                } },
+                onHabitLog = { id -> displayedHabits.date?.let { selected ->
+                    displayedHabits.rowsFor(selected).firstOrNull { it.day.habit.id == id }?.let(habitViewModel::log)
+                } }, onHabitRetryLog = habitViewModel::retryLog,
                 onHabitRetry = habitViewModel::retry, onHabitUndo = habitViewModel::undoLog, onCapture = onCapture,
                 todayTasks = todayTasks, todayTaskActions = todayTaskActions, onTask = onTask, onSetTaskCompleted = { task, completed ->
                     todayTasksViewModel?.setCompleted(task, completed)

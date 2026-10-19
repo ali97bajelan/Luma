@@ -77,7 +77,7 @@ class TodayTasksSemanticsTest {
                     state = TodayUiState.Data(listOf(event)),
                     onSelectDate = {}, onToday = {}, onRetry = {},
                     summaryState = DailySummaryState.Data(DailySummary(date, zone, 1, 0, 0)),
-                    habitsState = HabitsUiState(date = date, trackingZone = zone, deviceDate = date, loading = false),
+                    habitsState = HabitsUiState(date = date, loadedDate = date, trackingZone = zone, deviceDate = date, loading = false),
                     todayTasks = TodayTasksState.Error,
                 )
             }

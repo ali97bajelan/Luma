@@ -791,4 +791,5 @@
     <string name="todo_undo_stale">این کار تغییر کرده است؛ دیگر نمی‌توان آن را بازگرداند.</string>
     <string name="todo_feedback_dismiss">بستن پیام</string>
     <string name="capture_record_section">ثبت رویدادهای زندگی</string>
+    <string name="habit_loading">در حال بارگیری عادت‌ها برای این تاریخ…</string>
 </resources>

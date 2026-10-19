@@ -54,16 +54,24 @@ class HabitsViewModel(
         currentDeviceZone = deviceZone
         currentDeviceDate = deviceDate
         selectionJob?.cancel()
+        observationJob?.cancel()
+        // Invalidate synchronously, before tracking-zone lookup or the new observation can suspend.
+        mutableState.update { it.copy(date = date, loadedDate = null,
+            selectionGeneration = it.selectionGeneration + 1, days = emptyList(), pendingSchedules = emptyMap(),
+            deviceZone = deviceZone, deviceDate = deviceDate, loading = true, error = null) }
+        val generation = state.value.selectionGeneration
         selectionJob = viewModelScope.launch {
             try {
                 val zone = repository.trackingZone() ?: deviceZone
                 val resolvedDate = date ?: LocalDate.now(clock.withZone(zone))
+                if (state.value.selectionGeneration != generation) return@launch
                 mutableState.update { it.copy(date = resolvedDate, trackingZone = zone, deviceZone = deviceZone,
                     deviceDate = deviceDate, loading = true, error = null) }
-                observe(resolvedDate, zone)
+                observe(resolvedDate, zone, generation)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                mutableState.update { it.copy(loading = false, error = HabitUiError.LOAD) }
+                mutableState.update { if (it.selectionGeneration != generation) it
+                    else it.copy(loading = false, error = HabitUiError.LOAD) }
             }
         }
     }
@@ -76,15 +84,17 @@ class HabitsViewModel(
         }
     }
 
-    private suspend fun observe(date: LocalDate, zone: ZoneId) {
+    private fun observe(date: LocalDate, zone: ZoneId, generation: Long) {
         observationJob?.cancel()
         observationJob = viewModelScope.launch {
             repository.observeDay(date)
                 .catch { failure ->
                     if (failure is CancellationException) throw failure
-                    mutableState.update { it.copy(loading = false, error = HabitUiError.LOAD) }
+                    mutableState.update { if (it.selectionGeneration != generation) it
+                        else it.copy(loadedDate = null, days = emptyList(), loading = false, error = HabitUiError.LOAD) }
                 }
                 .collect { days ->
+                    if (state.value.selectionGeneration != generation) return@collect
                     val today = LocalDate.now(clock.withZone(zone))
                     val rows = days.map { day ->
                         val schedule = day.schedule
@@ -96,24 +106,34 @@ class HabitsViewModel(
                             schedule.lifecycle == HabitLifecycle.ARCHIVED -> HabitLogDisabledReason.ARCHIVED
                             else -> null
                         }
-                        HabitDayRow(day, canLog = reason == null, disabledReason = reason)
+                        HabitDayRow(day, canLog = reason == null, disabledReason = reason, selectionGeneration = generation)
                     }
-                    mutableState.update { it.copy(days = rows, date = date, trackingZone = zone,
+                    mutableState.update { if (it.selectionGeneration != generation) it
+                        else it.copy(days = rows, loadedDate = date, trackingZone = zone,
                         deviceZone = currentDeviceZone, deviceDate = currentDeviceDate,
                         loading = false, error = null) }
-                    refreshPendingSchedules(days.map { it.habit.id }, today)
+                    refreshPendingSchedules(days.map { it.habit.id }, today, generation)
                 }
         }
     }
 
-    fun log(habitId: UUID) {
+    fun dateForRow(row: HabitDayRow): LocalDate? {
         val current = state.value
-        val row = current.days.firstOrNull { it.day.habit.id == habitId } ?: return
-        if (!row.canLog) return
+        val date = current.date ?: return null
+        if (row.selectionGeneration != current.selectionGeneration || row.day.zone != current.trackingZone ||
+            current.rowsFor(date).none { it.day.habit.id == row.day.habit.id } || row.day.date != date) return null
+        return date
+    }
+
+    fun log(row: HabitDayRow) {
+        if (!row.canLog || dateForRow(row) == null) return
+        // Recheck eligibility against the latest snapshot, even if the callback came from an older render.
+        if (state.value.days.none { it.day.habit.id == row.day.habit.id && it.canLog }) return
         val zone = row.day.zone
         val now = clock.instant().truncatedTo(ChronoUnit.MILLIS)
         val today = LocalDate.now(clock.withZone(zone))
-        val input = HabitLogInput(habitId, row.day.date, zone,
+        if (row.day.date > today) return
+        val input = HabitLogInput(row.day.habit.id, row.day.date, zone,
             occurredAt = if (row.day.date == today) habitLogTime(row.day.date,
                 now.atZone(zone).toLocalTime(), zone, now, now.atZone(zone).offset) else null)
         val action = PendingHabitLog(UUID.randomUUID(), input)
@@ -276,7 +296,8 @@ class HabitsViewModel(
         viewModelScope.launch { refreshDetail(habitId, date) }
     }
 
-    private suspend fun refreshPendingSchedules(ids: List<UUID>, today: LocalDate) {
+    private suspend fun refreshPendingSchedules(ids: List<UUID>, today: LocalDate,
+        generation: Long = state.value.selectionGeneration) {
         val pending = linkedMapOf<UUID, com.luma.lifeos.domain.habit.HabitSchedule>()
         ids.forEach { id ->
             runCatching { repository.schedules(id) }.getOrNull()?.let { versions ->
@@ -285,7 +306,7 @@ class HabitsViewModel(
                 scheduleFor(effectiveDate, versions)?.takeIf { it.effectiveFrom == effectiveDate }?.let { pending[id] = it }
             }
         }
-        mutableState.update { it.copy(pendingSchedules = pending) }
+        mutableState.update { if (it.selectionGeneration != generation) it else it.copy(pendingSchedules = pending) }
     }
 
     private suspend fun refreshDetail(habitId: UUID? = null, date: LocalDate? = null) {

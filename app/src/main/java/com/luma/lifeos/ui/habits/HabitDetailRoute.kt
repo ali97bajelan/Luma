@@ -64,8 +64,11 @@ fun HabitDetailRoute(
     val state by habits.state.collectAsStateWithLifecycle()
     LaunchedEffect(habitId, date, deviceZone) { habits.openDetail(habitId, date, deviceZone) }
     LaunchedEffect(state.detail?.deleted) { if (state.detail?.deleted == true) onBack() }
-    HabitDetailScreen(state, habitId, date, logId, onBack,
-        onEdit = { onEdit(habitId) }, onLog = { habits.log(habitId) },
+    val renderedState = state
+    HabitDetailScreen(renderedState, habitId, date, logId, onBack,
+        onEdit = { onEdit(habitId) }, onLog = {
+            renderedState.rowsFor(date).firstOrNull { it.day.habit.id == habitId }?.let(habits::log)
+        },
         onRetryLog = habits::retryLog, onUndoLog = habits::undoLog,
         onSkip = { habits.setSkipRemaining(habitId, true) }, onResumeToday = { habits.setSkipRemaining(habitId, false) },
         onPauseResume = { habits.changeLifecycle(habitId, it) },
@@ -109,7 +112,7 @@ fun HabitDetailScreen(
     val detail = state.detail
     val habit = detail?.habit
     val day = detail?.day
-    val row = state.days.firstOrNull { it.day.habit.id == habitId }
+    val row = state.rowsFor(date).firstOrNull { it.day.habit.id == habitId }
     val trackingZone = state.trackingZone ?: habit?.let { day?.zone } ?: ZoneId.systemDefault()
     val today = LocalDate.now(trackingZone)
     val futureStart = habit?.start?.isAfter(today) == true
@@ -134,7 +137,7 @@ fun HabitDetailScreen(
         LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("habit_detail_list"), contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (detail?.loading == true) item { CircularProgressIndicator(Modifier.testTag("habit_detail_loading")) }
-            if (detail?.error == HabitUiError.LOAD) item {
+            if (detail?.error == HabitUiError.LOAD || state.error == HabitUiError.LOAD) item {
                 Text(stringResource(R.string.habit_load_error), color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }

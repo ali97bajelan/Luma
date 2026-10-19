@@ -19,6 +19,7 @@ data class HabitDayRow(
     val day: HabitDay,
     val canLog: Boolean,
     val disabledReason: HabitLogDisabledReason? = null,
+    val selectionGeneration: Long = 0,
 )
 
 data class PendingHabitLog(
@@ -59,6 +60,8 @@ data class HabitDetailUiState(
 
 data class HabitsUiState(
     val date: LocalDate? = null,
+    val loadedDate: LocalDate? = null,
+    val selectionGeneration: Long = 0,
     val trackingZone: ZoneId? = null,
     val deviceZone: ZoneId? = null,
     val deviceDate: LocalDate? = null,
@@ -70,4 +73,8 @@ data class HabitsUiState(
     val undoableLog: HabitLog? = null,
     val pendingSchedules: Map<UUID, HabitSchedule> = emptyMap(),
     val detail: HabitDetailUiState? = null,
-)
+) {
+    fun rowsFor(date: LocalDate): List<HabitDayRow> =
+        if (loading || error != null || this.date != date || loadedDate != date) emptyList()
+        else days.filter { it.day.date == date && it.selectionGeneration == selectionGeneration }
+}
