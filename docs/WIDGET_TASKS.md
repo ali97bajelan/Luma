@@ -1,6 +1,6 @@
 # Luma home-screen widget tasks
 
-Prepared: 19 October 2026. Status: **WG01 implemented; acceptance verification pending. WG02–WG08 remain pending.** Static resource XML and localization-key checks passed. A Gradle compile was attempted but could not start because the Gradle 9.1 distribution is not cached and network access is blocked. No Gradle test or emulator/launcher test was run, per request.
+Prepared: 19 October 2026. Status: **WG01 implemented; acceptance verification pending. WG02 implemented; acceptance verification pending. WG03–WG08 remain pending.** Room schema 5 was exported and the `:core:data:compileDebugKotlin` production compile passed. No Gradle test or emulator/launcher test was run, per request.
 
 Requested outcome: Habits and Tasks widgets support common actions on the Android home screen; Quick capture opens a new Mood, Memory or Journal editor directly. “mod” is interpreted as “mood”. Use `widgets/WGNN` when referring to these tasks to distinguish them from existing habit, task and audit numbering.
 
@@ -24,7 +24,7 @@ Priority here describes sequencing within widget delivery; it does not redefine 
 | Task | Status | Priority | Deliverable | Depends on | Complexity | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
 | WG01 | Implemented; verification pending | First slice | Direct Quick capture widget; typed cold/warm intent routing; existing draft preservation | — | Medium | AC-01/02 |
-| WG02 | Pending | Foundation | Pure contracts, local runtime tables, bounded snapshots, migration, archive separation and restore invalidation | — | High | AC-08/09 |
+| WG02 | Implemented; acceptance verification pending | Foundation | Pure contracts, local runtime tables, bounded snapshots, migration, archive separation and restore invalidation | — | High | AC-08/09 |
 | WG03 | Pending | Integrity gate | Atomic +1/completion, duplicate/replay safety, stale validation, exact Undo and retained retry | WG02 | High | AC-03–06/08/09 |
 | WG04 | Pending | Foundation | Refresh/action workers, coalescing, lifecycle/time/locale/theme handling and process-absent execution | WG01–03 | High | AC-07/12 |
 | WG05 | Pending | Feature | Habits provider and responsive shared rendering/feedback | WG01–04 | Medium | AC-01/03/06/10 |
@@ -32,12 +32,12 @@ Priority here describes sequencing within widget delivery; it does not redefine 
 | WG07 | Pending | Release dependency | Required configuration, in-app instance management, discovery/pinning and privacy help | WG01–06 | Medium | AC-08/11 |
 | WG08 | Pending | Acceptance gate | Integrated suites, launcher/device/accessibility/performance evidence and release decision | WG01–07 | High | All |
 
-AC references expand to `WG-AC-NN` in the specification. WG01 can ship independently. Data providers are development-only until WG03 safety and WG07 required configuration are complete; do not expose mutations behind incomplete transaction/restore behavior. Recommended start is **WG01**, then WG02→WG03→WG04→WG05→WG06→WG07→WG08. Independent planning order does not authorize concurrent edits to shared navigation, strings or composition roots.
+AC references expand to `WG-AC-NN` in the specification. WG01 can ship independently. Data providers are development-only until WG03 safety and WG07 required configuration are complete; do not expose mutations behind incomplete transaction/restore behavior. WG01 and WG02 source implementation is in place; **WG03** is the next implementation task, with WG01/WG02 acceptance verification still outstanding. The full delivery order is WG01→WG02→WG03→WG04→WG05→WG06→WG07→WG08. Independent planning order does not authorize concurrent edits to shared navigation, strings or composition roots.
 
 ## Task completion checklist
 
 - [ ] WG01 acceptance: all three new-entry buttons work cold/warm; Cancel creates nothing; recreation and repeated taps preserve existing drafts; default and compact capture layouts verified. Source implementation is present; behavior remains unverified because automated and launcher checks were not run.
-- [ ] WG02: migrations 1–4→5 retain data; snapshots return bounded rows/full counts; hidden details have no row tokens; archives 1–4 remain compatible and restore cleanup is atomic.
+- [ ] WG02 acceptance verification: migrations 1–4→5 retain data; snapshots return bounded rows/full counts; hidden details have no row tokens; archives 1–4 remain compatible and restore cleanup is atomic. Source implementation, Room schema 5 export and production compile are complete; storage/migration/backup tests remain pending because no Gradle tests or emulator tests were run, per request.
 - [ ] WG03: duplicate/concurrent/lost-result delivery writes once; midnight/zone/count/revision/config races reject; original command after Undo stays terminal; failed Undo/Retry retains original identity.
 - [ ] WG04: one periodic schedule only with data widgets; no dropped refresh arriving during render; app and widget changes update all affected instances; process death/remap/delayed work fail safely.
 - [ ] WG05: habits respect tracking date, active schedule, skip/target/order; feedback survives hidden rows; small/large/RTL/scaled layouts preserve recovery.
@@ -51,6 +51,6 @@ Use the plan's task-specific failing-test → implement → passing-test steps. 
 
 The planning package fixes provider scope, widget interactions, configuration defaults, typed navigation, data contracts, migration/backup boundary, action lifetime, refresh policy, file ownership and acceptance tests. Product choices are documented defaults; they may be revised before implementation without pretending user research has already validated them.
 
-Before starting, reread current files and pending changes; the working tree already contains unrelated Todo editor work and updated audit statuses. Confirm schema version 5 is still available before WG02. Reuse existing offline test/build tooling and the disposable direct-ADB fallback documented in [Todo acceptance](TODO_ACCEPTANCE_2026-10-19.md) if connected Gradle runs remain blocked. Never reset/restore the owner's installed data.
+Before WG02, current files and pending changes were reread; the working tree also contains unrelated untracked release and data-test artifacts, which were preserved. Room schema version 5 was available; the additive migration, source tables and exported schema are in place, and production compilation passed. Reuse existing offline test/build tooling and the disposable direct-ADB fallback documented in [Todo acceptance](TODO_ACCEPTANCE_2026-10-19.md) if connected Gradle runs remain blocked. Never reset/restore the owner's installed data.
 
 At WG08 create `docs/WIDGET_ACCEPTANCE_<actual-date>.md` and record build/APK identity, device/API/launcher, dimensions, locale/theme/font, fixture, expected/actual and evidence per WG-AC. Keep the distinction between planned checks, compiled tests, observed passes and explicit blocks. WG01 now has source implementation and static resource-check evidence; no successful build or device evidence exists yet.

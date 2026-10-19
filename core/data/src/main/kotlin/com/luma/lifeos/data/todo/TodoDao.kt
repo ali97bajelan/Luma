@@ -32,10 +32,36 @@ data class TodoPageRow(
     }
 }
 
+data class WidgetTodoRow(
+    @ColumnInfo(name = "task_id") val taskId: String,
+    val title: String,
+    @ColumnInfo(name = "due_date") val dueDate: String,
+)
+
+data class WidgetTodoSummary(
+    val total: Int,
+    val hasAnyItems: Boolean,
+)
+
 @Dao
 interface TodoDao {
     @Query("SELECT * FROM todo_task WHERE id = :id")
     suspend fun find(id: String): TodoEntity?
+
+    @Query("""
+        SELECT COUNT(*) AS total, EXISTS(SELECT 1 FROM todo_task) AS hasAnyItems
+        FROM todo_task WHERE completed_at IS NULL AND due_date <= :date
+    """)
+    suspend fun widgetTodaySummary(date: String): WidgetTodoSummary
+
+    @Query("""
+        SELECT id AS task_id, title, due_date
+        FROM todo_task
+        WHERE completed_at IS NULL AND due_date <= :date
+        ORDER BY due_date ASC, created_at ASC, id ASC
+        LIMIT :limit
+    """)
+    suspend fun widgetTodayRows(date: String, limit: Int): List<WidgetTodoRow>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: TodoEntity)

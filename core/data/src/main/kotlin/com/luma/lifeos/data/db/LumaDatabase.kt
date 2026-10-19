@@ -24,6 +24,9 @@ import com.luma.lifeos.data.habit.HabitScheduleEntity
 import com.luma.lifeos.data.habit.HabitSettingsEntity
 import com.luma.lifeos.data.todo.TodoDao
 import com.luma.lifeos.data.todo.TodoEntity
+import com.luma.lifeos.data.widget.WidgetCommandEntity
+import com.luma.lifeos.data.widget.WidgetDao
+import com.luma.lifeos.data.widget.WidgetInstanceEntity
 
 @Database(
     entities = [
@@ -36,6 +39,7 @@ import com.luma.lifeos.data.todo.TodoEntity
         HabitSettingsEntity::class, HabitEntity::class, HabitScheduleEntity::class, HabitLogEntity::class,
         HabitDayChoiceEntity::class, HabitReminderEntity::class, HabitReminderRuntimeEntity::class,
         TodoEntity::class,
+        WidgetInstanceEntity::class, WidgetCommandEntity::class,
     ],
     version = LumaDatabase.VERSION,
     exportSchema = true,
@@ -51,9 +55,10 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun habits(): HabitDao
     abstract fun habitTimeline(): HabitTimelineSql
     abstract fun todos(): TodoDao
+    abstract fun widgets(): WidgetDao
 
     companion object {
-        const val VERSION = 4
+        const val VERSION = 5
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
@@ -150,6 +155,22 @@ abstract class LumaDatabase : RoomDatabase() {
                     )""")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_completed_at_due_date_created_at_id ON todo_task(completed_at, due_date, created_at, id)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_completed_at_id ON todo_task(completed_at, id)")
+                }
+            },
+            object : Migration(4, 5) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS widget_instance (
+                        widget_id INTEGER NOT NULL, kind TEXT NOT NULL, show_details INTEGER NOT NULL,
+                        feedback_json TEXT, PRIMARY KEY(widget_id)
+                    )""")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS widget_command (
+                        token TEXT NOT NULL, widget_id INTEGER NOT NULL, action TEXT NOT NULL,
+                        payload_json TEXT NOT NULL, fingerprint TEXT NOT NULL, status TEXT NOT NULL,
+                        outcome_json TEXT, created_at INTEGER NOT NULL, PRIMARY KEY(token),
+                        FOREIGN KEY(widget_id) REFERENCES widget_instance(widget_id) ON DELETE CASCADE
+                    )""")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_widget_command_widget_id_status_fingerprint ON widget_command(widget_id, status, fingerprint)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_widget_command_created_at ON widget_command(created_at)")
                 }
             },
         )

@@ -56,7 +56,8 @@ Unknown format/schema versions fail safely; future versions require an explicit
 reader. Task rows are validated for canonical UUIDs and civil dates, title/note
 limits, and update/creation chronology. Schema 4 restores preserve task identities,
 content and timestamps while rotating revision tokens, so pre-restore writes cannot
-change the replacement data. The Room database schema version is 4.
+change the replacement data. The Room database schema version is 5; widget runtime
+tables are device-local and never part of the version-4 portable archive.
 
 ## Validation and replacement
 
@@ -100,7 +101,12 @@ Schema 3 restores retain habit definitions, schedules, logs, choices and reminde
 preferences. Reminder preferences are forced off, revisions rotate, and transient
 reminder runtime is discarded so restore cannot replay an old notification action.
 Schema 4 restores also retain open and completed tasks; their revision tokens rotate
-during publication. Older schema 1–3 restores clear the live task table.
+during publication. Older schema 1–3 restores clear the live task table. Room schema
+5 adds device-local widget instances and command tokens; these tables are excluded
+from every archive inventory. A successful replacement restore revokes all widget
+commands, hides per-instance details and clears widget feedback in the same
+transaction as the content replacement. A failed or cancelled restore leaves widget
+runtime state untouched. The portable archive schema remains version 4.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss
 checks remain pending device validation; see [VALIDATION.md](VALIDATION.md).

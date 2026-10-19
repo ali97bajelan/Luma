@@ -26,6 +26,8 @@ import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.data.repository.RoomTodoRepository
+import com.luma.lifeos.data.widget.RoomWidgetStore
+import com.luma.lifeos.domain.widget.WidgetStore
 
 /** One database per process, owned by the application composition root. */
 class LumaStorage(context: Context) {
@@ -51,6 +53,7 @@ class LumaStorage(context: Context) {
     val memories: MemoryRepository = RoomMemoryRepository(database)
     val habits: HabitRepository = RoomHabitRepository(database)
     val todos: TodoRepository = RoomTodoRepository(database)
+    val widgets: WidgetStore = RoomWidgetStore(database)
     val places: PlaceRepository = RoomPlaceRepository(database)
     val people: PersonRepository = RoomPersonRepository(database)
     val events = RoomEventStore(database)

@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-19-home-screen-widgets-design.md](../specs/2026-10-19-home-screen-widgets-design.md)
 
-**Status:** WG01 source implementation is in place. Resource XML and en/fr/fa widget-string checks passed. The Kotlin compile could not start because Gradle 9.1 is unavailable locally and network access is blocked. No Gradle test or emulator/launcher test was run, per request; WG01 acceptance verification and WG02–WG08 remain pending.
+**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete, and `:core:data:compileDebugKotlin` passed. No Gradle test or emulator/launcher test was run, per request; WG01/WG02 acceptance verification and WG03–WG08 remain pending.
 
 ## Global Constraints
 
@@ -116,10 +116,11 @@ WG04 owns `WidgetRefreshCoordinator.request(context: Context): Unit`, `reconcile
 
 - [ ] Write failing tests `defaultDetailsHidden`, `boundedHabitAndTaskSnapshot`, `migration4To5PreservesContent`, `legacyRestoreRevokesCommandsAtomically`. For tasks due yesterday/today/tomorrow/null/completed, assert total=2 and only first two eligible rows; for six scheduled habits assert full total and at most rowLimit rows in created/id order. Hidden details always rows=[] even when rowLimit=3. Test populated migrations 1–4→5 and valid archive versions 1–4, plus failed/cancelled restore preserving runtime state.
 - [ ] Run `./gradlew :core:data:testDebugUnitTest :core:data:assembleDebugAndroidTest`; run the three named device classes (see verification commands below), observing expected new test failures.
-- [ ] Define Room tables exactly: `widget_instance(widget_id INTEGER PRIMARY KEY, kind TEXT NOT NULL, show_details INTEGER NOT NULL, feedback_json TEXT)`; `widget_command(token TEXT PRIMARY KEY, widget_id INTEGER NOT NULL, action TEXT NOT NULL, payload_json TEXT NOT NULL, fingerprint TEXT NOT NULL, status TEXT NOT NULL, outcome_json TEXT, created_at INTEGER NOT NULL)`. Index `(widget_id,status,fingerprint)` and `created_at`; instance foreign key cascades commands. Command payloads have a required version=1 and typed strict decoding; no user content is needed in payloads. Add explicit 4→5 migration with no destructive fallback.
-- [ ] Implement bounded SQL habit rows/counts with the same effective schedule/date predicates as the spec, task rows/counts using existing Today predicates/order, all inside snapshot transaction. Do not load all habits to truncate in UI. `rowLimit=0` still returns full summary/count and empty rows. Wire content-only invalidations; exclude runtime table writes to prevent refresh loops.
-- [ ] Keep archive inventories/CURRENT_BACKUP_SCHEMA_VERSION at 4. In the live restore transaction delete widget_command and clear feedback/set show_details=false on surviving instances. Do not place that cleanup in generic backup staging/deletion SQL. Invalid/cancelled restore never reaches cleanup. Host remap deletes old runtime state and creates verified new hidden instances. Reopening after reset has no commands/configuration.
-- [ ] Rerun tests, migration and backup regressions; require PASS and exported schema 5. Update `docs/BACKUP_FORMAT.md` during implementation to explain local runtime exclusion. Commit this slice.
+- [x] Define the two Room tables, command index and cascading instance relation; add explicit 4→5 migration with no destructive fallback. Typed version-1 payload decoding remains with WG03, when actionable command payloads are introduced.
+- [x] Implement bounded SQL habit rows/counts with the spec's effective schedule/date predicates and task rows/counts with existing Today eligibility/order, inside the snapshot transaction. `rowLimit=0` returns full summary/count and no rows; hidden details return no rows or tokens. Invalidation observes content tables only.
+- [x] Keep archive inventories and `CURRENT_BACKUP_SCHEMA_VERSION` at 4. In the live restore transaction delete commands and reset surviving instances to hidden details with cleared feedback. Host remap drops old runtime state and creates hidden instances. Update `docs/BACKUP_FORMAT.md` for local runtime exclusion.
+- [x] Export Room schema 5, pass the non-test `:core:data:compileDebugKotlin` production compile, and document local runtime exclusion in `docs/BACKUP_FORMAT.md`.
+- [ ] Run migration/storage/backup verification. No Gradle test or emulator test was run per request, so acceptance verification remains pending. Commit this slice after acceptance review.
 
 ## WG03 — Atomic actions, duplicate protection and exact Undo
 
@@ -223,4 +224,4 @@ For a named app device class, use the class's full package, for example:
 
 Run full app/data instrumentation at WG08. The current acceptance docs record an uncached UTP host-output artifact preventing Gradle connected runs in a previous environment; if still blocked, use the established disposable direct-ADB APK workflow in [TODO_ACCEPTANCE_2026-10-19.md](../../TODO_ACCEPTANCE_2026-10-19.md), recording exact current commands/results. A built test APK is not a passed test. Keep fresh evidence under `docs/ui-ux-audit/evidence/widgets/` when screenshots are available.
 
-Before beginning WG01, reread current working-tree navigation/editor contracts and preserve existing user changes. Before WG02, confirm no newer migration has claimed version 5; if it has, advance the additive migration and update this spec/plan consistently before editing schema files. Review implementation-ready documents as a package; no implementation or installation has been performed by this planning task.
+Before beginning WG01, reread current working-tree navigation/editor contracts and preserve existing user changes. Before WG02, confirm no newer migration has claimed version 5; if it has, advance the additive migration and update this spec/plan consistently before editing schema files. WG02 confirmed version 5 was available, implemented its additive migration and exported schema 5. Review implementation-ready documents as a package; no implementation or installation had been performed before WG01.

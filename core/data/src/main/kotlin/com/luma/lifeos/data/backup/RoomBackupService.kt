@@ -127,6 +127,10 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                 val target = database.openHelper.writableDatabase
                                 val liveHealthRevision = healthCheckpoint(target).optLong("revision", 0).coerceAtLeast(0)
                                 BackupSql.deleteStatements.forEach(target::execSQL)
+                                // Widget commands and privacy preferences describe this device, not the archive.
+                                // Revoke them only inside the committed replacement transaction.
+                                database.widgets().deleteAllCommands()
+                                database.widgets().resetInstancesAfterRestore()
                                 for (table in backupTables(schemaVersion)) {
                                     if (table == "habit_reminder_runtime") continue
                                     stage.openHelper.readableDatabase.query("SELECT * FROM `$table`").use { cursor ->
