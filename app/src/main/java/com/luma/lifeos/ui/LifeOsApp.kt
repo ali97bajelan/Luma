@@ -76,6 +76,9 @@ import com.luma.lifeos.ui.todo.TodoListRoute
 import com.luma.lifeos.ui.todo.encodeActionResult
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.mood.MoodEditorRoute
+import com.luma.lifeos.widget.CaptureKind
+import com.luma.lifeos.widget.WidgetDestination
+import com.luma.lifeos.widget.WidgetLaunchRequest
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.luma.lifeos.ui.today.TodayRoute
@@ -89,6 +92,7 @@ import com.luma.lifeos.ui.integrations.IntegrationAvailabilityViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun LifeOsApp(
@@ -109,6 +113,8 @@ fun LifeOsApp(
     reset: com.luma.lifeos.ui.privacy.AppDataReset? = null,
     habits: HabitRepository,
     todos: TodoRepository? = null,
+    widgetLaunch: WidgetLaunchRequest? = null,
+    onWidgetLaunchConsumed: (UUID) -> Unit = {},
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -145,6 +151,7 @@ fun LifeOsApp(
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
     var capturing by rememberSaveable { mutableStateOf(false) }
+    var widgetQuickCapture by rememberSaveable { mutableStateOf(false) }
     var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
     var captureFabHeight by remember { mutableStateOf(0.dp) }
     val currentRoute = backStackEntry?.destination?.route
@@ -153,6 +160,7 @@ fun LifeOsApp(
     val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
     fun openCapture(route: String, date: LocalDate?) {
         capturing = false
+        widgetQuickCapture = false
         val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
         navController.navigate(if (target == null) route else "$route?initialTime=$target")
     }
@@ -516,10 +524,59 @@ fun LifeOsApp(
                         places = places, onCreatePlace = { navController.navigate("place") })
             }
         }
+        LaunchedEffect(widgetLaunch?.id, navController) {
+            val request = widgetLaunch ?: return@LaunchedEffect
+            // The cold-start request waits here until NavHost has installed its graph.
+            navController.currentBackStackEntryFlow.first()
+            val top = navController.currentBackStackEntry
+            if (request.destination != WidgetDestination.QuickCapture) {
+                capturing = false
+                widgetQuickCapture = false
+            }
+            when (val destination = request.destination) {
+                WidgetDestination.Today -> {
+                    if (top?.destination?.route != PrimaryDestination.TODAY.route) {
+                        navController.navigate(PrimaryDestination.TODAY.route)
+                    }
+                }
+                WidgetDestination.QuickCapture -> {
+                    widgetQuickCapture = true
+                    capturing = true
+                }
+                is WidgetDestination.Capture -> {
+                    val route = when (destination.kind) {
+                        CaptureKind.MOOD -> "mood"
+                        CaptureKind.MEMORY -> "memory"
+                        CaptureKind.JOURNAL -> "journal"
+                    }
+                    val pattern = when (destination.kind) {
+                        CaptureKind.MOOD -> "mood?eventId={eventId}&initialTime={initialTime}"
+                        CaptureKind.MEMORY -> "memory?eventId={eventId}&initialTime={initialTime}"
+                        CaptureKind.JOURNAL -> "journal?eventId={eventId}&initialTime={initialTime}"
+                    }
+                    val isSameNewEditor = top?.destination?.route == pattern &&
+                        top.arguments?.getString("eventId") == null
+                    if (!isSameNewEditor) navController.navigate(route)
+                }
+                WidgetDestination.Habits -> navController.navigate(AppRoutes.HABITS)
+                is WidgetDestination.HabitDetail -> navController.navigate(
+                    "habit_detail/${destination.id}/${destination.date}",
+                )
+                WidgetDestination.Tasks -> if (todos != null) navController.navigate(AppRoutes.TASKS)
+                is WidgetDestination.Task -> if (todos != null) openTodoEditor(taskId = destination.id)
+                WidgetDestination.NewTask -> if (todos != null) {
+                    openTodoEditor(dueDate = LocalDate.now(ZoneId.systemDefault()))
+                }
+            }
+            onWidgetLaunchConsumed(request.id)
+        }
         TodoActionFeedbackHost(backStackEntry, todos, snackbarHostState, todoRestoreGeneration)
     }
     val browsedDate = selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
-    if (capturing) QuickCaptureSheet(browsedDate = browsedDate, onDismiss = { capturing = false }, onMood = { date ->
+    if (capturing) QuickCaptureSheet(browsedDate = browsedDate.takeUnless { widgetQuickCapture }, onDismiss = {
+        capturing = false
+        widgetQuickCapture = false
+    }, onMood = { date ->
         openCapture("mood", date)
     }, onJournal = { date ->
         openCapture("journal", date)
@@ -527,6 +584,7 @@ fun LifeOsApp(
         openCapture("memory", date)
     }, onTask = if (todos != null) ({
         capturing = false
+        widgetQuickCapture = false
         openTodoEditor()
     }) else null)
 }
