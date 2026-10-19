@@ -73,7 +73,7 @@ class TodoListViewModel(
     private val mutableState = MutableStateFlow(
         TodoListUiState(
             completed = saved[KEY_COMPLETED] ?: false,
-            pageLimit = if (saved[KEY_COMPLETED] == true) completedLimit else openLimit,
+            pageLimit = if (saved.get<Boolean>(KEY_COMPLETED) == true) completedLimit else openLimit,
             pendingIntents = readPendingIntents(),
             rowErrors = readPendingIntents().keys.associateWith { TodoListRowError.FAILED },
             rowErrorTitles = readPendingIntents().mapValues { it.value.title },

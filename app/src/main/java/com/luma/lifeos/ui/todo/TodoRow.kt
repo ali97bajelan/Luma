@@ -67,8 +67,9 @@ internal fun TodoRow(
             formatted,
         )
     } ?: if (completedList) null else stringResource(R.string.todo_no_date)
-    val originalDue = if (task.isCompleted && task.dueDate != null) {
-        stringResource(R.string.todo_due_original, task.dueDate.format(localizedDate(FormatStyle.MEDIUM)))
+    val originalDueDate = task.dueDate
+    val originalDue = if (task.isCompleted && originalDueDate != null) {
+        stringResource(R.string.todo_due_original, originalDueDate.format(localizedDate(FormatStyle.MEDIUM)))
     } else null
     val accessDescription = listOfNotNull(task.title, secondary, originalDue, statusDescription).joinToString(". ")
 

@@ -245,7 +245,7 @@ class TodoEditorViewModel(
                         val draft = saved.readDraft() ?: TodoDraft()
                         mutableState.value = state.value.copy(
                             draft = draft,
-                            baselineTitle = (baselineInput ?: task.toInput()).title,
+                            baselineTitle = baselineInput?.title.orEmpty(),
                             loading = false,
                             ready = true,
                             editing = true,
