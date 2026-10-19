@@ -1,6 +1,6 @@
 # Tasks feature planning handoff
 
-Prepared: 19 October 2026. Status: TD01 complete; TD02 in progress (schema export and verification pending); TD03 in progress (implementation written; verification pending); TD04 in progress (editor implementation written; verification pending); TD05 in progress (implementation written; verification pending per request); TD06–TD07 not started.
+Prepared: 19 October 2026. Status: TD01 complete; TD02 in progress (schema export and verification pending); TD03 in progress (implementation written; verification pending); TD04 in progress (editor implementation written; verification pending); TD05 in progress (implementation written; verification pending per request); TD06 in progress (implementation written; verification skipped per request); TD07 not started.
 
 The user requested investigation by a senior product manager and a senior UI/UX
 designer, with direct discussion to produce specifications, plans and tasks. They
@@ -35,7 +35,7 @@ and counted habits remain distinct.
 
 Priorities express proposed release scope, not implementation evidence. TD01's
 focused and full domain suites pass. TD02 remains in progress; TD03 is **In progress** (implementation written;
-verification pending); TD04 is **In progress** (editor implementation written; verification pending); TD05 is **In progress** (implementation written; verification pending per request); TD06–TD07 remain **Not started**. Every slice includes its owning tests and all three language catalogs where
+verification pending); TD04 is **In progress** (editor implementation written; verification pending); TD05 is **In progress** (implementation written; verification pending per request); TD06 is **In progress** (implementation written; verification skipped per request); TD07 remains **Not started**. Every slice includes its owning tests and all three language catalogs where
 UI is introduced.
 
 | ID | Status | Priority | Deliverable | Depends on | Acceptance coverage | Done when |
@@ -45,7 +45,7 @@ UI is introduced.
 | TD03 | In progress (verification pending) | P0 | Backup/restore, preview counts and reset contract | TD02 | TODO-AC-09/10; UX-TODO-15 | New archive round trip, old replacement, malformed/cancelled restore and existing backup regressions pass |
 | TD04 | In progress (verification pending) | P0 | Shared create/edit screen with reliable drafts/status/delete | TD02/03 | TODO-AC-01–03/07/08/12; UX-TODO-06–11/14 | JVM draft/conflict tests and editor interaction checks pass in localized UI |
 | TD05 | In progress (implementation written; verification pending per request) | P0 | Tasks lists, More access, Task in existing Quick Capture and completion Undo | TD04 | TODO-AC-04/05/07/08/12; UX-TODO-01–03/05/11/12/15 | >50-row live list, retry/Undo and navigation/capture regressions pass |
-| TD06 | Not started | P0 | Compact Today card and date/zone lifecycle | TD05 | TODO-AC-02/05/06/07/13; UX-TODO-04/05/12 | Cap/count/eligibility, hidden historical card, midnight/travel and independent failure checks pass |
+| TD06 | In progress (implementation written; verification skipped per request) | P0 | Compact Today card and date/zone lifecycle | TD05 | TODO-AC-02/05/06/07/13; UX-TODO-04/05/12 | Cap/count/eligibility, hidden historical card, midnight/travel and independent failure checks pass |
 | TD07 | Not started | P0 | Integrated language/accessibility/device acceptance and documentation | TD01–06 | All product/UX criteria; especially TODO-AC-11/13, UX-TODO-13/14/15 | Required automated/native checks have evidence; unresolved exceptions are explicit |
 
 Dependency order: **TD01 → TD02 → TD03 → TD04 → TD05 → TD06 → TD07**.
@@ -98,6 +98,13 @@ TD05 now adds the observed Open/Completed task list, More entry, existing Quick 
 action, shared editor navigation, completion Undo feedback and restore invalidation wiring, with
 EN/FA/FR copy. Per request, no Gradle or emulator tests were run or added for this slice. Keep
 TD05 in progress until its list, navigation and Quick Capture checks have evidence.
+
+TD06 now adds the capped Today task preview, independent load/retry state, revision-safe completion
+retry, shared completion Undo feedback, contextual Add due today, and current-device-date visibility.
+EN/FA/FR copy is included. Per request, no TD06 tests were added or run. The attempted baseline app
+unit-test command stopped at existing Kotlin compile errors in `TodoEditorScreen.kt`,
+`TodoEditorViewModel.kt`, `TodoListViewModel.kt` and `TodoRow.kt`, before test compilation. Keep TD06
+in progress until its owning checks pass; TD05 remains in progress pending its own verification.
 
 No app build, emulator test, usability session, performance benchmark or native
 TalkBack check has run as part of feature implementation.

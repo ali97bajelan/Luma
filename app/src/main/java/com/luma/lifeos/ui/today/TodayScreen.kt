@@ -31,6 +31,10 @@ import java.time.ZoneId
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.TodayHabitsCard
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.domain.todo.TodoTask
+import com.luma.lifeos.ui.todo.TodayTasksActionState
+import com.luma.lifeos.ui.todo.TodayTasksCard
+import com.luma.lifeos.ui.todo.TodayTasksState
 import java.util.UUID
 
 @Composable
@@ -62,6 +66,15 @@ fun TodayScreen(
     onHabitRetry: () -> Unit = {},
     onHabitUndo: (UUID) -> Unit = {},
     onCapture: (EventType, LocalDate?) -> Unit = { _, _ -> },
+    todayTasks: TodayTasksState? = null,
+    todayTaskActions: TodayTasksActionState = TodayTasksActionState(),
+    onTask: (UUID) -> Unit = {},
+    onSetTaskCompleted: (TodoTask, Boolean) -> Unit = { _, _ -> },
+    onAllTasks: () -> Unit = {},
+    onAddTask: () -> Unit = {},
+    onRetryTasks: () -> Unit = {},
+    onRetryTask: (UUID) -> Unit = {},
+    onDismissTaskError: (UUID) -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(screenTag),
@@ -79,6 +92,20 @@ fun TodayScreen(
         }
         habitsState?.let { item(key = "habits") {
             TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry)
+        } }
+        todayTasks?.let { taskState -> item(key = "today_tasks") {
+            TodayTasksCard(
+                state = taskState,
+                actions = todayTaskActions,
+                today = date,
+                onTask = onTask,
+                onSetCompleted = onSetTaskCompleted,
+                onAllTasks = onAllTasks,
+                onAddTask = onAddTask,
+                onRetry = onRetryTasks,
+                onRetryTask = onRetryTask,
+                onDismissTaskError = onDismissTaskError,
+            )
         } }
         item(key = "recent_entries") {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

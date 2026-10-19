@@ -196,7 +196,7 @@ fun LifeOsApp(
             modifier = Modifier.padding(padding),
         ) {
             PrimaryDestination.entries.forEach { destination ->
-                composable(destination.route) {
+                composable(destination.route) { destinationEntry ->
                     when (destination) {
                         PrimaryDestination.TIMELINE -> TimelineRoute(
                             timeline,
@@ -240,6 +240,17 @@ fun LifeOsApp(
                                 EventType.MEMORY -> "memory"
                                 else -> error("Unsupported capture type: $type")
                             }, date) },
+                            todos = todos,
+                            restoreGeneration = todoRestoreGeneration,
+                            onTask = { id -> openTodoEditor(taskId = id) },
+                            onAllTasks = { navController.navigate(AppRoutes.TASKS) },
+                            onAddTask = { dueDate -> openTodoEditor(dueDate = dueDate) },
+                            onTaskActionResult = { result ->
+                                destinationEntry.savedStateHandle.set(
+                                    TODO_ACTION_RESULT_KEY,
+                                    result.encodeActionResult(),
+                                )
+                            },
                         )
                         PrimaryDestination.HABITS -> HabitsRoute(
                             habits,

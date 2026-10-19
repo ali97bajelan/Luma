@@ -5,8 +5,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.annotation.StringRes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.domain.repository.LifeEventRepository
@@ -20,8 +22,16 @@ import java.time.LocalDate
 import java.time.ZoneId
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitRepository
+import com.luma.lifeos.domain.todo.TodoRepository
+import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.HabitsViewModel
+import com.luma.lifeos.ui.todo.TodayTasksActionState
+import com.luma.lifeos.ui.todo.TodayTasksState
+import com.luma.lifeos.ui.todo.TodayTasksViewModel
+import com.luma.lifeos.ui.todo.TodoActionResult
+import com.luma.lifeos.ui.todo.observeTodayTasks
+import com.luma.lifeos.ui.todo.shouldShowTodayTasks
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,9 +66,42 @@ fun TodayRoute(
     onCreateHabit: () -> Unit = {},
     onHabit: (UUID, LocalDate) -> Unit = { _, _ -> },
     onCapture: (EventType, LocalDate?) -> Unit = { _, _ -> },
+    todos: TodoRepository? = null,
+    restoreGeneration: Int = 0,
+    onTask: (UUID) -> Unit = {},
+    onAllTasks: () -> Unit = {},
+    onAddTask: (LocalDate) -> Unit = {},
+    onTaskActionResult: (TodoActionResult) -> Unit = {},
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
+    var todoRetry by remember { mutableIntStateOf(0) }
+    val todayTasksViewModel = if (todos != null) {
+        val tasksFactory = remember(todos) {
+            viewModelFactory { initializer { TodayTasksViewModel(todos, createSavedStateHandle()) } }
+        }
+        viewModel<TodayTasksViewModel>(factory = tasksFactory)
+    } else null
+    val todayTaskActions: TodayTasksActionState
+    if (todayTasksViewModel != null) {
+        val taskActions by todayTasksViewModel.state.collectAsStateWithLifecycle()
+        val handledRestore = rememberSaveable { mutableStateOf(restoreGeneration) }
+        LaunchedEffect(restoreGeneration) {
+            if (handledRestore.value != restoreGeneration) {
+                handledRestore.value = restoreGeneration
+                todayTasksViewModel.invalidateAfterRestore()
+            }
+        }
+        LaunchedEffect(taskActions.actionResult) {
+            taskActions.actionResult?.let { result ->
+                onTaskActionResult(result)
+                todayTasksViewModel.consumeActionResult(result)
+            }
+        }
+        todayTaskActions = taskActions
+    } else {
+        todayTaskActions = TodayTasksActionState()
+    }
     // Recreate collection state so old-day rows cannot appear under the new date header.
     key(repository, summaries, date, zone) {
         val observation = remember(retry) { observeToday(repository, date, zone) }
@@ -68,11 +111,20 @@ fun TodayRoute(
             val summaryState by summaryFlow.collectAsStateWithLifecycle(initialValue = DailySummaryState.Loading)
             summaryState
         } else null
+        val todayTasks = if (todos != null && shouldShowTodayTasks(date, deviceDate)) {
+            val tasksFlow = remember(todos, deviceDate, todoRetry) { observeTodayTasks(todos, deviceDate) }
+            val tasksState by tasksFlow.collectAsStateWithLifecycle(initialValue = TodayTasksState.Loading)
+            tasksState
+        } else null
         if (habits == null) {
             TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
                 onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,
                 summaryState = summary, onSummaryRetry = { summaryRetry++ }, onCapture = onCapture,
-                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn)
+                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn,
+                todayTasks = todayTasks, todayTaskActions = todayTaskActions, onTask = onTask, onSetTaskCompleted = { task, completed ->
+                    todayTasksViewModel?.setCompleted(task, completed)
+                }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
+                onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) })
         } else {
             val habitFactory = remember(habits) {
                 viewModelFactory { initializer { HabitsViewModel(habits, createSavedStateHandle()) } }
@@ -94,7 +146,11 @@ fun TodayRoute(
                 integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn,
                 habitLogCount = habitLogCount, onHabits = onHabits, onCreateHabit = onCreateHabit, onHabit = onHabit,
                 onHabitLog = habitViewModel::log, onHabitRetryLog = habitViewModel::retryLog,
-                onHabitRetry = habitViewModel::retry, onHabitUndo = habitViewModel::undoLog, onCapture = onCapture)
+                onHabitRetry = habitViewModel::retry, onHabitUndo = habitViewModel::undoLog, onCapture = onCapture,
+                todayTasks = todayTasks, todayTaskActions = todayTaskActions, onTask = onTask, onSetTaskCompleted = { task, completed ->
+                    todayTasksViewModel?.setCompleted(task, completed)
+                }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
+                onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) })
         }
     }
 }

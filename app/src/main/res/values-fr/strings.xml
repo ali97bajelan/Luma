@@ -774,6 +774,9 @@
     <string name="todo_list_page_error">Impossible de charger plus de tâches. La liste est conservée.</string>
     <string name="todo_list_empty_open">Aucune tâche ouverte.</string>
     <string name="todo_list_empty_completed">Aucune tâche terminée pour le moment.</string>
+    <string name="todo_today_count">%1$s tâches ouvertes dues aujourd’hui ou en retard</string>
+    <string name="todo_today_empty">Aucune tâche ouverte n’est due aujourd’hui ou en retard.</string>
+    <string name="todo_today_view_all">Tout voir</string>
     <string name="todo_group_overdue">En retard</string>
     <string name="todo_group_today">Aujourd’hui</string>
     <string name="todo_group_upcoming">À venir</string>

@@ -765,6 +765,9 @@
     <string name="todo_list_page_error">More tasks could not be loaded. Your list is retained.</string>
     <string name="todo_list_empty_open">No open tasks.</string>
     <string name="todo_list_empty_completed">No completed tasks yet.</string>
+    <string name="todo_today_count">%1$s open tasks due today or earlier</string>
+    <string name="todo_today_empty">No open tasks due today or earlier.</string>
+    <string name="todo_today_view_all">View all</string>
     <string name="todo_group_overdue">Overdue</string>
     <string name="todo_group_today">Today</string>
     <string name="todo_group_upcoming">Upcoming</string>
