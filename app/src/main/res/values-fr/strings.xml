@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Luma</string>
     <string name="today">Aujourd’hui</string>
     <string name="timeline">Chronologie</string>
@@ -601,6 +601,7 @@
     <string name="habit_no_scheduled">Aucune habitude prévue pour cette date.</string>
     <plurals name="habit_other_count">
         <item quantity="one">Autres habitudes (%1$d)</item>
+        <item quantity="many">Autres habitudes (%1$d)</item>
         <item quantity="other">Autres habitudes (%1$d)</item>
     </plurals>
     <string name="habit_other_show">Afficher</string>
@@ -614,7 +615,8 @@
     <string name="habit_tracking_elsewhere">Date de l’habitude : %1$s · %2$s</string>
     <string name="habit_tracking_zone_mismatch">Date de l’habitude : %1$s (%2$s). La date de votre appareil est le %3$s.</string>
     <string name="habit_progress">%1$s sur %2$s</string>
-    <plurals name="habit_unit_default">
+    <!-- The quantity is displayed separately; this resource selects only the unit label. -->
+    <plurals name="habit_unit_default" tools:ignore="ImpliedQuantity">
         <item quantity="one">fois</item>
         <item quantity="many">fois</item>
         <item quantity="other">fois</item>

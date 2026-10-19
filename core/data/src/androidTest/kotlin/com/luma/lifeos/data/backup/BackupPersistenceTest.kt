@@ -7,8 +7,12 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
+import com.luma.lifeos.domain.todo.TodoInput
 import java.io.*
+import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
@@ -141,14 +145,66 @@ class BackupPersistenceTest {
     }
     @Test fun schemaOneBackupRetainsContentWithoutInventingSessionHistory() = runBlocking {
         val id = EventId.new(); RoomJournalRepository(db).create(id, JournalInput("Version one", now))
+        val taskId = UUID.randomUUID()
+        RoomTodoRepository(db).create(taskId, UUID.randomUUID(), TodoInput("Removed by old archive"))
         val payload = File(root, "v1-payload")
         val manifest = BackupArchive.read(ByteArrayInputStream(export()), payload)
-        val files = manifest.names.filterNot { it in setOf("tables/usage_session.tsv", "tables/usage_session_window.tsv") }.associateWith { File(payload, it) }
+        val v1Tables = backupTables(1).map { "tables/$it.tsv" }.toSet()
+        val files = manifest.names.filter { it.startsWith("photos/") || it in v1Tables }
+            .associateWith { File(payload, it) }
         val v1 = ByteArrayOutputStream().also { BackupArchive.write(it, files, 1, 1234) }.toByteArray()
         RoomJournalRepository(db).delete(id)
-        backup.prepare(ByteArrayInputStream(v1)).use { it.restore() }
+        backup.prepare(ByteArrayInputStream(v1)).use {
+            assertEquals(0L, it.preview.todoCount)
+            it.restore()
+        }
         assertEquals("Version one", RoomJournalRepository(db).get(id)!!.journal!!.body)
+        assertNull(RoomTodoRepository(db).get(taskId))
         assertEquals(0, db.openHelper.readableDatabase.query("SELECT * FROM usage_session").use { it.count })
+    }
+
+    @Test fun schemaFourTaskRoundTripPreservesRowsAndRotatesRevisions() = runBlocking {
+        val clock = Clock.fixed(now, ZoneOffset.UTC)
+        val todos = RoomTodoRepository(db, clock)
+        val openId = UUID.randomUUID()
+        val openRevision = UUID.randomUUID()
+        val open = todos.create(
+            openId,
+            openRevision,
+            TodoInput("Open task", "Keep this note", LocalDate.parse("2026-10-20")),
+        )
+        val completedId = UUID.randomUUID()
+        val completedRevision = UUID.randomUUID()
+        val createdCompleted = todos.create(
+            completedId,
+            completedRevision,
+            TodoInput("Completed task", dueDate = LocalDate.parse("2026-10-18")),
+        )
+        val completed = todos.setCompleted(completedId, completedRevision, UUID.randomUUID(), true)
+        val bytes = export()
+        val extraId = UUID.randomUUID()
+        todos.create(extraId, UUID.randomUUID(), TodoInput("Must be replaced"))
+
+        backup.prepare(ByteArrayInputStream(bytes)).use {
+            assertEquals(2L, it.preview.todoCount)
+            it.restore()
+        }
+
+        val restoredOpen = requireNotNull(todos.get(openId))
+        assertEquals(open.title, restoredOpen.title)
+        assertEquals(open.note, restoredOpen.note)
+        assertEquals(open.dueDate, restoredOpen.dueDate)
+        assertEquals(open.createdAt, restoredOpen.createdAt)
+        assertNull(restoredOpen.completedAt)
+        assertNotEquals(open.revision, restoredOpen.revision)
+
+        val restoredCompleted = requireNotNull(todos.get(completedId))
+        assertEquals(createdCompleted.title, restoredCompleted.title)
+        assertEquals(completed.dueDate, restoredCompleted.dueDate)
+        assertEquals(completed.completedAt, restoredCompleted.completedAt)
+        assertEquals(completed.createdAt, restoredCompleted.createdAt)
+        assertNotEquals(completed.revision, restoredCompleted.revision)
+        assertNull(todos.get(extraId))
     }
     @Test fun checksummedInvalidDomainRowsAndReferencesAreRejectedBeforeReplacement() = runBlocking {
         val id = EventId.new(); RoomJournalRepository(db).create(id, JournalInput("Keep", now))

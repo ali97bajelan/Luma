@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Luma</string>
     <string name="today">امروز</string>
     <string name="timeline">خط زمانی</string>
@@ -606,7 +606,8 @@
     <string name="habit_tracking_elsewhere">تاریخ عادت: %1$s · %2$s</string>
     <string name="habit_tracking_zone_mismatch">تاریخ عادت: %1$s (منطقهٔ زمانی %2$s). تاریخ دستگاه شما %3$s است.</string>
     <string name="habit_progress">%1$s از %2$s</string>
-    <plurals name="habit_unit_default">
+    <!-- The quantity is displayed separately; this resource selects only the unit label. -->
+    <plurals name="habit_unit_default" tools:ignore="ImpliedQuantity">
         <item quantity="one">بار</item>
         <item quantity="other">بار</item>
     </plurals>

@@ -81,9 +81,12 @@ revocation and opt-out guards continue to pass; the delayed-access opt-out regre
 failed before its fix and passes afterward. Five new/extended Compose cases compile
 for privacy/dialog controls and access management while imports are off.
 
-No device is connected. Native erasure/process termination, real permission/provider
-UI, actual activity/process recreation, exported-backup survival, settings reset,
-OEM behavior and visual/accessibility acceptance remain pending. Use a disposable
-application ID with seeded records, photos, drafts, preferences and external backup
-for destructive reset validation, then reopen and inspect storage/import defaults.
+The 19 October 2026 TD07 UI run used only a disposable API 36 emulator; it does not
+verify destructive reset. Native erasure/process termination, real
+permission/provider UI, exported-backup survival, settings reset, OEM behavior and
+visual/accessibility acceptance remain pending. Use a disposable application ID
+with seeded records, photos, drafts, preferences and external backup for destructive
+reset validation, then reopen and inspect storage/import defaults. The focused TD07
+emulator evidence is listed in
+[`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md).
 See [VALIDATION.md](VALIDATION.md) for commands and the privacy audit evidence.

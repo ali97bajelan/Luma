@@ -104,3 +104,11 @@ during publication. Older schema 1–3 restores clear the live task table.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss
 checks remain pending device validation; see [VALIDATION.md](VALIDATION.md).
+
+TD07 task-specific backup/persistence checks now pass: task CRUD/migration tests
+and backup persistence tests ran on a disposable API 36 emulator. Coverage includes
+schema 1–3 migrations, schema-4 open/completed task round-trip and preview count,
+revision rotation, and legacy archive replacement clearing current tasks. The
+complete `core:data` instrumentation suite still has two Timeline ordering/page
+failures; detailed results and remaining acceptance are in
+[`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md).

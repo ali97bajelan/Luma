@@ -2,8 +2,12 @@
 
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
-a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline browsing,
-mood check-ins, offline journals with reusable tags, direct/reversible memories, people with linked event histories, reusable manual places, private photo attachments on journals/memories, optional on-device app-usage imports, optional Health Connect step imports, saved daily summaries, simple local lookup, and deterministic weekly reviews.
+a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline
+browsing, mood check-ins, offline journals with reusable tags, direct/reversible
+memories, people with linked event histories, reusable manual places, private
+photo attachments on journals/memories, offline one-time tasks with optional due
+dates, optional on-device app-usage imports, optional Health Connect step imports,
+saved daily summaries, simple local lookup, and deterministic weekly reviews.
 Remaining reliability and release work follows [TASKS.md](TASKS.md).
 
 Settings → App language offers English, فارسی and Français, including offline
@@ -75,6 +79,8 @@ data was reset or optional health access granted during validation.
 - [ARCHITECTURE.md](ARCHITECTURE.md): stack, module boundaries, relational schema, privacy, and phases.
 - [TASKS.md](TASKS.md): original T01–T21 and approved extension T22–T29, with acceptance criteria and status.
 - [Habits handoff](docs/HABITS_TASKS.md): counted habits, per-completion Timeline records, and the five-destination navigation with a More hub are implemented; optional reminders and full release acceptance remain open.
+- [Tasks handoff](docs/TODO_TASKS.md): one-time tasks with optional civil due dates, Open/Completed lists, Today and Quick Capture entry points; integrated release acceptance remains in progress.
+- [Tasks acceptance evidence](docs/TODO_ACCEPTANCE_2026-10-19.md): automated and emulator results plus checks still pending.
 - Original `.docx` files: product specification and implementation task source.
 - `docs/`: readable source extracts and validation evidence.
 

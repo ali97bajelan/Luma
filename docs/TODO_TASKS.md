@@ -1,6 +1,6 @@
 # Tasks feature planning handoff
 
-Prepared: 19 October 2026. Status: TD01 complete; TD02 in progress (schema export and verification pending); TD03 in progress (implementation written; verification pending); TD04 in progress (editor implementation written; verification pending); TD05 in progress (implementation written; verification pending per request); TD06 in progress (implementation written; verification skipped per request); TD07 not started.
+Prepared: 19 October 2026. Status: TD01 complete; TD02 in progress (schema export verification pending; persistence and migration instrumentation pass); TD03 in progress (implementation written; verification pending); TD04 in progress (editor implementation written; verification pending); TD05 in progress (implementation written; verification pending per request); TD06 in progress (implementation written; verification skipped per request); TD07 in progress (focused app/data acceptance and builds pass; full app suite has 12 failures in non-Todo flows and full data suite has two Timeline failures; native accessibility, performance and remaining acceptance are pending).
 
 The user requested investigation by a senior product manager and a senior UI/UX
 designer, with direct discussion to produce specifications, plans and tasks. They
@@ -35,18 +35,18 @@ and counted habits remain distinct.
 
 Priorities express proposed release scope, not implementation evidence. TD01's
 focused and full domain suites pass. TD02 remains in progress; TD03 is **In progress** (implementation written;
-verification pending); TD04 is **In progress** (editor implementation written; verification pending); TD05 is **In progress** (implementation written; verification pending per request); TD06 is **In progress** (implementation written; verification skipped per request); TD07 remains **Not started**. Every slice includes its owning tests and all three language catalogs where
+verification pending); TD04 is **In progress** (editor implementation written; verification pending); TD05 is **In progress** (implementation written; verification pending per request); TD06 is **In progress** (implementation written; verification skipped per request); TD07 is **In progress** (focused verification has evidence; integrated release acceptance remains incomplete). Every slice includes its owning tests and all three language catalogs where
 UI is introduced.
 
 | ID | Status | Priority | Deliverable | Depends on | Acceptance coverage | Done when |
 | --- | --- | --- | --- | --- | --- | --- |
 | TD01 | Complete | P0 | Pure Kotlin task models, validation, civil-date buckets and repository contracts | Existing baseline | TODO-AC-01–04; UX-TODO-02/06/07 | Unicode/date/ordering tests and full domain suite pass |
-| TD02 | In progress (schema export and verification pending) | P0 | Room table, schema 4, transactional CRUD, revisions and bounded observation | TD01 | TODO-AC-03/04/07–09 | Persistence/retry/conflict tests and populated migrations 1–3→4 pass; schema exported |
+| TD02 | In progress (schema export verification pending; persistence/migration tests pass) | P0 | Room table, schema 4, transactional CRUD, revisions and bounded observation | TD01 | TODO-AC-03/04/07–09 | Persistence/retry/conflict tests and populated migrations 1–3→4 pass; schema exported |
 | TD03 | In progress (verification pending) | P0 | Backup/restore, preview counts and reset contract | TD02 | TODO-AC-09/10; UX-TODO-15 | New archive round trip, old replacement, malformed/cancelled restore and existing backup regressions pass |
 | TD04 | In progress (verification pending) | P0 | Shared create/edit screen with reliable drafts/status/delete | TD02/03 | TODO-AC-01–03/07/08/12; UX-TODO-06–11/14 | JVM draft/conflict tests and editor interaction checks pass in localized UI |
 | TD05 | In progress (implementation written; verification pending per request) | P0 | Tasks lists, More access, Task in existing Quick Capture and completion Undo | TD04 | TODO-AC-04/05/07/08/12; UX-TODO-01–03/05/11/12/15 | >50-row live list, retry/Undo and navigation/capture regressions pass |
 | TD06 | In progress (implementation written; verification skipped per request) | P0 | Compact Today card and date/zone lifecycle | TD05 | TODO-AC-02/05/06/07/13; UX-TODO-04/05/12 | Cap/count/eligibility, hidden historical card, midnight/travel and independent failure checks pass |
-| TD07 | Not started | P0 | Integrated language/accessibility/device acceptance and documentation | TD01–06 | All product/UX criteria; especially TODO-AC-11/13, UX-TODO-13/14/15 | Required automated/native checks have evidence; unresolved exceptions are explicit |
+| TD07 | In progress (focused verification passed; acceptance remains incomplete) | P0 | Integrated language/accessibility/device acceptance and documentation | TD01–06 | All product/UX criteria; especially TODO-AC-11/13, UX-TODO-13/14/15 | Required automated/native checks have evidence; unresolved exceptions are explicit |
 
 Dependency order: **TD01 → TD02 → TD03 → TD04 → TD05 → TD06 → TD07**.
 Existing habits reminders/release work stays independently open; this proposal
@@ -106,14 +106,14 @@ unit-test command stopped at existing Kotlin compile errors in `TodoEditorScreen
 `TodoEditorViewModel.kt`, `TodoListViewModel.kt` and `TodoRow.kt`, before test compilation. Keep TD06
 in progress until its owning checks pass; TD05 remains in progress pending its own verification.
 
-No app build, emulator test, usability session, performance benchmark or native
-TalkBack check has run as part of feature implementation.
-
-Complete TD02 schema export and verification before relying on TD03 acceptance, then
-run TD03's owning checks. Create
-`docs/TODO_ACCEPTANCE_2026-10-19.md` at TD07 (or earlier to record actual evidence),
-using PASS/FAIL/BLOCKED/NOT RUN plus command, device/API/package, locale, width,
-font scale and evidence. Use disposable installs for migration/restore/reset;
-preserve the user's working tree and actual saved Luma data. Update this index
-only after its owning checks pass. Do not infer native acceptance from existing
-Habits or app validation reports.
+At the TD06 handoff, no app build, emulator test, usability session, performance
+benchmark or native TalkBack check had run for Tasks. TD07 has since run focused
+tests and builds; evidence and remaining exceptions are recorded in
+[`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md). The task remains
+in progress because the full app suite has 12 failures outside the Todo tests and
+the full data suite has two Timeline ordering failures, while native TalkBack,
+restore/reset UI, data-isolation and 10,000-task performance checks remain
+unverified. The acceptance record uses PASS/FAIL/BLOCKED/NOT RUN and records
+command, emulator/API, app package, locale, width and font scale. Only the
+disposable `emulator-5562` was used; the user's existing emulator and saved Luma
+data were not touched.

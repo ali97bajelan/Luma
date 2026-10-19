@@ -1,12 +1,13 @@
 # Luma architecture
 
-Planned extension (17 October 2026): the user-approved counted-habits,
-reminders and navigation handoff is in [docs/HABITS_TASKS.md](docs/HABITS_TASKS.md).
-Its [specification](docs/superpowers/specs/2026-10-17-habits-and-navigation-design.md)
-defines additive schema 3, standalone habit logs with optional occurrence time,
-a mixed Timeline read model, separate habit counts and app-local reminders.
-Current code remains schema 2 with the original navigation; the extension has
-not been implemented. The current architecture below describes implemented code.
+The counted-habits and navigation handoff is documented in
+[docs/HABITS_TASKS.md](docs/HABITS_TASKS.md). The original
+[specification](docs/superpowers/specs/2026-10-17-habits-and-navigation-design.md)
+introduced schema 3, standalone habit logs and the More destination. The later
+one-time Tasks feature adds a separate `todo_task` table in schema 4. Current
+navigation and storage include both features; their remaining acceptance work is
+tracked in [docs/TODO_TASKS.md](docs/TODO_TASKS.md) and
+[docs/TODO_ACCEPTANCE_2026-10-19.md](docs/TODO_ACCEPTANCE_2026-10-19.md).
 
 ## Product contract
 
@@ -62,9 +63,11 @@ adapters depend inward on domain contracts. No microservices or backend.
 
 ## Database schema (T03)
 
-Schema version 2 retains the original stable text UUIDs, UTC epoch-millisecond timestamps,
-and explicit foreign keys. Day ranges are computed from the selected `ZoneId`,
-not by adding 24 hours. Keep event occurrence separate from creation/update times.
+Schema version 4 retains the original stable text UUIDs, UTC epoch-millisecond
+timestamps, and explicit foreign keys. Schema 2 added usage-session tables,
+schema 3 added standalone habit tables, and schema 4 added standalone tasks.
+Day ranges are computed from the selected `ZoneId`, not by adding 24 hours. Keep
+event occurrence separate from creation/update times.
 
 | Table | Fields and constraints |
 | --- | --- |
@@ -83,6 +86,8 @@ not by adding 24 hours. Keep event occurrence separate from creation/update time
 | integration_state | source PK; status; last_sync_at; checkpoint |
 | usage_session | package_name + started_at composite PK; ended_at; app_label nullable; ongoing; start/end indexes |
 | usage_session_window | query_start + query_end composite PK; complete flag |
+| habit_settings / habit / habit_schedule / habit_log / habit_day_choice / habit_reminder / habit_reminder_runtime | independent habit configuration, schedules, logs, day choices and reminder state |
+| todo_task | id PK; title; optional note and ISO civil `due_date`; optional `completed_at`; created/updated timestamps; revision token; indexes for Open/Completed ordering |
 
 Index events on `(occurred_at, id)` and `(type, occurred_at)`; source identities
 are unique when present. Index every FK lookup and reverse link lookup. Event
@@ -92,12 +97,11 @@ operations and import upserts are transactional. Physical media deletion occurs
 after database success with orphan cleanup, avoiding lost references on failure.
 
 The Room Gradle plugin exports schemas to `core/data/schemas` and supplies them to
-instrumentation tests after exporting the current schema. Compiler-generated
-versions 1 and 2 must both be included in version control. The additive 1→2
-migration creates session/window tables and marks derived caches stale, retaining
-all original data. `SchemaMigrationTest` checks preserved journal content, new
-session writes across reopening, and rejection of unsupported versions without
-erasing records. Never enable destructive fallback.
+instrumentation tests. Compiler-generated versions 1–4 belong in version control.
+Migrations 1→2 add session/window tables, 2→3 add habit tables, and 3→4 add
+`todo_task`, while retaining earlier records. Never enable destructive fallback.
+Current migration and task persistence verification status is recorded in
+`docs/TODO_TASKS.md`.
 
 A backup has a distinct format
 version, validates before replacement, and includes only referenced local media.
@@ -118,8 +122,9 @@ summaries in one transaction. Invalid catalog references or uniqueness conflicts
 roll back the whole write. Catalog objects must exist first. Child IDs are validated
 as UUIDs; imported retries remap their parent links to the canonical event ID.
 `saveImportBatch` also commits the integration checkpoint in that same transaction.
-Feature-specific domain models and capture UI remain assigned to their later tasks;
-the initial typed storage DTOs belong only to `core:data`.
+Life-event typed content remains inside the event graph. Habit and task records use
+independent repositories and tables, so task mutations do not create timeline
+events or change habit counts or summary inputs.
 
 `EventWithDetails` loads indexed relations in batched queries under `@Transaction`.
 People/emotions/tags are reusable catalog rows. Each event has at most one place.
@@ -152,9 +157,9 @@ Repositories expose Flow for observation and suspend operations for mutations.
 
 ## Application shell and Today (T04)
 
-`MainActivity` supplies the application's `LifeEventRepository` to `LifeOsApp`.
+`MainActivity` supplies the application's repositories to `LifeOsApp`.
 The primary bar is Today, Timeline, Habits, Review and More in that order. More
-opens People & Places and Settings as secondary destinations, each with Back to
+opens Tasks, People & Places and Settings as secondary destinations, each with Back to
 its actual source; Review links and capture pickers retain direct access to
 person/place details and creation. Quick Capture remains available from every primary destination. The
 shell owns saveable ISO date selection and sheet visibility. A null selection
@@ -180,7 +185,25 @@ source, with counts derived directly from available events. These are record
 counts, not T14 mood/usage/activity metrics. T05 extended this feed with typed mood
 details for the initial daily Timeline; T11 replaces that reuse with a dedicated
 bounded Timeline route described below. Quick Capture opens a scrollable sheet from every primary tab, with
-mood, journal and memory capture enabled.
+mood, journal, memory and task capture enabled.
+
+## Tasks (TD01–TD07)
+
+`TodoTask` is a standalone offline record, not a `LifeEvent`; its optional due
+date is an ISO civil date and has no event timestamp or habit-zone conversion.
+The Room `todo_task` table stores an independent completion timestamp and revision
+token. `TodoRepository` exposes bounded observed pages and revision-checked
+create/edit/status/delete operations. Open rows are grouped by overdue, today,
+upcoming and no date; Completed rows have their own order. The list starts with 50
+rows, while Today shows at most three eligible tasks and the full count only for
+the current device date.
+
+More → Tasks and contextual Today Add open the shared editor/list flow. The Task
+choice in Quick Capture starts without a due date. Saved editor drafts retain
+their title, note and civil due date across activity recreation and app-language
+changes. Task operations do not feed Timeline, daily summaries or habit counts.
+The latest integrated acceptance evidence and remaining release checks are in
+`docs/TODO_ACCEPTANCE_2026-10-19.md`.
 
 ## Mood check-ins (T05)
 
