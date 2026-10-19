@@ -134,6 +134,26 @@ class TodoPersistenceTest {
         assertEquals(1, todos.observeList(completed = false).first().total)
     }
 
+    @Test fun duplicateTitlesRemainIndependentTasksWhenEitherOneIsEdited() = runBlocking {
+        val sameTitle = "Prepare the report"
+        val firstId = UUID.nameUUIDFromBytes("duplicate-title-first".toByteArray())
+        val secondId = UUID.nameUUIDFromBytes("duplicate-title-second".toByteArray())
+        val first = todos.create(firstId, UUID.randomUUID(), TodoInput(sameTitle))
+        val second = todos.create(secondId, UUID.randomUUID(), TodoInput(sameTitle))
+
+        assertEquals(2, todos.observeList(completed = false, limit = 50).first().total)
+        val updatedFirst = todos.update(
+            first.id,
+            first.revision,
+            UUID.randomUUID(),
+            TodoInput("Prepare the revised report"),
+        )
+
+        assertEquals(first.id, updatedFirst.id)
+        assertEquals(sameTitle, requireNotNull(todos.get(second.id)).title)
+        assertEquals(2, todos.observeList(completed = false, limit = 50).first().total)
+    }
+
     @Test fun repeatedDesiredCompletionPreservesTimestampAndRevisionAndStaleRetryConflicts() = runBlocking {
         val id = UUID.randomUUID()
         val initialRevision = UUID.randomUUID()

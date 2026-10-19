@@ -1,6 +1,6 @@
 # Tasks feature planning handoff
 
-Prepared: 19 October 2026. Status: TD01–TD06 complete; TD07 in progress (focused app/data acceptance and builds pass; full app suite has 12 failures in non-Todo flows and full data suite has two Timeline failures; native accessibility, performance and remaining acceptance are pending).
+Prepared: 19 October 2026. Status: TD01–TD06 complete; TD07 in progress (focused app/data acceptance, builds, native export/restore/reset, CRUD isolation and 10,000-task performance pass; the full app suite has 14 failures outside Todo, the full data suite has two Timeline failures, and native TalkBack speech/focus traversal remains unverified).
 
 The user requested investigation by a senior product manager and a senior UI/UX
 designer, with direct discussion to produce specifications, plans and tasks. They
@@ -35,7 +35,7 @@ and counted habits remain distinct.
 
 Priorities express proposed release scope, not implementation evidence. TD01's
 focused and full domain suites pass. TD02 and TD03 are complete with schema,
-persistence, migration, backup and restore evidence recorded below. TD04–TD06 are **Complete** with their owning JVM, UI and regression checks recorded below. TD07 is **In progress** (focused verification has evidence; integrated release acceptance remains incomplete). Every slice includes its owning tests and all three language catalogs where
+persistence, migration, backup and restore evidence recorded below. TD04–TD06 are **Complete** with their owning JVM, UI and regression checks recorded below. TD07 is **In progress** (focused and manual results are recorded; integrated release acceptance remains incomplete). Every slice includes its owning tests and all three language catalogs where
 UI is introduced.
 
 | ID | Status | Priority | Deliverable | Depends on | Acceptance coverage | Done when |
@@ -46,7 +46,7 @@ UI is introduced.
 | TD04 | Complete | P0 | Shared create/edit screen with reliable drafts/status/delete | TD02/03 | TODO-AC-01–03/07/08/12; UX-TODO-06–11/14 | JVM draft/conflict tests and editor interaction checks pass; shared editor status/Undo flow passes on device |
 | TD05 | Complete | P0 | Tasks lists, More access, Task in existing Quick Capture and completion Undo | TD04 | TODO-AC-04/05/07/08/12; UX-TODO-01–03/05/11/12/15 | >50-row live list, retry/Undo and navigation/capture regressions pass |
 | TD06 | Complete | P0 | Compact Today card and date/zone lifecycle | TD05 | TODO-AC-02/05/06/07/13; UX-TODO-04/05/12 | Cap/count/eligibility, hidden historical card, midnight/travel and independent failure checks pass |
-| TD07 | In progress (focused verification passed; acceptance remains incomplete) | P0 | Integrated language/accessibility/device acceptance and documentation | TD01–06 | All product/UX criteria; especially TODO-AC-11/13, UX-TODO-13/14/15 | Required automated/native checks have evidence; unresolved exceptions are explicit |
+| TD07 | In progress (focused checks pass; aggregate exceptions remain) | P0 | Integrated language/accessibility/device acceptance and documentation | TD01–06 | All product/UX criteria; especially TODO-AC-11/13, UX-TODO-13/14/15 | Required automated/native checks have evidence; unresolved exceptions are explicitly accepted |
 
 Dependency order: **TD01 → TD02 → TD03 → TD04 → TD05 → TD06 → TD07**.
 Existing habits reminders/release work stays independently open; this proposal
@@ -116,13 +116,13 @@ language regression cases pass 4/4. Full commands and remaining aggregate accept
 [`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md).
 
 At the TD06 handoff, no app build, emulator test, usability session, performance
-benchmark or native TalkBack check had run for Tasks. TD04–TD06 follow-up tests and
-builds now have evidence; integrated acceptance gaps are recorded in
-[`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md). The task remains
-in progress because the full app suite has 12 failures outside the Todo tests and
-the full data suite has two Timeline ordering failures, while native TalkBack,
-restore/reset UI, data-isolation and 10,000-task performance checks remain
-unverified. The acceptance record uses PASS/FAIL/BLOCKED/NOT RUN and records
-command, emulator/API, app package, locale, width and font scale. Only the
-disposable `emulator-5562` was used; the user's existing emulator and saved Luma
-data were not touched.
+benchmark or native TalkBack check had run for Tasks. TD07 added focused
+accessibility/language tests and recorded native results in
+[`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md). The full app
+suite now reports 14 failures outside Todo, and the full data suite reports two
+Timeline ordering/page failures. Native TalkBack showed an initial focus ring and
+the active-service tests passed, but spoken output and focus traversal remain
+unverified. Native SAF export/restore, app-data reset, CRUD isolation and the
+10,000-task benchmark passed. TD07 stays in progress until the suite failures and
+TalkBack gap are fixed or explicitly accepted. Only disposable `emulator-5562`
+was used; the user's existing emulator and saved Luma data were not touched.

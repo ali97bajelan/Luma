@@ -1,9 +1,11 @@
 # Tasks acceptance record — 19 October 2026
 
-TD07 is **In progress**. The focused task UI, localization, Room CRUD/migration,
-task backup and app build checks below pass. Product/UX criteria are aggregate results: each is PASS only when every
-specified condition has evidence. A passing sub-check does not promote an
-otherwise incomplete criterion to PASS.
+TD07 is **In progress**. Focused task UI, localization, Room persistence/migration,
+backup, isolation, scale, app builds, and most native UI checks pass. The full app
+and data instrumentation suites still have failures outside the Tasks tests, and
+native TalkBack speech/focus traversal could not be verified. Product/UX criteria are
+aggregate results: each is PASS only when every specified condition has evidence.
+A passing sub-check does not promote an otherwise incomplete criterion to PASS.
 
 ## Test environment and commands
 
@@ -15,8 +17,9 @@ otherwise incomplete criterion to PASS.
 - The language flow changes Luma's in-app language English → Persian → French →
   English and recreates the Activity after each selection. It does not change the
   Android system locale.
-- App data was cleared only on the disposable emulator before the final run. The
-  existing user emulator and its Luma data were not used.
+- Android app data was cleared only on the disposable emulator before test runs
+  and again for the final reset check. The existing user emulator and its Luma
+  data were not used.
 
 **PASS — full domain/app/data JVM tests, app/data lint and app packaging:**
 
@@ -37,7 +40,8 @@ data 24/24; no failures, errors or skipped tests. The app suite has since gained
 the TD04–TD06 ViewModel/state tests and passes 244/244 on a full
 `:app:testDebugUnitTest` run. An earlier forced app rerun, before those additions,
 passed 223/223. App and data lint both pass; app debug and instrumentation APKs
-assemble.
+assemble. The final aggregate Gradle rerun after adding the TD07 data acceptance
+tests also passed (232 tasks; nine executed, 223 up-to-date): [final build output](../.superpowers/sdd/2026-10-19-todo-list/td07-build-final.log).
 
 The French `habit_other_count` plural now includes the required `many` variant,
 which the translation-catalog test checks. Persian and French `habit_unit_default`
@@ -146,11 +150,14 @@ The complete data test APK was run directly with ADB on `emulator-5562`:
   com.luma.lifeos.data.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-It ran 139 tests; 137 passed and two `TimelinePersistenceTest` cases failed on
+The final complete APK run included the TD07 isolation, duplicate-title and
+scale acceptance cases and ran 145 tests; 143 passed and two
+`TimelinePersistenceTest` cases failed on
 expected ordering/page IDs (`shortAndMissingUsageAreExcludedBeforePagingWhileLongUsageRemains`
 and `indexedMixedPagesAreBoundedDeterministicAndExcludeOtherDays`). Neither test
 touches the Tasks repository, but the full data suite is not green. The focused
-task persistence, migration and backup suites all pass within that run.
+task persistence, migration, backup, isolation and scale cases all pass within
+that run. [Full data output](../.superpowers/sdd/2026-10-19-todo-list/td07-data-full-device-final.log).
 
 **FAIL — full app instrumentation suite:**
 
@@ -162,12 +169,14 @@ app instrumentation APK was run directly:
   com.luma.lifeos.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-It ran 154 tests and reported 12 failures: one Habit capture case, three Health
-Connect settings cases, three Weekly Review cases, one Daily Summary case, and
-four Usage settings cases. No `TodoAccessibilityTest`,
+It ran 166 tests and reported 14 failures: two capture cases
+(`PeopleCaptureTest.journalKeepsDraftAcrossNewPeopleAndHistoryReflectsExplicitRemoval`
+and `PlaceCaptureTest.journalDraftSurvivesPlaceCreationAndSelectionCanBeRenamedAndCleared`),
+one Habit capture case, three Health Connect settings cases, three Weekly
+Review cases, one Daily Summary case, and four Usage settings cases. No `TodoAccessibilityTest`,
 `TodoAccessibilitySemanticsTest` or `TodoLanguageFlowTest` case failed in this
 full run. The failures are recorded separately from the Tasks-specific results;
-their causes were not investigated as part of TD07.
+their causes were not investigated as part of TD07. [Full app output](../.superpowers/sdd/2026-10-19-todo-list/td07-app-full-device-current.log).
 
 **BLOCKED — Gradle-managed connected app test task:**
 
@@ -177,57 +186,94 @@ in the available repository/cache. The focused app tests and complete app/data
 test APKs were therefore run directly using `adb` on the disposable emulator.
 The full app and data suites have the failures listed above.
 
+**PASS — task CRUD isolation and 10,000-task scale:**
+
+`TodoIsolationAcceptanceTest` seeds an event, mood entry, habit and habit log,
+then creates, updates, completes, reopens and deletes a task. After each write it
+compares unrelated table counts, Timeline rows/counts, daily summary values,
+weekly Review values and sources, Search results and the habit day. All remained
+unchanged. Network traffic and Android permission state are outside this Room
+fixture and were not exercised.
+
+`TodoScaleAcceptanceTest` inserts 10,000 Room tasks in a file-backed database,
+then confirms the repository returns 50 Open rows and 3 Today rows while
+reporting full counts (9,600 Open; 7,800 eligible Today). On
+`sdk_gphone64_x86_64`, API 36, the final full data instrumentation run recorded:
+Open p50 8.10 ms / p95 10.89 ms; Today p50 1.66 ms / p95 2.76 ms. Open p95 is
+below the proposed 300 ms target. The test logs these measurements and asserts
+the bounded row counts and Open p95 target; it does not instrument UI first-frame
+rendering.
+
+Source: [isolation test](../core/data/src/androidTest/kotlin/com/luma/lifeos/data/TodoIsolationAcceptanceTest.kt),
+[scale test](../core/data/src/androidTest/kotlin/com/luma/lifeos/data/TodoScaleAcceptanceTest.kt).
+
 ## Product acceptance criteria
 
 | Criterion | Status | Evidence and remaining work |
 | --- | --- | --- |
-| TODO-AC-01 | NOT RUN | Empty-title validation retains an editable draft. Exact title/note boundaries, Unicode limits, duplicate titles, edit identity/timestamps and complete create/edit persistence acceptance remain unverified. |
-| TODO-AC-02 | NOT RUN | Due date survives an in-app locale change and Activity recreation. No-date default, Today prefill, clear/past/future dates, travel and midnight behavior remain unverified. |
-| TODO-AC-03 | NOT RUN | Complete/reopen actions are exercised. Timestamp idempotence, completed edits and blocking status changes while dirty remain unverified. |
-| TODO-AC-04 | NOT RUN | A mocked 50-row list exposes total 51 and Load More. Room-backed paging, deterministic ordering and mutation-without-duplicate coverage remain unverified. |
+| TODO-AC-01 | PASS | Domain tests cover whitespace/multiline rejection, 200/201-code-point titles and 4,000/4,001-code-point notes; language flow retains the invalid draft; persistence covers identity/creation time across reopen. `duplicateTitlesRemainIndependentTasksWhenEitherOneIsEdited` verifies duplicate titles remain separate after an edit. |
+| TODO-AC-02 | PARTIAL | Due date survives EN/FA/FR Activity recreation; native English and Persian pickers selected civil dates; date clearing and Today prefill are exercised. State tests cover midnight/time-zone regrouping; native future-date selection, real zone travel and combined dirty-state acceptance remain unverified. |
+| TODO-AC-03 | PASS | Room tests verify completion/reopen, repeated-completion timestamp/revision idempotence and actual completion time; editor tests verify completed edits preserve status and dirty fields block status changes. |
+| TODO-AC-04 | PASS | Domain/data tests verify deterministic open/completed order and exact 50/100 prefixes; list-state tests grow live 50→100 results through insertion, deletion and reordering without stale duplicates or omissions. |
 | TODO-AC-05 | PASS | More → Tasks, Today contextual Add and historical Timeline Quick Capture Task reach the shared Tasks/editor flow. Tests verify origin return, selected event date retention, shared editor completion Undo, and the existing primary-navigation regressions. |
 | TODO-AC-06 | PASS | State tests verify the three-row cap, full eligible count and exclusion of future/undated/completed rows; device flows hide the card on future and historical browsed dates and restore it on Today. Midnight/zone date rules are covered by the state test. |
-| TODO-AC-07 | NOT RUN | Distinct checkbox/body actions and successful completion/reopen are exercised. Failed writes, retry/Undo revisions, commit announcements and create retry behavior remain unverified. |
-| TODO-AC-08 | NOT RUN | Confirmed deletion succeeds. Cancel, dirty Back, missing targets and delete retry behavior remain unverified. |
+| TODO-AC-07 | PARTIAL | Distinct checkbox/body actions and successful completion/reopen are exercised; task repository retry/revision behavior has JVM/device coverage. Native TalkBack announcements and the full failed-write/retry matrix remain unverified. |
+| TODO-AC-08 | PASS | Compose flows verify cancel/confirmed deletion and dirty Back; editor tests cover a missing target; persistence tests verify stale writes fail and a repeated delete after success is harmless. Native Persian confirmation Cancel also retained the task. |
 | TODO-AC-09 | PASS | `TodoMigrationTest` upgrades populated schema 1–3 databases to 4; task backup tests round-trip schema-4 rows, verify preview count/revision rotation, clear tasks on schema-1/2/3 replacement, and retain live data after cancelled or malformed restore. |
-| TODO-AC-10 | NOT RUN | Focused JVM checks cover success-only restore callback delivery and ensure a retained editor draft cannot write to a same-UUID restored task. End-to-end shell-to-route invalidation and isolated app-data reset remain unverified; no destructive reset was performed. |
-| TODO-AC-11 | NOT RUN | Simulated 320 dp/200% text and localized form behavior pass their focused checks. Full layout matrix, ≥48 dp target measurement, status/overdue color independence and native screen-reader labels/traversal remain unverified. |
-| TODO-AC-12 | NOT RUN | Dirty-draft Activity recreation and validation retention are exercised. Retry states, empty Open/Completed actions and full view restoration remain unverified. |
-| TODO-AC-13 | NOT RUN | No task CRUD isolation checks against events, habits, Timeline, summaries, search, Review, network or permissions were run. |
+| TODO-AC-10 | PARTIAL | Restore preview and native SAF export/restore succeeded; restored task survived process death. `pm clear com.luma.lifeos` on the disposable emulator returned Tasks to zero and app settings to defaults. Success-only callback/draft JVM checks pass; retained-route invalidation is not fully verified end-to-end. |
+| TODO-AC-11 | PARTIAL | Simulated 320 dp/200% text and localized checks pass. Native English/Persian layouts expose status and overdue as text beside a separate checkbox. Full layout/target-size matrix and screen-reader labels/traversal remain unverified. |
+| TODO-AC-12 | PARTIAL | Dirty-draft Activity recreation, validation retention and process-death task persistence are exercised. Retry states, empty Completed behavior and full route/view restoration remain unverified. |
+| TODO-AC-13 | PARTIAL | CRUD isolation test confirms event/habit table counts, Timeline, summaries, weekly Review and Search stay unchanged through every task mutation. Network traffic and OS permission state were not part of the fixture. |
 
 ## UX acceptance criteria
 
 | Criterion | Status | Evidence and remaining work |
 | --- | --- | --- |
-| UX-TODO-01 | NOT RUN | More → Tasks works. Today origin, Quick Capture restoration and navigation/back-stack state remain unverified. |
-| UX-TODO-02 | NOT RUN | Group heading, mocked 50-row list and Load More reachability pass. Repository ordering and growing observed prefixes remain unverified. |
-| UX-TODO-03 | NOT RUN | One checkbox semantics node, separate body/status actions, and complete/reopen flows pass. Physical target dimensions and all row-label combinations remain unverified. |
+| UX-TODO-01 | PASS | More, Today and Quick Capture reach the shared flow; navigation regressions preserve the origin/selected date, return path and five primary destinations. |
+| UX-TODO-02 | PASS | Domain/data ordering checks cover task groups and Completed order; list state grows from 50 to 100 through live insertion, deletion and reordering, and the Room fixture returns exact bounded pages. |
+| UX-TODO-03 | PARTIAL | One checkbox semantics node, separate body/status actions and complete/reopen flows pass. Physical target dimensions and every row-label combination remain unverified. |
 | UX-TODO-04 | PASS | State tests verify eligibility, cap/count, backfill, midnight and zone regrouping while preserving the civil due date; device flows verify future/historical hiding and Today restoration. |
-| UX-TODO-05 | NOT RUN | Quick Capture date defaults and large-text record choices were not exercised. |
-| UX-TODO-06 | NOT RUN | Required-title validation and retained editable text pass. Full title/note boundaries, dirty dialogs, save and delete error behavior remain unverified. |
-| UX-TODO-07 | NOT RUN | Localized due-date display survives Activity recreation. Picker confirm/cancel/clear, timezone travel and dirty-state combinations remain unverified. |
-| UX-TODO-08 | NOT RUN | Completion/reopen are exercised. Completed-edit preservation, dirty status guard and duplicate-tap handling remain unverified. |
-| UX-TODO-09 | NOT RUN | Activity recreation retains the tested draft. Back/IME/picker cancellation, process death and full draft decision paths remain unverified. |
-| UX-TODO-10 | NOT RUN | Confirmed deletion succeeds. Cancel/failure retention and backup wording remain unverified. |
-| UX-TODO-11 | NOT RUN | Concurrent conflict, reload/missing states and stale-write rejection were not exercised. |
-| UX-TODO-12 | NOT RUN | Successful row actions and validation feedback are exercised. Scoped failures, retries, Undo and native focus behavior remain unverified. |
-| UX-TODO-13 | NOT RUN | Automated semantics checks cover a simulated narrow/large-text layout. Native TalkBack, keyboard/IME, themes and the full locale/width/font matrix were not tested. |
-| UX-TODO-14 | NOT RUN | Translation catalog tests and a dirty-draft flow across EN/FA/FR pass. Persian numerals, Gregorian date rules, RTL mixed-direction rendering and all catalog-format cases are not fully accepted here. |
-| UX-TODO-15 | NOT RUN | Backup settings Compose checks cover task counts and the legacy zero-task replacement warning; data tests cover schema-4 restore and cancelled/malformed restore. Native document-picker flow, integrated shell invalidation and isolated reset remain unverified. |
+| UX-TODO-05 | PARTIAL | Today contextual Add and historical Quick Capture Task flows pass; native keyboard/IME kept Save reachable while typing. Full large-text capture choices remain incomplete. |
+| UX-TODO-06 | PARTIAL | Required-title validation, editable draft retention, dirty Back continue/discard and delete-confirmation cancel are exercised. Exact limits and save/delete failure behavior remain unverified. |
+| UX-TODO-07 | PARTIAL | Localized due-date display survives EN/FA/FR Activity recreation; native English/Persian picker selection and clearing are exercised. Travel and all dirty-state combinations remain incomplete. |
+| UX-TODO-08 | PARTIAL | Completion/reopen and dirty status guard are exercised. Completed-edit preservation and duplicate-tap handling remain unverified. |
+| UX-TODO-09 | PARTIAL | Activity recreation retains the tested draft; process death preserves saved task data; native Back offers continue/discard and the IME is visible. Full process-death draft and picker-cancel flows remain unverified. |
+| UX-TODO-10 | PARTIAL | Confirmed deletion succeeds; native confirmation wording explains permanence and Cancel preserves the task. Backup wording and failed-delete retention remain incomplete. |
+| UX-TODO-11 | PASS | Editor tests retain drafts through update conflict, explicit reload and missing-target states; persistence tests reject stale update/completion/delete requests and do not recreate absent tasks. |
+| UX-TODO-12 | PARTIAL | Successful row actions, retries/Undo coverage and validation feedback are exercised. Native focus traversal and every scoped failure state remain unverified. |
+| UX-TODO-13 | PARTIAL | Native dark/light themes and Persian RTL rendering pass at the tested width/font scale; keyboard/IME, picker, dirty dialogs and date clear are exercised. Native TalkBack speech/focus traversal and the full locale/width/font matrix remain unverified. |
+| UX-TODO-14 | PARTIAL | EN/FA/FR catalog and dirty-draft recreation tests pass; native Persian rendering shows a Latin title, Persian digits and Gregorian date in RTL. Full catalog-format and locale/system combinations remain incomplete. |
+| UX-TODO-15 | PARTIAL | Backup settings tests and native SAF export, preview, restore-success, process persistence and isolated app-data reset pass. Retained-route invalidation after restore remains incomplete. |
 
 ## Manual/native and performance checks
 
-These checks remain **NOT RUN**: native TalkBack speech and focus traversal;
-keyboard/IME and picker behavior; mixed-direction Persian content; dark/light
-themes; date clearing; color-independent overdue state; export/restore; full
-app-data reset; task CRUD isolation from existing data; and a 10,000-task fixture
-with repository p50/p95 timing against the ≤300 ms initial-prefix target. No
-native focus result is inferred from Compose semantics. The test host reported
-`Focused=false` even for a minimal Material button after `RequestFocus`, so the
-focused suite checks that the next control remains actionable and leaves native
-TalkBack as a separate manual acceptance item.
+The manual run used disposable `emulator-5562`, API 36, 1080×2400 at 420 dpi
+(about 411 dp wide), OS font scale 1.0. The app language was Persian for RTL and
+English for export/restore/reset. The app-data reset at the end returned Luma to
+its default English settings. Screenshots are stored under
+[`TD07 evidence`](superpowers/evidence/2026-10-19-td07/).
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| TalkBack initial accessibility focus | PARTIAL / BLOCKED | TalkBack was enabled on the disposable emulator; the initial focus ring appeared on Today and the task accessibility/semantics cases passed 3/3 with TalkBack active. Spoken output and focus traversal could not be heard or captured through the available tools. [Focus screenshot](superpowers/evidence/2026-10-19-td07/talkback-initial-focus.png) |
+| RTL mixed text and dates | PASS | Persian Tasks and picker screens show RTL layout, Latin `TD07 task`, Persian digits and Gregorian October 18, 2026. [Picker](superpowers/evidence/2026-10-19-td07/persian-date-picker.png), [light theme task](superpowers/evidence/2026-10-19-td07/rtl-overdue-task-light.png) |
+| Keyboard/IME | PASS | Gboard remained visible while entering a title, with Save available above it. [Editor with IME](superpowers/evidence/2026-10-19-td07/keyboard-and-past-date-editor.png) |
+| Date clearing | PASS | Remove then Save returned the task to the No date group. [No-date screen](superpowers/evidence/2026-10-19-td07/date-cleared-no-date.png) |
+| Overdue state is readable without color | PASS | The overdue label and due date are visible text; the checkbox is separate, and accessibility content description includes status and date in both light and dark screenshots. [Dark](superpowers/evidence/2026-10-19-td07/overdue-task-dark.png), [light/RTL](superpowers/evidence/2026-10-19-td07/rtl-overdue-task-light.png) |
+| Dark and light themes | PASS | Tasks were inspected in both themes at the recorded default width and font scale. [Dark Tasks](superpowers/evidence/2026-10-19-td07/tasks-dark.png), [light RTL Tasks](superpowers/evidence/2026-10-19-td07/rtl-overdue-task-light.png) |
+| Dirty Back and delete dialogs | PASS | Persian dirty Back offered Continue editing and Discard; delete confirmation explained permanent removal; Cancel returned to the intact task. [Dirty Back](superpowers/evidence/2026-10-19-td07/dirty-back-dialog-persian.png), [delete confirmation](superpowers/evidence/2026-10-19-td07/delete-dialog-persian.png) |
+| Process recreation | PASS | Force-stop and relaunch preserved the restored task and its No date state; the task remained in the list. The language-flow test separately preserves a civil due date through Activity recreation. |
+| Native export and restore | PASS | SAF Create Document exported a ZIP; SAF Open Document selected it; preview showed one task; Replace and restore completed and the restored task was visible. [Preview](superpowers/evidence/2026-10-19-td07/restore-preview.png), [success](superpowers/evidence/2026-10-19-td07/restore-success.png) |
+| Full app-data reset | PASS | `pm clear com.luma.lifeos` returned Success on `emulator-5562`; relaunch showed English defaults and Tasks reported 0 open tasks. [Post-reset Tasks](superpowers/evidence/2026-10-19-td07/after-reset-empty-tasks.png) |
+| CRUD isolation | PASS | See `TodoIsolationAcceptanceTest`; event/habit counts, Timeline, summary, Review and Search remained unchanged after every task write. Network and OS permission state were not measured. |
+| 10,000-task scale | PASS | 50 Open rows and 3 Today rows loaded with full counts. Repository p50/p95: Open 8.10/10.89 ms; Today 1.66/2.76 ms on API 36. The Open p95 is below the 300 ms target. |
+| Full layout / target-size matrix | NOT RUN | Only the native 411 dp / 100% font configuration and the Compose 320 dp / 200% semantics configuration were checked; physical target dimensions and remaining combinations were not measured. |
+
+The Compose host reported `Focused=false` even for a minimal Material button
+after `RequestFocus`, so native TalkBack remains a separate acceptance result;
+the TalkBack screenshot documents an initial focus ring, not spoken feedback.
 
 TD07 remains **In progress** until the full app/data suites are green, the
-remaining criteria are run, and any
-unresolved exception is explicitly accepted. Do not mark the Tasks feature
-release-ready from the focused results above.
+remaining criteria are run, and the unresolved failures/TalkBack gap are fixed or
+explicitly accepted. Do not mark the Tasks feature release-ready from focused
+results alone.
