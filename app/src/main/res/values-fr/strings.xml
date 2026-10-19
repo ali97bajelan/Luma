@@ -642,6 +642,9 @@
     <string name="habit_retry_action">Réessayer</string>
     <string name="habit_undo">Annuler</string>
     <string name="habit_log_saved">Répétition enregistrée.</string>
+    <string name="habit_log_saved_named">Enregistrement effectué : %1$s.</string>
+    <string name="habit_undo_pending">Suppression de la répétition…</string>
+    <string name="habit_undo_failed">Impossible d’annuler cette répétition. Réessayez pour confirmer.</string>
     <string name="habit_action_error">La modification n’a pas été enregistrée. Votre progression reste disponible.</string>
     <string name="habit_editor_new">Nouvelle habitude</string>
     <string name="habit_editor_edit">Modifier l’habitude</string>

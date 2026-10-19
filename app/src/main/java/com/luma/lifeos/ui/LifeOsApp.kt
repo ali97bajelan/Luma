@@ -251,6 +251,7 @@ fun LifeOsApp(
                                     result.encodeActionResult(),
                                 )
                             },
+                            snackbarHostState = snackbarHostState,
                         )
                         PrimaryDestination.HABITS -> HabitsRoute(
                             habits,
@@ -261,6 +262,7 @@ fun LifeOsApp(
                             onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
                             deviceDate = currentDay.date,
                             deviceZone = currentDay.zone,
+                            snackbarHostState = snackbarHostState,
                         )
                         PrimaryDestination.REVIEW -> {
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
@@ -424,6 +426,7 @@ fun LifeOsApp(
                 val habitDate = LocalDate.parse(requireNotNull(entry.arguments?.getString("date")))
                 val logId = entry.arguments?.getString("logId")?.let(UUID::fromString)
                 HabitDetailRoute(habits, habitId, habitDate, logId,
+                    snackbarHostState = snackbarHostState,
                     onEdit = { id -> navController.navigate("habit_editor?habitId=$id") },
                     onBack = { navController.popBackStack() }, deviceZone = currentDay.zone)
             }

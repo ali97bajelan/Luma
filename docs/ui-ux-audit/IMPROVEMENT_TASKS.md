@@ -52,6 +52,9 @@ Shared-file coordination: avoid concurrent edits to `LifeOsApp.kt`, locale resou
 - **Complexity / dependencies:** Medium; UX-01 for date-sensitive action ownership; can use existing AccessibleFeedback before UX-15 migration.
 - **Acceptance:** first of ten habits gives visible confirmation/Undo without scrolling to list end. Failed deleteLog announces failure and keeps retry on Today/full list; count follows confirmed data. Error remains accessible if target leaves preview; repeated retry does not remove a different repetition.
 - **Verification:** fake failed Undo then successful retry; Compose checks feedback outside scrolled rows; manual TalkBack/font-2.0 and two rapid completions verify correct target and focus.
+- **Status:** In progress — implementation complete; acceptance verification pending (19 October 2026).
+- **Results:** Successful habit logs use the shared app snackbar with an Undo action bound to the exact log ID. Dismissing the snackbar acknowledges the result. Failed undo or history deletion retains that log ID with an accessible error and retry action; pending removal is shown immediately. Today, Habits and habit detail keep feedback independent of row order, while counts remain driven by observed habit data. Copy is localized in English, French and Persian.
+- **Verification:** `:app:compileDebugKotlin` passed, and `git diff --check` passed. Failure/retry behavior, rapid completions, TalkBack and font-scale checks were not run; those acceptance checks remain pending.
 
 ### UX-03 — Preserve Today task recovery when the row disappears
 

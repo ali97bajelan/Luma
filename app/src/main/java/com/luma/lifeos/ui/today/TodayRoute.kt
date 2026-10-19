@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.annotation.StringRes
+import androidx.compose.material3.SnackbarHostState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.repository.DailySummaryRepository
@@ -26,6 +27,7 @@ import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.HabitsViewModel
+import com.luma.lifeos.ui.habits.HabitLogSnackbarFeedback
 import com.luma.lifeos.ui.todo.TodayTasksActionState
 import com.luma.lifeos.ui.todo.TodayTasksState
 import com.luma.lifeos.ui.todo.TodayTasksViewModel
@@ -72,6 +74,7 @@ fun TodayRoute(
     onAllTasks: () -> Unit = {},
     onAddTask: (LocalDate) -> Unit = {},
     onTaskActionResult: (TodoActionResult) -> Unit = {},
+    snackbarHostState: SnackbarHostState? = null,
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
@@ -131,6 +134,13 @@ fun TodayRoute(
             }
             val habitViewModel: HabitsViewModel = viewModel(factory = habitFactory)
             val habitsState by habitViewModel.state.collectAsStateWithLifecycle(initialValue = HabitsUiState())
+            HabitLogSnackbarFeedback(
+                state = habitsState,
+                snackbarHostState = snackbarHostState,
+                onUndo = habitViewModel::undoLog,
+                onAcknowledge = habitViewModel::acknowledgeUndoLog,
+                onRetry = habitViewModel::undoLog,
+            )
             // Hide the previous selection even in the render before LaunchedEffect invalidates it.
             val displayedHabits = if (habitsState.deviceDate != deviceDate || habitsState.deviceZone != zone ||
                 (habitsDate != null && habitsState.date != habitsDate)) {

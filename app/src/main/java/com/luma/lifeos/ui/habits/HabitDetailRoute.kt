@@ -16,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -53,6 +54,7 @@ fun HabitDetailRoute(
     habitId: UUID,
     date: LocalDate,
     logId: UUID? = null,
+    snackbarHostState: SnackbarHostState? = null,
     onEdit: (UUID) -> Unit,
     onBack: () -> Unit,
     deviceZone: ZoneId = ZoneId.systemDefault(),
@@ -65,6 +67,13 @@ fun HabitDetailRoute(
     LaunchedEffect(habitId, date, deviceZone) { habits.openDetail(habitId, date, deviceZone) }
     LaunchedEffect(state.detail?.deleted) { if (state.detail?.deleted == true) onBack() }
     val renderedState = state
+    HabitLogSnackbarFeedback(
+        state = renderedState,
+        snackbarHostState = snackbarHostState,
+        onUndo = habits::undoLog,
+        onAcknowledge = habits::acknowledgeUndoLog,
+        onRetry = habits::undoLog,
+    )
     HabitDetailScreen(renderedState, habitId, date, logId, onBack,
         onEdit = { onEdit(habitId) }, onLog = {
             renderedState.rowsFor(date).firstOrNull { it.day.habit.id == habitId }?.let(habits::log)
@@ -74,7 +83,7 @@ fun HabitDetailRoute(
         onPauseResume = { habits.changeLifecycle(habitId, it) },
         onCancelPending = { habits.cancelPendingSchedule(habitId) },
         onLoadMore = habits::loadMoreHistory,
-        onDeleteHabit = { habits.deleteHabit(habitId) }, onDeleteLog = habits::undoLog,
+        onDeleteHabit = { habits.deleteHabit(habitId) }, onDeleteLog = habits::deleteHistoryLog,
         onEditLog = habits::beginCorrection, onChangeDate = habits::changeCorrectionDate,
         onChangeTime = habits::changeCorrectionTime, onSaveCorrection = habits::saveCorrection,
         onCancelCorrection = habits::cancelCorrection, onRetry = habits::retry)
@@ -172,14 +181,10 @@ fun HabitDetailScreen(
                                 }
                             }
                         }
-                        state.undoableLog?.takeIf { it.habitId == habitId }?.let { log ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(stringResource(R.string.habit_log_saved))
-                                TextButton(onClick = { onUndoLog(log.id) }, modifier = Modifier.heightIn(min = 48.dp)
-                                    .testTag("habit_detail_undo")) { Text(stringResource(R.string.habit_undo)) }
-                            }
-                        }
                     }
+                }
+                item(key = "habit_detail_undo_feedback") {
+                    HabitUndoStatusFeedback(state, onUndoLog, onlyHabitId = habitId)
                 }
                 if (canSkip) item {
                     TextButton(onClick = if (day?.skipRemaining == true) onResumeToday else onSkip,

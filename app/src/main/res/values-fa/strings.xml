@@ -632,6 +632,9 @@
     <string name="habit_retry_action">تلاش دوباره</string>
     <string name="habit_undo">واگرد</string>
     <string name="habit_log_saved">تکرار ذخیره شد.</string>
+    <string name="habit_log_saved_named">%1$s ثبت شد.</string>
+    <string name="habit_undo_pending">در حال حذف تکرار…</string>
+    <string name="habit_undo_failed">واگرد این تکرار انجام نشد. برای اطمینان دوباره تلاش کنید.</string>
     <string name="habit_action_error">تغییر ذخیره نشد. پیشرفت قبلی شما باقی است.</string>
     <string name="habit_editor_new">عادت جدید</string>
     <string name="habit_editor_edit">ویرایش عادت</string>

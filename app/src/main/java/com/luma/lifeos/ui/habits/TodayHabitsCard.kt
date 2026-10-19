@@ -66,6 +66,11 @@ fun TodayHabitsCard(
                     Text(stringResource(R.string.retry))
                 }
             }
+            HabitUndoStatusFeedback(
+                state = state,
+                onRetry = onUndo,
+                modifier = Modifier.testTag("today_habit_undo_feedback"),
+            )
             if (!state.loading && state.loadedDate == shownDate && rows.isEmpty() && state.error == null) {
                 Text(stringResource(R.string.habit_empty_body))
                 Button(onClick = onCreate, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
@@ -82,15 +87,6 @@ fun TodayHabitsCard(
                         state.pendingSchedules[row.day.habit.id],
                         onOpen = { onHabit(row.day.habit.id, row.day.date) },
                         onLog = { onLog(row.day.habit.id) }, onRetry = onRetryLog, compact = true)
-                }
-            }
-            state.undoableLog?.let { log ->
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(stringResource(R.string.habit_log_saved))
-                    TextButton(onClick = { onUndo(log.id) }, modifier = Modifier.heightIn(min = 48.dp).testTag("today_habit_undo")) {
-                        Text(stringResource(R.string.habit_undo))
-                    }
                 }
             }
         }

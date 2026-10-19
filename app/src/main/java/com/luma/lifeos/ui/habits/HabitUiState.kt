@@ -71,6 +71,9 @@ data class HabitsUiState(
     val actionError: String? = null,
     val pendingLogs: List<PendingHabitLog> = emptyList(),
     val undoableLog: HabitLog? = null,
+    val undoableHabitName: String? = null,
+    val undoingLogs: List<HabitLog> = emptyList(),
+    val undoFailures: List<HabitLog> = emptyList(),
     val pendingSchedules: Map<UUID, HabitSchedule> = emptyMap(),
     val detail: HabitDetailUiState? = null,
 ) {

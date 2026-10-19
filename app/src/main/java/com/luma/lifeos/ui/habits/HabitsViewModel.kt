@@ -165,7 +165,10 @@ class HabitsViewModel(
                     } else repository.log(id, latest.input)
                     mutableState.update { current -> current.copy(
                         pendingLogs = current.pendingLogs.filterNot { it.id == id },
-                        undoableLog = committed, actionError = null,
+                        undoableLog = committed,
+                        undoableHabitName = current.days.firstOrNull { it.day.habit.id == committed.habitId }
+                            ?.day?.habit?.name ?: current.detail?.habit?.takeIf { it.id == committed.habitId }?.name,
+                        actionError = null,
                     ) }
                     persistPending()
                 } catch (failure: Exception) {
@@ -182,15 +185,54 @@ class HabitsViewModel(
     }
 
     fun undoLog(id: UUID) {
+        val current = state.value
+        val target = current.undoableLog?.takeIf { it.id == id }
+            ?: current.undoFailures.firstOrNull { it.id == id }
+            ?: return
+        deleteLog(target)
+    }
+
+    fun deleteHistoryLog(id: UUID) {
+        val current = state.value
+        val target = current.detail?.history?.firstOrNull { it.id == id }
+            ?: current.undoFailures.firstOrNull { it.id == id }
+            ?: return
+        deleteLog(target)
+    }
+
+    fun acknowledgeUndoLog(id: UUID) {
+        mutableState.update { current ->
+            if (current.undoableLog?.id == id) current.copy(undoableLog = null, undoableHabitName = null) else current
+        }
+    }
+
+    private fun deleteLog(target: HabitLog) {
+        val id = target.id
+        if (state.value.undoingLogs.any { it.id == id }) return
+        mutableState.update { current -> current.copy(
+            undoableLog = if (current.undoableLog?.id == id) null else current.undoableLog,
+            undoableHabitName = if (current.undoableLog?.id == id) null else current.undoableHabitName,
+            undoFailures = current.undoFailures.filterNot { it.id == id },
+            undoingLogs = (current.undoingLogs + target).distinctBy { it.id },
+        ) }
         viewModelScope.launch {
             try {
                 repository.deleteLog(id)
-                mutableState.update { it.copy(undoableLog = if (it.undoableLog?.id == id) null else it.undoableLog,
-                    actionError = null) }
+                mutableState.update { current -> current.copy(
+                    undoableLog = if (current.undoableLog?.id == id) null else current.undoableLog,
+                    undoableHabitName = if (current.undoableLog?.id == id) null else current.undoableHabitName,
+                    undoFailures = current.undoFailures.filterNot { it.id == id },
+                    undoingLogs = current.undoingLogs.filterNot { it.id == id },
+                ) }
                 mutableState.value.detail?.let { refreshDetail() }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                mutableState.update { it.copy(actionError = failure.message ?: "Unable to remove this repetition") }
+                mutableState.update { current -> current.copy(
+                    undoableLog = if (current.undoableLog?.id == id) null else current.undoableLog,
+                    undoableHabitName = if (current.undoableLog?.id == id) null else current.undoableHabitName,
+                    undoFailures = (current.undoFailures.filterNot { it.id == id } + target),
+                    undoingLogs = current.undoingLogs.filterNot { it.id == id },
+                ) }
             }
         }
     }

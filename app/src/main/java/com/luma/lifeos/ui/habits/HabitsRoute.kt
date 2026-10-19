@@ -8,6 +8,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.compose.material3.SnackbarHostState
 import com.luma.lifeos.domain.habit.HabitRepository
 import java.time.LocalDate
 import java.time.ZoneId
@@ -24,6 +25,7 @@ fun HabitsRoute(
     deviceDate: LocalDate,
     deviceZone: ZoneId,
     onBack: (() -> Unit)? = null,
+    snackbarHostState: SnackbarHostState? = null,
 ) {
     val factory = androidx.compose.runtime.remember(repository) {
         viewModelFactory { initializer { HabitsViewModel(repository, createSavedStateHandle()) } }
@@ -33,6 +35,13 @@ fun HabitsRoute(
     LaunchedEffect(date, deviceDate, deviceZone) { viewModel.selectDate(date, deviceZone, deviceDate) }
     val renderedState = state
     val shownDate = date ?: renderedState.date ?: deviceDate
+    HabitLogSnackbarFeedback(
+        state = renderedState,
+        snackbarHostState = snackbarHostState,
+        onUndo = viewModel::undoLog,
+        onAcknowledge = viewModel::acknowledgeUndoLog,
+        onRetry = viewModel::undoLog,
+    )
     HabitsScreen(renderedState, shownDate, deviceZone, onBack, onSelectDate, onToday, onCreate,
         onHabit = { id -> renderedState.rowsFor(shownDate).firstOrNull { it.day.habit.id == id }?.let { row ->
             viewModel.dateForRow(row)?.let { onHabit(id, it) }

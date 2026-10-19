@@ -631,6 +631,9 @@
     <string name="habit_retry_action">Retry</string>
     <string name="habit_undo">Undo</string>
     <string name="habit_log_saved">Repetition saved.</string>
+    <string name="habit_log_saved_named">%1$s saved.</string>
+    <string name="habit_undo_pending">Removing repetition…</string>
+    <string name="habit_undo_failed">Could not remove this repetition. Retry to confirm.</string>
     <string name="habit_action_error">The change could not be saved. Your existing progress is still here.</string>
     <string name="habit_editor_new">New habit</string>
     <string name="habit_editor_edit">Edit habit</string>

@@ -97,6 +97,13 @@ fun HabitsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item { DayNavigation(selectedDate, onSelectDate, onToday) }
+                item(key = "habit_undo_status") {
+                    HabitUndoStatusFeedback(
+                        state = state,
+                        onRetry = onUndo,
+                        modifier = Modifier.testTag("habits_undo_feedback"),
+                    )
+                }
                 state.trackingZone?.let { zone ->
                     item { Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.labelLarge) }
                     item { Text(stringResource(R.string.habit_tracking_zone_note), style = MaterialTheme.typography.bodySmall) }
@@ -197,17 +204,6 @@ fun HabitsScreen(
                 state.actionError?.let { item {
                     Text(stringResource(R.string.habit_action_error), color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.testTag("habit_action_error"))
-                } }
-                state.undoableLog?.let { log -> item {
-                    Card(Modifier.fillMaxWidth().testTag("habit_undo_card")) {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.habit_log_saved))
-                            TextButton(onClick = { onUndo(log.id) }, modifier = Modifier.heightIn(min = 48.dp).testTag("habit_undo")) {
-                                Text(stringResource(R.string.habit_undo))
-                            }
-                        }
-                    }
                 } }
             }
         }
