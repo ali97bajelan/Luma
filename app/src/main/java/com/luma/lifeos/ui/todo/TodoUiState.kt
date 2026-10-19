@@ -45,4 +45,8 @@ data class TodoUiState(
     val deleteConfirmationRequested: Boolean = false,
     val pendingAction: String? = null,
     val result: TodoEditorResult? = null,
-)
+) {
+    /** A failed read after conflict resolution was approved can be retried without another prompt. */
+    val canRetryConfirmedReload: Boolean
+        get() = conflict && error == TodoEditorError.LOAD
+}

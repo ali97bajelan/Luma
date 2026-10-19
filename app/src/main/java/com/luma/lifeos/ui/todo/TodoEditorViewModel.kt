@@ -150,10 +150,15 @@ class TodoEditorViewModel(
         executeDelete(pending)
     }
 
-    /** Retry a failed mutation with its retained operation token, or retry the initial load. */
+    /** Retry an approved conflict reload, a mutation with its retained token, or the initial load. */
     fun retry() {
         val current = state.value
-        if (current.busy || current.finished || current.conflict || current.missing) return
+        if (current.busy || current.finished || current.missing) return
+        if (current.canRetryConfirmedReload) {
+            reload()
+            return
+        }
+        if (current.conflict) return
         if (!current.ready || current.error == TodoEditorError.LOAD) {
             load()
             return

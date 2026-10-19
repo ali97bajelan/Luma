@@ -130,6 +130,100 @@ class TodoEditorViewModelTest {
         assertEquals("Changed elsewhere", editor.state.value.draft.title)
     }
 
+    @Test fun confirmedConflictReloadCanRetryFailedReadWithoutLosingDraft() = runTest(dispatcher) {
+        val original = todoFixtureTask("Original")
+        val repository = TodoRepositoryFixture(listOf(original))
+        val editor = TodoEditorViewModel(repository, original.id, null, SavedStateHandle())
+        advanceUntilIdle()
+        editor.setTitle("My unsaved edit")
+        val draftDueDate = LocalDate.parse("2026-10-24")
+        editor.setDueDate(draftDueDate)
+        val latest = original.copy(
+            title = "Changed elsewhere",
+            revision = UUID.randomUUID(),
+            updatedAt = original.updatedAt.plusSeconds(2),
+        )
+        repository.replace(latest)
+        editor.save()
+        advanceUntilIdle()
+        assertTrue(editor.state.value.conflict)
+
+        repository.getFailure = IllegalStateException("transient read failure")
+        val readsBeforeReload = repository.getCalls.size
+        editor.reload()
+        advanceUntilIdle()
+
+        assertEquals(readsBeforeReload + 1, repository.getCalls.size)
+        assertEquals(TodoEditorError.LOAD, editor.state.value.error)
+        assertTrue(editor.state.value.conflict)
+        assertTrue(editor.state.value.canRetryConfirmedReload)
+        assertEquals("My unsaved edit", editor.state.value.draft.title)
+        assertEquals(draftDueDate, editor.state.value.draft.dueDate)
+
+        repository.getFailure = IllegalStateException("second transient read failure")
+        editor.retry()
+        advanceUntilIdle()
+
+        assertEquals(readsBeforeReload + 2, repository.getCalls.size)
+        assertEquals(TodoEditorError.LOAD, editor.state.value.error)
+        assertTrue(editor.state.value.conflict)
+        assertTrue(editor.state.value.canRetryConfirmedReload)
+        assertEquals("My unsaved edit", editor.state.value.draft.title)
+        assertEquals(draftDueDate, editor.state.value.draft.dueDate)
+
+        editor.save()
+        editor.setCompleted(true)
+        editor.requestDelete()
+        assertFalse(editor.state.value.deleteConfirmationRequested)
+        assertTrue(repository.updateCalls.isEmpty())
+        assertTrue(repository.completionCalls.isEmpty())
+        assertTrue(repository.deleteCalls.isEmpty())
+
+        editor.retry()
+        advanceUntilIdle()
+
+        assertEquals(readsBeforeReload + 3, repository.getCalls.size)
+        assertNull(editor.state.value.error)
+        assertFalse(editor.state.value.conflict)
+        assertFalse(editor.state.value.canRetryConfirmedReload)
+        assertFalse(editor.state.value.missing)
+        assertEquals("Changed elsewhere", editor.state.value.draft.title)
+        assertEquals(latest.dueDate, editor.state.value.draft.dueDate)
+        assertFalse(editor.state.value.dirty)
+        assertTrue(repository.updateCalls.isEmpty())
+    }
+
+    @Test fun confirmedReloadRetryReportsMissingTaskWithoutReplacingDraft() = runTest(dispatcher) {
+        val original = todoFixtureTask("Original")
+        val repository = TodoRepositoryFixture(listOf(original))
+        val editor = TodoEditorViewModel(repository, original.id, null, SavedStateHandle())
+        advanceUntilIdle()
+        editor.setTitle("My unsaved edit")
+        repository.replace(original.copy(title = "Changed elsewhere", revision = UUID.randomUUID()))
+        editor.save()
+        advanceUntilIdle()
+        assertTrue(editor.state.value.conflict)
+
+        repository.getFailure = IllegalStateException("transient read failure")
+        editor.reload()
+        advanceUntilIdle()
+        assertEquals(TodoEditorError.LOAD, editor.state.value.error)
+        assertEquals("My unsaved edit", editor.state.value.draft.title)
+
+        repository.remove(original.id)
+        editor.retry()
+        advanceUntilIdle()
+
+        assertTrue(editor.state.value.missing)
+        assertFalse(editor.state.value.conflict)
+        assertNull(editor.state.value.error)
+        assertFalse(editor.state.value.canRetryConfirmedReload)
+        assertEquals("My unsaved edit", editor.state.value.draft.title)
+        assertTrue(repository.updateCalls.isEmpty())
+        assertTrue(repository.completionCalls.isEmpty())
+        assertTrue(repository.deleteCalls.isEmpty())
+    }
+
     @Test fun missingEditTargetIsReportedWithoutCreatingAReplacement() = runTest(dispatcher) {
         val missingId = UUID.randomUUID()
         val repository = TodoRepositoryFixture()

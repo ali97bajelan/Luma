@@ -76,6 +76,9 @@ Shared-file coordination: avoid concurrent edits to `LifeOsApp.kt`, locale resou
 - **Complexity / dependencies:** Low; none.
 - **Acceptance:** conflict → confirmed Reload latest → failed read → Retry actually reads and recovers. Repeated failure retains text/date and truthful copy. If latest record is gone, show missing state. Save/status/delete remain revision-safe throughout; Cancel before confirming reload preserves draft.
 - **Verification:** deterministic repository fail-once test exercising the UI callback, then Compose recovery flow; no broad test duplication of unchanged editor behavior.
+- **Status:** Complete (19 October 2026).
+- **Results:** A failed read after conflict resolution is explicitly classified as a confirmed-reload retry. Retry uses the reload read path and retains the draft through repeated failures; successful replacement accepts the latest task, while a deleted task remains missing. Save, status and delete stay blocked during conflict. Persistent error feedback uses the existing localized copy, and Retry reserves a 48 dp action target.
+- **Verification:** `:app:testDebugUnitTest --tests 'com.luma.lifeos.ui.todo.TodoEditorViewModelTest'` passed 9/9. `TodoEditorFlowTest` passed 7/7 on API 36.1 via direct ADB, including a route-level test that drives the real Retry callback through two read failures and recovery. That regression failed against the previous UI when the discard dialog reappeared, then passed with the fix. Debug and instrumentation APKs compiled. Gradle's `:app:connectedDebugAndroidTest` remains unavailable because the configured UTP host-output artifact `android-test-plugin-host-additional-test-output:31.7.3` is not cached; the Compose tests ran through the repository's direct-ADB workflow.
 
 ### UX-05 — Protect Mood draft restoration from oversized notes
 

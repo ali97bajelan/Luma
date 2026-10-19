@@ -132,7 +132,11 @@ fun TodoEditorScreen(
                         },
                     )
                     AccessibleFeedback(message, Modifier.testTag("todo_editor_action_error"))
-                    TextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("todo_editor_retry")) {
+                    TextButton(
+                        onClick = onRetry,
+                        enabled = !state.busy,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_retry"),
+                    ) {
                         Text(stringResource(R.string.retry))
                     }
                 }
@@ -176,8 +180,10 @@ fun TodoEditorScreen(
             if (state.conflict) {
                 AccessibleFeedback(stringResource(R.string.todo_conflict), Modifier.testTag("todo_editor_conflict"))
                 TextButton(
-                    onClick = { if (state.dirty) reloadConfirmation = true else onReload() },
-                    enabled = !state.busy,
+                    onClick = {
+                        if (state.dirty && !state.canRetryConfirmedReload) reloadConfirmation = true else onReload()
+                    },
+                    enabled = !state.busy && !state.loading,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_reload"),
                 ) { Text(stringResource(R.string.todo_reload_latest)) }
             }
