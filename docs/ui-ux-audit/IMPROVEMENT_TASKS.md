@@ -64,6 +64,9 @@ Shared-file coordination: avoid concurrent edits to `LifeOsApp.kt`, locale resou
 - **Complexity / dependencies:** Medium; none; shared semantics align with UX-15.
 - **Acceptance:** completion racing with delete, due-date change, reordered fourth task and restored failure each retain understandable feedback. Dismiss clears only that error. Completion changes preview/count only from real data. Other Today modules remain usable and viewport is not consumed by multiple errors.
 - **Verification:** ViewModel and Compose fixtures for all off-preview cases, including 3+ retained failures at 200% font; assert retry uses original revision/token and missing tasks stay missing.
+- **Status:** In progress — implementation complete; acceptance verification pending (19 October 2026).
+- **Results:** Today keeps task title, operation and classified failure with the saved action identity. Off-preview summaries remain visible during task loading/read errors, use safe Retry only for the retained failed intent, allow opening a conflicted task for review, and never retry a missing task. Multiple summaries live in a bounded scroll region, with localized English, French and Persian labels.
+- **Verification:** `git diff --check` passed. ViewModel/Compose fixtures, 200% font, race/reorder/restoration behavior and device accessibility checks were not run; acceptance remains pending.
 
 ### UX-04 — Make task conflict-load Retry actionable
 

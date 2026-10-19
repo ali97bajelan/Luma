@@ -771,6 +771,8 @@
     <string name="todo_today_count">%1$s open tasks due today or earlier</string>
     <string name="todo_today_empty">No open tasks due today or earlier.</string>
     <string name="todo_today_view_all">View all</string>
+    <string name="todo_today_task_feedback">Task updates</string>
+    <string name="todo_today_task_action">Action: %1$s</string>
     <string name="todo_group_overdue">Overdue</string>
     <string name="todo_group_today">Today</string>
     <string name="todo_group_upcoming">Upcoming</string>

@@ -782,6 +782,8 @@
     <string name="todo_today_count">%1$s tâches ouvertes dues aujourd’hui ou en retard</string>
     <string name="todo_today_empty">Aucune tâche ouverte n’est due aujourd’hui ou en retard.</string>
     <string name="todo_today_view_all">Tout voir</string>
+    <string name="todo_today_task_feedback">État des tâches</string>
+    <string name="todo_today_task_action">Action : %1$s</string>
     <string name="todo_group_overdue">En retard</string>
     <string name="todo_group_today">Aujourd’hui</string>
     <string name="todo_group_upcoming">À venir</string>

@@ -772,6 +772,8 @@
     <string name="todo_today_count">%1$s کار باز با مهلت امروز یا گذشته</string>
     <string name="todo_today_empty">هیچ کار بازی با مهلت امروز یا گذشته وجود ندارد.</string>
     <string name="todo_today_view_all">دیدن همه</string>
+    <string name="todo_today_task_feedback">وضعیت کارها</string>
+    <string name="todo_today_task_action">عمل: %1$s</string>
     <string name="todo_group_overdue">گذشته از مهلت</string>
     <string name="todo_group_today">امروز</string>
     <string name="todo_group_upcoming">پیشِ‌رو</string>

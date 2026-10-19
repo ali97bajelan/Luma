@@ -18,22 +18,33 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.coroutineContext
 
+data class TodayTaskRowFeedback(
+    val title: String,
+    val error: TodoListRowError,
+    val completesTask: Boolean,
+)
+
 data class TodayTasksActionState(
     val pendingIntents: Map<UUID, TodoMutationIntent> = emptyMap(),
     val inFlight: Set<UUID> = emptySet(),
-    val rowErrors: Map<UUID, TodoListRowError> = emptyMap(),
+    val rowFeedback: Map<UUID, TodayTaskRowFeedback> = emptyMap(),
     val actionResult: TodoActionResult? = null,
-)
+) {
+    val rowErrors: Map<UUID, TodoListRowError> get() = rowFeedback.mapValues { it.value.error }
+}
 
 /** Revision-safe completion actions for the small Today preview. */
 class TodayTasksViewModel(
     private val repository: TodoRepository,
     private val saved: SavedStateHandle,
 ) : ViewModel() {
+    private val restoredPendingIntents = readPendingIntents()
     private val mutableState = MutableStateFlow(
         TodayTasksActionState(
-            pendingIntents = readPendingIntents(),
-            rowErrors = readPendingIntents().keys.associateWith { TodoListRowError.FAILED },
+            pendingIntents = restoredPendingIntents,
+            rowFeedback = readRowFeedback() + restoredPendingIntents.mapValues { (_, intent) ->
+                TodayTaskRowFeedback(intent.title, TodoListRowError.FAILED, intent.completed)
+            },
             actionResult = readActionResult(),
         ),
     )
@@ -58,10 +69,10 @@ class TodayTasksViewModel(
             title = task.title,
         )
         updatePending(current.pendingIntents + (task.id to intent))
+        updateRowFeedback(current.rowFeedback - task.id)
         mutableState.update {
             it.copy(
                 inFlight = it.inFlight + task.id,
-                rowErrors = it.rowErrors - task.id,
             )
         }
         execute(intent)
@@ -71,12 +82,13 @@ class TodayTasksViewModel(
         val current = mutableState.value
         val intent = current.pendingIntents[taskId] ?: return
         if (taskId in current.inFlight) return
-        mutableState.update { it.copy(inFlight = it.inFlight + taskId, rowErrors = it.rowErrors - taskId) }
+        updateRowFeedback(current.rowFeedback - taskId)
+        mutableState.update { it.copy(inFlight = it.inFlight + taskId) }
         execute(intent)
     }
 
     fun dismissRowError(taskId: UUID) {
-        mutableState.update { it.copy(rowErrors = it.rowErrors - taskId) }
+        updateRowFeedback(mutableState.value.rowFeedback - taskId)
     }
 
     fun consumeActionResult(result: TodoActionResult) {
@@ -90,6 +102,7 @@ class TodayTasksViewModel(
         mutationJobs.values.toList().forEach { it.cancel() }
         mutationJobs.clear()
         clearPendingIntents()
+        saved.remove<ArrayList<String>>(KEY_ROW_FEEDBACK)
         saved.remove<String>(KEY_ACTION_RESULT)
         mutableState.value = TodayTasksActionState()
     }
@@ -118,12 +131,7 @@ class TodayTasksViewModel(
                         failAndRemove(intent.taskId, TodoListRowError.MISSING)
                     (live != null && live.revision != intent.expectedRevision) || failure is TodoConflictException ->
                         failAndRemove(intent.taskId, TodoListRowError.CONFLICT)
-                    else -> mutableState.update {
-                        it.copy(
-                            inFlight = it.inFlight - intent.taskId,
-                            rowErrors = it.rowErrors + (intent.taskId to TodoListRowError.FAILED),
-                        )
-                    }
+                    else -> recordFailure(intent, TodoListRowError.FAILED)
                 }
             } finally {
                 if (mutationJobs[intent.taskId] === coroutineContext[Job]) mutationJobs.remove(intent.taskId)
@@ -135,12 +143,12 @@ class TodayTasksViewModel(
 
     private fun acceptCommitted(intent: TodoMutationIntent, task: TodoTask) {
         removePending(intent.taskId)
+        updateRowFeedback(mutableState.value.rowFeedback - intent.taskId)
         val result = TodoActionResult(task.id, intent.completed, task.revision)
         saved[KEY_ACTION_RESULT] = result.encodeActionResult()
         mutableState.update {
             it.copy(
                 inFlight = it.inFlight - intent.taskId,
-                rowErrors = it.rowErrors - intent.taskId,
                 actionResult = result,
             )
         }
@@ -157,13 +165,11 @@ class TodayTasksViewModel(
                         live == null -> failAndRemove(taskId, TodoListRowError.MISSING)
                         isCommitted(intent, live) -> acceptCommitted(intent, live)
                         live.revision != intent.expectedRevision -> failAndRemove(taskId, TodoListRowError.CONFLICT)
-                        else -> mutableState.update {
-                            it.copy(rowErrors = it.rowErrors + (taskId to TodoListRowError.FAILED))
-                        }
+                        else -> recordFailure(intent, TodoListRowError.FAILED)
                     }
                 } catch (failure: Exception) {
                     if (failure is CancellationException) throw failure
-                    mutableState.update { it.copy(rowErrors = it.rowErrors + (taskId to TodoListRowError.FAILED)) }
+                    mutableState.value.pendingIntents[taskId]?.let { intent -> recordFailure(intent, TodoListRowError.FAILED) }
                 } finally {
                     reconciling.remove(taskId)
                 }
@@ -172,10 +178,18 @@ class TodayTasksViewModel(
     }
 
     private fun failAndRemove(taskId: UUID, error: TodoListRowError) {
+        val intent = mutableState.value.pendingIntents[taskId] ?: return
         removePending(taskId)
-        mutableState.update {
-            it.copy(inFlight = it.inFlight - taskId, rowErrors = it.rowErrors + (taskId to error))
-        }
+        recordFailure(intent, error)
+    }
+
+    private fun recordFailure(intent: TodoMutationIntent, error: TodoListRowError) {
+        val taskId = intent.taskId
+        updateRowFeedback(
+            mutableState.value.rowFeedback +
+                (taskId to TodayTaskRowFeedback(intent.title, error, intent.completed)),
+        )
+        mutableState.update { it.copy(inFlight = it.inFlight - taskId) }
     }
 
     private fun isCommitted(intent: TodoMutationIntent, task: TodoTask) =
@@ -190,6 +204,11 @@ class TodayTasksViewModel(
 
     private fun clearPendingIntents() = updatePending(emptyMap())
 
+    private fun updateRowFeedback(feedback: Map<UUID, TodayTaskRowFeedback>) {
+        mutableState.update { it.copy(rowFeedback = feedback) }
+        saved[KEY_ROW_FEEDBACK] = ArrayList(feedback.map { (taskId, item) -> encodeRowFeedback(taskId, item) })
+    }
+
     private fun clearActionResult() {
         saved.remove<String>(KEY_ACTION_RESULT)
         mutableState.update { it.copy(actionResult = null) }
@@ -197,6 +216,24 @@ class TodayTasksViewModel(
 
     private fun readPendingIntents(): Map<UUID, TodoMutationIntent> =
         saved.get<ArrayList<String>>(KEY_PENDING).orEmpty().mapNotNull(::decodeIntent).associateBy { it.taskId }
+
+    private fun encodeRowFeedback(taskId: UUID, feedback: TodayTaskRowFeedback): String {
+        val title = Base64.getUrlEncoder().withoutPadding().encodeToString(feedback.title.toByteArray(Charsets.UTF_8))
+        return listOf(taskId, feedback.error.name, feedback.completesTask, title).joinToString("|")
+    }
+
+    private fun decodeRowFeedback(value: String): Pair<UUID, TodayTaskRowFeedback>? = runCatching {
+        val fields = value.split('|', limit = 4)
+        require(fields.size == 4)
+        UUID.fromString(fields[0]) to TodayTaskRowFeedback(
+            title = String(Base64.getUrlDecoder().decode(fields[3]), Charsets.UTF_8),
+            error = TodoListRowError.valueOf(fields[1]),
+            completesTask = fields[2].toBooleanStrict(),
+        )
+    }.getOrNull()
+
+    private fun readRowFeedback(): Map<UUID, TodayTaskRowFeedback> =
+        saved.get<ArrayList<String>>(KEY_ROW_FEEDBACK).orEmpty().mapNotNull(::decodeRowFeedback).toMap()
 
     private fun encodeIntent(intent: TodoMutationIntent): String {
         val title = Base64.getUrlEncoder().withoutPadding().encodeToString(intent.title.toByteArray(Charsets.UTF_8))
@@ -224,6 +261,7 @@ class TodayTasksViewModel(
 
     private companion object {
         const val KEY_PENDING = "today_todo_pending"
+        const val KEY_ROW_FEEDBACK = "today_todo_row_feedback"
         const val KEY_ACTION_RESULT = "today_todo_action_result"
     }
 }
