@@ -32,12 +32,12 @@ otherwise incomplete criterion to PASS.
   --no-daemon --console=plain
 ```
 
-The result was BUILD SUCCESSFUL. Results: domain 126/126 tests, app 223/223 and
-data 24/24; no failures, errors or skipped tests. The app unit suite was then
-forced to re-run with the same Gradle 9.1.0 binary using
-`:app:testDebugUnitTest --rerun-tasks --no-daemon --console=plain` after the
-translation resource change; all 223 passed.
-App and data lint both pass. App debug and app instrumentation APKs assemble.
+The recorded full-module build was successful. Results: domain 126/126 tests and
+data 24/24; no failures, errors or skipped tests. The app suite has since gained
+the TD04–TD06 ViewModel/state tests and passes 244/244 on a full
+`:app:testDebugUnitTest` run. An earlier forced app rerun, before those additions,
+passed 223/223. App and data lint both pass; app debug and instrumentation APKs
+assemble.
 
 The French `habit_other_count` plural now includes the required `many` variant,
 which the translation-catalog test checks. Persian and French `habit_unit_default`
@@ -67,6 +67,33 @@ the prior test version had an intermittent race because the persisted locale
 could update before the Activity resources did. After this wait was corrected,
 the full focused suite passed and the language case passed on two additional
 repeats.
+
+**PASS — TD04–TD06 follow-up JVM and UI flows:**
+
+The new app tests cover stable create operation IDs/revisions and explicit
+retry after ambiguous results; conflict/missing-task draft retention; live
+50→100 list prefixes, retry and revision-safe completion Undo; Today eligibility,
+full counts, completion backfill, date regrouping and scoped errors. Six editor
+Compose flows, one navigation flow, two Today flows and two Today semantics
+flows passed 11/11 together on disposable `emulator-5562` (API 36):
+
+```sh
+/home/bajelan/Android/Sdk/platform-tools/adb -s emulator-5562 shell am instrument -w \
+  -e class 'com.luma.lifeos.todo.TodoEditorFlowTest,com.luma.lifeos.todo.TodoNavigationTest,com.luma.lifeos.todo.TodayTasksFlowTest,com.luma.lifeos.todo.TodayTasksSemanticsTest' \
+  com.luma.lifeos.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+The editor flows exercise title-only save, picker cancel/same-date confirmation,
+date clearing, dirty status guarding, delete cancel/confirm and dirty close. The
+navigation flow verifies an undated Task from historical Quick Capture returns
+to its Timeline origin and that editor completion Undo is consumed once. Today
+flows verify contextual Add defaults to today, empty-state Add/View all actions,
+completion Undo, and hiding/restoring the card on both future and historical
+dates. Today semantics tests verify three visible rows/full count and that a task
+load error does not hide events, habits or summary. Adjacent `AppNavigationTest`,
+`HabitsNavigationTest`, `TodayScreenTest`, `DayNavigationTest` and
+`EntryHabitCountsFlowTest` regressions passed 22/22; task accessibility and
+language regressions passed 4/4.
 
 **PASS — data-module instrumentation compile and task persistence/migration:**
 
@@ -158,8 +185,8 @@ The full app and data suites have the failures listed above.
 | TODO-AC-02 | NOT RUN | Due date survives an in-app locale change and Activity recreation. No-date default, Today prefill, clear/past/future dates, travel and midnight behavior remain unverified. |
 | TODO-AC-03 | NOT RUN | Complete/reopen actions are exercised. Timestamp idempotence, completed edits and blocking status changes while dirty remain unverified. |
 | TODO-AC-04 | NOT RUN | A mocked 50-row list exposes total 51 and Load More. Room-backed paging, deterministic ordering and mutation-without-duplicate coverage remain unverified. |
-| TODO-AC-05 | NOT RUN | More → Tasks is exercised. Today, Quick Capture, five-tab/back-stack and capture-origin regressions remain unverified. |
-| TODO-AC-06 | NOT RUN | Today eligibility, three-row cap, full count and historical-date hiding were not tested. |
+| TODO-AC-05 | PASS | More → Tasks, Today contextual Add and historical Timeline Quick Capture Task reach the shared Tasks/editor flow. Tests verify origin return, selected event date retention, shared editor completion Undo, and the existing primary-navigation regressions. |
+| TODO-AC-06 | PASS | State tests verify the three-row cap, full eligible count and exclusion of future/undated/completed rows; device flows hide the card on future and historical browsed dates and restore it on Today. Midnight/zone date rules are covered by the state test. |
 | TODO-AC-07 | NOT RUN | Distinct checkbox/body actions and successful completion/reopen are exercised. Failed writes, retry/Undo revisions, commit announcements and create retry behavior remain unverified. |
 | TODO-AC-08 | NOT RUN | Confirmed deletion succeeds. Cancel, dirty Back, missing targets and delete retry behavior remain unverified. |
 | TODO-AC-09 | PASS | `TodoMigrationTest` upgrades populated schema 1–3 databases to 4; task backup tests round-trip schema-4 rows, verify preview count/revision rotation, clear tasks on schema-1/2/3 replacement, and retain live data after cancelled or malformed restore. |
@@ -175,7 +202,7 @@ The full app and data suites have the failures listed above.
 | UX-TODO-01 | NOT RUN | More → Tasks works. Today origin, Quick Capture restoration and navigation/back-stack state remain unverified. |
 | UX-TODO-02 | NOT RUN | Group heading, mocked 50-row list and Load More reachability pass. Repository ordering and growing observed prefixes remain unverified. |
 | UX-TODO-03 | NOT RUN | One checkbox semantics node, separate body/status actions, and complete/reopen flows pass. Physical target dimensions and all row-label combinations remain unverified. |
-| UX-TODO-04 | NOT RUN | Today task preview behavior was not exercised. |
+| UX-TODO-04 | PASS | State tests verify eligibility, cap/count, backfill, midnight and zone regrouping while preserving the civil due date; device flows verify future/historical hiding and Today restoration. |
 | UX-TODO-05 | NOT RUN | Quick Capture date defaults and large-text record choices were not exercised. |
 | UX-TODO-06 | NOT RUN | Required-title validation and retained editable text pass. Full title/note boundaries, dirty dialogs, save and delete error behavior remain unverified. |
 | UX-TODO-07 | NOT RUN | Localized due-date display survives Activity recreation. Picker confirm/cancel/clear, timezone travel and dirty-state combinations remain unverified. |
