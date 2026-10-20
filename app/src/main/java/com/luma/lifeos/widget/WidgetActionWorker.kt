@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.luma.lifeos.LumaApplication
+import com.luma.lifeos.domain.widget.WidgetActionResult
 import com.luma.lifeos.domain.widget.WidgetOutcome
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -34,9 +36,32 @@ class WidgetActionWorker(context: Context, params: WorkerParameters) : Coroutine
         } catch (_: IllegalArgumentException) {
             return Result.failure()
         }
+        val collectionItemIdRaw = inputData.getString(KEY_COLLECTION_ITEM_ID)
+        val collectionDateRaw = inputData.getString(KEY_COLLECTION_DATE)
+        if ((collectionItemIdRaw == null) != (collectionDateRaw == null)) return Result.failure()
+        val collectionItemId = collectionItemIdRaw?.let { raw ->
+            try {
+                UUID.fromString(raw).takeIf { it.toString() == raw } ?: return Result.failure()
+            } catch (_: IllegalArgumentException) {
+                return Result.failure()
+            }
+        }
+        val collectionDate = collectionDateRaw?.let { raw ->
+            runCatching { LocalDate.parse(raw).takeIf { it.toString() == raw } }.getOrNull()
+                ?: return Result.failure()
+        }
+        val now = Instant.now()
+        val deviceZone = ZoneId.systemDefault()
         val result = try {
             withContext(Dispatchers.IO) {
-                app.storage.widgets.execute(widgetId, token, Instant.now(), ZoneId.systemDefault())
+                val store = app.storage.widgets
+                if (collectionItemId != null && collectionDate != null &&
+                    !store.isValidCollectionMutation(widgetId, collectionItemId, token, collectionDate)
+                ) {
+                    WidgetActionResult(WidgetOutcome.INVALID)
+                } else {
+                    store.execute(widgetId, token, now, deviceZone)
+                }
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -58,5 +83,7 @@ class WidgetActionWorker(context: Context, params: WorkerParameters) : Coroutine
         const val KEY_WIDGET_ID = "widget_id"
         const val KEY_TOKEN = "token"
         const val KEY_DISMISS_FEEDBACK = "dismiss_feedback"
+        const val KEY_COLLECTION_ITEM_ID = "collection_item_id"
+        const val KEY_COLLECTION_DATE = "collection_date"
     }
 }

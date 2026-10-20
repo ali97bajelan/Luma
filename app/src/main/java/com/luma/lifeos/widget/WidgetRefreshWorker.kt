@@ -7,7 +7,6 @@ import androidx.work.WorkerParameters
 import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
-import com.luma.lifeos.domain.widget.WidgetStore
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
@@ -63,11 +62,11 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 val views = try {
                     val snapshot = withContext(Dispatchers.IO) {
                         val store = app.storage.widgets
-                        store.snapshot(widgetId, now, deviceZone, rowLimit = WidgetStore.MAX_CANDIDATE_ROWS) ?: run {
+                        WidgetRenderer.snapshotForRendering(store, widgetId, now, deviceZone) ?: run {
                             val kind = WidgetRefreshCoordinator.kindForWidgetId(applicationContext, widgetId)
                                 ?: return@withContext null
                             store.ensureConfigured(WidgetInstance(widgetId, kind))
-                            store.snapshot(widgetId, now, deviceZone, rowLimit = WidgetStore.MAX_CANDIDATE_ROWS)
+                            WidgetRenderer.snapshotForRendering(store, widgetId, now, deviceZone)
                         }
                     }
                     WidgetRenderer.render(
@@ -84,6 +83,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                         options = manager.getAppWidgetOptions(widgetId))
                 }
                 manager.updateAppWidget(widgetId, views)
+                manager.notifyAppWidgetViewDataChanged(widgetId, R.id.widget_data_rows)
             }
         }
         return Result.success()

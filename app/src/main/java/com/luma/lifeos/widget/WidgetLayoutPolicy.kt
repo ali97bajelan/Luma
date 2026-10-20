@@ -6,7 +6,7 @@ import kotlin.math.max
 
 /** Pure sizing policy shared by the data-widget renderers. */
 internal object WidgetLayoutPolicy {
-    const val MAX_ROWS = WidgetStore.MAX_CANDIDATE_ROWS
+    const val MAX_MEASUREMENT_ROWS = WidgetStore.COLLECTION_PAGE_SIZE
     const val ROW_GAP_DP = 8
     private const val MIN_WIDGET_WIDTH_DP = 180
 
@@ -92,12 +92,12 @@ internal object WidgetLayoutPolicy {
         val safeScale = fontScale.takeIf { it.isFinite() }?.coerceAtLeast(1f) ?: 1f
         val scaleAllowance = ceil((safeScale - 1f).coerceAtMost(2f) * 8f).toInt()
         val availableHeight = (heightDp - reservedHeightDp - scaleAllowance).coerceAtLeast(0)
-        return rowViewportCapacity(availableHeight, rowHeightsDp.take(MAX_ROWS), ROW_GAP_DP)
+        return rowViewportCapacity(availableHeight, rowHeightsDp, ROW_GAP_DP)
     }
 
     /** Row heights are already measured for their actual localized content and action width. */
     fun rowPrefixCapacity(availableHeightDp: Int, rowHeightsDp: List<Int>): Int {
-        return rowViewportCapacity(availableHeightDp, rowHeightsDp.take(MAX_ROWS), 0)
+        return rowViewportCapacity(availableHeightDp, rowHeightsDp, 0)
     }
 
     /** Counts whole rows in the measured viewport, charging a gap only between adjacent rows. */
@@ -109,7 +109,7 @@ internal object WidgetLayoutPolicy {
         if (availableHeightDp <= 0) return 0
         var remaining = availableHeightDp
         var count = 0
-        for (height in rowHeightsDp.take(MAX_ROWS)) {
+        for (height in rowHeightsDp) {
             val requiredHeight = height + if (count > 0) rowGapDp else 0
             if (height <= 0 || requiredHeight > remaining) break
             remaining -= requiredHeight

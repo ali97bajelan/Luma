@@ -84,8 +84,13 @@
                 <action android:name="com.luma.lifeos.widget.action.REFRESH" />
                 <action android:name="com.luma.lifeos.widget.action.MUTATION" />
                 <action android:name="com.luma.lifeos.widget.action.DISMISS_FEEDBACK" />
+                <action android:name="com.luma.lifeos.widget.action.COLLECTION_ITEM" />
             </intent-filter>
         </receiver>
+        <service
+            android:name=".widget.WidgetCollectionService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
         <receiver
             android:name=".widget.WidgetSystemReceiver"
             android:exported="false">

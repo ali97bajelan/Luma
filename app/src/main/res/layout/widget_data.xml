@@ -114,10 +114,18 @@
         android:textSize="12sp"
         android:visibility="gone" />
 
-    <LinearLayout
+    <ListView
         android:id="@+id/widget_data_rows"
+        android:contentDescription="@string/widget_collection_accessibility"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginTop="8dp"
-        android:orientation="vertical" />
+        android:divider="@android:color/transparent"
+        android:dividerHeight="8dp"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:cacheColorHint="@android:color/transparent"
+        android:footerDividersEnabled="false"
+        android:visibility="gone" />
 </LinearLayout>

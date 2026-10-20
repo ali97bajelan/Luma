@@ -58,24 +58,32 @@ internal fun WidgetExample(kind: WidgetKind, details: Boolean = false) {
                 }
                 Text("${stringResource(R.string.widget_preview_date)} · $summary", style = MaterialTheme.typography.bodyMedium)
                 if (details) {
-                    Row(
-                        Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            stringResource(if (kind == WidgetKind.HABITS) R.string.widget_preview_habit else R.string.widget_preview_task),
-                            Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Text(
-                            stringResource(if (kind == WidgetKind.HABITS) R.string.widget_preview_habit_action else R.string.widget_preview_task_action),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
+                    val rowNames = if (kind == WidgetKind.HABITS) {
+                        listOf(R.string.widget_preview_habit, R.string.widget_preview_habit_second)
+                    } else {
+                        listOf(R.string.widget_preview_task, R.string.widget_preview_task_second)
                     }
+                    val rowActions = if (kind == WidgetKind.HABITS) {
+                        listOf(R.string.widget_preview_habit_action, R.string.widget_preview_habit_second_action)
+                    } else {
+                        listOf(R.string.widget_preview_task_action, R.string.widget_preview_task_second_action)
+                    }
+                    rowNames.zip(rowActions).forEach { (name, action) ->
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(stringResource(name), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(action), style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                    Text(stringResource(R.string.widget_scroll_for_more), style = MaterialTheme.typography.bodySmall)
                 }
                 Text(stringResource(R.string.widget_data_updated_time, "13:07"), style = MaterialTheme.typography.bodySmall)
-                Text(stringResource(R.string.widget_settings_title_navigation_hint), style = MaterialTheme.typography.bodySmall)
+                if (!details) {
+                    Text(stringResource(R.string.widget_settings_title_navigation_hint), style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
         Text(

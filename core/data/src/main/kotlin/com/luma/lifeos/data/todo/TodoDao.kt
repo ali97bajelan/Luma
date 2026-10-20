@@ -64,6 +64,23 @@ interface TodoDao {
     """)
     suspend fun widgetTodayRows(date: String, limit: Int): List<WidgetTodoRow>
 
+    @Query("""
+        SELECT id AS task_id, title, due_date, revision_token
+        FROM todo_task
+        WHERE completed_at IS NULL AND due_date <= :date
+        ORDER BY due_date ASC, created_at ASC, id ASC
+        LIMIT :limit OFFSET :offset
+    """)
+    suspend fun widgetTodayRowsPage(date: String, limit: Int, offset: Int): List<WidgetTodoRow>
+
+    @Query("""
+        SELECT id AS task_id, title, due_date, revision_token
+        FROM todo_task
+        WHERE id = :taskId AND completed_at IS NULL AND due_date <= :date
+        LIMIT 1
+    """)
+    suspend fun widgetTodayRow(taskId: String, date: String): WidgetTodoRow?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: TodoEntity)
 

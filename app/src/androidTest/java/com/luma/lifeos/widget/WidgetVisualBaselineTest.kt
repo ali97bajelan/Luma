@@ -10,8 +10,8 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
-import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.ListView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.R
@@ -47,7 +47,7 @@ class WidgetVisualBaselineTest {
         val output = File(rootOutput, "matrix").apply { mkdirs() }
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         val manifest = StringBuilder()
-        manifest.appendLine("kind,count,width_dp,height_dp,feedback,show_details,visible_rows,title_cue,capture_label,title_bounds,capture_bounds,refresh_bounds,image")
+        manifest.appendLine("kind,count,width_dp,height_dp,feedback,show_details,collection_visible,scroll_hint,title_cue,capture_label,title_bounds,capture_bounds,refresh_bounds,image")
         var captureCount = 0
 
         val configuration = context.resources.configuration
@@ -63,7 +63,7 @@ class WidgetVisualBaselineTest {
                 "api=${Build.VERSION.SDK_INT}\n" +
                 "device=${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})\n" +
                 "home_activity_resolver=$homeResolver\n" +
-                "capture_host=offscreen RemoteViews.apply; no launcher-host check\n" +
+                "capture_host=offscreen RemoteViews.apply; collection adapter rows are not launcher-bound\n" +
                 "density_dpi=${context.resources.displayMetrics.densityDpi}\n" +
                 "locale=$localeTags\n" +
                 "font_scale=${configuration.fontScale}\n" +
@@ -93,7 +93,7 @@ class WidgetVisualBaselineTest {
                         )
                         root.layout(0, 0, widthPx, heightPx)
 
-                        val name = "${kind.name.lowercase()}-$count-${width}x$height-none-details.png"
+                        val name = "${kind.name.lowercase()}-$count-${width}x$height-no-feedback-details.png"
                         val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
                         try {
                             root.draw(Canvas(bitmap))
@@ -104,7 +104,10 @@ class WidgetVisualBaselineTest {
                             bitmap.recycle()
                         }
 
-                        val rowCount = root.findViewById<LinearLayout>(R.id.widget_data_rows)?.childCount ?: 0
+                        val collectionVisible = root.findViewById<ListView?>(R.id.widget_data_rows)
+                            ?.visibility == View.VISIBLE
+                        val scrollHint = root.findViewById<View?>(R.id.widget_data_scroll_hint)
+                            ?.visibility == View.VISIBLE
                         val title = boundsLabel(root.findViewById(R.id.widget_data_open))
                         val titleCue = root.findViewById<TextView>(R.id.widget_data_more)?.text?.toString()?.replace(",", " ") ?: "absent"
                         val captureView = root.findViewById<TextView>(R.id.widget_data_refresh)
@@ -112,7 +115,7 @@ class WidgetVisualBaselineTest {
                         val capture = boundsLabel(captureView)
                         val refresh = boundsLabel(root.findViewById(R.id.widget_header_refresh))
                         manifest.appendLine(
-                            "${kind.name},$count,$width,$height,none,true,$rowCount,$titleCue,$captureLabel,$title,$capture,$refresh,$name",
+                            "${kind.name},$count,$width,$height,none,true,$collectionVisible,$scrollHint,$titleCue,$captureLabel,$title,$capture,$refresh,$name",
                         )
                         captureCount++
                     }
@@ -169,12 +172,15 @@ class WidgetVisualBaselineTest {
                     } finally {
                         bitmap.recycle()
                     }
-                    val rowCount = root.findViewById<LinearLayout>(R.id.widget_data_rows)?.childCount ?: 0
-                    rows.appendLine("${kind.name},4,${size.first},${size.second},$state,true,$rowCount,$name")
+                    val collectionVisible = root.findViewById<ListView?>(R.id.widget_data_rows)
+                        ?.visibility == View.VISIBLE
+                    val scrollHint = root.findViewById<View?>(R.id.widget_data_scroll_hint)
+                        ?.visibility == View.VISIBLE
+                    rows.appendLine("${kind.name},4,${size.first},${size.second},$state,true,$collectionVisible,$scrollHint,$name")
                 }
             }
         }
-        File(output, "feedback.csv").writeText("kind,count,width_dp,height_dp,feedback,show_details,visible_rows,image\n$rows")
+        File(output, "feedback.csv").writeText("kind,count,width_dp,height_dp,feedback,show_details,collection_visible,scroll_hint,image\n$rows")
     }
 
     private fun exportEvidenceZip(context: android.content.Context, root: File): String {

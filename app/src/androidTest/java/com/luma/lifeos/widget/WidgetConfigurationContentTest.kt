@@ -33,6 +33,8 @@ class WidgetConfigurationContentTest {
         compose.onNodeWithText(context.getString(R.string.widget_config_save)).assertIsDisplayed().assertIsEnabled()
         compose.onNodeWithText(context.getString(R.string.widget_config_cancel)).assertIsDisplayed().assertIsEnabled()
         compose.onNodeWithText(context.getString(R.string.widget_mode_summary)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.widget_config_scroll_resize)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.widget_preview_habit_second)).assertDoesNotExist()
         captureEvidence()
         // Privacy remains default-off until the switch is explicitly changed.
         compose.onNodeWithText(context.getString(R.string.widget_preview_habit)).assertDoesNotExist()
@@ -42,6 +44,9 @@ class WidgetConfigurationContentTest {
         compose.onNodeWithText(context.getString(R.string.widget_settings_title_navigation_hint)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_preview_habit_action)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_preview_habit)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.widget_preview_habit_second)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.widget_scroll_for_more)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.widget_config_scroll_resize)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_config_save)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.widget_config_cancel)).assertIsDisplayed()
     }

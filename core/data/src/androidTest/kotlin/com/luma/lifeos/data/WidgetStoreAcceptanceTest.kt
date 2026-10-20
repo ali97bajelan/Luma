@@ -132,4 +132,83 @@ class WidgetStoreAcceptanceTest {
         }
         Unit
     }
+
+    @Test fun collectionPagesUseStableOrderAndReachRowsPastEightAndFiveHundred() = runBlocking {
+        val widgetId = 44
+        val taskIds = (0 until 500).map { index ->
+            val id = UUID.randomUUID()
+            todos.create(id, UUID.randomUUID(), TodoInput("Paged task ${index + 1}", dueDate = today))
+            id
+        }
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+
+        val expectedOrder = taskIds.sortedBy(UUID::toString)
+        val middlePage = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 8, limit = 32))
+        val middleRows = middlePage.rows.filterIsInstance<WidgetRow.Task>()
+        assertEquals(500, middlePage.total)
+        assertEquals(expectedOrder.drop(8).take(32), middleRows.map(WidgetRow.Task::id))
+        assertEquals(32, middleRows.mapNotNull(WidgetRow.Task::actionToken).toSet().size)
+
+        val lastPage = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 480, limit = 32))
+        val lastRows = lastPage.rows.filterIsInstance<WidgetRow.Task>()
+        assertEquals(expectedOrder.drop(480), lastRows.map(WidgetRow.Task::id))
+        assertEquals(20, lastRows.size)
+    }
+
+    @Test fun collectionPageRespectsSummaryPrivacyAndRejectsInvalidBounds() = runBlocking {
+        val widgetId = 45
+        todos.create(UUID.randomUUID(), UUID.randomUUID(), TodoInput("Private task", dueDate = today))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = false))
+
+        val summary = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 0, limit = 32))
+        assertEquals(1, summary.total)
+        assertEquals(emptyList<WidgetRow>(), summary.rows)
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = -1, limit = 32) }
+        }
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 0, limit = 33) }
+        }
+        Unit
+    }
+
+    @Test fun collectionMutationTokenIsBoundToItsExactItemAndDate() = runBlocking {
+        val widgetId = 46
+        val firstId = UUID.randomUUID()
+        val secondId = UUID.randomUUID()
+        todos.create(firstId, UUID.randomUUID(), TodoInput("First task", dueDate = today))
+        todos.create(secondId, UUID.randomUUID(), TodoInput("Second task", dueDate = today))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+        val page = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 0, limit = 32))
+        val first = page.rows.filterIsInstance<WidgetRow.Task>().first { it.id == firstId }
+        val token = requireNotNull(first.actionToken)
+
+        assertEquals(true, widgets.isValidCollectionMutation(widgetId, firstId, token, today))
+        assertEquals(false, widgets.isValidCollectionMutation(widgetId, secondId, token, today))
+        assertEquals(false, widgets.isValidCollectionMutation(widgetId, firstId, token, today.minusDays(1)))
+    }
+
+    @Test fun collectionCommandsKeepConflictAndMissingResultsBoundToTheirRecords() = runBlocking {
+        val widgetId = 47
+        val changedId = UUID.randomUUID()
+        val removedId = UUID.randomUUID()
+        val changed = todos.create(changedId, UUID.randomUUID(), TodoInput("Changed later", dueDate = today))
+        val removed = todos.create(removedId, UUID.randomUUID(), TodoInput("Removed later", dueDate = today))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+        val rows = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, 0, 32))
+            .rows.filterIsInstance<WidgetRow.Task>()
+        val changedToken = requireNotNull(rows.first { it.id == changedId }.actionToken)
+        val removedToken = requireNotNull(rows.first { it.id == removedId }.actionToken)
+
+        todos.update(
+            changedId,
+            changed.revision,
+            UUID.randomUUID(),
+            TodoInput("Changed elsewhere", dueDate = today),
+        )
+        todos.delete(removedId, removed.revision)
+
+        assertEquals(WidgetOutcome.CONFLICT, widgets.execute(widgetId, changedToken, now, ZoneOffset.UTC).outcome)
+        assertEquals(WidgetOutcome.MISSING, widgets.execute(widgetId, removedToken, now, ZoneOffset.UTC).outcome)
+    }
 }

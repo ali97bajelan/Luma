@@ -1,7 +1,7 @@
 # Luma Habits and Tasks widgets — visual redesign review
 
-**Date:** 20 October 2026  
-**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13–WD17 remain open.
+**Date:** 20 October 2026<br>
+**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; WD15 and WD16 remain open.
 **Scope:** Improve the existing Habits and Tasks home-screen widgets shown in the supplied screenshot, including vertical scrolling when items exceed the available list area. Retain shared Capture, existing providers, per-instance privacy and dependable recovery. This review remains the design/backlog reference; WD09 and WD10 implementation evidence is linked below.
 
 **User requirement added:** Both data widgets must let users scroll through additional eligible items within the current widget size. Resizing or opening the app must not be required just to reach overflow items. The scrolling contract and WD17 below supersede the earlier static-prefix/eight-candidate proposal.
@@ -180,7 +180,7 @@ TalkBack should encounter title navigation, Capture, Refresh, scope/freshness, f
 
 ## 6. Implementation tasks
 
-WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13–WD17 remain open. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
+WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; WD15 and WD16 remain open. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
 
 | ID | Priority / effort | Responsible role | Dependency | Outcome |
 | --- | --- | --- | --- | --- |
@@ -236,17 +236,21 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD13 — Verify states and persisted actions
 
-- [ ] Extend existing `WidgetLayoutPolicyTest`, `WidgetRendererAcceptanceTest` and relevant `WidgetIntentsTest` cases for the new gaps, metadata order, both directions, collection totals, summary/details and RemoteViews reapplication. Include the collection adapter and fill-in intent route contract.
-- [ ] Exercise Complete/+1, final-row removal, target reached, Undo, Retry, stale/conflict/missing, read failure, loading, setup and empty states. Assert that Retry/Undo use the same persisted operation tokens and that controls belong to the correct instance.
-- [ ] Check shared Capture from both widgets with cold/warm launch, existing draft, historical browsed date and repeated taps; preserve explicit Save/Cancel and undated shared Task semantics.
+**Status: Partial.** Source regressions now cover bounded page ordering/privacy, collection identity and fill-in decoding, ListView/reapplication visibility, overflow hints, action row states, setup privacy, and preview/configuration controls. Existing Capture navigation coverage remains in place. No Gradle, emulator, or launcher tests were run for this update by user instruction; acceptance remains unverified.
+
+- [x] Extend `WidgetLayoutPolicyTest`, `WidgetRendererAcceptanceTest` and `WidgetIntentsTest` source for collection totals, summary/details, viewport hints, RemoteViews reapplication and the fill-in route contract.
+- [x] Add source coverage for page ordering/reach beyond eight, summary privacy, habit target/skipped state, task completion/recovery states, collection identity and separate navigation/mutation routes.
+- [ ] Run the focused suite/build/lint and verify Capture cold/warm launch, existing draft, historical browsed date, repeated taps, Save/Cancel and undated shared Task semantics. These checks remain blocked only by the requested no-test constraint and are not accepted as passed.
 
 **Acceptance:** recovery remains available independently of visible rows; unknown counts never become zero; summary mode exposes no real names/actions. Focused regressions, app JVM tests, `lintDebug`, debug APK and Android-test APK assembly pass for the changed build. Record exact results; previous pass counts are historical only.
 
 ### WD14 — Match previews and placement guidance
 
-- [ ] Update `WidgetExample.kt`, `WidgetSettingsRoute.kt`, `WidgetConfigurationActivity.kt`, `widget_preview_habits.xml` and `widget_preview_tasks.xml` with the new header/row hierarchy and fictional summary/details examples.
-- [ ] Add concise scroll/resize guidance in setup/discovery and a compact example; explain that overflow items can be reached inside either widget. Update the old static “1 more” schematic cue in delivered previews. Keep scrolling Save/Cancel, names hidden by default, and existing per-instance consent.
+- [x] Update `WidgetExample.kt`, `WidgetSettingsRoute.kt`, `WidgetConfigurationActivity.kt`, `widget_preview_habits.xml` and `widget_preview_tasks.xml` with fictional summary/details examples and two sample rows.
+- [x] Add localized scroll/resize guidance in setup/discovery and a scroll cue in details previews; keep Save/Cancel, names hidden by default, and existing per-instance consent.
 - [ ] Evaluate a shorter initial placement using verified recovery/content fit before editing provider XML. Preserve existing placement size and legacy capture compatibility; a default-size change is conditional, not required for this slice.
+
+**Status: Partial.** Preview and setup source is updated in en/fr/fa, and the current provider placement size is preserved. Launcher fit, landscape and large-text acceptance remain unverified because no emulator/device tests were run.
 
 **Acceptance:** previews do not advertise a fixed row count or expose personal data; smaller examples are achievable on tested launchers. Configuration remains operable in landscape and at 200%.
 
@@ -270,17 +274,19 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD17 — Add native vertical scrolling to both data widgets
 
-- [ ] Replace `widget_data_rows`' static child container in the regular and stacked layouts with a bounded native ListView collection. Keep fixed header/metadata/feedback outside it, preserve 8dp row gaps and support the compact fallback when no usable row viewport fits. Keep summary mode free of a real collection before consent.
-- [ ] Add collection adapter/factory components under `app/.../widget`, the required `AndroidManifest.xml` service registration and per-instance adapter identity. Use stable collision-safe record IDs and the correct row view-type count; do not share adapter state between widget instances.
-- [ ] Extend `WidgetStore.kt`, `RoomWidgetStore.kt`, `WidgetDao.kt`, `WidgetRefreshWorker.kt` and related snapshot contracts as needed to expose all eligible records through bounded reads. Retain the current task/habit scope, stable ordering and transactional command/token guarantees; the former eight-row bound must not truncate the scrollable dataset. Keep the existing summary path for hidden-details instances.
-- [ ] Update `WidgetRenderer.kt`, `WidgetIntents.kt` and collection routing to use supported templates/fill-in intents for separate item navigation and mutations. Validate instance, item identity, revision and persisted token; never dispatch by recycled row position. Test Android activity-launch behavior so scrolling or completing an item does not unexpectedly open the app.
-- [ ] Update collection contents after refresh, mutation, Undo, Retry, date rollover, consent change, restore and widget removal. Keep recovery independent of scroll position; discard stale collection data/tokens on privacy changes and lifecycle invalidation. Preserve host scroll where supported, avoiding unnecessary adapter replacement.
-- [ ] Add focused adapter/store/intent tests and actual launcher scroll tests covering overflow, large datasets, reapplication, duplicate instances, empty/loading/error states, mixed scripts and offscreen accessibility traversal. Record memory/update-time observations and confirm bounded loading without an oversized RemoteViews payload.
+**Status: Partial.** Both data layouts now use per-widget native ListView adapters with a 32-row page API, identity-bound fill-in routes, privacy checks and fixed recovery controls. Source checks were added, but no Gradle/emulator/launcher or accessibility acceptance was run. Scroll persistence and host behavior remain to be confirmed on supported launchers.
+
+- [x] Replace `widget_data_rows`' static child container in the regular and stacked layouts with a bounded native ListView collection. Keep fixed header/metadata/feedback outside it, preserve 8dp row gaps and use the compact fallback when no usable row viewport fits. Hidden-details instances return no adapter rows.
+- [x] Add the collection service/factory, manifest registration and per-widget adapter identity. Use stable collision-resolved record IDs and the expected row view-type count.
+- [x] Add ordered task/habit page queries and a bounded store page API. Preserve current scope/order and persisted command token guarantees; the old snapshot prefix is no longer the rendered dataset.
+- [x] Route collection navigation and mutations through explicit fill-in intents carrying row identity/date/token; validate the live widget, current item scope and persisted command identity. Dispatch by item identity, never adapter position.
+- [x] Notify the same adapter after refresh and configuration changes; keep Undo/Retry outside the collection. Existing provider refresh/removal/restore paths remain active.
+- [ ] Run adapter/store/intent tests and actual launcher scrolling for overflow, large data, reapplication, duplicate instances, load failure, mixed scripts and offscreen accessibility. Record memory/update-time evidence and verify scroll preservation; these checks remain open.
 
 **Acceptance:** At unchanged 373×321dp and 373×420dp bounds, users can scroll to and act on every eligible record in 10/50/500-item fixtures for both providers, including beyond item eight. No resizing or app opening is needed to reach overflow. Capture/Refresh and Undo/Retry stay fixed and usable. Swipes never mutate data. Row navigation and mutation remain distinct after recycling/refresh. Small datasets have no unnecessary scroll hint, hidden-details mode exposes no records, and undersized viewports use the documented compact fallback. API 28/35/36, a second launcher, RTL, 200% text and assistive scrolling must be evidenced before acceptance.
 
 ## 7. Delivery and sign-off
 
-Deliver WD09 first, implement WD10/WD11, then resolve measurement and localization in WD12. Implement the required scrollable collection and data/interaction changes in WD17 before behavior verification in WD13 and preview updates in WD14. Complete device/accessibility evidence and formative review in WD15/WD16. This includes a collection/data-contract change rather than only visual polish; retain existing providers and persistence. No new dependency or app-wide navigation redesign is required.
+Deliver WD09 first, implement WD10/WD11, then resolve measurement and localization in WD12. WD17 source changes are in place before WD13 behavior verification and WD14 preview updates; their acceptance evidence remains open. Complete device/accessibility evidence and formative review in WD15/WD16. This includes a collection/data-contract change rather than only visual polish; retain existing providers and persistence. No new dependency or app-wide navigation redesign is required.
 
 The documentation deliverable is complete when this review, the retained baseline, proposed visual reference and actionable backlog are present and internally consistent. The app redesign remains proposed until implemented and verified; existing WD07/WD08 and WG08 release gaps stay open.

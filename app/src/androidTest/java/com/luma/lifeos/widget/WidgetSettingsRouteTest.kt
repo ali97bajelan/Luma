@@ -23,6 +23,7 @@ class WidgetSettingsRouteTest {
         compose.onNodeWithText(context.getString(R.string.widget_settings_intro)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_settings_legacy_capture_note)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_settings_capture_on_both)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.widget_settings_scroll_resize)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_habits_title)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_tasks_title)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_quick_capture_name)).assertDoesNotExist()

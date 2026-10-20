@@ -73,6 +73,7 @@
     <string name="widget_settings_intro">Add a Habits or Tasks widget to your home screen. Both include quick capture, so you do not need a separate capture widget.</string>
     <string name="widget_settings_legacy_capture_note">Existing Quick capture widgets stay on your home screen after updates. Remove one there with your launcher’s Remove action; Luma does not remove it automatically.</string>
     <string name="widget_settings_capture_on_both">Capture is available on either widget. Tap its title to view the full list.</string>
+    <string name="widget_settings_scroll_resize">With Details on, scroll inside either widget to reach overflow items. Resize to change how many rows fit at once.</string>
     <string name="widget_settings_title_navigation_hint">Tap the title to view all.</string>
     <string name="widget_settings_add">Add</string>
     <string name="widget_settings_existing_heading">Existing Habits and Tasks widgets</string>
@@ -89,6 +90,7 @@
     <string name="widget_config_summary_description">Summary shows the date and counts. Names and row actions stay hidden until you choose to show details.</string>
     <string name="widget_config_show_details">Show names and row actions</string>
     <string name="widget_config_show_details_description">Optional and off by default. Names, progress and row actions will appear wherever your launcher shows this widget.</string>
+    <string name="widget_config_scroll_resize">With Details on, swipe inside the item list to reach more items. Resize the widget to show more rows at once; scrolling remains available.</string>
     <string name="widget_config_privacy_note">Your launcher may cache this view, including names when details are on. Removing the widget does not erase launcher copies.</string>
     <string name="widget_config_loading">Loading widget settings…</string>
     <string name="widget_config_load_error">Widget settings could not be loaded. Try again or cancel.</string>
@@ -916,6 +918,7 @@
     <string name="widget_view_all_count">%1$s, %2$d items total</string>
     <string name="widget_view_all_hidden_count">%1$s, %2$d items total; names are hidden in this widget</string>
     <string name="widget_scroll_for_more">Scroll for more</string>
+    <string name="widget_collection_accessibility">Scrollable widget items</string>
     <plurals name="widget_more_count">
         <item quantity="one">%1$d more</item>
         <item quantity="other">%1$d more</item>
@@ -929,8 +932,12 @@
     <string name="widget_preview_tasks_title">Tasks ›</string>
     <string name="widget_preview_habit">Read a book</string>
     <string name="widget_preview_habit_action">0 / 1 · +1</string>
+    <string name="widget_preview_habit_second">Morning stretch</string>
+    <string name="widget_preview_habit_second_action">1 / 1 · +1</string>
     <string name="widget_preview_task">Book an appointment</string>
     <string name="widget_preview_task_action">Due today · Complete</string>
+    <string name="widget_preview_task_second">Renew library card</string>
+    <string name="widget_preview_task_second_action">Overdue · Complete</string>
     <string name="widget_preview_date">Oct 20</string>
     <string name="widget_settings_add_named">Add %1$s widget</string>
     <string name="widget_settings_instance_mode">%1$s · %2$s</string>

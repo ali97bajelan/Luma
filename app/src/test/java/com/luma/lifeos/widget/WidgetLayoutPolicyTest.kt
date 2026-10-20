@@ -87,7 +87,7 @@ class WidgetLayoutPolicyTest {
         assertEquals(3, WidgetLayoutPolicy.rowPrefixCapacity(166, listOf(70, 48, 48)))
         assertEquals(2, WidgetLayoutPolicy.rowPrefixCapacity(165, listOf(70, 48, 48)))
         assertEquals(0, WidgetLayoutPolicy.rowPrefixCapacity(47, listOf(48, 48)))
-        assertEquals(8, WidgetLayoutPolicy.rowPrefixCapacity(1_000, List(10) { 48 }))
+        assertEquals(10, WidgetLayoutPolicy.rowPrefixCapacity(1_000, List(10) { 48 }))
     }
 
     @Test fun headerStacksWhenLocalizedTargetsCannotShareOneLine() {

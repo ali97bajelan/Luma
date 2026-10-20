@@ -142,6 +142,7 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
             onAdd = { requestPin(providerComponent(context, WidgetKind.TASKS), WidgetKind.TASKS) },
         )
         Text(stringResource(R.string.widget_settings_capture_on_both), style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.widget_settings_scroll_resize), style = MaterialTheme.typography.bodyMedium)
         Text(stringResource(R.string.widget_settings_existing_heading), style = MaterialTheme.typography.titleMedium)
         when {
             loading -> CircularProgressIndicator()

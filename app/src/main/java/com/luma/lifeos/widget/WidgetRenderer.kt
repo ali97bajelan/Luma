@@ -19,9 +19,11 @@ import com.luma.lifeos.domain.widget.WidgetKind
 import com.luma.lifeos.domain.widget.WidgetOutcome
 import com.luma.lifeos.domain.widget.WidgetRow
 import com.luma.lifeos.domain.widget.WidgetSnapshot
+import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.language.AppLanguages
 import com.luma.lifeos.ui.theme.THEME_KEY
 import java.time.LocalDate
+import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -46,6 +48,24 @@ object WidgetRenderer {
         val progressColumnWidthPx: Int = 0,
         val fitsWidth: Boolean = true,
     )
+
+    /** Loads shell metadata plus only the small first page needed to size the collection viewport. */
+    internal suspend fun snapshotForRendering(
+        store: WidgetStore,
+        widgetId: Int,
+        now: Instant,
+        deviceZone: ZoneId,
+    ): WidgetSnapshot? {
+        val metadata = store.snapshot(widgetId, now, deviceZone, rowLimit = 0) ?: return null
+        if (!metadata.instance.showDetails || metadata.total <= 0) return metadata
+        return store.collectionPage(
+            widgetId,
+            now,
+            deviceZone,
+            offset = 0,
+            limit = minOf(WidgetLayoutPolicy.MAX_MEASUREMENT_ROWS, metadata.total),
+        )?.takeIf { it.instance.kind == metadata.instance.kind && it.date == metadata.date } ?: metadata
+    }
 
     fun render(
         context: Context,
@@ -130,12 +150,20 @@ object WidgetRenderer {
         else R.drawable.widget_utility_background
         val widgetBackground = if (dark) R.drawable.widget_background_dark else R.drawable.widget_background
 
-        // AppWidgetHost may reapply this layout to an existing view. Dynamic rows must be
-        // cleared first or a completed task remains visible after its snapshot removes it.
-        views.removeAllViews(R.id.widget_data_rows)
         views.removeAllViews(R.id.widget_data_action_slot)
         views.removeAllViews(R.id.widget_feedback_slot)
         views.setViewVisibility(R.id.widget_data_scroll_hint, View.GONE)
+        views.setViewVisibility(R.id.widget_data_rows, View.GONE)
+        if (kind != null) {
+            views.setRemoteAdapter(
+                R.id.widget_data_rows,
+                WidgetCollectionService.adapterIntent(context, widgetId, kind),
+            )
+            views.setPendingIntentTemplate(
+                R.id.widget_data_rows,
+                WidgetIntents.collectionTemplate(context, widgetId),
+            )
+        }
         views.setViewVisibility(R.id.widget_data_updated, if (snapshot == null || failure) View.GONE else View.VISIBLE)
         views.setInt(R.id.widget_data_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
         views.setInt(R.id.widget_data_root, "setBackgroundResource", widgetBackground)
@@ -260,11 +288,12 @@ object WidgetRenderer {
         val feedbackText = snapshot.feedback?.let { feedbackText(appContext, it.outcome, snapshot.instance.kind) }.orEmpty()
         val inlineFeedback = useInlineFeedback(appContext, widthDp, feedbackText, snapshot.feedback)
 
-        val rows: List<WidgetRow> = if (snapshot.instance.showDetails) {
+        // This small page is only a sizing sample. The ListView adapter owns the full collection.
+        val measurementRows: List<WidgetRow> = if (snapshot.instance.showDetails) {
             when (snapshot.instance.kind) {
                 WidgetKind.HABITS -> snapshot.rows.filterIsInstance<WidgetRow.Habit>()
                 WidgetKind.TASKS -> snapshot.rows.filterIsInstance<WidgetRow.Task>()
-            }.take(WidgetLayoutPolicy.MAX_ROWS)
+            }.take(WidgetLayoutPolicy.MAX_MEASUREMENT_ROWS)
         } else {
             emptyList()
         }
@@ -318,10 +347,10 @@ object WidgetRenderer {
         renderFeedback(context, appContext, feedbackViews, widgetId, snapshot, textColor, utilityTextColor,
             buttonBackground, utilityBackground, feedbackText, inlineFeedback)
         views.addView(R.id.widget_feedback_slot, feedbackViews)
-        val progressColumnWidthPx = rows.filterIsInstance<WidgetRow.Habit>().maxOfOrNull { row ->
-            measureTextWidth(appContext, habitProgressText(appContext, row), 14f).roundToInt()
-        } ?: 0
-        val measurements = rows.map { row ->
+        val progressColumnWidthPx = if (snapshot.instance.kind == WidgetKind.HABITS) {
+            collectionProgressColumnWidthPx(appContext)
+        } else 0
+        val measurements = measurementRows.map { row ->
             when (row) {
                 is WidgetRow.Habit -> measureHabitRow(appContext, widthDp, row, progressColumnWidthPx)
                 is WidgetRow.Task -> measureTaskRow(appContext, widthDp, row, snapshot.date)
@@ -331,26 +360,39 @@ object WidgetRenderer {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
                 "$scopeText\n$updatedText")
         }
-        val capacity = WidgetLayoutPolicy.rowCapacity(
-            widthDp, heightDp, fontScale, reserved, measurements.map { it.heightDp },
+        val sampledHeights = measurements.map { it.heightDp }.ifEmpty {
+            if (snapshot.instance.showDetails && snapshot.total > 0) {
+                listOf(if (snapshot.instance.kind == WidgetKind.TASKS) 56 else 64)
+            } else emptyList()
+        }
+        val capacityWithoutHint = WidgetLayoutPolicy.rowCapacity(
+            widthDp, heightDp, fontScale, reserved, sampledHeights,
         )
-        val visibleRows = rows.take(capacity)
+        val scrollHintHeight = measureTextHeight(
+            appContext,
+            appContext.getString(R.string.widget_scroll_for_more),
+            textWidthPx,
+            12f,
+        ) + 4
+        val capacityWithHint = WidgetLayoutPolicy.rowCapacity(
+            widthDp,
+            heightDp,
+            fontScale,
+            reserved + scrollHintHeight,
+            sampledHeights,
+        )
+        val showScrollHint = snapshot.instance.showDetails && snapshot.total > capacityWithoutHint &&
+            capacityWithHint > 0
+        val capacity = if (showScrollHint) capacityWithHint else capacityWithoutHint
+        if (snapshot.instance.showDetails && snapshot.total > 0 && capacity <= 0) {
+            return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
+                "$scopeText\n$updatedText")
+        }
+        views.setViewVisibility(R.id.widget_data_rows,
+            if (snapshot.instance.showDetails && snapshot.total > 0) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_data_scroll_hint, if (showScrollHint) View.VISIBLE else View.GONE)
         views.setContentDescription(R.id.widget_data_open,
             viewAllDescription(appContext, snapshot.instance.kind, snapshot.total, snapshot.instance.showDetails))
-        visibleRows.forEachIndexed { index, row ->
-            if (index > 0) {
-                views.addView(R.id.widget_data_rows,
-                    RemoteViews(context.packageName, R.layout.widget_data_row_gap))
-            }
-            val rowViews = when (row) {
-                is WidgetRow.Habit -> habitRow(context, appContext, snapshot, widgetId, row, textColor,
-                    secondaryTextColor, rowActionBackground,
-                    measurements[index].inlineHabit, measurements[index].progressColumnWidthPx)
-                is WidgetRow.Task -> taskRow(context, appContext, snapshot, widgetId, row, textColor,
-                    secondaryTextColor, rowActionBackground)
-            }
-            views.addView(R.id.widget_data_rows, rowViews)
-        }
         return views
     }
 
@@ -358,7 +400,6 @@ object WidgetRenderer {
         context: Context,
         appContext: Context,
         snapshot: WidgetSnapshot,
-        widgetId: Int,
         row: WidgetRow.Habit,
         textColor: Int,
         secondaryTextColor: Int,
@@ -380,13 +421,9 @@ object WidgetRenderer {
             R.id.widget_habit_row_text,
             appContext.getString(R.string.widget_habit_open_description, bidiWrapped(appContext, row.title)),
         )
-        setOnClickPendingIntent(
+        setOnClickFillInIntent(
             R.id.widget_habit_row_text,
-            WidgetIntents.navigation(
-                context,
-                widgetId,
-                WidgetDestination.HabitDetail(row.id, snapshot.date),
-            ),
+            WidgetIntents.collectionNavigation(row.id, snapshot.date),
         )
         val count = habitProgressText(appContext, row)
         setTextViewText(R.id.widget_habit_row_count, count)
@@ -401,9 +438,9 @@ object WidgetRenderer {
                 R.id.widget_habit_row_action,
                 appContext.getString(R.string.widget_habit_log_description, bidiWrapped(appContext, row.title)),
             )
-            setOnClickPendingIntent(
+            setOnClickFillInIntent(
                 R.id.widget_habit_row_action,
-                WidgetIntents.mutation(context, widgetId, requireNotNull(row.actionToken)),
+                WidgetIntents.collectionMutation(requireNotNull(row.actionToken), row.id, snapshot.date),
             )
         }
     }
@@ -412,7 +449,6 @@ object WidgetRenderer {
         context: Context,
         appContext: Context,
         snapshot: WidgetSnapshot,
-        widgetId: Int,
         row: WidgetRow.Task,
         textColor: Int,
         secondaryTextColor: Int,
@@ -431,9 +467,9 @@ object WidgetRenderer {
             R.id.widget_task_row_text,
             appContext.getString(R.string.widget_task_open_description, bidiWrapped(appContext, row.title)),
         )
-        setOnClickPendingIntent(
+        setOnClickFillInIntent(
             R.id.widget_task_row_text,
-            WidgetIntents.navigation(context, widgetId, WidgetDestination.Task(row.id)),
+            WidgetIntents.collectionNavigation(row.id, snapshot.date),
         )
         setTextViewText(R.id.widget_task_row_due, taskDueLabel(appContext, row, snapshot.date))
         setContentDescription(R.id.widget_task_row_text,
@@ -448,11 +484,51 @@ object WidgetRenderer {
                 R.id.widget_task_row_action,
                 appContext.getString(R.string.widget_task_complete_description, bidiWrapped(appContext, row.title)),
             )
-            setOnClickPendingIntent(
+            setOnClickFillInIntent(
                 R.id.widget_task_row_action,
-                WidgetIntents.mutation(context, widgetId, requireNotNull(row.actionToken)),
+                WidgetIntents.collectionMutation(requireNotNull(row.actionToken), row.id, snapshot.date),
             )
         }
+    }
+
+    internal fun collectionRow(
+        context: Context,
+        snapshot: WidgetSnapshot,
+        row: WidgetRow,
+        widthDp: Int,
+    ): RemoteViews {
+        val appContext = AppLanguages.wrap(context)
+        val dark = isAppDark(context, appContext)
+        val textColor = appContext.getColor(if (dark) R.color.widget_text_primary_dark else R.color.widget_text_primary_light)
+        val secondaryTextColor = appContext.getColor(
+            if (dark) R.color.widget_text_secondary_dark else R.color.widget_text_secondary_light,
+        )
+        val rowActionBackground = if (dark) R.drawable.widget_row_action_background_dark
+        else R.drawable.widget_row_action_background
+        return when (row) {
+            is WidgetRow.Habit -> {
+                val progressWidth = collectionProgressColumnWidthPx(appContext)
+                val measured = measureHabitRow(appContext, widthDp, row, progressWidth)
+                habitRow(
+                    context, appContext, snapshot, row, textColor, secondaryTextColor,
+                    rowActionBackground, measured.inlineHabit, progressWidth,
+                )
+            }
+            is WidgetRow.Task -> taskRow(
+                context, appContext, snapshot, row, textColor, secondaryTextColor,
+                rowActionBackground,
+            )
+        }
+    }
+
+    internal fun collectionProgressColumnWidthPx(context: Context): Int {
+        val samples = listOf(
+            context.getString(R.string.widget_habit_count, 999_999, 999),
+            context.getString(R.string.widget_habit_target_reached, 999_999, 999),
+            context.getString(R.string.widget_habit_skipped, 999_999, 999),
+        ).map { bidiWrapped(context, it) }
+        val density = context.resources.displayMetrics.density
+        return ceil(samples.maxOf { measureTextWidth(context, it, 14f) } + 8f * density).toInt()
     }
 
     private fun renderFeedback(
@@ -660,7 +736,8 @@ object WidgetRenderer {
         val count = habitProgressText(context, row)
         val countWidthDp = progressColumnWidthPx / density
         val inlineTitleWidthDp = (textWidthDp - countWidthDp - 8).coerceAtLeast(1f)
-        val inline = measureTextWidth(context, row.title, 16f, bold = true) <= inlineTitleWidthDp * density
+        val inline = measureTextWidth(context, count, 14f) <= progressColumnWidthPx &&
+            measureTextWidth(context, row.title, 16f, bold = true) <= inlineTitleWidthDp * density
         val height = if (inline) {
             val titleHeight = measureTextHeight(context, row.title,
                 (inlineTitleWidthDp * density).toInt(), 16f, maxLines = 1, bold = true)

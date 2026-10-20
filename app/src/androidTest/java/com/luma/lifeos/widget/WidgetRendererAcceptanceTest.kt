@@ -8,6 +8,7 @@ import android.graphics.Canvas
 import android.os.Build
 import android.os.LocaleList
 import android.widget.LinearLayout
+import android.widget.ListView
 import android.widget.TextView
 import android.view.View
 import android.view.ViewGroup
@@ -39,7 +40,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class WidgetRendererAcceptanceTest {
-    @Test fun reapplyingCompletedTaskSnapshotRemovesOldRowAndKeepsUndoAction() {
+    @Test fun reapplyingCompletedTaskHidesCollectionAndKeepsUndoAction() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val widgetId = 51
         val task = WidgetRow.Task(
@@ -61,7 +62,8 @@ class WidgetRendererAcceptanceTest {
         )
         val initialViews = WidgetRenderer.render(context, widgetId, before, failure = false, options = expandedBounds())
         val root = initialViews.apply(context, null)
-        assertEquals(1, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+        assertEquals(View.VISIBLE, root.findViewById<ListView>(R.id.widget_data_rows).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
 
         val completed = before.copy(
             total = 0,
@@ -71,7 +73,7 @@ class WidgetRendererAcceptanceTest {
         val refreshedViews = WidgetRenderer.render(context, widgetId, completed, failure = false, options = expandedBounds())
         refreshedViews.reapply(context, root)
 
-        assertEquals(0, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+        assertEquals(View.GONE, root.findViewById<ListView>(R.id.widget_data_rows).visibility)
         assertEquals(context.getString(R.string.widget_feedback_undo), root.findViewById<TextView>(R.id.widget_feedback_primary).text.toString())
         assertEquals(
             context.getString(R.string.widget_task_undo_description),
@@ -88,7 +90,7 @@ class WidgetRendererAcceptanceTest {
             root.findViewById<TextView>(R.id.widget_data_refresh).text.toString())
         assertEquals(context.getString(R.string.widget_tasks_refresh_description),
             root.findViewById<View>(R.id.widget_header_refresh).contentDescription.toString())
-        assertEquals(0, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+        assertEquals(View.GONE, root.findViewById<ListView>(R.id.widget_data_rows).visibility)
     }
 
     @Test fun retryNamesTaskAndUndoneClearsActionBandOnReapply() {
@@ -130,7 +132,8 @@ class WidgetRendererAcceptanceTest {
                 LocalDate.parse("2026-10-20"), UUID.randomUUID())),
         )
         val root = WidgetRenderer.render(context, 57, snapshot, false, expandedBounds()).apply(context, null)
-        assertEquals(0, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+        assertEquals(View.GONE, root.findViewById<ListView>(R.id.widget_data_rows).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
         assertEquals(context.getString(R.string.widget_view_all_hidden_count,
             context.getString(R.string.widget_tasks_view_all), 5),
             root.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
@@ -183,6 +186,15 @@ class WidgetRendererAcceptanceTest {
             val titleViews = ArrayList<View>()
             root.findViewsWithText(titleViews, context.getString(titleId), View.FIND_VIEWS_WITH_TEXT)
             assertEquals(1, titleViews.size)
+            val secondRowId = if (layoutId == R.layout.widget_preview_habits) {
+                R.string.widget_preview_habit_second
+            } else R.string.widget_preview_task_second
+            val secondRows = ArrayList<View>()
+            root.findViewsWithText(secondRows, context.getString(secondRowId), View.FIND_VIEWS_WITH_TEXT)
+            assertEquals(1, secondRows.size)
+            val scrollHints = ArrayList<View>()
+            root.findViewsWithText(scrollHints, context.getString(R.string.widget_scroll_for_more), View.FIND_VIEWS_WITH_TEXT)
+            assertEquals(1, scrollHints.size)
             val oldFooterViews = ArrayList<View>()
             root.findViewsWithText(oldFooterViews, context.getString(R.string.widget_habits_view_all), View.FIND_VIEWS_WITH_TEXT)
             assertEquals(0, oldFooterViews.size)
@@ -203,7 +215,7 @@ class WidgetRendererAcceptanceTest {
         WidgetRenderer.render(context, 51, populated, false, expandedBounds()).reapply(context, root)
 
         assertEquals(0, root.findViewById<LinearLayout>(R.id.widget_data_action_slot).childCount)
-        assertEquals(1, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+        assertEquals(View.VISIBLE, root.findViewById<ListView>(R.id.widget_data_rows).visibility)
     }
 
     @Test fun dataWidgetHeaderHasSeparateListCaptureAndRefreshTargets() {
@@ -228,7 +240,7 @@ class WidgetRendererAcceptanceTest {
         assertEquals(capture.parent, title.parent)
     }
 
-    @Test fun expandedWidgetRendersFourCompleteMixedHeightRowsFromEightCandidates() {
+    @Test fun expandedWidgetBindsScrollableCollectionAndShowsOverflowHint() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val rows = (0 until 8).map { index ->
             WidgetRow.Task(
@@ -241,19 +253,14 @@ class WidgetRendererAcceptanceTest {
         val snapshot = sampleSnapshot().copy(total = 10, rows = rows)
         val root = WidgetRenderer.render(context, 51, snapshot, false, bounds(373, 420)).apply(context, null)
         layoutAtBounds(root, context, 373, 420)
-        val rendered = root.findViewById<LinearLayout>(R.id.widget_data_rows)
-        org.junit.Assert.assertTrue("Only ${rendered.childCount} rows rendered", rendered.childCount >= 4)
-        for (index in 0 until rendered.childCount) {
-            val row = rendered.getChildAt(index)
-            org.junit.Assert.assertTrue("Row $index has no complete measured height", row.height >= 48 * context.resources.displayMetrics.density - 1)
-            val bounds = android.graphics.Rect()
-            row.getDrawingRect(bounds)
-            rendered.offsetDescendantRectToMyCoords(row, bounds)
-            org.junit.Assert.assertTrue("Row $index extends beyond the row container", bounds.bottom <= rendered.height)
-        }
+        val collection = root.findViewById<ListView>(R.id.widget_data_rows)
+        assertEquals(View.VISIBLE, collection.visibility)
+        assertEquals(context.getString(R.string.widget_collection_accessibility), collection.contentDescription)
+        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
 
         val expandedRoot = WidgetRenderer.render(context, 51, snapshot, false, expandedBounds()).apply(context, null)
-        assertEquals(8, expandedRoot.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+        assertEquals(View.VISIBLE, expandedRoot.findViewById<ListView>(R.id.widget_data_rows).visibility)
+        assertEquals(View.VISIBLE, expandedRoot.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
         assertEquals(context.getString(R.string.widget_view_all_count,
             context.getString(R.string.widget_tasks_view_all), 10),
             expandedRoot.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
@@ -271,19 +278,15 @@ class WidgetRendererAcceptanceTest {
         )
         val habitRoot = WidgetRenderer.render(context, 56, habitSnapshot, false, bounds(373, 420)).apply(context, null)
         layoutAtBounds(habitRoot, context, 373, 420)
-        val visibleHabits = habitRoot.findViewById<LinearLayout>(R.id.widget_data_rows)
-        org.junit.Assert.assertTrue("Only ${visibleHabits.childCount} habit rows rendered", visibleHabits.childCount >= 4)
+        assertEquals(View.VISIBLE, habitRoot.findViewById<ListView>(R.id.widget_data_rows).visibility)
     }
 
     @Test fun habitProgressUsesInlineLayoutWhenItFitsAndStacksLongNames() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val habit = WidgetRow.Habit(UUID.randomUUID(), "Read", 1, 4, false, UUID.randomUUID())
-        val inlineRoot = WidgetRenderer.render(context, 52,
-            sampleSnapshot().copy(instance = WidgetInstance(52, WidgetKind.HABITS, true),
-                total = 1, completed = 0, rows = listOf(habit)), false, bounds(373, 320))
-            .apply(context, null)
-        layoutAtBounds(inlineRoot, context, 373, 320)
-        val inlineRow = inlineRoot.findViewById<LinearLayout>(R.id.widget_data_rows).getChildAt(0)
+        val inlineSnapshot = sampleSnapshot().copy(instance = WidgetInstance(52, WidgetKind.HABITS, true),
+            total = 1, completed = 0, rows = listOf(habit))
+        val inlineRow = WidgetRenderer.collectionRow(context, inlineSnapshot, habit, 373).apply(context, null)
         val inlineTitle = inlineRow.findViewById<TextView>(R.id.widget_habit_row_title)
         val inlineProgress = inlineRow.findViewById<TextView>(R.id.widget_habit_row_count)
         assertEquals(LinearLayout.HORIZONTAL,
@@ -291,12 +294,9 @@ class WidgetRendererAcceptanceTest {
         org.junit.Assert.assertTrue(inlineTitle.width > 0 && inlineProgress.width > 0)
 
         val longHabit = habit.copy(title = "A very long mixed-script habit name عادتی با نام بلند")
-        val stackedRoot = WidgetRenderer.render(context, 53,
-            sampleSnapshot().copy(instance = WidgetInstance(53, WidgetKind.HABITS, true),
-                total = 1, completed = 0, rows = listOf(longHabit)), false, bounds(250, 320))
-            .apply(context, null)
-        layoutAtBounds(stackedRoot, context, 250, 320)
-        val stackedRow = stackedRoot.findViewById<LinearLayout>(R.id.widget_data_rows).getChildAt(0)
+        val stackedSnapshot = sampleSnapshot().copy(instance = WidgetInstance(53, WidgetKind.HABITS, true),
+            total = 1, completed = 0, rows = listOf(longHabit))
+        val stackedRow = WidgetRenderer.collectionRow(context, stackedSnapshot, longHabit, 250).apply(context, null)
         assertEquals(LinearLayout.VERTICAL,
             stackedRow.findViewById<LinearLayout>(R.id.widget_habit_row_text).orientation)
         org.junit.Assert.assertTrue(stackedRow.findViewById<View>(R.id.widget_habit_row_text).contentDescription
@@ -315,12 +315,8 @@ class WidgetRendererAcceptanceTest {
             completed = 1,
             rows = rows,
         )
-        val root = WidgetRenderer.render(context, 54, snapshot, false, bounds(600, 600)).apply(context, null)
-        layoutAtBounds(root, context, 600, 600)
-        val rowViews = root.findViewById<LinearLayout>(R.id.widget_data_rows)
-        assertEquals(2, rowViews.childCount)
-        val reached = rowViews.getChildAt(0)
-        val skipped = rowViews.getChildAt(1)
+        val reached = WidgetRenderer.collectionRow(context, snapshot, rows[0], 600).apply(context, null)
+        val skipped = WidgetRenderer.collectionRow(context, snapshot, rows[1], 600).apply(context, null)
         org.junit.Assert.assertTrue(reached.findViewById<View>(R.id.widget_habit_row_text)
             .contentDescription.toString().contains(context.getString(R.string.widget_habit_target_reached, 3, 3)))
         org.junit.Assert.assertTrue(skipped.findViewById<View>(R.id.widget_habit_row_text)
@@ -335,19 +331,20 @@ class WidgetRendererAcceptanceTest {
         val task = WidgetRow.Task(UUID.randomUUID(), taskTitle,
             LocalDate.parse("2026-10-19"), UUID.randomUUID())
         val snapshot = sampleSnapshot().copy(total = 1, rows = listOf(task))
-        val root = WidgetRenderer.render(context, 51, snapshot, false, bounds(250, 320)).apply(context, null)
-        layoutAtBounds(root, context, 250, 320)
-        val row = root.findViewById<LinearLayout>(R.id.widget_data_rows).getChildAt(0)
+        val row = WidgetRenderer.collectionRow(context, snapshot, task, 250).apply(context, null)
+        val density = context.resources.displayMetrics.density
+        val rowWidth = (250 * density).toInt()
+        row.measure(View.MeasureSpec.makeMeasureSpec(rowWidth, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((200 * density).toInt(), View.MeasureSpec.AT_MOST))
+        row.layout(0, 0, rowWidth, row.measuredHeight)
         val navigation = row.findViewById<View>(R.id.widget_task_row_text)
         val action = row.findViewById<TextView>(R.id.widget_task_row_action)
         org.junit.Assert.assertTrue(navigation.contentDescription.toString().contains(taskTitle))
         org.junit.Assert.assertTrue(navigation.contentDescription.toString().contains("Overdue"))
         assertEquals(context.getString(R.string.widget_task_complete_description, taskTitle),
             action.contentDescription.toString())
-        org.junit.Assert.assertTrue(navigation.isClickable)
-        org.junit.Assert.assertTrue(action.isClickable)
         org.junit.Assert.assertNotSame(navigation, action)
-        org.junit.Assert.assertTrue(action.height >= 48 * context.resources.displayMetrics.density - 1)
+        org.junit.Assert.assertTrue(action.height >= 48 * density - 1)
     }
 
     @Test fun headerTargetsKeepLocalizedLabelsWholeAcrossFontScales() {
@@ -552,8 +549,6 @@ class WidgetRendererAcceptanceTest {
                         assertTrue("$state total cue stays below title",
                             boundsIn(root, totalCue).top >= boundsIn(root, title).bottom)
                     }
-                    assertEquals("$state keeps scroll hint hidden until WD17", View.GONE,
-                        root.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
                 }
             }
         } finally {
@@ -742,7 +737,7 @@ class WidgetRendererAcceptanceTest {
         }
     }
 
-    @Test fun densityEvidenceRecordsVisibleRowsForRequestedFixturesAndBounds() {
+    @Test fun densityEvidenceRecordsCollectionAndOverflowAffordanceForRequestedFixturesAndBounds() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val surfaces = listOf("compact" to (220 to 160), "recorded" to (373 to 321), "expanded" to (373 to 420))
         val feedbackStates = listOf(
@@ -750,9 +745,9 @@ class WidgetRendererAcceptanceTest {
             "undo" to WidgetActionResult(WidgetOutcome.SAVED, undoToken = UUID.randomUUID()),
             "retry" to WidgetActionResult(WidgetOutcome.FAILED, retryToken = UUID.randomUUID()),
         )
-        val evidence = mutableListOf("fixture,surface,feedback,eligible,visible")
+        val evidence = mutableListOf("fixture,surface,feedback,eligible,collection,hint")
         for (eligible in listOf(0, 1, 3, 4, 8, 10)) {
-            val rows = (0 until eligible.coerceAtMost(8)).map { index ->
+            val rows = (0 until eligible).map { index ->
                 WidgetRow.Task(
                     id = UUID.randomUUID(),
                     title = if (index == 0) "A long mixed-script title عادتی for density measurement" else "Task ${index + 1}",
@@ -766,21 +761,12 @@ class WidgetRendererAcceptanceTest {
                     val (width, height) = dimensions
                     val root = WidgetRenderer.render(context, 71, snapshot, false, bounds(width, height)).apply(context, null)
                     layoutAtBounds(root, context, width, height)
-                    val rowContainer = root.findViewById<LinearLayout>(R.id.widget_data_rows)
-                    val visible = rowContainer?.childCount ?: 0
-                    org.junit.Assert.assertTrue("Visible $visible rows exceed $eligible eligible items at $surface / $feedbackName",
-                        visible <= eligible.coerceAtMost(8))
-                    if (rowContainer != null) {
-                        for (index in 0 until rowContainer.childCount) {
-                            val row = rowContainer.getChildAt(index)
-                            org.junit.Assert.assertTrue("Partial row $index at $surface / $feedbackName", row.height >= 48 * context.resources.displayMetrics.density - 1)
-                            val rect = android.graphics.Rect()
-                            row.getDrawingRect(rect)
-                            rowContainer.offsetDescendantRectToMyCoords(row, rect)
-                            org.junit.Assert.assertTrue("Clipped row $index at $surface / $feedbackName", rect.bottom <= rowContainer.height)
-                        }
-                    }
-                    evidence += "$eligible,$surface,$feedbackName,$eligible,$visible"
+                    val collection = root.findViewById<ListView?>(R.id.widget_data_rows)
+                    val visible = collection?.visibility == View.VISIBLE
+                    val hint = root.findViewById<View?>(R.id.widget_data_scroll_hint)?.visibility == View.VISIBLE
+                    if (eligible == 0 && collection != null) assertEquals(View.GONE, collection.visibility)
+                    if (eligible == 0) assertFalse("Empty collection has a scroll hint at $surface / $feedbackName", hint)
+                    evidence += "$eligible,$surface,$feedbackName,$eligible,$visible,$hint"
                 }
             }
         }
@@ -798,7 +784,7 @@ class WidgetRendererAcceptanceTest {
         assertEquals(android.view.View.GONE, root.findViewById<android.view.View>(R.id.widget_compact_secondary).visibility)
     }
 
-    @Test fun fictionalRendererEvidenceKeepsBaselineTaskRow() {
+    @Test fun fictionalRendererEvidenceKeepsCollectionTaskRow() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {
             val config = android.content.res.Configuration(instrumentation.targetContext.resources.configuration).apply { fontScale = 1f }
@@ -814,17 +800,17 @@ class WidgetRendererAcceptanceTest {
                 putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, height)
                 putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, height)
             }
-            val root = WidgetRenderer.render(context, 51, snapshot, false, options).apply(context, null)
-            assertEquals(1, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+            val task = requireNotNull(snapshot.rows.singleOrNull()) as WidgetRow.Task
+            val row = WidgetRenderer.collectionRow(context, snapshot, task, width).apply(context, null)
             val density = context.resources.displayMetrics.density
             val w = (width * density).toInt()
-            val h = (height * density).toInt()
-            root.measure(android.view.View.MeasureSpec.makeMeasureSpec(w, android.view.View.MeasureSpec.EXACTLY),
-                android.view.View.MeasureSpec.makeMeasureSpec(h, android.view.View.MeasureSpec.EXACTLY))
-            root.layout(0, 0, w, h)
+            val h = (64 * density).toInt()
+            row.measure(android.view.View.MeasureSpec.makeMeasureSpec(w, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(h, android.view.View.MeasureSpec.AT_MOST))
+            row.layout(0, 0, w, h)
             val bitmap = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
-            root.draw(android.graphics.Canvas(bitmap))
-            java.io.File(context.cacheDir, "widget-renderer-$locale-${width}x$height.png").outputStream().use {
+            row.draw(android.graphics.Canvas(bitmap))
+            java.io.File(context.cacheDir, "widget-collection-row-$locale-${width}x${h}.png").outputStream().use {
                 bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
             }
             bitmap.recycle()

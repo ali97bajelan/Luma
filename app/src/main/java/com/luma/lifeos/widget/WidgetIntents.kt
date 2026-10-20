@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import com.luma.lifeos.MainActivity
 import java.time.LocalDate
 import java.util.UUID
@@ -13,6 +14,11 @@ object WidgetIntents {
     const val ACTION_REFRESH = "com.luma.lifeos.widget.action.REFRESH"
     const val ACTION_MUTATION = "com.luma.lifeos.widget.action.MUTATION"
     const val ACTION_DISMISS_FEEDBACK = "com.luma.lifeos.widget.action.DISMISS_FEEDBACK"
+    const val ACTION_COLLECTION_ITEM = "com.luma.lifeos.widget.action.COLLECTION_ITEM"
+    const val EXTRA_COLLECTION_ACTION = "com.luma.lifeos.widget.extra.COLLECTION_ACTION"
+    const val EXTRA_COLLECTION_ITEM_ID = "com.luma.lifeos.widget.extra.COLLECTION_ITEM_ID"
+    const val EXTRA_COLLECTION_DATE = "com.luma.lifeos.widget.extra.COLLECTION_DATE"
+    const val EXTRA_COLLECTION_TOKEN = "com.luma.lifeos.widget.extra.COLLECTION_TOKEN"
     private const val URI_SCHEME = "luma-widget"
     private const val URI_AUTHORITY = "navigate"
     private const val ACTION_AUTHORITY = "action"
@@ -86,12 +92,47 @@ object WidgetIntents {
         )
     }
 
+    /** Mutable only so the host can merge an explicit row fill-in route into this scoped template. */
+    fun collectionTemplate(context: Context, widgetId: Int): PendingIntent {
+        require(widgetId > 0) { "A live widget ID is required" }
+        val intent = Intent(context, WidgetActionReceiver::class.java).apply {
+            action = ACTION_COLLECTION_ITEM
+            data = actionUri("collection", widgetId)
+        }
+        val mutable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+        return PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or mutable,
+        )
+    }
+
+    fun collectionNavigation(itemId: UUID, date: LocalDate): Intent = Intent().apply {
+        putExtra(EXTRA_COLLECTION_ACTION, COLLECTION_NAVIGATE)
+        putExtra(EXTRA_COLLECTION_ITEM_ID, itemId.toString())
+        putExtra(EXTRA_COLLECTION_DATE, date.toString())
+    }
+
+    fun collectionMutation(token: UUID, itemId: UUID, date: LocalDate): Intent = Intent().apply {
+        putExtra(EXTRA_COLLECTION_ACTION, COLLECTION_MUTATE)
+        putExtra(EXTRA_COLLECTION_TOKEN, token.toString())
+        putExtra(EXTRA_COLLECTION_ITEM_ID, itemId.toString())
+        putExtra(EXTRA_COLLECTION_DATE, date.toString())
+    }
+
     internal sealed interface Action {
         val widgetId: Int
 
         data class Refresh(override val widgetId: Int) : Action
         data class Mutation(override val widgetId: Int, val token: UUID) : Action
         data class DismissFeedback(override val widgetId: Int) : Action
+        data class Collection(override val widgetId: Int, val route: CollectionRoute) : Action
+    }
+
+    internal sealed interface CollectionRoute {
+        data class Navigate(val itemId: UUID, val date: LocalDate) : CollectionRoute
+        data class Mutate(val token: UUID, val itemId: UUID, val date: LocalDate) : CollectionRoute
     }
 
     /** Decode only explicit receiver actions with canonical identifier paths. */
@@ -113,6 +154,9 @@ object WidgetIntents {
             ACTION_DISMISS_FEEDBACK -> if (parts.size == 2 && parts[0] == "dismiss-feedback") {
                 Action.DismissFeedback(widgetId)
             } else null
+            ACTION_COLLECTION_ITEM -> if (parts.size == 2 && parts[0] == "collection") {
+                decodeCollectionRoute(intent)?.let { Action.Collection(widgetId, it) }
+            } else null
             else -> null
         } ?: return null
         return action.takeIf {
@@ -120,7 +164,27 @@ object WidgetIntents {
                 is Action.Refresh -> actionUri("refresh", widgetId).toString() == uri.toString()
                 is Action.Mutation -> actionUri("mutation", widgetId, it.token.toString()).toString() == uri.toString()
                 is Action.DismissFeedback -> actionUri("dismiss-feedback", widgetId).toString() == uri.toString()
+                is Action.Collection -> actionUri("collection", widgetId).toString() == uri.toString()
             }
+        }
+    }
+
+    private fun decodeCollectionRoute(intent: Intent): CollectionRoute? {
+        fun stringExtra(key: String) = runCatching { intent.getStringExtra(key) }.getOrNull()
+        return when (stringExtra(EXTRA_COLLECTION_ACTION)) {
+            COLLECTION_NAVIGATE -> {
+                val id = stringExtra(EXTRA_COLLECTION_ITEM_ID)?.canonicalUuid() ?: return null
+                val date = stringExtra(EXTRA_COLLECTION_DATE)?.canonicalDate() ?: return null
+                if (stringExtra(EXTRA_COLLECTION_TOKEN) != null) return null
+                CollectionRoute.Navigate(id, date)
+            }
+            COLLECTION_MUTATE -> {
+                val token = stringExtra(EXTRA_COLLECTION_TOKEN)?.canonicalUuid() ?: return null
+                val id = stringExtra(EXTRA_COLLECTION_ITEM_ID)?.canonicalUuid() ?: return null
+                val date = stringExtra(EXTRA_COLLECTION_DATE)?.canonicalDate() ?: return null
+                CollectionRoute.Mutate(token, id, date)
+            }
+            else -> null
         }
     }
 
@@ -221,4 +285,7 @@ object WidgetIntents {
     } catch (_: Exception) {
         null
     }
+
+    private const val COLLECTION_NAVIGATE = "navigate"
+    private const val COLLECTION_MUTATE = "mutate"
 }

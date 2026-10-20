@@ -74,6 +74,94 @@ class RoomWidgetStore(
         require(rowLimit in 0..WidgetStore.MAX_CANDIDATE_ROWS) {
             "Widget row limit must be between zero and ${WidgetStore.MAX_CANDIDATE_ROWS}"
         }
+        return snapshotRows(
+            widgetId = widgetId,
+            now = now,
+            deviceZone = deviceZone,
+            rowOffset = 0,
+            rowLimit = rowLimit,
+            rejectSuperseded = rowLimit > 0,
+        )
+    }
+
+    override suspend fun collectionPage(
+        widgetId: Int,
+        now: Instant,
+        deviceZone: ZoneId,
+        offset: Int,
+        limit: Int,
+    ): WidgetSnapshot? {
+        require(offset >= 0) { "Widget collection offset must be nonnegative" }
+        require(limit in 1..WidgetStore.COLLECTION_PAGE_SIZE) {
+            "Widget collection page limit must be between 1 and ${WidgetStore.COLLECTION_PAGE_SIZE}"
+        }
+        return snapshotRows(
+            widgetId = widgetId,
+            now = now,
+            deviceZone = deviceZone,
+            rowOffset = offset,
+            rowLimit = limit,
+            rejectSuperseded = false,
+        )
+    }
+
+    override suspend fun isEligibleCollectionItem(
+        widgetId: Int,
+        itemId: UUID,
+        now: Instant,
+        deviceZone: ZoneId,
+    ): Boolean = database.withTransaction {
+        val instance = database.widgets().instance(widgetId) ?: return@withTransaction false
+        if (!instance.showDetails) return@withTransaction false
+        when (WidgetKind.valueOf(instance.kind)) {
+            WidgetKind.HABITS -> {
+                val trackingZone = database.habits().settings()?.trackingZoneId
+                    ?.let(ZoneId::of) ?: deviceZone
+                val date = now.atZone(trackingZone).toLocalDate()
+                database.habits().widgetDayRow(itemId.toString(), date.toString()) != null
+            }
+            WidgetKind.TASKS -> {
+                val date = now.atZone(deviceZone).toLocalDate()
+                database.todos().widgetTodayRow(itemId.toString(), date.toString()) != null
+            }
+        }
+    }
+
+    override suspend fun isValidCollectionMutation(
+        widgetId: Int,
+        itemId: UUID,
+        token: UUID,
+        date: LocalDate,
+    ): Boolean = database.withTransaction {
+        val dao = database.widgets()
+        val instance = dao.instance(widgetId) ?: return@withTransaction false
+        if (!instance.showDetails) return@withTransaction false
+        val command = dao.command(token.toString()) ?: return@withTransaction false
+        if (command.widgetId != widgetId || command.status != WidgetCommandExecutor.READY) {
+            return@withTransaction false
+        }
+        val payload = WidgetCommandPayload.decode(command.action, command.payloadJson)
+            ?: return@withTransaction false
+        if (payload.fingerprint() != command.fingerprint) return@withTransaction false
+
+        when (payload) {
+            is WidgetCommandPayload.HabitLog -> {
+                instance.kind == WidgetKind.HABITS.name && payload.habitId == itemId && payload.date == date
+            }
+            is WidgetCommandPayload.TaskComplete ->
+                instance.kind == WidgetKind.TASKS.name && payload.taskId == itemId && payload.date == date
+            is WidgetCommandPayload.HabitUndo, is WidgetCommandPayload.TaskUndo -> false
+        }
+    }
+
+    private suspend fun snapshotRows(
+        widgetId: Int,
+        now: Instant,
+        deviceZone: ZoneId,
+        rowOffset: Int,
+        rowLimit: Int,
+        rejectSuperseded: Boolean,
+    ): WidgetSnapshot? {
         return database.withTransaction {
             val dao = database.widgets()
             dao.deleteCommandsBefore(now.minus(7, ChronoUnit.DAYS).toEpochMilli())
@@ -90,7 +178,7 @@ class RoomWidgetStore(
                     val date = now.atZone(trackingZone).toLocalDate()
                     val summary = database.habits().widgetSummary(date.toString())
                     val rows = if (instance.showDetails && rowLimit > 0) {
-                        database.habits().widgetDayRows(date.toString(), rowLimit).map { row ->
+                        database.habits().widgetDayRowsPage(date.toString(), rowLimit, rowOffset).map { row ->
                             val token = if (row.target != null && row.scheduleId != null &&
                                 row.scheduleState == "ACTIVE" && !row.skipRemaining && row.count < row.target
                             ) {
@@ -141,7 +229,7 @@ class RoomWidgetStore(
                     val date = now.atZone(deviceZone).toLocalDate()
                     val summary = database.todos().widgetTodaySummary(date.toString())
                     val rows = if (instance.showDetails && rowLimit > 0) {
-                        database.todos().widgetTodayRows(date.toString(), rowLimit).map { row ->
+                        database.todos().widgetTodayRowsPage(date.toString(), rowLimit, rowOffset).map { row ->
                             val token = issuer.tokenFor(
                                 WidgetCommandPayload.TaskComplete(
                                     taskId = UUID.fromString(row.taskId),
@@ -173,7 +261,7 @@ class RoomWidgetStore(
                     )
                 }
             }
-            issuer.rejectSuperseded()
+            if (rejectSuperseded) issuer.rejectSuperseded()
             snapshot.copy(feedback = feedbackFor(dao, widgetId))
         }
     }

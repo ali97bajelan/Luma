@@ -38,7 +38,6 @@ import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
-import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -148,11 +147,11 @@ class WidgetConfigurationActivity : ComponentActivity() {
                 }
                 val snapshot = try {
                     withContext(Dispatchers.IO) {
-                        storage.widgets.snapshot(
+                        WidgetRenderer.snapshotForRendering(
+                            store = storage.widgets,
                             widgetId = selectedWidgetId,
                             now = Instant.now(),
                             deviceZone = ZoneId.systemDefault(),
-                            rowLimit = WidgetStore.MAX_CANDIDATE_ROWS,
                         )
                     }
                 } catch (cancelled: CancellationException) {
@@ -160,7 +159,8 @@ class WidgetConfigurationActivity : ComponentActivity() {
                 } catch (_: Exception) {
                     null
                 }
-                AppWidgetManager.getInstance(this@WidgetConfigurationActivity).updateAppWidget(
+                val manager = AppWidgetManager.getInstance(this@WidgetConfigurationActivity)
+                manager.updateAppWidget(
                     selectedWidgetId,
                     WidgetRenderer.render(
                         this@WidgetConfigurationActivity,
@@ -171,6 +171,7 @@ class WidgetConfigurationActivity : ComponentActivity() {
                             .getAppWidgetOptions(selectedWidgetId),
                     ),
                 )
+                manager.notifyAppWidgetViewDataChanged(selectedWidgetId, R.id.widget_data_rows)
                 try {
                     WidgetRefreshCoordinator.request(this@WidgetConfigurationActivity)
                 } catch (_: Exception) {
@@ -264,6 +265,7 @@ internal fun ConfigurationContent(
                             enabled = !saving,
                         )
                     }
+                    Text(stringResource(R.string.widget_config_scroll_resize), style = MaterialTheme.typography.bodyMedium)
                     Text(stringResource(R.string.widget_config_privacy_note), style = MaterialTheme.typography.bodySmall)
                     com.luma.lifeos.ui.widgets.WidgetExample(kind, showDetails)
                     if (saveFailed) {
