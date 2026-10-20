@@ -12,6 +12,7 @@ object WidgetIntents {
     const val ACTION_NAVIGATION = "com.luma.lifeos.widget.action.NAVIGATE"
     const val ACTION_REFRESH = "com.luma.lifeos.widget.action.REFRESH"
     const val ACTION_MUTATION = "com.luma.lifeos.widget.action.MUTATION"
+    const val ACTION_DISMISS_FEEDBACK = "com.luma.lifeos.widget.action.DISMISS_FEEDBACK"
     private const val URI_SCHEME = "luma-widget"
     private const val URI_AUTHORITY = "navigate"
     private const val ACTION_AUTHORITY = "action"
@@ -60,11 +61,26 @@ object WidgetIntents {
         )
     }
 
+    fun dismissFeedback(context: Context, widgetId: Int): PendingIntent {
+        require(widgetId > 0) { "A live widget ID is required" }
+        val intent = Intent(context, WidgetActionReceiver::class.java).apply {
+            action = ACTION_DISMISS_FEEDBACK
+            data = actionUri("dismiss-feedback", widgetId)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
     internal sealed interface Action {
         val widgetId: Int
 
         data class Refresh(override val widgetId: Int) : Action
         data class Mutation(override val widgetId: Int, val token: UUID) : Action
+        data class DismissFeedback(override val widgetId: Int) : Action
     }
 
     /** Decode only explicit receiver actions with canonical identifier paths. */
@@ -83,12 +99,16 @@ object WidgetIntents {
                 val token = parts[2].canonicalUuid() ?: return null
                 Action.Mutation(widgetId, token)
             } else null
+            ACTION_DISMISS_FEEDBACK -> if (parts.size == 2 && parts[0] == "dismiss-feedback") {
+                Action.DismissFeedback(widgetId)
+            } else null
             else -> null
         } ?: return null
         return action.takeIf {
             when (it) {
                 is Action.Refresh -> actionUri("refresh", widgetId).toString() == uri.toString()
                 is Action.Mutation -> actionUri("mutation", widgetId, it.token.toString()).toString() == uri.toString()
+                is Action.DismissFeedback -> actionUri("dismiss-feedback", widgetId).toString() == uri.toString()
             }
         }
     }

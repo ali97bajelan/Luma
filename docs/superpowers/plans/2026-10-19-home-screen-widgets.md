@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-19-home-screen-widgets-design.md](../specs/2026-10-19-home-screen-widgets-design.md)
 
-**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete. WG03 source implementation is complete, and production compiles passed for `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. WG04 source implementation is complete and `:app:assembleDebug` passed. No Gradle test or emulator/launcher test was run, per request; WG01–WG04 acceptance verification and WG05–WG08 remain pending.
+**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete. WG03 source implementation is complete, and production compiles passed for `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. WG04 and WG05 source implementations are complete and `:app:assembleDebug` passed. No Gradle test or emulator/launcher test was run, per request; WG01–WG05 acceptance verification and WG06–WG08 remain pending.
 
 ## Global Constraints
 
@@ -159,14 +159,16 @@ WG04 source implementation is complete and `:app:assembleDebug` passed. No Gradl
 
 **Depends on:** WG01–WG04. **Produces:** usable Habits provider. **Acceptance:** WG-AC-01/03/06/10.
 
-**Files:** Create `A/widget/HabitsWidgetProvider.kt`, `WidgetLayoutPolicy.kt`; finish `WidgetRenderer.kt`. Create `R/xml/habits_widget_info.xml`, `R/layout/widget_data.xml`, `widget_habit_row.xml`, `widget_feedback.xml`, `R/drawable/widget_preview_habits.xml` and necessary themed XML colors/backgrounds. Modify manifest and all three string catalogs. Tests: `AT/WidgetLayoutPolicyTest.kt`, `AI/HabitsWidgetTest.kt`.
+**Files:** Create `A/widget/HabitsWidgetProvider.kt`, `WidgetLayoutPolicy.kt`; finish `WidgetRenderer.kt`. Create `R/xml/habits_widget_info.xml`, `R/layout/widget_data.xml`, `widget_habit_row.xml`, `widget_feedback.xml`, `R/drawable/widget_preview_habits.xml` and necessary themed XML colors/backgrounds. Modify manifest and all three string catalogs. Add insert-if-absent default instance initialization to `K/WidgetStore.kt`, `D/widget/WidgetDao.kt` and `RoomWidgetStore.kt` so first refresh cannot overwrite a concurrent user configuration. Tests: `AT/WidgetLayoutPolicyTest.kt`, `AI/HabitsWidgetTest.kt`.
 
 **Interfaces:** consumes WidgetSnapshot/WidgetRow.Habit, WidgetIntents, coordinator; produces complete habit rendering and reusable header/footer/feedback layout. Provider only reconciles instance lifecycle and requests refresh; no business writes in the provider.
 
 - [ ] Add hosted tests `summaryNeverExposesNamesOrActions`, `habitRowLogsAndKeepsUndoOffPreview`, `readErrorRetainsQualifiedCountAndRefresh`, `longRtlFeedbackReducesRowCapacity`. Assert target/skip states have no Log PendingIntent; name opens exact ID/date; a changed date/count token is rejected by real store integration. After a row leaves the prefix, failed Undo still has visible Retry. At 180×160dp/200% text capacity reaches zero before recovery is clipped.
 - [ ] Run focused tests; record expected failures. Use `AppWidgetHost`/inflated RemoteViews for wiring/layout checks; Compose tests alone do not exercise the launcher surface.
-- [ ] Render headers, zone difference, full summary, 0–3 measured rows, empty-library versus empty-scope state, Open/Create and Refresh. Show last successful snapshot date/time; no optimistic count. Reserve retained feedback before rows; replace rows with feedback/summary if necessary. Apply spec typography/palette/targets/RTL, full accessible titles and indexed-safe actions. Publish fictional preview and safe initial layout; do not introduce mutable collection PendingIntents or RemoteViewsService for three rows.
+- [x] Render headers, zone difference, full summary, 0–3 measured rows, empty-library versus empty-scope state, Open/Create and Refresh. Show last successful snapshot date/time; no optimistic count. Reserve retained feedback before rows; replace rows with feedback/summary if necessary. Apply spec typography/palette/targets/RTL, full accessible titles and indexed-safe actions. Publish fictional preview and safe initial layout; do not introduce mutable collection PendingIntents or RemoteViewsService for three rows.
 - [ ] Verify repeated intentional +1 after refresh has a fresh token, while identical passive rerenders reuse READY tokens. Exercise default/short/large sizes in English/French/Persian and both themes. Rerun safety/render tests and build/lint; commit this slice.
+
+WG05 source implementation is complete and `:app:assembleDebug` passed. No Gradle tests or emulator/launcher checks were run, per request; acceptance verification remains pending. No commit was created.
 
 ## WG06 — Tasks widget
 

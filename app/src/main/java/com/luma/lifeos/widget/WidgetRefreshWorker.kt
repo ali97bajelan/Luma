@@ -61,9 +61,21 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
             ids.forEach { widgetId ->
                 val views = try {
                     val snapshot = withContext(Dispatchers.IO) {
-                        app.storage.widgets.snapshot(widgetId, now, deviceZone, rowLimit = 3)
+                        val store = app.storage.widgets
+                        store.snapshot(widgetId, now, deviceZone, rowLimit = 3) ?: run {
+                            val kind = WidgetRefreshCoordinator.kindForWidgetId(applicationContext, widgetId)
+                                ?: return@withContext null
+                            store.ensureConfigured(WidgetInstance(widgetId, kind))
+                            store.snapshot(widgetId, now, deviceZone, rowLimit = 3)
+                        }
                     }
-                    WidgetRenderer.render(applicationContext, widgetId, snapshot, failure = false)
+                    WidgetRenderer.render(
+                        applicationContext,
+                        widgetId,
+                        snapshot,
+                        failure = false,
+                        options = manager.getAppWidgetOptions(widgetId),
+                    )
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

@@ -35,6 +35,20 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     work,
                 )
             }
+            is WidgetIntents.Action.DismissFeedback -> {
+                val data = Data.Builder()
+                    .putInt(WidgetActionWorker.KEY_WIDGET_ID, action.widgetId)
+                    .putBoolean(WidgetActionWorker.KEY_DISMISS_FEEDBACK, true)
+                    .build()
+                val work = OneTimeWorkRequestBuilder<WidgetActionWorker>()
+                    .setInputData(data)
+                    .build()
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    "luma-widget-dismiss-feedback:${action.widgetId}",
+                    ExistingWorkPolicy.KEEP,
+                    work,
+                )
+            }
         }
     }
 }

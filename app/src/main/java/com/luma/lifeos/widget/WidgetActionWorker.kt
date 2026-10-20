@@ -16,14 +16,24 @@ import kotlinx.coroutines.withContext
 class WidgetActionWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val widgetId = inputData.getInt(KEY_WIDGET_ID, 0).takeIf { it > 0 } ?: return Result.failure()
+        val app = applicationContext as? LumaApplication ?: return Result.failure()
+        if (inputData.getBoolean(KEY_DISMISS_FEEDBACK, false)) {
+            try {
+                withContext(Dispatchers.IO) { app.storage.widgets.dismissFeedback(widgetId) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                return Result.retry()
+            }
+            WidgetRefreshCoordinator.request(applicationContext)
+            return Result.success()
+        }
         val tokenString = inputData.getString(KEY_TOKEN) ?: return Result.failure()
         val token = try {
             UUID.fromString(tokenString).takeIf { it.toString() == tokenString } ?: return Result.failure()
         } catch (_: IllegalArgumentException) {
             return Result.failure()
         }
-        val app = applicationContext as? LumaApplication ?: return Result.failure()
-
         val result = try {
             withContext(Dispatchers.IO) {
                 app.storage.widgets.execute(widgetId, token, Instant.now(), ZoneId.systemDefault())
@@ -47,5 +57,6 @@ class WidgetActionWorker(context: Context, params: WorkerParameters) : Coroutine
     companion object {
         const val KEY_WIDGET_ID = "widget_id"
         const val KEY_TOKEN = "token"
+        const val KEY_DISMISS_FEEDBACK = "dismiss_feedback"
     }
 }

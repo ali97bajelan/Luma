@@ -2,6 +2,7 @@ package com.luma.lifeos.data.widget
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 
@@ -27,6 +28,9 @@ interface WidgetDao {
 
     @Upsert
     suspend fun upsertInstance(instance: WidgetInstanceEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertInstanceIfAbsent(instance: WidgetInstanceEntity): Long
 
     @Query("DELETE FROM widget_command WHERE widget_id = :widgetId")
     suspend fun deleteCommands(widgetId: Int)

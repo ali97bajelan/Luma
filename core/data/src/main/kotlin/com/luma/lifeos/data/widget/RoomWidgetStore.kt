@@ -23,6 +23,17 @@ class RoomWidgetStore(
     private val database: LumaDatabase,
     @Suppress("unused") private val clock: Clock = Clock.systemUTC(),
 ) : WidgetStore {
+    override suspend fun ensureConfigured(instance: WidgetInstance) {
+        database.widgets().insertInstanceIfAbsent(
+            WidgetInstanceEntity(
+                widgetId = instance.id,
+                kind = instance.kind.name,
+                showDetails = instance.showDetails,
+                feedbackJson = null,
+            ),
+        )
+    }
+
     override suspend fun configure(instance: WidgetInstance) = database.withTransaction {
         val dao = database.widgets()
         val existing = dao.instance(instance.id)
