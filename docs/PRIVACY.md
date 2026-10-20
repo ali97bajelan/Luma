@@ -11,6 +11,23 @@ Automatic cloud backup and device-transfer extraction are disabled; manual backu
 is explicit and unencrypted. A chosen document provider controls its destination.
 This describes Luma's own behavior, not other apps or device services.
 
+## Home-screen widgets
+
+Habits and Tasks widgets show a date and summary counts by default. Each widget
+instance can separately opt in to names, progress and row actions. Luma explains
+that those details appear wherever the launcher displays that instance before
+the setting can be saved. Quick capture opens the existing Mood, Memory or
+Journal editor and does not save an entry until the user saves in that editor.
+Widget previews use fictional content.
+
+The launcher controls widget placement and may retain a cached view. Turning
+details off revokes the widget's existing row and Undo actions and updates its
+current view, but Luma cannot control copies retained by the launcher. Removing
+a widget or resetting Luma also cannot guarantee that the launcher has cleared
+its cached view. Widget action intents contain only the widget ID and an opaque
+command token; entry names and notes are not sent to the launcher in those
+intents.
+
 ## Optional permissions and retained history
 
 Core browsing/capture does not require usage, health, location, camera or broad

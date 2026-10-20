@@ -32,6 +32,10 @@
             </intent-filter>
         </activity-alias>
         <activity
+            android:name=".widget.WidgetConfigurationActivity"
+            android:excludeFromRecents="true"
+            android:exported="true" />
+        <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
             android:exported="true">

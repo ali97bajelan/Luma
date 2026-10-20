@@ -62,6 +62,7 @@ import com.luma.lifeos.ui.journal.JournalDetailRoute
 import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.todo.TodoRepository
+import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.ui.habits.HabitsRoute
 import com.luma.lifeos.ui.habits.HabitEditorRoute
 import com.luma.lifeos.ui.habits.HabitDetailRoute
@@ -115,6 +116,7 @@ fun LifeOsApp(
     todos: TodoRepository? = null,
     widgetLaunch: WidgetLaunchRequest? = null,
     onWidgetLaunchConsumed: (UUID) -> Unit = {},
+    widgetStore: WidgetStore? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -364,6 +366,14 @@ fun LifeOsApp(
                     onBackup = { navController.navigate("settings_backup") },
                     onPrivacy = { navController.navigate("privacy") },
                     onIntegrations = { navController.navigate("settings_integrations") },
+                    onBack = { navController.popBackStack() },
+                    widgetsAvailable = widgetStore != null,
+                    onWidgets = { navController.navigate("settings_widgets") },
+                )
+            }
+            if (widgetStore != null) composable("settings_widgets") {
+                com.luma.lifeos.ui.widgets.WidgetSettingsRoute(
+                    widgetStore = widgetStore,
                     onBack = { navController.popBackStack() },
                 )
             }

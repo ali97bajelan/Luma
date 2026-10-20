@@ -34,6 +34,16 @@ class RoomWidgetStore(
         )
     }
 
+    override suspend fun configuration(widgetId: Int): WidgetInstance? = database.withTransaction {
+        database.widgets().instance(widgetId)?.let { stored ->
+            WidgetInstance(
+                id = stored.widgetId,
+                kind = WidgetKind.valueOf(stored.kind),
+                showDetails = stored.showDetails,
+            )
+        }
+    }
+
     override suspend fun configure(instance: WidgetInstance) = database.withTransaction {
         val dao = database.widgets()
         val existing = dao.instance(instance.id)

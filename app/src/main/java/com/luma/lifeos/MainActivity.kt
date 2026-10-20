@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
                     luma.appDataReset,
                     storage.habits,
                     storage.todos,
+                    widgetStore = storage.widgets,
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,
                 )

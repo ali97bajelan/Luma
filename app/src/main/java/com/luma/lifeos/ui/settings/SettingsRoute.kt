@@ -20,7 +20,7 @@ import com.luma.lifeos.R
 @Composable
 fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrationsAvailable: Boolean,
     onLanguage: () -> Unit, onBackup: () -> Unit, onPrivacy: () -> Unit, onIntegrations: () -> Unit,
-    onBack: (() -> Unit)? = null) {
+    onBack: (() -> Unit)? = null, widgetsAvailable: Boolean = false, onWidgets: () -> Unit = {}) {
     BackHandler(enabled = onBack != null) { onBack?.invoke() }
     Column(Modifier.fillMaxSize()) {
         if (onBack != null) {
@@ -35,6 +35,12 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
             Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.semantics { heading() })
             Text(stringResource(R.string.settings_hub_description))
+            if (widgetsAvailable) SettingsRow(
+                R.string.settings_widgets_title,
+                R.string.settings_widgets_description,
+                "settings_widgets",
+                onWidgets,
+            )
             SettingsRow(R.string.settings_language_title, R.string.settings_language_description, "settings_language", onLanguage)
             com.luma.lifeos.ui.theme.ThemeSettingsCard()
             if (backupAvailable) SettingsRow(R.string.settings_backup_title, R.string.settings_backup_description, "settings_backup", onBackup)

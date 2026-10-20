@@ -74,6 +74,15 @@ files and original provider records must be managed separately. Native reset and
 real provider-permission and app-data-reset acceptance remain pending; no real app
 data was reset or optional health access granted during validation.
 
+## Home-screen widgets
+
+Luma provides Habits, Tasks and Quick capture widgets. Habits and Tasks start in
+summary mode, which shows the date and counts without names or row actions. Open
+Settings → Home-screen widgets to add a widget or configure an existing instance;
+names and progress are an explicit per-instance choice. Quick capture opens the
+Mood, Memory or Journal editor directly. Your launcher controls widget placement
+and may retain cached views, including after a widget is removed or Luma is reset.
+
 ## Project references
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): stack, module boundaries, relational schema, privacy, and phases.
