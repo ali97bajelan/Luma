@@ -1,18 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
- android:layout_width="match_parent" android:layout_height="match_parent" android:padding="12dp"
- android:orientation="vertical" android:background="@drawable/widget_background">
- <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
- <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:gravity="center_vertical"
- android:text="@string/widget_tasks_title" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/widget_on_primary" />
- <ImageView android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:src="@drawable/ic_widget_refresh" android:contentDescription="@null" android:importantForAccessibility="no" />
- </LinearLayout>
- <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/widget_preview_tasks_summary"
- android:textSize="14sp" android:textColor="@color/widget_on_primary" />
- <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/widget_preview_updated"
- android:textSize="12sp" android:textColor="@color/widget_on_primary" />
- <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
- <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="48dp"
- android:gravity="center" android:text="@string/widget_tasks_view_all" android:textSize="14sp" android:textColor="@color/widget_on_primary" />
- <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="48dp"
- android:gravity="center" android:text="@string/widget_tasks_add" android:background="@drawable/widget_button_background"
- android:textSize="14sp" android:textColor="@color/widget_on_primary" /></LinearLayout></LinearLayout>
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_preview_label"
+        android:textColor="@color/widget_on_primary"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:text="@string/widget_preview_tasks_title"
+            android:textColor="@color/widget_on_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:background="@drawable/widget_button_background"
+            android:gravity="center"
+            android:minWidth="48dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="@string/widget_capture"
+            android:textColor="@color/widget_on_primary"
+            android:textSize="14sp" />
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:padding="12dp"
+            android:src="@drawable/ic_widget_refresh" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_preview_tasks_summary"
+        android:textColor="@color/widget_on_primary"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="48dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/widget_preview_task"
+            android:textColor="@color/widget_on_primary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_preview_task_action"
+            android:textColor="@color/widget_on_primary"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_preview_updated"
+        android:textColor="@color/widget_on_primary"
+        android:textSize="12sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_settings_title_navigation_hint"
+        android:textColor="@color/widget_on_primary"
+        android:textSize="12sp" />
+</LinearLayout>

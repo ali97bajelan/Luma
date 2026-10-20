@@ -41,6 +41,15 @@ internal object WidgetCompactRenderer {
             })
             else -> summary
         }
+        val emptyLibraryAction = if (snapshot?.hasAnyItems == false && !failure && feedback == null) {
+            when (kind) {
+                WidgetKind.HABITS -> R.string.widget_habits_add to
+                    WidgetIntents.navigation(context, widgetId, WidgetDestination.NewHabit)
+                WidgetKind.TASKS -> R.string.widget_tasks_add to
+                    WidgetIntents.navigation(context, widgetId, WidgetDestination.NewTask)
+                null -> null
+            }
+        } else null
         val primary = when {
             loadingKind != null -> R.string.widget_data_open to WidgetIntents.navigation(context, widgetId, destination)
             failure -> R.string.widget_data_refresh to WidgetIntents.refresh(context, widgetId)
@@ -53,10 +62,12 @@ internal object WidgetCompactRenderer {
                 R.string.widget_data_refresh to WidgetIntents.refresh(context, widgetId)
             feedback?.outcome == WidgetOutcome.FAILED && feedback.retryToken != null ->
                 R.string.widget_feedback_retry to WidgetIntents.mutation(context, widgetId, requireNotNull(feedback.retryToken))
+            emptyLibraryAction != null -> emptyLibraryAction
             else -> R.string.widget_data_open to WidgetIntents.navigation(context, widgetId, destination)
         }
         val secondary = when {
             snapshot == null && !failure -> R.string.widget_open_luma to WidgetIntents.navigation(context, widgetId, WidgetDestination.Today)
+            emptyLibraryAction != null -> open to WidgetIntents.navigation(context, widgetId, destination)
             feedback?.outcome == WidgetOutcome.STALE || (feedback?.outcome == WidgetOutcome.FAILED && feedback.retryToken != null) ->
                 open to WidgetIntents.navigation(context, widgetId, destination)
             feedback != null && feedback.outcome != WidgetOutcome.UNDONE ->

@@ -1,5 +1,7 @@
 package com.luma.lifeos
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.luma.lifeos.domain.model.EventId
@@ -17,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.luma.lifeos.widget.WidgetIntents
 
 @RunWith(AndroidJUnit4::class)
 class AppNavigationTest {
@@ -152,6 +155,39 @@ class AppNavigationTest {
         }
     }
 
+    @Test fun dataWidgetCaptureUsesOneCurrentTimeChooserFromEitherProvider() {
+        compose.onNodeWithTag("nav_timeline").performClick()
+        compose.onNodeWithTag("day_previous").performClick()
+
+        launchWidgetQuickCapture(51)
+        compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
+        compose.onNodeWithTag("capture_on_browsed_date").assertDoesNotExist()
+        launchWidgetQuickCapture(52)
+        compose.onAllNodesWithTag("capture_sheet").assertCountEquals(1)
+        compose.onNodeWithTag("capture_mood").performClick()
+        awaitTag("screen_mood")
+        compose.onNodeWithTag("capture_timestamp_value").assertTextContains("Today", substring = true)
+        compose.onNodeWithTag("mood_cancel").performClick()
+        awaitTag("screen_timeline")
+
+        listOf("journal", "memory").forEach { type ->
+            launchWidgetQuickCapture(51)
+            compose.onNodeWithTag("capture_$type").performClick()
+            awaitTag("screen_$type")
+            compose.onNodeWithTag("capture_timestamp_value").assertTextContains("Today", substring = true)
+            compose.onNodeWithTag("${type}_cancel").performClick()
+            awaitTag("screen_timeline")
+        }
+
+        launchWidgetQuickCapture(52)
+        compose.onNodeWithTag("capture_task").performClick()
+        awaitTag("screen_todo_editor")
+        compose.onNodeWithTag("todo_editor_due_date_value")
+            .assertTextEquals(compose.activity.getString(R.string.todo_no_date))
+        compose.onNodeWithTag("todo_editor_close").performClick()
+        awaitTag("screen_timeline")
+    }
+
     @Test fun selectedDaySurvivesNavigationAndRecreation() {
         val yesterday = LocalDate.now().minusDays(1)
             .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
@@ -174,5 +210,16 @@ class AppNavigationTest {
         compose.waitUntil(5_000) {
             compose.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    private fun launchWidgetQuickCapture(widgetId: Int) {
+        val intent = Intent(compose.activity, MainActivity::class.java).apply {
+            action = WidgetIntents.ACTION_NAVIGATION
+            data = Uri.parse("luma-widget://navigate/navigation/$widgetId/quick-capture")
+        }
+        compose.activityRule.scenario.onActivity {
+            it.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
+        }
+        awaitTag("capture_sheet")
     }
 }

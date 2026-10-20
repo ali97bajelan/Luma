@@ -91,6 +91,12 @@
         android:textSize="14sp" />
 
     <LinearLayout
+        android:id="@+id/widget_data_action_slot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <LinearLayout
         android:id="@+id/widget_feedback_slot"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

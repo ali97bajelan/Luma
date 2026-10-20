@@ -41,7 +41,6 @@ import com.luma.lifeos.domain.widget.WidgetKind
 import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 import com.luma.lifeos.widget.HabitsWidgetProvider
-import com.luma.lifeos.widget.QuickCaptureWidgetProvider
 import com.luma.lifeos.widget.TasksWidgetProvider
 import com.luma.lifeos.widget.WidgetConfigurationActivity
 import kotlinx.coroutines.CancellationException
@@ -130,23 +129,18 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
     ) {
         Text(stringResource(R.string.widget_settings_intro))
         ProviderCard(
+            kind = WidgetKind.HABITS,
             title = R.string.widget_habits_title,
             description = R.string.widget_habits_description,
             onAdd = { requestPin(providerComponent(context, WidgetKind.HABITS), WidgetKind.HABITS) },
         )
         ProviderCard(
+            kind = WidgetKind.TASKS,
             title = R.string.widget_tasks_title,
             description = R.string.widget_tasks_description,
             onAdd = { requestPin(providerComponent(context, WidgetKind.TASKS), WidgetKind.TASKS) },
         )
-        ProviderCard(
-            title = R.string.widget_quick_capture_name,
-            description = R.string.widget_quick_capture_description,
-            onAdd = {
-                requestPin(ComponentName(context, QuickCaptureWidgetProvider::class.java))
-            },
-        )
-        Text(stringResource(R.string.widget_capture_no_configuration), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.widget_settings_capture_on_both), style = MaterialTheme.typography.bodyMedium)
         Text(stringResource(R.string.widget_settings_existing_heading), style = MaterialTheme.typography.titleMedium)
         when {
             loading -> CircularProgressIndicator()
@@ -166,16 +160,12 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
 }
 
 @Composable
-private fun ProviderCard(title: Int, description: Int, onAdd: () -> Unit) {
+private fun ProviderCard(kind: WidgetKind, title: Int, description: Int, onAdd: () -> Unit) {
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(description), style = MaterialTheme.typography.bodyMedium)
-            WidgetExample(when (title) {
-                R.string.widget_habits_title -> WidgetKind.HABITS
-                R.string.widget_tasks_title -> WidgetKind.TASKS
-                else -> null
-            })
+            WidgetExample(kind)
             Button(onClick = onAdd) {
                 Text(stringResource(R.string.widget_settings_add_named, stringResource(title)))
             }

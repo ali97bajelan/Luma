@@ -121,6 +121,7 @@ object WidgetRenderer {
         // AppWidgetHost may reapply this layout to an existing view. Dynamic rows must be
         // cleared first or a completed task remains visible after its snapshot removes it.
         views.removeAllViews(R.id.widget_data_rows)
+        views.removeAllViews(R.id.widget_data_action_slot)
         views.removeAllViews(R.id.widget_feedback_slot)
         views.setViewVisibility(R.id.widget_data_date, View.GONE)
         views.setViewVisibility(R.id.widget_data_updated, if (snapshot == null || failure) View.GONE else View.VISIBLE)
@@ -245,9 +246,11 @@ object WidgetRenderer {
         val textWidthPx = ((widthDp - 24).coerceAtLeast(1) * density).toInt()
         val fontScale = appContext.resources.configuration.fontScale
         val header = headerPlan(appContext, snapshot.instance.kind, widthDp)
+        val emptyActionHeight = if (!snapshot.hasAnyItems) 52 else 0
         val reserved = 24 + header.heightDp +
             measureTextHeight(appContext, scopeText, textWidthPx, 14f) + 4 +
             measureTextHeight(appContext, updatedText, textWidthPx, 12f) +
+            emptyActionHeight +
             (snapshot.feedback?.let {
                 if (inlineFeedback) max(48, measureTextHeight(appContext, feedbackText,
                     (textWidthPx - 120 * density).toInt(), 14f)) + 4
@@ -256,6 +259,31 @@ object WidgetRenderer {
         if (!header.actionsFit || WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
                 "$scopeText\n$updatedText")
+        }
+        if (!snapshot.hasAnyItems) {
+            val (label, description, destination) = when (snapshot.instance.kind) {
+                WidgetKind.HABITS -> Triple(
+                    R.string.widget_habits_add,
+                    R.string.widget_habits_add_description,
+                    WidgetDestination.NewHabit,
+                )
+                WidgetKind.TASKS -> Triple(
+                    R.string.widget_tasks_add,
+                    R.string.widget_tasks_add_description,
+                    WidgetDestination.NewTask,
+                )
+            }
+            val emptyAction = RemoteViews(context.packageName, R.layout.widget_data_empty_action).apply {
+                setTextViewText(R.id.widget_data_empty_action, appContext.getString(label))
+                setContentDescription(R.id.widget_data_empty_action, appContext.getString(description))
+                setTextColor(R.id.widget_data_empty_action, textColor)
+                setInt(R.id.widget_data_empty_action, "setBackgroundResource", buttonBackground)
+                setOnClickPendingIntent(
+                    R.id.widget_data_empty_action,
+                    WidgetIntents.navigation(context, widgetId, destination),
+                )
+            }
+            views.addView(R.id.widget_data_action_slot, emptyAction)
         }
         val feedbackViews = RemoteViews(context.packageName,
             if (inlineFeedback) R.layout.widget_feedback_inline else R.layout.widget_feedback)

@@ -18,6 +18,7 @@ sealed interface WidgetDestination : Serializable {
     data class HabitDetail(val id: UUID, val date: LocalDate) : WidgetDestination
     data object Tasks : WidgetDestination
     data class Task(val id: UUID) : WidgetDestination
+    data object NewHabit : WidgetDestination
     data object NewTask : WidgetDestination
 }
 

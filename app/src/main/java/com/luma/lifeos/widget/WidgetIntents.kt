@@ -160,6 +160,7 @@ object WidgetIntents {
                 val id = parts[3].canonicalUuid() ?: return null
                 WidgetDestination.Task(id)
             }
+            "new-habit" -> if (parts.size == 3) WidgetDestination.NewHabit else null
             "new-task" -> if (parts.size == 3) WidgetDestination.NewTask else null
             else -> null
         }
@@ -194,6 +195,7 @@ object WidgetIntents {
                         appendPath("task")
                         appendPath(destination.id.toString())
                     }
+                    WidgetDestination.NewHabit -> appendPath("new-habit")
                     WidgetDestination.NewTask -> appendPath("new-task")
                 }
             }

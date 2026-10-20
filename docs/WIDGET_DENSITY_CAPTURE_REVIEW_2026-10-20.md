@@ -1,7 +1,7 @@
 # Luma widget review: more useful rows and shared quick capture
 
 **Reviewed:** 20 October 2026  
-**Status:** WD01–WD03 are implemented. Focused automated checks pass; manual launcher, comparative sizing and accessibility acceptance remains open. WD04–WD08 are still open.  
+**Status:** WD01–WD06 implementation is in place. Focused Android test sources compile; manual launcher, comparative sizing and accessibility acceptance remains open. WD04 launcher checks are pending because `adb` is unavailable here. WD07–WD08 remain open.
 **Scope:** Android home-screen Habits, Tasks and Quick capture; their navigation, configuration, discovery and accessible sizing.
 
 ## Recommended direction
@@ -181,25 +181,31 @@ WD01–WD03 implementation bullets are complete. P1 means the next implementatio
 ### WD04 — Wire and verify shared capture — P1
 
 - [x] Bind both widgets with `WidgetIntents.navigation(..., WidgetDestination.QuickCapture)`; reuse the existing `LifeOsApp.kt` and `QuickCaptureSheet.kt` flow.
-- [ ] Keep current-time capture, undated shared Task behavior, explicit Save/Cancel and editor/draft protections. Ensure capture remains available in summary/empty/error states when it fits.
-- [ ] Exercise both widget origins, repeated taps, cold/warm app, a browsed historical day, an old snapshot and an existing draft. Check each of the four menu destinations.
+- [x] Keep current-time capture, undated shared Task behavior, explicit Save/Cancel and editor/draft protections. Ensure capture remains available in summary/empty/error states when it fits.
+- [ ] Exercise both widget origins, repeated taps, cold/warm app, a browsed historical day, an old snapshot and an existing draft. Check each of the four menu destinations. Instrumentation coverage was added for both provider IDs, repeated taps, all four destinations, current-time capture and the undated Task flow; its source compiles, but it could not run without `adb`.
 
 **Acceptance:** One tap opens exactly one chooser; a second opens the chosen editor. No record is saved by navigation, no stale date leaks into capture, and existing edits are not silently replaced. Back/Close dismisses the sheet predictably without a navigation loop.
 
+**Status:** Implemented. Both widget entry points use the date-free shared chooser, and the chooser opens the existing editors. Save/Cancel and draft protections remain in those editor flows. The focused route test compiles; cold/warm launcher, historical-date, existing-draft and Back/Close acceptance is still pending because no emulator or `adb` is available in this environment.
+
 ### WD05 — Preserve recovery and clarify empty states — P1
 
-- [ ] Carry existing persistent Undo/Retry/Dismiss behavior into the new height budget and clear old actions on reapply.
-- [ ] Add the explicit empty-state actions and distinct no-library/no-eligible/read-failed copy described above. Preserve actual freshness and tracking-zone meaning.
+- [x] Carry existing persistent Undo/Retry/Dismiss behavior into the new height budget and clear old actions on reapply.
+- [x] Add the explicit empty-state actions and distinct no-library/no-eligible/read-failed copy described above. Preserve actual freshness and tracking-zone meaning.
 
 **Acceptance:** Complete the last visible task or reach a habit target: Undo remains reachable after its row changes/disappears. Retry reuses the failed command. Read failure never appears as an empty library. Header capture never submits a mutation.
 
+**Status:** Implemented. Empty libraries now offer Add habit or Add task, with the task scheduled for today; a library with no eligible items keeps its separate explanatory state and list navigation. Normal and compact layouts retain persisted recovery actions ahead of optional rows. Renderer coverage was added and compiles; mutation/Undo/Retry launcher checks remain part of manual acceptance.
+
 ### WD06 — Update discovery, previews and setup — P2
 
-- [ ] Update `WidgetSettingsRoute.kt`, `WidgetExample.kt`, both data-widget picker previews/provider descriptions and values/values-fr/values-fa strings for the new two-primary-widget model.
-- [ ] Show fictional summary/details examples with the new header. Explain title navigation, capture and details consent. Keep details hidden by default for new instances.
-- [ ] Preserve scrolling setup and reachable Save/Cancel; do not reset consent when upgrading existing instances.
+- [x] Update `WidgetSettingsRoute.kt`, `WidgetExample.kt`, both data-widget picker previews/provider descriptions and values/values-fr/values-fa strings for the new two-primary-widget model.
+- [x] Show fictional summary/details examples with the new header. Explain title navigation, capture and details consent. Keep details hidden by default for new instances.
+- [x] Preserve scrolling setup and reachable Save/Cancel; do not reset consent when upgrading existing instances.
 
 **Acceptance:** In-app and picker previews match the new hierarchy and clearly identify fictional data. Users can find capture without placing another widget. First placement, cancel and reconfiguration do not disclose names before consent.
+
+**Status:** Implemented. In-app discovery promotes Habits and Tasks and explains shared Capture and title navigation. Both launcher previews and configuration examples show the new header and fictional content. New instances still default to summary mode, and existing saved consent remains the configuration source. Preview/configuration test sources compile; launcher placement and upgrade checks remain pending.
 
 ### WD07 — Transition the legacy capture provider — P2
 
@@ -220,8 +226,8 @@ WD01–WD03 implementation bullets are complete. P1 means the next implementatio
 
 ## Delivery order and success measures
 
-WD01–WD03 are implemented. Continue with WD04–WD05 as one coherent behavior change, then align previews/discovery and the legacy transition in WD06–WD07. Complete WD08 before release. Updating the row limit or removing a footer in isolation is insufficient.
+WD01–WD06 implementation is in place. Complete the legacy transition in WD07 and record the comparative accessibility and sizing evidence in WD08 before release. Updating the row limit or removing a footer in isolation is insufficient.
 
 Success means more **complete, actionable rows** where data and measured space allow; **two promoted widget choices**; capture from either widget in **two taps to an editor**; and no regressions in consent, dates, recovery or accessible interaction. Ask a small formative group to find capture, open the full list and log/complete an item without coaching. These are proposed validation activities, not research already performed.
 
-The review document, raw evidence, measurements and schematic are the outputs of this task. WD01–WD03 implementation is complete; release acceptance remains open.
+The review document, raw evidence, measurements and schematic are the outputs of this task. WD01–WD06 implementation is in place; manual release acceptance and WD07–WD08 remain open.

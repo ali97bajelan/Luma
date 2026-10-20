@@ -38,6 +38,10 @@ class WidgetConfigurationContentTest {
         compose.onNodeWithText(context.getString(R.string.widget_preview_habit)).assertDoesNotExist()
         compose.onNode(androidx.compose.ui.test.isToggleable()).performScrollTo().performClick()
         compose.onNodeWithText(context.getString(R.string.widget_mode_details)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.widget_capture)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.widget_settings_title_navigation_hint)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.widget_preview_habit_action)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.widget_preview_habit)).assertExists()
         compose.onNodeWithText(context.getString(R.string.widget_config_save)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.widget_config_cancel)).assertIsDisplayed()
     }

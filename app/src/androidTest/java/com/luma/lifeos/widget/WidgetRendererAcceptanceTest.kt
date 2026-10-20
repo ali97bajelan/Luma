@@ -120,6 +120,76 @@ class WidgetRendererAcceptanceTest {
             root.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
     }
 
+    @Test fun emptyLibrariesOfferCreationActionsButEmptyScopesDoNot() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val habits = sampleSnapshot().copy(
+            instance = WidgetInstance(61, WidgetKind.HABITS, showDetails = true),
+            total = 0,
+            completed = 0,
+            hasAnyItems = false,
+            rows = emptyList(),
+        )
+        val habitsRoot = WidgetRenderer.render(context, 61, habits, false, expandedBounds()).apply(context, null)
+        val habitAction = habitsRoot.findViewById<TextView>(R.id.widget_data_empty_action)
+        assertEquals(context.getString(R.string.widget_habits_add), habitAction.text.toString())
+        assertEquals(context.getString(R.string.widget_habits_add_description), habitAction.contentDescription.toString())
+        val compactHabits = WidgetRenderer.render(context, 61, habits, false, bounds(180, 160)).apply(context, null)
+        assertEquals(context.getString(R.string.widget_habits_add),
+            compactHabits.findViewById<TextView>(R.id.widget_compact_primary).text.toString())
+
+        val tasks = habits.copy(instance = WidgetInstance(62, WidgetKind.TASKS, showDetails = true))
+        val tasksRoot = WidgetRenderer.render(context, 62, tasks, false, expandedBounds()).apply(context, null)
+        val taskAction = tasksRoot.findViewById<TextView>(R.id.widget_data_empty_action)
+        assertEquals(context.getString(R.string.widget_tasks_add), taskAction.text.toString())
+        assertEquals(context.getString(R.string.widget_tasks_add_description), taskAction.contentDescription.toString())
+
+        val noEligibleTasks = tasks.copy(hasAnyItems = true)
+        val scopeRoot = WidgetRenderer.render(context, 62, noEligibleTasks, false, expandedBounds()).apply(context, null)
+        assertEquals(0, scopeRoot.findViewById<LinearLayout>(R.id.widget_data_action_slot).childCount)
+        org.junit.Assert.assertTrue(scopeRoot.findViewById<TextView>(R.id.widget_data_summary).text.toString()
+            .endsWith(context.getString(R.string.widget_tasks_empty_scope)))
+    }
+
+    @Test fun pickerPreviewsShowFictionalContentWithSharedCaptureHeader() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val expectations = listOf(
+            R.layout.widget_preview_habits to R.string.widget_preview_habits_title,
+            R.layout.widget_preview_tasks to R.string.widget_preview_tasks_title,
+        )
+        expectations.forEach { (layoutId, titleId) ->
+            val root = android.view.LayoutInflater.from(context).inflate(layoutId, null)
+            val textViews = ArrayList<View>()
+            root.findViewsWithText(textViews, context.getString(R.string.widget_preview_label), View.FIND_VIEWS_WITH_TEXT)
+            assertEquals(1, textViews.size)
+            val captureViews = ArrayList<View>()
+            root.findViewsWithText(captureViews, context.getString(R.string.widget_capture), View.FIND_VIEWS_WITH_TEXT)
+            assertEquals(1, captureViews.size)
+            val titleViews = ArrayList<View>()
+            root.findViewsWithText(titleViews, context.getString(titleId), View.FIND_VIEWS_WITH_TEXT)
+            assertEquals(1, titleViews.size)
+            val oldFooterViews = ArrayList<View>()
+            root.findViewsWithText(oldFooterViews, context.getString(R.string.widget_habits_view_all), View.FIND_VIEWS_WITH_TEXT)
+            assertEquals(0, oldFooterViews.size)
+        }
+    }
+
+    @Test fun reapplyingNonEmptySnapshotClearsPreviouslyRenderedEmptyAction() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val empty = sampleSnapshot().copy(total = 0, hasAnyItems = false, rows = emptyList())
+        val root = WidgetRenderer.render(context, 51, empty, false, expandedBounds()).apply(context, null)
+        assertEquals(1, root.findViewById<LinearLayout>(R.id.widget_data_action_slot).childCount)
+
+        val populated = empty.copy(
+            total = 1,
+            hasAnyItems = true,
+            rows = listOf(WidgetRow.Task(UUID.randomUUID(), "First task", empty.date, UUID.randomUUID())),
+        )
+        WidgetRenderer.render(context, 51, populated, false, expandedBounds()).reapply(context, root)
+
+        assertEquals(0, root.findViewById<LinearLayout>(R.id.widget_data_action_slot).childCount)
+        assertEquals(1, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
+    }
+
     @Test fun dataWidgetHeaderHasSeparateListCaptureAndRefreshTargets() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val root = WidgetRenderer.render(context, 51, sampleSnapshot().copy(total = 0), false, expandedBounds())

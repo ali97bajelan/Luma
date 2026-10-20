@@ -574,6 +574,7 @@ fun LifeOsApp(
                 )
                 WidgetDestination.Tasks -> if (todos != null) navController.navigate(AppRoutes.TASKS)
                 is WidgetDestination.Task -> if (todos != null) openTodoEditor(taskId = destination.id)
+                WidgetDestination.NewHabit -> navController.navigate("habit_editor")
                 WidgetDestination.NewTask -> if (todos != null) {
                     openTodoEditor(dueDate = LocalDate.now(ZoneId.systemDefault()))
                 }
