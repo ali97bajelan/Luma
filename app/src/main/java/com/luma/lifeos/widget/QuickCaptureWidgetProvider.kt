@@ -58,16 +58,47 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
         manager.updateAppWidget(widgetId, views)
     }
 
-    private fun viewsForSize(
+    internal fun viewsForSize(
         context: Context,
         appContext: Context,
         widgetId: Int,
         widthDp: Int,
         heightDp: Int,
-    ): RemoteViews = if (shouldUseCompactLayout(appContext.resources.configuration.fontScale, widthDp, heightDp)) {
-        compactViews(context, appContext, widgetId)
-    } else {
-        defaultViews(context, appContext, widgetId)
+    ): RemoteViews {
+        val labels = listOf(R.string.widget_capture_mood, R.string.widget_capture_memory, R.string.widget_capture_journal)
+        val density = appContext.resources.displayMetrics.density
+        val paint = android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textLocales = appContext.resources.configuration.locales
+            textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
+                16f, appContext.resources.displayMetrics)
+        }
+        // Try each arrangement at its actual cell width, including wrapped localized labels.
+        val layout = listOf(WidgetLayoutPolicy.CaptureLayout.WIDE, WidgetLayoutPolicy.CaptureLayout.GRID,
+            WidgetLayoutPolicy.CaptureLayout.TALL).firstOrNull { candidate ->
+            val columns = when (candidate) {
+                WidgetLayoutPolicy.CaptureLayout.WIDE -> 3
+                WidgetLayoutPolicy.CaptureLayout.GRID -> 2
+                else -> 1
+            }
+            val cellWidth = (widthDp - 24 - (columns - 1) * 8) / columns
+            val sizes = labels.mapIndexed { index, label ->
+                val labelWidth = if (candidate == WidgetLayoutPolicy.CaptureLayout.GRID && index == 2) widthDp - 24 else cellWidth
+                val text = appContext.getString(label)
+                val textLayout = android.text.StaticLayout.Builder.obtain(text, 0, text.length, paint,
+                    ((labelWidth - 16).coerceAtLeast(1) * density).toInt()).setIncludePad(true).setUseLineSpacingFromFallbacks(true)
+                    .setBreakStrategy(android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY).build()
+                labelWidth.coerceAtLeast(48) to maxOf(48, kotlin.math.ceil(textLayout.height / density).toInt() + 16)
+            }
+            cellWidth >= 48 && WidgetLayoutPolicy.captureLayout(widthDp, heightDp, sizes) == candidate
+        } ?: WidgetLayoutPolicy.CaptureLayout.FALLBACK
+        return when (layout) {
+            WidgetLayoutPolicy.CaptureLayout.FALLBACK -> compactViews(context, appContext, widgetId)
+            else -> defaultViews(context, appContext, widgetId, when (layout) {
+                WidgetLayoutPolicy.CaptureLayout.WIDE -> R.layout.widget_quick_capture_wide
+                WidgetLayoutPolicy.CaptureLayout.TALL -> R.layout.widget_quick_capture_tall
+                else -> R.layout.widget_quick_capture
+            })
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -89,13 +120,12 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
                 WidgetIntents.navigation(context, widgetId, WidgetDestination.QuickCapture))
         }
 
-    private fun defaultViews(context: Context, appContext: Context, widgetId: Int) =
-        RemoteViews(context.packageName, R.layout.widget_quick_capture).apply {
+    private fun defaultViews(context: Context, appContext: Context, widgetId: Int, layout: Int) =
+        RemoteViews(context.packageName, layout).apply {
             val buttons = listOf(
                 R.id.widget_capture_mood,
                 R.id.widget_capture_memory,
                 R.id.widget_capture_journal,
-                R.id.widget_open_luma,
             )
             applyPalette(context, appContext, R.id.quick_capture_widget_root, buttons)
             setTextViewText(R.id.widget_capture_mood, appContext.getString(R.string.widget_capture_mood))
@@ -116,10 +146,7 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
             setOnClickPendingIntent(R.id.widget_capture_journal,
                 WidgetIntents.navigation(context, widgetId, WidgetDestination.Capture(CaptureKind.JOURNAL)))
 
-            setTextViewText(R.id.widget_open_luma, appContext.getString(R.string.widget_open_luma))
-            setContentDescription(R.id.widget_open_luma, appContext.getString(R.string.widget_open_luma_description))
-            setOnClickPendingIntent(R.id.widget_open_luma,
-                WidgetIntents.navigation(context, widgetId, WidgetDestination.Today))
+
         }
 
     private fun RemoteViews.applyPalette(
@@ -152,8 +179,4 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    companion object {
-        internal fun shouldUseCompactLayout(fontScale: Float, minWidthDp: Int, minHeightDp: Int): Boolean =
-            fontScale >= 1.6f || (minWidthDp > 0 && minWidthDp < 180) || (minHeightDp > 0 && minHeightDp < 160)
-    }
 }

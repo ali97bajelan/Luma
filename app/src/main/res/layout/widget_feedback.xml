@@ -8,6 +8,7 @@
     android:visibility="gone">
 
     <LinearLayout
+        android:id="@+id/widget_feedback_message_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
@@ -36,7 +37,7 @@
             android:layout_height="48dp"
             android:background="@drawable/widget_button_background"
             android:gravity="center"
-            android:text="×"
+            android:text="@string/widget_dismiss_symbol"
             android:textColor="@color/widget_on_primary"
             android:textSize="20sp"
             android:visibility="gone" />

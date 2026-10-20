@@ -2,10 +2,13 @@
 
 Updated: 20 October 2026. Status: **WG01–WG07 implementation complete; API 36 / Pixel Launcher smoke checks and focused widget regressions pass. Broad acceptance remains partial; WG08 is blocked and release is no-go pending the untested device, accessibility and performance matrix.** Room schema 5 is exported. The full cross-module JVM/build/lint gate passed after the storage fix; after the final renderer fix, app unit tests, debug/app-test packaging and app lint passed. The complete `core:data` emulator suite passed 147/147 tests. The full app emulator suite ran 171 tests and had five failures against the preserved app database; a clean-data rerun was not permitted by automatic review. The Android Gradle connected-test task also could not resolve its uncached UTP host-output artifact offline, so APKs were run directly with `am instrument`. See the [dated acceptance record](WIDGET_ACCEPTANCE_2026-10-20.md) and [launcher screenshots](ui-ux-audit/evidence/widgets/quick-capture-api36.png). The pre-existing untracked release APK is not tied to the current source commit and is not acceptance evidence.
 
+UX follow-up: **WUX01–WUX04 implemented; 259 app JVM tests and 30 focused en/fr/fa instrumentation tests pass; debug/test APK packaging and lint pass.** The new [implementation record](WIDGET_UX_IMPLEMENTATION_2026-10-20.md) identifies the delivered APK and distinguishes test-host rendering from the earlier launcher smoke evidence. WG08 remains blocked.
+
 Requested outcome: Habits and Tasks widgets support common actions on the Android home screen; Quick capture opens a new Mood, Memory or Journal editor directly. “mod” is interpreted as “mood”. Use `widgets/WGNN` when referring to these tasks to distinguish them from existing habit, task and audit numbering.
 
 Read together:
 
+- [Focused UX review and four highest-impact improvement proposals](WIDGET_UX_REVIEW_2026-10-20.md) — includes fresh emulator evidence; WUX01–WUX04 are now implemented; remaining acceptance does not close WG08.
 - [Product and technical specification](superpowers/specs/2026-10-19-home-screen-widgets-design.md)
 - [Implementation plan and file/interface contracts](superpowers/plans/2026-10-19-home-screen-widgets.md)
 - [Existing improvement backlog](ui-ux-audit/IMPROVEMENT_TASKS.md)
@@ -33,6 +36,17 @@ Priority here describes sequencing within widget delivery; it does not redefine 
 | WG08 | Evidence updated; acceptance blocked / release no-go | Acceptance gate | Integrated suites, launcher/device/accessibility/performance evidence and release decision | WG01–07 | High | All |
 
 AC references expand to `WG-AC-NN` in the specification. WG01 can ship independently. WG03 preserves action safety and WG07 provides required configuration. WG03 now issues/reuses opaque row commands, validates and commits repository mutations with their outcomes and Undo records in one Room transaction; emulator tests caught and fixed feedback tokens being discarded after rows disappeared. WG04 serializes refresh rendering through one WorkManager chain, schedules 30-minute work only while data widgets exist, observes Room content invalidations in the app process, and dispatches token-only actions to workers. WG06 reuses the task command pipeline for overdue/today tasks, completion, editor navigation, launch-time Add task dates and retained Undo feedback. The renderer now clears dynamic row children before reapplication and uses launcher-provided sizes to select responsive layouts. WG08 records remaining host/API/accessibility/performance blockers; release stays no-go until those gates are met. The full delivery order is WG01→WG02→WG03→WG04→WG05→WG06→WG07→WG08. Independent planning order does not authorize concurrent edits to shared navigation, strings or composition roots.
+
+## Focused UX follow-up (20 October 2026)
+
+| Task | Status | Delivered change | Remaining acceptance |
+| --- | --- | --- | --- |
+| WUX01 | Implementation complete; focused verification recorded separately | Scrolling setup and safe Save/Cancel; measured compact state shells; Set up/Refresh/Retry recovery | Live instance setup/cancel, injected read failure and launcher matrix |
+| WUX02 | Implementation complete; focused verification recorded separately | Combined date/scope, true freshness, header Refresh, hidden counts, separate 48dp navigation, compact retained feedback | Broad before/after row counts, launcher reading order and lifecycle/privacy matrix |
+| WUX03 | Implementation complete; focused verification recorded separately | Three capture actions; measured wide/grid/tall arrangements; fit-based chooser fallback | One-tap cold/warm editor, drafts and launcher TalkBack matrix |
+| WUX04 | Implementation complete; focused verification recorded separately | Fictional mode/discovery/picker previews; localized Add names and purpose/mode/ordinal instance labels | API 28/second launcher picker comparisons and formative usability check |
+
+See [UX implementation evidence](WIDGET_UX_IMPLEMENTATION_2026-10-20.md). The original review remains the before/design record. New tests do not replace the WG08 release gate.
 
 ## Task completion checklist
 

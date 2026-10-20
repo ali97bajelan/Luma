@@ -1,0 +1,16 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ android:layout_width="match_parent" android:layout_height="match_parent" android:padding="12dp"
+ android:orientation="vertical" android:background="@drawable/widget_background">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+ <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:gravity="center_vertical"
+ android:text="@string/widget_habits_title" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/widget_on_primary" />
+ <ImageView android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:src="@drawable/ic_widget_refresh" android:contentDescription="@null" android:importantForAccessibility="no" />
+ </LinearLayout>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/widget_preview_habits_summary"
+ android:textSize="14sp" android:textColor="@color/widget_on_primary" />
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/widget_preview_updated"
+ android:textSize="12sp" android:textColor="@color/widget_on_primary" />
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+ <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="48dp"
+ android:gravity="center" android:text="@string/widget_habits_view_all" android:textSize="14sp" android:textColor="@color/widget_on_primary" />
+ </LinearLayout></LinearLayout>

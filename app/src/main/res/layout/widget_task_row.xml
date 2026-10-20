@@ -10,10 +10,15 @@
     android:paddingBottom="2dp">
 
     <LinearLayout
+        android:id="@+id/widget_task_row_text"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical"
+        android:minHeight="48dp"
+        android:gravity="center_vertical"
+        android:background="?android:attr/selectableItemBackground"
+        android:paddingStart="0dp"
         android:paddingEnd="8dp">
 
         <TextView

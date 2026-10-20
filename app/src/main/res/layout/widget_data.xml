@@ -7,16 +7,22 @@
     android:orientation="vertical"
     android:padding="12dp">
 
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
     <TextView
         android:id="@+id/widget_data_title"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:minHeight="48dp"
         android:layout_height="wrap_content"
-        android:maxLines="1"
         android:text="@string/app_name"
         android:textColor="@color/widget_on_primary"
         android:textSize="18sp"
         android:textStyle="bold" />
 
+    <ImageView android:id="@+id/widget_header_refresh" android:layout_width="48dp" android:layout_height="48dp"
+        android:padding="12dp" android:src="@drawable/ic_widget_refresh" android:background="?android:attr/selectableItemBackground" />
+    </LinearLayout>
     <TextView
         android:id="@+id/widget_data_date"
         android:layout_width="match_parent"
@@ -32,15 +38,14 @@
         android:paddingBottom="2dp"
         android:text="@string/widget_data_initial"
         android:textColor="@color/widget_on_primary"
-        android:textSize="16sp" />
+        android:textSize="14sp" />
 
-    <include layout="@layout/widget_feedback" />
+    <LinearLayout android:id="@+id/widget_feedback_slot" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
 
     <LinearLayout
         android:id="@+id/widget_data_rows"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:orientation="vertical" />
 
     <TextView
@@ -62,7 +67,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:background="@drawable/widget_button_background"
+            android:background="?android:attr/selectableItemBackground"
             android:gravity="center"
             android:minHeight="48dp"
             android:padding="6dp"

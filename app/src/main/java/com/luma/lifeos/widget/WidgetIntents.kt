@@ -32,6 +32,17 @@ object WidgetIntents {
         )
     }
 
+    /** The configuration Activity validates the ID against the live provider before reading or saving. */
+    fun configuration(context: Context, widgetId: Int): PendingIntent {
+        require(widgetId > 0)
+        val intent = Intent(context, WidgetConfigurationActivity::class.java).apply {
+            data = Uri.parse("luma-widget-config://instance/$widgetId")
+            putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        }
+        return PendingIntent.getActivity(context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
     fun refresh(context: Context, widgetId: Int): PendingIntent {
         require(widgetId > 0) { "A live widget ID is required" }
         val intent = Intent(context, WidgetActionReceiver::class.java).apply {

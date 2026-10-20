@@ -79,7 +79,8 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
-                    WidgetRenderer.render(applicationContext, widgetId, snapshot = null, failure = true)
+                    WidgetRenderer.render(applicationContext, widgetId, snapshot = null, failure = true,
+                        options = manager.getAppWidgetOptions(widgetId))
                 }
                 manager.updateAppWidget(widgetId, views)
             }

@@ -37,6 +37,7 @@ object WidgetRenderer {
         snapshot: WidgetSnapshot?,
         failure: Boolean,
         options: android.os.Bundle? = null,
+        loadingKind: WidgetKind? = null,
     ): RemoteViews {
         val sizes = options?.let(::supportedSizes).orEmpty()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && sizes.isNotEmpty()) {
@@ -50,6 +51,7 @@ object WidgetRenderer {
                     failure,
                     dimensions.first.roundToInt(),
                     dimensions.second.roundToInt(),
+                    loadingKind,
                 )
             }
             return RemoteViews(responsiveViews)
@@ -68,7 +70,7 @@ object WidgetRenderer {
                 fallbackHeightDp = 250,
             )
         }
-        return renderAtSize(context, widgetId, snapshot, failure, bounds.first, bounds.second)
+        return renderAtSize(context, widgetId, snapshot, failure, bounds.first, bounds.second, loadingKind)
     }
 
     private fun renderAtSize(
@@ -78,9 +80,27 @@ object WidgetRenderer {
         failure: Boolean,
         widthDp: Int,
         heightDp: Int,
+        loadingKind: WidgetKind?,
     ): RemoteViews {
         val appContext = AppLanguages.wrap(context)
+        if (loadingKind != null) return WidgetCompactRenderer.render(context, appContext, widgetId,
+            null, false, widthDp, heightDp, "", isAppDark(context, appContext), loadingKind)
         val kind = snapshot?.instance?.kind ?: WidgetRefreshCoordinator.kindForWidgetId(context, widgetId)
+        if (failure || snapshot == null) {
+            val density = appContext.resources.displayMetrics.density
+            val innerWidth = ((widthDp - 24) * density).toInt()
+            val message = appContext.getString(if (failure) R.string.widget_data_read_error else R.string.widget_data_setup)
+            val title = appContext.getString(if (kind == WidgetKind.TASKS) R.string.widget_tasks_title else R.string.widget_habits_title)
+            val actions = if (failure) listOf(openLabel(appContext, kind), appContext.getString(R.string.widget_data_refresh))
+                else listOf(appContext.getString(R.string.widget_set_up))
+            val reserved = 24 + max(48, measureTextHeight(appContext, title,
+                innerWidth - (48 * density).toInt(), 18f, bold = true)) +
+                measureTextHeight(appContext, message, innerWidth, 14f) + 4 +
+                measureFooterHeight(appContext, widthDp, actions)
+            if (WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
+                return compactState(context, appContext, widgetId, snapshot, failure, widthDp, heightDp)
+            }
+        }
         val views = RemoteViews(context.packageName, R.layout.widget_data)
         val dark = isAppDark(context, appContext)
         val textColor = appContext.getColor(if (dark) R.color.widget_on_primary_dark else R.color.widget_on_primary)
@@ -91,28 +111,20 @@ object WidgetRenderer {
         // AppWidgetHost may reapply this layout to an existing view. Dynamic rows must be
         // cleared first or a completed task remains visible after its snapshot removes it.
         views.removeAllViews(R.id.widget_data_rows)
+        views.removeAllViews(R.id.widget_feedback_slot)
+        views.setViewVisibility(R.id.widget_data_date, View.GONE)
+        views.setViewVisibility(R.id.widget_data_updated, if (snapshot == null || failure) View.GONE else View.VISIBLE)
         views.setInt(R.id.widget_data_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
         views.setInt(R.id.widget_data_root, "setBackgroundResource", widgetBackground)
-        listOf(
-            R.id.widget_data_title,
-            R.id.widget_data_date,
-            R.id.widget_data_summary,
-            R.id.widget_data_feedback,
-            R.id.widget_feedback_dismiss,
-            R.id.widget_feedback_primary,
-            R.id.widget_feedback_secondary,
-            R.id.widget_data_updated,
-            R.id.widget_data_open,
-            R.id.widget_data_refresh,
-        ).forEach { views.setTextColor(it, textColor) }
-        listOf(
-            R.id.widget_feedback_dismiss,
-            R.id.widget_feedback_primary,
-            R.id.widget_feedback_secondary,
-            R.id.widget_data_open,
-            R.id.widget_data_refresh,
-        ).forEach { views.setInt(it, "setBackgroundResource", buttonBackground) }
-
+        listOf(R.id.widget_data_title, R.id.widget_data_date, R.id.widget_data_summary,
+            R.id.widget_data_updated, R.id.widget_data_open, R.id.widget_data_refresh).forEach { views.setTextColor(it, textColor) }
+        views.setInt(R.id.widget_data_refresh, "setBackgroundResource", buttonBackground)
+        views.setInt(R.id.widget_data_open, "setBackgroundResource",
+            if (dark) R.drawable.widget_utility_background_dark else R.drawable.widget_utility_background)
+        views.setInt(R.id.widget_header_refresh, "setColorFilter", textColor)
+        views.setContentDescription(R.id.widget_header_refresh, appContext.getString(
+            if (kind == WidgetKind.TASKS) R.string.widget_tasks_refresh_description else R.string.widget_habits_refresh_description))
+        views.setOnClickPendingIntent(R.id.widget_header_refresh, WidgetIntents.refresh(context, widgetId))
         val (title, destination) = when (kind) {
             WidgetKind.HABITS -> R.string.widget_habits_title to WidgetDestination.Habits
             WidgetKind.TASKS -> R.string.widget_tasks_title to WidgetDestination.Tasks
@@ -149,27 +161,25 @@ object WidgetRenderer {
             },
         )
 
+        views.setViewVisibility(R.id.widget_data_refresh, if (kind == WidgetKind.TASKS || failure) View.VISIBLE else View.GONE)
         if (failure) {
+            views.setTextViewText(R.id.widget_data_refresh, appContext.getString(R.string.widget_data_refresh))
+            views.setContentDescription(R.id.widget_data_refresh, appContext.getString(R.string.widget_data_refresh_description))
+            views.setOnClickPendingIntent(R.id.widget_data_refresh, WidgetIntents.refresh(context, widgetId))
             views.setTextViewText(R.id.widget_data_date, "")
             views.setTextViewText(R.id.widget_data_summary, "")
             views.setTextViewText(R.id.widget_data_updated, "")
-            views.setViewVisibility(R.id.widget_feedback_container, View.VISIBLE)
-            views.setTextViewText(R.id.widget_data_feedback, appContext.getString(R.string.widget_data_read_error))
-            views.setViewVisibility(R.id.widget_feedback_icon, View.VISIBLE)
-            views.setInt(
-                R.id.widget_feedback_icon,
-                "setColorFilter",
-                appContext.getColor(if (isAppDark(context, appContext)) R.color.widget_on_primary_dark else R.color.widget_on_primary),
-            )
-            views.setViewVisibility(R.id.widget_feedback_dismiss, View.GONE)
-            views.setViewVisibility(R.id.widget_feedback_actions, View.GONE)
+            views.setTextViewText(R.id.widget_data_summary, appContext.getString(R.string.widget_data_read_error))
         } else if (snapshot == null) {
             views.setTextViewText(R.id.widget_data_date, "")
             views.setTextViewText(R.id.widget_data_summary, appContext.getString(R.string.widget_data_setup))
             views.setTextViewText(R.id.widget_data_updated, "")
-            views.setViewVisibility(R.id.widget_feedback_container, View.GONE)
+            views.setTextViewText(R.id.widget_data_open, appContext.getString(R.string.widget_set_up))
+            views.setContentDescription(R.id.widget_data_open, appContext.getString(R.string.widget_data_setup))
+            views.setOnClickPendingIntent(R.id.widget_data_open, WidgetIntents.configuration(context, widgetId))
+            views.setViewVisibility(R.id.widget_data_refresh, View.GONE)
         } else {
-            renderSnapshot(context, appContext, views, widgetId, snapshot, widthDp, heightDp, textColor, buttonBackground)
+            return renderSnapshot(context, appContext, views, widgetId, snapshot, widthDp, heightDp, textColor, buttonBackground)
         }
         return views
     }
@@ -192,7 +202,7 @@ object WidgetRenderer {
         heightDp: Int,
         textColor: Int,
         buttonBackground: Int,
-    ) {
+    ): RemoteViews {
         val locale = AppLanguages.current(appContext).locale
         val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(snapshot.date)
         val deviceZone = ZoneId.systemDefault()
@@ -202,7 +212,7 @@ object WidgetRenderer {
         } else {
             date
         }
-        views.setTextViewText(R.id.widget_data_date, dateText)
+        views.setViewVisibility(R.id.widget_data_date, View.GONE)
 
         val summary = when (snapshot.instance.kind) {
             WidgetKind.HABITS -> when {
@@ -224,16 +234,20 @@ object WidgetRenderer {
                 )
             }
         }
-        views.setTextViewText(R.id.widget_data_summary, summary)
+        val scopeText = "$dateText · $summary"
+        views.setTextViewText(R.id.widget_data_summary, scopeText)
         val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)
             .format(snapshot.updatedAt.atZone(snapshot.zone))
-        views.setTextViewText(
-            R.id.widget_data_updated,
-            appContext.getString(R.string.widget_data_updated_at, date, time),
-        )
-
-        val feedbackText = snapshot.feedback?.let { feedbackText(appContext, it.outcome) }.orEmpty()
-        renderFeedback(context, appContext, views, widgetId, snapshot, textColor, buttonBackground, feedbackText)
+        val updatedDate = snapshot.updatedAt.atZone(snapshot.zone).toLocalDate()
+        val updatedText = if (updatedDate == snapshot.date) {
+            appContext.getString(R.string.widget_data_updated_time, time)
+        } else {
+            appContext.getString(R.string.widget_data_updated_at,
+                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(updatedDate), time)
+        }
+        views.setTextViewText(R.id.widget_data_updated, updatedText)
+        val feedbackText = snapshot.feedback?.let { feedbackText(appContext, it.outcome, snapshot.instance.kind) }.orEmpty()
+        val inlineFeedback = useInlineFeedback(appContext, widthDp, feedbackText, snapshot.feedback)
 
         val rows: List<WidgetRow> = if (snapshot.instance.showDetails) {
             when (snapshot.instance.kind) {
@@ -246,17 +260,18 @@ object WidgetRenderer {
         val density = appContext.resources.displayMetrics.density
         val textWidthPx = ((widthDp - 24).coerceAtLeast(1) * density).toInt()
         val fontScale = appContext.resources.configuration.fontScale
-        val updatedText = appContext.getString(R.string.widget_data_updated_at, date, time)
         val titleText = appContext.getString(
             if (snapshot.instance.kind == WidgetKind.TASKS) R.string.widget_tasks_title else R.string.widget_habits_title,
         )
-        val reserved = 24 + 8 +
-            measureTextHeight(appContext, titleText, textWidthPx, 18f) +
-            measureTextHeight(appContext, dateText, textWidthPx, 14f) +
-            measureTextHeight(appContext, summary, textWidthPx, 16f) +
+        val fullOpenLabel = appContext.getString(R.string.widget_view_all_more,
+            appContext.getString(if (snapshot.instance.kind == WidgetKind.TASKS) R.string.widget_tasks_view_all else R.string.widget_habits_view_all),
+            snapshot.total)
+        val reserved = 24 +
+            max(48, measureTextHeight(appContext, titleText, (textWidthPx - 48 * density).toInt(), 18f, bold = true)) +
+            measureTextHeight(appContext, scopeText, textWidthPx, 14f) + 4 +
             measureTextHeight(appContext, updatedText, textWidthPx, 12f) +
             measureFooterHeight(appContext, widthDp, listOf(
-                openLabel(appContext, snapshot.instance.kind),
+                fullOpenLabel,
                 if (snapshot.instance.kind == WidgetKind.TASKS) {
                     appContext.getString(R.string.widget_tasks_add)
                 } else {
@@ -264,8 +279,18 @@ object WidgetRenderer {
                 },
             )) +
             (snapshot.feedback?.let {
-                measureFeedbackHeight(appContext, widthDp, feedbackText, it, snapshot.instance.kind)
+                if (inlineFeedback) max(48, measureTextHeight(appContext, feedbackText,
+                    (textWidthPx - 120 * density).toInt(), 14f)) + 4
+                else measureFeedbackHeight(appContext, widthDp, feedbackText, it, snapshot.instance.kind)
             } ?: 0)
+        if (WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
+            return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
+                "$scopeText\n$updatedText")
+        }
+        val feedbackViews = RemoteViews(context.packageName,
+            if (inlineFeedback) R.layout.widget_feedback_inline else R.layout.widget_feedback)
+        renderFeedback(context, appContext, feedbackViews, widgetId, snapshot, textColor, buttonBackground, feedbackText, inlineFeedback)
+        views.addView(R.id.widget_feedback_slot, feedbackViews)
         val rowHeight = rows.maxOfOrNull { row ->
             when (row) {
                 is WidgetRow.Habit -> measureHabitRowHeight(appContext, widthDp, row)
@@ -273,13 +298,20 @@ object WidgetRenderer {
             }
         } ?: 52
         val capacity = WidgetLayoutPolicy.rowCapacity(widthDp, heightDp, fontScale, reserved, rowHeight)
-        rows.take(capacity).forEach { row ->
+        val visibleRows = rows.take(capacity)
+        val hidden = (snapshot.total - visibleRows.size).coerceAtLeast(0)
+        val viewAll = appContext.getString(if (snapshot.instance.kind == WidgetKind.TASKS)
+            R.string.widget_tasks_view_all else R.string.widget_habits_view_all)
+        views.setTextViewText(R.id.widget_data_open, if (snapshot.instance.showDetails && hidden > 0)
+            appContext.getString(R.string.widget_view_all_more, viewAll, hidden) else viewAll)
+        visibleRows.forEach { row ->
             val rowViews = when (row) {
                 is WidgetRow.Habit -> habitRow(context, appContext, snapshot, widgetId, row, textColor, buttonBackground)
                 is WidgetRow.Task -> taskRow(context, appContext, snapshot, widgetId, row, textColor, buttonBackground)
             }
             views.addView(R.id.widget_data_rows, rowViews)
         }
+        return views
     }
 
     private fun habitRow(
@@ -297,11 +329,11 @@ object WidgetRenderer {
         setInt(R.id.widget_habit_row_action, "setBackgroundResource", buttonBackground)
         setTextViewText(R.id.widget_habit_row_title, row.title)
         setContentDescription(
-            R.id.widget_habit_row_title,
+            R.id.widget_habit_row_text,
             appContext.getString(R.string.widget_habit_open_description, row.title),
         )
         setOnClickPendingIntent(
-            R.id.widget_habit_row_title,
+            R.id.widget_habit_row_text,
             WidgetIntents.navigation(
                 context,
                 widgetId,
@@ -314,6 +346,8 @@ object WidgetRenderer {
             else -> appContext.getString(R.string.widget_habit_count, row.count, row.target)
         }
         setTextViewText(R.id.widget_habit_row_count, count)
+        setContentDescription(R.id.widget_habit_row_text,
+            appContext.getString(R.string.widget_habit_open_description, row.title) + ", " + count)
 
         val canLog = !row.skipped && row.count < row.target && row.actionToken != null
         setViewVisibility(R.id.widget_habit_row_action, if (canLog) View.VISIBLE else View.GONE)
@@ -345,14 +379,16 @@ object WidgetRenderer {
         setInt(R.id.widget_task_row_action, "setBackgroundResource", buttonBackground)
         setTextViewText(R.id.widget_task_row_title, row.title)
         setContentDescription(
-            R.id.widget_task_row_title,
+            R.id.widget_task_row_text,
             appContext.getString(R.string.widget_task_open_description, row.title),
         )
         setOnClickPendingIntent(
-            R.id.widget_task_row_title,
+            R.id.widget_task_row_text,
             WidgetIntents.navigation(context, widgetId, WidgetDestination.Task(row.id)),
         )
         setTextViewText(R.id.widget_task_row_due, taskDueLabel(appContext, row, snapshot.date))
+        setContentDescription(R.id.widget_task_row_text,
+            appContext.getString(R.string.widget_task_open_description, row.title) + ", " + taskDueLabel(appContext, row, snapshot.date))
 
         val canComplete = row.actionToken != null
         setViewVisibility(R.id.widget_task_row_action, if (canComplete) View.VISIBLE else View.GONE)
@@ -378,6 +414,7 @@ object WidgetRenderer {
         textColor: Int,
         buttonBackground: Int,
         text: String,
+        inline: Boolean,
     ) {
         val feedback = snapshot.feedback
         if (feedback == null) {
@@ -386,12 +423,15 @@ object WidgetRenderer {
         }
         views.setViewVisibility(R.id.widget_feedback_container, View.VISIBLE)
         views.setTextViewText(R.id.widget_data_feedback, text)
+        views.setTextColor(R.id.widget_data_feedback, textColor)
+        views.setTextColor(R.id.widget_feedback_dismiss, textColor)
         views.setViewVisibility(R.id.widget_feedback_dismiss, View.VISIBLE)
         views.setContentDescription(
             R.id.widget_feedback_dismiss,
             appContext.getString(R.string.widget_feedback_dismiss_description),
         )
-        views.setInt(R.id.widget_feedback_dismiss, "setBackgroundResource", buttonBackground)
+        views.setInt(R.id.widget_feedback_dismiss, "setBackgroundResource",
+            if (isAppDark(context, appContext)) R.drawable.widget_utility_background_dark else R.drawable.widget_utility_background)
         views.setOnClickPendingIntent(
             R.id.widget_feedback_dismiss,
             WidgetIntents.dismissFeedback(context, widgetId),
@@ -436,7 +476,8 @@ object WidgetRenderer {
                 action(
                     R.id.widget_feedback_primary,
                     R.string.widget_feedback_retry,
-                    R.string.widget_feedback_retry_description,
+                    if (snapshot.instance.kind == WidgetKind.TASKS) R.string.widget_task_retry_description
+                    else R.string.widget_feedback_retry_description,
                     WidgetIntents.mutation(context, widgetId, token),
                 )
             } ?: action(
@@ -465,6 +506,24 @@ object WidgetRenderer {
         } else {
             hideAction(R.id.widget_feedback_secondary)
         }
+        val hasPrimary = feedback.outcome != WidgetOutcome.UNDONE &&
+            (feedback.outcome != WidgetOutcome.SAVED || feedback.undoToken != null)
+        views.setViewVisibility(R.id.widget_feedback_actions,
+            if (needsSecondaryOpen || (hasPrimary && !inline)) View.VISIBLE else View.GONE)
+    }
+
+    private fun compactState(
+        context: Context, appContext: Context, widgetId: Int, snapshot: WidgetSnapshot?,
+        failure: Boolean, widthDp: Int, heightDp: Int, summary: String = "",
+    ) = WidgetCompactRenderer.render(context, appContext, widgetId, snapshot, failure,
+        widthDp, heightDp, summary, isAppDark(context, appContext))
+
+    private fun useInlineFeedback(context: Context, widthDp: Int, text: String, result: WidgetActionResult?): Boolean {
+        if (result == null || result.outcome !in setOf(WidgetOutcome.SAVED, WidgetOutcome.UNDONE)) return false
+        val density = context.resources.displayMetrics.density
+        val undoWidth = if (result.undoToken != null) max(48f,
+            measureTextWidth(context, context.getString(R.string.widget_feedback_undo), 14f) / density + 12) else 0f
+        return widthDp - 24 >= measureTextWidth(context, text, 14f) / density + undoWidth + 48 + 12
     }
 
     private fun destinationFor(kind: WidgetKind) = when (kind) {
@@ -474,8 +533,10 @@ object WidgetRenderer {
 
     private fun measureHabitRowHeight(context: Context, widthDp: Int, row: WidgetRow.Habit): Int {
         val density = context.resources.displayMetrics.density
-        val textWidthPx = ((widthDp - 24) * density * 0.64f).toInt().coerceAtLeast(1)
-        val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2)
+        val actionWidth = if (!row.skipped && row.count < row.target && row.actionToken != null)
+            max(48f, measureTextWidth(context, context.getString(R.string.widget_habit_log_short), 14f) / density + 24f) else 0f
+        val textWidthPx = ((widthDp - 24 - actionWidth - 8) * density).toInt().coerceAtLeast(1)
+        val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
         val count = when {
             row.skipped -> context.getString(R.string.widget_habit_skipped, row.count, row.target)
             row.count >= row.target -> context.getString(R.string.widget_habit_target_reached, row.count, row.target)
@@ -490,13 +551,14 @@ object WidgetRenderer {
         val actionText = context.getString(R.string.widget_task_complete)
         val actionWidthDp = max(48f, measureTextWidth(context, actionText, 14f) / density + 16f)
         val textWidthPx = ((widthDp - 24f - actionWidthDp - 8f) * density).toInt().coerceAtLeast(1)
-        val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2)
+        val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
         val dueHeight = measureTextHeight(context, taskDueLabel(context, row, date), textWidthPx, 14f)
         return max(48, titleHeight + dueHeight + 8)
     }
 
-    private fun measureTextWidth(context: Context, text: String, sizeSp: Float): Float {
+    internal fun measureTextWidth(context: Context, text: String, sizeSp: Float): Float {
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textLocales = context.resources.configuration.locales
             textSize = TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP,
                 sizeSp,
@@ -530,7 +592,8 @@ object WidgetRenderer {
         if (kind == WidgetKind.TASKS) R.string.widget_tasks_open_description else R.string.widget_data_open_description
 
     private fun measureFooterHeight(context: Context, widthDp: Int, labels: List<String>): Int {
-        val buttonWidthPx = ((widthDp - 32) * context.resources.displayMetrics.density / 2).toInt().coerceAtLeast(1)
+        val buttonWidthPx = (((widthDp - 24 - (labels.size - 1) * 8) / labels.size - 12) *
+            context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
         val labelsHeight = labels.maxOf { measureTextHeight(context, it, buttonWidthPx, 14f) }
         return max(48, labelsHeight + 12) + 8
     }
@@ -563,15 +626,18 @@ object WidgetRenderer {
         return 4 + textHeight + actionsHeight
     }
 
-    private fun measureTextHeight(
+    internal fun measureTextHeight(
         context: Context,
         text: String,
         widthPx: Int,
         sizeSp: Float,
         maxLines: Int = Int.MAX_VALUE,
+        bold: Boolean = false,
     ): Int {
         if (text.isEmpty()) return 0
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textLocales = context.resources.configuration.locales
+            typeface = if (bold) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
             textSize = TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP,
                 sizeSp,
@@ -581,13 +647,15 @@ object WidgetRenderer {
         val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, widthPx.coerceAtLeast(1))
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
             .setIncludePad(true)
+            .setUseLineSpacingFromFallbacks(true)
+            .setBreakStrategy(android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
             .setMaxLines(maxLines)
             .build()
         return ceil(layout.height / context.resources.displayMetrics.density).toInt()
     }
 
-    private fun feedbackText(context: Context, outcome: WidgetOutcome): String = when (outcome) {
-        WidgetOutcome.SAVED -> context.getString(R.string.widget_feedback_saved)
+    private fun feedbackText(context: Context, outcome: WidgetOutcome, kind: WidgetKind): String = when (outcome) {
+        WidgetOutcome.SAVED -> context.getString(if (kind == WidgetKind.TASKS) R.string.widget_task_saved else R.string.widget_habit_saved)
         WidgetOutcome.UNDONE -> context.getString(R.string.widget_feedback_undone)
         WidgetOutcome.STALE -> context.getString(R.string.widget_feedback_stale)
         WidgetOutcome.CONFLICT -> context.getString(R.string.widget_feedback_conflict)

@@ -9,6 +9,10 @@ import com.luma.lifeos.domain.widget.WidgetKind
 /** Thin lifecycle bridge; all database reads and rendering run in the refresh worker. */
 class HabitsWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
+        appWidgetIds.forEach { id ->
+            manager.updateAppWidget(id, WidgetRenderer.render(context, id, null, false,
+                manager.getAppWidgetOptions(id), loadingKind = WidgetKind.HABITS))
+        }
         WidgetRefreshCoordinator.request(context)
     }
 

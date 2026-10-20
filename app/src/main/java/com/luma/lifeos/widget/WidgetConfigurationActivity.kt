@@ -11,6 +11,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -205,8 +209,9 @@ class WidgetConfigurationActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @androidx.compose.runtime.Composable
-private fun ConfigurationContent(
+internal fun ConfigurationContent(
     kind: WidgetKind,
     showDetails: Boolean,
     loaded: Boolean,
@@ -221,9 +226,13 @@ private fun ConfigurationContent(
     BackHandler(enabled = saving) { }
     Scaffold { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(24.dp),
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
             Text(
                 stringResource(if (kind == WidgetKind.HABITS) R.string.widget_config_habits_title else R.string.widget_config_tasks_title),
                 style = MaterialTheme.typography.headlineMedium,
@@ -255,12 +264,18 @@ private fun ConfigurationContent(
                         )
                     }
                     Text(stringResource(R.string.widget_config_privacy_note), style = MaterialTheme.typography.bodySmall)
+                    com.luma.lifeos.ui.widgets.WidgetExample(kind, showDetails)
                     if (saveFailed) {
                         Text(stringResource(R.string.widget_config_save_error), color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            }
+            FlowRow(
+                Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 OutlinedButton(onClick = onCancel, enabled = !saving) {
                     Text(stringResource(R.string.widget_config_cancel))
                 }

@@ -146,12 +146,15 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
                 requestPin(ComponentName(context, QuickCaptureWidgetProvider::class.java))
             },
         )
+        Text(stringResource(R.string.widget_capture_no_configuration), style = MaterialTheme.typography.bodySmall)
         Text(stringResource(R.string.widget_settings_existing_heading), style = MaterialTheme.typography.titleMedium)
         when {
             loading -> CircularProgressIndicator()
             instances.isEmpty() -> Text(stringResource(R.string.widget_settings_no_instances))
             else -> instances.forEach { instance ->
-                InstanceCard(instance = instance, onConfigure = { configure(instance) })
+                val peers = instances.filter { it.kind == instance.kind }
+                InstanceCard(instance = instance, ordinal = if (peers.size > 1) peers.indexOf(instance) + 1 else null,
+                    onConfigure = { configure(instance) })
             }
         }
         if (pinStatus != 0) {
@@ -165,36 +168,35 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
 @Composable
 private fun ProviderCard(title: Int, description: Int, onAdd: () -> Unit) {
     OutlinedCard(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(description), style = MaterialTheme.typography.bodyMedium)
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(description), style = MaterialTheme.typography.bodyMedium)
+            WidgetExample(when (title) {
+                R.string.widget_habits_title -> WidgetKind.HABITS
+                R.string.widget_tasks_title -> WidgetKind.TASKS
+                else -> null
+            })
+            Button(onClick = onAdd) {
+                Text(stringResource(R.string.widget_settings_add_named, stringResource(title)))
             }
-            Button(onClick = onAdd) { Text(stringResource(R.string.widget_settings_add)) }
         }
     }
 }
 
 @Composable
-private fun InstanceCard(instance: WidgetInstance, onConfigure: () -> Unit) {
+private fun InstanceCard(instance: WidgetInstance, ordinal: Int?, onConfigure: () -> Unit) {
     OutlinedCard(Modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val title = stringResource(if (instance.kind == WidgetKind.HABITS) R.string.widget_habits_title else R.string.widget_tasks_title)
+            val name = if (ordinal != null) stringResource(R.string.widget_settings_instance_ordinal, title, ordinal) else title
             Text(
-                stringResource(
-                    R.string.widget_settings_instance,
-                    stringResource(if (instance.kind == WidgetKind.HABITS) R.string.widget_habits_title else R.string.widget_tasks_title),
-                    instance.id,
-                ),
-                Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
+                stringResource(R.string.widget_settings_instance_mode, name,
+                    stringResource(if (instance.showDetails) R.string.widget_mode_details_short else R.string.widget_mode_summary_short)),
+                Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
             )
             Button(onClick = onConfigure) { Text(stringResource(R.string.widget_settings_configure)) }
         }

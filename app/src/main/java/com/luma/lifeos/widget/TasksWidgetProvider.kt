@@ -9,6 +9,10 @@ import com.luma.lifeos.domain.widget.WidgetKind
 /** Thin lifecycle bridge; task reads, actions and rendering run through the shared worker pipeline. */
 class TasksWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
+        appWidgetIds.forEach { id ->
+            manager.updateAppWidget(id, WidgetRenderer.render(context, id, null, false,
+                manager.getAppWidgetOptions(id), loadingKind = WidgetKind.TASKS))
+        }
         WidgetRefreshCoordinator.request(context)
     }
 

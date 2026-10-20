@@ -7,6 +7,27 @@ internal object WidgetLayoutPolicy {
     const val MAX_ROWS = 3
     private const val MIN_WIDGET_WIDTH_DP = 180
 
+    enum class CaptureLayout { WIDE, GRID, TALL, FALLBACK }
+
+    /** Label sizes include text padding and the minimum 48dp target. */
+    fun captureLayout(widthDp: Int, heightDp: Int, labels: List<Pair<Int, Int>>): CaptureLayout {
+        require(labels.size == 3)
+        val width = widthDp - 24
+        val height = heightDp - 24
+        val cellWidth = labels.maxOf { it.first.coerceAtLeast(48) }
+        val cellHeight = labels.maxOf { it.second.coerceAtLeast(48) }
+        return when {
+            width >= cellWidth * 3 + 16 && height >= cellHeight -> CaptureLayout.WIDE
+            width >= labels.take(2).maxOf { it.first.coerceAtLeast(48) } * 2 + 8 &&
+                width >= labels[2].first.coerceAtLeast(48) &&
+                height >= cellHeight * 2 + 8 -> CaptureLayout.GRID
+            width >= cellWidth && height >= cellHeight * 3 + 16 -> CaptureLayout.TALL
+            else -> CaptureLayout.FALLBACK
+        }
+    }
+
+    fun needsCompactShell(heightDp: Int, reservedHeightDp: Int): Boolean = heightDp < reservedHeightDp
+
     /**
      * The legacy min/max option fields combine bounds from different orientations. On a phone,
      * portrait width is paired with landscape height in the min/min pair. Select the two bounds
