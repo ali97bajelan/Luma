@@ -1,0 +1,8 @@
+
+com.luma.lifeos.widget.WidgetRendererAcceptanceTest:...................
+
+Time: 4.522
+
+OK (19 tests)
+
+

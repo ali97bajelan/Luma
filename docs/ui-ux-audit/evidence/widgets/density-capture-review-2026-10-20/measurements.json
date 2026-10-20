@@ -1,0 +1,1005 @@
+{
+  "01-launcher-baseline": [
+    {
+      "id": "widget_data_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        93,
+        1030,
+        936
+      ],
+      "size_dp": [
+        373.3,
+        321.1
+      ]
+    },
+    {
+      "id": "widget_data_title",
+      "text": "Habits",
+      "description": "",
+      "bounds_px": [
+        82,
+        125,
+        873,
+        251
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_header_refresh",
+      "text": "",
+      "description": "Refresh habits",
+      "bounds_px": [
+        873,
+        125,
+        999,
+        251
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_summary",
+      "text": "Oct 20, 2026 · 0 of 2 targets reached",
+      "description": "",
+      "bounds_px": [
+        82,
+        251,
+        999,
+        312
+      ],
+      "size_dp": [
+        349.3,
+        23.2
+      ]
+    },
+    {
+      "id": "widget_data_rows",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        82,
+        312,
+        999,
+        584
+      ],
+      "size_dp": [
+        349.3,
+        103.6
+      ]
+    },
+    {
+      "id": "widget_habit_row_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        82,
+        312,
+        999,
+        448
+      ],
+      "size_dp": [
+        349.3,
+        51.8
+      ]
+    },
+    {
+      "id": "widget_habit_row_text",
+      "text": "",
+      "description": "Open water for this date, 3 / 10",
+      "bounds_px": [
+        82,
+        317,
+        873,
+        443
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_habit_row_title",
+      "text": "water",
+      "description": "",
+      "bounds_px": [
+        82,
+        326,
+        852,
+        383
+      ],
+      "size_dp": [
+        293.3,
+        21.7
+      ]
+    },
+    {
+      "id": "widget_habit_row_count",
+      "text": "3 / 10",
+      "description": "",
+      "bounds_px": [
+        82,
+        383,
+        852,
+        434
+      ],
+      "size_dp": [
+        293.3,
+        19.4
+      ]
+    },
+    {
+      "id": "widget_habit_row_action",
+      "text": "+1",
+      "description": "Log one repetition for water",
+      "bounds_px": [
+        873,
+        317,
+        999,
+        443
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_habit_row_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        82,
+        448,
+        999,
+        584
+      ],
+      "size_dp": [
+        349.3,
+        51.8
+      ]
+    },
+    {
+      "id": "widget_habit_row_text",
+      "text": "",
+      "description": "Open neck for this date, 1 / 7",
+      "bounds_px": [
+        82,
+        453,
+        873,
+        579
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_habit_row_title",
+      "text": "neck",
+      "description": "",
+      "bounds_px": [
+        82,
+        462,
+        852,
+        519
+      ],
+      "size_dp": [
+        293.3,
+        21.7
+      ]
+    },
+    {
+      "id": "widget_habit_row_count",
+      "text": "1 / 7",
+      "description": "",
+      "bounds_px": [
+        82,
+        519,
+        852,
+        570
+      ],
+      "size_dp": [
+        293.3,
+        19.4
+      ]
+    },
+    {
+      "id": "widget_habit_row_action",
+      "text": "+1",
+      "description": "Log one repetition for neck",
+      "bounds_px": [
+        873,
+        453,
+        999,
+        579
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_updated",
+      "text": "Updated 3:27 PM",
+      "description": "",
+      "bounds_px": [
+        82,
+        584,
+        999,
+        627
+      ],
+      "size_dp": [
+        349.3,
+        16.4
+      ]
+    },
+    {
+      "id": "widget_data_open",
+      "text": "View all habits",
+      "description": "Open this widget’s section in Luma",
+      "bounds_px": [
+        82,
+        648,
+        988,
+        774
+      ],
+      "size_dp": [
+        345.1,
+        48.0
+      ]
+    },
+    {
+      "id": "quick_capture_widget_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        966,
+        776,
+        1518
+      ],
+      "size_dp": [
+        276.6,
+        210.3
+      ]
+    },
+    {
+      "id": "widget_capture_mood",
+      "text": "Mood",
+      "description": "Create a new mood check-in",
+      "bounds_px": [
+        82,
+        998,
+        288,
+        1486
+      ],
+      "size_dp": [
+        78.5,
+        185.9
+      ]
+    },
+    {
+      "id": "widget_capture_memory",
+      "text": "Memory",
+      "description": "Create a new memory",
+      "bounds_px": [
+        309,
+        998,
+        516,
+        1486
+      ],
+      "size_dp": [
+        78.9,
+        185.9
+      ]
+    },
+    {
+      "id": "widget_capture_journal",
+      "text": "Journal",
+      "description": "Create a new journal entry",
+      "bounds_px": [
+        537,
+        998,
+        744,
+        1486
+      ],
+      "size_dp": [
+        78.9,
+        185.9
+      ]
+    }
+  ],
+  "02-tasks-launcher": [
+    {
+      "id": "widget_data_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        93,
+        1030,
+        936
+      ],
+      "size_dp": [
+        373.3,
+        321.1
+      ]
+    },
+    {
+      "id": "widget_data_title",
+      "text": "Tasks",
+      "description": "",
+      "bounds_px": [
+        82,
+        125,
+        873,
+        251
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_header_refresh",
+      "text": "",
+      "description": "Refresh tasks",
+      "bounds_px": [
+        873,
+        125,
+        999,
+        251
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_summary",
+      "text": "Oct 20, 2026 · No tasks yet. Open Luma to add one.",
+      "description": "",
+      "bounds_px": [
+        82,
+        251,
+        999,
+        312
+      ],
+      "size_dp": [
+        349.3,
+        23.2
+      ]
+    },
+    {
+      "id": "widget_data_updated",
+      "text": "Updated 3:27 PM",
+      "description": "",
+      "bounds_px": [
+        82,
+        312,
+        999,
+        355
+      ],
+      "size_dp": [
+        349.3,
+        16.4
+      ]
+    },
+    {
+      "id": "widget_data_open",
+      "text": "View all tasks",
+      "description": "Open your task list in Luma",
+      "bounds_px": [
+        82,
+        376,
+        529,
+        502
+      ],
+      "size_dp": [
+        170.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_refresh",
+      "text": "Add task",
+      "description": "Add a task due today",
+      "bounds_px": [
+        551,
+        376,
+        999,
+        502
+      ],
+      "size_dp": [
+        170.7,
+        48.0
+      ]
+    }
+  ],
+  "04-quick-capture-menu": [],
+  "06-habits-configuration": [],
+  "07-tasks-large-text": [
+    {
+      "id": "widget_data_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        93,
+        1030,
+        939
+      ],
+      "size_dp": [
+        373.3,
+        322.3
+      ]
+    },
+    {
+      "id": "widget_data_title",
+      "text": "Tasks",
+      "description": "",
+      "bounds_px": [
+        82,
+        125,
+        873,
+        251
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_header_refresh",
+      "text": "",
+      "description": "Refresh tasks",
+      "bounds_px": [
+        873,
+        125,
+        999,
+        251
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_summary",
+      "text": "Oct 20, 2026 · No tasks yet. Open Luma to add one.",
+      "description": "",
+      "bounds_px": [
+        82,
+        251,
+        999,
+        432
+      ],
+      "size_dp": [
+        349.3,
+        69.0
+      ]
+    },
+    {
+      "id": "widget_data_updated",
+      "text": "Updated 3:45 PM",
+      "description": "",
+      "bounds_px": [
+        82,
+        432,
+        999,
+        517
+      ],
+      "size_dp": [
+        349.3,
+        32.4
+      ]
+    },
+    {
+      "id": "widget_data_open",
+      "text": "View all tasks",
+      "description": "Open your task list in Luma",
+      "bounds_px": [
+        82,
+        538,
+        529,
+        664
+      ],
+      "size_dp": [
+        170.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_refresh",
+      "text": "Add task",
+      "description": "Add a task due today",
+      "bounds_px": [
+        551,
+        538,
+        999,
+        664
+      ],
+      "size_dp": [
+        170.7,
+        48.0
+      ]
+    }
+  ],
+  "08-habits-capture-large-text": [
+    {
+      "id": "widget_data_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        93,
+        1030,
+        939
+      ],
+      "size_dp": [
+        373.3,
+        322.3
+      ]
+    },
+    {
+      "id": "widget_data_title",
+      "text": "Habits",
+      "description": "",
+      "bounds_px": [
+        82,
+        125,
+        873,
+        251
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_header_refresh",
+      "text": "",
+      "description": "Refresh habits",
+      "bounds_px": [
+        873,
+        125,
+        999,
+        251
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_summary",
+      "text": "Oct 20, 2026 · 0 of 2 targets reached",
+      "description": "",
+      "bounds_px": [
+        82,
+        251,
+        999,
+        432
+      ],
+      "size_dp": [
+        349.3,
+        69.0
+      ]
+    },
+    {
+      "id": "widget_data_updated",
+      "text": "Updated 3:45 PM",
+      "description": "",
+      "bounds_px": [
+        82,
+        432,
+        999,
+        517
+      ],
+      "size_dp": [
+        349.3,
+        32.4
+      ]
+    },
+    {
+      "id": "widget_data_open",
+      "text": "View all habits · 2 more",
+      "description": "Open this widget’s section in Luma",
+      "bounds_px": [
+        82,
+        538,
+        988,
+        664
+      ],
+      "size_dp": [
+        345.1,
+        48.0
+      ]
+    },
+    {
+      "id": "quick_capture_widget_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        969,
+        776,
+        1523
+      ],
+      "size_dp": [
+        276.6,
+        211.0
+      ]
+    },
+    {
+      "id": "widget_capture_mood",
+      "text": "Mood",
+      "description": "Create a new mood check-in",
+      "bounds_px": [
+        82,
+        1001,
+        288,
+        1491
+      ],
+      "size_dp": [
+        78.5,
+        186.7
+      ]
+    },
+    {
+      "id": "widget_capture_memory",
+      "text": "Memory",
+      "description": "Create a new memory",
+      "bounds_px": [
+        309,
+        1001,
+        516,
+        1491
+      ],
+      "size_dp": [
+        78.9,
+        186.7
+      ]
+    },
+    {
+      "id": "widget_capture_journal",
+      "text": "Journal",
+      "description": "Create a new journal entry",
+      "bounds_px": [
+        537,
+        1001,
+        744,
+        1491
+      ],
+      "size_dp": [
+        78.9,
+        186.7
+      ]
+    }
+  ],
+  "09-widget-discovery": [],
+  "11-habits-dark": [
+    {
+      "id": "widget_data_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        93,
+        1030,
+        936
+      ],
+      "size_dp": [
+        373.3,
+        321.1
+      ]
+    },
+    {
+      "id": "widget_data_title",
+      "text": "Habits",
+      "description": "",
+      "bounds_px": [
+        82,
+        125,
+        873,
+        251
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_header_refresh",
+      "text": "",
+      "description": "Refresh habits",
+      "bounds_px": [
+        873,
+        125,
+        999,
+        251
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_summary",
+      "text": "Oct 20, 2026 · 0 of 2 targets reached",
+      "description": "",
+      "bounds_px": [
+        82,
+        251,
+        999,
+        312
+      ],
+      "size_dp": [
+        349.3,
+        23.2
+      ]
+    },
+    {
+      "id": "widget_data_rows",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        82,
+        312,
+        999,
+        584
+      ],
+      "size_dp": [
+        349.3,
+        103.6
+      ]
+    },
+    {
+      "id": "widget_habit_row_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        82,
+        312,
+        999,
+        448
+      ],
+      "size_dp": [
+        349.3,
+        51.8
+      ]
+    },
+    {
+      "id": "widget_habit_row_text",
+      "text": "",
+      "description": "Open water for this date, 3 / 10",
+      "bounds_px": [
+        82,
+        317,
+        873,
+        443
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_habit_row_title",
+      "text": "water",
+      "description": "",
+      "bounds_px": [
+        82,
+        326,
+        852,
+        383
+      ],
+      "size_dp": [
+        293.3,
+        21.7
+      ]
+    },
+    {
+      "id": "widget_habit_row_count",
+      "text": "3 / 10",
+      "description": "",
+      "bounds_px": [
+        82,
+        383,
+        852,
+        434
+      ],
+      "size_dp": [
+        293.3,
+        19.4
+      ]
+    },
+    {
+      "id": "widget_habit_row_action",
+      "text": "+1",
+      "description": "Log one repetition for water",
+      "bounds_px": [
+        873,
+        317,
+        999,
+        443
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_habit_row_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        82,
+        448,
+        999,
+        584
+      ],
+      "size_dp": [
+        349.3,
+        51.8
+      ]
+    },
+    {
+      "id": "widget_habit_row_text",
+      "text": "",
+      "description": "Open neck for this date, 1 / 7",
+      "bounds_px": [
+        82,
+        453,
+        873,
+        579
+      ],
+      "size_dp": [
+        301.3,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_habit_row_title",
+      "text": "neck",
+      "description": "",
+      "bounds_px": [
+        82,
+        462,
+        852,
+        519
+      ],
+      "size_dp": [
+        293.3,
+        21.7
+      ]
+    },
+    {
+      "id": "widget_habit_row_count",
+      "text": "1 / 7",
+      "description": "",
+      "bounds_px": [
+        82,
+        519,
+        852,
+        570
+      ],
+      "size_dp": [
+        293.3,
+        19.4
+      ]
+    },
+    {
+      "id": "widget_habit_row_action",
+      "text": "+1",
+      "description": "Log one repetition for neck",
+      "bounds_px": [
+        873,
+        453,
+        999,
+        579
+      ],
+      "size_dp": [
+        48.0,
+        48.0
+      ]
+    },
+    {
+      "id": "widget_data_updated",
+      "text": "Updated 3:47 PM",
+      "description": "",
+      "bounds_px": [
+        82,
+        584,
+        999,
+        627
+      ],
+      "size_dp": [
+        349.3,
+        16.4
+      ]
+    },
+    {
+      "id": "widget_data_open",
+      "text": "View all habits",
+      "description": "Open this widget’s section in Luma",
+      "bounds_px": [
+        82,
+        648,
+        988,
+        774
+      ],
+      "size_dp": [
+        345.1,
+        48.0
+      ]
+    },
+    {
+      "id": "quick_capture_widget_root",
+      "text": "",
+      "description": "",
+      "bounds_px": [
+        50,
+        966,
+        776,
+        1518
+      ],
+      "size_dp": [
+        276.6,
+        210.3
+      ]
+    },
+    {
+      "id": "widget_capture_mood",
+      "text": "Mood",
+      "description": "Create a new mood check-in",
+      "bounds_px": [
+        82,
+        998,
+        288,
+        1486
+      ],
+      "size_dp": [
+        78.5,
+        185.9
+      ]
+    },
+    {
+      "id": "widget_capture_memory",
+      "text": "Memory",
+      "description": "Create a new memory",
+      "bounds_px": [
+        309,
+        998,
+        516,
+        1486
+      ],
+      "size_dp": [
+        78.9,
+        185.9
+      ]
+    },
+    {
+      "id": "widget_capture_journal",
+      "text": "Journal",
+      "description": "Create a new journal entry",
+      "bounds_px": [
+        537,
+        998,
+        744,
+        1486
+      ],
+      "size_dp": [
+        78.9,
+        185.9
+      ]
+    }
+  ]
+}

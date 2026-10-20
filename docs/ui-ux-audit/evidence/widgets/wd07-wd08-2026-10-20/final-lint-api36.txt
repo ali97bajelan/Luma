@@ -1,0 +1,215 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+> Configure project :core:data
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+> Configure project :integration:health
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+The Kotlin Gradle plugin was loaded multiple times in different subprojects, which is not supported and may break the build. 
+This might happen in subprojects that apply the Kotlin plugins with the Gradle 'plugins { ... }' DSL if they specify explicit versions, even if the versions are equal.
+Please add the Kotlin plugin to the common parent project or the root project, then remove the versions in the subprojects.
+If the parent project does not need the plugin, add 'apply false' to the plugin line.
+See: https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
+The Kotlin plugin was loaded in the following projects: ':app', ':core:data', ':core:domain', ':integration:health'
+
+> Task :integration:usage:preBuild UP-TO-DATE
+> Task :core:data:preBuild UP-TO-DATE
+> Task :core:domain:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :integration:health:preBuild UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :integration:usage:preDebugBuild UP-TO-DATE
+> Task :integration:health:preDebugBuild UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :core:data:preDebugBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :integration:health:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:data:mergeDebugJniLibFolders UP-TO-DATE
+> Task :integration:usage:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:data:mergeDebugNativeLibs NO-SOURCE
+> Task :integration:usage:mergeDebugNativeLibs NO-SOURCE
+> Task :integration:health:mergeDebugNativeLibs NO-SOURCE
+> Task :integration:usage:stripDebugDebugSymbols NO-SOURCE
+> Task :core:data:stripDebugDebugSymbols NO-SOURCE
+> Task :integration:health:stripDebugDebugSymbols NO-SOURCE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :core:data:copyDebugJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :integration:usage:copyDebugJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :integration:health:copyDebugJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :core:data:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :integration:usage:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :integration:health:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:data:generateDebugResValues UP-TO-DATE
+> Task :integration:usage:generateDebugResValues UP-TO-DATE
+> Task :integration:health:generateDebugResValues UP-TO-DATE
+> Task :core:data:generateDebugResources UP-TO-DATE
+> Task :integration:usage:generateDebugResources UP-TO-DATE
+> Task :integration:health:generateDebugResources UP-TO-DATE
+> Task :integration:health:packageDebugResources UP-TO-DATE
+> Task :integration:usage:packageDebugResources UP-TO-DATE
+> Task :core:data:packageDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :core:data:parseDebugLocalResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :integration:health:parseDebugLocalResources UP-TO-DATE
+> Task :integration:usage:parseDebugLocalResources UP-TO-DATE
+> Task :integration:health:generateDebugRFile UP-TO-DATE
+> Task :integration:health:extractDeepLinksForAarDebug UP-TO-DATE
+> Task :core:data:generateDebugRFile UP-TO-DATE
+> Task :integration:usage:generateDebugRFile UP-TO-DATE
+> Task :integration:health:javaPreCompileDebug UP-TO-DATE
+> Task :integration:usage:extractDeepLinksForAarDebug UP-TO-DATE
+> Task :integration:usage:javaPreCompileDebug UP-TO-DATE
+> Task :integration:health:mergeDebugShaders UP-TO-DATE
+> Task :integration:usage:mergeDebugShaders UP-TO-DATE
+> Task :integration:health:compileDebugShaders NO-SOURCE
+> Task :integration:health:generateDebugAssets UP-TO-DATE
+> Task :integration:usage:compileDebugShaders NO-SOURCE
+> Task :integration:usage:generateDebugAssets UP-TO-DATE
+> Task :integration:health:packageDebugAssets UP-TO-DATE
+> Task :integration:usage:packageDebugAssets UP-TO-DATE
+> Task :integration:health:prepareDebugArtProfile UP-TO-DATE
+> Task :integration:usage:prepareDebugArtProfile UP-TO-DATE
+> Task :integration:health:prepareLintJarForPublish UP-TO-DATE
+> Task :integration:usage:prepareLintJarForPublish UP-TO-DATE
+> Task :integration:health:processDebugManifest UP-TO-DATE
+> Task :integration:usage:processDebugManifest UP-TO-DATE
+> Task :integration:usage:writeDebugAarMetadata UP-TO-DATE
+> Task :core:domain:compileKotlin UP-TO-DATE
+> Task :integration:health:writeDebugAarMetadata UP-TO-DATE
+> Task :integration:usage:extractDeepLinksDebug UP-TO-DATE
+> Task :integration:health:extractDeepLinksDebug UP-TO-DATE
+> Task :integration:usage:compileDebugLibraryResources UP-TO-DATE
+> Task :core:domain:compileJava NO-SOURCE
+> Task :integration:health:compileDebugLibraryResources UP-TO-DATE
+> Task :integration:usage:writeDebugLintModelMetadata UP-TO-DATE
+> Task :core:domain:processResources NO-SOURCE
+> Task :core:domain:classes UP-TO-DATE
+> Task :integration:health:writeDebugLintModelMetadata UP-TO-DATE
+> Task :integration:usage:extractProguardFiles UP-TO-DATE
+> Task :integration:usage:preDebugAndroidTestBuild UP-TO-DATE
+> Task :core:data:javaPreCompileDebug UP-TO-DATE
+> Task :integration:health:extractProguardFiles UP-TO-DATE
+> Task :integration:usage:generateDebugAndroidTestResValues UP-TO-DATE
+> Task :integration:usage:preDebugUnitTestBuild UP-TO-DATE
+> Task :integration:health:preDebugAndroidTestBuild UP-TO-DATE
+> Task :core:data:extractDeepLinksForAarDebug UP-TO-DATE
+> Task :core:data:mergeDebugShaders UP-TO-DATE
+> Task :integration:health:generateDebugAndroidTestResValues UP-TO-DATE
+> Task :core:domain:jar UP-TO-DATE
+> Task :integration:health:preDebugUnitTestBuild UP-TO-DATE
+> Task :core:data:compileDebugShaders NO-SOURCE
+> Task :core:data:generateDebugAssets UP-TO-DATE
+> Task :core:data:packageDebugAssets UP-TO-DATE
+> Task :core:data:prepareDebugArtProfile UP-TO-DATE
+> Task :core:data:prepareLintJarForPublish UP-TO-DATE
+> Task :integration:usage:compileDebugKotlin UP-TO-DATE
+> Task :core:data:kspDebugKotlin UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :integration:health:compileDebugKotlin UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:generateDebugAndroidTestResValues UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :integration:health:extractDebugAnnotations UP-TO-DATE
+> Task :integration:usage:extractDebugAnnotations UP-TO-DATE
+> Task :integration:usage:compileDebugJavaWithJavac NO-SOURCE
+> Task :integration:health:compileDebugJavaWithJavac NO-SOURCE
+> Task :core:data:compileDebugKotlin UP-TO-DATE
+> Task :integration:usage:mergeDebugGeneratedProguardFiles UP-TO-DATE
+> Task :integration:health:mergeDebugGeneratedProguardFiles UP-TO-DATE
+> Task :core:data:compileDebugJavaWithJavac NO-SOURCE
+> Task :integration:usage:mergeDebugConsumerProguardFiles UP-TO-DATE
+> Task :integration:health:mergeDebugConsumerProguardFiles UP-TO-DATE
+> Task :core:data:copyRoomSchemas NO-SOURCE
+> Task :integration:health:processDebugJavaRes UP-TO-DATE
+> Task :integration:usage:processDebugJavaRes UP-TO-DATE
+> Task :integration:usage:mergeDebugJavaResource UP-TO-DATE
+> Task :integration:health:mergeDebugJavaResource UP-TO-DATE
+> Task :integration:usage:syncDebugLibJars UP-TO-DATE
+> Task :integration:health:syncDebugLibJars UP-TO-DATE
+> Task :core:data:extractDebugAnnotations UP-TO-DATE
+> Task :core:data:mergeDebugGeneratedProguardFiles UP-TO-DATE
+> Task :integration:usage:bundleDebugLocalLintAar UP-TO-DATE
+> Task :core:data:mergeDebugConsumerProguardFiles UP-TO-DATE
+> Task :integration:health:bundleDebugLocalLintAar UP-TO-DATE
+> Task :integration:usage:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core:data:processDebugManifest UP-TO-DATE
+> Task :integration:health:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :integration:usage:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :integration:health:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :integration:usage:createFullJarDebug UP-TO-DATE
+> Task :integration:health:createFullJarDebug UP-TO-DATE
+> Task :core:data:processDebugJavaRes UP-TO-DATE
+> Task :core:data:mergeDebugJavaResource UP-TO-DATE
+> Task :core:data:syncDebugLibJars UP-TO-DATE
+> Task :core:data:writeDebugAarMetadata UP-TO-DATE
+> Task :core:data:bundleDebugLocalLintAar UP-TO-DATE
+> Task :core:data:extractDeepLinksDebug UP-TO-DATE
+> Task :core:data:compileDebugLibraryResources UP-TO-DATE
+> Task :core:data:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core:data:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :core:data:createFullJarDebug UP-TO-DATE
+> Task :core:data:writeDebugLintModelMetadata UP-TO-DATE
+> Task :core:data:extractProguardFiles UP-TO-DATE
+> Task :core:data:generateDebugLintModel UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :integration:health:generateDebugLintModel UP-TO-DATE
+> Task :integration:usage:generateDebugLintModel UP-TO-DATE
+> Task :core:data:lintAnalyzeDebug UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :core:data:preDebugAndroidTestBuild UP-TO-DATE
+> Task :core:data:generateDebugAndroidTestResValues UP-TO-DATE
+> Task :integration:health:lintAnalyzeDebug UP-TO-DATE
+> Task :integration:usage:lintAnalyzeDebug UP-TO-DATE
+> Task :core:data:generateDebugAndroidTestLintModel UP-TO-DATE
+> Task :core:data:preDebugUnitTestBuild UP-TO-DATE
+> Task :integration:usage:generateDebugAndroidTestLintModel UP-TO-DATE
+> Task :integration:health:generateDebugAndroidTestLintModel UP-TO-DATE
+> Task :core:data:generateDebugUnitTestLintModel UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :integration:health:generateDebugUnitTestLintModel UP-TO-DATE
+> Task :integration:usage:generateDebugUnitTestLintModel UP-TO-DATE
+> Task :core:data:lintAnalyzeDebugAndroidTest UP-TO-DATE
+> Task :integration:health:lintAnalyzeDebugAndroidTest UP-TO-DATE
+> Task :core:data:lintAnalyzeDebugUnitTest UP-TO-DATE
+> Task :integration:health:lintAnalyzeDebugUnitTest UP-TO-DATE
+> Task :integration:usage:lintAnalyzeDebugAndroidTest UP-TO-DATE
+> Task :integration:usage:lintAnalyzeDebugUnitTest UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:generateDebugAndroidTestLintModel
+> Task :app:generateDebugLintReportModel
+> Task :app:generateDebugUnitTestLintModel
+> Task :app:lintAnalyzeDebug
+> Task :app:lintAnalyzeDebugAndroidTest
+> Task :app:lintAnalyzeDebugUnitTest
+
+> Task :app:lintReportDebug
+Wrote HTML report to file:///home/bajelan/AndroidStudioProjects/Luma/app/build/reports/lint-results-debug.html
+
+> Task :app:lintDebug
+
+[Incubating] Problems report is available at: file:///home/bajelan/AndroidStudioProjects/Luma/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 45s
+140 actionable tasks: 8 executed, 132 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.1.0/userguide/configuration_cache_enabling.html

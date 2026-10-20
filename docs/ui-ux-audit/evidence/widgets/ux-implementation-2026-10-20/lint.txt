@@ -1,0 +1,553 @@
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/widget/QuickCaptureWidgetProvider.kt:89: Warning: Field requires API level 29 (current min is 28): android.graphics.text.LineBreaker#BREAK_STRATEGY_HIGH_QUALITY [InlinedApi]
+                    .setBreakStrategy(android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY).build()
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/widget/WidgetRenderer.kt:651: Warning: Field requires API level 29 (current min is 28): android.graphics.text.LineBreaker#BREAK_STRATEGY_HIGH_QUALITY [InlinedApi]
+            .setBreakStrategy(android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "InlinedApi":
+   This check scans through all the Android API field references in the
+   application and flags certain constants, such as static final integers and
+   Strings, which were introduced in later versions. These will actually be
+   copied into the class files rather than being referenced, which means that
+   the value is available even when running on older devices. In some cases
+   that's fine, and in other cases it can result in a runtime crash or
+   incorrect behavior. It depends on the context, so consider the code
+   carefully and decide whether it's safe and can be suppressed or whether the
+   code needs to be guarded.
+
+   If you really want to use this API and don't need to support older devices
+   just set the minSdkVersion in your build.gradle or AndroidManifest.xml
+   files.
+
+   If your code is deliberately accessing newer APIs, and you have ensured
+   (e.g. with conditional execution) that this code will only ever be called
+   on a supported platform, then you can annotate your class or method with
+   the @TargetApi annotation specifying the local minimum SDK to apply, such
+   as @TargetApi(11), such that this check considers 11 rather than your
+   manifest file's minimum SDK as the required API level.
+
+/home/bajelan/AndroidStudioProjects/Luma/app/build.gradle.kts:14: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
+        targetSdk = 35
+        ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "OldTargetApi":
+   When your application or sdk runs on a version of Android that is more
+   recent than your targetSdkVersion specifies that it has been tested with,
+   various compatibility modes kick in. This ensures that your application
+   continues to work, but it may look out of place. For example, if the
+   targetSdkVersion is less than 14, your app may get an option button in the
+   UI.
+
+   To fix this issue, set the targetSdkVersion to the highest available value.
+   Then test your app to make sure everything works correctly. You may want to
+   consult the compatibility notes to see what changes apply to each version
+   you are adding support for:
+   https://developer.android.com/reference/android/os/Build.VERSION_CODES.html
+   as well as follow this guide:
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.
+   html
+
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.html
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/AndroidManifest.xml:14: Warning: Attribute localeConfig is only used in API level 33 and higher (current min is 28) [UnusedAttribute]
+        android:localeConfig="@xml/locales_config"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/habits_widget_info.xml:10: Warning: Attribute previewLayout is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:previewLayout="@layout/widget_preview_habits"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/habits_widget_info.xml:13: Warning: Attribute targetCellHeight is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:targetCellHeight="3"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/habits_widget_info.xml:14: Warning: Attribute targetCellWidth is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:targetCellWidth="4"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/quick_capture_widget_info.xml:9: Warning: Attribute previewLayout is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:previewLayout="@layout/widget_preview_capture"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/quick_capture_widget_info.xml:12: Warning: Attribute targetCellHeight is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:targetCellHeight="2"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/quick_capture_widget_info.xml:13: Warning: Attribute targetCellWidth is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:targetCellWidth="3"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/tasks_widget_info.xml:10: Warning: Attribute previewLayout is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:previewLayout="@layout/widget_preview_tasks"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/tasks_widget_info.xml:13: Warning: Attribute targetCellHeight is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:targetCellHeight="3"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/xml/tasks_widget_info.xml:14: Warning: Attribute targetCellWidth is only used in API level 31 and higher (current min is 28) [UnusedAttribute]
+    android:targetCellWidth="4"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UnusedAttribute":
+   This check finds attributes set in XML files that were introduced in a
+   version newer than the oldest version targeted by your application (with
+   the minSdkVersion attribute).
+
+   This is not an error; the application will simply ignore the attribute.
+   However, if the attribute is important to the appearance or functionality
+   of your application, you should consider finding an alternative way to
+   achieve the same result with only available attributes, and then you can
+   optionally create a copy of the layout in a layout-vNN folder which will be
+   used on API NN or higher where you can take advantage of the newer
+   attribute.
+
+   Note: This check does not only apply to attributes. For example, some tags
+   can be unused too, such as the new <tag> element in layouts introduced in
+   API 21.
+
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:3: Warning: A newer version of org.jetbrains.kotlin.jvm than 2.2.10 is available: 2.4.10 [GradleDependency]
+kotlin = "2.2.10"
+         ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:3: Warning: A newer version of org.jetbrains.kotlin.jvm than 2.2.10 is available: 2.4.10 [GradleDependency]
+kotlin = "2.2.10"
+         ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:3: Warning: A newer version of org.jetbrains.kotlin.jvm than 2.2.10 is available: 2.4.10 [GradleDependency]
+kotlin = "2.2.10"
+         ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:3: Warning: A newer version of org.jetbrains.kotlin.plugin.compose than 2.2.10 is available: 2.4.10 [GradleDependency]
+kotlin = "2.2.10"
+         ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:3: Warning: A newer version of org.jetbrains.kotlin.plugin.compose than 2.2.10 is available: 2.4.10 [GradleDependency]
+kotlin = "2.2.10"
+         ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:3: Warning: A newer version of org.jetbrains.kotlin.plugin.compose than 2.2.10 is available: 2.4.10 [GradleDependency]
+kotlin = "2.2.10"
+         ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:4: Warning: A newer version of androidx.compose:compose-bom than 2025.08.01 is available: 2026.09.00 [GradleDependency]
+compose-bom = "2025.08.01"
+              ~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:4: Warning: A newer version of androidx.compose:compose-bom than 2025.08.01 is available: 2026.09.00 [GradleDependency]
+compose-bom = "2025.08.01"
+              ~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:4: Warning: A newer version of androidx.compose:compose-bom than 2025.08.01 is available: 2026.09.00 [GradleDependency]
+compose-bom = "2025.08.01"
+              ~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:5: Warning: A newer version of androidx.activity:activity-compose than 1.10.1 is available: 1.13.0 [GradleDependency]
+activity = "1.10.1"
+           ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:5: Warning: A newer version of androidx.activity:activity-compose than 1.10.1 is available: 1.13.0 [GradleDependency]
+activity = "1.10.1"
+           ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:5: Warning: A newer version of androidx.activity:activity-compose than 1.10.1 is available: 1.13.0 [GradleDependency]
+activity = "1.10.1"
+           ~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:6: Warning: A newer version of androidx.navigation:navigation-compose than 2.9.3 is available: 2.10.2 [GradleDependency]
+navigation = "2.9.3"
+             ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:6: Warning: A newer version of androidx.navigation:navigation-compose than 2.9.3 is available: 2.10.2 [GradleDependency]
+navigation = "2.9.3"
+             ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:6: Warning: A newer version of androidx.navigation:navigation-compose than 2.9.3 is available: 2.10.2 [GradleDependency]
+navigation = "2.9.3"
+             ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:7: Warning: A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.9.0 is available: 2.11.0 [GradleDependency]
+lifecycle = "2.9.0"
+            ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:7: Warning: A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.9.0 is available: 2.11.0 [GradleDependency]
+lifecycle = "2.9.0"
+            ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:7: Warning: A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.9.0 is available: 2.11.0 [GradleDependency]
+lifecycle = "2.9.0"
+            ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:7: Warning: A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.9.0 is available: 2.11.0 [GradleDependency]
+lifecycle = "2.9.0"
+            ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:7: Warning: A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.9.0 is available: 2.11.0 [GradleDependency]
+lifecycle = "2.9.0"
+            ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:7: Warning: A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.9.0 is available: 2.11.0 [GradleDependency]
+lifecycle = "2.9.0"
+            ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:14: Warning: A newer version of com.google.devtools.ksp than 2.3.5 is available: 2.3.12 [GradleDependency]
+ksp = "2.3.5"
+      ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:14: Warning: A newer version of com.google.devtools.ksp than 2.3.5 is available: 2.3.12 [GradleDependency]
+ksp = "2.3.5"
+      ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:14: Warning: A newer version of com.google.devtools.ksp than 2.3.5 is available: 2.3.12 [GradleDependency]
+ksp = "2.3.5"
+      ~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:17: Warning: A newer version of androidx.health.connect:connect-client than 1.1.0-beta01 is available: 1.1.0 [GradleDependency]
+health-connect = "1.1.0-beta01"
+                 ~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:17: Warning: A newer version of androidx.health.connect:connect-client than 1.1.0-beta01 is available: 1.1.0 [GradleDependency]
+health-connect = "1.1.0-beta01"
+                 ~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/gradle/libs.versions.toml:17: Warning: A newer version of androidx.health.connect:connect-client than 1.1.0-beta01 is available: 1.1.0 [GradleDependency]
+health-connect = "1.1.0-beta01"
+                 ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "GradleDependency":
+   This detector looks for usages of libraries where the version you are using
+   is not the current stable release. Using older versions is fine, and there
+   are cases where you deliberately want to stick with an older version.
+   However, you may simply not be aware that a more recent version is
+   available, and that is what this lint check helps find.
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/ui/common/DetailTopBar.kt:35: Warning: Modifier parameter should be the first optional parameter [ModifierParameter from androidx.compose.ui]
+    modifier: Modifier = Modifier,
+    ~~~~~~~~
+
+   Explanation for issues of type "ModifierParameter":
+   The first (or only) Modifier parameter in a Composable function should
+   follow the following rules:
+   - Be named modifier
+   - Have a type of Modifier
+   - Either have no default value, or have a default value of Modifier
+   - If optional, be the first optional parameter in the parameter list
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.ui
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:100: Warning: Formatting %d followed by words ("targets"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="widget_habits_summary">%1$d of %2$d targets reached</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:273: Warning: Formatting %d followed by words ("people"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="people_selection_limit">You can link up to %1$d people. Remove someone to choose another.</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:318: Warning: Formatting %d followed by words ("more"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="activity_more">%1$d more measurements</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:481: Warning: Formatting %d followed by words ("matching"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="search_results">%1$d matching entries</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:494: Warning: Formatting %d followed by words ("selected"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="search_selection_count">%1$d selected · maximum 100</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:558: Warning: Formatting %d followed by words ("repetitions"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="review_habits_current_total">This week: %1$d repetitions · %2$d scheduled days</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:559: Warning: Formatting %d followed by words ("repetitions"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="review_habits_previous_total">Matching previous days: %1$d repetitions · %2$d scheduled days</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:638: Warning: Formatting %d followed by words ("dates"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="review_usage_summary">Saved history: %1$d of %2$d dates · Complete: %3$d</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:750: Warning: Formatting %d followed by words ("per"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="habit_schedule_target">Target: %1$d per day</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:897: Warning: Formatting %d followed by words ("more"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="widget_view_all_more">%1$s · %2$d more</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "PluralsCandidate":
+   This lint check looks for potential errors in internationalization where
+   you have translated a message which involves a quantity and it looks like
+   other parts of the string may need grammatical changes.
+
+   For example, rather than something like this:
+     <string name="try_again">Try again in %d seconds.</string>
+   you should be using a plural:
+      <plurals name="try_again">
+           <item quantity="one">Try again in %d second</item>
+           <item quantity="other">Try again in %d seconds</item>
+       </plurals>
+   This will ensure that in other languages the right set of translations are
+   provided for the different quantity classes.
+
+   (This check depends on some heuristics, so it may not accurately determine
+   whether a string really should be a quantity. You can use tools:ignore to
+   filter out false positives.
+
+   https://developer.android.com/guide/topics/resources/string-resource.html#Plurals
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/ui/widgets/WidgetSettingsRoute.kt:99: Warning: Unnecessary; SDK_INT is never < 28 [ObsoleteSdkInt]
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !manager.isRequestPinAppWidgetSupported) {
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "ObsoleteSdkInt":
+   This check flags version checks that are not necessary, because the
+   minSdkVersion (or surrounding known API level) is already at least as high
+   as the version checked for.
+
+   Similarly, it also looks for resources in -vNN folders, such as values-v14
+   where the version qualifier is less than or equal to the minSdkVersion,
+   where the contents should be merged into the best folder.
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/layout/widget_data.xml:10: Warning: This tag and its children can be replaced by one <TextView/> and a compound drawable [UseCompoundDrawables]
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+     ~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/layout/widget_preview_habits.xml:4: Warning: This tag and its children can be replaced by one <TextView/> and a compound drawable [UseCompoundDrawables]
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+  ~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/layout/widget_preview_tasks.xml:4: Warning: This tag and its children can be replaced by one <TextView/> and a compound drawable [UseCompoundDrawables]
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+  ~~~~~~~~~~~~
+
+   Explanation for issues of type "UseCompoundDrawables":
+   A LinearLayout which contains an ImageView and a TextView can be more
+   efficiently handled as a compound drawable (a single TextView, using the
+   drawableTop, drawableLeft, drawableRight and/or drawableBottom attributes
+   to draw one or more images adjacent to the text).
+
+   If the two widgets are offset from each other with margins, this can be
+   replaced with a drawablePadding attribute.
+
+   There's a lint quickfix to perform this conversion in the Eclipse plugin.
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/drawable/ic_nav_settings.xml:8: Warning: Very long vector path (892 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector. [VectorPath]
+        android:pathData="M19.14,12.94c0.04,-0.31 0.06,-0.62 0.06,-0.94s-0.02,-0.63 -0.07,-0.94l2.03,-1.58c0.18,-0.14 0.23,-0.4 0.12,-0.61l-1.92,-3.32c-0.12,-0.21 -0.36,-0.3 -0.59,-0.21l-2.39,0.96c-0.5,-0.38 -1.03,-0.69 -1.62,-0.93l-0.36,-2.54C14.36,2.59 14.16,2.4 13.92,2.4h-3.84c-0.24,0 -0.44,0.17 -0.48,0.41L9.24,5.35c-0.58,0.24 -1.12,0.56 -1.62,0.93l-2.39,-0.96c-0.22,-0.08 -0.47,0 -0.59,0.21L2.72,8.85c-0.12,0.21 -0.07,0.47 0.12,0.61l2.03,1.58c-0.04,0.31 -0.07,0.63 -0.07,0.96s0.02,0.63 0.07,0.94L2.84,14.52c-0.18,0.14 -0.23,0.4 -0.12,0.61l1.92,3.32c0.12,0.21 0.36,0.3 0.59,0.21l2.39,-0.96c0.5,0.38 1.03,0.69 1.62,0.93l0.36,2.54c0.04,0.24 0.24,0.42 0.48,0.42h3.84c0.24,0 0.44,-0.17 0.48,-0.41l0.36,-2.54c0.58,-0.24 1.12,-0.56 1.62,-0.93l2.39,0.96c0.22,0.08 0.47,0 0.59,-0.21l1.92,-3.32c0.12,-0.21 0.07,-0.47 -0.12,-0.61zM12,15.5c-1.93,0 -3.5,-1.57 -3.5,-3.5s1.57,-3.5 3.5,-3.5 3.5,1.57 3.5,3.5 -1.57,3.5 -3.5,3.5z" />
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "VectorPath":
+   Using long vector paths is bad for performance. There are several ways to
+   make the pathData shorter:
+   * Using less precision
+   * Removing some minor details
+   * Using the Android Studio vector conversion tool
+   * Rasterizing the image (converting to PNG)
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/ui/LifeOsApp.kt:157: Information: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
+                                                    ~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/ui/today/TodayRoute.kt:91: Information: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+        val handledRestore = rememberSaveable { mutableStateOf(restoreGeneration) }
+                                                ~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/ui/todo/TodoActionFeedback.kt:97: Information: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+        androidx.compose.runtime.mutableStateOf(resetToken)
+                                 ~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/ui/todo/TodoEditorRoute.kt:37: Information: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    val handledRestore = rememberSaveable { mutableStateOf(restoreGeneration) }
+                                            ~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/java/com/luma/lifeos/ui/todo/TodoListRoute.kt:34: Information: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    val handledRestore = rememberSaveable { mutableStateOf(restoreGeneration) }
+                                            ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "AutoboxingStateCreation":
+   Calling mutableStateOf<T>() when T is either backed by a primitive type on
+   the JVM or is a value class results in a state implementation that requires
+   all state values to be boxed. This usually causes an additional allocation
+   for each state write, and adds some additional work to auto-unbox values
+   when reading the value of the state. Instead, prefer to use a specialized
+   primitive state implementation for Int, Long, Float, and Double when the
+   state does not need to track null values and does not override the default
+   SnapshotMutationPolicy. See mutableIntStateOf(), mutableLongStateOf(),
+   mutableFloatStateOf(), and mutableDoubleStateOf() for more information.
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.runtime
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/layout/widget_preview_capture.xml:7: Warning: Nested weights are bad for performance [NestedWeights]
+ android:layout_height="match_parent" android:layout_weight="1"
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/layout/widget_quick_capture.xml:7: Warning: Nested weights are bad for performance [NestedWeights]
+ android:layout_height="match_parent" android:layout_weight="1"
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "NestedWeights":
+   Layout weights require a widget to be measured twice. When a LinearLayout
+   with non-zero weights is nested inside another LinearLayout with non-zero
+   weights, then the number of measurements increase exponentially.
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:10: Warning: The resource R.string.nav_people_compact appears to be unused [UnusedResources]
+    <string name="nav_people_compact">People</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:13: Warning: The resource R.string.nav_settings_compact appears to be unused [UnusedResources]
+    <string name="nav_settings_compact">Settings</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:15: Warning: The resource R.string.today_heading appears to be unused [UnusedResources]
+    <string name="today_heading">A space for your life</string>
+            ~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:16: Warning: The resource R.string.today_body appears to be unused [UnusedResources]
+    <string name="today_body">Your daily life record will appear here as capture becomes available.</string>
+            ~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:17: Warning: The resource R.string.timeline_heading appears to be unused [UnusedResources]
+    <string name="timeline_heading">Your life, day by day</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:18: Warning: The resource R.string.timeline_body appears to be unused [UnusedResources]
+    <string name="timeline_body">This is where you’ll revisit your entries and memories.</string>
+            ~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:19: Warning: The resource R.string.review_heading appears to be unused [UnusedResources]
+    <string name="review_heading">Look back on your week</string>
+            ~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:20: Warning: The resource R.string.review_body appears to be unused [UnusedResources]
+    <string name="review_body">Your weekly review will bring together the moments you record.</string>
+            ~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:21: Warning: The resource R.string.settings_heading appears to be unused [UnusedResources]
+    <string name="settings_heading">Private by design</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:22: Warning: The resource R.string.settings_body appears to be unused [UnusedResources]
+    <string name="settings_body">No account is needed. Optional integrations will always ask for your permission.</string>
+            ~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:23: Warning: The resource R.string.local_first appears to be unused [UnusedResources]
+    <string name="local_first">On your device. Under your control.</string>
+            ~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:36: Warning: The resource R.string.today_selected_date appears to be unused [UnusedResources]
+    <string name="today_selected_date">Entries for %1$s</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:37: Warning: The resource R.string.today_empty_heading appears to be unused [UnusedResources]
+    <string name="today_empty_heading">No mood, journal or memory entries yet</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:38: Warning: The resource R.string.today_empty_body appears to be unused [UnusedResources]
+    <string name="today_empty_body">Explore another day or open Quick Capture to record how you feel. No permissions or account are needed.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:45: Warning: The resource R.string.event_type_count appears to be unused [UnusedResources]
+    <string name="event_type_count">%1$s: %2$d</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:64: Warning: The resource R.string.widget_open_luma_description appears to be unused [UnusedResources]
+    <string name="widget_open_luma_description">Open Luma to Today</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:74: Warning: The resource R.string.widget_settings_add appears to be unused [UnusedResources]
+    <string name="widget_settings_add">Add</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:77: Warning: The resource R.string.widget_settings_instance appears to be unused [UnusedResources]
+    <string name="widget_settings_instance">Luma %1$s · widget %2$d</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:110: Warning: The resource R.string.widget_feedback_saved appears to be unused [UnusedResources]
+    <string name="widget_feedback_saved">Saved</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:182: Warning: The resource R.string.mood_timezone appears to be unused [UnusedResources]
+    <string name="mood_timezone">%1$s (%2$s)</string>
+            ~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:322: Warning: The resource R.string.app_usage_duration appears to be unused [UnusedResources]
+    <string name="app_usage_duration">%1$d h %2$d min</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:355: Warning: The resource R.string.usage_disabled appears to be unused [UnusedResources]
+    <string name="usage_disabled">Imports are off</string>
+            ~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:356: Warning: The resource R.string.usage_access_required appears to be unused [UnusedResources]
+    <string name="usage_access_required">Android Usage access is required</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:360: Warning: The resource R.string.usage_ready appears to be unused [UnusedResources]
+    <string name="usage_ready">Usage access is available</string>
+            ~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:365: Warning: The resource R.string.usage_daily_title appears to be unused [UnusedResources]
+    <string name="usage_daily_title">Saved daily foreground usage</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:367: Warning: The resource R.string.usage_view_timeline appears to be unused [UnusedResources]
+    <string name="usage_view_timeline">Timeline</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:368: Warning: The resource R.string.usage_view_totals appears to be unused [UnusedResources]
+    <string name="usage_view_totals">Daily totals</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:370: Warning: The resource R.string.usage_history_unavailable appears to be unused [UnusedResources]
+    <string name="usage_history_unavailable">Opening and closing times are unavailable for this day. Switch to Daily totals to see any saved totals.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:376: Warning: The resource R.string.usage_daily_error appears to be unused [UnusedResources]
+    <string name="usage_daily_error">Saved usage could not be loaded</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:377: Warning: The resource R.string.usage_interval_changed appears to be unused [UnusedResources]
+    <string name="usage_interval_changed">Android usage intervals changed or the device restarted. Saved totals are preserved; only newly started intervals will import.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:381: Warning: The resource R.string.summary_records appears to be unused [UnusedResources]
+    <string name="summary_records">Saved entries: %1$d</string>
+            ~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:388: Warning: The resource R.string.summary_unavailable appears to be unused [UnusedResources]
+    <string name="summary_unavailable">%1$s: unavailable</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:389: Warning: The resource R.string.summary_usage appears to be unused [UnusedResources]
+    <string name="summary_usage">Saved foreground usage</string>
+            ~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:397: Warning: The resource R.string.health_disabled appears to be unused [UnusedResources]
+    <string name="health_disabled">Step imports are off</string>
+            ~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:398: Warning: The resource R.string.health_required appears to be unused [UnusedResources]
+    <string name="health_required">Read-steps permission is required</string>
+            ~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:399: Warning: The resource R.string.health_update_required appears to be unused [UnusedResources]
+    <string name="health_update_required">Health Connect needs installation or an update</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:401: Warning: The resource R.string.health_ready appears to be unused [UnusedResources]
+    <string name="health_ready">Read-steps access is available</string>
+            ~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:514: Warning: The resource R.string.review_unavailable appears to be unused [UnusedResources]
+    <string name="review_unavailable">Unavailable</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:531: Warning: The resource R.string.review_mood_patterns appears to be unused [UnusedResources]
+    <string name="review_mood_patterns">Mood and emotion patterns</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:532: Warning: The resource R.string.review_mood_dates appears to be unused [UnusedResources]
+    <string name="review_mood_dates">Mood by recorded date</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:537: Warning: The resource R.string.review_activity_no_data appears to be unused [UnusedResources]
+    <string name="review_activity_no_data">No activity saved this week</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:540: Warning: The resource R.string.review_usage_no_data appears to be unused [UnusedResources]
+    <string name="review_usage_no_data">App usage total unavailable</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:558: Warning: The resource R.string.review_habits_current_total appears to be unused [UnusedResources]
+    <string name="review_habits_current_total">This week: %1$d repetitions · %2$d scheduled days</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:559: Warning: The resource R.string.review_habits_previous_total appears to be unused [UnusedResources]
+    <string name="review_habits_previous_total">Matching previous days: %1$d repetitions · %2$d scheduled days</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:627: Warning: The resource R.string.summary_count_entries appears to be unused [UnusedResources]
+    <string name="summary_count_entries">Entries</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:628: Warning: The resource R.string.summary_count_journals appears to be unused [UnusedResources]
+    <string name="summary_count_journals">Journals</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:629: Warning: The resource R.string.summary_count_memories appears to be unused [UnusedResources]
+    <string name="summary_count_memories">Memories</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:675: Warning: The resource R.string.review_mood_empty appears to be unused [UnusedResources]
+    <string name="review_mood_empty">No check-ins saved this week</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:778: Warning: The resource R.string.habit_date_invalid appears to be unused [UnusedResources]
+    <string name="habit_date_invalid">Enter a valid date.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:779: Warning: The resource R.string.habit_time_invalid appears to be unused [UnusedResources]
+    <string name="habit_time_invalid">Enter a valid time.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:782: Warning: The resource R.string.habit_pending_progress appears to be unused [UnusedResources]
+    <string name="habit_pending_progress">Schedule change pending</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:785: Warning: The resource R.string.habit_log_save_error appears to be unused [UnusedResources]
+    <string name="habit_log_save_error">Repetition could not be saved. Retry to continue.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:786: Warning: The resource R.string.habit_delete_error appears to be unused [UnusedResources]
+    <string name="habit_delete_error">Habit could not be deleted.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:795: Warning: The resource R.string.habit_accessibility_target appears to be unused [UnusedResources]
+    <string name="habit_accessibility_target">Target</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/values/strings.xml:883: Warning: The resource R.string.todo_undo_failed appears to be unused [UnusedResources]
+    <string name="todo_undo_failed">This completion could not be undone because the task changed.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/layout/widget_data_skeleton.xml:2: Warning: The resource R.layout.widget_data_skeleton appears to be unused [UnusedResources]
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+^
+
+   Explanation for issues of type "UnusedResources":
+   Unused resources make applications larger and slow down builds.
+
+
+   The unused resource check can ignore tests. If you want to include
+   resources that are only referenced from tests, consider packaging them in a
+   test source set instead.
+
+   You can include test sources in the unused resource check by setting the
+   system property lint.unused-resources.include-tests =true, and to exclude
+   them (usually for performance reasons), use
+   lint.unused-resources.exclude-tests =true.
+   ,
+
+/home/bajelan/AndroidStudioProjects/Luma/app/src/main/res/layout/widget_data.xml:23: Warning: Missing contentDescription attribute on image [ContentDescription]
+    <ImageView android:id="@+id/widget_header_refresh" android:layout_width="48dp" android:layout_height="48dp"
+     ~~~~~~~~~
+
+   Explanation for issues of type "ContentDescription":
+   Non-textual widgets like ImageViews and ImageButtons should use the
+   contentDescription attribute to specify a textual description of the widget
+   such that screen readers and other accessibility tools can adequately
+   describe the user interface.
+
+   Note that elements in application screens that are purely decorative and do
+   not provide any content or enable a user action should not have
+   accessibility content descriptions. In this case, set their descriptions to
+   @null. If your app's minSdkVersion is 16 or higher, you can instead set
+   these graphical elements' android:importantForAccessibility attributes to
+   no.
+
+   Note that for text fields, you should not set both the hint and the
+   contentDescription attributes since the hint will never be shown. Just set
+   the hint.
+
+   https://developer.android.com/guide/topics/ui/accessibility/apps#special-cases
+
+0 errors, 115 warnings

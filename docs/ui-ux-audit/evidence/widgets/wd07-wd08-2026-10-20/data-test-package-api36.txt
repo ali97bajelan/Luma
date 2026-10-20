@@ -1,0 +1,100 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+> Configure project :core:data
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+> Configure project :integration:health
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+The Kotlin Gradle plugin was loaded multiple times in different subprojects, which is not supported and may break the build. 
+This might happen in subprojects that apply the Kotlin plugins with the Gradle 'plugins { ... }' DSL if they specify explicit versions, even if the versions are equal.
+Please add the Kotlin plugin to the common parent project or the root project, then remove the versions in the subprojects.
+If the parent project does not need the plugin, add 'apply false' to the plugin line.
+See: https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
+The Kotlin plugin was loaded in the following projects: ':app', ':core:data', ':core:domain', ':integration:health'
+
+> Task :core:data:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:domain:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:data:preBuild UP-TO-DATE
+> Task :core:data:preDebugBuild UP-TO-DATE
+> Task :core:data:generateDebugResValues UP-TO-DATE
+> Task :core:data:generateDebugResources UP-TO-DATE
+> Task :core:data:packageDebugResources UP-TO-DATE
+> Task :core:data:parseDebugLocalResources UP-TO-DATE
+> Task :core:data:generateDebugRFile UP-TO-DATE
+> Task :core:domain:compileKotlin UP-TO-DATE
+> Task :core:domain:compileJava NO-SOURCE
+> Task :core:domain:processResources NO-SOURCE
+> Task :core:domain:classes UP-TO-DATE
+> Task :core:data:javaPreCompileDebug UP-TO-DATE
+> Task :core:data:preDebugAndroidTestBuild UP-TO-DATE
+> Task :core:data:writeDebugAarMetadata UP-TO-DATE
+> Task :core:domain:jar UP-TO-DATE
+> Task :core:data:checkDebugAndroidTestAarMetadata UP-TO-DATE
+> Task :core:data:kspDebugKotlin UP-TO-DATE
+> Task :core:data:compileDebugKotlin UP-TO-DATE
+> Task :core:data:compileDebugJavaWithJavac NO-SOURCE
+> Task :core:data:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core:data:compileDebugLibraryResources UP-TO-DATE
+> Task :core:data:generateDebugAndroidTestResValues UP-TO-DATE
+> Task :core:data:mapDebugAndroidTestSourceSetPaths UP-TO-DATE
+> Task :core:data:generateDebugAndroidTestResources UP-TO-DATE
+> Task :core:data:mergeDebugAndroidTestResources UP-TO-DATE
+> Task :core:data:extractDeepLinksDebug UP-TO-DATE
+> Task :core:data:processDebugManifest UP-TO-DATE
+> Task :core:data:processDebugAndroidTestManifest UP-TO-DATE
+> Task :core:data:processDebugAndroidTestResources UP-TO-DATE
+> Task :core:data:kspDebugAndroidTestKotlin UP-TO-DATE
+> Task :core:data:compileDebugAndroidTestKotlin UP-TO-DATE
+> Task :core:data:javaPreCompileDebugAndroidTest UP-TO-DATE
+> Task :core:data:compileDebugAndroidTestJavaWithJavac NO-SOURCE
+> Task :core:data:copyRoomSchemas NO-SOURCE
+> Task :core:data:mergeDebugAndroidTestShaders UP-TO-DATE
+> Task :core:data:compileDebugAndroidTestShaders NO-SOURCE
+> Task :core:data:copyRoomSchemasToAndroidTestAssetsDebugAndroidTest UP-TO-DATE
+> Task :core:data:generateDebugAndroidTestAssets UP-TO-DATE
+> Task :core:data:mergeDebugShaders UP-TO-DATE
+> Task :core:data:compileDebugShaders NO-SOURCE
+> Task :core:data:generateDebugAssets UP-TO-DATE
+> Task :core:data:packageDebugAssets UP-TO-DATE
+> Task :core:data:mergeDebugAndroidTestAssets UP-TO-DATE
+> Task :core:data:compressDebugAndroidTestAssets UP-TO-DATE
+> Task :core:data:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core:data:desugarDebugAndroidTestFileDependencies UP-TO-DATE
+> Task :core:data:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :core:data:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :core:data:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :core:data:processDebugJavaRes UP-TO-DATE
+> Task :core:data:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :core:data:checkDebugAndroidTestDuplicateClasses UP-TO-DATE
+> Task :core:data:mergeExtDexDebugAndroidTest UP-TO-DATE
+> Task :core:data:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :core:data:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :core:data:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:data:mergeDebugNativeLibs NO-SOURCE
+> Task :core:data:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :core:data:mergeDebugAndroidTestJniLibFolders UP-TO-DATE
+> Task :core:data:mergeDebugAndroidTestNativeLibs NO-SOURCE
+> Task :core:data:stripDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :core:data:validateSigningDebugAndroidTest UP-TO-DATE
+> Task :core:data:mergeLibDexDebugAndroidTest UP-TO-DATE
+> Task :core:data:writeDebugAndroidTestSigningConfigVersions UP-TO-DATE
+> Task :core:data:packageDebugAndroidTest UP-TO-DATE
+> Task :core:data:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+> Task :core:data:assembleDebugAndroidTest UP-TO-DATE
+
+[Incubating] Problems report is available at: file:///home/bajelan/AndroidStudioProjects/Luma/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 23s
+50 actionable tasks: 50 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.1.0/userguide/configuration_cache_enabling.html

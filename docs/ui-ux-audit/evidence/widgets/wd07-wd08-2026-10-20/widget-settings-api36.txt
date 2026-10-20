@@ -1,0 +1,8 @@
+
+com.luma.lifeos.widget.WidgetSettingsRouteTest:.
+
+Time: 2.644
+
+OK (1 test)
+
+

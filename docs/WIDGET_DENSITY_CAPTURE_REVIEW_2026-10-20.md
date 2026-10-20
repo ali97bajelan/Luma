@@ -4,6 +4,8 @@
 **Status:** WD01–WD07 implementation is in place. API 36 Pixel Launcher and focused renderer/store/navigation checks pass; WD07 capture-only upgrade acceptance and WD08 comparative/accessibility matrix remain open. See the [focused WD07–WD08 acceptance record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md).
 **Scope:** Android home-screen Habits, Tasks and Quick capture; their navigation, configuration, discovery and accessible sizing.
 
+**Latest design follow-up:** [Screenshot-based visual redesign and WD09–WD17 tasks](WIDGET_VISUAL_REVIEW_2026-10-20.md). This follow-up reviews the supplied populated, dark launcher screenshot after WD01–WD07. It proposes clearer hierarchy, separated actions, mixed-script alignment, a better small-dataset composition and **required vertical scrolling inside both data widgets**. WD17 supersedes this review's static eight-candidate/omitted-row presentation: users must reach overflow items without resizing or opening the app. WD09–WD17 are proposed work; existing implementation and acceptance statuses below are unchanged.
+
 ## Recommended direction
 
 Make **Habits and Tasks the two primary widget choices**, with a **Capture** button on both. Move full-list navigation into the header and give the remaining height to complete habit/task rows. Reuse Luma’s existing quick capture sheet for Mood, Journal, Memory and Task.
