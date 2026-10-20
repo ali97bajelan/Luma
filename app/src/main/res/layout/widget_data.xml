@@ -80,14 +80,18 @@
         android:paddingBottom="0dp"
         android:text="@string/widget_data_initial"
         android:textColor="@color/widget_text_primary_light"
-        android:textSize="14sp" />
+        android:textSize="14sp"
+        android:textDirection="firstStrong"
+        android:textAlignment="viewStart" />
 
     <TextView
         android:id="@+id/widget_data_updated"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="@color/widget_text_secondary_light"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:textDirection="firstStrong"
+        android:textAlignment="viewStart" />
 
     <LinearLayout
         android:id="@+id/widget_data_action_slot"

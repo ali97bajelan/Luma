@@ -1,7 +1,7 @@
 # Luma Habits and Tasks widgets — visual redesign review
 
 **Date:** 20 October 2026  
-**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11–WD17 remain open.
+**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13–WD17 remain open.
 **Scope:** Improve the existing Habits and Tasks home-screen widgets shown in the supplied screenshot, including vertical scrolling when items exceed the available list area. Retain shared Capture, existing providers, per-instance privacy and dependable recovery. This review remains the design/backlog reference; WD09 and WD10 implementation evidence is linked below.
 
 **User requirement added:** Both data widgets must let users scroll through additional eligible items within the current widget size. Resizing or opening the app must not be required just to reach overflow items. The scrolling contract and WD17 below supersede the earlier static-prefix/eight-candidate proposal.
@@ -180,7 +180,7 @@ TalkBack should encounter title navigation, Capture, Refresh, scope/freshness, f
 
 ## 6. Implementation tasks
 
-WD09 and WD10 are partial; WD11–WD17 remain open. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
+WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13–WD17 remain open. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
 
 | ID | Priority / effort | Responsible role | Dependency | Outcome |
 | --- | --- | --- | --- | --- |
@@ -216,17 +216,21 @@ WD09 and WD10 are partial; WD11–WD17 remain open. P1 is the first delivery sli
 
 ### WD11 — Separate rows and align habit progress
 
-- [ ] Update `widget_task_row.xml`, `widget_habit_row_inline.xml`, `widget_habit_row.xml` and mutation drawables with separate full targets, 8dp content/action gaps and inset visual fills. Add 8dp only between rendered rows.
-- [ ] Implement the measured progress column and stacked fallback; retain two-line task titles, full accessible names, due state, target reached and skipped copy.
-- [ ] Add a semantic overdue text role with a light/dark equivalent; keep explicit Overdue wording.
+**Status: Partial.** Row targets, inset fills, between-row spacing, shared habit progress measurement and bidi-safe accessible names are implemented. Acceptance evidence remains pending; no Gradle or emulator tests were run for this update.
+
+- [x] Update `widget_task_row.xml`, `widget_habit_row_inline.xml`, `widget_habit_row.xml` and row mutation drawables with separate full targets, 8dp content/action gaps and inset visual fills. Add 8dp only between rendered rows.
+- [x] Implement the measured progress column and stacked fallback; retain two-line task titles, full accessible names, due state, target reached and skipped copy.
+- [x] Use the existing semantic overdue text role with light/dark equivalents; keep explicit Overdue wording.
 
 **Acceptance:** no resting button fills touch between adjacent rows; count/action separation is visible; target bounds remain at least 48dp and do not overlap. Navigation and mutation taps produce distinct effects. Long translated Complete labels remain whole.
 
 ### WD12 — Reconcile measurement, bidi and constrained layouts
 
-- [ ] Update `WidgetRenderer.kt` and `WidgetLayoutPolicy.kt` to include actual header, metadata, progress-column width, inter-row gaps and remaining collection viewport. Replace visible-prefix truncation with a viewport budget for WD17; preserve repository ordering.
-- [ ] Apply the same tokens and required-action priorities to `WidgetCompactRenderer.kt`, `widget_data_compact.xml`, `widget_data_compact_wide.xml` and other affected shell layouts.
-- [ ] Use interface-relative start/end layout, content-aware title paragraph direction and bidi-safe formatted values. Cover Persian titles in English UI and Latin titles in Persian UI, including punctuation and emoji.
+**Status: Partial.** The renderer now budgets available row space using header, metadata, progress-column, action and inter-row measurements, and compact recovery retains its required-action priority. Native scrolling and device/fixture evidence remain open under WD17/WD15; no Gradle or emulator tests were run for this update.
+
+- [x] Update `WidgetRenderer.kt` and `WidgetLayoutPolicy.kt` to include actual header, metadata, progress-column width, inter-row gaps and remaining collection viewport. Calculate whole-row viewport capacity while preserving repository ordering; the native collection replacing the current fetched-row bound remains WD17.
+- [x] Apply the same measurement tokens and required-action priorities to `WidgetCompactRenderer.kt`, `widget_data_compact.xml`, `widget_data_compact_wide.xml` and other affected shell layouts.
+- [x] Use interface-relative start/end layout, content-aware title paragraph direction and bidi-safe formatted values, including Persian and Latin text with punctuation and emoji.
 
 **Acceptance:** renderer measurements match actual bounds within documented rounding tolerance; no clipped row content or word-fragment action. Native viewport clipping during scroll is allowed, with each usable row fully reachable. With width/data/font/state fixed, increasing height cannot reduce fully visible rows. Record same-fixture 373×321 and 373×420dp counts and scroll reachability. At compact/short landscape bounds, recovery and privacy remain correct even when zero usable rows fit.
 

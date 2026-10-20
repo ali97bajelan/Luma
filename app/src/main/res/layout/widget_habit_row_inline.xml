@@ -27,6 +27,9 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:paddingEnd="8dp"
+            android:textDirection="firstStrong"
+            android:textAlignment="viewStart"
+            android:gravity="start|center_vertical"
             android:textColor="@color/widget_on_primary"
             android:textSize="16sp"
             android:textStyle="bold" />
@@ -35,6 +38,8 @@
             android:id="@+id/widget_habit_row_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:textAlignment="viewEnd"
             android:maxLines="1"
             android:singleLine="true"
             android:textColor="@color/widget_on_primary"
@@ -45,12 +50,15 @@
         android:id="@+id/widget_habit_row_action"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/widget_button_background"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/widget_row_action_background"
         android:gravity="center"
         android:minWidth="48dp"
         android:minHeight="48dp"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
-        android:textColor="@color/widget_on_primary"
-        android:textSize="14sp" />
+        android:textColor="@color/widget_mutation_text_light"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:singleLine="true" />
 </LinearLayout>

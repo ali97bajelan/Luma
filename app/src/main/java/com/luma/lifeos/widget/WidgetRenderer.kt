@@ -40,7 +40,12 @@ object WidgetRenderer {
         val totalCountCue: String?,
     )
 
-    private data class MeasuredRow(val heightDp: Int, val inlineHabit: Boolean = false)
+    private data class MeasuredRow(
+        val heightDp: Int,
+        val inlineHabit: Boolean = false,
+        val progressColumnWidthPx: Int = 0,
+        val fitsWidth: Boolean = true,
+    )
 
     fun render(
         context: Context,
@@ -119,6 +124,8 @@ object WidgetRenderer {
         val utilityTextColor = appContext.getColor(if (dark) R.color.widget_action_utility_dark else R.color.widget_action_utility_light)
         val buttonBackground = if (dark) R.drawable.widget_button_background_dark
         else R.drawable.widget_button_background
+        val rowActionBackground = if (dark) R.drawable.widget_row_action_background_dark
+        else R.drawable.widget_row_action_background
         val utilityBackground = if (dark) R.drawable.widget_utility_background_dark
         else R.drawable.widget_utility_background
         val widgetBackground = if (dark) R.drawable.widget_background_dark else R.drawable.widget_background
@@ -174,7 +181,8 @@ object WidgetRenderer {
             views.setContentDescription(R.id.widget_data_open, appContext.getString(R.string.widget_data_setup))
         } else {
             return renderSnapshot(context, appContext, views, widgetId, snapshot, widthDp, heightDp,
-                textColor, secondaryTextColor, utilityTextColor, buttonBackground, utilityBackground)
+                textColor, secondaryTextColor, utilityTextColor, buttonBackground, utilityBackground,
+                rowActionBackground)
         }
         return views
     }
@@ -200,9 +208,11 @@ object WidgetRenderer {
         utilityTextColor: Int,
         buttonBackground: Int,
         utilityBackground: Int,
+        rowActionBackground: Int,
     ): RemoteViews {
         val locale = AppLanguages.current(appContext).locale
-        val snapshotDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(snapshot.date)
+        val snapshotDate = bidiWrapped(appContext,
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(snapshot.date))
         val deviceZone = ZoneId.systemDefault()
         val zoneSuffix = if (snapshot.zone != deviceZone) {
             appContext.getString(R.string.widget_data_tracking_zone,
@@ -232,16 +242,17 @@ object WidgetRenderer {
             }
         }
         val scopeText = summary
-        views.setTextViewText(R.id.widget_data_summary, scopeText)
-        val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)
-            .format(snapshot.updatedAt.atZone(snapshot.zone))
+        views.setTextViewText(R.id.widget_data_summary, bidiWrapped(appContext, scopeText))
+        val time = bidiWrapped(appContext, DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)
+            .format(snapshot.updatedAt.atZone(snapshot.zone)))
         val updatedDate = snapshot.updatedAt.atZone(snapshot.zone).toLocalDate()
         val updatedText = if (updatedDate == snapshot.date) {
             appContext.getString(R.string.widget_data_fresh_same, snapshotDate, time, zoneSuffix)
         } else {
             appContext.getString(R.string.widget_data_fresh_different,
                 snapshotDate,
-                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(updatedDate),
+                bidiWrapped(appContext,
+                    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(updatedDate)),
                 time,
                 zoneSuffix)
         }
@@ -307,11 +318,18 @@ object WidgetRenderer {
         renderFeedback(context, appContext, feedbackViews, widgetId, snapshot, textColor, utilityTextColor,
             buttonBackground, utilityBackground, feedbackText, inlineFeedback)
         views.addView(R.id.widget_feedback_slot, feedbackViews)
+        val progressColumnWidthPx = rows.filterIsInstance<WidgetRow.Habit>().maxOfOrNull { row ->
+            measureTextWidth(appContext, habitProgressText(appContext, row), 14f).roundToInt()
+        } ?: 0
         val measurements = rows.map { row ->
             when (row) {
-                is WidgetRow.Habit -> measureHabitRow(appContext, widthDp, row)
-                is WidgetRow.Task -> MeasuredRow(measureTaskRowHeight(appContext, widthDp, row, snapshot.date))
+                is WidgetRow.Habit -> measureHabitRow(appContext, widthDp, row, progressColumnWidthPx)
+                is WidgetRow.Task -> measureTaskRow(appContext, widthDp, row, snapshot.date)
             }
+        }
+        if (measurements.any { !it.fitsWidth }) {
+            return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
+                "$scopeText\n$updatedText")
         }
         val capacity = WidgetLayoutPolicy.rowCapacity(
             widthDp, heightDp, fontScale, reserved, measurements.map { it.heightDp },
@@ -320,12 +338,16 @@ object WidgetRenderer {
         views.setContentDescription(R.id.widget_data_open,
             viewAllDescription(appContext, snapshot.instance.kind, snapshot.total, snapshot.instance.showDetails))
         visibleRows.forEachIndexed { index, row ->
+            if (index > 0) {
+                views.addView(R.id.widget_data_rows,
+                    RemoteViews(context.packageName, R.layout.widget_data_row_gap))
+            }
             val rowViews = when (row) {
                 is WidgetRow.Habit -> habitRow(context, appContext, snapshot, widgetId, row, textColor,
-                    secondaryTextColor, buttonBackground,
-                    measurements[index].inlineHabit)
+                    secondaryTextColor, rowActionBackground,
+                    measurements[index].inlineHabit, measurements[index].progressColumnWidthPx)
                 is WidgetRow.Task -> taskRow(context, appContext, snapshot, widgetId, row, textColor,
-                    secondaryTextColor, buttonBackground)
+                    secondaryTextColor, rowActionBackground)
             }
             views.addView(R.id.widget_data_rows, rowViews)
         }
@@ -340,19 +362,23 @@ object WidgetRenderer {
         row: WidgetRow.Habit,
         textColor: Int,
         secondaryTextColor: Int,
-        buttonBackground: Int,
+        rowActionBackground: Int,
         inline: Boolean,
+        progressColumnWidthPx: Int,
     ) = RemoteViews(context.packageName,
         if (inline) R.layout.widget_habit_row_inline else R.layout.widget_habit_row).apply {
         setTextColor(R.id.widget_habit_row_title, textColor)
         setTextColor(R.id.widget_habit_row_count, secondaryTextColor)
         setTextColor(R.id.widget_habit_row_action,
             appContext.getColor(if (isAppDark(context, appContext)) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light))
-        setInt(R.id.widget_habit_row_action, "setBackgroundResource", buttonBackground)
+        setInt(R.id.widget_habit_row_action, "setBackgroundResource", rowActionBackground)
         setTextViewText(R.id.widget_habit_row_title, row.title)
+        if (inline && progressColumnWidthPx > 0) {
+            setInt(R.id.widget_habit_row_count, "setWidth", progressColumnWidthPx)
+        }
         setContentDescription(
             R.id.widget_habit_row_text,
-            appContext.getString(R.string.widget_habit_open_description, row.title),
+            appContext.getString(R.string.widget_habit_open_description, bidiWrapped(appContext, row.title)),
         )
         setOnClickPendingIntent(
             R.id.widget_habit_row_text,
@@ -365,7 +391,7 @@ object WidgetRenderer {
         val count = habitProgressText(appContext, row)
         setTextViewText(R.id.widget_habit_row_count, count)
         setContentDescription(R.id.widget_habit_row_text,
-            appContext.getString(R.string.widget_habit_open_description, row.title) + ", " + count)
+            appContext.getString(R.string.widget_habit_open_description, bidiWrapped(appContext, row.title)) + ", " + count)
 
         val canLog = !row.skipped && row.count < row.target && row.actionToken != null
         setViewVisibility(R.id.widget_habit_row_action, if (canLog) View.VISIBLE else View.GONE)
@@ -373,7 +399,7 @@ object WidgetRenderer {
             setTextViewText(R.id.widget_habit_row_action, appContext.getString(R.string.widget_habit_log_short))
             setContentDescription(
                 R.id.widget_habit_row_action,
-                appContext.getString(R.string.widget_habit_log_description, row.title),
+                appContext.getString(R.string.widget_habit_log_description, bidiWrapped(appContext, row.title)),
             )
             setOnClickPendingIntent(
                 R.id.widget_habit_row_action,
@@ -390,7 +416,7 @@ object WidgetRenderer {
         row: WidgetRow.Task,
         textColor: Int,
         secondaryTextColor: Int,
-        buttonBackground: Int,
+        rowActionBackground: Int,
     ) = RemoteViews(context.packageName, R.layout.widget_task_row).apply {
         setTextColor(R.id.widget_task_row_title, textColor)
         val dueColor = if (row.dueDate.isBefore(snapshot.date)) {
@@ -399,11 +425,11 @@ object WidgetRenderer {
         setTextColor(R.id.widget_task_row_due, dueColor)
         setTextColor(R.id.widget_task_row_action,
             appContext.getColor(if (isAppDark(context, appContext)) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light))
-        setInt(R.id.widget_task_row_action, "setBackgroundResource", buttonBackground)
+        setInt(R.id.widget_task_row_action, "setBackgroundResource", rowActionBackground)
         setTextViewText(R.id.widget_task_row_title, row.title)
         setContentDescription(
             R.id.widget_task_row_text,
-            appContext.getString(R.string.widget_task_open_description, row.title),
+            appContext.getString(R.string.widget_task_open_description, bidiWrapped(appContext, row.title)),
         )
         setOnClickPendingIntent(
             R.id.widget_task_row_text,
@@ -411,7 +437,8 @@ object WidgetRenderer {
         )
         setTextViewText(R.id.widget_task_row_due, taskDueLabel(appContext, row, snapshot.date))
         setContentDescription(R.id.widget_task_row_text,
-            appContext.getString(R.string.widget_task_open_description, row.title) + ", " + taskDueLabel(appContext, row, snapshot.date))
+            appContext.getString(R.string.widget_task_open_description, bidiWrapped(appContext, row.title)) +
+                ", " + taskDueLabel(appContext, row, snapshot.date))
 
         val canComplete = row.actionToken != null
         setViewVisibility(R.id.widget_task_row_action, if (canComplete) View.VISIBLE else View.GONE)
@@ -419,7 +446,7 @@ object WidgetRenderer {
             setTextViewText(R.id.widget_task_row_action, appContext.getString(R.string.widget_task_complete))
             setContentDescription(
                 R.id.widget_task_row_action,
-                appContext.getString(R.string.widget_task_complete_description, row.title),
+                appContext.getString(R.string.widget_task_complete_description, bidiWrapped(appContext, row.title)),
             )
             setOnClickPendingIntent(
                 R.id.widget_task_row_action,
@@ -573,7 +600,7 @@ object WidgetRenderer {
                 WidgetKind.HABITS -> R.plurals.widget_habits_total
                 else -> R.plurals.widget_tasks_total
             }
-            context.resources.getQuantityString(countResource, total, total).takeIf {
+            bidiWrapped(context, context.resources.getQuantityString(countResource, total, total)).takeIf {
                 measureTextWidth(context, it, 12f) <= titleTextWidthPx
             }
         } else null
@@ -597,9 +624,9 @@ object WidgetRenderer {
         }
         if (total <= 0) return label
         return if (showDetails) {
-            context.getString(R.string.widget_view_all_count, label, total)
+            bidiWrapped(context, context.getString(R.string.widget_view_all_count, label, total))
         } else {
-            context.getString(R.string.widget_view_all_hidden_count, label, total)
+            bidiWrapped(context, context.getString(R.string.widget_view_all_hidden_count, label, total))
         }
     }
 
@@ -617,15 +644,21 @@ object WidgetRenderer {
         null -> WidgetDestination.Today
     }
 
-    private fun measureHabitRow(context: Context, widthDp: Int, row: WidgetRow.Habit): MeasuredRow {
+    private fun measureHabitRow(
+        context: Context,
+        widthDp: Int,
+        row: WidgetRow.Habit,
+        progressColumnWidthPx: Int,
+    ): MeasuredRow {
         val density = context.resources.displayMetrics.density
         val canLog = !row.skipped && row.count < row.target && row.actionToken != null
         val actionWidthDp = if (canLog) max(48f,
             measureTextWidth(context, context.getString(R.string.widget_habit_log_short), 14f) / density + 24f) else 0f
-        val textWidthDp = (widthDp - 24 - actionWidthDp - 8).coerceAtLeast(1f)
+        val rawTextWidthDp = widthDp - 24 - actionWidthDp - if (canLog) 8 else 0
+        val textWidthDp = rawTextWidthDp.coerceAtLeast(1f)
         val textWidthPx = (textWidthDp * density).toInt().coerceAtLeast(1)
         val count = habitProgressText(context, row)
-        val countWidthDp = measureTextWidth(context, count, 14f) / density
+        val countWidthDp = progressColumnWidthPx / density
         val inlineTitleWidthDp = (textWidthDp - countWidthDp - 8).coerceAtLeast(1f)
         val inline = measureTextWidth(context, row.title, 16f, bold = true) <= inlineTitleWidthDp * density
         val height = if (inline) {
@@ -639,24 +672,35 @@ object WidgetRenderer {
             val countHeight = measureTextHeight(context, count, textWidthPx, 14f)
             max(48, titleHeight + countHeight)
         }
-        return MeasuredRow(height, inline)
+        return MeasuredRow(height, inline, progressColumnWidthPx, rawTextWidthDp >= 48f)
     }
 
-    private fun measureTaskRowHeight(context: Context, widthDp: Int, row: WidgetRow.Task, date: LocalDate): Int {
+    private fun measureTaskRow(
+        context: Context,
+        widthDp: Int,
+        row: WidgetRow.Task,
+        date: LocalDate,
+    ): MeasuredRow {
         val density = context.resources.displayMetrics.density
+        val canComplete = row.actionToken != null
         val actionText = context.getString(R.string.widget_task_complete)
-        val actionWidthDp = max(48f, measureTextWidth(context, actionText, 14f) / density + 16f)
-        val textWidthPx = ((widthDp - 24f - actionWidthDp - 8f) * density).toInt().coerceAtLeast(1)
+        val actionWidthDp = if (canComplete) max(48f,
+            measureTextWidth(context, actionText, 14f) / density + 16f) else 0f
+        val rawTextWidthDp = widthDp - 24f - actionWidthDp - if (canComplete) 8f else 0f
+        val textWidthPx = (rawTextWidthDp.coerceAtLeast(1f) * density).toInt()
         val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
         val dueHeight = measureTextHeight(context, taskDueLabel(context, row, date), textWidthPx, 14f)
-        return max(48, titleHeight + dueHeight)
+        return MeasuredRow(max(56, titleHeight + dueHeight), fitsWidth = rawTextWidthDp >= 48f)
     }
 
     private fun habitProgressText(context: Context, row: WidgetRow.Habit): String = when {
         row.skipped -> context.getString(R.string.widget_habit_skipped, row.count, row.target)
         row.count >= row.target -> context.getString(R.string.widget_habit_target_reached, row.count, row.target)
         else -> context.getString(R.string.widget_habit_count, row.count, row.target)
-    }
+    }.let { bidiWrapped(context, it) }
+
+    private fun bidiWrapped(context: Context, text: String): String =
+        BidiFormatter.getInstance(AppLanguages.current(context).locale).unicodeWrap(text)
 
     internal fun measureTextWidth(context: Context, text: String, sizeSp: Float, bold: Boolean = false): Float {
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -674,7 +718,8 @@ object WidgetRenderer {
     private fun taskDueLabel(context: Context, row: WidgetRow.Task, date: LocalDate): String {
         if (row.dueDate == date) return context.getString(R.string.widget_task_due_today)
         val locale = AppLanguages.current(context).locale
-        val dueDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(row.dueDate)
+        val dueDate = bidiWrapped(context,
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(row.dueDate))
         return if (row.dueDate.isBefore(date)) {
             context.getString(R.string.widget_task_overdue, dueDate)
         } else {
@@ -739,6 +784,7 @@ object WidgetRenderer {
         }
         val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, widthPx.coerceAtLeast(1))
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setTextDirection(android.text.TextDirectionHeuristics.FIRSTSTRONG_LTR)
             .setIncludePad(true)
             .setUseLineSpacingFromFallbacks(true)
             .setBreakStrategy(android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)

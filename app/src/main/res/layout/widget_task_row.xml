@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
-    android:minHeight="48dp"
+    android:minHeight="56dp"
     android:orientation="horizontal"
     android:paddingTop="0dp"
     android:paddingBottom="0dp">
@@ -15,11 +15,11 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:minHeight="48dp"
+        android:minHeight="56dp"
         android:gravity="center_vertical"
         android:background="?android:attr/selectableItemBackground"
         android:paddingStart="0dp"
-        android:paddingEnd="8dp">
+        android:paddingEnd="0dp">
 
         <TextView
             android:id="@+id/widget_task_row_title"
@@ -29,26 +29,35 @@
             android:maxLines="2"
             android:textColor="@color/widget_on_primary"
             android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textDirection="firstStrong"
+            android:textAlignment="viewStart"
+            android:gravity="start|center_vertical" />
 
         <TextView
             android:id="@+id/widget_task_row_due"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/widget_on_primary"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:textDirection="firstStrong"
+            android:textAlignment="viewStart"
+            android:gravity="start|center_vertical" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/widget_task_row_action"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/widget_button_background"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/widget_row_action_background"
         android:gravity="center"
         android:minWidth="48dp"
         android:minHeight="48dp"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
-        android:textColor="@color/widget_on_primary"
-        android:textSize="14sp" />
+        android:textColor="@color/widget_mutation_text_light"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:singleLine="true" />
 </LinearLayout>
