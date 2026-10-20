@@ -55,7 +55,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                                 modifier = Modifier.testTag("review_source_order"))
                         }
                         if (page.records.isEmpty()) item { Text(stringResource(R.string.review_no_sources)) }
-                        if (page.offset > 0) item { TextButton(onClick = { offset = maxOf(0, page.offset - 50) }, modifier = Modifier.testTag("review_source_previous")) { Text(stringResource(R.string.search_earlier)) } }
+                        if (page.offset > 0) item { TextButton(onClick = { offset = maxOf(0, page.offset - 50) }, modifier = Modifier.testTag("review_source_previous")) { Text(stringResource(R.string.review_source_previous_page)) } }
                         items(page.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { row ->
                             Column {
                                 Text(row.event.occurredAt.atZone(zone).toLocalDate().format(format))
@@ -63,7 +63,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                             }
                         }
                         if (page.offset + page.records.size < page.totalCount) item {
-                            TextButton(onClick = { offset = page.offset + 50 }, modifier = Modifier.testTag("review_source_next")) { Text(stringResource(R.string.search_later)) }
+                            TextButton(onClick = { offset = page.offset + 50 }, modifier = Modifier.testTag("review_source_next")) { Text(stringResource(R.string.review_source_next_page)) }
                         }
                     }
                 }

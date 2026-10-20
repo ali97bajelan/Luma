@@ -10,7 +10,7 @@
 
 **Spec:** [UX-027 specification](../specs/2026-10-20-audit-n-ux-027-entry-search-scope-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Implementation changes and regression assertions added; acceptance pending. No Gradle or emulator tests were run per user instruction. Relative effort: Low.
 
 ## Global Constraints
 
@@ -52,7 +52,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: Add search_entries_title = Search entries and search_scope_help = Matches entry titles, tags, people and places. Journal text, notes, habit logs and tasks aren't searched. Provide EN/FR/FA translations; SearchRoute renders help adjacent to the query field with normal readable semantics.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -72,9 +72,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Add dedicated title/scope resources in all three locales and update destination/entry-point copy.
+- [x] **Step 4: Implement the owning contract.** Add dedicated title/scope resources in all three locales and update destination/entry-point copy.
 
-- [ ] **Step 5: Connect the behavior.** Place scope help next to the query control so it remains inspectable across result states.
+- [x] **Step 5: Connect the behavior.** Place scope help next to the query control so it remains inspectable across result states.
 
 - [ ] **Step 6: Exercise the complete flow.** Review query behavior against SQL and verify that no repository/index changes enter the patch.
 
@@ -84,5 +84,5 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
+Deliver this task's code changes, five scenario results and remaining device limitations together. Implementation changes and regression assertions have been added. Acceptance validation remains pending; no Gradle or emulator tests were run per user instruction. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
 

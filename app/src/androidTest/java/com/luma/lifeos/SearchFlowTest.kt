@@ -32,7 +32,9 @@ class SearchFlowTest {
         }
         try {
             compose.onNodeWithTag("nav_timeline").performClick()
+            compose.onNodeWithTag("timeline_search").assertTextEquals("Search entries")
             compose.onNodeWithTag("timeline_search").performClick(); awaitTag("screen_search")
+            compose.onNodeWithTag("search_title").assertTextEquals("Search entries")
             compose.onNodeWithTag("search_text").performTextReplacement(token)
             awaitTag("event_$older"); awaitTag("event_$newer")
             compose.onNodeWithTag("search_order").assertTextEquals("Newest first")

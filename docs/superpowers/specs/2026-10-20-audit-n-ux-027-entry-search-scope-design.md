@@ -1,6 +1,6 @@
 # UX-027 — Generic Search does not explain excluded content
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implementation complete; acceptance pending. Gradle and emulator checks were not run per user instruction.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-027](../../UI_UX_AUDIT-20261020N.md#ux-027--generic-search-does-not-explain-excluded-content)
 **Priority / effort / confidence:** P2 — Medium / Low / High (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Explain the existing entry-search scope so excluded personal text is not mistaken for missing records. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not runtime acceptance. Implementation is in place, but the specified test runs, runtime exercises and commit remain pending.
 
 ## Dependencies
 

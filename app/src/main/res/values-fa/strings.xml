@@ -505,6 +505,8 @@
     <string name="review_usage_app_missing">برای این برنامه در این بازه مقداری ذخیره نشده است</string>
     <string name="review_usage_partial_total_unknown">از سابقهٔ ذخیره‌شده نمی‌توان مجموع این بازه را تعیین کرد.</string>
     <string name="search">جستجو</string>
+    <string name="search_entries_title">جست‌وجوی ثبت‌ها</string>
+    <string name="search_scope_help">عنوان ثبت‌ها، برچسب‌ها، افراد و مکان‌ها پیدا می‌شوند. متن روزنوشت‌ها، یادداشت‌ها، ثبت‌های عادت و کارها جست‌وجو نمی‌شوند.</string>
     <string name="search_text_hint">عنوان، برچسب، فرد یا مکان</string>
     <string name="search_text_help">%1$d/۲۰۰ نویسه</string>
     <string name="search_filters">فیلترهای جستجو</string>
@@ -567,6 +569,8 @@
     <string name="review_view_sources">دیدن منابع این بازه</string>
     <string name="review_view_previous_sources">دیدن منابع بازهٔ قبل</string>
     <string name="review_source_heading">منابع مرور</string>
+    <string name="review_source_previous_page">صفحهٔ قبلی</string>
+    <string name="review_source_next_page">صفحهٔ بعدی</string>
     <string name="review_no_sources">اطلاعاتی که در این انتخاب سهم داشته باشند باقی نمانده است.</string>
     <string name="review_error">مرور ذخیره‌شده بارگذاری نشد. اطلاعات شما محفوظ‌اند.</string>
     <string name="review_empty">نوشته یا اندازه‌گیری ذخیره‌شده‌ای در این بازه وجود ندارد.</string>

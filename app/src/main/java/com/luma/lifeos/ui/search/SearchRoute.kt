@@ -46,7 +46,8 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
     val hasCriteria = state.input.text.isNotBlank() || count > 0
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("screen_search")) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-        Text(stringResource(R.string.search), style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.search_entries_title), style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.testTag("search_title"))
         OutlinedTextField(value = state.input.text, onValueChange = vm::setText, singleLine = true,
             label = { Text(stringResource(R.string.search_text_hint)) },
             supportingText = if (state.input.text.length >= 180) {
@@ -70,6 +71,10 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
             }
             LazyColumn(state = list, modifier = Modifier.weight(1f).testTag("search_results_list"),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item(key = "scope_help") {
+                    Text(stringResource(R.string.search_scope_help), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().testTag("search_scope_help"))
+                }
                 item(key = "active_filters") { ActiveSearchFilters(state, vm::removeFilter) }
                 if (state.loading) item(key = "loading") { CircularProgressIndicator(Modifier.testTag("search_loading")) }
                 if (state.error) item(key = "error") {

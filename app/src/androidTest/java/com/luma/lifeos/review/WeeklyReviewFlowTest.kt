@@ -15,6 +15,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.review.*
+import com.luma.lifeos.domain.search.SearchPage
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.domain.summary.MoodSample
@@ -325,6 +326,89 @@ class WeeklyReviewFlowTest {
         compose.onNodeWithTag("review_usage_date_$today").performClick()
         compose.runOnIdle { assertEquals(today, opened) }
     }
+    @Test fun firstPageHasNextOnly() {
+        val sourceRepository = sourceFixtureRepository()
+        showSourceFixture(sourceRepository)
+        waitForSource(1)
+        compose.onNodeWithTag("review_source_previous").assertDoesNotExist()
+        scrollSourceTo("review_source_next")
+        compose.onNodeWithTag("review_source_next").assertTextEquals("Next page")
+        scrollSourceTo("event_" + sourceId(50))
+        compose.onNodeWithTag("event_" + sourceId(50)).assertExists()
+        compose.onNodeWithTag("event_" + sourceId(51)).assertDoesNotExist()
+    }
+
+    @Test fun middlePageDirectionsAgree() {
+        val sourceRepository = sourceFixtureRepository()
+        showSourceFixture(sourceRepository)
+        scrollSourceTo("review_source_next")
+        compose.onNodeWithTag("review_source_next").performClick()
+        waitForSource(51)
+        compose.onNodeWithTag("review_source_previous").assertTextEquals("Previous page")
+        scrollSourceTo("event_" + sourceId(100))
+        compose.onNodeWithTag("event_" + sourceId(100)).assertExists()
+        scrollSourceTo("review_source_next")
+        compose.onNodeWithTag("review_source_next").assertTextEquals("Next page")
+
+        scrollSourceTo("review_source_previous")
+        compose.onNodeWithTag("review_source_previous").performClick()
+        waitForSource(1)
+        scrollSourceTo("review_source_next")
+        compose.onNodeWithTag("review_source_next").assertTextEquals("Next page")
+    }
+
+    @Test fun lastPageHasPreviousOnly() {
+        val sourceRepository = sourceFixtureRepository()
+        showSourceFixture(sourceRepository)
+        scrollSourceTo("review_source_next")
+        compose.onNodeWithTag("review_source_next").performClick()
+        waitForSource(51)
+        scrollSourceTo("review_source_next")
+        compose.onNodeWithTag("review_source_next").performClick()
+        waitForSource(101)
+        compose.onNodeWithTag("review_source_previous").assertTextEquals("Previous page")
+        compose.onNodeWithTag("review_source_next").assertDoesNotExist()
+        compose.onNodeWithTag("event_" + sourceId(100)).assertDoesNotExist()
+    }
+
+    private fun showSourceFixture(repository: WeeklyReviewRepository) {
+        compose.setContent { LifeOsTheme {
+            ReviewSourcesRoute(repository, ReviewDates(today, today), zone, ReviewMetric(ReviewMetricKind.MOOD),
+                onBack = {}, onEvent = {})
+        } }
+    }
+
+    private fun sourceFixtureRepository(): WeeklyReviewRepository {
+        val records = (1L..101L).map { index ->
+            val occurredAt = now.plusSeconds(index)
+            val id = sourceId(index)
+            LifeEventRecord(LifeEvent(id, EventType.JOURNAL, occurredAt, occurredAt, title = "Source $index"))
+        }
+        return object : WeeklyReviewRepository by repo {
+            override suspend fun sources(dates: ReviewDates, zone: ZoneId, metric: ReviewMetric,
+                offset: Int, limit: Int): SearchPage =
+                SearchPage(records.drop(offset).take(limit), offset, records.size)
+        }
+    }
+
+    private fun sourceId(index: Long) = EventId(UUID(0, index))
+
+    private fun waitForSource(index: Long) {
+        val tag = "event_" + sourceId(index)
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    private fun scrollSourceTo(tag: String) {
+        compose.waitUntil(5_000) {
+            try {
+                compose.onNodeWithTag("review_source_list").performScrollToNode(hasTestTag(tag))
+                true
+            } catch (_: AssertionError) {
+                false
+            }
+        }
+    }
+
     private fun scroll(tag: String) {
         compose.waitUntil(15000) {
             try { compose.onNodeWithTag("memory_review_list").performScrollToNode(hasTestTag(tag)); true }

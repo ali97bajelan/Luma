@@ -3,7 +3,7 @@
 **Date:** 20 October 2026 (Asia/Tehran)
 **Source:** [UI_UX_AUDIT-20261020N.md](UI_UX_AUDIT-20261020N.md)
 **Scope:** 28 task specifications and 28 implementation plans, one pair for every UX-001–UX-028 finding.
-**Status:** Draft implementation documentation; delivery is tracked per task below. UX-001, UX-004, UX-005 and UX-006 are implemented with acceptance pending.
+**Status:** Draft implementation documentation; delivery is tracked per task below. UX-001, UX-004, UX-005, UX-006, UX-016 and UX-027 are implemented with acceptance pending.
 
 ## Intent and interpretation
 
@@ -27,12 +27,12 @@ Every specification defines intent, behavior/policy, architectural contract, dep
 | UX-008 | P2 | Low | Retained task errors can crowd out the task list | [Spec](superpowers/specs/2026-10-20-audit-n-ux-008-task-recovery-list-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-008-task-recovery-list.md) | — | Draft / not started |
 | UX-009 | P2 | Low | Past-day summary Check in opens a current-time entry | [Spec](superpowers/specs/2026-10-20-audit-n-ux-009-summary-dated-capture-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-009-summary-dated-capture.md) | — | Draft / not started |
 | UX-015 | P2 | Low | Habit failures display the wrong operation's message | [Spec](superpowers/specs/2026-10-20-audit-n-ux-015-habit-operation-errors-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-015-habit-operation-errors.md) | — | Draft / not started |
-| UX-016 | P2 | Low | Review source page labels reverse chronological direction | [Spec](superpowers/specs/2026-10-20-audit-n-ux-016-review-source-pagination-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-016-review-source-pagination.md) | — | Draft / not started |
+| UX-016 | P2 | Low | Review source page labels reverse chronological direction | [Spec](superpowers/specs/2026-10-20-audit-n-ux-016-review-source-pagination-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-016-review-source-pagination.md) | — | Implemented / acceptance pending |
 | UX-017 | P2 | Low | Successful integration refresh leaves obsolete error text | [Spec](superpowers/specs/2026-10-20-audit-n-ux-017-integration-error-recovery-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-017-integration-error-recovery.md) | — | Draft / not started |
 | UX-018 | P2 | Low | Several important asynchronous results lack announcement semantics | [Spec](superpowers/specs/2026-10-20-audit-n-ux-018-accessible-async-feedback-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-018-accessible-async-feedback.md) | — | Draft / not started |
 | UX-020 | P2 | Low | Entry card accessibility actions promise Edit but open details | [Spec](superpowers/specs/2026-10-20-audit-n-ux-020-entry-card-action-labels-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-020-entry-card-action-labels.md) | — | Draft / not started |
 | UX-025 | P2 | Low | Restore confirmation has an unbounded warning body | [Spec](superpowers/specs/2026-10-20-audit-n-ux-025-restore-dialog-reachability-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-025-restore-dialog-reachability.md) | — | Draft / not started |
-| UX-027 | P2 | Low | Generic Search does not explain excluded content | [Spec](superpowers/specs/2026-10-20-audit-n-ux-027-entry-search-scope-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-027-entry-search-scope.md) | — | Draft / not started |
+| UX-027 | P2 | Low | Generic Search does not explain excluded content | [Spec](superpowers/specs/2026-10-20-audit-n-ux-027-entry-search-scope-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-027-entry-search-scope.md) | — | Implemented / acceptance pending |
 | UX-022 | P2 | Low | Visible headings are missing semantic heading roles | [Spec](superpowers/specs/2026-10-20-audit-n-ux-022-semantic-headings-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-022-semantic-headings.md) | — | Draft / not started |
 | UX-023 | P2 | Low | Expanded disclosures lose their subject and state | [Spec](superpowers/specs/2026-10-20-audit-n-ux-023-named-stateful-disclosures-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-023-named-stateful-disclosures.md) | — | Draft / not started |
 | UX-019 | P2 | Medium | Saved records and capture use different hour-cycle policies | [Spec](superpowers/specs/2026-10-20-audit-n-ux-019-shared-display-time-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-019-shared-display-time.md) | — | Draft / not started |

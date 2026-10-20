@@ -491,6 +491,8 @@
     <string name="review_usage_app_missing">No saved value for this app in this period</string>
     <string name="review_usage_partial_total_unknown">The saved history does not establish a total for this period.</string>
     <string name="search">Search</string>
+    <string name="search_entries_title">Search entries</string>
+    <string name="search_scope_help">Matches entry titles, tags, people and places. Journal text, notes, habit logs and tasks aren\'t searched.</string>
     <string name="search_text_hint">Title, tag, person or place</string>
     <string name="search_text_help">%1$d/200 characters</string>
     <string name="search_filters">Search filters</string>
@@ -553,6 +555,8 @@
     <string name="review_view_sources">View this period’s sources</string>
     <string name="review_view_previous_sources">View previous sources</string>
     <string name="review_source_heading">Review sources</string>
+    <string name="review_source_previous_page">Previous page</string>
+    <string name="review_source_next_page">Next page</string>
     <string name="review_no_sources">No contributing records remain for this selection.</string>
     <string name="review_error">Could not load the saved review. Your records are retained.</string>
     <string name="review_empty">No saved entries or measurements in this period.</string>

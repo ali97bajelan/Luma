@@ -55,6 +55,8 @@ class SearchStatesTest {
         val repository = Fixture()
         show(repository)
         awaitTag("search_prompt")
+        compose.onNodeWithTag("search_title").assertTextEquals("Search entries")
+        compose.onNodeWithTag("search_scope_help").assertTextEquals("Matches entry titles, tags, people and places. Journal text, notes, habit logs and tasks aren't searched.")
         compose.onNodeWithTag("search_prompt").assertTextEquals("Search entry titles, tags, people or places")
         compose.onNodeWithTag("event_${repository.entry.event.id}").assertExists()
         compose.onNodeWithTag("search_result_count").assertDoesNotExist()
@@ -70,6 +72,23 @@ class SearchStatesTest {
         compose.runOnIdle { repository.records.value = emptyList() }
         awaitTag("search_empty_library")
         compose.onNodeWithTag("search_prompt").assertDoesNotExist()
+    }
+
+    @Test fun scopeHelpRemainsVisibleInNoMatchAndErrorStates() {
+        val repository = Fixture()
+        show(repository)
+        awaitTag("search_prompt")
+        compose.onNodeWithTag("search_scope_help").assertIsDisplayed()
+
+        compose.onNodeWithTag("search_text").performTextReplacement("Body only text")
+        awaitTag("search_empty")
+        compose.onNodeWithTag("search_scope_help").assertIsDisplayed()
+
+        compose.runOnIdle { repository.pageFailure = true }
+        compose.onNodeWithTag("search_text").performTextReplacement("failure query")
+        awaitTag("search_error")
+        compose.onNodeWithTag("search_scope_help").assertIsDisplayed()
+        compose.onNodeWithText("Retry").assertExists()
     }
 
     @Test fun filterResetPreservesQueryAndClearAllRemovesBoth() {
@@ -125,6 +144,7 @@ class SearchStatesTest {
     }
 
     private class Fixture(initial: List<LifeEventRecord>? = null) : SearchRepository {
+        var pageFailure = false
         val tag = UUID(1, 1)
         val entry = LifeEventRecord(LifeEvent(EventId(UUID(2, 2)), EventType.JOURNAL,
             Instant.parse("2026-10-12T12:00:00Z"), Instant.parse("2026-10-12T12:00:00Z"), title = "Saved entry"))
@@ -132,6 +152,7 @@ class SearchStatesTest {
         override fun observeChanges() = records.map { Unit }
         override fun observeOptions() = flowOf(SearchOptions(tags = listOf(SearchOption(tag, "Unused"))))
         override suspend fun page(query: SearchQuery, zone: ZoneId, offset: Int, limit: Int): SearchPage {
+            if (pageFailure) throw IllegalStateException("Search unavailable")
             val hits = records.value.filter {
                 query.tagIds.isEmpty() && it.event.title.orEmpty().contains(query.text.trim(), ignoreCase = true)
             }
