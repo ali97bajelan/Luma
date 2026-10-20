@@ -10,8 +10,11 @@ import java.util.UUID
 
 object WidgetIntents {
     const val ACTION_NAVIGATION = "com.luma.lifeos.widget.action.NAVIGATE"
+    const val ACTION_REFRESH = "com.luma.lifeos.widget.action.REFRESH"
+    const val ACTION_MUTATION = "com.luma.lifeos.widget.action.MUTATION"
     private const val URI_SCHEME = "luma-widget"
     private const val URI_AUTHORITY = "navigate"
+    private const val ACTION_AUTHORITY = "action"
 
     fun navigation(context: Context, widgetId: Int, destination: WidgetDestination): PendingIntent {
         require(widgetId > 0) { "A live widget ID is required" }
@@ -26,6 +29,68 @@ object WidgetIntents {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    fun refresh(context: Context, widgetId: Int): PendingIntent {
+        require(widgetId > 0) { "A live widget ID is required" }
+        val intent = Intent(context, WidgetActionReceiver::class.java).apply {
+            action = ACTION_REFRESH
+            data = actionUri("refresh", widgetId)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    /** The PendingIntent carries only the live widget ID and opaque persisted command token. */
+    fun mutation(context: Context, widgetId: Int, token: UUID): PendingIntent {
+        require(widgetId > 0) { "A live widget ID is required" }
+        val intent = Intent(context, WidgetActionReceiver::class.java).apply {
+            action = ACTION_MUTATION
+            data = actionUri("mutation", widgetId, token.toString())
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    internal sealed interface Action {
+        val widgetId: Int
+
+        data class Refresh(override val widgetId: Int) : Action
+        data class Mutation(override val widgetId: Int, val token: UUID) : Action
+    }
+
+    /** Decode only explicit receiver actions with canonical identifier paths. */
+    internal fun decodeAction(intent: Intent): Action? {
+        if (intent.component?.className != WidgetActionReceiver::class.java.name) return null
+        val uri = intent.data ?: return null
+        if (uri.scheme != URI_SCHEME || uri.authority != ACTION_AUTHORITY ||
+            uri.userInfo != null || uri.port != -1 || uri.query != null || uri.fragment != null
+        ) return null
+        val parts = uri.pathSegments
+        if (parts.size < 2 || parts[1].toIntOrNull()?.takeIf { it > 0 }?.toString() != parts[1]) return null
+        val widgetId = parts[1].toInt()
+        val action = when (intent.action) {
+            ACTION_REFRESH -> if (parts.size == 2 && parts[0] == "refresh") Action.Refresh(widgetId) else null
+            ACTION_MUTATION -> if (parts.size == 3 && parts[0] == "mutation") {
+                val token = parts[2].canonicalUuid() ?: return null
+                Action.Mutation(widgetId, token)
+            } else null
+            else -> null
+        } ?: return null
+        return action.takeIf {
+            when (it) {
+                is Action.Refresh -> actionUri("refresh", widgetId).toString() == uri.toString()
+                is Action.Mutation -> actionUri("mutation", widgetId, it.token.toString()).toString() == uri.toString()
+            }
+        }
     }
 
     /** Decode only the explicit MainActivity navigation allowlist; extras are never navigation input. */
@@ -101,6 +166,15 @@ object WidgetIntents {
                     WidgetDestination.NewTask -> appendPath("new-task")
                 }
             }
+            .build()
+
+    private fun actionUri(action: String, widgetId: Int, token: String? = null): Uri =
+        Uri.Builder()
+            .scheme(URI_SCHEME)
+            .authority(ACTION_AUTHORITY)
+            .appendPath(action)
+            .appendPath(widgetId.toString())
+            .apply { token?.let { appendPath(it) } }
             .build()
 
     private fun String.canonicalUuid(): UUID? = try {

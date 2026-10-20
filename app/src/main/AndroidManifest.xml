@@ -3,6 +3,7 @@
     <!-- Usage jobs have no network constraints or foreground execution. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:name=".LumaApplication"
         android:allowBackup="false"
@@ -49,6 +50,25 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_capture_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.WidgetActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.luma.lifeos.widget.action.REFRESH" />
+                <action android:name="com.luma.lifeos.widget.action.MUTATION" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".widget.WidgetSystemReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
         </receiver>
     </application>
 </manifest>

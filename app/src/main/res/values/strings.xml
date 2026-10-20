@@ -64,6 +64,27 @@
     <string name="widget_open_luma_description">Open Luma to Today</string>
     <string name="widget_open_quick_capture">Open quick capture</string>
     <string name="widget_open_quick_capture_description">Choose a new mood, memory or journal entry</string>
+    <string name="widget_habits_title">Habits</string>
+    <string name="widget_tasks_title">Tasks</string>
+    <string name="widget_data_setup">Set up this widget in Luma.</string>
+    <string name="widget_data_read_error">Couldn’t update. Counts are unavailable.</string>
+    <string name="widget_habits_summary">%1$d of %2$d targets reached</string>
+    <string name="widget_data_updated_at">%1$s · updated %2$s</string>
+    <string name="widget_data_open">Open</string>
+    <string name="widget_data_open_description">Open this widget’s section in Luma</string>
+    <string name="widget_data_refresh">Refresh</string>
+    <string name="widget_data_refresh_description">Refresh this widget</string>
+    <string name="widget_feedback_saved">Saved</string>
+    <string name="widget_feedback_undone">Undo complete</string>
+    <string name="widget_feedback_stale">This view is out of date. Refresh it.</string>
+    <string name="widget_feedback_conflict">This item changed. Open Luma to review it.</string>
+    <string name="widget_feedback_missing">This item is unavailable. Open Luma.</string>
+    <string name="widget_feedback_unavailable">This action is unavailable. Open Luma.</string>
+    <string name="widget_feedback_failed">Couldn’t save. Open Luma.</string>
+    <plurals name="widget_tasks_summary">
+        <item quantity="one">%1$d task due today or overdue</item>
+        <item quantity="other">%1$d tasks due today or overdue</item>
+    </plurals>
     <string name="capture_intro">Choose what to record.</string>
     <string name="capture_use_now">Use current time</string>
     <string name="capture_add_to_date">Add to %1$s</string>

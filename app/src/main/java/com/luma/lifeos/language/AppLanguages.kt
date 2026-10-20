@@ -8,6 +8,7 @@ import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
 import java.util.Locale
+import com.luma.lifeos.widget.WidgetRefreshCoordinator
 
 /** Applies locale before activity creation so Compose and platform dialogs agree. */
 object AppLanguages {
@@ -42,7 +43,7 @@ object AppLanguages {
 
     /** Return false when persistence fails; keep the current screen and report a retry. */
     fun select(activity: Activity, language: AppLanguage): Boolean {
-        return try {
+        val saved = try {
             if (Build.VERSION.SDK_INT >= 33) {
                 val manager = activity.getSystemService(LocaleManager::class.java)
                 val locales = LocaleList(language.locale)
@@ -58,5 +59,10 @@ object AppLanguages {
         } catch (_: SecurityException) {
             false
         }
+        if (saved) {
+            WidgetRefreshCoordinator.request(activity)
+            WidgetRefreshCoordinator.refreshQuickCapture(activity)
+        }
+        return saved
     }
 }

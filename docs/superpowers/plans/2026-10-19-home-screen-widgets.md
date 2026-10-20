@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-19-home-screen-widgets-design.md](../specs/2026-10-19-home-screen-widgets-design.md)
 
-**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete. WG03 source implementation is complete, and production compiles passed for `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. No Gradle test or emulator/launcher test was run, per request; WG01–WG03 acceptance verification and WG04–WG08 remain pending.
+**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete. WG03 source implementation is complete, and production compiles passed for `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. WG04 source implementation is complete and `:app:assembleDebug` passed. No Gradle test or emulator/launcher test was run, per request; WG01–WG04 acceptance verification and WG05–WG08 remain pending.
 
 ## Global Constraints
 
@@ -148,9 +148,12 @@ WG03 production source compilation passed in `:core:data:compileDebugKotlin` and
 
 - [ ] Write `quickCaptureAloneSchedulesNoPeriodicWork`, `lastDataWidgetCancelsPeriodicWork`, `invalidationDuringRenderQueuesFollowUp`, `actionWorkerRestartDoesNotReplayCommit`, `failedReadRemovesMutationTargets`, `remappedIdsDropOldTokens`. Assert one unique 30-minute periodic request, no overlapping renderer, and no dropped refresh after a write arriving during render. Test actual app process absent for widget actions; simulate delayed work after both relevant midnights and timezone change.
 - [ ] Run focused JVM policy/device lifecycle tests and observe new failures.
-- [ ] Implement event-driven coalescing, e.g. unique APPEND_OR_REPLACE one-time refresh chain with no automatic retry for an expired render request; periodic work requests a refresh rather than rendering concurrently. Reconcile IDs/schedule on provider lifecycle, foreground return and permitted system events. Observe relevant Room content tables while the app process lives. Enqueue refresh after command/Undo/config/restore commit. Use periodic/foreground recovery if post-commit notification is lost. Never query DB on receiver main thread or start usage/health integration from widget workers.
-- [ ] Add immutable explicit non-exported mutation dispatch, token syntax/owner validation and generic safe errors. Worker retries only transient storage failures with the original token; stale/missing/conflict is a completed classified result. For no storage before unlock, show unavailable/Open and wait for an allowed later refresh. Theme/app-language selection requests refresh even on pre-33 devices. Quick capture system refreshes avoid data queries.
-- [ ] Rerun tests and app build/lint. Verify reboot scheduling, removal, cold process actions and persisted feedback in a launcher on disposable data. Commit this slice.
+- [x] Implement serialized APPEND_OR_REPLACE refresh work; periodic work enqueues it instead of rendering concurrently. Reconcile IDs and scheduling on foreground return, removal/remap hooks and permitted system events. Observe Room content tables while the app process lives. Enqueue refresh after command/Undo commits; successful restore invalidates observed content tables. Never query Room in a receiver or start usage/health integration from widget workers.
+- [x] Add immutable explicit non-exported mutation dispatch, canonical token/widget-ID validation and generic read errors. Action workers retry the original token only for failed storage execution; stale/missing/conflict outcomes finish. App theme/language selection refreshes data and Quick capture widgets, including pre-33 language selection. Quick capture refresh uses its static provider and does not query widget data.
+- [x] Run a fresh non-test `:app:assembleDebug` and `:app:lintDebug`; both passed.
+- [ ] Run the focused JVM/device lifecycle checks and verify reboot scheduling, removal, cold-process actions and persisted feedback in a launcher on disposable data. These checks remain pending per request. The user requested a commit message; no commit was created.
+
+WG04 source implementation is complete and `:app:assembleDebug` passed. No Gradle test or emulator/launcher check was run, per request; acceptance verification remains pending.
 
 ## WG05 — Habits widget and responsive shared rendering
 

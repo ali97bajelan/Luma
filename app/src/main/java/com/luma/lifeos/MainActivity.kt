@@ -10,6 +10,7 @@ import com.luma.lifeos.ui.LifeOsApp
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.widget.WidgetIntents
 import com.luma.lifeos.widget.WidgetLaunchViewModel
+import com.luma.lifeos.widget.WidgetRefreshCoordinator
 
 class MainActivity : ComponentActivity() {
     private lateinit var widgetLaunches: WidgetLaunchViewModel
@@ -57,6 +58,12 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         enqueueWidgetLaunch(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        WidgetRefreshCoordinator.request(this)
+        WidgetRefreshCoordinator.refreshQuickCapture(this)
     }
 
     private fun enqueueWidgetLaunch(intent: android.content.Intent) {

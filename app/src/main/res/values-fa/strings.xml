@@ -64,6 +64,27 @@
     <string name="widget_open_luma_description">باز کردن صفحهٔ امروز لوما</string>
     <string name="widget_open_quick_capture">باز کردن ثبت سریع</string>
     <string name="widget_open_quick_capture_description">انتخاب حال‌وهوا، خاطره یا یادداشت روزانه</string>
+    <string name="widget_habits_title">عادت‌ها</string>
+    <string name="widget_tasks_title">کارها</string>
+    <string name="widget_data_setup">این ویجت را در لوما تنظیم کنید.</string>
+    <string name="widget_data_read_error">به‌روزرسانی انجام نشد. شمارش در دسترس نیست.</string>
+    <string name="widget_habits_summary">%1$d هدف از %2$d هدف انجام‌شده</string>
+    <string name="widget_data_updated_at">%1$s · به‌روزرسانی %2$s</string>
+    <string name="widget_data_open">باز کردن</string>
+    <string name="widget_data_open_description">باز کردن این بخش در لوما</string>
+    <string name="widget_data_refresh">تازه‌سازی</string>
+    <string name="widget_data_refresh_description">تازه‌سازی این ویجت</string>
+    <string name="widget_feedback_saved">ذخیره شد</string>
+    <string name="widget_feedback_undone">بازگشت انجام شد</string>
+    <string name="widget_feedback_stale">این نما قدیمی است. آن را تازه‌سازی کنید.</string>
+    <string name="widget_feedback_conflict">این مورد تغییر کرده است. برای بررسی، لوما را باز کنید.</string>
+    <string name="widget_feedback_missing">این مورد در دسترس نیست. لوما را باز کنید.</string>
+    <string name="widget_feedback_unavailable">این کنش در دسترس نیست. لوما را باز کنید.</string>
+    <string name="widget_feedback_failed">ذخیره انجام نشد. لوما را باز کنید.</string>
+    <plurals name="widget_tasks_summary">
+        <item quantity="one">%1$d کار برای امروز یا عقب‌افتاده</item>
+        <item quantity="other">%1$d کار برای امروز یا عقب‌افتاده</item>
+    </plurals>
     <string name="capture_intro">چه چیزی را می‌خواهید ثبت کنید؟</string>
     <string name="capture_use_now">استفاده از زمان فعلی</string>
     <string name="capture_add_to_date">افزودن به %1$s</string>
