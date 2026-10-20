@@ -3,6 +3,7 @@ package com.luma.lifeos
 import android.app.Application
 import android.content.SharedPreferences
 import com.luma.lifeos.data.LumaStorage
+import com.luma.lifeos.ui.mood.FileMoodDraftStore
 import com.luma.lifeos.domain.usage.UsageIntegration
 import com.luma.lifeos.domain.usage.UsageSyncer
 import com.luma.lifeos.integration.usage.AndroidUsageSource
@@ -28,6 +29,7 @@ class LumaApplication : Application() {
     // Construction is lazy; the database opens off the main thread on the first suspend/Flow query.
     val appDataReset: com.luma.lifeos.ui.privacy.AppDataReset by lazy { com.luma.lifeos.ui.privacy.AndroidAppDataReset(this) }
     val storage: LumaStorage by lazy { LumaStorage(this) }
+    val moodDraftStore: FileMoodDraftStore by lazy { FileMoodDraftStore(this) }
     val usage: UsageIntegration by lazy {
         UsageSyncer(AndroidUsageSource(this), storage.usage, UsageWorkScheduler(this, UsageWorker::class.java))
     }

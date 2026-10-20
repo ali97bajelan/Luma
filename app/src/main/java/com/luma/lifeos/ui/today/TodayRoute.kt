@@ -75,6 +75,7 @@ fun TodayRoute(
     onAddTask: (LocalDate) -> Unit = {},
     onTaskActionResult: (TodoActionResult) -> Unit = {},
     snackbarHostState: SnackbarHostState? = null,
+    onHabitOpenDate: (LocalDate) -> Unit = {},
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
@@ -166,7 +167,8 @@ fun TodayRoute(
                 onHabitLog = { id -> displayedHabits.date?.let { selected ->
                     displayedHabits.rowsFor(selected).firstOrNull { it.day.habit.id == id }?.let(habitViewModel::log)
                 } }, onHabitRetryLog = habitViewModel::retryLog,
-                onHabitRetry = habitViewModel::retry, onHabitUndo = habitViewModel::undoLog, onCapture = onCapture,
+                onHabitRetry = habitViewModel::retry, onHabitUndo = habitViewModel::undoLog,
+                onHabitOpenDate = onHabitOpenDate, onCapture = onCapture,
                 todayTasks = todayTasks, todayTaskActions = todayTaskActions, onTask = onTask, onSetTaskCompleted = { task, completed ->
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },

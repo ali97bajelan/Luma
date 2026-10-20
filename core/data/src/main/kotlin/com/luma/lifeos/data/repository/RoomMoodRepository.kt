@@ -13,6 +13,7 @@ import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.MoodInput
+import com.luma.lifeos.domain.model.MoodNotePolicy
 import com.luma.lifeos.domain.repository.MoodRepository
 import java.time.Clock
 import java.util.UUID
@@ -42,6 +43,10 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
 
     override suspend fun create(id: EventId, input: MoodInput): EventId = database.withTransaction {
         val previous = database.lifeEvents().getDetails(id.toString())
+        val previousNote = previous?.mood?.note.orEmpty()
+        require(MoodNotePolicy.canAcceptMoodNote(previousNote, input.note.orEmpty())) {
+            "Mood note may contain at most ${MoodNotePolicy.LIMIT} UTF-16 units unless it is unchanged or shortened"
+        }
         val note = input.note.cleanNote()
         if (previous != null) {
             val record = editable(previous).toRecord()
@@ -70,6 +75,10 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
     override suspend fun update(id: EventId, input: MoodInput) = database.withTransaction {
         val previous = editable(requireNotNull(database.lifeEvents().getDetails(id.toString())) { "Check-in was deleted" })
         val record = previous.toRecord()
+        val previousNote = record.mood?.note.orEmpty()
+        require(MoodNotePolicy.canAcceptMoodNote(previousNote, input.note.orEmpty())) {
+            "Mood note may contain at most ${MoodNotePolicy.LIMIT} UTF-16 units unless it is unchanged or shortened"
+        }
         val note = input.note.cleanNote()
         envelopes.upsertInTransaction(record.event.copy(occurredAt = input.occurredAt, endedAt = null,
             updatedAt = maxOf(clock.instant(), record.event.updatedAt), note = note))

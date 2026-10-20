@@ -75,6 +75,7 @@ fun TodayScreen(
     onRetryTasks: () -> Unit = {},
     onRetryTask: (UUID) -> Unit = {},
     onDismissTaskError: (UUID) -> Unit = {},
+    onHabitOpenDate: (LocalDate) -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(screenTag),
@@ -91,7 +92,8 @@ fun TodayScreen(
             TodayCaptureActions(date, zone, empty = state == TodayUiState.Empty, onCapture = onCapture)
         }
         habitsState?.let { item(key = "habits") {
-            TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry)
+            TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
+                onOpenDate = onHabitOpenDate)
         } }
         todayTasks?.let { taskState -> item(key = "today_tasks") {
             TodayTasksCard(

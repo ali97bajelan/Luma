@@ -1,6 +1,6 @@
 # UX-001 — Habit retries conceal the date they will affect
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implemented / acceptance pending. Gradle, emulator and manual runtime checks were not run per request.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-001](../../UI_UX_AUDIT-20261020N.md#ux-001--habit-retries-conceal-the-date-they-will-affect)
 **Priority / effort / confidence:** P1 — High / Medium / High (copied from the static audit; not a delivery estimate).

@@ -69,7 +69,7 @@ fun HabitsScreen(
     val groups = splitHabitRows(rows)
     val trackingDate = LocalDate.now(state.trackingZone ?: deviceZone)
     val forceOtherOpen = groups.other.any { row ->
-        state.pendingLogs.any { it.input.habitId == row.day.habit.id }
+        state.pendingLogs.any { it.input.habitId == row.day.habit.id && it.input.date == selectedDate }
     }
     val saveableStateHolder = rememberSaveableStateHolder()
 
@@ -156,11 +156,12 @@ fun HabitsScreen(
                     items(groups.scheduled, key = { "scheduled:${it.day.habit.id}" }) { row ->
                         HabitRow(
                             row = row,
-                            pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id },
+                            pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id && it.input.date == selectedDate },
                             pendingSchedule = state.pendingSchedules[row.day.habit.id],
                             onOpen = { onHabit(row.day.habit.id) },
                             onLog = { onLog(row.day.habit.id) },
                             onRetry = onRetryLog,
+                            onOpenDate = onSelectDate,
                             compact = false,
                         )
                     }
@@ -189,11 +190,12 @@ fun HabitsScreen(
                             items(groups.other, key = { "other:${it.day.habit.id}" }) { row ->
                                 HabitRow(
                                     row = row,
-                                    pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id },
+                                    pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id && it.input.date == selectedDate },
                                     pendingSchedule = state.pendingSchedules[row.day.habit.id],
                                     onOpen = { onHabit(row.day.habit.id) },
                                     onLog = {},
                                     onRetry = onRetryLog,
+                                    onOpenDate = onSelectDate,
                                     compact = false,
                                     showLog = false,
                                 )
@@ -205,6 +207,19 @@ fun HabitsScreen(
                     Text(stringResource(R.string.habit_action_error), color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.testTag("habit_action_error"))
                 } }
+                val representedHabitIds = rows.mapTo(mutableSetOf()) { it.day.habit.id }
+                val retained = state.pendingLogs.filter {
+                    it.input.date != selectedDate || it.input.habitId !in representedHabitIds
+                }
+                if (retained.isNotEmpty()) {
+                    item(key = "habit_retained_actions_heading") {
+                        Text(stringResource(R.string.habit_retained_actions), style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.testTag("habit_retained_actions_heading"))
+                    }
+                    items(retained, key = { "retained:${it.id}" }) { action ->
+                        PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onSelectDate)
+                    }
+                }
             }
         }
     }
@@ -220,6 +235,7 @@ internal fun HabitRow(
     onRetry: (UUID) -> Unit,
     compact: Boolean,
     showLog: Boolean = true,
+    onOpenDate: (LocalDate) -> Unit = {},
 ) {
     val day = row.day
     val logUnit = habitUnitLabel(day.habit, 1)
@@ -247,14 +263,7 @@ internal fun HabitRow(
             }
             if (showLog) row.disabledReason?.let { Text(stringResource(disabledLabel(it)), style = MaterialTheme.typography.bodySmall) }
             pending.forEach { action ->
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(if (action.error == null) R.string.habit_log_saving else R.string.habit_log_failed),
-                        style = MaterialTheme.typography.bodySmall)
-                    if (action.error != null) TextButton(onClick = { onRetry(action.id) },
-                        modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp).testTag("habit_retry_${action.id}")) {
-                        Text(stringResource(R.string.habit_retry_action))
-                    }
-                }
+                PendingHabitFeedback(action, onRetry = { onRetry(action.id) }, onOpenDate = onOpenDate)
             }
         }
     }

@@ -32,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -77,6 +78,8 @@ import com.luma.lifeos.ui.todo.TodoListRoute
 import com.luma.lifeos.ui.todo.encodeActionResult
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.mood.MoodEditorRoute
+import com.luma.lifeos.ui.mood.FileMoodDraftStore
+import com.luma.lifeos.ui.mood.MoodDraftStore
 import com.luma.lifeos.widget.CaptureKind
 import com.luma.lifeos.widget.WidgetDestination
 import com.luma.lifeos.widget.WidgetLaunchRequest
@@ -117,6 +120,7 @@ fun LifeOsApp(
     widgetLaunch: WidgetLaunchRequest? = null,
     onWidgetLaunchConsumed: (UUID) -> Unit = {},
     widgetStore: WidgetStore? = null,
+    moodDraftStore: MoodDraftStore? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -132,6 +136,10 @@ fun LifeOsApp(
     } }
     LaunchedEffect(photos) {
         try { photos.cleanup() } catch (failure: Exception) { if (failure is CancellationException) throw failure }
+    }
+    val applicationContext = LocalContext.current.applicationContext
+    val resolvedMoodDraftStore = remember(applicationContext, moodDraftStore) {
+        moodDraftStore ?: FileMoodDraftStore(applicationContext)
     }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -168,6 +176,14 @@ fun LifeOsApp(
     }
     fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null) {
         navController.navigate("task_editor?taskId=${taskId?.toString().orEmpty()}&dueDate=${dueDate?.toString().orEmpty()}")
+    }
+    fun openHabitsDate(date: LocalDate) {
+        selectedDate = date.toString()
+        navController.navigate(AppRoutes.HABITS) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
     }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -244,6 +260,7 @@ fun LifeOsApp(
                             onHabits = { navController.navigate(AppRoutes.HABITS) },
                             onCreateHabit = { navController.navigate("habit_editor") },
                             onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                            onHabitOpenDate = ::openHabitsDate,
                             onCapture = { type, date -> openCapture(when (type) {
                                 EventType.MOOD -> "mood"
                                 EventType.JOURNAL -> "journal"
@@ -446,7 +463,7 @@ fun LifeOsApp(
                 HabitDetailRoute(habits, habitId, habitDate, logId,
                     snackbarHostState = snackbarHostState,
                     onEdit = { id -> navController.navigate("habit_editor?habitId=$id") },
-                    onBack = { navController.popBackStack() }, deviceZone = currentDay.zone)
+                    onBack = { navController.popBackStack() }, onOpenDate = ::openHabitsDate, deviceZone = currentDay.zone)
             }
             composable("place?placeId={placeId}", arguments = listOf(navArgument("placeId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
@@ -531,7 +548,8 @@ fun LifeOsApp(
                         navController.popBackStack()
                     }, people = people, onCreatePerson = { navController.navigate("person") },
                         initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
-                        places = places, onCreatePlace = { navController.navigate("place") })
+                        places = places, onCreatePlace = { navController.navigate("place") },
+                        draftStore = resolvedMoodDraftStore)
             }
         }
         LaunchedEffect(widgetLaunch?.id, navController) {

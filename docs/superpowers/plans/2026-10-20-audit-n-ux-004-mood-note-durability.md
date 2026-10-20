@@ -10,7 +10,7 @@
 
 **Spec:** [UX-004 specification](../specs/2026-10-20-audit-n-ux-004-mood-note-durability-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implemented / acceptance pending. Steps 1, 4 and 5 are complete; regression exercises, runtime acceptance and integration remain pending. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -63,7 +63,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: Proposed MoodNotePolicy.LIMIT = 5_000 (UTF-16 units); canAcceptMoodNote(previous: String, next: String): Boolean accepts next.length <= LIMIT, unchanged text, or strictly shorter legacy text. MoodDraftStore has suspend read(id: UUID): MoodDraftSnapshot?, write(id: UUID, snapshot: MoodDraftSnapshot): Unit, remove(id: UUID): Unit. MoodDraftSnapshot contains draft: MoodDraft, revision: Long, pendingDeleteId: EventId? = null, completion: MoodDraftCompletion? = null. MoodDraftCompletion(eventId: EventId, deleted: Boolean) records the durable terminal result. Load checks completion before other dependencies; save/delete retain this snapshot until caller acknowledgement, then remove it.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -91,9 +91,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Implement MoodNotePolicy and apply create versus previous-value update validation without making old stored records unreadable.
+- [x] **Step 4: Implement the owning contract.** Implement MoodNotePolicy and apply create versus previous-value update validation without making old stored records unreadable.
 
-- [ ] **Step 5: Connect the behavior.** Add versioned private atomic snapshots and inject the store through MoodEditorRoute; serialize revisions so older writes cannot overwrite newer accepted text.
+- [x] **Step 5: Connect the behavior.** Add versioned private atomic snapshots and inject the store through MoodEditorRoute; serialize revisions so older writes cannot overwrite newer accepted text.
 
 - [ ] **Step 6: Exercise the complete flow.** Move note persistence out of SavedStateHandle, migrate old keys safely, add inline validation/storage feedback and safe-close protection.
 

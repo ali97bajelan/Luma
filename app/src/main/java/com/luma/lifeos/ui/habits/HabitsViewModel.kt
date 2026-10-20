@@ -108,6 +108,7 @@ class HabitsViewModel(
                         }
                         HabitDayRow(day, canLog = reason == null, disabledReason = reason, selectionGeneration = generation)
                     }
+                    resolvePendingHabitNames(days.associate { it.habit.id to it.habit.name })
                     mutableState.update { if (it.selectionGeneration != generation) it
                         else it.copy(days = rows, loadedDate = date, trackingZone = zone,
                         deviceZone = currentDeviceZone, deviceDate = currentDeviceDate,
@@ -136,7 +137,7 @@ class HabitsViewModel(
         val input = HabitLogInput(row.day.habit.id, row.day.date, zone,
             occurredAt = if (row.day.date == today) habitLogTime(row.day.date,
                 now.atZone(zone).toLocalTime(), zone, now, now.atZone(zone).offset) else null)
-        val action = PendingHabitLog(UUID.randomUUID(), input)
+        val action = PendingHabitLog(UUID.randomUUID(), input, habitName = row.day.habit.name)
         mutableState.update { it.copy(pendingLogs = it.pendingLogs + action, actionError = null) }
         persistPending()
         enqueueLog(action.id)
@@ -369,6 +370,7 @@ class HabitsViewModel(
             val effectiveDate = if (today.isBefore(habit.start)) habit.start else today.plusDays(1)
             val pending = scheduleFor(effectiveDate, schedules)?.takeIf { it.effectiveFrom == effectiveDate }
             val restoredCorrection = if (current.habit == null) readCorrection() else null
+            resolvePendingHabitNames(mapOf(id to habit.name))
             mutableState.update {
                 val latest = it.detail ?: current
                 val correction = if (latest.habit == null) restoredCorrection ?: CorrectionRestore(null)
@@ -548,6 +550,18 @@ class HabitsViewModel(
         saved.remove<String>(CORRECTION_TIME)
     }
 
+    private fun resolvePendingHabitNames(names: Map<UUID, String>) {
+        val current = state.value.pendingLogs
+        val resolved = current.map { pending ->
+            if (pending.habitName.isNotBlank()) pending
+            else names[pending.input.habitId]?.let { pending.copy(habitName = it) } ?: pending
+        }
+        if (resolved != current) {
+            mutableState.update { it.copy(pendingLogs = resolved) }
+            persistPending()
+        }
+    }
+
     private fun persistPending() {
         saved[PENDING_LOGS] = ArrayList(state.value.pendingLogs.map { pending -> encode(pending) })
     }
@@ -556,18 +570,24 @@ class HabitsViewModel(
         zone == input.zone && occurredAt?.toEpochMilli() == input.occurredAt?.toEpochMilli()
 
     private fun encode(action: PendingHabitLog): String = listOf(action.id, action.input.habitId,
-        action.input.date, action.input.zone.id, action.input.occurredAt ?: "-").joinToString("|")
+        action.input.date, action.input.zone.id, action.input.occurredAt ?: "-",
+        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(action.habitName.toByteArray(Charsets.UTF_8)))
+        .joinToString("|")
 
     private fun decodePending(savedValues: List<String>?): List<PendingHabitLog> = savedValues.orEmpty().mapNotNull { value ->
         runCatching {
             val fields = value.split('|')
-            require(fields.size == 5)
+            require(fields.size == 5 || fields.size == 6)
             val id = UUID.fromString(fields[0])
             val habitId = UUID.fromString(fields[1])
             val date = LocalDate.parse(fields[2])
             val zone = ZoneId.of(fields[3])
             val occurredAt = fields[4].takeUnless { it == "-" }?.let(java.time.Instant::parse)
-            PendingHabitLog(id, HabitLogInput(habitId, date, zone, occurredAt))
+            val habitName = fields.getOrNull(5)?.let { encodedName ->
+                runCatching { String(java.util.Base64.getUrlDecoder().decode(encodedName), Charsets.UTF_8) }
+                    .getOrNull()
+            }.orEmpty()
+            PendingHabitLog(id, HabitLogInput(habitId, date, zone, occurredAt), habitName = habitName)
         }.getOrNull()
     }
 

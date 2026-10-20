@@ -10,7 +10,7 @@
 
 **Spec:** [UX-001 specification](../specs/2026-10-20-audit-n-ux-001-habit-retry-context-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implemented / acceptance pending. Steps 1, 4 and 5 are complete; regressions, runtime acceptance and integration remain pending. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -59,7 +59,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: PendingHabitLog gains habitName: String; its existing id: UUID and input: HabitLogInput remain unchanged. PendingHabitFeedback(pending: PendingHabitLog, onRetry: () -> Unit, onOpenDate: (LocalDate) -> Unit): Unit is @Composable. Date navigation calls the existing selected-day owner; Retry calls retryLog(pending.id).
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -83,9 +83,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Snapshot the habit name in enqueueLog and expose inline versus cross-date collections without altering command IDs or repository calls.
+- [x] **Step 4: Implement the owning contract.** Snapshot the habit name in enqueueLog and expose inline versus cross-date collections without altering command IDs or repository calls.
 
-- [ ] **Step 5: Connect the behavior.** Build PendingHabitFeedback and wire all three surfaces, including Open date, retained failure state and localized zone/date copy.
+- [x] **Step 5: Connect the behavior.** Build PendingHabitFeedback and wire all three surfaces, including Open date, retained failure state and localized zone/date copy.
 
 - [ ] **Step 6: Exercise the complete flow.** Exercise failure on day A, navigation to B, Retry and return to A; verify actual repository input and one retained card per action.
 

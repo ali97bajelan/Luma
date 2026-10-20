@@ -36,9 +36,11 @@ fun TodayHabitsCard(
     onRetryLog: (UUID) -> Unit,
     onUndo: (UUID) -> Unit,
     onRetry: () -> Unit,
+    onOpenDate: (LocalDate) -> Unit = {},
 ) {
     val shownDate = state.date ?: fallbackDate
     val rows = state.rowsFor(shownDate)
+    val visibleHabitIds = splitHabitRows(rows).scheduled.take(3).mapTo(mutableSetOf()) { it.day.habit.id }
     Card(Modifier.fillMaxWidth().testTag("today_habits_card")) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
@@ -83,10 +85,21 @@ fun TodayHabitsCard(
                 if (visible.isEmpty()) Text(stringResource(R.string.habit_no_scheduled),
                     modifier = Modifier.testTag("today_habits_none_scheduled"))
                 visible.forEach { row ->
-                    HabitRow(row, state.pendingLogs.filter { it.input.habitId == row.day.habit.id },
+                    HabitRow(row, state.pendingLogs.filter { it.input.habitId == row.day.habit.id && it.input.date == row.day.date },
                         state.pendingSchedules[row.day.habit.id],
                         onOpen = { onHabit(row.day.habit.id, row.day.date) },
-                        onLog = { onLog(row.day.habit.id) }, onRetry = onRetryLog, compact = true)
+                        onLog = { onLog(row.day.habit.id) }, onRetry = onRetryLog, compact = true, onOpenDate = onOpenDate)
+                }
+            }
+            val retained = state.pendingLogs.filter {
+                it.input.date != shownDate || it.input.habitId !in visibleHabitIds
+            }
+            if (retained.isNotEmpty()) {
+                Text(stringResource(R.string.habit_retained_actions), style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.testTag("today_habit_retained_actions_heading"))
+                retained.forEach { action ->
+                    PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onOpenDate,
+                        modifier = Modifier.testTag("today_habit_retained_${action.id}"))
                 }
             }
         }

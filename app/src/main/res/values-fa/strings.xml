@@ -206,6 +206,9 @@
     <string name="mood_scale_description">%1$s، %2$d از ۵</string>
     <string name="mood_optional_value">%1$s: %2$d/۵</string>
     <string name="mood_note">یادداشت (اختیاری)</string>
+    <string name="mood_note_limit_error">یادداشت حداکثر می‌تواند ۵۰۰۰ واحد UTF-16 داشته باشد. متن فعلی شما حفظ شد.</string>
+    <string name="mood_draft_save_error">این پیش‌نویس در این دستگاه به‌روز نشد. متن شما همین‌جا قابل مشاهده است.</string>
+    <string name="mood_draft_retry">تلاش دوباره</string>
     <string name="mood_timestamp">زمان</string>
     <string name="mood_timezone">%1$s (%2$s)</string>
     <string name="capture_timestamp_today">امروز · %1$s</string>
@@ -735,6 +738,10 @@
     <string name="habit_log_disabled_archived">این عادت در این تاریخ بایگانی شده بود.</string>
     <string name="habit_log_saving">در حال ذخیره تکرار…</string>
     <string name="habit_log_failed">این تکرار برای تلاش دوباره نگه داشته شده است.</string>
+    <string name="habit_pending_context">برای %1$s · منطقهٔ زمانی پیگیری %2$s</string>
+    <string name="habit_pending_open_date">باز کردن تاریخ</string>
+    <string name="habit_retained_actions">اقدام‌های عادتِ در انتظار</string>
+    <string name="habit_unavailable">عادت در دسترس نیست</string>
     <string name="habit_retry_action">تلاش دوباره</string>
     <string name="habit_undo">واگرد</string>
     <string name="habit_log_saved">تکرار ذخیره شد.</string>

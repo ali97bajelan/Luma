@@ -64,6 +64,7 @@ fun MoodEditorScreen(
     onTime: (LocalDateTime, ZoneId) -> Boolean,
     peopleContent: @Composable () -> Unit = {},
     placeContent: @Composable () -> Unit = {},
+    onRetryDraft: () -> Unit = {},
 ) {
     var more by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
@@ -95,10 +96,11 @@ fun MoodEditorScreen(
                 }
                 actionError?.let { AccessibleFeedback(it, Modifier.testTag("mood_error")) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("mood_delete")) {
+                    if (editing) TextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,
+                        onClick = { deleting = true }, modifier = Modifier.testTag("mood_delete")) {
                         Text(stringResource(R.string.delete))
                     }
-                    Button(enabled = enabled && state.draft.score != null, onClick = onSave,
+                    Button(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting, onClick = onSave,
                         modifier = Modifier.weight(1f).testTag("mood_save")) {
                         Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                     }
@@ -112,6 +114,19 @@ fun MoodEditorScreen(
             if (state.error == MoodEditorError.LOAD) {
                 AccessibleFeedback(stringResource(R.string.mood_load_error), Modifier.testTag("mood_error"))
                 TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            }
+            if (state.draftStorageError) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AccessibleFeedback(stringResource(R.string.mood_draft_save_error), Modifier.weight(1f).testTag("mood_draft_storage_error"))
+                    TextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_draft_retry")) {
+                        Text(stringResource(R.string.mood_draft_retry))
+                    }
+                }
+            }
+            if (!state.ready && state.draftStorageError && state.draft.note.isNotEmpty()) {
+                OutlinedTextField(value = state.draft.note, onValueChange = {}, readOnly = true,
+                    label = { Text(stringResource(R.string.mood_note)) }, minLines = 3,
+                    modifier = Modifier.fillMaxWidth().testTag("mood_note_recovery_preview"))
             }
             if (state.ready) {
                 CaptureTimestampRow(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
@@ -158,6 +173,8 @@ fun MoodEditorScreen(
                         label = { Text(stringResource(R.string.mood_note)) }, minLines = 3,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
                         modifier = Modifier.fillMaxWidth().testTag("mood_note"))
+                    if (state.noteLimitError) AccessibleFeedback(
+                        stringResource(R.string.mood_note_limit_error), Modifier.testTag("mood_note_limit_error"))
                     peopleContent()
                     placeContent()
                 }

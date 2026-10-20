@@ -194,6 +194,9 @@
     <string name="mood_scale_description">%1$s, %2$d of 5</string>
     <string name="mood_optional_value">%1$s: %2$d/5</string>
     <string name="mood_note">Note (optional)</string>
+    <string name="mood_note_limit_error">Notes may contain up to 5,000 UTF-16 units. Your current text was kept.</string>
+    <string name="mood_draft_save_error">This draft could not be updated on this device. Your text is still visible here.</string>
+    <string name="mood_draft_retry">Retry</string>
     <string name="mood_timestamp">When</string>
     <string name="mood_timezone">%1$s (%2$s)</string>
     <string name="capture_timestamp_today">Today · %1$s</string>
@@ -734,6 +737,10 @@
     <string name="habit_log_disabled_archived">This habit was archived for this date.</string>
     <string name="habit_log_saving">Saving repetition…</string>
     <string name="habit_log_failed">This repetition is waiting to retry.</string>
+    <string name="habit_pending_context">Affects %1$s · tracking zone %2$s</string>
+    <string name="habit_pending_open_date">Open date</string>
+    <string name="habit_retained_actions">Pending habit actions</string>
+    <string name="habit_unavailable">Habit unavailable</string>
     <string name="habit_retry_action">Retry</string>
     <string name="habit_undo">Undo</string>
     <string name="habit_log_saved">Repetition saved.</string>

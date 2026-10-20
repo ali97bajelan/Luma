@@ -1,6 +1,6 @@
 # UX-004 — Unbounded Mood notes are copied into saved instance state
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implemented / acceptance pending. Gradle, emulator and manual runtime checks were not run per request.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-004](../../UI_UX_AUDIT-20261020N.md#ux-004--unbounded-mood-notes-are-copied-into-saved-instance-state)
 **Priority / effort / confidence:** P1 — High / Medium / Medium (copied from the static audit; not a delivery estimate).

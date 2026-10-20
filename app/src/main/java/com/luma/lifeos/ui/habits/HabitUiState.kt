@@ -26,6 +26,7 @@ data class PendingHabitLog(
     val id: UUID,
     val input: HabitLogInput,
     val error: String? = null,
+    val habitName: String = "",
 )
 
 data class HabitLogCorrectionDraft(

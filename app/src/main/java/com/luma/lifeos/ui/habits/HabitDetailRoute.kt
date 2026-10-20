@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -58,6 +59,7 @@ fun HabitDetailRoute(
     onEdit: (UUID) -> Unit,
     onBack: () -> Unit,
     deviceZone: ZoneId = ZoneId.systemDefault(),
+    onOpenDate: (LocalDate) -> Unit = {},
 ) {
     val factory = androidx.compose.runtime.remember(repository, habitId) {
         viewModelFactory { initializer { HabitsViewModel(repository, createSavedStateHandle()) } }
@@ -78,7 +80,7 @@ fun HabitDetailRoute(
         onEdit = { onEdit(habitId) }, onLog = {
             renderedState.rowsFor(date).firstOrNull { it.day.habit.id == habitId }?.let(habits::log)
         },
-        onRetryLog = habits::retryLog, onUndoLog = habits::undoLog,
+        onRetryLog = habits::retryLog, onUndoLog = habits::undoLog, onOpenDate = onOpenDate,
         onSkip = { habits.setSkipRemaining(habitId, true) }, onResumeToday = { habits.setSkipRemaining(habitId, false) },
         onPauseResume = { habits.changeLifecycle(habitId, it) },
         onCancelPending = { habits.cancelPendingSchedule(habitId) },
@@ -114,6 +116,7 @@ fun HabitDetailScreen(
     onSaveCorrection: () -> Unit,
     onCancelCorrection: () -> Unit,
     onRetry: () -> Unit,
+    onOpenDate: (LocalDate) -> Unit = {},
 ) {
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by rememberSaveable { mutableStateOf(false) }
@@ -171,20 +174,25 @@ fun HabitDetailScreen(
                                 Text(stringResource(R.string.habit_log))
                             }
                         }
-                        state.pendingLogs.filter { it.input.habitId == habitId }.forEach { action ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(stringResource(if (action.error == null) R.string.habit_log_saving else R.string.habit_log_failed),
-                                    modifier = Modifier.weight(1f).testTag("habit_detail_pending_${action.id}"))
-                                if (action.error != null) TextButton(onClick = { onRetryLog(action.id) },
-                                    modifier = Modifier.heightIn(min = 48.dp).testTag("habit_detail_retry_${action.id}")) {
-                                    Text(stringResource(R.string.habit_retry_action))
-                                }
-                            }
+                        state.pendingLogs.filter { it.input.habitId == habitId && it.input.date == date }.forEach { action ->
+                            PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onOpenDate,
+                                modifier = Modifier.testTag("habit_detail_pending_${action.id}"),
+                                retryTag = "habit_detail_retry_${action.id}")
                         }
                     }
                 }
                 item(key = "habit_detail_undo_feedback") {
                     HabitUndoStatusFeedback(state, onUndoLog, onlyHabitId = habitId)
+                }
+                val retained = state.pendingLogs.filter { it.input.habitId == habitId && it.input.date != date }
+                if (retained.isNotEmpty()) {
+                    item(key = "habit_detail_retained_heading") {
+                        Text(stringResource(R.string.habit_retained_actions), style = MaterialTheme.typography.titleMedium)
+                    }
+                    items(retained, key = { "detail-retained:${it.id}" }) { action ->
+                        PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onOpenDate,
+                            modifier = Modifier.testTag("habit_detail_retained_${action.id}"))
+                    }
                 }
                 if (canSkip) item {
                     TextButton(onClick = if (day?.skipRemaining == true) onResumeToday else onSkip,

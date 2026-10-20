@@ -198,6 +198,9 @@
     <string name="mood_scale_description">%1$s, %2$d sur 5</string>
     <string name="mood_optional_value">%1$s : %2$d/5</string>
     <string name="mood_note">Note (facultatif)</string>
+    <string name="mood_note_limit_error">Les notes peuvent contenir jusqu’à 5 000 unités UTF-16. Votre texte actuel a été conservé.</string>
+    <string name="mood_draft_save_error">Impossible de mettre à jour ce brouillon sur cet appareil. Votre texte reste visible ici.</string>
+    <string name="mood_draft_retry">Réessayer</string>
     <string name="mood_timestamp">Date et heure</string>
     <string name="mood_timezone">%1$s (%2$s)</string>
     <string name="capture_timestamp_today">Aujourd’hui · %1$s</string>
@@ -748,6 +751,10 @@
     <string name="habit_log_disabled_archived">Cette habitude était archivée à cette date.</string>
     <string name="habit_log_saving">Enregistrement de la répétition…</string>
     <string name="habit_log_failed">Cette répétition est conservée pour une nouvelle tentative.</string>
+    <string name="habit_pending_context">Concerne le %1$s · fuseau de suivi %2$s</string>
+    <string name="habit_pending_open_date">Ouvrir la date</string>
+    <string name="habit_retained_actions">Actions d’habitude en attente</string>
+    <string name="habit_unavailable">Habitude indisponible</string>
     <string name="habit_retry_action">Réessayer</string>
     <string name="habit_undo">Annuler</string>
     <string name="habit_log_saved">Répétition enregistrée.</string>

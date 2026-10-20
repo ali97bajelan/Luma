@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
                     storage.habits,
                     storage.todos,
                     widgetStore = storage.widgets,
+                    moodDraftStore = luma.moodDraftStore,
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,
                 )
