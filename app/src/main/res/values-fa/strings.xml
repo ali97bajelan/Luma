@@ -68,6 +68,8 @@
     <string name="widget_habits_name">عادت‌های لوما</string>
     <string name="widget_habits_description">پیشرفت امروز عادت‌ها را ببینید و از صفحهٔ اصلی یک بار ثبت کنید.</string>
     <string name="widget_tasks_title">کارها</string>
+    <string name="widget_tasks_name">کارهای لوما</string>
+    <string name="widget_tasks_description">کارهای امروز و عقب‌افتاده را ببینید و از صفحهٔ اصلی تکمیل کنید.</string>
     <string name="widget_data_initial">برای دیدن پیشرفت، لوما را باز کنید.</string>
     <string name="widget_data_setup">این ویجت را در لوما تنظیم کنید.</string>
     <string name="widget_data_read_error">به‌روزرسانی انجام نشد. شمارش در دسترس نیست.</string>
@@ -100,6 +102,16 @@
     <string name="widget_habit_log_short">+۱</string>
     <string name="widget_habit_log_description">ثبت یک تکرار برای %1$s</string>
     <string name="widget_habit_open_description">باز کردن %1$s برای این تاریخ</string>
+    <string name="widget_tasks_open">دیدن کارها</string>
+    <string name="widget_tasks_open_description">باز کردن فهرست کارها در لوما</string>
+    <string name="widget_tasks_add">افزودن کار</string>
+    <string name="widget_tasks_add_description">افزودن کاری با موعد امروز</string>
+    <string name="widget_task_due_today">موعد امروز</string>
+    <string name="widget_task_due_date">موعد %1$s</string>
+    <string name="widget_task_overdue">عقب‌افتاده · %1$s</string>
+    <string name="widget_task_complete">تکمیل</string>
+    <string name="widget_task_complete_description">تکمیل %1$s</string>
+    <string name="widget_task_open_description">باز کردن %1$s</string>
     <plurals name="widget_tasks_summary">
         <item quantity="one">%1$d کار برای امروز یا عقب‌افتاده</item>
         <item quantity="other">%1$d کار برای امروز یا عقب‌افتاده</item>

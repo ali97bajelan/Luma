@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-19-home-screen-widgets-design.md](../specs/2026-10-19-home-screen-widgets-design.md)
 
-**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete. WG03 source implementation is complete, and production compiles passed for `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. WG04 and WG05 source implementations are complete and `:app:assembleDebug` passed. No Gradle test or emulator/launcher test was run, per request; WG01–WG05 acceptance verification and WG06–WG08 remain pending.
+**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete. WG03 source implementation is complete, and production compiles passed for `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. WG04–WG06 source implementations are complete. No Gradle test or emulator/launcher test was run, per request; WG01–WG06 acceptance verification and WG07–WG08 remain pending. WG06 `:app:assembleDebug` could not start because the default Gradle cache is read-only and the temporary cache could not download Gradle under the network restriction.
 
 ## Global Constraints
 
@@ -180,7 +180,7 @@ WG05 source implementation is complete and `:app:assembleDebug` passed. No Gradl
 
 - [ ] Write `eligibleScopeExcludesUndatedFutureCompleted`, `completionLeavesUndoVisibleWhenTaskDisappears`, `conflictingCompletionOffersOpenWithoutOverwrite`, `missingTaskNeverOffersCreateRetry`, `addTaskUsesLaunchDateAfterMidnight`. Assert the full eligible count differs correctly from the 3-row prefix; dates remain civil LocalDates; stale Undo cannot reverse a newer task edit/recompletion. Add French long-title/Persian 200% text recovery layout cases.
 - [ ] Run the TasksWidgetTest class with existing Todo persistence/editor regressions; observe new widget assertions fail.
-- [ ] Render scope/date, eligible ordered prefix, Complete, Add task/Open tasks and truthful empty/error states. Reuse exact command tokens and feedback even after completed rows disappear. Completion never uses a blind checkbox toggle; user opens the app for edit or conflict review. Names and row targets are absent in summary mode.
+- [x] Render scope/date, eligible ordered prefix, Complete, Add task/Open tasks and truthful empty/error states. Reuse exact command tokens and feedback even after completed rows disappear. Completion never uses a blind checkbox toggle; user opens the app for edit or conflict review. Names and row targets are absent in summary mode.
 - [ ] Rerun focused widget and Todo tests, build/lint, and inspect multiple independent Tasks instances after app/widget mutations. Commit this slice.
 
 ## WG07 — Configuration, discovery and privacy help

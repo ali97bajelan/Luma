@@ -69,6 +69,8 @@
     <string name="widget_habits_name">Luma · Habitudes</string>
     <string name="widget_habits_description">Consultez la progression du jour et ajoutez une répétition depuis l’écran d’accueil.</string>
     <string name="widget_tasks_title">Tâches</string>
+    <string name="widget_tasks_name">Luma · Tâches</string>
+    <string name="widget_tasks_description">Consultez les tâches en retard ou prévues aujourd’hui et terminez-les depuis l’écran d’accueil.</string>
     <string name="widget_data_initial">Ouvrez Luma pour voir votre progression.</string>
     <string name="widget_data_setup">Configurez ce widget dans Luma.</string>
     <string name="widget_data_read_error">Mise à jour impossible. Les nombres sont indisponibles.</string>
@@ -101,6 +103,16 @@
     <string name="widget_habit_log_short">+1</string>
     <string name="widget_habit_log_description">Ajouter une répétition pour %1$s</string>
     <string name="widget_habit_open_description">Ouvrir %1$s à cette date</string>
+    <string name="widget_tasks_open">Voir les tâches</string>
+    <string name="widget_tasks_open_description">Ouvrir votre liste de tâches dans Luma</string>
+    <string name="widget_tasks_add">Nouvelle tâche</string>
+    <string name="widget_tasks_add_description">Ajouter une tâche prévue aujourd’hui</string>
+    <string name="widget_task_due_today">Pour aujourd’hui</string>
+    <string name="widget_task_due_date">Échéance : %1$s</string>
+    <string name="widget_task_overdue">En retard · %1$s</string>
+    <string name="widget_task_complete">Terminer</string>
+    <string name="widget_task_complete_description">Terminer %1$s</string>
+    <string name="widget_task_open_description">Ouvrir %1$s</string>
     <plurals name="widget_tasks_summary">
         <item quantity="one">%1$d tâche en retard ou prévue aujourd’hui</item>
         <item quantity="other">%1$d tâches en retard ou prévues aujourd’hui</item>

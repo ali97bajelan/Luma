@@ -68,6 +68,8 @@
     <string name="widget_habits_name">Luma Habits</string>
     <string name="widget_habits_description">See today’s habit progress and log a repetition from your home screen.</string>
     <string name="widget_tasks_title">Tasks</string>
+    <string name="widget_tasks_name">Luma Tasks</string>
+    <string name="widget_tasks_description">See tasks due today or overdue and complete them from your home screen.</string>
     <string name="widget_data_initial">Open Luma to view your progress.</string>
     <string name="widget_data_setup">Set up this widget in Luma.</string>
     <string name="widget_data_read_error">Couldn’t update. Counts are unavailable.</string>
@@ -100,6 +102,16 @@
     <string name="widget_habit_log_short">+1</string>
     <string name="widget_habit_log_description">Log one repetition for %1$s</string>
     <string name="widget_habit_open_description">Open %1$s for this date</string>
+    <string name="widget_tasks_open">Open tasks</string>
+    <string name="widget_tasks_open_description">Open your task list in Luma</string>
+    <string name="widget_tasks_add">Add task</string>
+    <string name="widget_tasks_add_description">Add a task due today</string>
+    <string name="widget_task_due_today">Due today</string>
+    <string name="widget_task_due_date">Due %1$s</string>
+    <string name="widget_task_overdue">Overdue · %1$s</string>
+    <string name="widget_task_complete">Complete</string>
+    <string name="widget_task_complete_description">Complete %1$s</string>
+    <string name="widget_task_open_description">Open %1$s</string>
     <plurals name="widget_tasks_summary">
         <item quantity="one">%1$d task due today or overdue</item>
         <item quantity="other">%1$d tasks due today or overdue</item>
