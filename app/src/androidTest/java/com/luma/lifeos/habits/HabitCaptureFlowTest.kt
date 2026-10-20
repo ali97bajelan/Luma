@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -35,6 +36,7 @@ import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.repository.RoomHabitRepository
+import com.luma.lifeos.R
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitSchedule
@@ -107,17 +109,25 @@ class HabitCaptureFlowTest {
         compose.setContent {
             var screen by remember { mutableStateOf("habits") }
             var selectedDate by remember { mutableStateOf(today) }
+            val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
             LifeOsTheme {
-                when (screen) {
-                    "habits" -> HabitsRoute(repository, selectedDate,
-                        onSelectDate = { selectedDate = it }, onToday = { selectedDate = today },
-                        onCreate = { screen = "editor" },
-                        onHabit = { id, day -> createdId = id; selectedDate = day; screen = "detail" },
-                        deviceDate = today, deviceZone = zone)
-                    "editor" -> HabitEditorRoute(repository, null,
-                        onDone = { id -> createdId = id; screen = "detail" }, onBack = { screen = "habits" }, deviceZone = zone)
-                    else -> HabitDetailRoute(repository, requireNotNull(createdId), selectedDate,
-                        onEdit = { screen = "editor" }, onBack = { screen = "habits" }, deviceZone = zone)
+                Box(Modifier.fillMaxSize()) {
+                    when (screen) {
+                        "habits" -> HabitsRoute(repository, selectedDate,
+                            onSelectDate = { selectedDate = it }, onToday = { selectedDate = today },
+                            onCreate = { screen = "editor" },
+                            onHabit = { id, day -> createdId = id; selectedDate = day; screen = "detail" },
+                            deviceDate = today, deviceZone = zone, snackbarHostState = snackbarHostState)
+                        "editor" -> HabitEditorRoute(repository, null,
+                            onDone = { id -> createdId = id; screen = "detail" }, onBack = { screen = "habits" }, deviceZone = zone)
+                        else -> HabitDetailRoute(repository, requireNotNull(createdId), selectedDate,
+                            snackbarHostState = snackbarHostState,
+                            onEdit = { screen = "editor" }, onBack = { screen = "habits" }, deviceZone = zone)
+                    }
+                    androidx.compose.material3.SnackbarHost(
+                        snackbarHostState,
+                        modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter),
+                    )
                 }
             }
         }
@@ -138,7 +148,7 @@ class HabitCaptureFlowTest {
         compose.onNodeWithTag("habit_progress_$habitId", useUnmergedTree = true)
             .assertIsDisplayed().assertContentDescriptionEquals("Read, 9 of target 8 pages")
         compose.onNodeWithText("9 of 8").assertIsDisplayed()
-        compose.onNodeWithTag("habit_undo").performClick()
+        compose.onNodeWithText(compose.activity.getString(R.string.habit_undo)).performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("8 of 8").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("8 of 8").assertIsDisplayed()
 
@@ -226,27 +236,24 @@ class HabitCaptureFlowTest {
         assertEquals(1, repository.history(habitId, date, 0, 20).logs.size)
     }
 
-    @Test fun detailRendersRetryForFailedLogAndUndoForCommittedLog() {
+    @Test fun detailRendersRetryForFailedLog() {
         val habitId = UUID.randomUUID()
-        val logId = UUID.randomUUID()
         val pendingId = UUID.randomUUID()
         val createdAt = Instant.parse("2026-10-01T00:00:00Z")
         val habit = HabitDefinition(habitId, "Read", "pages", today.minusDays(10), createdAt, createdAt)
         val schedule = HabitSchedule(UUID.randomUUID(), habitId, habit.start, 8, DayOfWeek.entries.toSet(), HabitLifecycle.ACTIVE)
         val day = HabitDay(habit, today, zone, schedule, 1, false)
-        val log = HabitLog(logId, habitId, today, zone, null, createdAt, createdAt)
         val pending = PendingHabitLog(pendingId, HabitLogInput(habitId, today, zone, null), "write failed")
         var retried: UUID? = null
-        var undone: UUID? = null
         val state = HabitsUiState(date = today, loadedDate = today, loading = false, trackingZone = zone,
             days = listOf(HabitDayRow(day, canLog = true)), actionError = "write failed",
-            pendingLogs = listOf(pending), undoableLog = log,
+            pendingLogs = listOf(pending),
             detail = HabitDetailUiState(habit = habit, day = day, schedules = listOf(schedule), loading = false))
 
         compose.setContent {
             LifeOsTheme {
                 HabitDetailScreen(state, habitId, today, null, onBack = {}, onEdit = {}, onLog = {},
-                    onRetryLog = { retried = it }, onUndoLog = { undone = it }, onSkip = {}, onResumeToday = {},
+                    onRetryLog = { retried = it }, onUndoLog = {}, onSkip = {}, onResumeToday = {},
                     onPauseResume = {}, onCancelPending = {}, onLoadMore = {}, onDeleteHabit = {}, onDeleteLog = {},
                     onEditLog = {}, onChangeDate = {}, onChangeTime = {}, onSaveCorrection = {},
                     onCancelCorrection = {}, onRetry = {})
@@ -255,10 +262,8 @@ class HabitCaptureFlowTest {
 
         compose.onNodeWithTag("habit_detail_pending_$pendingId").assertIsDisplayed()
         compose.onNodeWithTag("habit_detail_retry_$pendingId").performClick()
-        compose.onNodeWithTag("habit_detail_undo").performClick()
         compose.onNodeWithTag("habit_detail_action_error").assertIsDisplayed()
         assertEquals(pendingId, retried)
-        assertEquals(logId, undone)
     }
 
     @Test fun historyPrecedesCollapsedManagementAndDeleteRemainsConfirmed() {

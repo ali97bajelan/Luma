@@ -73,7 +73,7 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
         val settings = database.habits().settings() ?: return reject(command, WidgetOutcome.STALE)
         val trackingZone = runCatching { ZoneId.of(settings.trackingZoneId) }.getOrNull()
             ?: return reject(command, WidgetOutcome.STALE)
-        if (payload.zone != trackingZone || payload.date != LocalDate.ofInstant(now, trackingZone)) {
+        if (payload.zone != trackingZone || payload.date != now.atZone(trackingZone).toLocalDate()) {
             return reject(command, WidgetOutcome.STALE)
         }
         val row = database.habits().widgetHabitState(payload.habitId.toString(), payload.date.toString())
@@ -104,7 +104,7 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
         now: Instant,
         deviceZone: ZoneId,
     ): WidgetActionResult {
-        val actualDate = LocalDate.ofInstant(now, deviceZone)
+        val actualDate = now.atZone(deviceZone).toLocalDate()
         if (payload.date != actualDate) return reject(command, WidgetOutcome.STALE)
         val dao = database.todos()
         val entity = dao.find(payload.taskId.toString()) ?: return reject(command, WidgetOutcome.MISSING)

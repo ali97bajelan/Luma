@@ -106,13 +106,14 @@ class HabitsViewModelTest {
         assertTrue(row.canLog)
     }
 
-    @Test fun undoDeletesOnlyTheSelectedRepetition() = runTest(dispatcher) {
+    @Test fun deletingHistoryLogRemovesOnlyTheSelectedRepetition() = runTest(dispatcher) {
         val repo = HabitRepositoryFixture(clock)
         val ids = (1L..3L).map { UUID(2, it) }
         ids.forEach { id -> repo.logs[id] = com.luma.lifeos.domain.habit.HabitLog(id, repo.habitId(), day,
             zone, null, clock.instant(), clock.instant()) }
         val vm = HabitsViewModel(repo, SavedStateHandle(), clock)
-        vm.selectDate(day, zone); advanceUntilIdle(); vm.undoLog(ids[1]); advanceUntilIdle()
+        vm.openDetail(repo.habitId(), day, zone); advanceUntilIdle()
+        vm.deleteHistoryLog(ids[1]); advanceUntilIdle()
 
         assertEquals(setOf(ids[0], ids[2]), repo.logs.keys)
         assertEquals(2, vm.state.value.days.single().day.count)

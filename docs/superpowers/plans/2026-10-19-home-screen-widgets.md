@@ -10,7 +10,7 @@
 
 **Spec:** [2026-10-19-home-screen-widgets-design.md](../specs/2026-10-19-home-screen-widgets-design.md)
 
-**Status:** WG01 source implementation is in place. WG02 implementation and Room schema 5 export are complete. WG03 source implementation is complete, and production compiles passed for `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. WG04–WG07 source implementations are complete. No Gradle test or emulator/launcher test was run, per request; WG01–WG07 acceptance verification and WG08 remain pending. WG06 `:app:assembleDebug` could not start because the default Gradle cache is read-only and the temporary cache could not download Gradle under the network restriction. WG07 production compilation could not run because the Gradle wrapper cache is read-only and no system Gradle installation is available.
+**Status:** WG01–WG07 implementation is complete. API 36 Pixel Launcher smoke checks and focused widget regressions pass. The full `core:data` emulator suite passed 147/147; the app suite ran 171 tests with five failures against preserved emulator data. The final app unit/build/lint gate passed. WG-AC-01–12 remain partially verified; API/launcher, accessibility, lifecycle and performance coverage is outstanding, so release is no-go. See [the current acceptance record](../../WIDGET_ACCEPTANCE_2026-10-20.md).
 
 ## Global Constraints
 
@@ -120,7 +120,7 @@ WG04 owns `WidgetRefreshCoordinator.request(context: Context): Unit`, `reconcile
 - [x] Implement bounded SQL habit rows/counts with the spec's effective schedule/date predicates and task rows/counts with existing Today eligibility/order, inside the snapshot transaction. `rowLimit=0` returns full summary/count and no rows; hidden details return no rows or tokens. Invalidation observes content tables only.
 - [x] Keep archive inventories and `CURRENT_BACKUP_SCHEMA_VERSION` at 4. In the live restore transaction delete commands and reset surviving instances to hidden details with cleared feedback. Host remap drops old runtime state and creates hidden instances. Update `docs/BACKUP_FORMAT.md` for local runtime exclusion.
 - [x] Export Room schema 5, pass the non-test `:core:data:compileDebugKotlin` production compile, and document local runtime exclusion in `docs/BACKUP_FORMAT.md`.
-- [ ] Run migration/storage/backup verification. No Gradle test or emulator test was run per request, so acceptance verification remains pending. Commit this slice after acceptance review.
+- [x] Run the full core:data emulator suite; migration, storage and backup tests passed within 147/147 total tests. Full widget restore/remap edge cases remain open. Commit this slice after acceptance review.
 
 ## WG03 — Atomic actions, duplicate protection and exact Undo
 
@@ -136,7 +136,7 @@ WG04 owns `WidgetRefreshCoordinator.request(context: Context): Unit`, `reconcile
 - [x] Implement spec Undo checks: exact log value comparison before delete; missing log succeeds as UNDONE; task Undo requires the committed completion revision. Superseding feedback rejects old unused Undo. Dismiss clears feedback/revokes its Undo without uncommitting the original action. Transient failures preserve READY payload and retry token; permanent stale/conflict/missing outcomes remain terminal. Prune records older than seven days and reject absent tokens; never execute data inferred from the URI.
 - [ ] Rerun safety cases plus existing HabitPersistenceTest/TodoPersistenceTest and backup replacement tests; require PASS. Record commit-then-lost-callback evidence separately from failures before commit. Commit this slice before enabling mutation receivers/providers.
 
-WG03 production source compilation passed in `:core:data:compileDebugKotlin` and `:app:compileDebugKotlin`. No Gradle test or emulator test was run, per request, so acceptance verification remains pending.
+WG03 production source compilation passed. Emulator regressions now verify task completion/Undo after the row disappears and habit Undo after reaching target. The complete duplicate/concurrent/restart/midnight/config race matrix remains open.
 
 ## WG04 — Background refresh and action dispatch
 
@@ -151,9 +151,9 @@ WG03 production source compilation passed in `:core:data:compileDebugKotlin` and
 - [x] Implement serialized APPEND_OR_REPLACE refresh work; periodic work enqueues it instead of rendering concurrently. Reconcile IDs and scheduling on foreground return, removal/remap hooks and permitted system events. Observe Room content tables while the app process lives. Enqueue refresh after command/Undo commits; successful restore invalidates observed content tables. Never query Room in a receiver or start usage/health integration from widget workers.
 - [x] Add immutable explicit non-exported mutation dispatch, canonical token/widget-ID validation and generic read errors. Action workers retry the original token only for failed storage execution; stale/missing/conflict outcomes finish. App theme/language selection refreshes data and Quick capture widgets, including pre-33 language selection. Quick capture refresh uses its static provider and does not query widget data.
 - [x] Run a fresh non-test `:app:assembleDebug` and `:app:lintDebug`; both passed.
-- [ ] Run the focused JVM/device lifecycle checks and verify reboot scheduling, removal, cold-process actions and persisted feedback in a launcher on disposable data. These checks remain pending per request. The user requested a commit message; no commit was created.
+- [x] Verify live app data changes and widget actions refresh launcher views. Reboot scheduling, removal, cold-process actions and persisted feedback after process death remain open. The user requested a commit message; no commit was created.
 
-WG04 source implementation is complete and `:app:assembleDebug` passed. No Gradle test or emulator/launcher check was run, per request; acceptance verification remains pending.
+WG04 implementation and `:app:assembleDebug` are complete. Live launcher refresh was observed; the lifecycle matrix remains partial.
 
 ## WG05 — Habits widget and responsive shared rendering
 
@@ -168,7 +168,7 @@ WG04 source implementation is complete and `:app:assembleDebug` passed. No Gradl
 - [x] Render headers, zone difference, full summary, 0–3 measured rows, empty-library versus empty-scope state, Open/Create and Refresh. Show last successful snapshot date/time; no optimistic count. Reserve retained feedback before rows; replace rows with feedback/summary if necessary. Apply spec typography/palette/targets/RTL, full accessible titles and indexed-safe actions. Publish fictional preview and safe initial layout; do not introduce mutable collection PendingIntents or RemoteViewsService for three rows.
 - [ ] Verify repeated intentional +1 after refresh has a fresh token, while identical passive rerenders reuse READY tokens. Exercise default/short/large sizes in English/French/Persian and both themes. Rerun safety/render tests and build/lint; commit this slice.
 
-WG05 source implementation is complete and `:app:assembleDebug` passed. No Gradle tests or emulator/launcher checks were run, per request; acceptance verification remains pending. No commit was created.
+WG05 implementation is complete. Pixel Launcher default summary, detail opt-in, +1, target behavior and Undo were observed. Responsive sizing policy and renderer reapplication regressions pass; locale/theme/font/orientation coverage remains partial. No commit was created.
 
 ## WG06 — Tasks widget
 
@@ -183,6 +183,8 @@ WG05 source implementation is complete and `:app:assembleDebug` passed. No Gradl
 - [x] Render scope/date, eligible ordered prefix, Complete, Add task/Open tasks and truthful empty/error states. Reuse exact command tokens and feedback even after completed rows disappear. Completion never uses a blind checkbox toggle; user opens the app for edit or conflict review. Names and row targets are absent in summary mode.
 - [ ] Rerun focused widget and Todo tests, build/lint, and inspect multiple independent Tasks instances after app/widget mutations. Commit this slice.
 
+WG06 implementation is complete. The Pixel Launcher smoke covered summary-default configuration, Add task with today’s date, Complete, off-preview row removal, task-specific Undo accessibility text and restoration of the row. Overdue/missing/stale task cases, multiple instances and large localized layouts remain open.
+
 ## WG07 — Configuration, discovery and privacy help
 
 **Depends on:** WG01–WG06. **Produces:** complete setup/reconfiguration and discoverability. Until this task is complete, do not ship Habits/Tasks providers outside development builds; their required configuration Activity is a release dependency. **Acceptance:** WG-AC-08/11.
@@ -195,13 +197,15 @@ WG05 source implementation is complete and `:app:assembleDebug` passed. No Gradl
 - [ ] Run configuration/discovery tests, confirming new failures.
 - [x] Implement required configuration with explicit Save/Cancel; preserve working draft on rotation, do not commit until Save. Save validates live ownership then configures and requests/renders first view before returning OK with EXTRA_APPWIDGET_ID. For in-app changes, provide the verified instance entry even on API 28 without relying on host long-press reconfigure. On pin-supported launchers requestPinAppWidget; otherwise explain system widget-picker steps. Callback confirms only what Android reports; never say Added from the request's boolean return alone.
 - [x] Explain summary count visibility, launcher-managed surfaces, show-details consent and cache/reset limitations; include no permission wizard or forced setup. Reuse existing privacy wording conventions. Set user-facing strings from Luma's selected app locale.
-- [ ] Run tests/builds and inspect privacy/intent behavior; require no sensitive content in PendingIntent extras, previews or logs. Gradle tests and emulator tests were not run for WG07, per request. `bash ./gradlew :app:assembleDebug :core:data:compileDebugKotlin --no-daemon` could not start because the Gradle wrapper cache is read-only; no system Gradle executable is installed. XML parsing and resource-key checks passed.
+- [ ] Run remaining configuration/privacy edge cases, including Cancel, detail revocation, invalid IDs, pin denial/fallback and a second launcher. Pixel Launcher provider discovery and first-placement summary-default configuration passed; the final build/lint and focused widget tests pass.
 
 ## WG08 — Integrated acceptance and handoff evidence
 
 **Depends on:** WG01–WG07. **Produces:** evidence-backed release decision. **Acceptance:** all WG-AC criteria.
 
-**Files:** Create `docs/WIDGET_ACCEPTANCE_2026-10-19.md` (date can change to actual execution date), `AI/WidgetAcceptanceTest.kt`, `DI/WidgetScaleTest.kt`; update `docs/WIDGET_TASKS.md` and widget section of audit backlog with actual results, not planned passes.
+**Status (20 October 2026):** Evidence now covers API 36 Pixel Launcher placement, capture editors, Habits/Tasks actions, storage Undo and renderer reapplication. Release remains no-go: the full app suite had five failures with the existing database preserved, and several required host/accessibility/lifecycle/performance matrices remain untested. See [the dated acceptance record](../../WIDGET_ACCEPTANCE_2026-10-20.md).
+
+**Files:** `docs/WIDGET_ACCEPTANCE_2026-10-20.md`, `app/src/androidTest/java/com/luma/lifeos/widget/WidgetRendererAcceptanceTest.kt`, `core/data/src/androidTest/kotlin/com/luma/lifeos/data/WidgetStoreAcceptanceTest.kt`, `docs/WIDGET_TASKS.md` and the widget section of the audit backlog contain actual results. Broad scale/accessibility tests and final release sign-off remain open.
 
 **Interfaces:** no new product API; validates the shipped contracts as a whole.
 

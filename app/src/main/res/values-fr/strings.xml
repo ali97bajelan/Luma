@@ -117,6 +117,7 @@
     <string name="widget_feedback_failed">Enregistrement impossible. Ouvrez Luma.</string>
     <string name="widget_feedback_undo">Annuler</string>
     <string name="widget_feedback_undo_description">Annuler la répétition enregistrée</string>
+    <string name="widget_task_undo_description">Annuler la fin de la tâche enregistrée</string>
     <string name="widget_feedback_retry">Réessayer</string>
     <string name="widget_feedback_retry_description">Réessayer l’action précédente</string>
     <string name="widget_feedback_dismiss_description">Masquer ce message du widget</string>

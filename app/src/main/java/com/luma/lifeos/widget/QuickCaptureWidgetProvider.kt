@@ -3,11 +3,15 @@ package com.luma.lifeos.widget
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.util.SizeF
 import android.widget.RemoteViews
 import com.luma.lifeos.R
 import com.luma.lifeos.language.AppLanguages
 import com.luma.lifeos.ui.theme.THEME_KEY
+import kotlin.math.roundToInt
 
 class QuickCaptureWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -25,12 +29,54 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
 
     private fun render(context: Context, manager: AppWidgetManager, widgetId: Int, options: Bundle) {
         val appContext = AppLanguages.wrap(context)
-        val compact = shouldUseCompactLayout(appContext.resources.configuration.fontScale,
-            options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
-            options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT))
-        val views = if (compact) compactViews(context, appContext, widgetId) else defaultViews(context, appContext, widgetId)
+        val sizes = supportedSizes(options)
+        val views = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && sizes.isNotEmpty()) {
+            val sizeByDimensions = sizes.associateBy { it.width to it.height }
+            val responsiveViews = WidgetLayoutPolicy.distinctSizes(sizeByDimensions.keys.toList()).associate { dimensions ->
+                val size = sizeByDimensions.getValue(dimensions)
+                size to viewsForSize(
+                    context,
+                    appContext,
+                    widgetId,
+                    dimensions.first.roundToInt(),
+                    dimensions.second.roundToInt(),
+                )
+            }
+            RemoteViews(responsiveViews)
+        } else {
+            val (widthDp, heightDp) = WidgetLayoutPolicy.currentBounds(
+                isLandscape = appContext.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE,
+                minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
+                minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
+                maxWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH),
+                maxHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
+                fallbackWidthDp = 180,
+                fallbackHeightDp = 160,
+            )
+            viewsForSize(context, appContext, widgetId, widthDp, heightDp)
+        }
         manager.updateAppWidget(widgetId, views)
     }
+
+    private fun viewsForSize(
+        context: Context,
+        appContext: Context,
+        widgetId: Int,
+        widthDp: Int,
+        heightDp: Int,
+    ): RemoteViews = if (shouldUseCompactLayout(appContext.resources.configuration.fontScale, widthDp, heightDp)) {
+        compactViews(context, appContext, widgetId)
+    } else {
+        defaultViews(context, appContext, widgetId)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun supportedSizes(options: Bundle): List<SizeF> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES).orEmpty()
+        } else {
+            emptyList()
+        }
 
     private fun compactViews(context: Context, appContext: Context, widgetId: Int) =
         RemoteViews(context.packageName, R.layout.widget_quick_capture_compact).apply {

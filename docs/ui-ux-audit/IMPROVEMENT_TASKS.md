@@ -334,7 +334,7 @@ Shared-file coordination: avoid concurrent edits to `LifeOsApp.kt`, locale resou
 
 ## Requested feature — Android home-screen widgets
 
-Requested 19 October 2026. This is a new feature workstream, not an additional observed audit finding. All implementation tasks are **Pending**; the documents below prepare implementation and do not claim shipped widgets or passing acceptance.
+Requested 19 October 2026. This is a new feature workstream, not an additional observed audit finding. WG01–WG07 implementation is complete. API 36 Pixel Launcher smoke checks and focused storage/renderer regressions pass; broader acceptance is partial. WG08 release status is no-go pending the remaining matrix.
 
 - **Outcome:** separate Luma Habits, Luma Tasks and Luma Quick capture launcher widgets. Log a habit repetition or complete a due/overdue task directly; open new Mood, Memory or Journal capture with one tap. “mod” in the request is interpreted as Mood.
 - **Specification:** [Product/technical contract and WG-AC acceptance criteria](../superpowers/specs/2026-10-19-home-screen-widgets-design.md).
@@ -343,7 +343,7 @@ Requested 19 October 2026. This is a new feature workstream, not an additional o
 - **Order:** WG01 direct capture first; WG02 local runtime/migration/restore → WG03 transactional actions/Undo → WG04 background refresh → WG05 Habits → WG06 Tasks → WG07 setup/discovery/privacy → WG08 integrated acceptance. Quick capture can ship independently; data providers require both action safety and completed configuration before release.
 - **Constraints/dependencies:** reuse current repositories/editors, fixed habit tracking zone, task revisions and native offline behavior. Preserve UX-01/02/03/04/05/06 recovery contracts and UX-15/21/27/28 accessibility/localization/privacy rules. New widget work does not resolve their outstanding acceptance. Preserve current pending Todo editor changes and audit status edits.
 - **Defaults:** native RemoteViews, no dependency/SDK upgrade, per-instance hidden-detail summaries by default, at most three detail rows, exact retained Undo/Retry, 48dp actions and en/fr/fa. Runtime migration 4→5; portable archive schema stays 4. Successful restore revokes old tokens atomically; stale date/revision/duplicate actions cannot write unintended records.
-- **Verification:** widget-host wiring plus real launcher add/resize/reconfigure/actions, API 28 and 35/36, process death/midnight/zone/restore/replay, two instances, 200% text/RTL/themes and TalkBack/keyboard. Record current-build results in a dated widget acceptance document; no widget checks were run by the planning task.
+- **Verification:** the [20 October 2026 widget acceptance record](../WIDGET_ACCEPTANCE_2026-10-20.md) records a passing 147-test core:data emulator suite, focused storage and renderer regressions, API 36 Pixel Launcher placement and Habits/Tasks/Quick capture actions, plus the five failures in the 171-test full app run against preserved emulator data. API 28, second launcher, resize/orientation, locale/theme/font, TalkBack/keyboard, process/restore races and performance remain open. Automatic review rejected clearing Luma app data for a clean rerun.
 
 ## Verification matrix and handoff rules
 

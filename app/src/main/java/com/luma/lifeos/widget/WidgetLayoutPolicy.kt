@@ -8,6 +8,33 @@ internal object WidgetLayoutPolicy {
     private const val MIN_WIDGET_WIDTH_DP = 180
 
     /**
+     * The legacy min/max option fields combine bounds from different orientations. On a phone,
+     * portrait width is paired with landscape height in the min/min pair. Select the two bounds
+     * that describe the current orientation when a launcher does not provide exact sizes.
+     */
+    fun currentBounds(
+        isLandscape: Boolean,
+        minWidthDp: Int,
+        minHeightDp: Int,
+        maxWidthDp: Int,
+        maxHeightDp: Int,
+        fallbackWidthDp: Int,
+        fallbackHeightDp: Int,
+    ): Pair<Int, Int> {
+        fun firstPositive(vararg values: Int): Int = values.firstOrNull { it > 0 } ?: 0
+        return if (isLandscape) {
+            firstPositive(maxWidthDp, minWidthDp, fallbackWidthDp) to
+                firstPositive(minHeightDp, maxHeightDp, fallbackHeightDp)
+        } else {
+            firstPositive(minWidthDp, maxWidthDp, fallbackWidthDp) to
+                firstPositive(maxHeightDp, minHeightDp, fallbackHeightDp)
+        }
+    }
+
+    fun distinctSizes(sizes: List<Pair<Float, Float>>): List<Pair<Float, Float>> =
+        sizes.filter { (width, height) -> width > 0f && height > 0f }.distinct()
+
+    /**
      * Returns the number of complete rows that fit after all measured header, feedback and footer
      * content has been reserved. The caller measures localized content at the active font scale.
      */

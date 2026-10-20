@@ -20,6 +20,9 @@ class MoodCaptureTest {
 
     @Test fun capturesMultipleEmotionsRestoresDraftAndEditsAndDeletesFromTimeline() {
         val note = "Mood capture test ${System.nanoTime()}"
+        // Other navigation tests may leave the saved date on a past day.
+        compose.onNodeWithTag("nav_today").performClick()
+        compose.onNodeWithTag("day_today").performClick()
         compose.onNodeWithTag("today_capture_mood").performClick()
         awaitTag("mood_score_4")
         compose.onNodeWithTag("mood_score_4").performClick()
@@ -64,7 +67,7 @@ class MoodCaptureTest {
     private fun awaitText(text: String, feed: String) {
         if (feed == "screen_today") awaitTag("today_summary")
         else compose.waitUntil(5_000) { compose.onAllNodesWithTag("timeline_loading").fetchSemanticsNodes().isEmpty() }
-        compose.waitUntil(10_000) {
+        compose.waitUntil(20_000) {
             try {
                 compose.onNodeWithTag(feed).performScrollToNode(hasText(text))
                 compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()

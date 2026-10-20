@@ -3,11 +3,13 @@ package com.luma.lifeos.widget
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Build
 import android.graphics.Paint
 import android.text.BidiFormatter
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.util.SizeF
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -25,6 +27,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.ceil
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 /** Shared data-widget shell. Per-kind row content stays small and uses only persisted commands. */
 object WidgetRenderer {
@@ -35,6 +38,47 @@ object WidgetRenderer {
         failure: Boolean,
         options: android.os.Bundle? = null,
     ): RemoteViews {
+        val sizes = options?.let(::supportedSizes).orEmpty()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && sizes.isNotEmpty()) {
+            val sizeByDimensions = sizes.associateBy { it.width to it.height }
+            val responsiveViews = WidgetLayoutPolicy.distinctSizes(sizeByDimensions.keys.toList()).associate { dimensions ->
+                val size = sizeByDimensions.getValue(dimensions)
+                size to renderAtSize(
+                    context,
+                    widgetId,
+                    snapshot,
+                    failure,
+                    dimensions.first.roundToInt(),
+                    dimensions.second.roundToInt(),
+                )
+            }
+            return RemoteViews(responsiveViews)
+        }
+
+        val bounds = if (options == null) {
+            250 to 250
+        } else {
+            WidgetLayoutPolicy.currentBounds(
+                isLandscape = context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE,
+                minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
+                minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
+                maxWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH),
+                maxHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
+                fallbackWidthDp = 250,
+                fallbackHeightDp = 250,
+            )
+        }
+        return renderAtSize(context, widgetId, snapshot, failure, bounds.first, bounds.second)
+    }
+
+    private fun renderAtSize(
+        context: Context,
+        widgetId: Int,
+        snapshot: WidgetSnapshot?,
+        failure: Boolean,
+        widthDp: Int,
+        heightDp: Int,
+    ): RemoteViews {
         val appContext = AppLanguages.wrap(context)
         val kind = snapshot?.instance?.kind ?: WidgetRefreshCoordinator.kindForWidgetId(context, widgetId)
         val views = RemoteViews(context.packageName, R.layout.widget_data)
@@ -44,6 +88,9 @@ object WidgetRenderer {
         else R.drawable.widget_button_background
         val widgetBackground = if (dark) R.drawable.widget_background_dark else R.drawable.widget_background
 
+        // AppWidgetHost may reapply this layout to an existing view. Dynamic rows must be
+        // cleared first or a completed task remains visible after its snapshot removes it.
+        views.removeAllViews(R.id.widget_data_rows)
         views.setInt(R.id.widget_data_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
         views.setInt(R.id.widget_data_root, "setBackgroundResource", widgetBackground)
         listOf(
@@ -122,10 +169,18 @@ object WidgetRenderer {
             views.setTextViewText(R.id.widget_data_updated, "")
             views.setViewVisibility(R.id.widget_feedback_container, View.GONE)
         } else {
-            renderSnapshot(context, appContext, views, widgetId, snapshot, options, textColor, buttonBackground)
+            renderSnapshot(context, appContext, views, widgetId, snapshot, widthDp, heightDp, textColor, buttonBackground)
         }
         return views
     }
+
+    @Suppress("DEPRECATION")
+    private fun supportedSizes(options: android.os.Bundle): List<SizeF> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES).orEmpty()
+        } else {
+            emptyList()
+        }
 
     private fun renderSnapshot(
         context: Context,
@@ -133,7 +188,8 @@ object WidgetRenderer {
         views: RemoteViews,
         widgetId: Int,
         snapshot: WidgetSnapshot,
-        options: android.os.Bundle?,
+        widthDp: Int,
+        heightDp: Int,
         textColor: Int,
         buttonBackground: Int,
     ) {
@@ -187,9 +243,6 @@ object WidgetRenderer {
         } else {
             emptyList()
         }
-        val bounds = widgetBounds(options)
-        val widthDp = bounds.first
-        val heightDp = bounds.second
         val density = appContext.resources.displayMetrics.density
         val textWidthPx = ((widthDp - 24).coerceAtLeast(1) * density).toInt()
         val fontScale = appContext.resources.configuration.fontScale
@@ -360,10 +413,15 @@ object WidgetRenderer {
 
         when (feedback.outcome) {
             WidgetOutcome.SAVED -> feedback.undoToken?.let { token ->
+                val undoDescription = if (snapshot.instance.kind == WidgetKind.TASKS) {
+                    R.string.widget_task_undo_description
+                } else {
+                    R.string.widget_feedback_undo_description
+                }
                 action(
                     R.id.widget_feedback_primary,
                     R.string.widget_feedback_undo,
-                    R.string.widget_feedback_undo_description,
+                    undoDescription,
                     WidgetIntents.mutation(context, widgetId, token),
                 )
             } ?: hideAction(R.id.widget_feedback_primary)
@@ -412,23 +470,6 @@ object WidgetRenderer {
     private fun destinationFor(kind: WidgetKind) = when (kind) {
         WidgetKind.HABITS -> WidgetDestination.Habits
         WidgetKind.TASKS -> WidgetDestination.Tasks
-    }
-
-    private fun widgetBounds(options: android.os.Bundle?): Pair<Int, Int> {
-        fun dimension(minKey: String, maxKey: String, fallback: Int): Int {
-            val maxValue = options?.getInt(maxKey, 0) ?: 0
-            val minValue = options?.getInt(minKey, 0) ?: 0
-            return (minValue.takeIf { it > 0 } ?: maxValue.takeIf { it > 0 } ?: fallback)
-        }
-        return dimension(
-            AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,
-            AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,
-            250,
-        ) to dimension(
-            AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
-            AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
-            250,
-        )
     }
 
     private fun measureHabitRowHeight(context: Context, widthDp: Int, row: WidgetRow.Habit): Int {

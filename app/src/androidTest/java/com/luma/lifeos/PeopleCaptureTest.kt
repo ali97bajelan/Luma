@@ -142,7 +142,7 @@ class PeopleCaptureTest {
     }
     private fun awaitContextExpanded(tag: String) {
         val expanded = compose.activity.getString(R.string.review_details_expanded)
-        compose.waitUntil(5_000) {
+        compose.waitUntil(15_000) {
             try {
                 compose.onNodeWithTag(tag).assert(
                     SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, expanded),

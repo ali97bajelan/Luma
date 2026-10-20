@@ -116,6 +116,7 @@
     <string name="widget_feedback_failed">ذخیره انجام نشد. لوما را باز کنید.</string>
     <string name="widget_feedback_undo">بازگردانی</string>
     <string name="widget_feedback_undo_description">بازگرداندن یک تکرار ثبت‌شده</string>
+    <string name="widget_task_undo_description">بازگرداندن تکمیل وظیفهٔ ذخیره‌شده</string>
     <string name="widget_feedback_retry">تلاش دوباره</string>
     <string name="widget_feedback_retry_description">تلاش دوباره برای کنش قبلی</string>
     <string name="widget_feedback_dismiss_description">بستن پیام ویجت</string>

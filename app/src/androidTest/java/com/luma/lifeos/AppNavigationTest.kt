@@ -52,8 +52,7 @@ class AppNavigationTest {
             compose.onNodeWithTag("nav_review").performClick()
             awaitTag("screen_review")
             awaitTag("review_overview")
-            compose.onNodeWithTag("memory_review_list")
-                .performScrollToNode(hasTestTag("review_section_catalog"))
+            compose.onNodeWithTag("memory_review_list").performTouchInput { swipeUp() }
             compose.onNodeWithTag("review_section_catalog").performScrollTo().performClick()
             awaitTag("review_heading_catalog")
             val openDetails = compose.activity.getString(R.string.review_catalog_detail)

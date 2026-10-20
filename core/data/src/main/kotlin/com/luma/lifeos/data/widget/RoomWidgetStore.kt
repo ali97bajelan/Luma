@@ -79,13 +79,13 @@ class RoomWidgetStore(
             val kind = WidgetKind.valueOf(stored.kind)
             val instance = stored.toDomain(kind)
             val feedback = stored.feedbackJson?.let(::decodeWidgetActionResult)
-            val issuer = WidgetCommandIssuer(dao, widgetId, now.toEpochMilli())
+            val issuer = WidgetCommandIssuer(dao, widgetId, now.toEpochMilli(), feedback)
 
             val snapshot = when (kind) {
                 WidgetKind.HABITS -> {
                     val trackingZone = database.habits().settings()?.trackingZoneId
                         ?.let(ZoneId::of) ?: deviceZone
-                    val date = LocalDate.ofInstant(now, trackingZone)
+                    val date = now.atZone(trackingZone).toLocalDate()
                     val summary = database.habits().widgetSummary(date.toString())
                     val rows = if (instance.showDetails && rowLimit > 0) {
                         database.habits().widgetDayRows(date.toString(), rowLimit).map { row ->
@@ -136,7 +136,7 @@ class RoomWidgetStore(
                 }
 
                 WidgetKind.TASKS -> {
-                    val date = LocalDate.ofInstant(now, deviceZone)
+                    val date = now.atZone(deviceZone).toLocalDate()
                     val summary = database.todos().widgetTodaySummary(date.toString())
                     val rows = if (instance.showDetails && rowLimit > 0) {
                         database.todos().widgetTodayRows(date.toString(), rowLimit).map { row ->
@@ -288,9 +288,15 @@ class RoomWidgetStore(
         private val dao: WidgetDao,
         private val widgetId: Int,
         private val nowMillis: Long,
+        feedback: WidgetActionResult?,
     ) {
         private val current = mutableListOf<WidgetCommandEntity>()
-        private val retainedTokens = mutableSetOf<String>()
+        // A committed action's undo/retry command is deliberately outside the current row set.
+        // Keep it alive while refreshing so feedback stays actionable after the row disappears
+        // (task completion) or no longer offers a row action (habit target reached).
+        private val retainedTokens = mutableSetOf<String>().apply {
+            listOfNotNull(feedback?.retryToken, feedback?.undoToken).forEach { add(it.toString()) }
+        }
         private val readyByFingerprint = mutableMapOf<String, MutableList<WidgetCommandEntity>>()
         private var loaded = false
 
