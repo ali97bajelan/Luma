@@ -9,5 +9,7 @@
  android:minWidth="48dp" android:minHeight="48dp" android:padding="6dp" android:gravity="center" android:textSize="14sp" android:background="@drawable/widget_button_background" />
  <TextView android:id="@+id/widget_compact_secondary" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
  android:minWidth="48dp" android:minHeight="48dp" android:padding="6dp" android:gravity="center" android:textSize="14sp" android:background="?android:attr/selectableItemBackground" />
+ <TextView android:id="@+id/widget_compact_capture" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+ android:minWidth="48dp" android:minHeight="48dp" android:padding="6dp" android:gravity="center" android:textSize="14sp" android:background="@drawable/widget_button_background" />
  </LinearLayout>
 </LinearLayout>

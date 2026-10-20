@@ -1,10 +1,12 @@
 package com.luma.lifeos.widget
 
+import com.luma.lifeos.domain.widget.WidgetStore
 import kotlin.math.ceil
+import kotlin.math.max
 
 /** Pure sizing policy shared by the data-widget renderers. */
 internal object WidgetLayoutPolicy {
-    const val MAX_ROWS = 3
+    const val MAX_ROWS = WidgetStore.MAX_CANDIDATE_ROWS
     private const val MIN_WIDGET_WIDTH_DP = 180
 
     enum class CaptureLayout { WIDE, GRID, TALL, FALLBACK }
@@ -27,6 +29,13 @@ internal object WidgetLayoutPolicy {
     }
 
     fun needsCompactShell(heightDp: Int, reservedHeightDp: Int): Boolean = heightDp < reservedHeightDp
+
+    /** Keeps the title, labeled Capture action, and Refresh target separate at every font scale. */
+    fun needsStackedHeader(widthDp: Int, titleWidthDp: Int, captureWidthDp: Int): Boolean {
+        val availableWidth = widthDp - 24
+        val requiredWidth = max(48, titleWidthDp) + max(48, captureWidthDp) + 48 + 16
+        return availableWidth < requiredWidth
+    }
 
     /**
      * The legacy min/max option fields combine bounds from different orientations. On a phone,
@@ -55,23 +64,31 @@ internal object WidgetLayoutPolicy {
     fun distinctSizes(sizes: List<Pair<Float, Float>>): List<Pair<Float, Float>> =
         sizes.filter { (width, height) -> width > 0f && height > 0f }.distinct()
 
-    /**
-     * Returns the number of complete rows that fit after all measured header, feedback and footer
-     * content has been reserved. The caller measures localized content at the active font scale.
-     */
+    /** Counts the complete ordered prefix whose individually measured heights fit the budget. */
     fun rowCapacity(
         widthDp: Int,
         heightDp: Int,
         fontScale: Float,
         reservedHeightDp: Int,
-        rowHeightDp: Int,
+        rowHeightsDp: List<Int>,
     ): Int {
-        if (widthDp < MIN_WIDGET_WIDTH_DP || heightDp <= 0 || rowHeightDp <= 0) return 0
+        if (widthDp < MIN_WIDGET_WIDTH_DP || heightDp <= 0) return 0
         val safeScale = fontScale.takeIf { it.isFinite() }?.coerceAtLeast(1f) ?: 1f
-        // Text is measured using scaled pixels by the renderer; leave a little extra for host
-        // rounding and line-height differences at larger system font settings.
         val scaleAllowance = ceil((safeScale - 1f).coerceAtMost(2f) * 8f).toInt()
-        return ((heightDp - reservedHeightDp - scaleAllowance).coerceAtLeast(0) / rowHeightDp)
-            .coerceIn(0, MAX_ROWS)
+        val availableHeight = (heightDp - reservedHeightDp - scaleAllowance).coerceAtLeast(0)
+        return rowPrefixCapacity(availableHeight, rowHeightsDp.take(MAX_ROWS))
+    }
+
+    /** Row heights are already measured for their actual localized content and action width. */
+    fun rowPrefixCapacity(availableHeightDp: Int, rowHeightsDp: List<Int>): Int {
+        if (availableHeightDp <= 0) return 0
+        var remaining = availableHeightDp
+        var count = 0
+        for (height in rowHeightsDp.take(MAX_ROWS)) {
+            if (height <= 0 || height > remaining) break
+            remaining -= height
+            count++
+        }
+        return count
     }
 }

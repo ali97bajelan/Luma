@@ -105,6 +105,7 @@
     <string name="widget_data_updated_at">%1$s · updated %2$s</string>
     <string name="widget_data_open">Open</string>
     <string name="widget_data_open_description">Open this widget’s section in Luma</string>
+    <string name="widget_capture">Capture</string>
     <string name="widget_data_refresh">Refresh</string>
     <string name="widget_data_refresh_description">Refresh this widget</string>
     <string name="widget_feedback_saved">Saved</string>
@@ -894,7 +895,12 @@
     <string name="widget_data_updated_time">Updated %1$s</string>
     <string name="widget_habits_view_all">View all habits</string>
     <string name="widget_tasks_view_all">View all tasks</string>
-    <string name="widget_view_all_more">%1$s · %2$d more</string>
+    <string name="widget_view_all_more">%1$s, %2$d more not shown</string>
+    <string name="widget_view_all_hidden">%1$s; names are hidden in this widget</string>
+    <plurals name="widget_more_count">
+        <item quantity="one">%1$d more</item>
+        <item quantity="other">%1$d more</item>
+    </plurals>
     <string name="widget_task_saved">Task completed</string>
     <string name="widget_habit_saved">Repetition saved</string>
     <string name="widget_mode_summary">Summary — names hidden</string>

@@ -65,11 +65,15 @@ internal object WidgetCompactRenderer {
                 R.string.widget_data_refresh to WidgetIntents.refresh(context, widgetId)
             else -> open to WidgetIntents.navigation(context, widgetId, destination)
         }
+        val capture = R.string.widget_capture to
+            WidgetIntents.navigation(context, widgetId, WidgetDestination.QuickCapture)
         val density = appContext.resources.displayMetrics.density
         val primaryWidth = maxOf(48, (WidgetRenderer.measureTextWidth(appContext,
             appContext.getString(primary.first), 14f) / density).toInt() + 12)
         val secondaryWidth = maxOf(48, (WidgetRenderer.measureTextWidth(appContext,
             appContext.getString(secondary.first), 14f) / density).toInt() + 12)
+        val captureWidth = maxOf(48, (WidgetRenderer.measureTextWidth(appContext,
+            appContext.getString(capture.first), 14f) / density).toInt() + 12)
         val locale = com.luma.lifeos.language.AppLanguages.current(appContext).locale
         val shortDate = snapshot?.let {
             java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.SHORT)
@@ -132,6 +136,23 @@ internal object WidgetCompactRenderer {
             primaryWidth + secondaryWidth + 8 <= innerWidth &&
                 WidgetRenderer.measureTextHeight(appContext, message, (innerWidth * density).toInt(), 14f) + height <= heightDp - 24
         }
+        val roomForCapture = secondary != capture && if (horizontal) {
+            val textWidth = innerWidth - primaryWidth - secondaryWidth - captureWidth - 24
+            textWidth >= 80 &&
+                WidgetRenderer.measureTextHeight(appContext, message, (textWidth * density).toInt(), 14f) <= heightDp - 24
+        } else {
+            val targetWidth = (innerWidth - 16) / 3
+            val actionsFit = listOf(primary, secondary, capture).all { action ->
+                WidgetRenderer.measureTextWidth(appContext, appContext.getString(action.first), 14f) <=
+                    (targetWidth - 12) * density
+            }
+            val actionsHeight = maxOf(48, listOf(primary, secondary, capture).maxOf { action ->
+                WidgetRenderer.measureTextHeight(appContext, appContext.getString(action.first),
+                    ((targetWidth - 12) * density).toInt(), 14f) + 12
+            })
+            actionsFit && WidgetRenderer.measureTextHeight(appContext, message,
+                (innerWidth * density).toInt(), 14f) + actionsHeight <= heightDp - 24
+        }
         listOf(R.id.widget_compact_primary to primary, R.id.widget_compact_secondary to secondary).forEach { (id, action) ->
             views.setTextViewText(id, appContext.getString(action.first))
             val description = when (action.first) {
@@ -149,6 +170,14 @@ internal object WidgetCompactRenderer {
                 R.drawable.widget_button_background_dark else R.drawable.widget_button_background)
             views.setOnClickPendingIntent(id, action.second)
         }
+        views.setTextViewText(R.id.widget_compact_capture, appContext.getString(capture.first))
+        views.setContentDescription(R.id.widget_compact_capture,
+            appContext.getString(R.string.widget_open_quick_capture_description))
+        views.setTextColor(R.id.widget_compact_capture, color)
+        views.setInt(R.id.widget_compact_capture, "setBackgroundResource", if (dark)
+            R.drawable.widget_button_background_dark else R.drawable.widget_button_background)
+        views.setOnClickPendingIntent(R.id.widget_compact_capture, capture.second)
+        views.setViewVisibility(R.id.widget_compact_capture, if (roomForCapture) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_compact_secondary,
             if (loadingKind == null && roomForSecondary && primary != secondary) View.VISIBLE else View.GONE)
         return views

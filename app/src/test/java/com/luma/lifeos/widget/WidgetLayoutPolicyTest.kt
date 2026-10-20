@@ -61,6 +61,20 @@ class WidgetLayoutPolicyTest {
         assertEquals(true, WidgetLayoutPolicy.needsCompactShell(109, 150))
         assertEquals(false, WidgetLayoutPolicy.needsCompactShell(250, 150))
     }
+
+    @Test fun rowCapacityUsesEachMeasuredHeightInsteadOfTheTallestCandidate() {
+        assertEquals(3, WidgetLayoutPolicy.rowPrefixCapacity(166, listOf(70, 48, 48)))
+        assertEquals(2, WidgetLayoutPolicy.rowPrefixCapacity(165, listOf(70, 48, 48)))
+        assertEquals(0, WidgetLayoutPolicy.rowPrefixCapacity(47, listOf(48, 48)))
+        assertEquals(8, WidgetLayoutPolicy.rowPrefixCapacity(1_000, List(10) { 48 }))
+    }
+
+    @Test fun headerStacksWhenLocalizedTargetsCannotShareOneLine() {
+        assertEquals(true, WidgetLayoutPolicy.needsStackedHeader(180, 80, 80))
+        assertEquals(false, WidgetLayoutPolicy.needsStackedHeader(373, 100, 90))
+        assertEquals(true, WidgetLayoutPolicy.needsStackedHeader(373, 220, 100))
+    }
+
     @Test fun unequalGridLabelsReserveBothEqualHeightRows() {
         assertEquals(WidgetLayoutPolicy.CaptureLayout.FALLBACK,
             WidgetLayoutPolicy.captureLayout(200, 160, listOf(80 to 72, 80 to 72, 80 to 48)))

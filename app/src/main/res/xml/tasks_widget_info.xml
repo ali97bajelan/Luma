@@ -8,7 +8,6 @@
     android:minResizeWidth="180dp"
     android:minWidth="250dp"
     android:previewLayout="@layout/widget_preview_tasks"
-    android:previewImage="@drawable/widget_preview_tasks"
     android:resizeMode="horizontal|vertical"
     android:targetCellHeight="3"
     android:targetCellWidth="4"

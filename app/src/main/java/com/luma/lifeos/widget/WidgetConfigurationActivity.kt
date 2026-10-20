@@ -38,6 +38,7 @@ import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
+import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -151,7 +152,7 @@ class WidgetConfigurationActivity : ComponentActivity() {
                             widgetId = selectedWidgetId,
                             now = Instant.now(),
                             deviceZone = ZoneId.systemDefault(),
-                            rowLimit = 3,
+                            rowLimit = WidgetStore.MAX_CANDIDATE_ROWS,
                         )
                     }
                 } catch (cancelled: CancellationException) {

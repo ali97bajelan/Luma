@@ -71,7 +71,9 @@ class RoomWidgetStore(
         deviceZone: ZoneId,
         rowLimit: Int,
     ): WidgetSnapshot? {
-        require(rowLimit in 0..3) { "Widget row limit must be between zero and three" }
+        require(rowLimit in 0..WidgetStore.MAX_CANDIDATE_ROWS) {
+            "Widget row limit must be between zero and ${WidgetStore.MAX_CANDIDATE_ROWS}"
+        }
         return database.withTransaction {
             val dao = database.widgets()
             dao.deleteCommandsBefore(now.minus(7, ChronoUnit.DAYS).toEpochMilli())

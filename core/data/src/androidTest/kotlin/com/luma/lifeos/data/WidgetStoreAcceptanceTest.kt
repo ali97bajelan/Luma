@@ -98,4 +98,38 @@ class WidgetStoreAcceptanceTest {
         assertEquals(0, (afterUndo.rows.single() as WidgetRow.Habit).count)
         assertEquals(WidgetOutcome.UNDONE, afterUndo.feedback?.outcome)
     }
+
+    @Test fun taskSnapshotFetchesEightCandidatesWithDistinctMutationTokens() = runBlocking {
+        val widgetId = 43
+        val taskIds = (0 until 9).map { index ->
+            val id = UUID.randomUUID()
+            todos.create(id, UUID.randomUUID(), TodoInput("Widget task ${index + 1}", dueDate = today))
+            id
+        }
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+
+        val snapshot = requireNotNull(widgets.snapshot(
+            widgetId, now, ZoneOffset.UTC, rowLimit = com.luma.lifeos.domain.widget.WidgetStore.MAX_CANDIDATE_ROWS,
+        ))
+        val rows = snapshot.rows.filterIsInstance<WidgetRow.Task>()
+        assertEquals(9, snapshot.total)
+        assertEquals(8, rows.size)
+        assertEquals(8, rows.map { it.id }.toSet().size)
+        val tokens = rows.mapNotNull { it.actionToken }
+        assertEquals(8, tokens.size)
+        assertEquals(8, tokens.toSet().size)
+
+        val selected = rows[4]
+        assertEquals(WidgetOutcome.SAVED,
+            widgets.execute(widgetId, requireNotNull(selected.actionToken), now, ZoneOffset.UTC).outcome)
+        assertEquals(true, todos.get(selected.id)?.isCompleted)
+        assertEquals(false, todos.get(taskIds.first { it != selected.id })?.isCompleted)
+
+        val noRows = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 0))
+        assertEquals(emptyList<WidgetRow>(), noRows.rows)
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 9) }
+        }
+        Unit
+    }
 }

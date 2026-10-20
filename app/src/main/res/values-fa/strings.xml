@@ -105,6 +105,7 @@
     <string name="widget_data_updated_at">%1$s · به‌روزرسانی %2$s</string>
     <string name="widget_data_open">باز کردن</string>
     <string name="widget_data_open_description">باز کردن این بخش در لوما</string>
+    <string name="widget_capture">ثبت</string>
     <string name="widget_data_refresh">تازه‌سازی</string>
     <string name="widget_data_refresh_description">تازه‌سازی این ویجت</string>
     <string name="widget_feedback_saved">ذخیره شد</string>
@@ -895,7 +896,12 @@
     <string name="widget_data_updated_time">به‌روزرسانی %1$s</string>
     <string name="widget_habits_view_all">نمایش همهٔ عادت‌ها</string>
     <string name="widget_tasks_view_all">نمایش همهٔ کارها</string>
-    <string name="widget_view_all_more">%1$s · %2$d مورد دیگر</string>
+    <string name="widget_view_all_more">%1$s، %2$d مورد دیگر نمایش داده نشده</string>
+    <string name="widget_view_all_hidden">%1$s؛ نام‌ها در این ویجت پنهان هستند</string>
+    <plurals name="widget_more_count">
+        <item quantity="one">%1$d مورد دیگر</item>
+        <item quantity="other">%1$d مورد دیگر</item>
+    </plurals>
     <string name="widget_task_saved">کار انجام شد</string>
     <string name="widget_habit_saved">تکرار ذخیره شد</string>
     <string name="widget_mode_summary">خلاصه — نام‌ها پنهان</string>

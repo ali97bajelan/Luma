@@ -31,6 +31,16 @@ import kotlin.math.roundToInt
 
 /** Shared data-widget shell. Per-kind row content stays small and uses only persisted commands. */
 object WidgetRenderer {
+    private data class HeaderPlan(
+        val stacked: Boolean,
+        val actionsFit: Boolean,
+        val heightDp: Int,
+        val captureWidthDp: Int,
+        val title: String,
+    )
+
+    private data class MeasuredRow(val heightDp: Int, val inlineHabit: Boolean = false)
+
     fun render(
         context: Context,
         widgetId: Int,
@@ -86,22 +96,22 @@ object WidgetRenderer {
         if (loadingKind != null) return WidgetCompactRenderer.render(context, appContext, widgetId,
             null, false, widthDp, heightDp, "", isAppDark(context, appContext), loadingKind)
         val kind = snapshot?.instance?.kind ?: WidgetRefreshCoordinator.kindForWidgetId(context, widgetId)
+        val header = headerPlan(appContext, kind, widthDp)
         if (failure || snapshot == null) {
             val density = appContext.resources.displayMetrics.density
             val innerWidth = ((widthDp - 24) * density).toInt()
             val message = appContext.getString(if (failure) R.string.widget_data_read_error else R.string.widget_data_setup)
-            val title = appContext.getString(if (kind == WidgetKind.TASKS) R.string.widget_tasks_title else R.string.widget_habits_title)
-            val actions = if (failure) listOf(openLabel(appContext, kind), appContext.getString(R.string.widget_data_refresh))
-                else listOf(appContext.getString(R.string.widget_set_up))
-            val reserved = 24 + max(48, measureTextHeight(appContext, title,
-                innerWidth - (48 * density).toInt(), 18f, bold = true)) +
-                measureTextHeight(appContext, message, innerWidth, 14f) + 4 +
-                measureFooterHeight(appContext, widthDp, actions)
-            if (WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
+            val reserved = 24 + header.heightDp +
+                measureTextHeight(appContext, message, innerWidth, 14f) + 4
+            if (!header.actionsFit || WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
                 return compactState(context, appContext, widgetId, snapshot, failure, widthDp, heightDp)
             }
         }
-        val views = RemoteViews(context.packageName, R.layout.widget_data)
+        if (!header.actionsFit) {
+            return compactState(context, appContext, widgetId, snapshot, failure, widthDp, heightDp)
+        }
+        val views = RemoteViews(context.packageName,
+            if (header.stacked) R.layout.widget_data_stacked_header else R.layout.widget_data)
         val dark = isAppDark(context, appContext)
         val textColor = appContext.getColor(if (dark) R.color.widget_on_primary_dark else R.color.widget_on_primary)
         val buttonBackground = if (dark) R.drawable.widget_button_background_dark
@@ -116,8 +126,8 @@ object WidgetRenderer {
         views.setViewVisibility(R.id.widget_data_updated, if (snapshot == null || failure) View.GONE else View.VISIBLE)
         views.setInt(R.id.widget_data_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
         views.setInt(R.id.widget_data_root, "setBackgroundResource", widgetBackground)
-        listOf(R.id.widget_data_title, R.id.widget_data_date, R.id.widget_data_summary,
-            R.id.widget_data_updated, R.id.widget_data_open, R.id.widget_data_refresh).forEach { views.setTextColor(it, textColor) }
+        listOf(R.id.widget_data_title, R.id.widget_data_more, R.id.widget_data_date, R.id.widget_data_summary,
+            R.id.widget_data_updated, R.id.widget_data_refresh).forEach { views.setTextColor(it, textColor) }
         views.setInt(R.id.widget_data_refresh, "setBackgroundResource", buttonBackground)
         views.setInt(R.id.widget_data_open, "setBackgroundResource",
             if (dark) R.drawable.widget_utility_background_dark else R.drawable.widget_utility_background)
@@ -125,59 +135,33 @@ object WidgetRenderer {
         views.setContentDescription(R.id.widget_header_refresh, appContext.getString(
             if (kind == WidgetKind.TASKS) R.string.widget_tasks_refresh_description else R.string.widget_habits_refresh_description))
         views.setOnClickPendingIntent(R.id.widget_header_refresh, WidgetIntents.refresh(context, widgetId))
-        val (title, destination) = when (kind) {
-            WidgetKind.HABITS -> R.string.widget_habits_title to WidgetDestination.Habits
-            WidgetKind.TASKS -> R.string.widget_tasks_title to WidgetDestination.Tasks
-            null -> R.string.app_name to WidgetDestination.Today
-        }
-        views.setTextViewText(R.id.widget_data_title, appContext.getString(title))
-        views.setTextViewText(R.id.widget_data_open, openLabel(appContext, kind))
-        views.setContentDescription(
-            R.id.widget_data_open,
-            openDescription(appContext, kind),
-        )
-        views.setOnClickPendingIntent(R.id.widget_data_open, WidgetIntents.navigation(context, widgetId, destination))
-        val secondaryLabel = if (kind == WidgetKind.TASKS) {
-            appContext.getString(R.string.widget_tasks_add)
-        } else {
-            appContext.getString(R.string.widget_data_refresh)
-        }
-        val secondaryDescription = if (kind == WidgetKind.TASKS) {
-            appContext.getString(R.string.widget_tasks_add_description)
-        } else {
-            appContext.getString(R.string.widget_data_refresh_description)
-        }
-        views.setTextViewText(R.id.widget_data_refresh, secondaryLabel)
-        views.setContentDescription(
-            R.id.widget_data_refresh,
-            secondaryDescription,
-        )
+        val destination = destinationFor(kind)
+        views.setTextViewText(R.id.widget_data_title, header.title)
+        views.setTextViewText(R.id.widget_data_more, "")
+        views.setViewVisibility(R.id.widget_data_more, View.GONE)
+        views.setContentDescription(R.id.widget_data_open, viewAllDescription(appContext, kind, 0, showDetails = true))
         views.setOnClickPendingIntent(
-            R.id.widget_data_refresh,
-            if (kind == WidgetKind.TASKS) {
-                WidgetIntents.navigation(context, widgetId, WidgetDestination.NewTask)
-            } else {
-                WidgetIntents.refresh(context, widgetId)
-            },
+            R.id.widget_data_open,
+            if (snapshot == null && !failure) WidgetIntents.configuration(context, widgetId)
+            else WidgetIntents.navigation(context, widgetId, destination),
         )
-
-        views.setViewVisibility(R.id.widget_data_refresh, if (kind == WidgetKind.TASKS || failure) View.VISIBLE else View.GONE)
+        views.setTextViewText(R.id.widget_data_refresh, appContext.getString(R.string.widget_capture))
+        views.setContentDescription(R.id.widget_data_refresh,
+            appContext.getString(R.string.widget_open_quick_capture_description))
+        views.setOnClickPendingIntent(R.id.widget_data_refresh,
+            WidgetIntents.navigation(context, widgetId, WidgetDestination.QuickCapture))
+        views.setViewVisibility(R.id.widget_data_refresh, View.VISIBLE)
         if (failure) {
-            views.setTextViewText(R.id.widget_data_refresh, appContext.getString(R.string.widget_data_refresh))
-            views.setContentDescription(R.id.widget_data_refresh, appContext.getString(R.string.widget_data_refresh_description))
-            views.setOnClickPendingIntent(R.id.widget_data_refresh, WidgetIntents.refresh(context, widgetId))
             views.setTextViewText(R.id.widget_data_date, "")
             views.setTextViewText(R.id.widget_data_summary, "")
             views.setTextViewText(R.id.widget_data_updated, "")
             views.setTextViewText(R.id.widget_data_summary, appContext.getString(R.string.widget_data_read_error))
+            views.setContentDescription(R.id.widget_data_open, viewAllDescription(appContext, kind, 0, showDetails = true))
         } else if (snapshot == null) {
             views.setTextViewText(R.id.widget_data_date, "")
             views.setTextViewText(R.id.widget_data_summary, appContext.getString(R.string.widget_data_setup))
             views.setTextViewText(R.id.widget_data_updated, "")
-            views.setTextViewText(R.id.widget_data_open, appContext.getString(R.string.widget_set_up))
             views.setContentDescription(R.id.widget_data_open, appContext.getString(R.string.widget_data_setup))
-            views.setOnClickPendingIntent(R.id.widget_data_open, WidgetIntents.configuration(context, widgetId))
-            views.setViewVisibility(R.id.widget_data_refresh, View.GONE)
         } else {
             return renderSnapshot(context, appContext, views, widgetId, snapshot, widthDp, heightDp, textColor, buttonBackground)
         }
@@ -260,30 +244,16 @@ object WidgetRenderer {
         val density = appContext.resources.displayMetrics.density
         val textWidthPx = ((widthDp - 24).coerceAtLeast(1) * density).toInt()
         val fontScale = appContext.resources.configuration.fontScale
-        val titleText = appContext.getString(
-            if (snapshot.instance.kind == WidgetKind.TASKS) R.string.widget_tasks_title else R.string.widget_habits_title,
-        )
-        val fullOpenLabel = appContext.getString(R.string.widget_view_all_more,
-            appContext.getString(if (snapshot.instance.kind == WidgetKind.TASKS) R.string.widget_tasks_view_all else R.string.widget_habits_view_all),
-            snapshot.total)
-        val reserved = 24 +
-            max(48, measureTextHeight(appContext, titleText, (textWidthPx - 48 * density).toInt(), 18f, bold = true)) +
+        val header = headerPlan(appContext, snapshot.instance.kind, widthDp)
+        val reserved = 24 + header.heightDp +
             measureTextHeight(appContext, scopeText, textWidthPx, 14f) + 4 +
             measureTextHeight(appContext, updatedText, textWidthPx, 12f) +
-            measureFooterHeight(appContext, widthDp, listOf(
-                fullOpenLabel,
-                if (snapshot.instance.kind == WidgetKind.TASKS) {
-                    appContext.getString(R.string.widget_tasks_add)
-                } else {
-                    appContext.getString(R.string.widget_data_refresh)
-                },
-            )) +
             (snapshot.feedback?.let {
                 if (inlineFeedback) max(48, measureTextHeight(appContext, feedbackText,
                     (textWidthPx - 120 * density).toInt(), 14f)) + 4
                 else measureFeedbackHeight(appContext, widthDp, feedbackText, it, snapshot.instance.kind)
             } ?: 0)
-        if (WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
+        if (!header.actionsFit || WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
                 "$scopeText\n$updatedText")
         }
@@ -291,22 +261,32 @@ object WidgetRenderer {
             if (inlineFeedback) R.layout.widget_feedback_inline else R.layout.widget_feedback)
         renderFeedback(context, appContext, feedbackViews, widgetId, snapshot, textColor, buttonBackground, feedbackText, inlineFeedback)
         views.addView(R.id.widget_feedback_slot, feedbackViews)
-        val rowHeight = rows.maxOfOrNull { row ->
+        val measurements = rows.map { row ->
             when (row) {
-                is WidgetRow.Habit -> measureHabitRowHeight(appContext, widthDp, row)
-                is WidgetRow.Task -> measureTaskRowHeight(appContext, widthDp, row, snapshot.date)
+                is WidgetRow.Habit -> measureHabitRow(appContext, widthDp, row)
+                is WidgetRow.Task -> MeasuredRow(measureTaskRowHeight(appContext, widthDp, row, snapshot.date))
             }
-        } ?: 52
-        val capacity = WidgetLayoutPolicy.rowCapacity(widthDp, heightDp, fontScale, reserved, rowHeight)
+        }
+        val capacity = WidgetLayoutPolicy.rowCapacity(
+            widthDp, heightDp, fontScale, reserved, measurements.map { it.heightDp },
+        )
         val visibleRows = rows.take(capacity)
         val hidden = (snapshot.total - visibleRows.size).coerceAtLeast(0)
-        val viewAll = appContext.getString(if (snapshot.instance.kind == WidgetKind.TASKS)
-            R.string.widget_tasks_view_all else R.string.widget_habits_view_all)
-        views.setTextViewText(R.id.widget_data_open, if (snapshot.instance.showDetails && hidden > 0)
-            appContext.getString(R.string.widget_view_all_more, viewAll, hidden) else viewAll)
-        visibleRows.forEach { row ->
+        views.setContentDescription(R.id.widget_data_open,
+            viewAllDescription(appContext, snapshot.instance.kind, hidden, snapshot.instance.showDetails))
+        val moreCue = if (snapshot.instance.showDetails && hidden > 0) {
+            appContext.resources.getQuantityString(R.plurals.widget_more_count, hidden, hidden)
+        } else ""
+        val titleWidthDp = if (header.stacked) widthDp - 24 else widthDp - 24 - header.captureWidthDp - 48 - 16
+        val cueWidthDp = if (moreCue.isEmpty()) 0f else measureTextWidth(appContext, moreCue, 12f) / density + 8
+        val titleWidthNeededDp = measureTextWidth(appContext, header.title, 18f, bold = true) / density + cueWidthDp
+        views.setTextViewText(R.id.widget_data_more, moreCue)
+        views.setViewVisibility(R.id.widget_data_more,
+            if (moreCue.isNotEmpty() && titleWidthNeededDp <= titleWidthDp) View.VISIBLE else View.GONE)
+        visibleRows.forEachIndexed { index, row ->
             val rowViews = when (row) {
-                is WidgetRow.Habit -> habitRow(context, appContext, snapshot, widgetId, row, textColor, buttonBackground)
+                is WidgetRow.Habit -> habitRow(context, appContext, snapshot, widgetId, row, textColor, buttonBackground,
+                    measurements[index].inlineHabit)
                 is WidgetRow.Task -> taskRow(context, appContext, snapshot, widgetId, row, textColor, buttonBackground)
             }
             views.addView(R.id.widget_data_rows, rowViews)
@@ -322,7 +302,9 @@ object WidgetRenderer {
         row: WidgetRow.Habit,
         textColor: Int,
         buttonBackground: Int,
-    ) = RemoteViews(context.packageName, R.layout.widget_habit_row).apply {
+        inline: Boolean,
+    ) = RemoteViews(context.packageName,
+        if (inline) R.layout.widget_habit_row_inline else R.layout.widget_habit_row).apply {
         setTextColor(R.id.widget_habit_row_title, textColor)
         setTextColor(R.id.widget_habit_row_count, textColor)
         setTextColor(R.id.widget_habit_row_action, textColor)
@@ -340,11 +322,7 @@ object WidgetRenderer {
                 WidgetDestination.HabitDetail(row.id, snapshot.date),
             ),
         )
-        val count = when {
-            row.skipped -> appContext.getString(R.string.widget_habit_skipped, row.count, row.target)
-            row.count >= row.target -> appContext.getString(R.string.widget_habit_target_reached, row.count, row.target)
-            else -> appContext.getString(R.string.widget_habit_count, row.count, row.target)
-        }
+        val count = habitProgressText(appContext, row)
         setTextViewText(R.id.widget_habit_row_count, count)
         setContentDescription(R.id.widget_habit_row_text,
             appContext.getString(R.string.widget_habit_open_description, row.title) + ", " + count)
@@ -518,6 +496,45 @@ object WidgetRenderer {
     ) = WidgetCompactRenderer.render(context, appContext, widgetId, snapshot, failure,
         widthDp, heightDp, summary, isAppDark(context, appContext))
 
+    private fun headerPlan(context: Context, kind: WidgetKind?, widthDp: Int): HeaderPlan {
+        val titleResource = when (kind) {
+            WidgetKind.HABITS -> R.string.widget_habits_title
+            WidgetKind.TASKS -> R.string.widget_tasks_title
+            null -> R.string.app_name
+        }
+        val title = context.getString(titleResource)
+        val navigationTitle = if (context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+            "‹ $title"
+        } else {
+            "$title ›"
+        }
+        val density = context.resources.displayMetrics.density
+        val captureWidthDp = max(48, ceil(measureTextWidth(context,
+            context.getString(R.string.widget_capture), 14f) / density).toInt() + 24)
+        val titleWidthDp = ceil(measureTextWidth(context, navigationTitle, 18f, bold = true) / density).toInt() + 8
+        val stacked = WidgetLayoutPolicy.needsStackedHeader(widthDp, titleWidthDp, captureWidthDp)
+        val actionsFit = widthDp - 24 >= captureWidthDp + 48 + 8
+        return HeaderPlan(stacked, actionsFit, if (stacked) 100 else 48, captureWidthDp, navigationTitle)
+    }
+
+    private fun viewAllDescription(
+        context: Context,
+        kind: WidgetKind?,
+        hidden: Int,
+        showDetails: Boolean,
+    ): String {
+        val label = when (kind) {
+            WidgetKind.HABITS -> context.getString(R.string.widget_habits_view_all)
+            WidgetKind.TASKS -> context.getString(R.string.widget_tasks_view_all)
+            null -> context.getString(R.string.widget_data_open)
+        }
+        return when {
+            !showDetails -> context.getString(R.string.widget_view_all_hidden, label)
+            hidden > 0 -> context.getString(R.string.widget_view_all_more, label, hidden)
+            else -> label
+        }
+    }
+
     private fun useInlineFeedback(context: Context, widthDp: Int, text: String, result: WidgetActionResult?): Boolean {
         if (result == null || result.outcome !in setOf(WidgetOutcome.SAVED, WidgetOutcome.UNDONE)) return false
         val density = context.resources.displayMetrics.density
@@ -526,24 +543,35 @@ object WidgetRenderer {
         return widthDp - 24 >= measureTextWidth(context, text, 14f) / density + undoWidth + 48 + 12
     }
 
-    private fun destinationFor(kind: WidgetKind) = when (kind) {
+    private fun destinationFor(kind: WidgetKind?) = when (kind) {
         WidgetKind.HABITS -> WidgetDestination.Habits
         WidgetKind.TASKS -> WidgetDestination.Tasks
+        null -> WidgetDestination.Today
     }
 
-    private fun measureHabitRowHeight(context: Context, widthDp: Int, row: WidgetRow.Habit): Int {
+    private fun measureHabitRow(context: Context, widthDp: Int, row: WidgetRow.Habit): MeasuredRow {
         val density = context.resources.displayMetrics.density
-        val actionWidth = if (!row.skipped && row.count < row.target && row.actionToken != null)
-            max(48f, measureTextWidth(context, context.getString(R.string.widget_habit_log_short), 14f) / density + 24f) else 0f
-        val textWidthPx = ((widthDp - 24 - actionWidth - 8) * density).toInt().coerceAtLeast(1)
-        val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
-        val count = when {
-            row.skipped -> context.getString(R.string.widget_habit_skipped, row.count, row.target)
-            row.count >= row.target -> context.getString(R.string.widget_habit_target_reached, row.count, row.target)
-            else -> context.getString(R.string.widget_habit_count, row.count, row.target)
+        val canLog = !row.skipped && row.count < row.target && row.actionToken != null
+        val actionWidthDp = if (canLog) max(48f,
+            measureTextWidth(context, context.getString(R.string.widget_habit_log_short), 14f) / density + 24f) else 0f
+        val textWidthDp = (widthDp - 24 - actionWidthDp - 8).coerceAtLeast(1f)
+        val textWidthPx = (textWidthDp * density).toInt().coerceAtLeast(1)
+        val count = habitProgressText(context, row)
+        val countWidthDp = measureTextWidth(context, count, 14f) / density
+        val inlineTitleWidthDp = (textWidthDp - countWidthDp - 8).coerceAtLeast(1f)
+        val inline = measureTextWidth(context, row.title, 16f, bold = true) <= inlineTitleWidthDp * density
+        val height = if (inline) {
+            val titleHeight = measureTextHeight(context, row.title,
+                (inlineTitleWidthDp * density).toInt(), 16f, maxLines = 1, bold = true)
+            val countHeight = measureTextHeight(context, count,
+                (countWidthDp * density).toInt(), 14f, maxLines = 1)
+            max(48, max(titleHeight, countHeight))
+        } else {
+            val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
+            val countHeight = measureTextHeight(context, count, textWidthPx, 14f)
+            max(48, titleHeight + countHeight)
         }
-        val countHeight = measureTextHeight(context, count, textWidthPx, 14f)
-        return max(48, titleHeight + countHeight + 8)
+        return MeasuredRow(height, inline)
     }
 
     private fun measureTaskRowHeight(context: Context, widthDp: Int, row: WidgetRow.Task, date: LocalDate): Int {
@@ -553,12 +581,19 @@ object WidgetRenderer {
         val textWidthPx = ((widthDp - 24f - actionWidthDp - 8f) * density).toInt().coerceAtLeast(1)
         val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
         val dueHeight = measureTextHeight(context, taskDueLabel(context, row, date), textWidthPx, 14f)
-        return max(48, titleHeight + dueHeight + 8)
+        return max(48, titleHeight + dueHeight)
     }
 
-    internal fun measureTextWidth(context: Context, text: String, sizeSp: Float): Float {
+    private fun habitProgressText(context: Context, row: WidgetRow.Habit): String = when {
+        row.skipped -> context.getString(R.string.widget_habit_skipped, row.count, row.target)
+        row.count >= row.target -> context.getString(R.string.widget_habit_target_reached, row.count, row.target)
+        else -> context.getString(R.string.widget_habit_count, row.count, row.target)
+    }
+
+    internal fun measureTextWidth(context: Context, text: String, sizeSp: Float, bold: Boolean = false): Float {
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             textLocales = context.resources.configuration.locales
+            if (bold) typeface = android.graphics.Typeface.DEFAULT_BOLD
             textSize = TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP,
                 sizeSp,
@@ -582,21 +617,11 @@ object WidgetRenderer {
     private fun openLabel(context: Context, kind: WidgetKind?) =
         context.getString(openLabelResource(kind))
 
-    private fun openDescription(context: Context, kind: WidgetKind?) =
-        context.getString(openDescriptionResource(kind))
-
     private fun openLabelResource(kind: WidgetKind?) =
         if (kind == WidgetKind.TASKS) R.string.widget_tasks_open else R.string.widget_data_open
 
     private fun openDescriptionResource(kind: WidgetKind?) =
         if (kind == WidgetKind.TASKS) R.string.widget_tasks_open_description else R.string.widget_data_open_description
-
-    private fun measureFooterHeight(context: Context, widthDp: Int, labels: List<String>): Int {
-        val buttonWidthPx = (((widthDp - 24 - (labels.size - 1) * 8) / labels.size - 12) *
-            context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
-        val labelsHeight = labels.maxOf { measureTextHeight(context, it, buttonWidthPx, 14f) }
-        return max(48, labelsHeight + 12) + 8
-    }
 
     private fun measureFeedbackHeight(
         context: Context,
