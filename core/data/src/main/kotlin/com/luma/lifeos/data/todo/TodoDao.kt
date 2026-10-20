@@ -36,6 +36,7 @@ data class WidgetTodoRow(
     @ColumnInfo(name = "task_id") val taskId: String,
     val title: String,
     @ColumnInfo(name = "due_date") val dueDate: String,
+    @ColumnInfo(name = "revision_token") val revisionToken: String,
 )
 
 data class WidgetTodoSummary(
@@ -55,7 +56,7 @@ interface TodoDao {
     suspend fun widgetTodaySummary(date: String): WidgetTodoSummary
 
     @Query("""
-        SELECT id AS task_id, title, due_date
+        SELECT id AS task_id, title, due_date, revision_token
         FROM todo_task
         WHERE completed_at IS NULL AND due_date <= :date
         ORDER BY due_date ASC, created_at ASC, id ASC
