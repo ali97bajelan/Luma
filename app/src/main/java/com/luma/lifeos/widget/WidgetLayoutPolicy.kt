@@ -11,6 +11,21 @@ internal object WidgetLayoutPolicy {
 
     enum class CaptureLayout { WIDE, GRID, TALL, FALLBACK }
 
+    fun captureLayoutOrder(fontScale: Float): List<CaptureLayout> =
+        if (fontScale >= 1.5f) {
+            listOf(CaptureLayout.TALL, CaptureLayout.GRID, CaptureLayout.WIDE)
+        } else {
+            listOf(CaptureLayout.WIDE, CaptureLayout.GRID, CaptureLayout.TALL)
+        }
+
+    fun captureLabelsFitWithoutSplitting(
+        wordWidthsPx: List<Float>,
+        contentWidthsPx: List<Float>,
+    ): Boolean = wordWidthsPx.size == contentWidthsPx.size &&
+        wordWidthsPx.zip(contentWidthsPx).all { (wordWidth, contentWidth) ->
+            wordWidth.isFinite() && contentWidth.isFinite() && wordWidth <= contentWidth
+        }
+
     /** Label sizes include text padding and the minimum 48dp target. */
     fun captureLayout(widthDp: Int, heightDp: Int, labels: List<Pair<Int, Int>>): CaptureLayout {
         require(labels.size == 3)

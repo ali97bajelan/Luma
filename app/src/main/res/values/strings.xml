@@ -52,8 +52,8 @@
     <string name="source_usage">Usage access</string>
     <string name="source_manual">Manual</string>
     <string name="quick_capture">Quick Capture</string>
-    <string name="widget_quick_capture_name">Luma Quick capture</string>
-    <string name="widget_quick_capture_description">Create a mood, memory or journal entry from your home screen.</string>
+    <string name="widget_quick_capture_name">Luma Quick capture (legacy)</string>
+    <string name="widget_quick_capture_description">Compatibility widget for existing placements. New placements should use Habits or Tasks, which include Capture.</string>
     <string name="widget_capture_mood">Mood</string>
     <string name="widget_capture_mood_description">Create a new mood check-in</string>
     <string name="widget_capture_memory">Memory</string>
@@ -71,6 +71,7 @@
     <string name="widget_tasks_name">Luma Tasks</string>
     <string name="widget_tasks_description">See tasks due today or overdue, tap the title for the full list, complete tasks, or open Capture from the home screen.</string>
     <string name="widget_settings_intro">Add a Habits or Tasks widget to your home screen. Both include quick capture, so you do not need a separate capture widget.</string>
+    <string name="widget_settings_legacy_capture_note">Existing Quick capture widgets stay on your home screen after updates. Remove one there with your launcher’s Remove action; Luma does not remove it automatically.</string>
     <string name="widget_settings_capture_on_both">Capture is available on either widget. Tap its title to view the full list.</string>
     <string name="widget_settings_title_navigation_hint">Tap the title to view all.</string>
     <string name="widget_settings_add">Add</string>

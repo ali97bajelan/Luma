@@ -1,7 +1,7 @@
 # Luma widget review: more useful rows and shared quick capture
 
 **Reviewed:** 20 October 2026  
-**Status:** WD01–WD06 implementation is in place. Focused Android test sources compile; manual launcher, comparative sizing and accessibility acceptance remains open. WD04 launcher checks are pending because `adb` is unavailable here. WD07–WD08 remain open.
+**Status:** WD01–WD07 implementation is in place. API 36 Pixel Launcher and focused renderer/store/navigation checks pass; WD07 capture-only upgrade acceptance and WD08 comparative/accessibility matrix remain open. See the [focused WD07–WD08 acceptance record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md).
 **Scope:** Android home-screen Habits, Tasks and Quick capture; their navigation, configuration, discovery and accessible sizing.
 
 ## Recommended direction
@@ -182,11 +182,11 @@ WD01–WD03 implementation bullets are complete. P1 means the next implementatio
 
 - [x] Bind both widgets with `WidgetIntents.navigation(..., WidgetDestination.QuickCapture)`; reuse the existing `LifeOsApp.kt` and `QuickCaptureSheet.kt` flow.
 - [x] Keep current-time capture, undated shared Task behavior, explicit Save/Cancel and editor/draft protections. Ensure capture remains available in summary/empty/error states when it fits.
-- [ ] Exercise both widget origins, repeated taps, cold/warm app, a browsed historical day, an old snapshot and an existing draft. Check each of the four menu destinations. Instrumentation coverage was added for both provider IDs, repeated taps, all four destinations, current-time capture and the undated Task flow; its source compiles, but it could not run without `adb`.
+- [ ] Exercise both widget origins, repeated taps, cold/warm app, a browsed historical day, an old snapshot and an existing draft. Check each of the four menu destinations. API 36 route/provider tests pass; cold/warm, historical-date, draft and Back/Close acceptance remains pending.
 
 **Acceptance:** One tap opens exactly one chooser; a second opens the chosen editor. No record is saved by navigation, no stale date leaks into capture, and existing edits are not silently replaced. Back/Close dismisses the sheet predictably without a navigation loop.
 
-**Status:** Implemented. Both widget entry points use the date-free shared chooser, and the chooser opens the existing editors. Save/Cancel and draft protections remain in those editor flows. The focused route test compiles; cold/warm launcher, historical-date, existing-draft and Back/Close acceptance is still pending because no emulator or `adb` is available in this environment.
+**Status:** Implemented. Both widget entry points use the date-free shared chooser, and the chooser opens the existing editors. Save/Cancel and draft protections remain in those editor flows. The API 36 route/provider test passes 3/3; cold/warm launcher, historical-date, existing-draft and Back/Close acceptance remains pending. See the [focused WD07–WD08 acceptance record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md).
 
 ### WD05 — Preserve recovery and clarify empty states — P1
 
@@ -209,25 +209,32 @@ WD01–WD03 implementation bullets are complete. P1 means the next implementatio
 
 ### WD07 — Transition the legacy capture provider — P2
 
-- [ ] Remove its primary in-app promotion; retain the registered provider and existing editor routes for upgrade compatibility.
-- [ ] Adjust remaining discovery copy consistently, and fix its 200% fragmented labels with a readable stacked/grid/fallback arrangement.
-- [ ] Upgrade with capture-only and mixed widget placements already pinned. Verify their behavior and explain manual removal without deleting launcher placements automatically.
+- [x] Remove its primary in-app promotion; retain the registered provider and existing editor routes for upgrade compatibility.
+- [x] Adjust discovery and picker copy consistently. At large text, choose a readable stacked/grid/fallback arrangement without splitting words.
+- [x] Explain manual removal without deleting launcher placements automatically. API 36 same-version in-place install preserves the existing mixed Habits/Tasks placements.
+- [ ] Verify an already-pinned capture-only placement across upgrade. The validation emulator had no standalone capture instance before the update.
 
 **Acceptance:** Existing standalone widgets continue opening the correct editors after upgrade. The main in-app discovery promotes two widgets. Any remaining system-picker compatibility entry is described honestly. Full retirement stays separate until its migration is verified.
 
+**Status:** Implemented; API 36 system-picker registration, compatibility copy, direct editor route tests and mixed Habits/Tasks placement survival pass. Capture-only placement survival across upgrade remains unverified. See the [focused WD07–WD08 acceptance record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md).
+
 ### WD08 — Record comparative acceptance evidence — release gate
 
-- [ ] Capture identical-fixture before/after screenshots and row counts at the recorded surface plus compact and expanded sizes. Include 0/1/3/4/8/>8 items, long titles and feedback-present states.
-- [ ] Test API 28 and 35/36, Pixel Launcher and one other supported launcher, portrait/landscape, en/fr/fa, 100/130/200%, light/dark, summary/details and duplicate instances.
-- [ ] Manually check TalkBack labels, focus order, full names/state, separate actions and target bounds. Check contrast; a dark screenshot alone does not establish accessibility.
-- [ ] Run focused sizing/store/renderer/navigation checks and the repository’s required build/lint checks for the eventual implementation. Record failures and untested combinations explicitly.
+- [x] Record renderer row counts for 0/1/3/4/8/>8 items, long titles and no-feedback/Undo/Retry states at compact, recorded and expanded bounds.
+- [ ] Capture identical-fixture before/after launcher screenshots. Current before and after screenshots have different item counts and are not a controlled comparison.
+- [x] Exercise renderer layouts for en/fr/fa at 100/130/200%, portrait/landscape bounds, summary/details, feedback and separate actions on API 36.
+- [ ] Test API 28/35, another launcher, actual landscape, light/dark and duplicate same-provider instances.
+- [ ] Manually check TalkBack speech/focus, keyboard traversal and contrast.
+- [x] Run focused sizing/store/renderer/navigation checks, app JVM tests, APK packaging and lint. Record remaining combinations explicitly.
 
 **Acceptance:** Publish measured row-count gains and target-bound evidence, not an assumed percentage. Capture works from both widgets, legacy placements survive upgrades, and setup/recovery remains operable. Retain existing release blockers until their own acceptance requirements are met.
 
+**Status:** Partial; API 36 renderer/store/provider/navigation evidence is recorded, but controlled before/after screenshots and the broader launcher, device and manual accessibility matrix remain release gates. See the [focused WD07–WD08 acceptance record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md).
+
 ## Delivery order and success measures
 
-WD01–WD06 implementation is in place. Complete the legacy transition in WD07 and record the comparative accessibility and sizing evidence in WD08 before release. Updating the row limit or removing a footer in isolation is insufficient.
+WD01–WD07 implementation is in place. Complete the standalone capture upgrade check and remaining comparative accessibility/sizing evidence in WD08 before release. Updating the row limit or removing a footer in isolation is insufficient.
 
 Success means more **complete, actionable rows** where data and measured space allow; **two promoted widget choices**; capture from either widget in **two taps to an editor**; and no regressions in consent, dates, recovery or accessible interaction. Ask a small formative group to find capture, open the full list and log/complete an item without coaching. These are proposed validation activities, not research already performed.
 
-The review document, raw evidence, measurements and schematic are the outputs of this task. WD01–WD06 implementation is in place; manual release acceptance and WD07–WD08 remain open.
+The review document, raw evidence, measurements and schematic are the outputs of this task. WD07 implementation is in place; its standalone placement upgrade acceptance and WD08 manual release matrix remain open.

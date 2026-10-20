@@ -53,8 +53,8 @@
     <string name="source_usage">Accès aux données d’utilisation</string>
     <string name="source_manual">Manuel</string>
     <string name="quick_capture">Saisie rapide</string>
-    <string name="widget_quick_capture_name">Luma · Saisie rapide</string>
-    <string name="widget_quick_capture_description">Créez un point sur l’humeur, un souvenir ou une entrée de journal depuis l’écran d’accueil.</string>
+    <string name="widget_quick_capture_name">Luma · Saisie rapide (compatibilité)</string>
+    <string name="widget_quick_capture_description">Widget conservé pour les placements existants. Pour un nouveau placement, choisissez Habitudes ou Tâches, qui incluent la saisie.</string>
     <string name="widget_capture_mood">Humeur</string>
     <string name="widget_capture_mood_description">Créer un nouveau point sur l’humeur</string>
     <string name="widget_capture_memory">Souvenir</string>
@@ -72,6 +72,7 @@
     <string name="widget_tasks_name">Luma · Tâches</string>
     <string name="widget_tasks_description">Consultez les tâches dues ou en retard, touchez le titre pour ouvrir la liste, terminez une tâche ou ouvrez Saisie depuis l’écran d’accueil.</string>
     <string name="widget_settings_intro">Ajoutez le widget Habitudes ou Tâches à l’écran d’accueil. Les deux incluent la saisie rapide, sans widget de saisie séparé.</string>
+    <string name="widget_settings_legacy_capture_note">Les widgets Saisie rapide déjà placés restent sur l’écran d’accueil après une mise à jour. Pour en retirer un, utilisez l’action Supprimer du lanceur ; Luma ne le retire pas automatiquement.</string>
     <string name="widget_settings_capture_on_both">La saisie est disponible sur les deux widgets. Touchez le titre pour ouvrir la liste complète.</string>
     <string name="widget_settings_title_navigation_hint">Touchez le titre pour tout afficher.</string>
     <string name="widget_settings_add">Ajouter</string>

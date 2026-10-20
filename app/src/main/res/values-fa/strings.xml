@@ -52,8 +52,8 @@
     <string name="source_usage">دسترسی به داده‌های استفاده</string>
     <string name="source_manual">دستی</string>
     <string name="quick_capture">ثبت سریع</string>
-    <string name="widget_quick_capture_name">ثبت سریع لوما</string>
-    <string name="widget_quick_capture_description">ثبت حال‌وهوا، خاطره یا یادداشت روزانه از صفحهٔ اصلی</string>
+    <string name="widget_quick_capture_name">ثبت سریع قدیمی لوما</string>
+    <string name="widget_quick_capture_description">ابزارک سازگار برای جای‌گذاری‌های قبلی است. برای جای‌گذاری تازه، عادت‌ها یا کارها را انتخاب کنید که ثبت سریع دارند.</string>
     <string name="widget_capture_mood">حال‌وهوا</string>
     <string name="widget_capture_mood_description">ثبت حال‌وهوای تازه</string>
     <string name="widget_capture_memory">خاطره</string>
@@ -71,6 +71,7 @@
     <string name="widget_tasks_name">کارهای لوما</string>
     <string name="widget_tasks_description">کارهای امروز و عقب‌افتاده را ببینید، برای فهرست کامل عنوان را لمس کنید، کارها را کامل کنید یا ثبت را از صفحهٔ اصلی باز کنید.</string>
     <string name="widget_settings_intro">ابزارک عادت‌ها یا کارها را به صفحهٔ اصلی اضافه کنید. هر دو ثبت سریع دارند و به ابزارک جداگانهٔ ثبت نیاز نیست.</string>
+    <string name="widget_settings_legacy_capture_note">ابزارک‌های ثبت سریعِ ازقبل‌جای‌گذاری‌شده پس از به‌روزرسانی روی صفحهٔ اصلی می‌مانند. برای حذف، از گزینهٔ حذف راه‌انداز استفاده کنید؛ لوما آن را خودکار حذف نمی‌کند.</string>
     <string name="widget_settings_capture_on_both">ثبت در هر دو ابزارک در دسترس است. برای دیدن فهرست کامل، عنوان را لمس کنید.</string>
     <string name="widget_settings_title_navigation_hint">برای دیدن همه، عنوان را لمس کنید.</string>
     <string name="widget_settings_add">افزودن</string>

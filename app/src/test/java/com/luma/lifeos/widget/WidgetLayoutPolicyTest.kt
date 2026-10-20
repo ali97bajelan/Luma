@@ -57,6 +57,27 @@ class WidgetLayoutPolicyTest {
         assertEquals(WidgetLayoutPolicy.CaptureLayout.TALL, WidgetLayoutPolicy.captureLayout(190, 240, labels))
     }
 
+    @Test fun largeTextCapturePrefersStackingAndRejectsSplitWords() {
+        assertEquals(
+            listOf(WidgetLayoutPolicy.CaptureLayout.TALL, WidgetLayoutPolicy.CaptureLayout.GRID,
+                WidgetLayoutPolicy.CaptureLayout.WIDE),
+            WidgetLayoutPolicy.captureLayoutOrder(2f),
+        )
+        assertEquals(
+            listOf(WidgetLayoutPolicy.CaptureLayout.WIDE, WidgetLayoutPolicy.CaptureLayout.GRID,
+                WidgetLayoutPolicy.CaptureLayout.TALL),
+            WidgetLayoutPolicy.captureLayoutOrder(1f),
+        )
+        assertEquals(false, WidgetLayoutPolicy.captureLabelsFitWithoutSplitting(
+            wordWidthsPx = listOf(160f, 140f, 155f),
+            contentWidthsPx = listOf(126f, 126f, 126f),
+        ))
+        assertEquals(true, WidgetLayoutPolicy.captureLabelsFitWithoutSplitting(
+            wordWidthsPx = listOf(160f, 140f, 155f),
+            contentWidthsPx = listOf(220f, 220f, 480f),
+        ))
+    }
+
     @Test fun compactShellReservesRecoveryInsteadOfOnlyRemovingRows() {
         assertEquals(true, WidgetLayoutPolicy.needsCompactShell(109, 150))
         assertEquals(false, WidgetLayoutPolicy.needsCompactShell(250, 150))

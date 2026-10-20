@@ -72,25 +72,40 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
             textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
                 16f, appContext.resources.displayMetrics)
         }
-        // Try each arrangement at its actual cell width, including wrapped localized labels.
-        val layout = listOf(WidgetLayoutPolicy.CaptureLayout.WIDE, WidgetLayoutPolicy.CaptureLayout.GRID,
-            WidgetLayoutPolicy.CaptureLayout.TALL).firstOrNull { candidate ->
-            val columns = when (candidate) {
-                WidgetLayoutPolicy.CaptureLayout.WIDE -> 3
-                WidgetLayoutPolicy.CaptureLayout.GRID -> 2
-                else -> 1
-            }
-            val cellWidth = (widthDp - 24 - (columns - 1) * 8) / columns
-            val sizes = labels.mapIndexed { index, label ->
-                val labelWidth = if (candidate == WidgetLayoutPolicy.CaptureLayout.GRID && index == 2) widthDp - 24 else cellWidth
-                val text = appContext.getString(label)
-                val textLayout = android.text.StaticLayout.Builder.obtain(text, 0, text.length, paint,
-                    ((labelWidth - 16).coerceAtLeast(1) * density).toInt()).setIncludePad(true).setUseLineSpacingFromFallbacks(true)
-                    .setBreakStrategy(android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY).build()
-                labelWidth.coerceAtLeast(48) to maxOf(48, kotlin.math.ceil(textLayout.height / density).toInt() + 16)
-            }
-            cellWidth >= 48 && WidgetLayoutPolicy.captureLayout(widthDp, heightDp, sizes) == candidate
-        } ?: WidgetLayoutPolicy.CaptureLayout.FALLBACK
+        val wordWidths = labels.map { label ->
+            appContext.getString(label).split(Regex("\\s+")).maxOfOrNull { paint.measureText(it) } ?: 0f
+        }
+        // At large text sizes, stack actions first. Never select a layout that splits a word.
+        val layout = WidgetLayoutPolicy.captureLayoutOrder(appContext.resources.configuration.fontScale)
+            .firstOrNull { candidate ->
+                val columns = when (candidate) {
+                    WidgetLayoutPolicy.CaptureLayout.WIDE -> 3
+                    WidgetLayoutPolicy.CaptureLayout.GRID -> 2
+                    else -> 1
+                }
+                val cellWidth = (widthDp - 24 - (columns - 1) * 8) / columns
+                val labelWidths = when (candidate) {
+                    WidgetLayoutPolicy.CaptureLayout.WIDE -> List(3) { cellWidth }
+                    WidgetLayoutPolicy.CaptureLayout.GRID -> listOf(cellWidth, cellWidth, widthDp - 24)
+                    WidgetLayoutPolicy.CaptureLayout.TALL -> List(3) { widthDp - 24 }
+                    WidgetLayoutPolicy.CaptureLayout.FALLBACK -> emptyList()
+                }
+                val sizes = labels.mapIndexed { index, label ->
+                    val labelWidth = labelWidths[index]
+                    val text = appContext.getString(label)
+                    val textLayout = android.text.StaticLayout.Builder.obtain(text, 0, text.length, paint,
+                        ((labelWidth - 16).coerceAtLeast(1) * density).toInt())
+                        .setIncludePad(true)
+                        .setUseLineSpacingFromFallbacks(true)
+                        .setBreakStrategy(android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
+                        .build()
+                    labelWidth.coerceAtLeast(48) to maxOf(48, kotlin.math.ceil(textLayout.height / density).toInt() + 16)
+                }
+                val contentWidthsPx = labelWidths.map { ((it - 16).coerceAtLeast(1) * density) }
+                cellWidth >= 48 &&
+                    WidgetLayoutPolicy.captureLabelsFitWithoutSplitting(wordWidths, contentWidthsPx) &&
+                    WidgetLayoutPolicy.captureLayout(widthDp, heightDp, sizes) == candidate
+            } ?: WidgetLayoutPolicy.CaptureLayout.FALLBACK
         return when (layout) {
             WidgetLayoutPolicy.CaptureLayout.FALLBACK -> compactViews(context, appContext, widgetId)
             else -> defaultViews(context, appContext, widgetId, when (layout) {

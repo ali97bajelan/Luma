@@ -472,25 +472,126 @@ class WidgetRendererAcceptanceTest {
         }
     }
 
-    @Test fun captureKeepsThreeActionsAtLargeTextWhenAnyArrangementFits() {
+    @Test fun captureKeepsWholeLabelsAcrossLocaleTextScalesAndBounds() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {
             for (tag in listOf("en", "fr", "fa")) {
                 val locale = java.util.Locale.forLanguageTag(tag)
-                val config = android.content.res.Configuration(instrumentation.targetContext.resources.configuration).apply {
-                    fontScale = 2f
-                    setLocale(locale)
-                    setLayoutDirection(locale)
-                }
-                val context = instrumentation.targetContext.createConfigurationContext(config)
-                for ((width, height) in listOf(578 to 109, 350 to 240, 220 to 400)) {
-                    val root = QuickCaptureWidgetProvider().viewsForSize(context, context, 51, width, height).apply(context, null)
-                    for (id in listOf(R.id.widget_capture_mood, R.id.widget_capture_memory, R.id.widget_capture_journal)) {
-                        org.junit.Assert.assertNotNull("$tag $width x $height", root.findViewById<TextView>(id))
+                for (scale in listOf(1f, 1.3f, 2f)) {
+                    val config = android.content.res.Configuration(instrumentation.targetContext.resources.configuration).apply {
+                        fontScale = scale
+                        setLocale(locale)
+                        setLayoutDirection(locale)
+                    }
+                    val context = instrumentation.targetContext.createConfigurationContext(config)
+                    for ((width, height) in listOf(276 to 210, 350 to 240, 578 to 109, 220 to 400)) {
+                        val root = QuickCaptureWidgetProvider().viewsForSize(context, context, 51, width, height)
+                            .apply(context, null)
+                        val density = context.resources.displayMetrics.density
+                        val rootWidth = (width * density).toInt()
+                        val rootHeight = (height * density).toInt()
+                        root.measure(
+                            android.view.View.MeasureSpec.makeMeasureSpec(rootWidth, android.view.View.MeasureSpec.EXACTLY),
+                            android.view.View.MeasureSpec.makeMeasureSpec(rootHeight, android.view.View.MeasureSpec.EXACTLY),
+                        )
+                        root.layout(0, 0, rootWidth, rootHeight)
+                        val actionIds = listOf(
+                            R.id.widget_capture_mood,
+                            R.id.widget_capture_memory,
+                            R.id.widget_capture_journal,
+                        )
+                        val directActions = actionIds.map { root.findViewById<TextView>(it) }
+                        if (directActions.all { it != null }) {
+                            directActions.filterNotNull().forEach { action ->
+                                org.junit.Assert.assertTrue(
+                                    "$tag $width x $height target too small: ${action.width} x ${action.height}",
+                                    action.width >= 48 * density - 1 && action.height >= 48 * density - 1,
+                                )
+                                val layout = requireNotNull(action.layout)
+                                org.junit.Assert.assertTrue(
+                                    "$tag $scale $width x $height clipped ${action.text}",
+                                    layout.height <= action.height - action.paddingTop - action.paddingBottom,
+                                )
+                                val text = action.text.toString()
+                                for (line in 0 until layout.lineCount - 1) {
+                                    val end = layout.getLineEnd(line).coerceAtMost(text.length)
+                                    val nextStart = layout.getLineStart(line + 1).coerceAtMost(text.length)
+                                    val previous = text.getOrNull(end - 1)
+                                    val next = text.getOrNull(nextStart)
+                                    org.junit.Assert.assertTrue(
+                                        "$tag $scale $width x $height split a word in ${action.text}",
+                                        previous?.isWhitespace() == true || next?.isWhitespace() == true,
+                                    )
+                                }
+                            }
+                        } else {
+                            val fallback = root.findViewById<TextView>(R.id.widget_quick_capture_open)
+                            org.junit.Assert.assertNotNull(
+                                "$tag $scale $width x $height must keep a readable capture action",
+                                fallback,
+                            )
+                            org.junit.Assert.assertEquals(
+                                context.getString(R.string.widget_open_quick_capture),
+                                fallback.text.toString(),
+                            )
+                            org.junit.Assert.assertEquals(
+                                context.getString(R.string.widget_open_quick_capture_description),
+                                fallback.contentDescription.toString(),
+                            )
+                            org.junit.Assert.assertTrue(
+                                "$tag $scale $width x $height fallback target too small",
+                                fallback.width >= 48 * density - 1 && fallback.height >= 48 * density - 1,
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    @Test fun densityEvidenceRecordsVisibleRowsForRequestedFixturesAndBounds() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val surfaces = listOf("compact" to (220 to 160), "recorded" to (373 to 321), "expanded" to (373 to 420))
+        val feedbackStates = listOf(
+            "none" to null,
+            "undo" to WidgetActionResult(WidgetOutcome.SAVED, undoToken = UUID.randomUUID()),
+            "retry" to WidgetActionResult(WidgetOutcome.FAILED, retryToken = UUID.randomUUID()),
+        )
+        val evidence = mutableListOf("fixture,surface,feedback,eligible,visible")
+        for (eligible in listOf(0, 1, 3, 4, 8, 10)) {
+            val rows = (0 until eligible.coerceAtMost(8)).map { index ->
+                WidgetRow.Task(
+                    id = UUID.randomUUID(),
+                    title = if (index == 0) "A long mixed-script title عادتی for density measurement" else "Task ${index + 1}",
+                    dueDate = LocalDate.parse("2026-10-20"),
+                    actionToken = UUID.randomUUID(),
+                )
+            }
+            for ((surface, dimensions) in surfaces) {
+                for ((feedbackName, feedback) in feedbackStates) {
+                    val snapshot = sampleSnapshot().copy(total = eligible, rows = rows, feedback = feedback)
+                    val (width, height) = dimensions
+                    val root = WidgetRenderer.render(context, 71, snapshot, false, bounds(width, height)).apply(context, null)
+                    layoutAtBounds(root, context, width, height)
+                    val rowContainer = root.findViewById<LinearLayout>(R.id.widget_data_rows)
+                    val visible = rowContainer?.childCount ?: 0
+                    org.junit.Assert.assertTrue("Visible $visible rows exceed $eligible eligible items at $surface / $feedbackName",
+                        visible <= eligible.coerceAtMost(8))
+                    if (rowContainer != null) {
+                        for (index in 0 until rowContainer.childCount) {
+                            val row = rowContainer.getChildAt(index)
+                            org.junit.Assert.assertTrue("Partial row $index at $surface / $feedbackName", row.height >= 48 * context.resources.displayMetrics.density - 1)
+                            val rect = android.graphics.Rect()
+                            row.getDrawingRect(rect)
+                            rowContainer.offsetDescendantRectToMyCoords(row, rect)
+                            org.junit.Assert.assertTrue("Clipped row $index at $surface / $feedbackName", rect.bottom <= rowContainer.height)
+                        }
+                    }
+                    evidence += "$eligible,$surface,$feedbackName,$eligible,$visible"
+                }
+            }
+        }
+        android.util.Log.i("WD08Rows", evidence.joinToString("\n"))
     }
 
     @Test fun loadingKeepsCountsUnknownAndOpensSection() {

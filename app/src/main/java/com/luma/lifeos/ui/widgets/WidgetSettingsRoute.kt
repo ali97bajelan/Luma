@@ -128,6 +128,7 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
         screenTag = "screen_settings_widgets",
     ) {
         Text(stringResource(R.string.widget_settings_intro))
+        Text(stringResource(R.string.widget_settings_legacy_capture_note), style = MaterialTheme.typography.bodyMedium)
         ProviderCard(
             kind = WidgetKind.HABITS,
             title = R.string.widget_habits_title,
