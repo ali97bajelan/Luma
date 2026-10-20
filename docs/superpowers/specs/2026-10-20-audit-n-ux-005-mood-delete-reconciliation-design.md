@@ -1,6 +1,6 @@
 # UX-005 — Interrupted Mood deletion has no reconciliation path
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implemented in working tree; acceptance pending. Automated and device validation was not run per user request.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-005](../../UI_UX_AUDIT-20261020N.md#ux-005--interrupted-mood-deletion-has-no-reconciliation-path)
 **Priority / effort / confidence:** P2 — Medium / Medium / High (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Resolve interrupted Mood deletion to an honest deleted, still-present or unavailable outcome. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not reproduced runtime acceptance. The implementation follows the proposed design; acceptance evidence remains pending.
 
 ## Dependencies
 
@@ -33,6 +33,7 @@ The audit is source evidence, not reproduced runtime acceptance. Its recommendat
 2. If get(id) returns null after retained intent, complete as deleted. A successful read returning a record permits explicit Retry delete; do not auto-repeat a destructive command merely because the process restarted.
 3. Read failure means unknown outcome with Retry status check. Missing data without a matching deletion intent is an honest missing-record state, never deletion success.
 4. Persist completion = MoodDraftCompletion(id, deleted = true) before clearing pendingDeleteId. Retain the completion snapshot until the caller acknowledges its result; load checks it before normal dependencies. Repeated restoration produces the same result and cannot recreate the deleted entry.
+5. Keep unresolved deletion intent in the durable draft if the user leaves the editor before the outcome is known. An ordinary draft discard must not erase intent needed for later reconciliation.
 
 ## Design and contract
 

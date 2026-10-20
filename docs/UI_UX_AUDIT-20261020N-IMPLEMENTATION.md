@@ -3,7 +3,7 @@
 **Date:** 20 October 2026 (Asia/Tehran)
 **Source:** [UI_UX_AUDIT-20261020N.md](UI_UX_AUDIT-20261020N.md)
 **Scope:** 28 task specifications and 28 implementation plans, one pair for every UX-001–UX-028 finding.
-**Status:** Draft implementation documentation; delivery is tracked per task below. UX-001 and UX-004 are implemented with acceptance pending.
+**Status:** Draft implementation documentation; delivery is tracked per task below. UX-001, UX-004, UX-005 and UX-006 are implemented with acceptance pending.
 
 ## Intent and interpretation
 
@@ -21,8 +21,8 @@ Every specification defines intent, behavior/policy, architectural contract, dep
 | UX-003 | P1 | Low | The widget privacy switch has no accessible name | [Spec](superpowers/specs/2026-10-20-audit-n-ux-003-widget-privacy-switch-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-003-widget-privacy-switch.md) | — | Draft / not started |
 | UX-001 | P1 | Medium | Habit retries conceal the date they will affect | [Spec](superpowers/specs/2026-10-20-audit-n-ux-001-habit-retry-context-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-001-habit-retry-context.md) | — | Implemented / acceptance pending |
 | UX-004 | P1 | Medium | Unbounded Mood notes are copied into saved instance state | [Spec](superpowers/specs/2026-10-20-audit-n-ux-004-mood-note-durability-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-004-mood-note-durability.md) | — | Implemented / acceptance pending |
-| UX-006 | P2 | Low | Restored Mood text disappears behind a load error | [Spec](superpowers/specs/2026-10-20-audit-n-ux-006-mood-restored-content-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-006-mood-restored-content.md) | — | Draft / not started |
-| UX-005 | P2 | Medium | Interrupted Mood deletion has no reconciliation path | [Spec](superpowers/specs/2026-10-20-audit-n-ux-005-mood-delete-reconciliation-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-005-mood-delete-reconciliation.md) | UX-004 | Draft / not started |
+| UX-006 | P2 | Low | Restored Mood text disappears behind a load error | [Spec](superpowers/specs/2026-10-20-audit-n-ux-006-mood-restored-content-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-006-mood-restored-content.md) | — | Implemented / acceptance pending |
+| UX-005 | P2 | Medium | Interrupted Mood deletion has no reconciliation path | [Spec](superpowers/specs/2026-10-20-audit-n-ux-005-mood-delete-reconciliation-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-005-mood-delete-reconciliation.md) | UX-004 | Implemented / acceptance pending |
 | UX-007 | P2 | Low | A conflicted Today task cannot be opened for review | [Spec](superpowers/specs/2026-10-20-audit-n-ux-007-task-conflict-opening-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-007-task-conflict-opening.md) | — | Draft / not started |
 | UX-008 | P2 | Low | Retained task errors can crowd out the task list | [Spec](superpowers/specs/2026-10-20-audit-n-ux-008-task-recovery-list-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-008-task-recovery-list.md) | — | Draft / not started |
 | UX-009 | P2 | Low | Past-day summary Check in opens a current-time entry | [Spec](superpowers/specs/2026-10-20-audit-n-ux-009-summary-dated-capture-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-009-summary-dated-capture.md) | — | Draft / not started |

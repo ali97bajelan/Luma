@@ -1,6 +1,6 @@
 # UX-005 — Interrupted Mood deletion has no reconciliation path Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **Execution note:** This plan tracks implementation and acceptance for the matching specification. Do not mark acceptance complete without recorded evidence.
 
 **Goal:** Resolve interrupted Mood deletion to an honest deleted, still-present or unavailable outcome.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-005 specification](../specs/2026-10-20-audit-n-ux-005-mood-delete-reconciliation-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implementation in working tree; acceptance pending. Steps 1, 4 and 5 are complete; regression additions remain pending, and automated/device verification was not run per user request. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -54,7 +54,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: Reuse UX-004 MoodDraftSnapshot.pendingDeleteId: EventId?. MoodEditorViewModel.delete(): Unit durably writes intent before deletion; load(): Unit checks pending intent via MoodRepository.get(id) before prepareEmotions(). Completion keeps existing completed/deleted state for UX-010 to translate.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. Complete UX-004 first and read its declared interfaces. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. Complete UX-004 first and read its declared interfaces. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -78,9 +78,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Persist deletion intent to the UX-004 store and separate intent-write, delete-write and existence-check failures.
+- [x] **Step 4: Implement the owning contract.** Persist deletion intent to the UX-004 store and separate intent-write, delete-write and existence-check failures.
 
-- [ ] **Step 5: Connect the behavior.** Reorder restoration to reconcile pending deletion before loading emotions or rejecting a missing source.
+- [x] **Step 5: Connect the behavior.** Reorder restoration to reconcile pending deletion before loading emotions or rejecting a missing source.
 
 - [ ] **Step 6: Exercise the complete flow.** Expose still-present/unknown/missing recovery states and keep destructive Retry explicit.
 

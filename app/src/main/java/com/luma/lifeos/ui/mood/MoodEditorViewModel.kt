@@ -38,7 +38,11 @@ data class MoodDraft(
     val placeId: UUID? = null,
 )
 
-enum class MoodEditorError { LOAD, SAVE, DELETE, TIME, DRAFT_STORAGE }
+enum class MoodEditorError { LOAD, SAVE, DELETE, DELETE_PREPARATION, DELETE_STATUS, TIME, DRAFT_STORAGE }
+
+enum class MoodDeleteRecovery {
+    NONE, CHECKING, STATUS_UNKNOWN, STILL_PRESENT, PREPARATION_FAILED, COMPLETION_PENDING, INTENT_MISMATCH,
+}
 
 data class MoodEditorState(
     val draft: MoodDraft,
@@ -56,6 +60,8 @@ data class MoodEditorState(
     val draftDurable: Boolean = false,
     val draftStorageError: Boolean = false,
     val completionEventId: EventId? = null,
+    val hasRestoredDraft: Boolean = false,
+    val deleteRecovery: MoodDeleteRecovery = MoodDeleteRecovery.NONE,
 )
 
 class MoodEditorViewModel(
@@ -81,8 +87,12 @@ class MoodEditorViewModel(
     private var draftRevision = 0L
     private val draftWriteMutex = Mutex()
     private var discardPending = false
-    private val mutableState = MutableStateFlow(MoodEditorState(MoodDraft(initialTime), editing = eventId != null,
-        hasChanges = saved.get<Boolean>(DIRTY) ?: (saved.get<Boolean>(HAS_DRAFT) == true)))
+    private val mutableState = MutableStateFlow(MoodEditorState(
+        draft = if (saved.get<Boolean>(HAS_DRAFT) == true) readLegacyDraft() else MoodDraft(initialTime),
+        editing = eventId != null,
+        hasChanges = saved.get<Boolean>(DIRTY) ?: (saved.get<Boolean>(HAS_DRAFT) == true),
+        hasRestoredDraft = saved.get<Boolean>(HAS_DRAFT) == true,
+    ))
     val state: StateFlow<MoodEditorState> = mutableState.asStateFlow()
 
     init { load() }
@@ -92,6 +102,7 @@ class MoodEditorViewModel(
         mutableState.value = state.value.copy(loading = true, error = null)
         loadingJob = viewModelScope.launch {
             var storageFailure = true
+            var checkingDeleteStatus = false
             try {
                 var snapshot = draftStore.read(draftId)
                 draftSnapshot = snapshot
@@ -123,14 +134,31 @@ class MoodEditorViewModel(
                 }
                 storageFailure = false
 
-                snapshot?.let { mutableState.value = state.value.copy(draft = it.draft) }
+                mutableState.value = state.value.copy(
+                    draft = snapshot?.draft ?: state.value.draft,
+                    hasRestoredDraft = snapshot != null || saved.get<Boolean>(HAS_DRAFT) == true,
+                )
                 val pendingDelete = snapshot?.pendingDeleteId
-                val pendingDeleteRecord = pendingDelete?.let { repository.get(it) }
-                if (pendingDelete != null && pendingDeleteRecord == null) {
-                    persistCompletion(MoodDraftCompletion(pendingDelete, deleted = true))
+                var pendingDeleteRecord: LifeEventRecord? = null
+                if (pendingDelete != null && pendingDelete != (eventId ?: captureId)) {
+                    mutableState.value = state.value.copy(loading = false, ready = false,
+                        error = MoodEditorError.LOAD, deleteRecovery = MoodDeleteRecovery.INTENT_MISMATCH)
                     return@launch
                 }
-                if (pendingDelete != null) editingId = pendingDelete
+                if (pendingDelete != null) {
+                    checkingDeleteStatus = true
+                    mutableState.value = state.value.copy(deleteRecovery = MoodDeleteRecovery.CHECKING)
+                    pendingDeleteRecord = repository.get(pendingDelete)
+                    checkingDeleteStatus = false
+                    if (pendingDeleteRecord == null) {
+                        persistCompletion(MoodDraftCompletion(pendingDelete, deleted = true))
+                        return@launch
+                    }
+                    editingId = pendingDelete
+                    mutableState.value = state.value.copy(deleteRecovery = MoodDeleteRecovery.STILL_PRESENT)
+                } else {
+                    mutableState.value = state.value.copy(deleteRecovery = MoodDeleteRecovery.NONE)
+                }
 
                 repository.prepareEmotions()
                 val emotions = repository.observeEmotions().first()
@@ -158,7 +186,13 @@ class MoodEditorViewModel(
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 mutableState.value = state.value.copy(loading = false, ready = false,
-                    error = if (storageFailure) MoodEditorError.DRAFT_STORAGE else MoodEditorError.LOAD,
+                    error = when {
+                        storageFailure -> MoodEditorError.DRAFT_STORAGE
+                        checkingDeleteStatus -> MoodEditorError.DELETE_STATUS
+                        else -> MoodEditorError.LOAD
+                    },
+                    deleteRecovery = if (checkingDeleteStatus) MoodDeleteRecovery.STATUS_UNKNOWN
+                        else state.value.deleteRecovery,
                     draftStorageError = storageFailure)
             }
         }
@@ -228,16 +262,16 @@ class MoodEditorViewModel(
     fun delete() {
         val id = editingId ?: return
         val current = state.value
-        if (!current.ready || current.busy || current.completed || !current.draftDurable) return
-        mutableState.value = current.copy(busy = true, error = null)
+        if (!current.ready || current.busy || current.completed || pendingCompletion != null || !current.draftDurable) return
+        mutableState.value = current.copy(busy = true, error = null, deleteRecovery = MoodDeleteRecovery.NONE)
         viewModelScope.launch {
             val marker = nextSnapshot(current.draft).copy(pendingDeleteId = id, completion = null)
             try {
                 writeSnapshot(marker)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                mutableState.value = state.value.copy(busy = false, error = MoodEditorError.DRAFT_STORAGE,
-                    draftStorageError = true)
+                mutableState.value = state.value.copy(busy = false, error = MoodEditorError.DELETE_PREPARATION,
+                    deleteRecovery = MoodDeleteRecovery.PREPARATION_FAILED, draftStorageError = false)
                 return@launch
             }
             try {
@@ -249,11 +283,13 @@ class MoodEditorViewModel(
                     if (repository.get(id) == null) {
                         persistCompletion(MoodDraftCompletion(id, deleted = true))
                     } else {
-                        mutableState.value = state.value.copy(busy = false, error = MoodEditorError.DELETE)
+                        mutableState.value = state.value.copy(busy = false, error = MoodEditorError.DELETE,
+                            deleteRecovery = MoodDeleteRecovery.STILL_PRESENT)
                     }
                 } catch (reconcileFailure: Exception) {
                     if (reconcileFailure is CancellationException) throw reconcileFailure
-                    mutableState.value = state.value.copy(busy = false, error = MoodEditorError.DELETE)
+                    mutableState.value = state.value.copy(loading = false, ready = false, busy = false,
+                        error = MoodEditorError.DELETE_STATUS, deleteRecovery = MoodDeleteRecovery.STATUS_UNKNOWN)
                 }
             }
         }
@@ -327,12 +363,17 @@ class MoodEditorViewModel(
             saved[DELETED] = completion.deleted
             mutableState.value = state.value.copy(busy = false, completed = true,
                 deleted = completion.deleted, completionEventId = completion.eventId,
-                draftPersisting = false, draftDurable = true, draftStorageError = false, error = null)
+                draftPersisting = false, draftDurable = true, draftStorageError = false, error = null,
+                deleteRecovery = MoodDeleteRecovery.NONE)
             true
         } catch (failure: Exception) {
             if (failure is CancellationException) throw failure
-            mutableState.value = state.value.copy(loading = false, busy = false, error = MoodEditorError.DRAFT_STORAGE,
-                draftPersisting = false, draftStorageError = true)
+            mutableState.value = state.value.copy(loading = false,
+                ready = if (completion.deleted) false else state.value.ready,
+                busy = false, error = MoodEditorError.DRAFT_STORAGE,
+                draftPersisting = false, draftStorageError = true,
+                deleteRecovery = if (completion.deleted) MoodDeleteRecovery.COMPLETION_PENDING
+                    else state.value.deleteRecovery)
             false
         }
     }
@@ -365,9 +406,16 @@ class MoodEditorViewModel(
             draftStorageError = false, error = null)
         return try {
             draftWriteMutex.withLock {
-                draftStore.remove(draftId)
-                draftSnapshot = null
-                clearLegacyDraft()
+                val retained = draftStore.read(draftId)
+                if (retained?.pendingDeleteId != null) {
+                    // Keep unresolved deletion intent durable so a later editor can reconcile it.
+                    draftSnapshot = retained
+                    draftRevision = maxOf(draftRevision, retained.revision)
+                } else {
+                    draftStore.remove(draftId)
+                    draftSnapshot = null
+                    clearLegacyDraft()
+                }
             }
             discardPending = false
             true
@@ -409,7 +457,7 @@ class MoodEditorViewModel(
     private fun restoreCompletion(completion: MoodDraftCompletion, draft: MoodDraft = state.value.draft) {
         mutableState.value = state.value.copy(draft = draft, loading = false, ready = false, busy = false,
             completed = true, deleted = completion.deleted, completionEventId = completion.eventId,
-            draftStorageError = false)
+            draftStorageError = false, hasRestoredDraft = true, deleteRecovery = MoodDeleteRecovery.NONE)
     }
 
     private fun readLegacyDraft(): MoodDraft = MoodDraft(

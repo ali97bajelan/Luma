@@ -1,6 +1,6 @@
 # UX-006 — Restored Mood text disappears behind a load error Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **Execution note:** This plan tracks implementation and acceptance for the matching specification. Do not mark acceptance complete without recorded evidence.
 
 **Goal:** Keep restored Mood content visible and copyable when editor preparation is loading or fails.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-006 specification](../specs/2026-10-20-audit-n-ux-006-mood-restored-content-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Implementation in working tree; acceptance pending. Steps 1, 4 and 5 are complete; regression additions remain pending, and automated/device verification was not run per user request. Relative effort: Low.
 
 ## Global Constraints
 
@@ -53,7 +53,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: MoodEditorState gains hasRestoredDraft: Boolean, initialized from an actual recovered draft rather than empty defaults. Existing ready: Boolean still gates mutations and save. Recovery note text is selectable/readOnly, not disabled in a way that prevents copying.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -77,9 +77,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Track recovered-draft presence and render a read-only branch independently of ready.
+- [x] **Step 4: Implement the owning contract.** Track recovered-draft presence and render a read-only branch independently of ready.
 
-- [ ] **Step 5: Connect the behavior.** Keep note selection/copy available and gate every write/context/date action on actual readiness.
+- [x] **Step 5: Connect the behavior.** Keep note selection/copy available and gate every write/context/date action on actual readiness.
 
 - [ ] **Step 6: Exercise the complete flow.** Test failed emotion preparation and missing-source load with a retained draft, followed by successful retry.
 

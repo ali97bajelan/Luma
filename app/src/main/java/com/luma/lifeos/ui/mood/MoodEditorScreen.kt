@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.mood
 
+import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -39,12 +42,17 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.language.emotionDisplayName
+import com.luma.lifeos.language.localizedDate
+import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.format.FormatStyle
 import java.util.UUID
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -92,13 +100,15 @@ fun MoodEditorScreen(
                 val actionError = when (state.error) {
                     MoodEditorError.SAVE -> stringResource(R.string.mood_save_error)
                     MoodEditorError.DELETE -> stringResource(R.string.mood_delete_error)
+                    MoodEditorError.DELETE_PREPARATION -> stringResource(R.string.mood_delete_preparation_error)
                     else -> null
                 }
                 actionError?.let { AccessibleFeedback(it, Modifier.testTag("mood_error")) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (editing) TextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,
                         onClick = { deleting = true }, modifier = Modifier.testTag("mood_delete")) {
-                        Text(stringResource(R.string.delete))
+                        Text(stringResource(if (state.deleteRecovery == MoodDeleteRecovery.STILL_PRESENT)
+                            R.string.mood_delete_retry else R.string.delete))
                     }
                     Button(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting, onClick = onSave,
                         modifier = Modifier.weight(1f).testTag("mood_save")) {
@@ -110,12 +120,64 @@ fun MoodEditorScreen(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            val showRecoveryContent = !state.ready &&
+                (state.hasRestoredDraft || state.deleteRecovery in setOf(
+                    MoodDeleteRecovery.STATUS_UNKNOWN,
+                    MoodDeleteRecovery.STILL_PRESENT,
+                    MoodDeleteRecovery.COMPLETION_PENDING,
+                    MoodDeleteRecovery.INTENT_MISMATCH,
+                ))
             if (state.loading) CircularProgressIndicator(Modifier.testTag("mood_loading"))
-            if (state.error == MoodEditorError.LOAD) {
-                AccessibleFeedback(stringResource(R.string.mood_load_error), Modifier.testTag("mood_error"))
-                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            val deleteRecoveryMessage = when (state.deleteRecovery) {
+                MoodDeleteRecovery.CHECKING -> R.string.mood_delete_checking
+                MoodDeleteRecovery.STATUS_UNKNOWN -> R.string.mood_delete_status_unknown
+                MoodDeleteRecovery.STILL_PRESENT -> R.string.mood_delete_still_present
+                MoodDeleteRecovery.COMPLETION_PENDING -> R.string.mood_delete_completion_error
+                MoodDeleteRecovery.INTENT_MISMATCH -> R.string.mood_delete_intent_mismatch
+                else -> null
             }
-            if (state.draftStorageError) {
+            if (deleteRecoveryMessage != null) {
+                AccessibleFeedback(stringResource(deleteRecoveryMessage), Modifier.testTag("mood_delete_recovery"))
+            }
+            if (state.error == MoodEditorError.LOAD && !state.hasRestoredDraft) {
+                AccessibleFeedback(stringResource(R.string.mood_load_error), Modifier.testTag("mood_error"))
+                TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.retry))
+                }
+            }
+            if (showRecoveryContent) {
+                when {
+                    state.error == MoodEditorError.LOAD && state.deleteRecovery != MoodDeleteRecovery.INTENT_MISMATCH -> AccessibleFeedback(
+                        stringResource(R.string.mood_recovery_load_error), Modifier.testTag("mood_recovery_message"))
+                    state.error == MoodEditorError.DRAFT_STORAGE && state.deleteRecovery != MoodDeleteRecovery.COMPLETION_PENDING ->
+                        AccessibleFeedback(stringResource(R.string.mood_draft_save_error),
+                            Modifier.testTag("mood_recovery_message"))
+                    deleteRecoveryMessage == null -> AccessibleFeedback(stringResource(R.string.mood_recovery_loading),
+                        Modifier.testTag("mood_recovery_message"))
+                }
+                if (state.error == MoodEditorError.LOAD && state.deleteRecovery != MoodDeleteRecovery.INTENT_MISMATCH) {
+                    TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_recovery_retry")) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+                if (state.deleteRecovery == MoodDeleteRecovery.STATUS_UNKNOWN) {
+                    TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_delete_check_retry")) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+                if (state.deleteRecovery == MoodDeleteRecovery.COMPLETION_PENDING) {
+                    TextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_delete_completion_retry")) {
+                        Text(stringResource(R.string.mood_delete_completion_retry))
+                    }
+                } else if (state.error == MoodEditorError.DRAFT_STORAGE && state.hasRestoredDraft) {
+                    TextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_draft_retry")) {
+                        Text(stringResource(R.string.mood_draft_retry))
+                    }
+                }
+                MoodRecoveryContent(state)
+            }
+            if (state.draftStorageError && !showRecoveryContent &&
+                state.deleteRecovery != MoodDeleteRecovery.COMPLETION_PENDING) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     AccessibleFeedback(stringResource(R.string.mood_draft_save_error), Modifier.weight(1f).testTag("mood_draft_storage_error"))
                     TextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_draft_retry")) {
@@ -123,7 +185,7 @@ fun MoodEditorScreen(
                     }
                 }
             }
-            if (!state.ready && state.draftStorageError && state.draft.note.isNotEmpty()) {
+            if (!state.ready && state.draftStorageError && !showRecoveryContent && state.draft.note.isNotEmpty()) {
                 OutlinedTextField(value = state.draft.note, onValueChange = {}, readOnly = true,
                     label = { Text(stringResource(R.string.mood_note)) }, minLines = 3,
                     modifier = Modifier.fillMaxWidth().testTag("mood_note_recovery_preview"))
@@ -196,6 +258,46 @@ fun MoodEditorScreen(
         confirmButton = { TextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
         dismissButton = { TextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } },
     )
+}
+
+@Composable
+private fun MoodRecoveryContent(state: MoodEditorState) {
+    val zone = ZoneId.systemDefault()
+    val moment = Instant.ofEpochMilli(state.draft.occurredAtMillis).atZone(zone)
+    val use24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val timeText = if (moment.toLocalDate() == LocalDate.now(zone)) {
+        stringResource(R.string.capture_timestamp_today, moment.format(localizedTime(use24Hour)))
+    } else {
+        stringResource(R.string.capture_timestamp_value,
+            moment.format(localizedDate(FormatStyle.MEDIUM)), moment.format(localizedTime(use24Hour)))
+    }
+    Text(stringResource(R.string.mood_recovery_time, timeText), modifier = Modifier.testTag("mood_recovery_time"))
+    state.draft.score?.let { score ->
+        Text(stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score))),
+            modifier = Modifier.testTag("mood_recovery_score"))
+    }
+    state.draft.energy?.let { value ->
+        Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_energy), value))
+    }
+    state.draft.stress?.let { value ->
+        Text(stringResource(R.string.mood_optional_value, stringResource(R.string.mood_stress), value))
+    }
+    val selectedEmotions = state.emotions.filter { it.id in state.draft.emotionIds }
+    if (selectedEmotions.isNotEmpty()) {
+        Text(stringResource(R.string.mood_recovery_emotions,
+            selectedEmotions.joinToString { emotionDisplayName(it) }))
+    }
+    if (state.draft.emotionIds.size > selectedEmotions.size) {
+        Text(stringResource(R.string.mood_recovery_emotions_unavailable))
+    }
+    if (state.draft.personIds.isNotEmpty() || state.draft.placeId != null) {
+        Text(stringResource(R.string.mood_recovery_links_unavailable))
+    }
+    if (state.draft.note.isNotEmpty()) {
+        OutlinedTextField(value = state.draft.note, onValueChange = {}, readOnly = true,
+            label = { Text(stringResource(R.string.mood_note)) }, minLines = 3,
+            modifier = Modifier.fillMaxWidth().testTag("mood_note_recovery"))
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

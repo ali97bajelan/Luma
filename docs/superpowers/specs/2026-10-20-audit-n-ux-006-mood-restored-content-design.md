@@ -1,6 +1,6 @@
 # UX-006 — Restored Mood text disappears behind a load error
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implemented in working tree; acceptance pending. Automated and device validation was not run per user request.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-006](../../UI_UX_AUDIT-20261020N.md#ux-006--restored-mood-text-disappears-behind-a-load-error)
 **Priority / effort / confidence:** P2 — Medium / Low / High (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Keep restored Mood content visible and copyable when editor preparation is loading or fails. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not reproduced runtime acceptance. The implementation follows the proposed design; acceptance evidence remains pending.
 
 ## Dependencies
 
