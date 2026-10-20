@@ -200,15 +200,14 @@ fun HabitDetailScreen(
                         Text(stringResource(if (day?.skipRemaining == true) R.string.habit_resume_today else R.string.habit_skip_remaining))
                     }
                 }
-                detail.actionError?.let { item { Text(stringResource(R.string.habit_correction_error),
-                    color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_detail_error")) } }
                 if (detail.correction == null && detail.correctionError == HabitCorrectionError.MISSING) item {
                     Text(stringResource(R.string.habit_correction_missing), color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.testTag("habit_correction_missing"))
                 }
                 state.actionError?.let { item { Text(stringResource(R.string.habit_action_error),
                     color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_detail_action_error")) } }
-                item { HabitHistory(detail.history, detail.historyTotal, selectedLogId, trackingZone, onEditLog, onDeleteLog, onLoadMore) }
+                item { HabitHistory(detail.history, detail.historyTotal, selectedLogId, trackingZone, onEditLog, onDeleteLog,
+                    onLoadMore, historyError = detail.actionErrors[HabitDetailOperation.HISTORY] is HabitDetailActionError.History) }
                 item(key = "schedule-${habit.id}") {
                     Column(Modifier.fillMaxWidth().testTag("habit_schedule_details"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.habit_schedule_details), style = MaterialTheme.typography.titleMedium)
@@ -239,6 +238,9 @@ fun HabitDetailScreen(
                         onEdit = onEdit,
                         onLifecycle = onPauseResume,
                         onDelete = { confirmingDelete = true },
+                        deleteError = (detail.actionErrors[HabitDetailOperation.DELETE] as? HabitDetailActionError.Delete)
+                            ?.takeIf { it.habitId == habit.id },
+                        onRetryDelete = onDeleteHabit,
                     )
                 }
             }

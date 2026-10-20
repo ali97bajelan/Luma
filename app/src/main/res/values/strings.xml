@@ -813,6 +813,7 @@
     <string name="habit_history">Repetition history</string>
     <string name="habit_history_empty">No repetitions recorded yet.</string>
     <string name="habit_load_older">Load older repetitions</string>
+    <string name="habit_history_error">Couldn’t load older repetitions.</string>
     <string name="habit_edit_log">Edit</string>
     <string name="habit_log_correction">Edit repetition</string>
     <string name="habit_correction_date">Date</string>
@@ -830,6 +831,7 @@
     <string name="habit_save_error">Habit could not be saved. Your draft is still here.</string>
     <string name="habit_log_save_error">Repetition could not be saved. Retry to continue.</string>
     <string name="habit_delete_error">Habit could not be deleted.</string>
+    <string name="habit_delete_outcome_unknown">We couldn’t confirm whether this habit was deleted.</string>
     <string name="habit_correction_error">Repetition could not be updated. Your correction is still here.</string>
     <string name="habit_correction_date_invalid">Choose a date that is not in the future.</string>
     <string name="habit_correction_time_invalid">That time does not exist or is in the future for this timezone.</string>

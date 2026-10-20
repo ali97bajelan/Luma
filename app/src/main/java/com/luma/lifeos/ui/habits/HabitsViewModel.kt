@@ -43,6 +43,11 @@ class HabitsViewModel(
     private var currentDeviceDate: LocalDate? = null
     private var currentDeviceZone: ZoneId? = null
     private var activeDetail: Pair<UUID, LocalDate>? = null
+    private var detailGeneration = 0L
+    private var historyRequestGeneration = 0L
+    private var historyRequestInFlight: Pair<UUID, Int>? = null
+    private var deleteRequestGeneration = 0L
+    private var deletingHabitId: UUID? = null
     private val logMutexes = ConcurrentHashMap<UUID, Mutex>()
 
     init {
@@ -241,19 +246,39 @@ class HabitsViewModel(
     fun loadMoreHistory() {
         val current = state.value.detail ?: return
         val habitId = current.habit?.id ?: return
-        if (current.loading || current.historyOffset >= current.historyTotal) return
+        val target = activeDetail?.takeIf { it.first == habitId } ?: return
+        val generation = detailGeneration
+        val historyError = current.actionErrors[HabitDetailOperation.HISTORY] as? HabitDetailActionError.History
+        val offset = historyError?.offset ?: current.historyOffset
+        if (current.loading || (historyError == null && current.historyOffset >= current.historyTotal)) return
+        val requestKey = habitId to offset
+        if (historyRequestInFlight == requestKey) return
+        val requestGeneration = ++historyRequestGeneration
+        historyRequestInFlight = requestKey
         viewModelScope.launch {
             try {
-                val page = repository.history(habitId, null, current.historyOffset, 50)
+                val page = repository.history(habitId, null, offset, 50)
                 mutableState.update { latest ->
                     val detail = latest.detail ?: return@update latest
-                    if (detail.habit?.id != habitId) return@update latest
+                    if (!isCurrentDetail(target, generation) || requestGeneration != historyRequestGeneration ||
+                        detail.habit?.id != habitId) return@update latest
                     latest.copy(detail = detail.copy(history = (detail.history + page.logs).distinctBy { it.id },
-                        historyOffset = page.offset + page.logs.size, historyTotal = page.total, actionError = null))
+                        historyOffset = page.offset + page.logs.size, historyTotal = page.total,
+                        actionErrors = detail.actionErrors - HabitDetailOperation.HISTORY))
                 }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                mutableState.update { it.copy(detail = it.detail?.copy(actionError = failure.message ?: "Unable to load older repetitions")) }
+                mutableState.update { latest ->
+                    val detail = latest.detail ?: return@update latest
+                    if (!isCurrentDetail(target, generation) || requestGeneration != historyRequestGeneration ||
+                        detail.habit?.id != habitId) return@update latest
+                    latest.copy(detail = detail.copy(actionErrors = detail.actionErrors +
+                        (HabitDetailOperation.HISTORY to HabitDetailActionError.History(offset))))
+                }
+            } finally {
+                if (requestGeneration == historyRequestGeneration && historyRequestInFlight == requestKey) {
+                    historyRequestInFlight = null
+                }
             }
         }
     }
@@ -328,6 +353,11 @@ class HabitsViewModel(
 
     fun openDetail(habitId: UUID, date: LocalDate, deviceZone: ZoneId) {
         activeDetail = habitId to date
+        detailGeneration += 1
+        historyRequestGeneration += 1
+        historyRequestInFlight = null
+        deleteRequestGeneration += 1
+        deletingHabitId = null
         selectDate(date, deviceZone)
         detailObservationJob?.cancel()
         mutableState.update { it.copy(detail = HabitDetailUiState(loading = true)) }
@@ -398,14 +428,14 @@ class HabitsViewModel(
         )
         writeCorrection(draft)
         mutableState.update { it.copy(detail = it.detail?.copy(correction = draft, correctionError = null,
-            correctionBusy = false, actionError = null)) }
+            correctionBusy = false)) }
     }
 
     fun changeCorrectionDate(value: LocalDate) {
         val draft = state.value.detail?.correction ?: return
         val changed = draft.copy(selectedDate = value)
         writeCorrection(changed)
-        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, correctionError = null, actionError = null)) }
+        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, correctionError = null)) }
     }
 
     fun changeCorrectionTime(value: LocalTime?) {
@@ -421,7 +451,7 @@ class HabitsViewModel(
         val changed = draft.copy(selectedTime = selectedTime, timeChanged = draft.timeChanged || !sameDisplayedMinute && value != null ||
             value == null && draft.originalOccurredAt != null)
         writeCorrection(changed)
-        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, correctionError = null, actionError = null)) }
+        mutableState.update { it.copy(detail = it.detail?.copy(correction = changed, correctionError = null)) }
     }
 
     fun cancelCorrection() {
@@ -432,6 +462,7 @@ class HabitsViewModel(
     fun saveCorrection() {
         val draft = state.value.detail?.correction ?: return
         val detail = state.value.detail ?: return
+        val generation = detailGeneration
         if (detail.correctionBusy) return
         if (!draft.hasChanges) {
             clearCorrection()
@@ -446,6 +477,7 @@ class HabitsViewModel(
         viewModelScope.launch {
             try {
                 val log = repository.getLog(draft.logId) ?: run {
+                    if (!isCurrentCorrection(draft.logId, generation)) return@launch
                     mutableState.update { it.copy(detail = it.detail?.copy(correctionBusy = false,
                         correctionError = HabitCorrectionError.MISSING)) }
                     return@launch
@@ -465,14 +497,14 @@ class HabitsViewModel(
                     return@launch
                 }
                 repository.updateLog(log.id, HabitLogInput(log.habitId, draft.selectedDate, draft.zone, occurredAt))
+                if (!isCurrentCorrection(draft.logId, generation)) return@launch
                 clearCorrection()
-                mutableState.update { it.copy(actionError = null) }
                 refreshDetail()
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
+                if (!isCurrentCorrection(draft.logId, generation)) return@launch
                 mutableState.update { it.copy(detail = it.detail?.copy(correctionBusy = false,
-                    correctionError = HabitCorrectionError.SAVE,
-                    actionError = failure.message ?: "Unable to update this repetition")) }
+                    correctionError = HabitCorrectionError.SAVE)) }
             }
         }
     }
@@ -480,20 +512,57 @@ class HabitsViewModel(
     private fun clearCorrection() {
         CORRECTION_KEYS.forEach { saved.remove<String>(it) }
         mutableState.update { it.copy(detail = it.detail?.copy(correction = null, correctionError = null,
-            correctionBusy = false, actionError = null)) }
+            correctionBusy = false)) }
     }
 
     fun deleteHabit(habitId: UUID) {
+        val target = activeDetail?.takeIf { it.first == habitId } ?: return
+        if (deletingHabitId == habitId) return
+        val generation = detailGeneration
+        val requestGeneration = ++deleteRequestGeneration
+        deletingHabitId = habitId
         viewModelScope.launch {
             try {
                 repository.deleteHabit(habitId)
-                mutableState.update { it.copy(detail = it.detail?.copy(deleted = true, loading = false, actionError = null)) }
+                mutableState.update { latest ->
+                    val detail = latest.detail ?: return@update latest
+                    if (!isCurrentDetail(target, generation) || requestGeneration != deleteRequestGeneration) return@update latest
+                    latest.copy(detail = detail.copy(deleted = true, loading = false,
+                        actionErrors = detail.actionErrors - HabitDetailOperation.DELETE))
+                }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                mutableState.update { it.copy(detail = it.detail?.copy(actionError = failure.message ?: "Unable to delete this habit")) }
+                val deletionState = try {
+                    if (repository.get(habitId) == null) DeleteReconciliation.DELETED else DeleteReconciliation.STILL_PRESENT
+                } catch (readFailure: Exception) {
+                    if (readFailure is CancellationException) throw readFailure
+                    DeleteReconciliation.UNKNOWN
+                }
+                mutableState.update { latest ->
+                    val detail = latest.detail ?: return@update latest
+                    if (!isCurrentDetail(target, generation) || requestGeneration != deleteRequestGeneration) return@update latest
+                    when (deletionState) {
+                        DeleteReconciliation.DELETED -> latest.copy(detail = detail.copy(deleted = true, loading = false,
+                            actionErrors = detail.actionErrors - HabitDetailOperation.DELETE))
+                        DeleteReconciliation.STILL_PRESENT, DeleteReconciliation.UNKNOWN -> latest.copy(detail = detail.copy(
+                            actionErrors = detail.actionErrors + (HabitDetailOperation.DELETE to
+                                HabitDetailActionError.Delete(habitId,
+                                    outcomeUnknown = deletionState == DeleteReconciliation.UNKNOWN))))
+                    }
+                }
+            } finally {
+                if (requestGeneration == deleteRequestGeneration && deletingHabitId == habitId) deletingHabitId = null
             }
         }
     }
+
+    private fun isCurrentDetail(target: Pair<UUID, LocalDate>, generation: Long): Boolean =
+        activeDetail == target && detailGeneration == generation
+
+    private fun isCurrentCorrection(logId: UUID, generation: Long): Boolean =
+        detailGeneration == generation && state.value.detail?.correction?.logId == logId
+
+    private enum class DeleteReconciliation { DELETED, STILL_PRESENT, UNKNOWN }
 
     private data class CorrectionRestore(val draft: HabitLogCorrectionDraft?, val error: HabitCorrectionError? = null)
 

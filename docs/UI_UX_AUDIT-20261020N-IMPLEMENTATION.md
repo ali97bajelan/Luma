@@ -3,7 +3,7 @@
 **Date:** 20 October 2026 (Asia/Tehran)
 **Source:** [UI_UX_AUDIT-20261020N.md](UI_UX_AUDIT-20261020N.md)
 **Scope:** 28 task specifications and 28 implementation plans, one pair for every UX-001–UX-028 finding.
-**Status:** Delivery is tracked per task below. UX-001, UX-004, UX-005, UX-006, UX-016, UX-027, UX-007, UX-008 and UX-011 have implementation and regression coverage with acceptance pending.
+**Status:** Delivery is tracked per task below. UX-001, UX-004, UX-005, UX-006, UX-016, UX-027, UX-007, UX-008, UX-011, UX-009 and UX-015 have implementation with acceptance pending.
 
 ## Intent and interpretation
 
@@ -25,8 +25,8 @@ Every specification defines intent, behavior/policy, architectural contract, dep
 | UX-005 | P2 | Medium | Interrupted Mood deletion has no reconciliation path | [Spec](superpowers/specs/2026-10-20-audit-n-ux-005-mood-delete-reconciliation-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-005-mood-delete-reconciliation.md) | UX-004 | Implemented / acceptance pending |
 | UX-007 | P2 | Low | A conflicted Today task cannot be opened for review | [Spec](superpowers/specs/2026-10-20-audit-n-ux-007-task-conflict-opening-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-007-task-conflict-opening.md) | — | Implemented / acceptance pending |
 | UX-008 | P2 | Low | Retained task errors can crowd out the task list | [Spec](superpowers/specs/2026-10-20-audit-n-ux-008-task-recovery-list-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-008-task-recovery-list.md) | — | Implemented / acceptance pending |
-| UX-009 | P2 | Low | Past-day summary Check in opens a current-time entry | [Spec](superpowers/specs/2026-10-20-audit-n-ux-009-summary-dated-capture-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-009-summary-dated-capture.md) | — | Draft / not started |
-| UX-015 | P2 | Low | Habit failures display the wrong operation's message | [Spec](superpowers/specs/2026-10-20-audit-n-ux-015-habit-operation-errors-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-015-habit-operation-errors.md) | — | Draft / not started |
+| UX-009 | P2 | Low | Past-day summary Check in opens a current-time entry | [Spec](superpowers/specs/2026-10-20-audit-n-ux-009-summary-dated-capture-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-009-summary-dated-capture.md) | — | Implemented / acceptance pending |
+| UX-015 | P2 | Low | Habit failures display the wrong operation's message | [Spec](superpowers/specs/2026-10-20-audit-n-ux-015-habit-operation-errors-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-015-habit-operation-errors.md) | — | Implemented / acceptance pending |
 | UX-016 | P2 | Low | Review source page labels reverse chronological direction | [Spec](superpowers/specs/2026-10-20-audit-n-ux-016-review-source-pagination-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-016-review-source-pagination.md) | — | Implemented / acceptance pending |
 | UX-017 | P2 | Low | Successful integration refresh leaves obsolete error text | [Spec](superpowers/specs/2026-10-20-audit-n-ux-017-integration-error-recovery-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-017-integration-error-recovery.md) | — | Draft / not started |
 | UX-018 | P2 | Low | Several important asynchronous results lack announcement semantics | [Spec](superpowers/specs/2026-10-20-audit-n-ux-018-accessible-async-feedback-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-018-accessible-async-feedback.md) | — | Draft / not started |

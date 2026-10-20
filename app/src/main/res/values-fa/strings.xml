@@ -814,6 +814,7 @@
     <string name="habit_history">تاریخچه تکرارها</string>
     <string name="habit_history_empty">هنوز تکراری ثبت نشده است.</string>
     <string name="habit_load_older">بارگذاری تکرارهای قدیمی‌تر</string>
+    <string name="habit_history_error">بارگذاری تکرارهای قدیمی‌تر ممکن نشد.</string>
     <string name="habit_edit_log">ویرایش</string>
     <string name="habit_log_correction">ویرایش تکرار</string>
     <string name="habit_correction_date">تاریخ</string>
@@ -831,6 +832,7 @@
     <string name="habit_save_error">عادت ذخیره نشد. پیش‌نویس شما باقی است.</string>
     <string name="habit_log_save_error">تکرار ذخیره نشد. برای ادامه دوباره تلاش کنید.</string>
     <string name="habit_delete_error">عادت حذف نشد.</string>
+    <string name="habit_delete_outcome_unknown">نمی‌توان تأیید کرد که این عادت حذف شده است یا نه.</string>
     <string name="habit_correction_error">تکرار به‌روزرسانی نشد. اصلاح شما باقی است.</string>
     <string name="habit_correction_date_invalid">تاریخی را انتخاب کنید که در آینده نباشد.</string>
     <string name="habit_correction_time_invalid">این زمان وجود ندارد یا در آینده این منطقه زمانی است.</string>

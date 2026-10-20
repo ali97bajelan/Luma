@@ -259,7 +259,6 @@ fun LifeOsApp(
                             summaries = summaries,
                             integrationAvailability = integrationAvailability,
                             onIntegrations = { navController.navigate("settings_integrations") },
-                            onCheckIn = { navController.navigate("mood") },
                             habits = habits,
                             habitsDate = selectedDate?.let(LocalDate::parse),
                             deviceDate = currentDay.date,

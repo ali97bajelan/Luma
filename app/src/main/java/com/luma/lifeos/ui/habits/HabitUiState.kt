@@ -14,6 +14,12 @@ import java.util.UUID
 enum class HabitLogDisabledReason { FUTURE_DATE, NOT_SCHEDULED, PAUSED, ARCHIVED }
 enum class HabitUiError { LOAD, ACTION, VALIDATION }
 enum class HabitCorrectionError { DATE, TIME, SAVE, MISSING }
+enum class HabitDetailOperation { HISTORY, DELETE }
+
+sealed interface HabitDetailActionError {
+    data class History(val offset: Int) : HabitDetailActionError
+    data class Delete(val habitId: UUID, val outcomeUnknown: Boolean) : HabitDetailActionError
+}
 
 data class HabitDayRow(
     val day: HabitDay,
@@ -52,7 +58,7 @@ data class HabitDetailUiState(
     val historyTotal: Int = 0,
     val loading: Boolean = true,
     val error: HabitUiError? = null,
-    val actionError: String? = null,
+    val actionErrors: Map<HabitDetailOperation, HabitDetailActionError> = emptyMap(),
     val correction: HabitLogCorrectionDraft? = null,
     val correctionError: HabitCorrectionError? = null,
     val correctionBusy: Boolean = false,

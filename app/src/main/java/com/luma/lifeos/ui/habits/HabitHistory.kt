@@ -38,6 +38,7 @@ fun HabitHistory(
     onEdit: (HabitLog) -> Unit,
     onDelete: (UUID) -> Unit,
     onLoadMore: () -> Unit,
+    historyError: Boolean = false,
 ) {
     Column(Modifier.testTag("habit_history_section"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.habit_history), style = MaterialTheme.typography.titleLarge)
@@ -74,7 +75,9 @@ fun HabitHistory(
                 } },
                 dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } })
         }
-        if (total > logs.size) TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        if (historyError) Text(stringResource(R.string.habit_history_error), color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.testTag("habit_history_error"))
+        if (total > logs.size || historyError) TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
             .testTag("habit_history_load_more")) { Text(stringResource(R.string.habit_load_older)) }
     }
 }

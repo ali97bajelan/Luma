@@ -60,7 +60,6 @@ fun TodayRoute(
     summaries: DailySummaryRepository? = null,
     integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {},
-    onCheckIn: () -> Unit = {},
     habits: HabitRepository? = null,
     habitsDate: LocalDate? = null,
     deviceDate: LocalDate = date,
@@ -124,7 +123,7 @@ fun TodayRoute(
             TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
                 onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,
                 summaryState = summary, onSummaryRetry = { summaryRetry++ }, onCapture = onCapture,
-                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn,
+                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations,
                 todayTasks = todayTasks, todayTaskActions = todayTaskActions, onTask = onTask, onSetTaskCompleted = { task, completed ->
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
@@ -159,7 +158,7 @@ fun TodayRoute(
             TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
                 onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,
                 summaryState = summary, onSummaryRetry = { summaryRetry++ }, habitsState = displayedHabits,
-                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations, onCheckIn = onCheckIn,
+                integrationAvailability = integrationAvailability, onIntegrations = onIntegrations,
                 habitLogCount = habitLogCount, onHabits = onHabits, onCreateHabit = onCreateHabit,
                 onHabit = { id, rowDate -> displayedHabits.rowsFor(rowDate).firstOrNull { it.day.habit.id == id }?.let { row ->
                     habitViewModel.dateForRow(row)?.let { onHabit(id, it) }

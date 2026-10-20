@@ -11,7 +11,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -24,6 +28,7 @@ import com.luma.lifeos.ui.timeline.DayNavigation
 import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.DetailsDisclosure
+import com.luma.lifeos.ui.common.CaptureDateChoice
 import com.luma.lifeos.ui.summary.DailySummaryState
 import com.luma.lifeos.ui.summary.DailySummaryCard
 import java.time.LocalDate
@@ -55,7 +60,6 @@ fun TodayScreen(
     onSummaryRetry: () -> Unit = {},
     integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {},
-    onCheckIn: () -> Unit = {},
     habitsState: HabitsUiState? = null,
     habitLogCount: Int? = null,
     onHabits: () -> Unit = {},
@@ -77,6 +81,16 @@ fun TodayScreen(
     onDismissTaskError: (UUID) -> Unit = {},
     onHabitOpenDate: (LocalDate) -> Unit = {},
 ) {
+    var choosingDateFor by rememberSaveable(date) { mutableStateOf<EventType?>(null) }
+    var choosingCaptureDate by rememberSaveable(date) { mutableStateOf<String?>(null) }
+    fun requestCapture(type: EventType, captureDate: LocalDate) {
+        if (captureDate == LocalDate.now(zone)) onCapture(type, null)
+        else {
+            choosingDateFor = type
+            choosingCaptureDate = captureDate.toString()
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(screenTag),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
@@ -89,7 +103,7 @@ fun TodayScreen(
             }
         }
         item(key = "capture") {
-            TodayCaptureActions(date, zone, empty = state == TodayUiState.Empty, onCapture = onCapture)
+            TodayCaptureActions(onDateCapture = { requestCapture(it, date) }, empty = state == TodayUiState.Empty)
         }
         habitsState?.let { item(key = "habits") {
             TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
@@ -152,8 +166,29 @@ fun TodayScreen(
         }
         summaryState?.let { summary -> item(key = "daily_summary") {
             DetailsDisclosure(R.string.summary_heading, "today_daily_summary", keepTitle = true) {
-                DailySummaryCard(summary, onSummaryRetry, habitLogCount, integrationAvailability, onIntegrations, onCheckIn)
+                DailySummaryCard(summary, onSummaryRetry, habitLogCount, integrationAvailability, onIntegrations,
+                    onCheckIn = { requestCapture(EventType.MOOD, it) })
             }
         } }
+    }
+    val selectedCaptureType = choosingDateFor
+    val selectedCaptureDate = choosingCaptureDate?.let { LocalDate.parse(it) }
+    if (selectedCaptureType != null && selectedCaptureDate != null) {
+        fun dismissCaptureDateChoice() {
+            choosingDateFor = null
+            choosingCaptureDate = null
+        }
+        CaptureDateChoice(
+            date = selectedCaptureDate,
+            onSelectedDate = {
+                dismissCaptureDateChoice()
+                onCapture(selectedCaptureType, selectedCaptureDate)
+            },
+            onNow = {
+                dismissCaptureDateChoice()
+                onCapture(selectedCaptureType, null)
+            },
+            onDismiss = ::dismissCaptureDateChoice,
+        )
     }
 }

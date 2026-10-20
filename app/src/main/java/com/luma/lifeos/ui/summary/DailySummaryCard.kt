@@ -26,11 +26,12 @@ import com.luma.lifeos.ui.integrations.label
 import com.luma.lifeos.ui.integrations.metricAbsence
 import com.luma.lifeos.ui.integrations.needsAccessSecondary
 import java.text.NumberFormat
+import java.time.LocalDate
 
 @Composable
 fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCount: Int? = null,
     availability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
-    onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {}) {
+    onIntegrations: () -> Unit = {}, onCheckIn: (LocalDate) -> Unit = {}) {
     Card(Modifier.fillMaxWidth().testTag("daily_summary")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.summary_heading), style = MaterialTheme.typography.titleMedium)
@@ -48,7 +49,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                     if (mood != null) ScaleLine(stringResource(R.string.summary_mood), mood.score, "summary_mood")
                     else {
                         Text(stringResource(R.string.metric_no_check_ins_day), modifier = Modifier.testTag("summary_mood_empty"))
-                        TextButton(onClick = onCheckIn, modifier = Modifier.testTag("summary_check_in")) {
+                        TextButton(onClick = { onCheckIn(summary.date) }, modifier = Modifier.testTag("summary_check_in")) {
                             Text(stringResource(R.string.summary_checkin_action))
                         }
                     }

@@ -1,6 +1,6 @@
 # UX-015 — Habit failures display the wrong operation's message Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking.
 
 **Goal:** Give history, correction and whole-habit deletion failures accurate operation-specific messages and recovery.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-015 specification](../specs/2026-10-20-audit-n-ux-015-habit-operation-errors-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Implemented / acceptance pending. Gradle and emulator checks were not run per request. Relative effort: Low.
 
 ## Global Constraints
 
@@ -55,7 +55,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: HabitDetailOperation { HISTORY, DELETE }; HabitDetailActionError is sealed: History(offset: Int), Delete(habitId: UUID, outcomeUnknown: Boolean). Replace detail.actionError with actionErrors: Map<HabitDetailOperation, HabitDetailActionError>. Keep correctionError: HabitCorrectionError? as the correction-only channel; remove correction failures from the generic detail channel.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -77,11 +77,11 @@ Keep changes in their current screen/state/repository responsibility. New files 
 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.habits.HabitCaptureFlowTest
 ```
 
-Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
+Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment.
 
-- [ ] **Step 4: Implement the owning contract.** Audit every detail.actionError assignment and replace it with its concrete operation and target; leave correctionError focused on correction.
+- [x] **Step 4: Implement the owning contract.** Audit every detail.actionError assignment and replace it with its concrete operation and target; leave correctionError focused on correction.
 
-- [ ] **Step 5: Connect the behavior.** Render per-operation copy/Retry and implement delete existence reconciliation before assigning a certain outcome.
+- [x] **Step 5: Connect the behavior.** Render per-operation copy/Retry and implement delete existence reconciliation before assigning a certain outcome.
 
 - [ ] **Step 6: Exercise the complete flow.** Test independent error clearing, retained history pages and correction draft preservation.
 
@@ -91,5 +91,5 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
+Implementation is complete. Regression tests and runtime/device acceptance remain pending; no Gradle or emulator command was run per request. Do not treat source inspection as runtime acceptance.
 

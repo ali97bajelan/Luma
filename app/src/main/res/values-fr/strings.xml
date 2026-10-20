@@ -827,6 +827,7 @@
     <string name="habit_history">Historique des répétitions</string>
     <string name="habit_history_empty">Aucune répétition enregistrée.</string>
     <string name="habit_load_older">Charger les répétitions plus anciennes</string>
+    <string name="habit_history_error">Impossible de charger les répétitions plus anciennes.</string>
     <string name="habit_edit_log">Modifier</string>
     <string name="habit_log_correction">Modifier la répétition</string>
     <string name="habit_correction_date">Date</string>
@@ -844,6 +845,7 @@
     <string name="habit_save_error">Impossible d’enregistrer l’habitude. Votre brouillon est conservé.</string>
     <string name="habit_log_save_error">Impossible d’enregistrer la répétition. Réessayez pour continuer.</string>
     <string name="habit_delete_error">Impossible de supprimer l’habitude.</string>
+    <string name="habit_delete_outcome_unknown">Impossible de confirmer si cette habitude a été supprimée.</string>
     <string name="habit_correction_error">Impossible de modifier la répétition. Votre correction est conservée.</string>
     <string name="habit_correction_date_invalid">Choisissez une date qui n’est pas dans le futur.</string>
     <string name="habit_correction_time_invalid">Cette heure n’existe pas ou se situe dans le futur pour ce fuseau.</string>

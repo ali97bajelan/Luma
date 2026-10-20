@@ -1,6 +1,6 @@
 # UX-015 — Habit failures display the wrong operation's message
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implemented / acceptance pending. Gradle and emulator acceptance were not run per request. Proposed decisions below remain reviewable defaults, not previously approved product policy.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-015](../../UI_UX_AUDIT-20261020N.md#ux-015--habit-failures-display-the-wrong-operations-message)
 **Priority / effort / confidence:** P2 — Medium / Low / High (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Give history, correction and whole-habit deletion failures accurate operation-specific messages and recovery. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. Regression tests and runtime exercises remain pending.
 
 ## Dependencies
 

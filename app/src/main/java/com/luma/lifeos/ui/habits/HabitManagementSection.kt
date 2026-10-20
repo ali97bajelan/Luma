@@ -30,6 +30,8 @@ internal fun HabitManagementSection(
     onEdit: () -> Unit,
     onLifecycle: (HabitLifecycle) -> Unit,
     onDelete: () -> Unit,
+    deleteError: HabitDetailActionError.Delete?,
+    onRetryDelete: () -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val expansionState = stringResource(if (expanded) R.string.habit_manage_expanded else R.string.habit_manage_collapsed)
@@ -69,6 +71,13 @@ internal fun HabitManagementSection(
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_delete"),
                 ) { Text(stringResource(R.string.habit_delete)) }
+                deleteError?.let { error ->
+                    Text(stringResource(if (error.outcomeUnknown) R.string.habit_delete_outcome_unknown
+                        else R.string.habit_delete_error), color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("habit_delete_error"))
+                    TextButton(onClick = onRetryDelete, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        .testTag("habit_retry_delete")) { Text(stringResource(R.string.retry)) }
+                }
             }
         }
     }
