@@ -1,7 +1,7 @@
 # Luma Habits and Tasks widgets — visual redesign review
 
 **Date:** 20 October 2026<br>
-**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; WD15 and WD16 remain open.
+**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; **WD15 is partial with device/accessibility evidence gaps open; WD16 is partial with formative research and user sign-off pending.**
 **Scope:** Improve the existing Habits and Tasks home-screen widgets shown in the supplied screenshot, including vertical scrolling when items exceed the available list area. Retain shared Capture, existing providers, per-instance privacy and dependable recovery. This review remains the design/backlog reference; WD09 and WD10 implementation evidence is linked below.
 
 **User requirement added:** Both data widgets must let users scroll through additional eligible items within the current widget size. Resizing or opening the app must not be required just to reach overflow items. The scrolling contract and WD17 below supersede the earlier static-prefix/eight-candidate proposal.
@@ -180,7 +180,7 @@ TalkBack should encounter title navigation, Capture, Refresh, scope/freshness, f
 
 ## 6. Implementation tasks
 
-WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; WD15 and WD16 remain open. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
+WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; WD15 is partial with device/accessibility evidence gaps open; WD16 is partial with formative research and user sign-off pending. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
 
 | ID | Priority / effort | Responsible role | Dependency | Outcome |
 | --- | --- | --- | --- | --- |
@@ -256,6 +256,8 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD15 — Close the device and accessibility evidence gaps
 
+**Status: Partial — evidence inventory updated; device and accessibility acceptance remains open.** The existing [WD09–WD10 record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md) contains synthetic API 36 RemoteViews captures at the three specified bounds, row counts, Undo/Retry states and calculated contrast ratios. It explicitly records that these captures did not use a launcher host. The [WD07–WD08 record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md) has earlier API 36 Pixel Launcher smoke results and measured target bounds, while the [widget UX implementation record](WIDGET_UX_IMPLEMENTATION_2026-10-20.md) links earlier en/fr/fa rendering checks at 100/130/200% text. These records are useful historical evidence, but do not verify post-WD17 scrolling, the full device/launcher matrix, or spoken TalkBack and keyboard behavior. No Gradle or emulator tests/device runs were performed for this update.
+
 - [ ] Re-run WD09's exact fixtures after implementation and retain before/after screenshots, row counts and target bounds. Include no feedback, Undo and Retry; report any capacity tradeoff explicitly.
 - [ ] Cover API 28/35/36, Pixel Launcher plus a second available launcher, actual landscape, light/dark, en/fr/fa, 100/130/200% text, maximum display size and duplicate same-provider instances. Record unsupported combinations rather than marking them passed.
 - [ ] Manually verify TalkBack speech/focus, keyboard/D-pad traversal, separate navigation/mutation targets, meaningful pressed/focus states and contrast. Reproduce the mixed-script case from the screenshot with fictional content.
@@ -266,9 +268,11 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD16 — Check comprehension and sign off
 
+**Status: Partial — review status and evidence links updated; formative study and user sign-off remain open.** No participant sessions were conducted for this update, so there are no observed first attempts, hesitation/wrong-tap findings, or evidence that recurring confusion has been resolved. The current design direction and implementation status are recorded above and in the [widget UX implementation record](WIDGET_UX_IMPLEMENTATION_2026-10-20.md); those implementation results do not establish comprehension or replace participant sign-off.
+
 - [ ] Ask a small formative group of 3–5 participants, including a Persian reader and a large-text user, to find Capture, open the full list, scroll to an initially offscreen item, identify an overdue task, complete/log an item and Undo without coaching.
 - [ ] Record first attempt, hesitation, wrong taps and recovery; revise any recurring confusion between navigation and mutation. This is a proposed study, not completed research or statistically representative validation.
-- [ ] Update this review with final design decisions, task implementation/acceptance status and links to the delivered evidence.
+- [x] Update this review with the current design direction, task implementation/acceptance status and links to the delivered evidence. This documentation update does not claim usability sign-off.
 
 **Acceptance:** no unresolved recurring confusion about Capture, the hidden-count cue or action scope; visual sign-off does not override accessibility/state failures. Any untested group or flow remains explicitly documented.
 
