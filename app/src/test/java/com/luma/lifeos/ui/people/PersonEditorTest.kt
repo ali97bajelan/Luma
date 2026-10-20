@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.people
 import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PersonRepository
+import com.luma.lifeos.ui.navigation.CatalogEditorResult
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +32,23 @@ class PersonEditorTest {
         assertTrue(editor.state.value.completed)
         assertEquals(1, repo.creates)
         assertEquals("Friend", repo.records.values.single().note)
+        assertEquals(CatalogEditorResult.Created(repo.records.keys.single()), editor.state.value.result)
+    }
+
+    @Test fun recoveredCaptureCreateReturnsCreatedIdentityWithoutCreatingAgain() = runTest(dispatcher) {
+        val repo = TestPeople().apply { failAfterCreate = true }
+        val handle = SavedStateHandle()
+        val requestId = UUID.randomUUID()
+        val editor = PersonEditorViewModel(repo, null, handle, requestId)
+        advanceUntilIdle(); editor.setName("New person"); editor.save(); advanceUntilIdle()
+        assertEquals(PersonEditorError.SAVE, editor.state.value.error)
+
+        repo.failAfterCreate = false
+        val restored = PersonEditorViewModel(repo, null, handle, requestId)
+        advanceUntilIdle()
+        assertTrue(restored.state.value.completed)
+        assertEquals(CatalogEditorResult.Created(repo.records.keys.single()), restored.state.value.result)
+        assertEquals(1, repo.creates)
     }
 
     @Test fun committedCreateWithLostResultRecoversSameIdAndNewerDraft() = runTest(dispatcher) {

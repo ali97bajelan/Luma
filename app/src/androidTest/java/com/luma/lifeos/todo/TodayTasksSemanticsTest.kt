@@ -1,6 +1,7 @@
 package com.luma.lifeos.todo
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -20,6 +21,9 @@ import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.ui.today.TodayScreen
 import com.luma.lifeos.ui.today.TodayUiState
 import com.luma.lifeos.ui.todo.TodayTasksState
+import com.luma.lifeos.ui.todo.TodayTaskRowFeedback
+import com.luma.lifeos.ui.todo.TodayTasksActionState
+import com.luma.lifeos.ui.todo.TodoListRowError
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -93,6 +97,76 @@ class TodayTasksSemanticsTest {
         compose.onNodeWithTag("today_daily_summary").performClick()
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_records"))
         compose.onNodeWithTag("summary_records").assertExists()
+    }
+
+    @Test fun existingConflictCanOpenFromVisibleAndRetainedFeedback() {
+        val date = LocalDate.parse("2026-10-19")
+        val visible = task(4)
+        val retained = task(5)
+        val opened = mutableListOf<UUID>()
+        val actions = TodayTasksActionState(
+            rowFeedback = mapOf(
+                visible.id to TodayTaskRowFeedback(visible.title, TodoListRowError.CONFLICT, completesTask = true),
+                retained.id to TodayTaskRowFeedback(retained.title, TodoListRowError.CONFLICT, completesTask = true),
+            ),
+        )
+        compose.setContent {
+            LifeOsTheme {
+                TodayScreen(
+                    date = date,
+                    zone = ZoneId.of("UTC"),
+                    state = TodayUiState.Empty,
+                    onSelectDate = {}, onToday = {}, onRetry = {},
+                    todayTasks = TodayTasksState.Data(listOf(visible), total = 1),
+                    todayTaskActions = actions,
+                    onTask = { opened.add(it) },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("today_task_feedback_open_${visible.id}").performClick()
+        compose.runOnIdle { assertEquals(listOf(visible.id), opened) }
+        compose.onNodeWithTag("today_tasks_feedback_scroll")
+            .performScrollToNode(hasTestTag("today_task_feedback_open_${retained.id}"))
+        compose.onNodeWithTag("today_task_feedback_open_${retained.id}").performClick()
+        compose.runOnIdle { assertEquals(listOf(visible.id, retained.id), opened) }
+        compose.onNodeWithTag("todo_status_${visible.id}", useUnmergedTree = true).assertIsNotEnabled()
+    }
+
+    @Test fun missingTaskCannotOpenOrCompleteAndDismissDoesNotWrite() {
+        val date = LocalDate.parse("2026-10-19")
+        val missing = task(6)
+        var opened = 0
+        var completions = 0
+        var dismissals = 0
+        compose.setContent {
+            LifeOsTheme {
+                TodayScreen(
+                    date = date,
+                    zone = ZoneId.of("UTC"),
+                    state = TodayUiState.Empty,
+                    onSelectDate = {}, onToday = {}, onRetry = {},
+                    todayTasks = TodayTasksState.Data(listOf(missing), total = 1),
+                    todayTaskActions = TodayTasksActionState(
+                        rowFeedback = mapOf(missing.id to TodayTaskRowFeedback(
+                            missing.title, TodoListRowError.MISSING, completesTask = true,
+                        )),
+                    ),
+                    onTask = { opened++ },
+                    onSetTaskCompleted = { _, _ -> completions++ },
+                    onDismissTaskError = { dismissals++ },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("todo_open_${missing.id}", useUnmergedTree = true).assertIsNotEnabled()
+        compose.onNodeWithTag("todo_status_${missing.id}", useUnmergedTree = true).assertIsNotEnabled()
+        compose.onNodeWithTag("today_task_feedback_dismiss_${missing.id}").performClick()
+        compose.runOnIdle {
+            assertEquals(0, opened)
+            assertEquals(0, completions)
+            assertEquals(1, dismissals)
+        }
     }
 
     private fun task(index: Int) = TodoTask(

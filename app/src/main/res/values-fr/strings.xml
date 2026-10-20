@@ -308,6 +308,9 @@
     <string name="person_unavailable">Personne indisponible · Retirer</string>
     <string name="person_selected_loading">Personne sélectionnée · Retirer</string>
     <string name="people_selection_limit">Vous pouvez associer jusqu’à %1$d personnes. Retirez quelqu’un pour choisir une autre personne.</string>
+    <string name="person_attached_to_capture">Personne ajoutée à cette saisie.</string>
+    <string name="person_created_but_not_attached">La personne a été créée, mais cette saisie contient déjà le maximum de %1$d personnes.</string>
+    <string name="person_created_unavailable">La personne créée n’a pas pu être confirmée ; le brouillon est resté inchangé. Sélectionnez-la de nouveau si elle est disponible.</string>
     <string name="people_linked">Personnes : %1$s</string>
     <string name="places">Lieux</string>
     <string name="places_intro">Enregistrez des lieux par leur nom et réutilisez-les dans vos entrées. Aucune autorisation de localisation n’est nécessaire.</string>
@@ -333,6 +336,8 @@
     <string name="place_remove">%1$s · Retirer</string>
     <string name="place_unavailable">Lieu indisponible · Retirer</string>
     <string name="place_selected_loading">Lieu sélectionné · Retirer</string>
+    <string name="place_attached_to_capture">Lieu ajouté à cette saisie.</string>
+    <string name="place_created_unavailable">Le lieu créé n’a pas pu être confirmé ; le brouillon est resté inchangé. Sélectionnez-le de nouveau s’il est disponible.</string>
     <string name="place_linked">Lieu : %1$s</string>
     <string name="place_coordinates">Coordonnées : %1$.5f, %2$.5f</string>
     <string name="photo_error">Impossible de modifier les photos. Votre entrée et les photos existantes sont conservées. Réessayez ou choisissez une autre photo.</string>

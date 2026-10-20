@@ -1,6 +1,6 @@
 # UX-011 — Creating a person/place during capture does not attach it
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implemented; acceptance pending. Regression coverage has been added but not run. Proposed decisions below remain reviewable defaults, not previously approved product policy.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-011](../../UI_UX_AUDIT-20261020N.md#ux-011--creating-a-personplace-during-capture-does-not-attach-it)
 **Priority / effort / confidence:** P2 — Medium / Medium / High (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Attach a person or place created during capture to the originating draft exactly once. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this specification, not executable instructions. Gradle/emulator checks and runtime exercises remain pending; no commit was created.
 
 ## Dependencies
 

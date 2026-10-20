@@ -316,6 +316,9 @@
     <string name="person_unavailable">فرد در دسترس نیست · حذف</string>
     <string name="person_selected_loading">فرد انتخاب‌شده · حذف</string>
     <string name="people_selection_limit">می‌توانید حداکثر %1$d نفر را پیوند دهید. برای انتخاب فرد دیگری، یکی را حذف کنید.</string>
+    <string name="person_attached_to_capture">فرد به این ثبت اضافه شد.</string>
+    <string name="person_created_but_not_attached">فرد ساخته شد، اما این ثبت از قبل به حداکثر %1$d نفر پیوند دارد.</string>
+    <string name="person_created_unavailable">ساخته‌شدن فرد تأیید نشد، بنابراین پیش‌نویس بدون تغییر ماند. اگر فرد در دسترس است، دوباره انتخابش کنید.</string>
     <string name="people_linked">افراد: %1$s</string>
     <string name="places">مکان‌ها</string>
     <string name="places_intro">مکان‌ها را با نام ذخیره کنید و دوباره در نوشته‌هایتان به کار ببرید. نیازی به مجوز مکان نیست.</string>
@@ -341,6 +344,8 @@
     <string name="place_remove">%1$s · حذف</string>
     <string name="place_unavailable">مکان در دسترس نیست · حذف</string>
     <string name="place_selected_loading">مکان انتخاب‌شده · حذف</string>
+    <string name="place_attached_to_capture">مکان به این ثبت اضافه شد.</string>
+    <string name="place_created_unavailable">ساخته‌شدن مکان تأیید نشد، بنابراین پیش‌نویس بدون تغییر ماند. اگر مکان در دسترس است، دوباره انتخابش کنید.</string>
     <string name="place_linked">مکان: %1$s</string>
     <string name="place_coordinates">مختصات: %1$.5f، %2$.5f</string>
     <string name="photo_error">عکس‌ها تغییر نکردند. نوشته و عکس‌های قبلی شما همچنان محفوظ‌اند. دوباره تلاش کنید یا عکس دیگری انتخاب کنید.</string>

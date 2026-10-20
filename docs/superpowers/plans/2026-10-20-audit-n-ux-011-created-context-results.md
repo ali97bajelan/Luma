@@ -1,6 +1,6 @@
 # UX-011 — Creating a person/place during capture does not attach it Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. Implementation was completed inline; no delegation or commit was performed.
 
 **Goal:** Attach a person or place created during capture to the originating draft exactly once.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-011 specification](../specs/2026-10-20-audit-n-ux-011-created-context-results-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implemented / acceptance pending. Regression coverage was added but not run; Gradle, emulator and device acceptance remain pending per request. No commit was created. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 
 ## Review Focus
 
-These five concrete failure modes are pinned to the regression cases owned by this task. The assertions below are requirements for tests to add, not claims that those tests exist or currently pass.
+These five concrete failure modes are pinned to regression cases owned by this task. Coverage was added for idempotent selection, editor results, selection limits and capture creation; tests have not been run.
 
 - **RF-1 → AC-1:** Create a person from Mood, Journal or Memory; deliver the result twice. The new UUID is selected exactly once and existing people remain selected. Covered by `createdPersonAttachesOnce` in the regression step below.
 - **RF-2 → AC-2:** Create a place while another place is selected. The new place becomes the one selected place. Covered by `createdPlaceReplacesSelection` in the regression step below.
@@ -65,9 +65,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: CatalogEditorResult has Created(id: UUID), Saved(id: UUID), Deleted(id: UUID). Each result channel also records PERSON or PLACE and requestId: UUID. New addPerson(id: UUID): Boolean on each capture ViewModel is idempotent; existing setPlace(id: UUID?): Unit handles places. Navigation stores primitive result fields keyed to the caller entry/request.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
-- [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
+- [x] **Step 2: Add the behavior regressions and manual checks.** Regression coverage was added for scoped catalog publication, idempotent attachment, durable Mood draft snapshots and capture creation. The tests and device/manual checks listed here have not been run; locale, accessibility and full-flow acceptance remain pending.
 
 | Case | Regression / evidence case | Fixture / action | Assertions |
 |---|---|---|---|
@@ -77,7 +77,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 | AC-4 | `resultWaitsForReadyCaller` | Return while dependencies are loading or the draft is restoring. | The request stays pending and attaches after readiness; it is not lost or applied elsewhere. |
 | AC-5 | `catalogAndCancelStayScoped` | Create from People & Places, cancel creation, or restore an old result after caller removal. | No unrelated draft changes and no duplicate catalog creation occurs. |
 
-- [ ] **Step 3: Establish the regression.** Run the relevant targeted command below before implementation. New-interface tests may initially fail to compile; existing-behavior tests must fail on the specified mismatch. Record the actual failure. For a runtime-risk finding, first exercise its constrained fixture; if it already passes, record that result and retain the reachability regression without claiming a reproduced failure.
+- [ ] **Step 3: Establish the regression.** Not run per request. The listed Gradle commands remain available for later acceptance; no failure/pass result is claimed.
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests 'com.luma.lifeos.ui.people.PersonEditorTest' --tests 'com.luma.lifeos.ui.places.PlaceEditorTest'
@@ -89,17 +89,17 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Expose created versus edited/deleted identity from both catalog editors and add request-scoped primitive result transport.
+- [x] **Step 4: Implement the owning contract.** Expose created versus edited/deleted identity from both catalog editors and add request-scoped primitive result transport.
 
-- [ ] **Step 5: Connect the behavior.** Implement idempotent addPerson and ready-aware consumption in all three capture routes; persist attachment before acknowledging consumption.
+- [x] **Step 5: Connect the behavior.** Implement idempotent addPerson and ready-aware consumption in all three capture routes; persist attachment before acknowledging consumption.
 
-- [ ] **Step 6: Exercise the complete flow.** Wire polite attachment/limit feedback and verify catalog-origin behavior, duplicate results and a busy/restoring caller.
+- [x] **Step 6: Wire feedback and cover edge cases.** Add polite attachment/limit feedback and regression coverage for scoped publication, duplicate selection and durable draft attachment. The complete-flow exercises remain pending.
 
-- [ ] **Step 7: Verify the task.** Rerun the targeted commands above and require zero failures. Then run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` to catch all-call-site, resource and lint regressions. Exercise the relevant acceptance scenarios in EN/FR/FA, semantic light/dark, 100%/130%/200% font and narrow/landscape where layout or semantics changed. Record app/build revision, device/API, locale, font/window inputs and results; label missing checks pending. Expected outcome: AC-1 through AC-5 hold and affected compilation/lint checks pass.
+- [ ] **Step 7: Verify the task.** Not run per request. Targeted Gradle tests/build/lint and EN/FR/FA, theme, font/window and device acceptance remain pending; do not mark AC-1 through AC-5 verified.
 
 - [ ] **Step 8: Review and integrate this task alone.** Inspect the diff against the spec and confirm every AC/RF has evidence. Stage only this task's hunks in existing modified files and its new files; do not stage the pre-existing dirty tree wholesale. If the execution workflow uses commits, commit with `fix: ux-011 created context results`. Update the index status only from actual evidence.
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
+Implementation and regression coverage are present. Runtime and accessibility acceptance remain pending because Gradle/emulator/device checks were not run per request. No commit was created. Do not mark the finding Verified until the remaining checks are completed.
 

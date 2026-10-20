@@ -28,17 +28,26 @@ import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.domain.repository.PersonRepository
+import com.luma.lifeos.ui.navigation.CatalogEditorResult
 import java.text.NumberFormat
 import java.util.UUID
 
 @Composable
-fun PersonEditorRoute(repository: PersonRepository, personId: UUID?, onCancel: () -> Unit, onFinished: (Boolean) -> Unit) {
-    val factory = remember(repository, personId) {
-        viewModelFactory { initializer { PersonEditorViewModel(repository, personId, createSavedStateHandle()) } }
+fun PersonEditorRoute(
+    repository: PersonRepository,
+    personId: UUID?,
+    onCancel: () -> Unit,
+    onFinished: (CatalogEditorResult) -> Unit,
+    requestId: UUID? = null,
+) {
+    val factory = remember(repository, personId, requestId) {
+        viewModelFactory { initializer { PersonEditorViewModel(repository, personId, createSavedStateHandle(), requestId) } }
     }
     val editor: PersonEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.completed) { if (state.completed) onFinished(state.deleted) }
+    LaunchedEffect(state.completed, state.result) {
+        if (state.completed) state.result?.let(onFinished)
+    }
     PersonEditorScreen(state, onCancel, editor::save, editor::delete, editor::load, editor::setName, editor::setNote)
 }
 

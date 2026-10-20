@@ -36,7 +36,8 @@ internal fun TodoRow(
     task: TodoTask,
     today: java.time.LocalDate,
     completedList: Boolean,
-    enabled: Boolean,
+    canOpen: Boolean,
+    canMutate: Boolean,
     pending: Boolean,
     error: TodoListRowError?,
     onOpen: () -> Unit,
@@ -82,7 +83,7 @@ internal fun TodoRow(
             Checkbox(
                 checked = task.isCompleted,
                 onCheckedChange = { onSetCompleted(it) },
-                enabled = enabled && !pending,
+                enabled = canMutate && !pending,
                 modifier = Modifier.heightIn(min = 48.dp).semantics {
                     contentDescription = "${task.title}. $checkboxDescription"
                     stateDescription = statusDescription
@@ -90,7 +91,7 @@ internal fun TodoRow(
             )
             TextButton(
                 onClick = onOpen,
-                enabled = enabled && !pending,
+                enabled = canOpen,
                 modifier = Modifier.weight(1f).heightIn(min = 56.dp).focusRequester(focusRequester)
                     .semantics { contentDescription = accessDescription }
                     .testTag("todo_open_${task.id}"),
@@ -124,12 +125,21 @@ internal fun TodoRow(
                 if (error == TodoListRowError.FAILED) {
                     Button(
                         onClick = onRetry,
-                        enabled = enabled,
+                        enabled = canMutate,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("todo_retry_${task.id}"),
                     ) {
                         Text(stringResource(R.string.todo_retry_action))
                     }
                 } else if (error == TodoListRowError.CONFLICT || error == TodoListRowError.MISSING) {
+                    if (error == TodoListRowError.CONFLICT) {
+                        TextButton(
+                            onClick = onOpen,
+                            enabled = canOpen,
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("todo_feedback_open_${task.id}"),
+                        ) {
+                            Text(stringResource(R.string.todo_status_open))
+                        }
+                    }
                     TextButton(onClick = onDismissError, modifier = Modifier.heightIn(min = 48.dp).testTag("todo_dismiss_${task.id}")) {
                         Text(stringResource(R.string.todo_feedback_dismiss))
                     }

@@ -1,6 +1,6 @@
 # UX-007 — A conflicted Today task cannot be opened for review Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. Implementation was completed inline; no delegation or commit was performed.
 
 **Goal:** Let users open an existing task in conflict while keeping unsafe completion actions disabled.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-007 specification](../specs/2026-10-20-audit-n-ux-007-task-conflict-opening-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Implemented / acceptance pending. Regression coverage was added but not run; Gradle, emulator and device acceptance remain pending per request. No commit was created. Relative effort: Low.
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 
 ## Review Focus
 
-These five concrete failure modes are pinned to the regression cases owned by this task. The assertions below are requirements for tests to add, not claims that those tests exist or currently pass.
+These five concrete failure modes are pinned to regression cases owned by this task. Coverage was added for visible and retained conflict opening, missing-task guards and dismiss-without-write; tests have not been run.
 
 - **RF-1 → AC-1:** Render an existing task with CONFLICT and tap Open. The matching editor opens; completion remains disabled. Covered by `existingConflictCanOpen` in the regression step below.
 - **RF-2 → AC-2:** Render MISSING feedback. Neither task open nor completion can dispatch. Covered by `missingTaskCannotOpen` in the regression step below.
@@ -54,9 +54,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: TodoRow replaces enabled: Boolean with canOpen: Boolean and canMutate: Boolean; pending remains an independent guard. onOpen is available for existing conflict targets, while onSetCompleted remains blocked by conflict/pending. Missing targets have canOpen=false.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
-- [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
+- [x] **Step 2: Add the behavior regressions and manual checks.** Regression coverage was added for the changed conflict/opening behavior. The tests and device/manual checks listed here have not been run; TalkBack and layout acceptance remain pending.
 
 | Case | Regression / evidence case | Fixture / action | Assertions |
 |---|---|---|---|
@@ -66,7 +66,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 | AC-4 | `visibleAndRetainedRecoveryAgree` | Move a conflicted task out of the preview. | Both presentations navigate to the same task ID. |
 | AC-5 | `dismissDoesNotWrite` | Dismiss CONFLICT without opening. | Only feedback changes; repository mutation call count stays unchanged. |
 
-- [ ] **Step 3: Establish the regression.** Run the relevant targeted command below before implementation. New-interface tests may initially fail to compile; existing-behavior tests must fail on the specified mismatch. Record the actual failure. For a runtime-risk finding, first exercise its constrained fixture; if it already passes, record that result and retain the reachability regression without claiming a reproduced failure.
+- [ ] **Step 3: Establish the regression.** Not run per request. The listed Gradle command remains available for later acceptance; no failure/pass result is claimed.
 
 ```bash
 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.todo.TodayTasksSemanticsTest,com.luma.lifeos.todo.TodayTasksFlowTest
@@ -74,17 +74,17 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Change TodoRow's API and migrate Today/full-list call sites with explicit open and mutate predicates.
+- [x] **Step 4: Implement the owning contract.** Change TodoRow's API and migrate Today/full-list call sites with explicit open and mutate predicates.
 
-- [ ] **Step 5: Connect the behavior.** Wire visible conflict Open to existing task navigation and preserve missing/pending guards.
+- [x] **Step 5: Connect the behavior.** Wire visible conflict Open to existing task navigation and preserve missing/pending guards.
 
 - [ ] **Step 6: Exercise the complete flow.** Verify visible and off-preview conflicts use the same task identity and recovery behavior.
 
-- [ ] **Step 7: Verify the task.** Rerun the targeted commands above and require zero failures. Then run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` to catch all-call-site, resource and lint regressions. Exercise the relevant acceptance scenarios in EN/FR/FA, semantic light/dark, 100%/130%/200% font and narrow/landscape where layout or semantics changed. Record app/build revision, device/API, locale, font/window inputs and results; label missing checks pending. Expected outcome: AC-1 through AC-5 hold and affected compilation/lint checks pass.
+- [ ] **Step 7: Verify the task.** Not run per request. Targeted Gradle tests/build/lint and EN/FR/FA, theme, font/window and device acceptance remain pending; do not mark AC-1 through AC-5 verified.
 
 - [ ] **Step 8: Review and integrate this task alone.** Inspect the diff against the spec and confirm every AC/RF has evidence. Stage only this task's hunks in existing modified files and its new files; do not stage the pre-existing dirty tree wholesale. If the execution workflow uses commits, commit with `fix: ux-007 task conflict opening`. Update the index status only from actual evidence.
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
+Implementation and regression coverage are present. Runtime and accessibility acceptance remain pending because Gradle/emulator/device checks were not run per request. No commit was created. Do not mark the finding Verified until the remaining checks are completed.
 

@@ -1,6 +1,6 @@
 # UX-008 — Retained task errors can crowd out the task list Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. Implementation was completed inline; no delegation or commit was performed.
 
 **Goal:** Keep tasks and every retained recovery action reachable when many task operations fail.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-008 specification](../specs/2026-10-20-audit-n-ux-008-task-recovery-list-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Implemented / acceptance pending. Regression coverage was added but not run; Gradle, emulator and device acceptance remain pending per request. No commit was created. Relative effort: Low.
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 
 ## Review Focus
 
-These five concrete failure modes are pinned to the regression cases owned by this task. The assertions below are requirements for tests to add, not claims that those tests exist or currently pass.
+These five concrete failure modes are pinned to regression cases owned by this task. Coverage was added for retained recovery reachability, Undo, stable item identity and task paging; tests have not been run.
 
 - **RF-1 → AC-1:** Render 12 off-page failures at 200% text in landscape. Scroll reaches every recovery action and at least one task without clipped pinned content. Covered by `manyFailuresDoNotHideTasks` in the regression step below.
 - **RF-2 → AC-2:** A completed task moves off-page and exposes Undo. Undo is a reachable stable lazy item with the original token. Covered by `undoRemainsDiscoverable` in the regression step below.
@@ -53,9 +53,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: Use lazy item keys prefixed recovery:<existing-action-id>, undo:<existing-undo-id>, bucket:<bucket>, task:<task-id>. Reuse existing Retry/Open/Dismiss callbacks; do not generate replacement operation IDs during recomposition.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
-- [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
+- [x] **Step 2: Add the behavior regressions and manual checks.** Regression coverage was added for the changed list and recovery behavior. The tests and device/manual checks listed here have not been run; TalkBack and layout acceptance remain pending.
 
 | Case | Regression / evidence case | Fixture / action | Assertions |
 |---|---|---|---|
@@ -65,7 +65,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 | AC-4 | `recompositionKeepsScroll` | Emit an unrelated task change while scrolled. | Stable item identity preserves the current content position and focus. |
 | AC-5 | `feedbackDoesNotAdvancePaging` | Insert recovery items before a 50-record task page. | Load-more requests use task page boundaries, without skipped or duplicate tasks. |
 
-- [ ] **Step 3: Establish the regression.** Run the relevant targeted command below before implementation. New-interface tests may initially fail to compile; existing-behavior tests must fail on the specified mismatch. Record the actual failure. For a runtime-risk finding, first exercise its constrained fixture; if it already passes, record that result and retain the reachability regression without claiming a reproduced failure.
+- [ ] **Step 3: Establish the regression.** Not run per request. The listed Gradle commands remain available for later acceptance; no failure/pass result is claimed.
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests 'com.luma.lifeos.ui.todo.TodoListViewModelTest'
@@ -77,17 +77,17 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Move unbounded recovery/Undo children into LazyColumn with separate stable key namespaces.
+- [x] **Step 4: Implement the owning contract.** Move unbounded recovery/Undo children into LazyColumn with separate stable key namespaces.
 
-- [ ] **Step 5: Connect the behavior.** Adjust task paging/scroll and focus targets to account for inserted feedback items while preserving all retained commands.
+- [x] **Step 5: Connect the behavior.** Adjust task paging/scroll and focus targets to account for inserted feedback items while preserving all retained commands.
 
 - [ ] **Step 6: Exercise the complete flow.** Use a constrained viewport with many failures to prove both final recovery action and task rows can be reached.
 
-- [ ] **Step 7: Verify the task.** Rerun the targeted commands above and require zero failures. Then run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` to catch all-call-site, resource and lint regressions. Exercise the relevant acceptance scenarios in EN/FR/FA, semantic light/dark, 100%/130%/200% font and narrow/landscape where layout or semantics changed. Record app/build revision, device/API, locale, font/window inputs and results; label missing checks pending. Expected outcome: AC-1 through AC-5 hold and affected compilation/lint checks pass.
+- [ ] **Step 7: Verify the task.** Not run per request. Targeted Gradle tests/build/lint and EN/FR/FA, theme, font/window and device acceptance remain pending; do not mark AC-1 through AC-5 verified.
 
 - [ ] **Step 8: Review and integrate this task alone.** Inspect the diff against the spec and confirm every AC/RF has evidence. Stage only this task's hunks in existing modified files and its new files; do not stage the pre-existing dirty tree wholesale. If the execution workflow uses commits, commit with `fix: ux-008 task recovery list`. Update the index status only from actual evidence.
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
+Implementation and regression coverage are present. Runtime and accessibility acceptance remain pending because Gradle/emulator/device checks were not run per request. No commit was created. Do not mark the finding Verified until the remaining checks are completed.
 

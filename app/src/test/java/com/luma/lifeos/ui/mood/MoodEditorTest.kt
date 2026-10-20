@@ -29,6 +29,17 @@ class MoodEditorTest {
     @Before fun setUp() { Dispatchers.setMain(dispatcher) }
     @After fun tearDown() { Dispatchers.resetMain() }
 
+    @Test fun addPersonIsIdempotentAndWaitsForDurableSnapshot() = runTest(dispatcher) {
+        val editor = MoodEditorViewModel(TestMoodRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle()
+        val personId = UUID.randomUUID()
+        assertTrue(editor.addPerson(personId))
+        assertTrue(editor.addPerson(personId))
+        assertEquals(setOf(personId), editor.state.value.draft.personIds)
+        advanceUntilIdle()
+        assertTrue(editor.state.value.draftDurable)
+    }
+
     @Test fun oneScoreIsEnoughToCaptureAndRapidRepeatedSaveCreatesOneRecord() = runTest(dispatcher) {
         val repo = TestMoodRepository()
         val editor = MoodEditorViewModel(repo, null, SavedStateHandle(), clock)

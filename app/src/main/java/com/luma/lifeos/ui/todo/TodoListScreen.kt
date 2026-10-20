@@ -73,6 +73,15 @@ fun TodoListScreen(
     }
     val visibleTasks = if (state.completed) state.page.items else groups.flatMap { it.second }
     val visibleIds = remember(visibleTasks) { visibleTasks.mapTo(mutableSetOf()) { it.id } }
+    val offPageIntents = state.pendingIntents.values.filter { it.taskId !in visibleIds }
+    val offPageErrors = state.rowErrors.entries.mapNotNull { (taskId, error) ->
+        val title = state.rowErrorTitles[taskId]
+        if (taskId !in visibleIds && taskId !in state.pendingIntents && title != null) {
+            Triple(taskId, error, title)
+        } else null
+    }
+    val undoItemCount = if (state.undoableCompletion != null) 1 else 0
+    val recoveryItemCount = undoItemCount + offPageIntents.size + offPageErrors.size
 
     Scaffold(
         modifier = Modifier.testTag("screen_todo_list"),
@@ -162,33 +171,8 @@ fun TodoListScreen(
                 )
             }
 
-            // Keep Undo in the fixed portion of the screen so it stays visible while rows scroll.
-            undoFeedback()
-
-            val offPageIntents = state.pendingIntents.values.filter { it.taskId !in visibleIds }
-            offPageIntents.forEach { intent ->
-                TodoPendingActionCard(
-                    intent = intent,
-                    error = state.rowErrors[intent.taskId],
-                    pending = intent.taskId in state.inFlight,
-                    retryEnabled = state.dataFresh,
-                    onRetry = { onRetry(intent.taskId) },
-                )
-            }
-            state.rowErrors.forEach { (taskId, error) ->
-                val title = state.rowErrorTitles[taskId]
-                if (taskId !in visibleIds && taskId !in state.pendingIntents && title != null) {
-                    TodoTerminalRowErrorCard(
-                        taskId = taskId,
-                        title = title,
-                        error = error,
-                        onDismiss = { onDismissRowError(taskId) },
-                    )
-                }
-            }
-
             // Do not compose a loading-only list: LazyListState would clamp its saved index to zero.
-            if (state.dataFresh || state.page.items.isNotEmpty()) {
+            if (state.dataFresh || state.page.items.isNotEmpty() || recoveryItemCount > 0) {
                 stateHolder.SaveableStateProvider(if (state.completed) "completed" else "open") {
                     val listState = rememberLazyListState()
                     LaunchedEffect(
@@ -205,7 +189,14 @@ fun TodoListScreen(
                             pendingFocus.value = null
                             return@LaunchedEffect
                         }
-                        if (focus.taskId in state.pendingIntents || focus.taskId in state.inFlight) return@LaunchedEffect
+                        if (focus.taskId in state.inFlight) return@LaunchedEffect
+                        val pendingIntentIndex = offPageIntents.indexOfFirst { it.taskId == focus.taskId }
+                        if (pendingIntentIndex >= 0) {
+                            listState.animateScrollToItem(undoItemCount + pendingIntentIndex)
+                            pendingFocus.value = null
+                            return@LaunchedEffect
+                        }
+                        if (focus.taskId in state.pendingIntents) return@LaunchedEffect
                         if (!state.dataFresh) return@LaunchedEffect
                         if (focus.taskId in visibleIds) {
                             val matchingResult = state.undoableCompletion?.let {
@@ -215,15 +206,30 @@ fun TodoListScreen(
                             return@LaunchedEffect
                         }
 
+                        val matchingUndo = state.undoableCompletion?.let {
+                            it.taskId == focus.taskId && it.completed == focus.desiredCompleted
+                        } == true
+                        if (matchingUndo) {
+                            listState.animateScrollToItem(0)
+                            pendingFocus.value = null
+                            return@LaunchedEffect
+                        }
+                        val terminalRecoveryIndex = offPageErrors.indexOfFirst { it.first == focus.taskId }
+                        if (terminalRecoveryIndex >= 0) {
+                            listState.animateScrollToItem(undoItemCount + offPageIntents.size + terminalRecoveryIndex)
+                            pendingFocus.value = null
+                            return@LaunchedEffect
+                        }
+
                         val targetIndex = focus.originalIndex.coerceAtMost(visibleTasks.lastIndex)
                         if (targetIndex < 0) {
                             if (state.completed) openTabFocusRequester.requestFocus() else addFocusRequester.requestFocus()
                         } else {
                             val target = visibleTasks[targetIndex]
                             val lazyIndex = if (state.completed) {
-                                targetIndex
+                                recoveryItemCount + targetIndex
                             } else {
-                                var index = 0
+                                var index = recoveryItemCount
                                 for ((_, rows) in groups) {
                                     if (rows.isNotEmpty()) {
                                         index += 1
@@ -248,6 +254,34 @@ fun TodoListScreen(
                         contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
+                        state.undoableCompletion?.let { result ->
+                            item(key = "undo:${result.taskId}:${result.resultingRevision}") {
+                                undoFeedback()
+                            }
+                        }
+                        offPageIntents.forEach { intent ->
+                            item(key = "recovery:intent:${intent.taskId}:${intent.resultingRevision}") {
+                                TodoPendingActionCard(
+                                    intent = intent,
+                                    error = state.rowErrors[intent.taskId],
+                                    pending = intent.taskId in state.inFlight,
+                                    retryEnabled = state.dataFresh,
+                                    onRetry = { onRetry(intent.taskId) },
+                                    onOpen = { onOpenTask(intent.taskId) },
+                                )
+                            }
+                        }
+                        offPageErrors.forEach { (taskId, error, title) ->
+                            item(key = "recovery:task:$taskId") {
+                                TodoTerminalRowErrorCard(
+                                    taskId = taskId,
+                                    title = title,
+                                    error = error,
+                                    onOpen = { onOpenTask(taskId) },
+                                    onDismiss = { onDismissRowError(taskId) },
+                                )
+                            }
+                        }
                         if (state.dataFresh && state.page.items.isEmpty()) {
                             item(key = "empty") {
                                 Card(Modifier.fillMaxWidth().testTag("todo_list_empty")) {
@@ -280,7 +314,7 @@ fun TodoListScreen(
                         }
                         if (state.page.items.isNotEmpty()) {
                             if (state.completed) {
-                                items(state.page.items, key = TodoTask::id) { task ->
+                                items(state.page.items, key = { "task:${it.id}" }) { task ->
                                     val rowError = state.rowErrors[task.id]
                                     val rowFocusRequester = remember(task.id) { FocusRequester() }
                                     DisposableEffect(task.id, rowFocusRequester) {
@@ -293,7 +327,9 @@ fun TodoListScreen(
                                         task = task,
                                         today = state.today,
                                         completedList = true,
-                                        enabled = state.dataFresh,
+                                        canOpen = rowError != TodoListRowError.MISSING,
+                                        canMutate = state.dataFresh && rowError != TodoListRowError.CONFLICT &&
+                                            rowError != TodoListRowError.MISSING,
                                         pending = task.id in state.inFlight || task.id in state.pendingIntents ||
                                             (state.undoing && state.undoableCompletion?.taskId == task.id),
                                         error = rowError,
@@ -316,7 +352,7 @@ fun TodoListScreen(
                                 }
                             } else {
                                 groups.filter { it.second.isNotEmpty() }.forEach { (bucket, rows) ->
-                                    item(key = "heading:${bucket.name}") {
+                                    item(key = "bucket:${bucket.name}") {
                                         Text(
                                             stringResource(bucket.headingResource()),
                                             style = MaterialTheme.typography.titleMedium,
@@ -324,7 +360,7 @@ fun TodoListScreen(
                                                 .testTag("todo_group_${bucket.name.lowercase()}"),
                                         )
                                     }
-                                    items(rows, key = TodoTask::id) { task ->
+                                    items(rows, key = { "task:${it.id}" }) { task ->
                                         val rowError = state.rowErrors[task.id]
                                         val rowFocusRequester = remember(task.id) { FocusRequester() }
                                         DisposableEffect(task.id, rowFocusRequester) {
@@ -337,7 +373,9 @@ fun TodoListScreen(
                                             task = task,
                                             today = state.today,
                                             completedList = false,
-                                            enabled = state.dataFresh,
+                                            canOpen = rowError != TodoListRowError.MISSING,
+                                            canMutate = state.dataFresh && rowError != TodoListRowError.CONFLICT &&
+                                                rowError != TodoListRowError.MISSING,
                                             pending = task.id in state.inFlight || task.id in state.pendingIntents ||
                                                 (state.undoing && state.undoableCompletion?.taskId == task.id),
                                             error = rowError,
@@ -413,6 +451,7 @@ private fun TodoPendingActionCard(
     pending: Boolean,
     retryEnabled: Boolean,
     onRetry: () -> Unit,
+    onOpen: () -> Unit,
 ) {
     Card(Modifier.fillMaxWidth().testTag("todo_pending_${intent.taskId}")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -432,6 +471,11 @@ private fun TodoPendingActionCard(
                 TextButton(onClick = onRetry, enabled = retryEnabled, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.todo_retry_action))
                 }
+                if (error == TodoListRowError.CONFLICT) {
+                    TextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.todo_status_open))
+                    }
+                }
             }
         }
     }
@@ -442,6 +486,7 @@ private fun TodoTerminalRowErrorCard(
     taskId: UUID,
     title: String,
     error: TodoListRowError,
+    onOpen: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Card(Modifier.fillMaxWidth().testTag("todo_row_error_$taskId")) {
@@ -454,6 +499,11 @@ private fun TodoTerminalRowErrorCard(
                 ),
                 color = MaterialTheme.colorScheme.error,
             )
+            if (error == TodoListRowError.CONFLICT) {
+                TextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.todo_status_open))
+                }
+            }
             TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.todo_feedback_dismiss))
             }

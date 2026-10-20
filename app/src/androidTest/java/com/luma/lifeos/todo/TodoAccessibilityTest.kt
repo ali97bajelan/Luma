@@ -22,6 +22,9 @@ import com.luma.lifeos.language.AppLanguages
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.ui.todo.TodoListScreen
 import com.luma.lifeos.ui.todo.TodoListUiState
+import com.luma.lifeos.ui.todo.TodoActionFeedbackCard
+import com.luma.lifeos.ui.todo.TodoActionResult
+import com.luma.lifeos.ui.todo.TodoListRowError
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -198,6 +201,167 @@ class TodoAccessibilitySemanticsTest {
         compose.onNodeWithTag("todo_open_${second.id}", useUnmergedTree = true)
             .assertIsDisplayed()
             .assertHasClickAction()
+    }
+
+    @Test fun manyFailuresDoNotHideTasks() {
+        val today = LocalDate.now()
+        val tasks = (0 until 12).map { task(100 + it) }
+        val visibleTask = task(500)
+        val state = listState(listOf(visibleTask), total = 1, today = today).copy(
+            rowErrors = tasks.associate { it.id to TodoListRowError.CONFLICT },
+            rowErrorTitles = tasks.associate { it.id to it.title },
+        )
+
+        compose.setContent {
+            val largeLandscape = Configuration(LocalConfiguration.current).apply {
+                screenWidthDp = 640
+                screenHeightDp = 320
+                fontScale = 2f
+            }
+            CompositionLocalProvider(LocalConfiguration provides largeLandscape) {
+                LifeOsTheme {
+                    Box(Modifier.width(640.dp).height(320.dp)) {
+                        TodoListScreen(
+                            state = state,
+                            onBack = {}, onAddTask = {}, onOpenTask = {}, onSelectCompleted = {},
+                            onSetCompleted = { _, _ -> }, onRetry = {}, onDismissRowError = {},
+                            onRetryLoad = {}, onLoadMore = {}, undoFeedback = {},
+                        )
+                    }
+                }
+            }
+        }
+
+        val finalRecovery = tasks.last()
+        compose.onNodeWithTag("todo_list_rows")
+            .performScrollToNode(hasTestTag("todo_row_error_${finalRecovery.id}"))
+        compose.onNodeWithTag("todo_row_error_${finalRecovery.id}").assertIsDisplayed()
+        compose.onNodeWithTag("todo_list_rows")
+            .performScrollToNode(hasTestTag("todo_open_${visibleTask.id}"))
+        compose.onNodeWithTag("todo_open_${visibleTask.id}").assertIsDisplayed().assertHasClickAction()
+    }
+
+    @Test fun undoRemainsDiscoverableAsAStableListItem() {
+        val today = LocalDate.now()
+        val task = task(600)
+        val result = TodoActionResult(task.id, completed = true, resultingRevision = UUID.randomUUID())
+        val state = listState(listOf(task), total = 1, today = today).copy(undoableCompletion = result)
+        var undoCalls = 0
+
+        compose.setContent {
+            LifeOsTheme {
+                TodoListScreen(
+                    state = state,
+                    onBack = {}, onAddTask = {}, onOpenTask = {}, onSelectCompleted = {},
+                    onSetCompleted = { _, _ -> }, onRetry = {}, onDismissRowError = {},
+                    onRetryLoad = {}, onLoadMore = {},
+                    undoFeedback = {
+                        TodoActionFeedbackCard(
+                            result = result, busy = false, failed = false, terminal = false,
+                            onUndo = { undoCalls++ }, onDismiss = {},
+                        )
+                    },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("todo_list_rows")
+            .performScrollToNode(hasTestTag("todo_completion_feedback"))
+        compose.onNodeWithTag("todo_completion_feedback").assertIsDisplayed()
+        compose.onNodeWithTag("todo_undo").performClick()
+        compose.runOnIdle { assertEquals(1, undoCalls) }
+    }
+
+    @Test fun filterChangeKeepsRecoveryActionIdentity() {
+        val today = LocalDate.now()
+        val task = task(700)
+        val state = mutableStateOf(
+            listState(listOf(task), total = 1, today = today).copy(
+                rowErrors = mapOf(task.id to TodoListRowError.CONFLICT),
+                rowErrorTitles = mapOf(task.id to task.title),
+            ),
+        )
+        var dismissed: UUID? = null
+
+        compose.setContent {
+            LifeOsTheme {
+                TodoListScreen(
+                    state = state.value,
+                    onBack = {}, onAddTask = {}, onOpenTask = {},
+                    onSelectCompleted = { completed -> state.value = state.value.copy(completed = completed) },
+                    onSetCompleted = { _, _ -> }, onRetry = {}, onDismissRowError = { dismissed = it },
+                    onRetryLoad = {}, onLoadMore = {}, undoFeedback = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag("todo_list_completed_tab").performClick()
+        compose.onNodeWithTag("todo_row_error_${task.id}").assertExists()
+        compose.onNodeWithTag("todo_list_open_tab").performClick()
+        compose.onNodeWithTag("todo_row_error_${task.id}").assertExists()
+        compose.onNodeWithTag("todo_dismiss_${task.id}").performClick()
+        compose.runOnIdle { assertEquals(task.id, dismissed) }
+    }
+
+    @Test fun recompositionKeepsScrolledRecoveryItemByKey() {
+        val today = LocalDate.now()
+        val failures = (0 until 8).map { task(800 + it) }
+        val state = mutableStateOf(
+            listState(listOf(task(900)), total = 1, today = today).copy(
+                rowErrors = failures.associate { it.id to TodoListRowError.CONFLICT },
+                rowErrorTitles = failures.associate { it.id to it.title },
+            ),
+        )
+
+        compose.setContent {
+            LifeOsTheme {
+                TodoListScreen(
+                    state = state.value,
+                    onBack = {}, onAddTask = {}, onOpenTask = {}, onSelectCompleted = {},
+                    onSetCompleted = { _, _ -> }, onRetry = {}, onDismissRowError = {},
+                    onRetryLoad = {}, onLoadMore = {}, undoFeedback = {},
+                )
+            }
+        }
+
+        val anchored = failures.last()
+        compose.onNodeWithTag("todo_list_rows")
+            .performScrollToNode(hasTestTag("todo_row_error_${anchored.id}"))
+        compose.runOnIdle {
+            val added = task(950)
+            state.value = state.value.copy(
+                rowErrors = linkedMapOf(added.id to TodoListRowError.CONFLICT) + state.value.rowErrors,
+                rowErrorTitles = linkedMapOf(added.id to added.title) + state.value.rowErrorTitles,
+            )
+        }
+        compose.onNodeWithTag("todo_row_error_${anchored.id}").assertIsDisplayed()
+    }
+
+    @Test fun feedbackDoesNotAdvanceTaskPaging() {
+        val today = LocalDate.now()
+        val tasks = (0 until 50).map { task(1_000 + it) }
+        val errors = (0 until 12).associate { index ->
+            val id = UUID.nameUUIDFromBytes("off-page-$index".toByteArray())
+            id to TodoListRowError.CONFLICT
+        }
+        val titles = errors.keys.associateWith { "Retained $it" }
+        var loadMoreCalls = 0
+        val state = listState(tasks, total = 51, today = today).copy(rowErrors = errors, rowErrorTitles = titles)
+
+        compose.setContent {
+            LifeOsTheme {
+                TodoListScreen(
+                    state = state,
+                    onBack = {}, onAddTask = {}, onOpenTask = {}, onSelectCompleted = {},
+                    onSetCompleted = { _, _ -> }, onRetry = {}, onDismissRowError = {},
+                    onRetryLoad = {}, onLoadMore = { loadMoreCalls++ }, undoFeedback = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag("todo_list_rows").performScrollToNode(hasTestTag("todo_list_load_more"))
+        compose.onNodeWithTag("todo_list_load_more").performClick()
+        compose.runOnIdle { assertEquals(1, loadMoreCalls) }
     }
 
     private fun listState(items: List<TodoTask>, total: Int, today: LocalDate) = TodoListUiState(

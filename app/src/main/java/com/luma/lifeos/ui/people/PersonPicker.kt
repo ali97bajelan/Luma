@@ -21,7 +21,8 @@ import java.util.UUID
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boolean,
-    onToggle: (UUID) -> Unit, onCreate: () -> Unit) {
+    onToggle: (UUID) -> Unit, onCreate: () -> Unit,
+    feedback: String? = null, feedbackIsError: Boolean = false) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, retry) { observePeople(repository) }
@@ -46,6 +47,7 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
             Text(stringResource(R.string.person_create))
         }
     }
+    feedback?.let { AccessibleFeedback(it, Modifier.testTag("people_attachment_feedback"), feedbackIsError) }
     if (expanded) {
         when (state) {
             PeopleState.Loading -> CircularProgressIndicator()

@@ -304,6 +304,9 @@
     <string name="person_unavailable">Unavailable person · Remove</string>
     <string name="person_selected_loading">Selected person · Remove</string>
     <string name="people_selection_limit">You can link up to %1$d people. Remove someone to choose another.</string>
+    <string name="person_attached_to_capture">Person added to this capture.</string>
+    <string name="person_created_but_not_attached">Person was created, but this capture already has the maximum of %1$d people.</string>
+    <string name="person_created_unavailable">The created person could not be confirmed, so the draft was left unchanged. Select it again if it is available.</string>
     <string name="people_linked">People: %1$s</string>
     <string name="places">Places</string>
     <string name="places_intro">Save places by name and reuse them in your entries. No location permission is needed.</string>
@@ -329,6 +332,8 @@
     <string name="place_remove">%1$s · Remove</string>
     <string name="place_unavailable">Unavailable place · Remove</string>
     <string name="place_selected_loading">Selected place · Remove</string>
+    <string name="place_attached_to_capture">Place added to this capture.</string>
+    <string name="place_created_unavailable">The created place could not be confirmed, so the draft was left unchanged. Select it again if it is available.</string>
     <string name="place_linked">Place: %1$s</string>
     <string name="place_coordinates">Coordinates: %1$.5f, %2$.5f</string>
     <string name="photo_error">Could not change photos. Your entry and existing photos are still here. Retry or select another photo.</string>

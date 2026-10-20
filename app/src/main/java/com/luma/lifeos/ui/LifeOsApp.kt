@@ -70,6 +70,12 @@ import com.luma.lifeos.ui.habits.HabitDetailRoute
 import com.luma.lifeos.ui.navigation.AppRoutes
 import com.luma.lifeos.ui.navigation.PrimaryDestination
 import com.luma.lifeos.ui.navigation.PrimaryNavigationBar
+import com.luma.lifeos.ui.navigation.CatalogEditorResult
+import com.luma.lifeos.ui.navigation.CatalogEntity
+import com.luma.lifeos.ui.navigation.beginCatalogRequest
+import com.luma.lifeos.ui.navigation.cancelCatalogRequest
+import com.luma.lifeos.ui.navigation.pendingCatalogRequest
+import com.luma.lifeos.ui.navigation.recordCatalogEditorResult
 import com.luma.lifeos.ui.more.MoreRoute
 import com.luma.lifeos.ui.todo.TODO_ACTION_RESULT_KEY
 import com.luma.lifeos.ui.todo.TodoActionFeedbackHost
@@ -468,11 +474,20 @@ fun LifeOsApp(
             composable("place?placeId={placeId}", arguments = listOf(navArgument("placeId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
             })) { entry ->
+                val requestId = navController.previousBackStackEntry?.savedStateHandle
+                    ?.pendingCatalogRequest(CatalogEntity.PLACE)
                 PlaceEditorRoute(places, entry.arguments?.getString("placeId")?.let(UUID::fromString),
-                    onCancel = { navController.popBackStack() }, onFinished = { deleted ->
+                    onCancel = {
+                        navController.previousBackStackEntry?.savedStateHandle?.cancelCatalogRequest(CatalogEntity.PLACE, requestId)
                         navController.popBackStack()
-                        if (deleted && navController.currentDestination?.route == "place_detail/{placeId}") navController.popBackStack()
-                    })
+                    }, onFinished = { result ->
+                        navController.previousBackStackEntry?.savedStateHandle
+                            ?.recordCatalogEditorResult(CatalogEntity.PLACE, requestId, result)
+                        navController.popBackStack()
+                        if (result is CatalogEditorResult.Deleted && navController.currentDestination?.route == "place_detail/{placeId}") {
+                            navController.popBackStack()
+                        }
+                    }, requestId = requestId)
             }
             composable("place_detail/{placeId}", arguments = listOf(navArgument("placeId") { type = NavType.StringType })) { entry ->
                 val id = UUID.fromString(requireNotNull(entry.arguments?.getString("placeId")))
@@ -482,11 +497,20 @@ fun LifeOsApp(
             composable("person?personId={personId}", arguments = listOf(navArgument("personId") {
                 type = NavType.StringType; nullable = true; defaultValue = null
             })) { entry ->
+                val requestId = navController.previousBackStackEntry?.savedStateHandle
+                    ?.pendingCatalogRequest(CatalogEntity.PERSON)
                 PersonEditorRoute(people, entry.arguments?.getString("personId")?.let(UUID::fromString),
-                    onCancel = { navController.popBackStack() }, onFinished = { deleted ->
+                    onCancel = {
+                        navController.previousBackStackEntry?.savedStateHandle?.cancelCatalogRequest(CatalogEntity.PERSON, requestId)
                         navController.popBackStack()
-                        if (deleted && navController.currentDestination?.route == "person_detail/{personId}") navController.popBackStack()
-                    })
+                    }, onFinished = { result ->
+                        navController.previousBackStackEntry?.savedStateHandle
+                            ?.recordCatalogEditorResult(CatalogEntity.PERSON, requestId, result)
+                        navController.popBackStack()
+                        if (result is CatalogEditorResult.Deleted && navController.currentDestination?.route == "person_detail/{personId}") {
+                            navController.popBackStack()
+                        }
+                    }, requestId = requestId)
             }
             composable("person_detail/{personId}", arguments = listOf(navArgument("personId") { type = NavType.StringType })) { entry ->
                 val id = UUID.fromString(requireNotNull(entry.arguments?.getString("personId")))
@@ -509,9 +533,15 @@ fun LifeOsApp(
                         cleanPhotos()
                         if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
                         navController.popBackStack()
-                    }, people = people, onCreatePerson = { navController.navigate("person") },
+                    }, people = people, onCreatePerson = {
+                        entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PERSON)
+                        navController.navigate("person")
+                    },
                         initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
-                        places = places, onCreatePlace = { navController.navigate("place") }, photos = photos)
+                        places = places, onCreatePlace = {
+                            entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PLACE)
+                            navController.navigate("place")
+                        }, photos = photos, catalogResultHandle = entry.savedStateHandle)
             }
             composable("journal_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
                 val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
@@ -532,9 +562,15 @@ fun LifeOsApp(
                         if (date == null && navController.currentDestination?.route == "journal_detail/{eventId}") {
                             navController.popBackStack()
                         }
-                    }, people = people, onCreatePerson = { navController.navigate("person") },
+                    }, people = people, onCreatePerson = {
+                        entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PERSON)
+                        navController.navigate("person")
+                    },
                         initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
-                        places = places, onCreatePlace = { navController.navigate("place") }, photos = photos)
+                        places = places, onCreatePlace = {
+                            entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PLACE)
+                            navController.navigate("place")
+                        }, photos = photos, catalogResultHandle = entry.savedStateHandle)
             }
             composable("mood?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
                 navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
@@ -546,10 +582,15 @@ fun LifeOsApp(
                         cleanPhotos()
                         if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
                         navController.popBackStack()
-                    }, people = people, onCreatePerson = { navController.navigate("person") },
+                    }, people = people, onCreatePerson = {
+                        entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PERSON)
+                        navController.navigate("person")
+                    },
                         initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
-                        places = places, onCreatePlace = { navController.navigate("place") },
-                        draftStore = resolvedMoodDraftStore)
+                        places = places, onCreatePlace = {
+                            entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PLACE)
+                            navController.navigate("place")
+                        }, draftStore = resolvedMoodDraftStore, catalogResultHandle = entry.savedStateHandle)
             }
         }
         LaunchedEffect(widgetLaunch?.id, navController) {

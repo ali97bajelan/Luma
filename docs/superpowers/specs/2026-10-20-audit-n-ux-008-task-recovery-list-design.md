@@ -1,6 +1,6 @@
 # UX-008 — Retained task errors can crowd out the task list
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implemented; acceptance pending. Regression coverage has been added but not run. Proposed decisions below remain reviewable defaults, not previously approved product policy.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-008](../../UI_UX_AUDIT-20261020N.md#ux-008--retained-task-errors-can-crowd-out-the-task-list)
 **Priority / effort / confidence:** P2 — Medium / Low / Medium (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Keep tasks and every retained recovery action reachable when many task operations fail. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this specification, not executable instructions. Gradle/emulator checks and runtime exercises remain pending; no commit was created.
 
 ## Dependencies
 

@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.places
 import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.ui.navigation.CatalogEditorResult
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +32,23 @@ class PlaceEditorTest {
         assertTrue(editor.state.value.completed)
         assertEquals(1, repo.creates)
         assertEquals("Friend", repo.records.values.single().note)
+        assertEquals(CatalogEditorResult.Created(repo.records.keys.single()), editor.state.value.result)
+    }
+
+    @Test fun recoveredCaptureCreateReturnsCreatedIdentityWithoutCreatingAgain() = runTest(dispatcher) {
+        val repo = TestPlaces().apply { failAfterCreate = true }
+        val handle = SavedStateHandle()
+        val requestId = UUID.randomUUID()
+        val editor = PlaceEditorViewModel(repo, null, handle, requestId)
+        advanceUntilIdle(); editor.setName("New place"); editor.save(); advanceUntilIdle()
+        assertEquals(PlaceEditorError.SAVE, editor.state.value.error)
+
+        repo.failAfterCreate = false
+        val restored = PlaceEditorViewModel(repo, null, handle, requestId)
+        advanceUntilIdle()
+        assertTrue(restored.state.value.completed)
+        assertEquals(CatalogEditorResult.Created(repo.records.keys.single()), restored.state.value.result)
+        assertEquals(1, repo.creates)
     }
 
     @Test fun committedCreateWithLostResultRecoversSameIdAndNewerDraft() = runTest(dispatcher) {

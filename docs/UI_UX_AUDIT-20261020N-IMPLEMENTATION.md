@@ -3,7 +3,7 @@
 **Date:** 20 October 2026 (Asia/Tehran)
 **Source:** [UI_UX_AUDIT-20261020N.md](UI_UX_AUDIT-20261020N.md)
 **Scope:** 28 task specifications and 28 implementation plans, one pair for every UX-001–UX-028 finding.
-**Status:** Draft implementation documentation; delivery is tracked per task below. UX-001, UX-004, UX-005, UX-006, UX-016 and UX-027 are implemented with acceptance pending.
+**Status:** Delivery is tracked per task below. UX-001, UX-004, UX-005, UX-006, UX-016, UX-027, UX-007, UX-008 and UX-011 have implementation and regression coverage with acceptance pending.
 
 ## Intent and interpretation
 
@@ -13,7 +13,7 @@ Use the 20 October **N** audit as the ID namespace. Older audits reuse UX number
 
 ## Deliverables and traceability
 
-Every specification defines intent, behavior/policy, architectural contract, dependencies, scope boundary and five acceptance scenarios. Every matching plan lists exact existing/new paths, interfaces, named regressions, targeted future commands, implementation steps and evidence requirements. There are **140 acceptance scenarios** across the 28 tasks. All implementation checkboxes are deliberately unchecked.
+Every specification defines intent, behavior/policy, architectural contract, dependencies, scope boundary and five acceptance scenarios. Every matching plan lists exact existing/new paths, interfaces, named regressions, targeted commands and evidence requirements. There are **140 acceptance scenarios** across the 28 tasks. Implementation checkboxes record code and regression work; acceptance remains pending for UX-007, UX-008 and UX-011 because Gradle and emulator checks were not run.
 
 | ID | Priority | Effort | Audit finding | Specification | Implementation plan | Hard prerequisites | Status |
 |---|---|---|---|---|---|---|---|
@@ -23,8 +23,8 @@ Every specification defines intent, behavior/policy, architectural contract, dep
 | UX-004 | P1 | Medium | Unbounded Mood notes are copied into saved instance state | [Spec](superpowers/specs/2026-10-20-audit-n-ux-004-mood-note-durability-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-004-mood-note-durability.md) | — | Implemented / acceptance pending |
 | UX-006 | P2 | Low | Restored Mood text disappears behind a load error | [Spec](superpowers/specs/2026-10-20-audit-n-ux-006-mood-restored-content-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-006-mood-restored-content.md) | — | Implemented / acceptance pending |
 | UX-005 | P2 | Medium | Interrupted Mood deletion has no reconciliation path | [Spec](superpowers/specs/2026-10-20-audit-n-ux-005-mood-delete-reconciliation-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-005-mood-delete-reconciliation.md) | UX-004 | Implemented / acceptance pending |
-| UX-007 | P2 | Low | A conflicted Today task cannot be opened for review | [Spec](superpowers/specs/2026-10-20-audit-n-ux-007-task-conflict-opening-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-007-task-conflict-opening.md) | — | Draft / not started |
-| UX-008 | P2 | Low | Retained task errors can crowd out the task list | [Spec](superpowers/specs/2026-10-20-audit-n-ux-008-task-recovery-list-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-008-task-recovery-list.md) | — | Draft / not started |
+| UX-007 | P2 | Low | A conflicted Today task cannot be opened for review | [Spec](superpowers/specs/2026-10-20-audit-n-ux-007-task-conflict-opening-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-007-task-conflict-opening.md) | — | Implemented / acceptance pending |
+| UX-008 | P2 | Low | Retained task errors can crowd out the task list | [Spec](superpowers/specs/2026-10-20-audit-n-ux-008-task-recovery-list-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-008-task-recovery-list.md) | — | Implemented / acceptance pending |
 | UX-009 | P2 | Low | Past-day summary Check in opens a current-time entry | [Spec](superpowers/specs/2026-10-20-audit-n-ux-009-summary-dated-capture-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-009-summary-dated-capture.md) | — | Draft / not started |
 | UX-015 | P2 | Low | Habit failures display the wrong operation's message | [Spec](superpowers/specs/2026-10-20-audit-n-ux-015-habit-operation-errors-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-015-habit-operation-errors.md) | — | Draft / not started |
 | UX-016 | P2 | Low | Review source page labels reverse chronological direction | [Spec](superpowers/specs/2026-10-20-audit-n-ux-016-review-source-pagination-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-016-review-source-pagination.md) | — | Implemented / acceptance pending |
@@ -38,7 +38,7 @@ Every specification defines intent, behavior/policy, architectural contract, dep
 | UX-019 | P2 | Medium | Saved records and capture use different hour-cycle policies | [Spec](superpowers/specs/2026-10-20-audit-n-ux-019-shared-display-time-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-019-shared-display-time.md) | — | Draft / not started |
 | UX-021 | P2 | Medium | Page chrome and inset ownership vary across screen families | [Spec](superpowers/specs/2026-10-20-audit-n-ux-021-page-header-insets-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-021-page-header-insets.md) | — | Draft / not started |
 | UX-010 | P2 | Medium | Deleting an entry can return to its missing detail page | [Spec](superpowers/specs/2026-10-20-audit-n-ux-010-deleted-detail-navigation-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-010-deleted-detail-navigation.md) | — | Draft / not started |
-| UX-011 | P2 | Medium | Creating a person/place during capture does not attach it | [Spec](superpowers/specs/2026-10-20-audit-n-ux-011-created-context-results-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-011-created-context-results.md) | — | Draft / not started |
+| UX-011 | P2 | Medium | Creating a person/place during capture does not attach it | [Spec](superpowers/specs/2026-10-20-audit-n-ux-011-created-context-results-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-011-created-context-results.md) | — | Implemented / acceptance pending |
 | UX-012 | P2 | Medium | Context selection requires scanning the entire catalog | [Spec](superpowers/specs/2026-10-20-audit-n-ux-012-searchable-context-selection-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-012-searchable-context-selection.md) | — | Draft / not started |
 | UX-014 | P2 | Medium | Habit management sits after all loaded history | [Spec](superpowers/specs/2026-10-20-audit-n-ux-014-habit-detail-management-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-014-habit-detail-management.md) | — | Draft / not started |
 | UX-013 | P2 | Medium | A historical habit link does not locate the requested repetition | [Spec](superpowers/specs/2026-10-20-audit-n-ux-013-habit-targeted-history-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-013-habit-targeted-history.md) | — | Draft / not started |
@@ -118,15 +118,15 @@ Use each task's exact test classes and commands. JVM tests cover pure policy/sta
 
 During implementation, record task ID, source revision, changed behavior, command/results, device/API/locale/font/window configuration and evidence paths. Use **Draft → In progress → Implemented / acceptance pending → Verified**. Keep optional UX-028 as **Not selected** until separately selected. Do not mark a task Verified from documentation, historical screenshots or source inspection alone.
 
-## Documentation completion boundary
+## Documentation baseline
 
-This package is complete when UX-001–UX-028 each has one linked spec and plan, links/file targets resolve or are explicitly proposed, prerequisites are coherent, and no implementation/acceptance result is implied. Application fixes and runtime acceptance remain future work. The existing task trackers are not marked complete by this documentation package.
+The documentation package was created with one linked spec and plan for each UX-001–UX-028 finding. The table above now also tracks implementation status; it does not imply runtime acceptance.
 
 ## Documentation verification
 
 - Verified 57 documents: one index, 28 specs and 28 plans, with all audit IDs paired exactly once.
 - Verified 140 unique task acceptance cases, five per task, with matching plan review-focus mappings.
 - Checked 143 relative document links and the listed existing source/test targets; proposed source/test files are explicitly marked as additions or dependency outputs.
-- Checked that implementation checkboxes remain unchecked and no unfinished placeholders remain.
-- These are documentation checks only. No Gradle build, application test, emulator/device session or TalkBack acceptance was run for this request.
+- At documentation creation, checked all implementation checkboxes were unchecked and no unfinished placeholders remained.
+- In this implementation update, regression coverage was added for UX-007/008/011. No Gradle build, application test, emulator/device session or TalkBack acceptance was run; acceptance is pending.
 

@@ -302,6 +302,16 @@ class MoodEditorViewModel(
             else if (it.personIds.size < PersonTextLimits.SELECTION) it.personIds + id else it.personIds)
     }
 
+    /** Adds a created picker result without letting a repeated delivery deselect it. */
+    fun addPerson(id: UUID): Boolean {
+        val current = state.value
+        if (!current.ready || current.busy || current.completed) return false
+        if (id in current.draft.personIds) return true
+        if (current.draft.personIds.size >= PersonTextLimits.SELECTION) return false
+        change { it.copy(personIds = it.personIds + id) }
+        return id in state.value.draft.personIds
+    }
+
     private fun change(transform: (MoodDraft) -> MoodDraft) {
         val current = state.value
         if (!current.ready || current.busy || current.completed || discardPending) return

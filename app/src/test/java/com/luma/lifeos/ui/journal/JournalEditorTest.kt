@@ -25,6 +25,16 @@ class JournalEditorTest {
     @Before fun setUp() { Dispatchers.setMain(dispatcher) }
     @After fun tearDown() { Dispatchers.resetMain() }
 
+    @Test fun addPersonIsIdempotentAndStopsAtSelectionLimit() = runTest(dispatcher) {
+        val editor = JournalEditorViewModel(TestJournalRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle()
+        val selected = (0 until PersonTextLimits.SELECTION).map { UUID.randomUUID() }
+        selected.forEach { assertTrue(editor.addPerson(it)) }
+        assertFalse(editor.addPerson(UUID.randomUUID()))
+        assertTrue(editor.addPerson(selected.first()))
+        assertEquals(selected.toSet(), editor.state.value.draft.personIds)
+    }
+
     @Test fun blankBodyCannotSaveAndRepeatedSubmitCommitsOnce() = runTest(dispatcher) {
         val repo = TestJournalRepository()
         val editor = JournalEditorViewModel(repo, null, SavedStateHandle(), clock)

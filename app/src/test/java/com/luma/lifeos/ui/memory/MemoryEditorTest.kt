@@ -26,6 +26,17 @@ class MemoryEditorTest {
     @Before fun setUp() { Dispatchers.setMain(dispatcher) }
     @After fun tearDown() { Dispatchers.resetMain() }
 
+    @Test fun addPersonIsIdempotentAndHonorsSelectionLimit() = runTest(dispatcher) {
+        val editor = MemoryEditorViewModel(TestMemoryRepository(), null, SavedStateHandle(), clock)
+        advanceUntilIdle()
+        val first = UUID.randomUUID()
+        assertTrue(editor.addPerson(first))
+        assertTrue(editor.addPerson(first))
+        repeat(PersonTextLimits.SELECTION - 1) { assertTrue(editor.addPerson(UUID.randomUUID())) }
+        assertFalse(editor.addPerson(UUID.randomUUID()))
+        assertEquals(PersonTextLimits.SELECTION, editor.state.value.draft.personIds.size)
+    }
+
     @Test fun directCaptureRequiresNoteAndRepeatedSubmitCommitsOnce() = runTest(dispatcher) {
         val repo = TestMemoryRepository()
         val editor = MemoryEditorViewModel(repo, null, SavedStateHandle(), clock)

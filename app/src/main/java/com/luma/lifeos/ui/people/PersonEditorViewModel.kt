@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.model.PersonInput
 import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.domain.repository.PersonRepository
+import com.luma.lifeos.ui.navigation.CatalogEditorResult
+import com.luma.lifeos.ui.navigation.persistCatalogEditorResult
+import com.luma.lifeos.ui.navigation.readPersistedCatalogEditorResult
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -21,18 +24,21 @@ data class PersonEditorState(
     val busy: Boolean = false, val editing: Boolean = false, val completed: Boolean = false,
     val deleted: Boolean = false, val hasChanges: Boolean = false, val error: PersonEditorError? = null,
     val textErrors: Set<PersonTextField> = emptySet(),
+    val result: CatalogEditorResult? = null,
 )
 
 class PersonEditorViewModel(private val repository: PersonRepository, private val personId: UUID?,
-    private val saved: SavedStateHandle) : ViewModel() {
+    private val saved: SavedStateHandle, requestId: UUID? = null) : ViewModel() {
     private val captureId = UUID.fromString(saved.get<String>("capture_id") ?: UUID.randomUUID().toString().also { saved["capture_id"] = it })
+    private val catalogRequestId = saved.get<String>(KEY_CATALOG_REQUEST_ID)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        ?: requestId.also { if (it != null) saved[KEY_CATALOG_REQUEST_ID] = it.toString() }
     private var editingId = personId
     private var baseline = PersonDraft()
     private var loadingJob: Job? = null
     private val mutableState = MutableStateFlow(PersonEditorState(readDraft(), editing = personId != null,
         completed = saved["completed"] ?: false, deleted = saved["deleted"] ?: false,
         hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true),
-        textErrors = readTextErrors()))
+        textErrors = readTextErrors(), result = saved.readPersistedCatalogEditorResult()))
     val state = mutableState.asStateFlow()
     init { if (!state.value.completed) load() }
 
@@ -43,11 +49,19 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
             try {
                 val person = repository.get(personId ?: captureId)
                 if (person == null && saved.get<Boolean>("pending_delete") == true) {
-                    finish(deleted = true)
+                    val deletedId = saved.get<String>(KEY_PENDING_DELETE_ID)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                        ?: personId ?: captureId
+                    finish(CatalogEditorResult.Deleted(deletedId))
                     mutableState.value = state.value.copy(loading = false)
                     return@launch
                 }
                 if (personId != null) requireNotNull(person) { "Person unavailable" }
+                if (personId == null && catalogRequestId != null && person != null) {
+                    editingId = person.id
+                    finish(CatalogEditorResult.Created(person.id))
+                    mutableState.value = state.value.copy(loading = false)
+                    return@launch
+                }
                 baseline = person?.let { PersonDraft(it.name, it.note.orEmpty()).also { draft ->
                     PersonInput(draft.name, draft.note)
                 } } ?: PersonDraft()
@@ -84,9 +98,10 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
         saved["pending_delete"] = false
         write(PersonEditorError.SAVE) {
             val recoveredId = editingId ?: repository.get(captureId)?.id
-            if (recoveredId == null) repository.create(captureId, input) else {
+            if (recoveredId == null) CatalogEditorResult.Created(repository.create(captureId, input)) else {
                 editingId = recoveredId
                 repository.update(recoveredId, input)
+                CatalogEditorResult.Saved(recoveredId)
             }
         }
     }
@@ -94,12 +109,16 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
         val id = editingId ?: return
         if (!state.value.ready || state.value.busy || state.value.completed) return
         saved["pending_delete"] = true
-        write(PersonEditorError.DELETE) { repository.delete(id) }
+        saved[KEY_PENDING_DELETE_ID] = id.toString()
+        write(PersonEditorError.DELETE) {
+            repository.delete(id)
+            CatalogEditorResult.Deleted(id)
+        }
     }
-    private fun write(error: PersonEditorError, action: suspend () -> Unit) {
+    private fun write(error: PersonEditorError, action: suspend () -> CatalogEditorResult) {
         mutableState.value = state.value.copy(busy = true, error = null)
         viewModelScope.launch {
-            try { action(); finish(deleted = error == PersonEditorError.DELETE) }
+            try { finish(action()) }
             catch (failure: Exception) {
                 mutableState.value = state.value.copy(busy = false)
                 if (failure is CancellationException) throw failure
@@ -107,9 +126,11 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
             }
         }
     }
-    private fun finish(deleted: Boolean) {
+    private fun finish(result: CatalogEditorResult) {
+        val deleted = result is CatalogEditorResult.Deleted
+        saved.persistCatalogEditorResult(result)
         saved["completed"] = true; saved["deleted"] = deleted; saved["pending_delete"] = false
-        mutableState.value = state.value.copy(busy = false, completed = true, deleted = deleted, error = null)
+        mutableState.value = state.value.copy(busy = false, completed = true, deleted = deleted, error = null, result = result)
     }
     private fun change(clearTextField: PersonTextField? = null, transform: (PersonDraft) -> PersonDraft) {
         val current = state.value
@@ -134,4 +155,9 @@ class PersonEditorViewModel(private val repository: PersonRepository, private va
         saved["text_error_fields"] = ArrayList(errors.map { it.name }.sorted())
     }
     private fun readDraft() = PersonDraft(saved.get<String>("name") ?: "", saved.get<String>("note") ?: "")
+
+    private companion object {
+        const val KEY_CATALOG_REQUEST_ID = "catalog_request_id"
+        const val KEY_PENDING_DELETE_ID = "pending_delete_id"
+    }
 }

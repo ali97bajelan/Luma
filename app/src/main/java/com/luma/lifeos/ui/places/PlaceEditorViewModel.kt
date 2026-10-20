@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.model.PlaceInput
 import com.luma.lifeos.domain.model.PlaceTextLimits
 import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.ui.navigation.CatalogEditorResult
+import com.luma.lifeos.ui.navigation.persistCatalogEditorResult
+import com.luma.lifeos.ui.navigation.readPersistedCatalogEditorResult
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -21,18 +24,21 @@ data class PlaceEditorState(
     val busy: Boolean = false, val editing: Boolean = false, val completed: Boolean = false,
     val deleted: Boolean = false, val hasChanges: Boolean = false, val error: PlaceEditorError? = null,
     val textErrors: Set<PlaceTextField> = emptySet(),
+    val result: CatalogEditorResult? = null,
 )
 
 class PlaceEditorViewModel(private val repository: PlaceRepository, private val placeId: UUID?,
-    private val saved: SavedStateHandle) : ViewModel() {
+    private val saved: SavedStateHandle, requestId: UUID? = null) : ViewModel() {
     private val captureId = UUID.fromString(saved.get<String>("capture_id") ?: UUID.randomUUID().toString().also { saved["capture_id"] = it })
+    private val catalogRequestId = saved.get<String>(KEY_CATALOG_REQUEST_ID)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        ?: requestId.also { if (it != null) saved[KEY_CATALOG_REQUEST_ID] = it.toString() }
     private var editingId = placeId
     private var baseline = PlaceDraft()
     private var loadingJob: Job? = null
     private val mutableState = MutableStateFlow(PlaceEditorState(readDraft(), editing = placeId != null,
         completed = saved["completed"] ?: false, deleted = saved["deleted"] ?: false,
         hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true),
-        textErrors = readTextErrors()))
+        textErrors = readTextErrors(), result = saved.readPersistedCatalogEditorResult()))
     val state = mutableState.asStateFlow()
     init { if (!state.value.completed) load() }
 
@@ -43,11 +49,19 @@ class PlaceEditorViewModel(private val repository: PlaceRepository, private val 
             try {
                 val place = repository.get(placeId ?: captureId)
                 if (place == null && saved.get<Boolean>("pending_delete") == true) {
-                    finish(deleted = true)
+                    val deletedId = saved.get<String>(KEY_PENDING_DELETE_ID)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                        ?: placeId ?: captureId
+                    finish(CatalogEditorResult.Deleted(deletedId))
                     mutableState.value = state.value.copy(loading = false)
                     return@launch
                 }
                 if (placeId != null) requireNotNull(place) { "Place unavailable" }
+                if (placeId == null && catalogRequestId != null && place != null) {
+                    editingId = place.id
+                    finish(CatalogEditorResult.Created(place.id))
+                    mutableState.value = state.value.copy(loading = false)
+                    return@launch
+                }
                 baseline = place?.let { PlaceDraft(it.name, it.note.orEmpty()).also { draft ->
                     PlaceInput(draft.name, draft.note)
                 } } ?: PlaceDraft()
@@ -84,9 +98,10 @@ class PlaceEditorViewModel(private val repository: PlaceRepository, private val 
         saved["pending_delete"] = false
         write(PlaceEditorError.SAVE) {
             val recoveredId = editingId ?: repository.get(captureId)?.id
-            if (recoveredId == null) repository.create(captureId, input) else {
+            if (recoveredId == null) CatalogEditorResult.Created(repository.create(captureId, input)) else {
                 editingId = recoveredId
                 repository.update(recoveredId, input)
+                CatalogEditorResult.Saved(recoveredId)
             }
         }
     }
@@ -94,12 +109,16 @@ class PlaceEditorViewModel(private val repository: PlaceRepository, private val 
         val id = editingId ?: return
         if (!state.value.ready || state.value.busy || state.value.completed) return
         saved["pending_delete"] = true
-        write(PlaceEditorError.DELETE) { repository.delete(id) }
+        saved[KEY_PENDING_DELETE_ID] = id.toString()
+        write(PlaceEditorError.DELETE) {
+            repository.delete(id)
+            CatalogEditorResult.Deleted(id)
+        }
     }
-    private fun write(error: PlaceEditorError, action: suspend () -> Unit) {
+    private fun write(error: PlaceEditorError, action: suspend () -> CatalogEditorResult) {
         mutableState.value = state.value.copy(busy = true, error = null)
         viewModelScope.launch {
-            try { action(); finish(deleted = error == PlaceEditorError.DELETE) }
+            try { finish(action()) }
             catch (failure: Exception) {
                 mutableState.value = state.value.copy(busy = false)
                 if (failure is CancellationException) throw failure
@@ -107,9 +126,11 @@ class PlaceEditorViewModel(private val repository: PlaceRepository, private val 
             }
         }
     }
-    private fun finish(deleted: Boolean) {
+    private fun finish(result: CatalogEditorResult) {
+        val deleted = result is CatalogEditorResult.Deleted
+        saved.persistCatalogEditorResult(result)
         saved["completed"] = true; saved["deleted"] = deleted; saved["pending_delete"] = false
-        mutableState.value = state.value.copy(busy = false, completed = true, deleted = deleted, error = null)
+        mutableState.value = state.value.copy(busy = false, completed = true, deleted = deleted, error = null, result = result)
     }
     private fun change(clearTextField: PlaceTextField? = null, transform: (PlaceDraft) -> PlaceDraft) {
         val current = state.value
@@ -134,4 +155,9 @@ class PlaceEditorViewModel(private val repository: PlaceRepository, private val 
         saved["text_error_fields"] = ArrayList(errors.map { it.name }.sorted())
     }
     private fun readDraft() = PlaceDraft(saved.get<String>("name") ?: "", saved.get<String>("note") ?: "")
+
+    private companion object {
+        const val KEY_CATALOG_REQUEST_ID = "catalog_request_id"
+        const val KEY_PENDING_DELETE_ID = "pending_delete_id"
+    }
 }

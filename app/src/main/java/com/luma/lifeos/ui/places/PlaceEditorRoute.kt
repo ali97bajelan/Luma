@@ -28,17 +28,26 @@ import com.luma.lifeos.domain.model.PlaceTextLimits
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.ui.navigation.CatalogEditorResult
 import java.text.NumberFormat
 import java.util.UUID
 
 @Composable
-fun PlaceEditorRoute(repository: PlaceRepository, placeId: UUID?, onCancel: () -> Unit, onFinished: (Boolean) -> Unit) {
-    val factory = remember(repository, placeId) {
-        viewModelFactory { initializer { PlaceEditorViewModel(repository, placeId, createSavedStateHandle()) } }
+fun PlaceEditorRoute(
+    repository: PlaceRepository,
+    placeId: UUID?,
+    onCancel: () -> Unit,
+    onFinished: (CatalogEditorResult) -> Unit,
+    requestId: UUID? = null,
+) {
+    val factory = remember(repository, placeId, requestId) {
+        viewModelFactory { initializer { PlaceEditorViewModel(repository, placeId, createSavedStateHandle(), requestId) } }
     }
     val editor: PlaceEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.completed) { if (state.completed) onFinished(state.deleted) }
+    LaunchedEffect(state.completed, state.result) {
+        if (state.completed) state.result?.let(onFinished)
+    }
     PlaceEditorScreen(state, onCancel, editor::save, editor::delete, editor::load, editor::setName, editor::setNote)
 }
 

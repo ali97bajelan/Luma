@@ -20,7 +20,8 @@ import java.util.UUID
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
-    onSelect: (UUID?) -> Unit, onCreate: () -> Unit) {
+    onSelect: (UUID?) -> Unit, onCreate: () -> Unit,
+    feedback: String? = null, feedbackIsError: Boolean = false) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, retry) { observePlaces(repository) }
@@ -43,6 +44,7 @@ fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
             Text(stringResource(R.string.place_create))
         }
     }
+    feedback?.let { AccessibleFeedback(it, Modifier.testTag("place_attachment_feedback"), feedbackIsError) }
     if (expanded) {
         when (state) {
             PlacesState.Loading -> CircularProgressIndicator()
