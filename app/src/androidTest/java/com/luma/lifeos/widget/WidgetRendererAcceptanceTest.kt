@@ -1,11 +1,23 @@
 package com.luma.lifeos.widget
 
 import android.os.Bundle
+import android.graphics.Color
+import android.graphics.Rect
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.os.Build
+import android.os.LocaleList
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.StateListDrawable
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.luma.lifeos.MainActivity
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetActionResult
 import com.luma.lifeos.domain.widget.WidgetInstance
@@ -13,11 +25,15 @@ import com.luma.lifeos.domain.widget.WidgetKind
 import com.luma.lifeos.domain.widget.WidgetOutcome
 import com.luma.lifeos.domain.widget.WidgetRow
 import com.luma.lifeos.domain.widget.WidgetSnapshot
+import com.luma.lifeos.language.AppLanguages
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.util.Locale
 import java.util.UUID
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -96,7 +112,7 @@ class WidgetRendererAcceptanceTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val snapshot = sampleSnapshot().copy(total = 7, updatedAt = Instant.parse("2026-10-21T08:00:00Z"))
         val root = WidgetRenderer.render(context, 51, snapshot, false, expandedBounds()).apply(context, null)
-        assertEquals(context.getString(R.string.widget_view_all_more,
+        assertEquals(context.getString(R.string.widget_view_all_count,
             context.getString(R.string.widget_tasks_view_all), 7),
             root.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
         org.junit.Assert.assertTrue(root.findViewById<TextView>(R.id.widget_data_title).text.toString()
@@ -115,8 +131,8 @@ class WidgetRendererAcceptanceTest {
         )
         val root = WidgetRenderer.render(context, 57, snapshot, false, expandedBounds()).apply(context, null)
         assertEquals(0, root.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
-        assertEquals(context.getString(R.string.widget_view_all_hidden,
-            context.getString(R.string.widget_tasks_view_all)),
+        assertEquals(context.getString(R.string.widget_view_all_hidden_count,
+            context.getString(R.string.widget_tasks_view_all), 5),
             root.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
     }
 
@@ -238,8 +254,8 @@ class WidgetRendererAcceptanceTest {
 
         val expandedRoot = WidgetRenderer.render(context, 51, snapshot, false, expandedBounds()).apply(context, null)
         assertEquals(8, expandedRoot.findViewById<LinearLayout>(R.id.widget_data_rows).childCount)
-        assertEquals(context.getString(R.string.widget_view_all_more,
-            context.getString(R.string.widget_tasks_view_all), 2),
+        assertEquals(context.getString(R.string.widget_view_all_count,
+            context.getString(R.string.widget_tasks_view_all), 10),
             expandedRoot.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
 
         val habits = (0 until 8).map { index ->
@@ -382,6 +398,183 @@ class WidgetRendererAcceptanceTest {
                 localeManager.applicationLocales = previousLocales
             }
         }
+    }
+
+    @Test fun wd10KeepsHeaderTargetsSeparateAndShowsTotalCountBelowTitle() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val rows = (0 until 8).map { index ->
+            WidgetRow.Task(UUID.randomUUID(), "Task ${index + 1}", LocalDate.parse("2026-10-20"), UUID.randomUUID())
+        }
+        val root = WidgetRenderer.render(
+            context,
+            56,
+            sampleSnapshot().copy(total = 8, rows = rows),
+            failure = false,
+            options = bounds(373, 420),
+        ).apply(context, null)
+        layoutAtBounds(root, context, 373, 420)
+
+        val titleTarget = root.findViewById<View>(R.id.widget_data_open)
+        val title = root.findViewById<TextView>(R.id.widget_data_title)
+        val totalCue = root.findViewById<TextView>(R.id.widget_data_more)
+        val capture = root.findViewById<TextView>(R.id.widget_data_refresh)
+        val refresh = root.findViewById<View>(R.id.widget_header_refresh)
+        val density = context.resources.displayMetrics.density
+        assertTargetsSeparated(root, titleTarget, capture, (8 * density).toInt())
+        assertTargetsSeparated(root, capture, refresh, (8 * density).toInt())
+        assertEquals("Capture", capture.text.toString())
+        assertEquals(context.getColor(R.color.widget_action_utility_light), capture.currentTextColor)
+        assertEquals("8 tasks", totalCue.text.toString())
+        assertTrue("The total cue sits beneath the title", boundsIn(root, totalCue).top >= boundsIn(root, title).bottom)
+        val background = capture.background as StateListDrawable
+        assertEquals(Color.TRANSPARENT, (background.current as ColorDrawable).color)
+        val captureBitmap = Bitmap.createBitmap(capture.width, capture.height, Bitmap.Config.ARGB_8888)
+        try {
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                scenario.onActivity { activity ->
+                    val host = FrameLayout(activity)
+                    activity.setContentView(host)
+                    host.addView(root, FrameLayout.LayoutParams(root.width, root.height))
+                    root.measure(View.MeasureSpec.makeMeasureSpec(root.width, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(root.height, View.MeasureSpec.EXACTLY))
+                    root.layout(0, 0, root.width, root.height)
+                }
+                InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+                scenario.onActivity {
+                    capture.draw(Canvas(captureBitmap))
+                }
+            }
+            assertTrue("The Capture label is painted in the resting state: " +
+                "size=${capture.width}x${capture.height}, shown=${capture.isShown}, visible=${capture.visibility}, " +
+                "layout=${capture.layout?.lineCount}, alpha=${capture.alpha}, text=${capture.text}, " +
+                "layoutSize=${capture.layout?.width}x${capture.layout?.height}, lineWidth=${capture.layout?.getLineWidth(0)}, " +
+                "lineBounds=${capture.layout?.getLineLeft(0)}..${capture.layout?.getLineRight(0)}, " +
+                "paintAlpha=${capture.paint.alpha}, paintColor=${capture.paint.color}",
+                (0 until captureBitmap.width).any { x ->
+                    (0 until captureBitmap.height).any { y -> Color.alpha(captureBitmap.getPixel(x, y)) > 0 }
+                })
+        } finally {
+            captureBitmap.recycle()
+        }
+    }
+
+    @Test fun wd10GroupsScopeAndDatedFreshnessBeforeFeedbackAndRows() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val date = LocalDate.parse("2026-10-19")
+        val rows = (0 until 8).map { index ->
+            WidgetRow.Task(UUID.randomUUID(), "Task ${index + 1}", date, UUID.randomUUID())
+        }
+        val snapshot = sampleSnapshot().copy(
+            date = date,
+            zone = java.time.ZoneId.of("America/Los_Angeles"),
+            total = 8,
+            rows = rows,
+            feedback = WidgetActionResult(WidgetOutcome.SAVED, undoToken = UUID.randomUUID()),
+            updatedAt = Instant.parse("2026-10-20T08:00:00Z"),
+        )
+        val root = WidgetRenderer.render(context, 57, snapshot, false, bounds(373, 420)).apply(context, null)
+        layoutAtBounds(root, context, 373, 420)
+
+        val scope = root.findViewById<TextView>(R.id.widget_data_summary)
+        val freshness = root.findViewById<TextView>(R.id.widget_data_updated)
+        val feedback = root.findViewById<View>(R.id.widget_feedback_slot)
+        val rowsView = root.findViewById<View>(R.id.widget_data_rows)
+        assertFalse("Scope has no duplicate date", scope.text.toString().contains("Oct 19, 2026"))
+        assertTrue("Freshness names the snapshot date", freshness.text.toString().contains("Oct 19, 2026"))
+        assertTrue("Freshness names the successful update date", freshness.text.toString().contains("Oct 20, 2026"))
+        assertTrue("Freshness preserves the tracking zone", freshness.text.toString().contains("America/Los_Angeles"))
+        assertTrue("Freshness precedes feedback", boundsIn(root, freshness).bottom <= boundsIn(root, feedback).top)
+        assertTrue("Rows follow feedback", boundsIn(root, feedback).bottom <= boundsIn(root, rowsView).top)
+    }
+
+    @Test fun wd10StacksNarrowHeaderAndKeepsEightDpBetweenTargets() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val rows = (0 until 8).map { index ->
+            WidgetRow.Task(UUID.randomUUID(), "Task ${index + 1}", LocalDate.parse("2026-10-20"), UUID.randomUUID())
+        }
+        val root = WidgetRenderer.render(
+            context, 58, sampleSnapshot().copy(total = 8, rows = rows), false, bounds(210, 420),
+        ).apply(context, null)
+        layoutAtBounds(root, context, 210, 420)
+
+        val titleTarget = root.findViewById<View>(R.id.widget_data_open)
+        val capture = root.findViewById<TextView>(R.id.widget_data_refresh)
+        val refresh = root.findViewById<View>(R.id.widget_header_refresh)
+        val density = context.resources.displayMetrics.density
+        assertTargetsSeparated(root, titleTarget, capture, (8 * density).toInt())
+        assertTargetsSeparated(root, capture, refresh, (8 * density).toInt())
+        assertTrue(titleTarget.height >= 48 * density - 1)
+        assertTrue(capture.height >= 48 * density - 1)
+        assertTrue(refresh.height >= 48 * density - 1)
+        assertEquals("Capture", capture.text.toString())
+    }
+
+    @Test fun wd10HeaderFitsSupportedLocalesAt100130And200PercentText() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
+        val previousLocales = localeManager.applicationLocales
+        val previousDefaultLocale = Locale.getDefault()
+        try {
+            for (languageTag in listOf("en", "fr", "fa")) {
+                localeManager.applicationLocales = LocaleList.forLanguageTags(languageTag)
+                val localized = AppLanguages.wrap(context)
+                for (scale in listOf(1f, 1.3f, 2f)) {
+                    val configuration = android.content.res.Configuration(localized.resources.configuration).apply {
+                        fontScale = scale
+                    }
+                    val scaled = localized.createConfigurationContext(configuration)
+                    val rows = (0 until 8).map { index ->
+                        WidgetRow.Task(UUID.randomUUID(), "Task ${index + 1}", LocalDate.parse("2026-10-20"), UUID.randomUUID())
+                    }
+                    val snapshot = sampleSnapshot().copy(total = 8, rows = rows)
+                    val root = WidgetRenderer.render(scaled, 59, snapshot, false, bounds(373, 420))
+                        .apply(scaled, null)
+                    layoutAtBounds(root, scaled, 373, 420)
+
+                    val titleTarget = root.findViewById<View>(R.id.widget_data_open)
+                    val title = root.findViewById<TextView>(R.id.widget_data_title)
+                    val totalCue = root.findViewById<TextView>(R.id.widget_data_more)
+                    val capture = root.findViewById<TextView>(R.id.widget_data_refresh)
+                    val refresh = root.findViewById<View>(R.id.widget_header_refresh)
+                    val density = scaled.resources.displayMetrics.density
+                    val state = "$languageTag at ${scale * 100}%"
+                    assertEquals("$state Capture label", localized.getString(R.string.widget_capture), capture.text.toString())
+                    assertTargetsSeparated(root, titleTarget, capture, (8 * density).toInt())
+                    assertTargetsSeparated(root, capture, refresh, (8 * density).toInt())
+                    assertTrue("$state title target", titleTarget.height >= 48 * density - 1)
+                    assertTrue("$state Capture target", capture.height >= 48 * density - 1)
+                    assertTrue("$state Refresh target", refresh.height >= 48 * density - 1)
+                    if (totalCue.visibility == View.VISIBLE) {
+                        assertEquals("$state total cue",
+                            localized.resources.getQuantityString(R.plurals.widget_tasks_total, 8, 8),
+                            totalCue.text.toString())
+                        assertTrue("$state total cue stays below title",
+                            boundsIn(root, totalCue).top >= boundsIn(root, title).bottom)
+                    }
+                    assertEquals("$state keeps scroll hint hidden until WD17", View.GONE,
+                        root.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
+                }
+            }
+        } finally {
+            localeManager.applicationLocales = previousLocales
+            Locale.setDefault(previousDefaultLocale)
+        }
+    }
+
+    private fun assertTargetsSeparated(root: View, first: View, second: View, minimumGapPx: Int) {
+        val firstRect = boundsIn(root, first)
+        val secondRect = boundsIn(root, second)
+        val horizontal = firstRect.right + minimumGapPx <= secondRect.left ||
+            secondRect.right + minimumGapPx <= firstRect.left
+        val vertical = firstRect.bottom + minimumGapPx <= secondRect.top ||
+            secondRect.bottom + minimumGapPx <= firstRect.top
+        assertTrue("Header targets are separate by at least ${minimumGapPx}px: $firstRect vs $secondRect",
+            horizontal || vertical)
+    }
+
+    private fun boundsIn(root: View, child: View): Rect = Rect(0, 0, child.width, child.height).also {
+        (root as ViewGroup).offsetDescendantRectToMyCoords(child, it)
     }
 
     private fun expandedBounds() = Bundle().apply {

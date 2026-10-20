@@ -146,6 +146,14 @@
         <item quantity="one">%1$d کار برای امروز یا عقب‌افتاده</item>
         <item quantity="other">%1$d کار برای امروز یا عقب‌افتاده</item>
     </plurals>
+    <plurals name="widget_habits_total">
+        <item quantity="one">%1$d عادت</item>
+        <item quantity="other">%1$d عادت</item>
+    </plurals>
+    <plurals name="widget_tasks_total">
+        <item quantity="one">%1$d کار</item>
+        <item quantity="other">%1$d کار</item>
+    </plurals>
     <string name="capture_intro">چه چیزی را می‌خواهید ثبت کنید؟</string>
     <string name="capture_use_now">استفاده از زمان فعلی</string>
     <string name="capture_add_to_date">افزودن به %1$s</string>
@@ -899,10 +907,16 @@
     <string name="widget_tasks_refresh_description">تازه‌سازی کارها</string>
     <string name="widget_habits_refresh_description">تازه‌سازی عادت‌ها</string>
     <string name="widget_data_updated_time">به‌روزرسانی %1$s</string>
+    <string name="widget_data_fresh_same">%1$s · به‌روزرسانی %2$s%3$s</string>
+    <string name="widget_data_fresh_different">تصویر %1$s · به‌روزرسانی %2$s، %3$s%4$s</string>
+    <string name="widget_data_tracking_zone"> · زمان پیگیری %1$s</string>
     <string name="widget_habits_view_all">نمایش همهٔ عادت‌ها</string>
     <string name="widget_tasks_view_all">نمایش همهٔ کارها</string>
     <string name="widget_view_all_more">%1$s، %2$d مورد دیگر نمایش داده نشده</string>
     <string name="widget_view_all_hidden">%1$s؛ نام‌ها در این ویجت پنهان هستند</string>
+    <string name="widget_view_all_count">%1$s، در مجموع %2$d مورد</string>
+    <string name="widget_view_all_hidden_count">%1$s، در مجموع %2$d مورد؛ نام‌ها در این ویجت پنهان هستند</string>
+    <string name="widget_scroll_for_more">برای دیدن موارد بیشتر پیمایش کنید</string>
     <plurals name="widget_more_count">
         <item quantity="one">%1$d مورد دیگر</item>
         <item quantity="other">%1$d مورد دیگر</item>

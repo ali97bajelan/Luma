@@ -1,8 +1,8 @@
 # Luma Habits and Tasks widgets — visual redesign review
 
 **Date:** 20 October 2026  
-**Status:** Design proposal and implementation backlog. WD09–WD17 are not implemented or accepted.  
-**Scope:** Improve the existing Habits and Tasks home-screen widgets shown in the supplied screenshot, including vertical scrolling when items exceed the available list area. Retain shared Capture, existing providers, per-instance privacy and dependable recovery. This deliverable changes documentation and adds reference visuals; it does not change the app.
+**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11–WD17 remain open.
+**Scope:** Improve the existing Habits and Tasks home-screen widgets shown in the supplied screenshot, including vertical scrolling when items exceed the available list area. Retain shared Capture, existing providers, per-instance privacy and dependable recovery. This review remains the design/backlog reference; WD09 and WD10 implementation evidence is linked below.
 
 **User requirement added:** Both data widgets must let users scroll through additional eligible items within the current widget size. Resizing or opening the app must not be required just to reach overflow items. The scrolling contract and WD17 below supersede the earlier static-prefix/eight-candidate proposal.
 
@@ -180,7 +180,7 @@ TalkBack should encounter title navigation, Capture, Refresh, scope/freshness, f
 
 ## 6. Implementation tasks
 
-All tasks are open. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
+WD09 and WD10 are partial; WD11–WD17 remain open. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
 
 | ID | Priority / effort | Responsible role | Dependency | Outcome |
 | --- | --- | --- | --- | --- |
@@ -196,17 +196,21 @@ All tasks are open. P1 is the first delivery slice; P2 is follow-up polish withi
 
 ### WD09 — Establish a reproducible baseline and tokens
 
+**Status: Partial.** An isolated API 36 run now has before/after synthetic matrices for 0/1/2/3/4/8/10/50/500 at all three bounds, plus separate Undo/Retry renders and light/dark contrast measurements. The capture used `RemoteViews.apply`; the resolved home activity was Settings, so launcher-host evidence and the requested per-state fixture combinations remain open. See the [WD09–WD10 evidence record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md).
+
 - [ ] On an isolated emulator/test profile, create reusable fictional fixtures for 0/1/2/3/4/8/10/50/500 eligible records, including one long mixed-script title, large counts, reached/skipped habits and overdue tasks. Retain consent and feedback state with each capture; do not mutate personal data for this test.
 - [ ] Record build identity, API, launcher, actual dp bounds, density, locale, font scale, theme and row count. Capture identical fixtures with the current renderer at 220×160, 373×321 and 373×420dp before changes.
-- [ ] Define semantic text/action/state roles in `res/values/widget_colors.xml`, existing light/dark drawables and the widget binding code. Select light equivalents and verify contrast for the proposed dark candidates.
+- [x] Define semantic text/action/state roles in `res/values/widget_colors.xml`, existing light/dark drawables and the widget binding code. Select light equivalents and verify contrast for the proposed dark candidates.
 
 **Acceptance:** baseline captures and measurements are reproducible; palette measurements cover normal, pressed and focused states. No source/build identity is inferred from the user attachment.
 
 ### WD10 — Rebuild header hierarchy and metadata grouping
 
+**Status: Partial.** The header now shows the eligible total under the title, renders a visible plain Capture label, separates title/Capture/Refresh targets by 8dp, and groups scope plus dated freshness before feedback and rows. Renderer and contrast checks pass, including en/fr/fa at 100/130/200% text scale. The localized scroll hint stays hidden until WD17 provides a real scrollable collection; launcher-host and assistive runs remain open. See the [WD10 evidence record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md).
+
 - [ ] Update `widget_data.xml` and `widget_data_stacked_header.xml`: title with an optional total-count cue, plain labeled Capture, separate Refresh and explicit 8dp target gaps. Keep existing intent destinations; add localized Scroll for more above an overflowing collection where it fits.
-- [ ] Move successful freshness into the metadata group before feedback/rows. Add concise localized scope strings and plural forms in `values`, `values-fr` and `values-fa`; retain explicit dates/zones and old-snapshot wording.
-- [ ] Update `WidgetRenderer.kt` header planning, reserved metadata/hint height, total-count visibility and content descriptions; clear removed view bindings on reapply.
+- [x] Move successful freshness into the metadata group before feedback/rows. Add concise localized scope strings and plural forms in `values`, `values-fr` and `values-fa`; retain explicit dates/zones and old-snapshot wording.
+- [x] Update `WidgetRenderer.kt` header planning, reserved metadata/hint height, total-count visibility and content descriptions; clear removed view bindings on reapply.
 
 **Acceptance:** title/cue never collide with Capture; all header targets are separate and at least 48dp; date/freshness occurs once and never looks like a final item's due state. All three languages work at 100/130/200% or select the measured fallback.
 

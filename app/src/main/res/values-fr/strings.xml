@@ -148,6 +148,16 @@
         <item quantity="other">%1$d tâches en retard ou prévues aujourd’hui</item>
         <item quantity="many">%1$d tâches en retard ou prévues aujourd’hui</item>
     </plurals>
+    <plurals name="widget_habits_total">
+        <item quantity="one">%1$d habitude</item>
+        <item quantity="other">%1$d habitudes</item>
+        <item quantity="many">%1$d habitudes</item>
+    </plurals>
+    <plurals name="widget_tasks_total">
+        <item quantity="one">%1$d tâche</item>
+        <item quantity="other">%1$d tâches</item>
+        <item quantity="many">%1$d tâches</item>
+    </plurals>
     <string name="capture_intro">Que souhaitez-vous noter ?</string>
     <string name="capture_use_now">Utiliser l’heure actuelle</string>
     <string name="capture_add_to_date">Ajouter au %1$s</string>
@@ -910,10 +920,16 @@
     <string name="widget_tasks_refresh_description">Actualiser les tâches</string>
     <string name="widget_habits_refresh_description">Actualiser les habitudes</string>
     <string name="widget_data_updated_time">Mis à jour à %1$s</string>
+    <string name="widget_data_fresh_same">%1$s · Mis à jour à %2$s%3$s</string>
+    <string name="widget_data_fresh_different">Instantané du %1$s · Mis à jour le %2$s à %3$s%4$s</string>
+    <string name="widget_data_tracking_zone"> · fuseau de suivi %1$s</string>
     <string name="widget_habits_view_all">Voir les habitudes</string>
     <string name="widget_tasks_view_all">Voir les tâches</string>
     <string name="widget_view_all_more">%1$s, %2$d autres éléments non affichés</string>
     <string name="widget_view_all_hidden">%1$s ; les noms sont masqués dans ce widget</string>
+    <string name="widget_view_all_count">%1$s, %2$d éléments au total</string>
+    <string name="widget_view_all_hidden_count">%1$s, %2$d éléments au total ; les noms sont masqués dans ce widget</string>
+    <string name="widget_scroll_for_more">Faites défiler pour voir la suite</string>
     <plurals name="widget_more_count">
         <item quantity="one">%1$d de plus</item>
         <item quantity="other">%1$d de plus</item>

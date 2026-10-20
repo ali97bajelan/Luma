@@ -1,6 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_pressed="true"><shape android:shape="rectangle"><solid android:color="#B4D9C8"/><corners android:radius="16dp"/></shape></item>
-    <item android:state_focused="true"><shape android:shape="rectangle"><solid android:color="#B4D9C8"/><corners android:radius="16dp"/></shape></item>
-    <item><shape android:shape="rectangle"><solid android:color="#CDE8DC"/><corners android:radius="16dp"/></shape></item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_mutation_fill_pressed_light" />
+            <corners android:radius="16dp" />
+            <stroke android:width="2dp" android:color="@color/widget_focus_ring_light" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_mutation_fill_light" />
+            <corners android:radius="16dp" />
+            <stroke android:width="2dp" android:color="@color/widget_focus_ring_light" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_mutation_fill_light" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
 </selector>

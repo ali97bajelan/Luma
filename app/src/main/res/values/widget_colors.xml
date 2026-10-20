@@ -1,4 +1,28 @@
 <resources>
-    <color name="widget_on_primary">#0A2F27</color>
-    <color name="widget_on_primary_dark">#BCEEDB</color>
+    <color name="widget_surface_light">#FFF8F8F2</color>
+    <color name="widget_surface_dark">#FF101813</color>
+    <color name="widget_text_primary_light">#FF0A2F27</color>
+    <color name="widget_text_primary_dark">#FFE1EEE5</color>
+    <color name="widget_text_secondary_light">#FF46534C</color>
+    <color name="widget_text_secondary_dark">#FFADBCB1</color>
+    <color name="widget_action_utility_light">#FF006247</color>
+    <color name="widget_action_utility_dark">#FFBCEEDB</color>
+    <color name="widget_mutation_fill_light">#FFCDE8DC</color>
+    <color name="widget_mutation_fill_pressed_light">#FFB4D9C8</color>
+    <color name="widget_mutation_fill_dark">#FF174E40</color>
+    <color name="widget_mutation_fill_pressed_dark">#FF205F4F</color>
+    <color name="widget_mutation_text_light">#FF0A2F27</color>
+    <color name="widget_mutation_text_dark">#FFD1F5E3</color>
+    <color name="widget_overdue_light">#FF8A4B08</color>
+    <color name="widget_overdue_dark">#FFF0C38B</color>
+    <color name="widget_error_light">#FF9E1C1C</color>
+    <color name="widget_error_dark">#FFFFB4AB</color>
+    <color name="widget_focus_ring_light">#FF006247</color>
+    <color name="widget_focus_ring_dark">#FFBCEEDB</color>
+    <color name="widget_outline_light">#FFC4C8BE</color>
+    <color name="widget_outline_dark">#FF424840</color>
+
+    <!-- Retained aliases for existing widget previews and compact layouts. -->
+    <color name="widget_on_primary">@color/widget_text_primary_light</color>
+    <color name="widget_on_primary_dark">@color/widget_text_primary_dark</color>
 </resources>

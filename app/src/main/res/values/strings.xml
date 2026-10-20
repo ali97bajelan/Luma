@@ -146,6 +146,14 @@
         <item quantity="one">%1$d task due today or overdue</item>
         <item quantity="other">%1$d tasks due today or overdue</item>
     </plurals>
+    <plurals name="widget_habits_total">
+        <item quantity="one">%1$d habit</item>
+        <item quantity="other">%1$d habits</item>
+    </plurals>
+    <plurals name="widget_tasks_total">
+        <item quantity="one">%1$d task</item>
+        <item quantity="other">%1$d tasks</item>
+    </plurals>
     <string name="capture_intro">Choose what to record.</string>
     <string name="capture_use_now">Use current time</string>
     <string name="capture_add_to_date">Add to %1$s</string>
@@ -898,10 +906,16 @@
     <string name="widget_tasks_refresh_description">Refresh tasks</string>
     <string name="widget_habits_refresh_description">Refresh habits</string>
     <string name="widget_data_updated_time">Updated %1$s</string>
+    <string name="widget_data_fresh_same">%1$s · Updated %2$s%3$s</string>
+    <string name="widget_data_fresh_different">Snapshot %1$s · Updated %2$s, %3$s%4$s</string>
+    <string name="widget_data_tracking_zone"> · %1$s tracking time</string>
     <string name="widget_habits_view_all">View all habits</string>
     <string name="widget_tasks_view_all">View all tasks</string>
     <string name="widget_view_all_more">%1$s, %2$d more not shown</string>
     <string name="widget_view_all_hidden">%1$s; names are hidden in this widget</string>
+    <string name="widget_view_all_count">%1$s, %2$d items total</string>
+    <string name="widget_view_all_hidden_count">%1$s, %2$d items total; names are hidden in this widget</string>
+    <string name="widget_scroll_for_more">Scroll for more</string>
     <plurals name="widget_more_count">
         <item quantity="one">%1$d more</item>
         <item quantity="other">%1$d more</item>

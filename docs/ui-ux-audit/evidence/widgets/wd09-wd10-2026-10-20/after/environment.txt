@@ -1,0 +1,11 @@
+versionName=1.0.1
+versionCode=2
+api=36
+device=Google sdk_gphone64_x86_64 (emu64xa)
+home_activity_resolver=com.android.settings
+capture_host=offscreen RemoteViews.apply; no launcher-host check
+density_dpi=420
+locale=en-US
+font_scale=1.0
+theme=light
+fixture_source=synthetic WidgetSnapshot; no app records read or changed

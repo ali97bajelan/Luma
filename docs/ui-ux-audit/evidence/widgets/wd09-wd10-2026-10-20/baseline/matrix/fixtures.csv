@@ -1,0 +1,55 @@
+kind,count,width_dp,height_dp,feedback,show_details,visible_rows,title_cue,capture_label,title_bounds,capture_bounds,refresh_bounds,image
+HABITS,0,220,160,none,true,0,absent,absent,absent,absent,absent,habits-0-220x160-none-details.png
+HABITS,0,373,321,none,true,0,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-0-373x321-none-details.png
+HABITS,0,373,420,none,true,0,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-0-373x420-none-details.png
+HABITS,1,220,160,none,true,0,absent,absent,absent,absent,absent,habits-1-220x160-none-details.png
+HABITS,1,373,321,none,true,1,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-1-373x321-none-details.png
+HABITS,1,373,420,none,true,1,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-1-373x420-none-details.png
+HABITS,2,220,160,none,true,0,absent,absent,absent,absent,absent,habits-2-220x160-none-details.png
+HABITS,2,373,321,none,true,2,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-2-373x321-none-details.png
+HABITS,2,373,420,none,true,2,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-2-373x420-none-details.png
+HABITS,3,220,160,none,true,0,absent,absent,absent,absent,absent,habits-3-220x160-none-details.png
+HABITS,3,373,321,none,true,3,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-3-373x321-none-details.png
+HABITS,3,373,420,none,true,3,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-3-373x420-none-details.png
+HABITS,4,220,160,none,true,0,absent,absent,absent,absent,absent,habits-4-220x160-none-details.png
+HABITS,4,373,321,none,true,3,1 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-4-373x321-none-details.png
+HABITS,4,373,420,none,true,4,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-4-373x420-none-details.png
+HABITS,8,220,160,none,true,0,absent,absent,absent,absent,absent,habits-8-220x160-none-details.png
+HABITS,8,373,321,none,true,3,5 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-8-373x321-none-details.png
+HABITS,8,373,420,none,true,5,3 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-8-373x420-none-details.png
+HABITS,10,220,160,none,true,0,absent,absent,absent,absent,absent,habits-10-220x160-none-details.png
+HABITS,10,373,321,none,true,3,7 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-10-373x321-none-details.png
+HABITS,10,373,420,none,true,5,5 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-10-373x420-none-details.png
+HABITS,50,220,160,none,true,0,absent,absent,absent,absent,absent,habits-50-220x160-none-details.png
+HABITS,50,373,321,none,true,3,47 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-50-373x321-none-details.png
+HABITS,50,373,420,none,true,5,45 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-50-373x420-none-details.png
+HABITS,500,220,160,none,true,0,absent,absent,absent,absent,absent,habits-500-220x160-none-details.png
+HABITS,500,373,321,none,true,3,497 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-500-373x321-none-details.png
+HABITS,500,373,420,none,true,5,495 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,habits-500-373x420-none-details.png
+TASKS,0,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-0-220x160-none-details.png
+TASKS,0,373,321,none,true,0,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-0-373x321-none-details.png
+TASKS,0,373,420,none,true,0,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-0-373x420-none-details.png
+TASKS,1,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-1-220x160-none-details.png
+TASKS,1,373,321,none,true,1,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-1-373x321-none-details.png
+TASKS,1,373,420,none,true,1,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-1-373x420-none-details.png
+TASKS,2,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-2-220x160-none-details.png
+TASKS,2,373,321,none,true,2,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-2-373x321-none-details.png
+TASKS,2,373,420,none,true,2,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-2-373x420-none-details.png
+TASKS,3,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-3-220x160-none-details.png
+TASKS,3,373,321,none,true,3,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-3-373x321-none-details.png
+TASKS,3,373,420,none,true,3,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-3-373x420-none-details.png
+TASKS,4,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-4-220x160-none-details.png
+TASKS,4,373,321,none,true,3,1 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-4-373x321-none-details.png
+TASKS,4,373,420,none,true,4,,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-4-373x420-none-details.png
+TASKS,8,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-8-220x160-none-details.png
+TASKS,8,373,321,none,true,3,5 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-8-373x321-none-details.png
+TASKS,8,373,420,none,true,5,3 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-8-373x420-none-details.png
+TASKS,10,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-10-220x160-none-details.png
+TASKS,10,373,321,none,true,3,7 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-10-373x321-none-details.png
+TASKS,10,373,420,none,true,5,5 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-10-373x420-none-details.png
+TASKS,50,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-50-220x160-none-details.png
+TASKS,50,373,321,none,true,3,47 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-50-373x321-none-details.png
+TASKS,50,373,420,none,true,5,45 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-50-373x420-none-details.png
+TASKS,500,220,160,none,true,0,absent,absent,absent,absent,absent,tasks-500-220x160-none-details.png
+TASKS,500,373,321,none,true,3,497 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-500-373x321-none-details.png
+TASKS,500,373,420,none,true,5,495 more,Capture,0:0:595:126,595:0:789:126,789:0:915:126,tasks-500-373x420-none-details.png

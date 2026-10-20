@@ -1,0 +1,5 @@
+kind,count,width_dp,height_dp,feedback,show_details,visible_rows,image
+HABITS,4,373,321,undo,true,2,habits-4-373x321-undo-details.png
+HABITS,4,373,321,retry,true,1,habits-4-373x321-retry-details.png
+TASKS,4,373,321,undo,true,2,tasks-4-373x321-undo-details.png
+TASKS,4,373,321,retry,true,1,tasks-4-373x321-retry-details.png

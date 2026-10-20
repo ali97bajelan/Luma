@@ -1,5 +1,11 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true" android:drawable="@drawable/widget_button_background" />
-    <item android:state_focused="true" android:drawable="@drawable/widget_button_background" />
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="16dp" />
+            <stroke android:width="2dp" android:color="@color/widget_focus_ring_light" />
+        </shape>
+    </item>
     <item android:drawable="@android:color/transparent" />
 </selector>
