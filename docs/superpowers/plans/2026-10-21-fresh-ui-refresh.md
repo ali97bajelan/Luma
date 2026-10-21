@@ -11,7 +11,7 @@
 **Spec:** [Fresh UI refresh design](../specs/2026-10-21-fresh-ui-refresh-design.md)
 **Tasks:** [Task catalog](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH-TASKS.md)
 **Source review:** [Fresh UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH.md)
-**Status:** FRESH-001 through FRESH-004 implementations are in place; verification remains pending by user request. FRESH-005–006 have not started.
+**Status:** FRESH-001 through FRESH-005 implementations are in place; Gradle and emulator verification are deferred at the user's request. FRESH-006 has not started.
 
 ## Global Constraints
 
@@ -174,11 +174,11 @@ Substitute the exact class/method named in the task. Expected result: the select
 - Consumes: FRESH-001 `LumaChoiceRow`, existing icons, and current More/QuickCaptureSheet callbacks.
 - Produces: unchanged `MoreRoute` and `QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit, onMood: (LocalDate?) -> Unit, onJournal: (LocalDate?) -> Unit, onMemory: (LocalDate?) -> Unit, onTask: (() -> Unit)? = null)` contracts. No new route, chooser, or domain state is introduced.
 
-- [ ] **Step 1:** Add `QuickCaptureSheetTest.dateChoiceAppliesOnlyToLifeRecords`: use callback collectors and a historical `browsedDate`, click each record choice with Now/selected date, and assert exactly one matching callback with null/the selected date respectively. Task increments only its undated callback; dismiss increments only dismissal. Add `largeRtlChoicesAndCloseRemainReachable` with long localized labels and verify scrolling can reach and click the final choice/Close exactly once.
-- [ ] **Step 2:** Replace `MoreEntry`'s outlined cards with neutral shared choice rows. Preserve task availability, title/description/tag resources, ordering, and callbacks. Keep AppPageScaffold and apply the shared reading width without duplicate padding.
-- [ ] **Step 3:** Replace Quick Capture buttons with the specified four icon choice rows and spacing. Keep date chips, grouping text, expanded sheet state, scroll/back/close behavior, optional Task, and every existing `capture_*` tag. Add explicit 48 dp minimum targets to date-choice chips and Close.
-- [ ] **Step 4:** Run the new sheet tests and `AppNavigationTest.moreOpensPeoplePlacesAndSettingsWithBackToMore`, `pastDayCaptureStartsExpandedAndKeepsEachDateChoice`, and `dataWidgetCaptureUsesOneCurrentTimeChooserFromEitherProvider`. Extend the direct sheet fixture with state restoration: select the browsed date, restore composition, and assert the next record callback still receives that date.
-- [ ] **Step 5:** Inspect the sheet from Timeline and Review, including a historical day and optional Task omitted; record acceptance results. Suggested commit: `feat(ui): unify destination and capture choice rows`.
+- [ ] **Step 1 (deferred by user request):** Add `QuickCaptureSheetTest.dateChoiceAppliesOnlyToLifeRecords`: use callback collectors and a historical `browsedDate`, click each record choice with Now/selected date, and assert exactly one matching callback with null/the selected date respectively. Task increments only its undated callback; dismiss increments only dismissal. Add `largeRtlChoicesAndCloseRemainReachable` with long localized labels and verify scrolling can reach and click the final choice/Close exactly once. No test source or test run was added.
+- [x] **Step 2:** Replace `MoreEntry`'s outlined cards with neutral shared choice rows. Preserve task availability, title/description/tag resources, ordering, and callbacks. Keep AppPageScaffold and apply the shared reading width without duplicate padding.
+- [x] **Step 3:** Replace Quick Capture buttons with the specified four icon choice rows and spacing. Keep date chips, grouping text, expanded sheet state, scroll/back/close behavior, optional Task, and every existing `capture_*` tag. Add explicit 48 dp minimum targets to date-choice chips and Close.
+- [ ] **Step 4 (verification deferred by user request):** Run the new sheet tests and `AppNavigationTest.moreOpensPeoplePlacesAndSettingsWithBackToMore`, `pastDayCaptureStartsExpandedAndKeepsEachDateChoice`, and `dataWidgetCaptureUsesOneCurrentTimeChooserFromEitherProvider`. Extend the direct sheet fixture with state restoration: select the browsed date, restore composition, and assert the next record callback still receives that date. No Gradle or emulator tests were run.
+- [ ] **Step 5 (visual verification deferred by user request):** Inspect the sheet from Timeline and Review, including a historical day and optional Task omitted; record acceptance results. Suggested commit: `feat(ui): unify More and Quick Capture choice rows`.
 
 <a id="fresh-006"></a>
 ## Task FRESH-006: Acknowledge confirmed saves and animate confirmed progress
