@@ -2,7 +2,7 @@
 
 **Date:** 21 October 2026
 **Source:** [Fresh UI/UX review](APP_FLOW_UX_REVIEW_2026-10-21-FRESH.md)
-**Status:** FRESH-001 through FRESH-006 implementations are in place; Gradle and emulator verification are deferred at the user's request.
+**Status:** FRESH-001 through FRESH-006 implementations are in place. Verification has started; current results and gaps are recorded in the [validation report](FRESH_UI_REFRESH_2026-10-21-VALIDATION.md).
 
 This package develops the fresh review's recommended visual refresh. It preserves the current five destinations and product behavior. Earlier review documents and their task IDs are not prerequisites for this package.
 
@@ -13,12 +13,12 @@ This package develops the fresh review's recommended visual refresh. It preserve
 
 | ID | Deliverable | Review findings | Dependencies | Specification | Implementation plan | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| FRESH-001 | Shared surfaces, typography roles, spacing, and accessible choice rows | 5, 6 | None | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-001) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-001) | Implemented; verification deferred at user request |
-| FRESH-002 | Compact Today previews and coherent habit presentation | 1, 2 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-002) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-002) | Implemented; verification deferred at user request |
-| FRESH-003 | Timeline header with direct search and expandable view options | 3 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-003) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-003) | Implemented; Gradle and emulator verification deferred at user request |
-| FRESH-004 | Modular Weekly Review overview with quieter setup information | 4 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-004) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-004) | Implemented; Gradle and emulator verification deferred at user request |
-| FRESH-005 | Consistent More destinations and compact Quick Capture choices | 5 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-005) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-005) | Implemented; Gradle and emulator verification deferred at user request |
-| FRESH-006 | Confirmed save acknowledgement and restrained habit progress motion | 6 | FRESH-001, FRESH-002 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-006) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-006) | Implemented; Gradle and emulator verification deferred at user request |
+| FRESH-001 | Shared surfaces, typography roles, spacing, and accessible choice rows | 5, 6 | None | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-001) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-001) | Implemented; build/lint pass and partial emulator verification; component semantics tests absent |
+| FRESH-002 | Compact Today previews and coherent habit presentation | 1, 2 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-002) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-002) | Implemented; fixture walkthrough passed; two HabitCaptureFlowTest assertions remain failing |
+| FRESH-003 | Timeline header with direct search and expandable view options | 3 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-003) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-003) | Implemented; collapsed/expanded walkthrough passed; Timeline tests need updates and Persian large-text date clipping is confirmed |
+| FRESH-004 | Modular Weekly Review overview with quieter setup information | 4 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-004) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-004) | Implemented; empty and populated emulator walkthroughs passed; full acceptance matrix remains incomplete |
+| FRESH-005 | Consistent More destinations and compact Quick Capture choices | 5 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-005) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-005) | Implemented; More and historical Quick Capture walkthroughs passed; callback tests absent and navigation teardown test fails |
+| FRESH-006 | Confirmed save acknowledgement and restrained habit progress motion | 6 | FRESH-001, FRESH-002 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-006) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-006) | Implemented; one confirmed save acknowledgement observed and count/undo flow passed; animation and acknowledgement regression tests absent |
 
 FRESH-001 supplies shared components. FRESH-002 through FRESH-005 can be delivered individually after that foundation; shared-file edits should have one implementation owner. FRESH-006 follows the habit presentation change. Integrated verification follows all six tasks.
 

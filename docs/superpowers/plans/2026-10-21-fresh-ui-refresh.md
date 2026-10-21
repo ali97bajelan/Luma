@@ -11,7 +11,7 @@
 **Spec:** [Fresh UI refresh design](../specs/2026-10-21-fresh-ui-refresh-design.md)
 **Tasks:** [Task catalog](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH-TASKS.md)
 **Source review:** [Fresh UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH.md)
-**Status:** FRESH-001 through FRESH-006 implementations are in place; Gradle and emulator verification are deferred at the user's request.
+**Status:** FRESH-001 through FRESH-006 implementations are in place. Verification has been run partially; see the [validation report](../../FRESH_UI_REFRESH_2026-10-21-VALIDATION.md) for passing checks, failures, and remaining work.
 
 ## Global Constraints
 
@@ -152,12 +152,12 @@ Substitute the exact class/method named in the task. Expected result: the select
 - Consumes: existing `WeeklyReview`, `ReviewHabitsState?`, `IntegrationAvailabilityState`, callbacks, `mostSampledActivity`, and `reviewUsageCoverageSummary`.
 - Produces: `ReviewOverviewSignals(report, availability, onSources, onIntegrations)` and `ReviewOverviewMemory(report, repository, onEvent)` with the exact typed signatures in [FRESH-004](../specs/2026-10-21-fresh-ui-refresh-design.md#fresh-004). `ReviewOverview` and existing section/metric keys remain source-compatible.
 
-- [ ] **Step 1 (test coverage pending):** Add the planned overview-order and collapsed-setup regression tests. No test source was added in this implementation; Gradle and emulator test execution was deferred at the user's request.
+- [ ] **Step 1 (test coverage pending):** Add the planned overview-order and collapsed-setup regression tests. No test source was added in this implementation; the existing review flow tests ran in the combined instrumentation pass. See the validation report.
 - [x] **Step 2:** Extract latest memory and saved signals into the two specified files. Preserve the memory observation's paging offset, stored-content route, error/retry behavior, and time formatter; keep `mostSampledActivity` and `reviewUsageCoverageSummary` callable from their current package. Do not add repository requests for the split signal cards.
 - [x] **Step 3:** Recompose `ReviewOverview` into the specified three modules. Apply Reflective tone only to an available saved memory; use ordinary body-size absence messages in signals and group setup explanations behind the named disclosure. Consolidate the overview integration callbacks under `review_overview_integrations` and add localized module/setup labels. No existing test assertions referenced the two retired integration tags.
 - [x] **Step 4 (implementation):** Align `ReviewHeader` title roles and `ReviewSection` surfaces; apply reading width in `WeeklyReviewRoute` without inserting/removing top-level lazy keys.
-- [ ] **Step 4 (verification deferred):** Run the new tests plus `overviewKeepsMissingAndRecordedZeroDistinct`, `overviewShowsSavedSamplesActivitySourceAndLinkedCatalogCounts`, `overviewShowsNewestMemoryFromPagedSources`, `sectionControlsScrollToTheirHeadings`, `sectionSelectionRestoresWithoutChangingTheSelectedWeek`, and `finalReviewActionScrollsAboveCaptureFab`. Add a fractional-activity assertion to the existing numeric fixture if it does not already cover one. These Gradle checks were not run at the user's request.
-- [ ] **Step 5 (visual verification deferred):** Inspect empty/populated/partial weeks, a failed memory load, and Persian large text; record acceptance results. Suggested commit: `feat(ui): split weekly overview into readable modules`.
+- [ ] **Step 4 (partial verification):** The planned review class ran in the combined instrumentation pass; see the validation report for overall results. New overview-order and collapsed-setup regressions and the fractional-activity assertion remain pending.
+- [ ] **Step 5 (partial visual verification):** Empty and populated review overviews were inspected. Partial weeks, failed memory loading, and the full Persian large-text acceptance matrix remain pending; see the validation report. Suggested commit: `feat(ui): split weekly overview into readable modules`.
 
 <a id="fresh-005"></a>
 ## Task FRESH-005: Align More and Quick Capture
@@ -174,11 +174,11 @@ Substitute the exact class/method named in the task. Expected result: the select
 - Consumes: FRESH-001 `LumaChoiceRow`, existing icons, and current More/QuickCaptureSheet callbacks.
 - Produces: unchanged `MoreRoute` and `QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit, onMood: (LocalDate?) -> Unit, onJournal: (LocalDate?) -> Unit, onMemory: (LocalDate?) -> Unit, onTask: (() -> Unit)? = null)` contracts. No new route, chooser, or domain state is introduced.
 
-- [ ] **Step 1 (deferred by user request):** Add `QuickCaptureSheetTest.dateChoiceAppliesOnlyToLifeRecords`: use callback collectors and a historical `browsedDate`, click each record choice with Now/selected date, and assert exactly one matching callback with null/the selected date respectively. Task increments only its undated callback; dismiss increments only dismissal. Add `largeRtlChoicesAndCloseRemainReachable` with long localized labels and verify scrolling can reach and click the final choice/Close exactly once. No test source or test run was added.
+- [ ] **Step 1 (test coverage pending):** Add `QuickCaptureSheetTest.dateChoiceAppliesOnlyToLifeRecords` and `largeRtlChoicesAndCloseRemainReachable` as specified above; no test source was added. The existing UI walkthrough is recorded in the validation report.
 - [x] **Step 2:** Replace `MoreEntry`'s outlined cards with neutral shared choice rows. Preserve task availability, title/description/tag resources, ordering, and callbacks. Keep AppPageScaffold and apply the shared reading width without duplicate padding.
 - [x] **Step 3:** Replace Quick Capture buttons with the specified four icon choice rows and spacing. Keep date chips, grouping text, expanded sheet state, scroll/back/close behavior, optional Task, and every existing `capture_*` tag. Add explicit 48 dp minimum targets to date-choice chips and Close.
-- [ ] **Step 4 (verification deferred by user request):** Run the new sheet tests and `AppNavigationTest.moreOpensPeoplePlacesAndSettingsWithBackToMore`, `pastDayCaptureStartsExpandedAndKeepsEachDateChoice`, and `dataWidgetCaptureUsesOneCurrentTimeChooserFromEitherProvider`. Extend the direct sheet fixture with state restoration: select the browsed date, restore composition, and assert the next record callback still receives that date. No Gradle or emulator tests were run.
-- [ ] **Step 5 (visual verification deferred by user request):** Inspect the sheet from Timeline and Review, including a historical day and optional Task omitted; record acceptance results. Suggested commit: `feat(ui): unify More and Quick Capture choice rows`.
+- [ ] **Step 4 (partial verification):** Existing navigation coverage ran; `dataWidgetCaptureUsesOneCurrentTimeChooserFromEitherProvider` failed during ActivityScenario teardown. The planned sheet callback/state-restoration tests are absent. See the validation report.
+- [ ] **Step 5 (partial visual verification):** The sheet was inspected from Timeline on a historical day and from Review on today. The optional-Task-omitted and recreation cases remain pending. See the validation report. Suggested commit: `feat(ui): unify More and Quick Capture choice rows`.
 
 <a id="fresh-006"></a>
 ## Task FRESH-006: Acknowledge confirmed saves and animate confirmed progress
@@ -198,21 +198,22 @@ Substitute the exact class/method named in the task. Expected result: the select
 - Consumes: existing `EntryEditorResult.Saved/Deleted/Unmarked`, `consumeEntryEditorResult()`, app-level coroutine scope/SnackbarHostState, and confirmed `HabitDay` counts.
 - Produces: one short acknowledgement at the existing result-consumption boundary, with no new domain result types or persistence; `internal suspend fun acknowledgeSavedEntry(result: EntryEditorResult, snackbarHostState: SnackbarHostState, message: String)` implements the host-priority policy. `HabitProgressContent(day: HabitDay)` remains source-compatible.
 
-- [ ] **Step 1 (tests deferred by user request):** The planned `EntrySaveFeedbackTest` coverage for a confirmed save and failed-save draft retention was not added or run.
+- [ ] **Step 1 (test coverage pending):** The planned `EntrySaveFeedbackTest` coverage for confirmed save and failed-save draft retention is absent; see the validation report for checks that did run.
 - [x] **Step 2:** Implement `acknowledgeSavedEntry` with the result/host policy from the spec. Resolve `entry_saved_feedback` in composition; after normal consumed-result navigation, launch this helper through the existing app-level scope. Do not await the optional record lookup or alter its selected-date behavior. Add the specified copy in all three locales.
-- [ ] **Step 3 (tests deferred by user request):** The planned capture-flow acknowledgement assertions, recreation check, active-snackbar priority check, and Deleted/Unmarked helper checks were not added or run.
+- [ ] **Step 3 (test coverage pending):** Capture-flow acknowledgement, recreation, active-snackbar priority, and Deleted/Unmarked helper assertions remain pending; see the validation report.
 - [x] **Step 4 (implementation):** In `HabitProgressContent`, remember the visual animation per habit ID/date and animate only later confirmed fraction changes for 180 ms. First observation/date/target change starts at the actual fraction. Expose the confirmed fraction in progress semantics and clear duplicate animated-child progress semantics; numeric labels use the actual count. Pending writes continue to leave the repository count unchanged.
-- [ ] **Step 5 (verification deferred by user request):** No Gradle or emulator tests were run; the enabled/disabled animation, confirmed increment/undo, pending/failure, and TalkBack scenarios remain unverified. No validation note is created without actual check results. Suggested commit: `feat(ui): acknowledge saved entries and animate confirmed progress`.
+- [ ] **Step 5 (partial verification):** A confirmed save acknowledgement and count/undo flow were observed. The enabled/disabled animation, pending/failure, snackbar priority, and TalkBack scenarios remain unverified; see the validation report. Suggested commit: `feat(ui): acknowledge saved entries and animate confirmed progress`.
 
 ## Integrated completion checks
 
-- [ ] Run the integrated build/resource/lint pass once after the tasks; repeat only for new edits or failures:
+- [x] Run the integrated build/resource/lint pass once after the tasks; repeat only for new edits or failures:
 
 ```bash
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
 ```
 
 Expected: `BUILD SUCCESSFUL`, no new lint errors, and both application/test APKs produced.
+**Result:** Passed with `bash ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug --console=plain`.
 
 - [ ] Run one combined instrumentation pass over the changed/new test classes plus the relevant navigation/inset regressions:
 
@@ -221,10 +222,11 @@ Expected: `BUILD SUCCESSFUL`, no new lint errors, and both application/test APKs
 ```
 
 Expected: all selected regressions pass. Do not expand to unrelated integration/provider/widget suites unless a changed shared component creates a concrete unresolved concern.
+**Result:** The 16 existing classes ran 82 tests with 9 failures; a focused rerun ran 39 tests with 8 failures. Three planned test classes are absent. See the validation report.
 
-- [ ] Use the dedicated two-habit/three-task/one-entry fixture from the spec for one ordinary visit per affected screen, not a separate new dataset per task. Capture Today, Timeline, Habits, Weekly Review, More, and Quick Capture at 411 × 891 dp/1.0 English in Light and Dark. Exercise empty/error/recovery states where changed, using controlled fixtures without clearing personal data.
-- [ ] Repeat the affected controls at 320 dp/2.0 in French and Persian RTL, inspect a centered 840 dp-wide window, and check TalkBack names/state/action separation, contrast, and final-row FAB clearance. Restore the original emulator settings.
-- [ ] Create `docs/FRESH_UI_REFRESH_2026-10-21-VALIDATION.md` **during implementation** with actual commands/results, device/build identity, screenshots, acceptance outcomes, and pending matrix cases. Do not create it now with invented pass results.
+- [ ] Use the dedicated two-habit/three-task/one-entry fixture from the spec for one ordinary visit per affected screen, not a separate new dataset per task. Capture Today, Timeline, Habits, Weekly Review, More, and Quick Capture at 411 × 891 dp/1.0 English in Light and Dark. Exercise empty/error/recovery states where changed, using controlled fixtures without clearing personal data. **Result:** The controlled fixture and all six screens were inspected; Today was captured in Light and Dark, while the remaining screens were not all captured in both themes and error/recovery coverage remains incomplete.
+- [ ] Repeat the affected controls at 320 dp/2.0 in French and Persian RTL, inspect a centered 840 dp-wide window, and check TalkBack names/state/action separation, contrast, and final-row FAB clearance. Restore the original emulator settings. **Result:** French/Persian wrapping and 840 dp reading width were inspected; Persian Timeline clipping was found. TalkBack and contrast checks remain pending. Emulator settings were restored.
+- [x] Create `docs/FRESH_UI_REFRESH_2026-10-21-VALIDATION.md` with actual commands/results, device/build identity, screenshots, acceptance outcomes, and pending matrix cases.
 - [ ] Run `git diff --check`, inspect the final diff for unintentional behavioral changes, and update the task catalog with real completion/verification status. Every declared completion must be backed by the recorded checks.
 
 ## Planning self-review
