@@ -29,8 +29,10 @@ import com.luma.lifeos.ui.navigation.consumeCatalogEditorDelivery
 import com.luma.lifeos.ui.navigation.readCatalogEditorDelivery
 import com.luma.lifeos.R
 import java.time.Instant
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.LocalDate
 import java.time.ZoneId
@@ -67,7 +69,9 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
     }
     LaunchedEffect(state.completionEventId) {
         if (state.completionEventId != null && editor.acknowledgeCompletion()) {
-            finish(state.deleted, state.draft.occurredAtMillis)
+            withContext(Dispatchers.Main.immediate) {
+                finish(state.deleted, state.draft.occurredAtMillis)
+            }
         }
     }
     LaunchedEffect(
@@ -135,8 +139,10 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
         cancelAfterDiscard = true
         scope.launch {
             if (editor.discardDraft()) {
-                cancelAfterDiscard = false
-                onCancel()
+                withContext(Dispatchers.Main.immediate) {
+                    cancelAfterDiscard = false
+                    onCancel()
+                }
             }
         }
     }
@@ -144,10 +150,14 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
         scope.launch {
             val completionId = state.completionEventId
             if (completionId != null) {
-                if (editor.acknowledgeCompletion()) finish(state.deleted, state.draft.occurredAtMillis)
+                if (editor.acknowledgeCompletion()) withContext(Dispatchers.Main.immediate) {
+                    finish(state.deleted, state.draft.occurredAtMillis)
+                }
             } else if (editor.retryDraftStorage() && cancelAfterDiscard) {
-                cancelAfterDiscard = false
-                onCancel()
+                withContext(Dispatchers.Main.immediate) {
+                    cancelAfterDiscard = false
+                    onCancel()
+                }
             }
         }
     }

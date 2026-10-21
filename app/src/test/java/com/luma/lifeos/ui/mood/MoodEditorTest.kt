@@ -45,6 +45,7 @@ class MoodEditorTest {
         val editor = MoodEditorViewModel(repo, null, SavedStateHandle(), clock)
         advanceUntilIdle()
         editor.setScore(4)
+        advanceUntilIdle()
         editor.save(); editor.save()
         advanceUntilIdle()
         assertEquals(1, repo.records.size)
@@ -62,6 +63,7 @@ class MoodEditorTest {
         advanceUntilIdle()
         editor.setScore(2); editor.setEnergy(5); editor.setStress(1); editor.setNote("A note")
         repo.emotions.forEach { editor.toggleEmotion(it.id) }
+        advanceUntilIdle()
         editor.save(); advanceUntilIdle()
         assertEquals(MoodEditorError.SAVE, editor.state.value.error)
         assertEquals("A note", editor.state.value.draft.note)
@@ -155,6 +157,7 @@ class MoodEditorTest {
         val editor = MoodEditorViewModel(repo, null, handle, clock)
         advanceUntilIdle()
         editor.setScore(4); editor.setNote("Keep this draft")
+        advanceUntilIdle()
         repo.failLoading = true
         val restored = MoodEditorViewModel(repo, null, handle, clock)
         assertTrue("Discard must confirm even before loading finishes", restored.state.value.hasChanges)
@@ -168,8 +171,8 @@ class MoodEditorTest {
         val handle = SavedStateHandle()
         val editor = MoodEditorViewModel(repo, null, handle, clock)
         advanceUntilIdle()
-        editor.setScore(4); editor.save(); advanceUntilIdle()
-        editor.setNote("New draft value")
+        editor.setScore(4); advanceUntilIdle(); editor.save(); advanceUntilIdle()
+        editor.setNote("New draft value"); advanceUntilIdle()
         repo.failAfterCreate = false
         val restored = MoodEditorViewModel(repo, null, handle, clock)
         advanceUntilIdle()
@@ -185,7 +188,7 @@ class MoodEditorTest {
         val handle = SavedStateHandle()
         val person = java.util.UUID.randomUUID()
         val editor = MoodEditorViewModel(repo, null, handle, clock)
-        advanceUntilIdle(); editor.setScore(4); editor.togglePerson(person)
+        advanceUntilIdle(); editor.setScore(4); editor.togglePerson(person); advanceUntilIdle()
         val restored = MoodEditorViewModel(repo, null, handle, clock)
         advanceUntilIdle()
         assertEquals(setOf(person), restored.state.value.draft.personIds)
@@ -194,7 +197,7 @@ class MoodEditorTest {
         val editing = MoodEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock)
         advanceUntilIdle()
         assertEquals(setOf(person), editing.state.value.draft.personIds)
-        editing.togglePerson(person); editing.save(); advanceUntilIdle()
+        editing.togglePerson(person); advanceUntilIdle(); editing.save(); advanceUntilIdle()
         assertEquals(emptySet<java.util.UUID>(), repo.submittedPeople)
     }
 
@@ -205,7 +208,7 @@ class MoodEditorTest {
         val editor = MoodEditorViewModel(repo, null, handle, clock)
         advanceUntilIdle(); editor.setScore(4)
         assertNull(editor.state.value.draft.placeId)
-        editor.setPlace(place)
+        editor.setPlace(place); advanceUntilIdle()
         val restored = MoodEditorViewModel(repo, null, handle, clock)
         advanceUntilIdle()
         assertEquals(place, restored.state.value.draft.placeId)
@@ -214,7 +217,7 @@ class MoodEditorTest {
         val editing = MoodEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock)
         advanceUntilIdle()
         assertEquals(place, editing.state.value.draft.placeId)
-        editing.setPlace(null); editing.save(); advanceUntilIdle()
+        editing.setPlace(null); advanceUntilIdle(); editing.save(); advanceUntilIdle()
         assertEquals(PlaceSelection(null), repo.submittedPlace)
         assertNull(repo.records.values.single().place)
     }

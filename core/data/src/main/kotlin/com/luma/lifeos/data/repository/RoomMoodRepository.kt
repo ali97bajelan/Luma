@@ -43,7 +43,7 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
 
     override suspend fun create(id: EventId, input: MoodInput): EventId = database.withTransaction {
         val previous = database.lifeEvents().getDetails(id.toString())
-        val previousNote = previous?.mood?.note.orEmpty()
+        val previousNote = previous?.mood?.entry?.note.orEmpty()
         require(MoodNotePolicy.canAcceptMoodNote(previousNote, input.note.orEmpty())) {
             "Mood note may contain at most ${MoodNotePolicy.LIMIT} UTF-16 units unless it is unchanged or shortened"
         }

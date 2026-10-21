@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.luma.lifeos.LumaApplication
+import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
 import java.time.Instant

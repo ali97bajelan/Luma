@@ -388,6 +388,10 @@ object WidgetRenderer {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
                 "$scopeText\n$updatedText")
         }
+        views.setContentDescription(
+            R.id.widget_data_rows,
+            collectionAccessibilityDescription(appContext, snapshot.instance.kind, snapshot.total),
+        )
         views.setViewVisibility(R.id.widget_data_rows,
             if (snapshot.instance.showDetails && snapshot.total > 0) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_data_scroll_hint, if (showScrollHint) View.VISIBLE else View.GONE)
@@ -436,7 +440,8 @@ object WidgetRenderer {
             setTextViewText(R.id.widget_habit_row_action, appContext.getString(R.string.widget_habit_log_short))
             setContentDescription(
                 R.id.widget_habit_row_action,
-                appContext.getString(R.string.widget_habit_log_description, bidiWrapped(appContext, row.title)),
+                appContext.getString(R.string.widget_habit_log_description, bidiWrapped(appContext, row.title)) +
+                    ", " + count,
             )
             setOnClickFillInIntent(
                 R.id.widget_habit_row_action,
@@ -471,10 +476,11 @@ object WidgetRenderer {
             R.id.widget_task_row_text,
             WidgetIntents.collectionNavigation(row.id, snapshot.date),
         )
-        setTextViewText(R.id.widget_task_row_due, taskDueLabel(appContext, row, snapshot.date))
+        val dueLabel = taskDueLabel(appContext, row, snapshot.date)
+        setTextViewText(R.id.widget_task_row_due, dueLabel)
         setContentDescription(R.id.widget_task_row_text,
             appContext.getString(R.string.widget_task_open_description, bidiWrapped(appContext, row.title)) +
-                ", " + taskDueLabel(appContext, row, snapshot.date))
+                ", " + dueLabel)
 
         val canComplete = row.actionToken != null
         setViewVisibility(R.id.widget_task_row_action, if (canComplete) View.VISIBLE else View.GONE)
@@ -482,7 +488,8 @@ object WidgetRenderer {
             setTextViewText(R.id.widget_task_row_action, appContext.getString(R.string.widget_task_complete))
             setContentDescription(
                 R.id.widget_task_row_action,
-                appContext.getString(R.string.widget_task_complete_description, bidiWrapped(appContext, row.title)),
+                appContext.getString(R.string.widget_task_complete_description, bidiWrapped(appContext, row.title)) +
+                    ", " + dueLabel,
             )
             setOnClickFillInIntent(
                 R.id.widget_task_row_action,
@@ -705,6 +712,16 @@ object WidgetRenderer {
             bidiWrapped(context, context.getString(R.string.widget_view_all_hidden_count, label, total))
         }
     }
+
+    private fun collectionAccessibilityDescription(context: Context, kind: WidgetKind, total: Int): String =
+        when (kind) {
+            WidgetKind.HABITS -> context.resources.getQuantityString(
+                R.plurals.widget_habits_collection_accessibility, total, total,
+            )
+            WidgetKind.TASKS -> context.resources.getQuantityString(
+                R.plurals.widget_tasks_collection_accessibility, total, total,
+            )
+        }
 
     private fun useInlineFeedback(context: Context, widthDp: Int, text: String, result: WidgetActionResult?): Boolean {
         if (result == null || result.outcome !in setOf(WidgetOutcome.SAVED, WidgetOutcome.UNDONE)) return false

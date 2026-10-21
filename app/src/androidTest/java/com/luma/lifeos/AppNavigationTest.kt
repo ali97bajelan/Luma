@@ -141,7 +141,9 @@ class AppNavigationTest {
             compose.onNodeWithTag("capture_now").assertIsSelected()
             compose.onNodeWithTag("capture_$type").performClick()
             awaitTag("screen_$type")
-            compose.onNodeWithTag("capture_timestamp_value").assertTextContains("Today", substring = true)
+            compose.onNodeWithText(
+                compose.activity.getString(R.string.today), substring = true, useUnmergedTree = true,
+            ).assertExists()
             compose.onNodeWithTag("${type}_cancel").performClick()
             awaitTag("screen_timeline")
 
@@ -149,7 +151,7 @@ class AppNavigationTest {
             compose.onNodeWithTag("capture_on_browsed_date").performClick()
             compose.onNodeWithTag("capture_$type").performClick()
             awaitTag("screen_$type")
-            compose.onNodeWithTag("capture_timestamp_value").assertTextContains(yesterdayText, substring = true)
+            compose.onNodeWithText(yesterdayText, substring = true, useUnmergedTree = true).assertExists()
             compose.onNodeWithTag("${type}_cancel").performClick()
             awaitTag("screen_timeline")
         }
@@ -166,7 +168,8 @@ class AppNavigationTest {
         compose.onAllNodesWithTag("capture_sheet").assertCountEquals(1)
         compose.onNodeWithTag("capture_mood").performClick()
         awaitTag("screen_mood")
-        compose.onNodeWithTag("capture_timestamp_value").assertTextContains("Today", substring = true)
+        compose.onNodeWithTag("capture_timestamp_value").assertTextContains(
+            compose.activity.getString(R.string.today), substring = true)
         compose.onNodeWithTag("mood_cancel").performClick()
         awaitTag("screen_timeline")
 
@@ -174,7 +177,8 @@ class AppNavigationTest {
             launchWidgetQuickCapture(51)
             compose.onNodeWithTag("capture_$type").performClick()
             awaitTag("screen_$type")
-            compose.onNodeWithTag("capture_timestamp_value").assertTextContains("Today", substring = true)
+            compose.onNodeWithTag("capture_timestamp_value").assertTextContains(
+                compose.activity.getString(R.string.today), substring = true)
             compose.onNodeWithTag("${type}_cancel").performClick()
             awaitTag("screen_timeline")
         }

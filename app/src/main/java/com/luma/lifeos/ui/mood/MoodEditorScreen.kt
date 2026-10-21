@@ -284,8 +284,10 @@ private fun MoodRecoveryContent(state: MoodEditorState) {
     }
     val selectedEmotions = state.emotions.filter { it.id in state.draft.emotionIds }
     if (selectedEmotions.isNotEmpty()) {
+        val selectedEmotionNames = ArrayList<String>(selectedEmotions.size)
+        for (emotion in selectedEmotions) selectedEmotionNames.add(emotionDisplayName(emotion))
         Text(stringResource(R.string.mood_recovery_emotions,
-            selectedEmotions.joinToString { emotionDisplayName(it) }))
+            selectedEmotionNames.joinToString()))
     }
     if (state.draft.emotionIds.size > selectedEmotions.size) {
         Text(stringResource(R.string.mood_recovery_emotions_unavailable))

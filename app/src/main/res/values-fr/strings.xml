@@ -965,6 +965,16 @@
     <string name="widget_view_all_hidden_count">%1$s, %2$d éléments au total ; les noms sont masqués dans ce widget</string>
     <string name="widget_scroll_for_more">Faites défiler pour voir la suite</string>
     <string name="widget_collection_accessibility">Éléments défilants du widget</string>
+    <plurals name="widget_tasks_collection_accessibility">
+        <item quantity="one">Tâches, %1$d tâche prévue aujourd’hui ou en retard</item>
+        <item quantity="other">Tâches, %1$d tâches prévues aujourd’hui ou en retard</item>
+        <item quantity="many">Tâches, %1$d tâches prévues aujourd’hui ou en retard</item>
+    </plurals>
+    <plurals name="widget_habits_collection_accessibility">
+        <item quantity="one">Habitudes, %1$d habitude prévue à cette date</item>
+        <item quantity="other">Habitudes, %1$d habitudes prévues à cette date</item>
+        <item quantity="many">Habitudes, %1$d habitudes prévues à cette date</item>
+    </plurals>
     <plurals name="widget_more_count">
         <item quantity="one">%1$d de plus</item>
         <item quantity="other">%1$d de plus</item>

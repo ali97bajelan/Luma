@@ -1,7 +1,7 @@
 # Luma Habits and Tasks widgets — visual redesign review
 
 **Date:** 20 October 2026<br>
-**Status:** Design proposal and implementation backlog. WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; **WD15 is partial with device/accessibility evidence gaps open; WD16 is partial with formative research and user sign-off pending.**
+**Status:** Design proposal and implementation backlog. WD09–WD15 and WD17 remain partial. API 36 Gradle/emulator evidence was added 21 October for the widget instrumentation package, collection store, and synthetic renderer matrix. Live launcher scrolling, the wider device/accessibility matrix, and formative research/sign-off remain open under WD15–WD17.
 **Scope:** Improve the existing Habits and Tasks home-screen widgets shown in the supplied screenshot, including vertical scrolling when items exceed the available list area. Retain shared Capture, existing providers, per-instance privacy and dependable recovery. This review remains the design/backlog reference; WD09 and WD10 implementation evidence is linked below.
 
 **User requirement added:** Both data widgets must let users scroll through additional eligible items within the current widget size. Resizing or opening the app must not be required just to reach overflow items. The scrolling contract and WD17 below supersede the earlier static-prefix/eight-candidate proposal.
@@ -180,7 +180,7 @@ TalkBack should encounter title navigation, Capture, Refresh, scope/freshness, f
 
 ## 6. Implementation tasks
 
-WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; WD15 is partial with device/accessibility evidence gaps open; WD16 is partial with formative research and user sign-off pending. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
+WD09 and WD10 are partial; WD11 and WD12 have implementation changes with acceptance evidence pending; WD13, WD14 and WD17 have source changes with acceptance evidence pending; WD15 has a source/evidence review recorded but device/accessibility evidence remains open; WD16 is partial with formative research and user sign-off pending. P1 is the first delivery slice; P2 is follow-up polish within this redesign. Effort is relative: S = one focused area; M = coordinated renderer/layout work; L = device and accessibility matrix. Existing WD01–WD08 history remains intact. Task completion requires the listed evidence, not only a source change.
 
 | ID | Priority / effort | Responsible role | Dependency | Outcome |
 | --- | --- | --- | --- | --- |
@@ -196,7 +196,7 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD09 — Establish a reproducible baseline and tokens
 
-**Status: Partial.** An isolated API 36 run now has before/after synthetic matrices for 0/1/2/3/4/8/10/50/500 at all three bounds, plus separate Undo/Retry renders and light/dark contrast measurements. The capture used `RemoteViews.apply`; the resolved home activity was Settings, so launcher-host evidence and the requested per-state fixture combinations remain open. See the [WD09–WD10 evidence record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md).
+**Status: Partial.** The existing before/after API 36 evidence remains synthetic and offscreen. A 21 October API 36 render archive records both providers at totals 0/1/2/3/4/8/10/50/500 across all three bounds, plus Undo/Retry examples. It used `RemoteViews.apply`; collection rows were not launcher-bound, so launcher-host evidence and fixture-state coverage remain open. See the [WD09–WD10 evidence record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md) and the [21 October WD17 render record](ui-ux-audit/evidence/widgets/wd17-api36-2026-10-21/acceptance.md).
 
 - [ ] On an isolated emulator/test profile, create reusable fictional fixtures for 0/1/2/3/4/8/10/50/500 eligible records, including one long mixed-script title, large counts, reached/skipped habits and overdue tasks. Retain consent and feedback state with each capture; do not mutate personal data for this test.
 - [ ] Record build identity, API, launcher, actual dp bounds, density, locale, font scale, theme and row count. Capture identical fixtures with the current renderer at 220×160, 373×321 and 373×420dp before changes.
@@ -206,9 +206,9 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD10 — Rebuild header hierarchy and metadata grouping
 
-**Status: Partial.** The header now shows the eligible total under the title, renders a visible plain Capture label, separates title/Capture/Refresh targets by 8dp, and groups scope plus dated freshness before feedback and rows. Renderer and contrast checks pass, including en/fr/fa at 100/130/200% text scale. The localized scroll hint stays hidden until WD17 provides a real scrollable collection; launcher-host and assistive runs remain open. See the [WD10 evidence record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md).
+**Status: Partial.** The header shows the eligible total under the title, a plain Capture label, 8dp target gaps, and scope plus dated freshness before feedback and rows. Renderer and contrast checks pass, including en/fr/fa at 100/130/200% text scale; the localized scroll hint is now exercised with WD17's collection. Launcher-host and assistive runs remain open. See the [WD10 evidence record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md) and the [21 October WD17 render record](ui-ux-audit/evidence/widgets/wd17-api36-2026-10-21/acceptance.md).
 
-- [ ] Update `widget_data.xml` and `widget_data_stacked_header.xml`: title with an optional total-count cue, plain labeled Capture, separate Refresh and explicit 8dp target gaps. Keep existing intent destinations; add localized Scroll for more above an overflowing collection where it fits.
+- [x] Update `widget_data.xml` and `widget_data_stacked_header.xml`: title with an optional total-count cue, plain labeled Capture, separate Refresh and explicit 8dp target gaps. Keep existing intent destinations; add localized Scroll for more above an overflowing collection where it fits.
 - [x] Move successful freshness into the metadata group before feedback/rows. Add concise localized scope strings and plural forms in `values`, `values-fr` and `values-fa`; retain explicit dates/zones and old-snapshot wording.
 - [x] Update `WidgetRenderer.kt` header planning, reserved metadata/hint height, total-count visibility and content descriptions; clear removed view bindings on reapply.
 
@@ -216,7 +216,7 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD11 — Separate rows and align habit progress
 
-**Status: Partial.** Row targets, inset fills, between-row spacing, shared habit progress measurement and bidi-safe accessible names are implemented. Acceptance evidence remains pending; no Gradle or emulator tests were run for this update.
+**Status: Partial.** Row targets, inset fills, between-row spacing, shared habit progress measurement and bidi-safe accessible names are implemented. API 36 widget renderer tests now cover row state and descriptions; launcher-host tap geometry and spoken behavior remain open. See the [21 October WD17 render record](ui-ux-audit/evidence/widgets/wd17-api36-2026-10-21/acceptance.md).
 
 - [x] Update `widget_task_row.xml`, `widget_habit_row_inline.xml`, `widget_habit_row.xml` and row mutation drawables with separate full targets, 8dp content/action gaps and inset visual fills. Add 8dp only between rendered rows.
 - [x] Implement the measured progress column and stacked fallback; retain two-line task titles, full accessible names, due state, target reached and skipped copy.
@@ -226,7 +226,7 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD12 — Reconcile measurement, bidi and constrained layouts
 
-**Status: Partial.** The renderer now budgets available row space using header, metadata, progress-column, action and inter-row measurements, and compact recovery retains its required-action priority. Native scrolling and device/fixture evidence remain open under WD17/WD15; no Gradle or emulator tests were run for this update.
+**Status: Partial.** The renderer budgets row space using header, metadata, progress-column, action and inter-row measurements, and compact recovery retains its required-action priority. API 36 captures cover the three synthetic bounds, but launcher measurement and scroll behavior remain open under WD17/WD15. See the [21 October WD17 render record](ui-ux-audit/evidence/widgets/wd17-api36-2026-10-21/acceptance.md).
 
 - [x] Update `WidgetRenderer.kt` and `WidgetLayoutPolicy.kt` to include actual header, metadata, progress-column width, inter-row gaps and remaining collection viewport. Calculate whole-row viewport capacity while preserving repository ordering; the native collection replacing the current fetched-row bound remains WD17.
 - [x] Apply the same measurement tokens and required-action priorities to `WidgetCompactRenderer.kt`, `widget_data_compact.xml`, `widget_data_compact_wide.xml` and other affected shell layouts.
@@ -236,11 +236,13 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD13 — Verify states and persisted actions
 
-**Status: Partial.** Source regressions now cover bounded page ordering/privacy, collection identity and fill-in decoding, ListView/reapplication visibility, overflow hints, action row states, setup privacy, and preview/configuration controls. Existing Capture navigation coverage remains in place. No Gradle, emulator, or launcher tests were run for this update by user instruction; acceptance remains unverified.
+**Status: Partial.** The final JVM/lint/assembly gate, all 35 app widget instrumentation tests, all 152 `core:data` instrumentation tests, and all 7 `WidgetStoreAcceptanceTest` cases passed on API 36. A full app run completed 218 tests with 1 skipped and 7 failures. Two failing cases—the Mood completion lifecycle path and the long-reading fixture—then passed in focused reruns. Five broader failures remain: widget Capture `ActivityScenario` teardown while paused, one Search assertion, and three Todo semantics assertions. The historical-date Capture flow passed; the capture checklist below remains open.
 
 - [x] Extend `WidgetLayoutPolicyTest`, `WidgetRendererAcceptanceTest` and `WidgetIntentsTest` source for collection totals, summary/details, viewport hints, RemoteViews reapplication and the fill-in route contract.
 - [x] Add source coverage for page ordering/reach beyond eight, summary privacy, habit target/skipped state, task completion/recovery states, collection identity and separate navigation/mutation routes.
-- [ ] Run the focused suite/build/lint and verify Capture cold/warm launch, existing draft, historical browsed date, repeated taps, Save/Cancel and undated shared Task semantics. These checks remain blocked only by the requested no-test constraint and are not accepted as passed.
+- [x] Run the focused Gradle suite/build/lint and widget instrumentation on the isolated API 36 emulator; the 35 app widget tests and 7 widget store tests passed.
+- [x] Verify historical browsed-date selection and Mood editor discard/completion navigation on API 36; the focused historical-date and Mood capture tests pass.
+- [ ] Close full Capture acceptance for repeated provider taps, app foreground/background launch behavior, Save/Cancel and undated Task semantics. The widget quick-capture test completes its assertions but fails during `ActivityScenario` teardown with the activity left paused; this case and the remaining app-wide Search/Todo failures keep WD13 partial.
 
 **Acceptance:** recovery remains available independently of visible rows; unknown counts never become zero; summary mode exposes no real names/actions. Focused regressions, app JVM tests, `lintDebug`, debug APK and Android-test APK assembly pass for the changed build. Record exact results; previous pass counts are historical only.
 
@@ -250,13 +252,15 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 - [x] Add localized scroll/resize guidance in setup/discovery and a scroll cue in details previews; keep Save/Cancel, names hidden by default, and existing per-instance consent.
 - [ ] Evaluate a shorter initial placement using verified recovery/content fit before editing provider XML. Preserve existing placement size and legacy capture compatibility; a default-size change is conditional, not required for this slice.
 
-**Status: Partial.** Preview and setup source is updated in en/fr/fa, and the current provider placement size is preserved. Launcher fit, landscape and large-text acceptance remain unverified because no emulator/device tests were run.
+**Status: Partial.** Preview and setup source is updated in en/fr/fa, the provider placement size is preserved, and both configuration-content tests pass on the API 36 emulator. Launcher fit, landscape and large-text acceptance remain unverified.
 
 **Acceptance:** previews do not advertise a fixed row count or expose personal data; smaller examples are achievable on tested launchers. Configuration remains operable in landscape and at 200%.
 
 ### WD15 — Close the device and accessibility evidence gaps
 
-**Status: Partial — evidence inventory updated; device and accessibility acceptance remains open.** The existing [WD09–WD10 record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md) contains synthetic API 36 RemoteViews captures at the three specified bounds, row counts, Undo/Retry states and calculated contrast ratios. It explicitly records that these captures did not use a launcher host. The [WD07–WD08 record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md) has earlier API 36 Pixel Launcher smoke results and measured target bounds, while the [widget UX implementation record](WIDGET_UX_IMPLEMENTATION_2026-10-20.md) links earlier en/fr/fa rendering checks at 100/130/200% text. These records are useful historical evidence, but do not verify post-WD17 scrolling, the full device/launcher matrix, or spoken TalkBack and keyboard behavior. No Gradle or emulator tests/device runs were performed for this update.
+**Status: Partial — API 36 emulator and source/accessibility evidence updated 21 October; launcher and manual accessibility acceptance remains open.** The existing [WD09–WD10 record](ui-ux-audit/evidence/widgets/wd09-wd10-2026-10-20/acceptance.md) contains synthetic API 36 `RemoteViews` captures at the three specified bounds, row counts, Undo/Retry states and calculated contrast ratios. The new [WD17 API 36 render record](ui-ux-audit/evidence/widgets/wd17-api36-2026-10-21/acceptance.md) records the current renderer's fixture matrix and focused instrumentation results. The [WD07–WD08 record](ui-ux-audit/evidence/widgets/wd07-wd08-2026-10-20/acceptance.md) has earlier API 36 Pixel Launcher smoke results and measured target bounds, while the [widget UX implementation record](WIDGET_UX_IMPLEMENTATION_2026-10-20.md) links earlier en/fr/fa rendering checks at 100/130/200% text. These records do not establish post-WD17 launcher-host scrolling, the full device/launcher matrix, or spoken TalkBack and keyboard behavior.
+
+**Source and automated review — 21 October 2026:** The regular and stacked layouts provide a native `ListView`, a vertical scrollbar and a localized scroll hint. The adapter reports the eligible collection total and gives rows stable item identities; row navigation and mutation are separate targets with item-specific action descriptions. Capture and Refresh also have localized descriptions. The collection accessibility label now identifies Tasks or Habits and announces the total; task actions include due context and habit logging actions include current progress. `WidgetRendererAcceptanceTest` asserts these descriptions, and the full widget instrumentation package passes on API 36. These automated checks cannot establish actual TalkBack speech, focus order, keyboard/D-pad traversal, swipe behavior, or launcher-host scroll restoration. The earlier contrast measurements are recorded evidence for the selected colors, but do not verify spoken access or final host rendering. WD15 remains partial; device-dependent checklist items below stay open.
 
 - [ ] Re-run WD09's exact fixtures after implementation and retain before/after screenshots, row counts and target bounds. Include no feedback, Undo and Retry; report any capacity tradeoff explicitly.
 - [ ] Cover API 28/35/36, Pixel Launcher plus a second available launcher, actual landscape, light/dark, en/fr/fa, 100/130/200% text, maximum display size and duplicate same-provider instances. Record unsupported combinations rather than marking them passed.
@@ -278,14 +282,15 @@ WD09 and WD10 are partial; WD11 and WD12 have implementation changes with accept
 
 ### WD17 — Add native vertical scrolling to both data widgets
 
-**Status: Partial.** Both data layouts now use per-widget native ListView adapters with a 32-row page API, identity-bound fill-in routes, privacy checks and fixed recovery controls. Source checks were added, but no Gradle/emulator/launcher or accessibility acceptance was run. Scroll persistence and host behavior remain to be confirmed on supported launchers.
+**Status: Partial.** Both data layouts use per-widget native `ListView` adapters with a 32-row page API, identity-bound fill-in routes, privacy checks and fixed recovery controls. The API 36 emulator passes all 35 app widget tests and all 7 widget store tests. The 54-image render matrix and four recovery captures are archived, but use offscreen `RemoteViews.apply`; they do not exercise a launcher host. Scroll persistence and host behavior remain to be confirmed on supported launchers.
 
 - [x] Replace `widget_data_rows`' static child container in the regular and stacked layouts with a bounded native ListView collection. Keep fixed header/metadata/feedback outside it, preserve 8dp row gaps and use the compact fallback when no usable row viewport fits. Hidden-details instances return no adapter rows.
 - [x] Add the collection service/factory, manifest registration and per-widget adapter identity. Use stable collision-resolved record IDs and the expected row view-type count.
 - [x] Add ordered task/habit page queries and a bounded store page API. Preserve current scope/order and persisted command token guarantees; the old snapshot prefix is no longer the rendered dataset.
 - [x] Route collection navigation and mutations through explicit fill-in intents carrying row identity/date/token; validate the live widget, current item scope and persisted command identity. Dispatch by item identity, never adapter position.
 - [x] Notify the same adapter after refresh and configuration changes; keep Undo/Retry outside the collection. Existing provider refresh/removal/restore paths remain active.
-- [ ] Run adapter/store/intent tests and actual launcher scrolling for overflow, large data, reapplication, duplicate instances, load failure, mixed scripts and offscreen accessibility. Record memory/update-time evidence and verify scroll preservation; these checks remain open.
+- [x] Run adapter/store/intent tests and renderer/configuration checks on API 36; the app widget package passes 35/35 and `WidgetStoreAcceptanceTest` passes 7/7.
+- [ ] Verify actual launcher scrolling for overflow, large data, reapplication, duplicate instances, load failure, mixed scripts and offscreen accessibility. Record memory/update-time evidence and scroll preservation; these checks remain open.
 
 **Acceptance:** At unchanged 373×321dp and 373×420dp bounds, users can scroll to and act on every eligible record in 10/50/500-item fixtures for both providers, including beyond item eight. No resizing or app opening is needed to reach overflow. Capture/Refresh and Undo/Retry stay fixed and usable. Swipes never mutate data. Row navigation and mutation remain distinct after recycling/refresh. Small datasets have no unnecessary scroll hint, hidden-details mode exposes no records, and undersized viewports use the documented compact fallback. API 28/35/36, a second launcher, RTL, 200% text and assistive scrolling must be evidenced before acceptance.
 

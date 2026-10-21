@@ -951,6 +951,14 @@
     <string name="widget_view_all_hidden_count">%1$s, %2$d items total; names are hidden in this widget</string>
     <string name="widget_scroll_for_more">Scroll for more</string>
     <string name="widget_collection_accessibility">Scrollable widget items</string>
+    <plurals name="widget_tasks_collection_accessibility">
+        <item quantity="one">Tasks, %1$d task due today or overdue</item>
+        <item quantity="other">Tasks, %1$d tasks due today or overdue</item>
+    </plurals>
+    <plurals name="widget_habits_collection_accessibility">
+        <item quantity="one">Habits, %1$d habit scheduled for this date</item>
+        <item quantity="other">Habits, %1$d habits scheduled for this date</item>
+    </plurals>
     <plurals name="widget_more_count">
         <item quantity="one">%1$d more</item>
         <item quantity="other">%1$d more</item>

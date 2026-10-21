@@ -952,6 +952,14 @@
     <string name="widget_view_all_hidden_count">%1$s، در مجموع %2$d مورد؛ نام‌ها در این ویجت پنهان هستند</string>
     <string name="widget_scroll_for_more">برای دیدن موارد بیشتر پیمایش کنید</string>
     <string name="widget_collection_accessibility">موارد پیمایشی ویجت</string>
+    <plurals name="widget_tasks_collection_accessibility">
+        <item quantity="one">کارها، %1$d کار با موعد امروز یا عقب‌افتاده</item>
+        <item quantity="other">کارها، %1$d کار با موعد امروز یا عقب‌افتاده</item>
+    </plurals>
+    <plurals name="widget_habits_collection_accessibility">
+        <item quantity="one">عادت‌ها، %1$d عادت برنامه‌ریزی‌شده برای این تاریخ</item>
+        <item quantity="other">عادت‌ها، %1$d عادت برنامه‌ریزی‌شده برای این تاریخ</item>
+    </plurals>
     <plurals name="widget_more_count">
         <item quantity="one">%1$d مورد دیگر</item>
         <item quantity="other">%1$d مورد دیگر</item>

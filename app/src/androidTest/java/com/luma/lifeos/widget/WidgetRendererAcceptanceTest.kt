@@ -255,7 +255,8 @@ class WidgetRendererAcceptanceTest {
         layoutAtBounds(root, context, 373, 420)
         val collection = root.findViewById<ListView>(R.id.widget_data_rows)
         assertEquals(View.VISIBLE, collection.visibility)
-        assertEquals(context.getString(R.string.widget_collection_accessibility), collection.contentDescription)
+        org.junit.Assert.assertTrue(collection.contentDescription.toString().contains("Tasks"))
+        org.junit.Assert.assertTrue(collection.contentDescription.toString().contains("10"))
         assertEquals(View.VISIBLE, root.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
 
         val expandedRoot = WidgetRenderer.render(context, 51, snapshot, false, expandedBounds()).apply(context, null)
@@ -278,7 +279,10 @@ class WidgetRendererAcceptanceTest {
         )
         val habitRoot = WidgetRenderer.render(context, 56, habitSnapshot, false, bounds(373, 420)).apply(context, null)
         layoutAtBounds(habitRoot, context, 373, 420)
-        assertEquals(View.VISIBLE, habitRoot.findViewById<ListView>(R.id.widget_data_rows).visibility)
+        val habitCollection = habitRoot.findViewById<ListView>(R.id.widget_data_rows)
+        assertEquals(View.VISIBLE, habitCollection.visibility)
+        org.junit.Assert.assertTrue(habitCollection.contentDescription.toString().contains("Habits"))
+        org.junit.Assert.assertTrue(habitCollection.contentDescription.toString().contains("8"))
     }
 
     @Test fun habitProgressUsesInlineLayoutWhenItFitsAndStacksLongNames() {
@@ -287,6 +291,7 @@ class WidgetRendererAcceptanceTest {
         val inlineSnapshot = sampleSnapshot().copy(instance = WidgetInstance(52, WidgetKind.HABITS, true),
             total = 1, completed = 0, rows = listOf(habit))
         val inlineRow = WidgetRenderer.collectionRow(context, inlineSnapshot, habit, 373).apply(context, null)
+        layoutAtBounds(inlineRow, context, 373, 100)
         val inlineTitle = inlineRow.findViewById<TextView>(R.id.widget_habit_row_title)
         val inlineProgress = inlineRow.findViewById<TextView>(R.id.widget_habit_row_count)
         assertEquals(LinearLayout.HORIZONTAL,
@@ -341,10 +346,27 @@ class WidgetRendererAcceptanceTest {
         val action = row.findViewById<TextView>(R.id.widget_task_row_action)
         org.junit.Assert.assertTrue(navigation.contentDescription.toString().contains(taskTitle))
         org.junit.Assert.assertTrue(navigation.contentDescription.toString().contains("Overdue"))
-        assertEquals(context.getString(R.string.widget_task_complete_description, taskTitle),
-            action.contentDescription.toString())
+        org.junit.Assert.assertTrue(action.contentDescription.toString().startsWith(
+            context.getString(R.string.widget_task_complete_description, taskTitle)))
+        org.junit.Assert.assertTrue(action.contentDescription.toString().contains("Overdue"))
+        org.junit.Assert.assertTrue(action.contentDescription.toString().contains("2026"))
         org.junit.Assert.assertNotSame(navigation, action)
         org.junit.Assert.assertTrue(action.height >= 48 * density - 1)
+    }
+
+    @Test fun habitMutationDescriptionIncludesCurrentProgress() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val habit = WidgetRow.Habit(UUID.randomUUID(), "Read", 2, 5, false, UUID.randomUUID())
+        val snapshot = sampleSnapshot().copy(
+            instance = WidgetInstance(56, WidgetKind.HABITS, true),
+            total = 1,
+            completed = 0,
+            rows = listOf(habit),
+        )
+        val row = WidgetRenderer.collectionRow(context, snapshot, habit, 600).apply(context, null)
+        val action = row.findViewById<View>(R.id.widget_habit_row_action)
+        org.junit.Assert.assertTrue(action.contentDescription.toString().contains("Read"))
+        org.junit.Assert.assertTrue(action.contentDescription.toString().contains("2 / 5"))
     }
 
     @Test fun headerTargetsKeepLocalizedLabelsWholeAcrossFontScales() {

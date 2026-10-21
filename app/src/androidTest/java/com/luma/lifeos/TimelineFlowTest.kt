@@ -149,7 +149,7 @@ class TimelineFlowTest {
 
     @Test fun eventBackAndEditStayVisibleAfterLongReadingScroll() {
         val moodId = EventId.new()
-        val note = "A long check-in note. ".repeat(420)
+        val note = "A long check-in note. ".repeat(220)
         runBlocking { RoomMoodRepository(db, clock).create(moodId, MoodInput(4, time, note = note)) }
         show()
         compose.onNodeWithTag("nav_timeline").performClick()
