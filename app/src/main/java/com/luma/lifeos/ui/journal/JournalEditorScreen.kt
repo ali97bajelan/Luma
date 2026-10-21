@@ -102,7 +102,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
         return false
     }
     BackHandler { close() }
-    Scaffold(modifier = Modifier.testTag("screen_journal"), topBar = {
+    Scaffold(modifier = Modifier.testTag("screen_journal"), contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
         EditorTopBar(stringResource(if (state.editing) R.string.journal_edit else R.string.journal_capture),
             "journal_cancel", !state.busy, ::close)
     }, bottomBar = {

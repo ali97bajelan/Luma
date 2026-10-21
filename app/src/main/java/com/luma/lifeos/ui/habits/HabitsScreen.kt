@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -75,6 +76,7 @@ fun HabitsScreen(
 
     Scaffold(
         modifier = Modifier.testTag("screen_habits"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.habit_title)) }, navigationIcon = {
                 onBack?.let { back ->
@@ -86,7 +88,7 @@ fun HabitsScreen(
                 TextButton(onClick = onCreate, modifier = Modifier.testTag("habit_create")) {
                     Text(stringResource(R.string.habit_add))
                 }
-            })
+            }, windowInsets = WindowInsets(0, 0, 0, 0))
         },
     ) { padding ->
         saveableStateHolder.SaveableStateProvider(selectedDate.toString()) {

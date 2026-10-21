@@ -10,7 +10,7 @@
 
 **Spec:** [UX-012 specification](../specs/2026-10-20-audit-n-ux-012-searchable-context-selection-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implementation complete. Focused Android emulator suite (29 tests), debug builds and lint pass. Manual EN/FR/FA, large-font, landscape and TalkBack checks remain pending. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -90,4 +90,3 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 ## Handoff
 
 Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-

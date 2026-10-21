@@ -16,24 +16,24 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.PageNavigation
 
 @Composable
 fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrationsAvailable: Boolean,
     onLanguage: () -> Unit, onBackup: () -> Unit, onPrivacy: () -> Unit, onIntegrations: () -> Unit,
     onBack: (() -> Unit)? = null, widgetsAvailable: Boolean = false, onWidgets: () -> Unit = {}) {
     BackHandler(enabled = onBack != null) { onBack?.invoke() }
-    Column(Modifier.fillMaxSize()) {
-        if (onBack != null) {
-            TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                .testTag("settings_hub_back")) {
-                Text(stringResource(R.string.back))
-            }
-        }
+    AppPageScaffold(
+        title = stringResource(R.string.settings),
+        navigation = if (onBack != null) PageNavigation.BACK else PageNavigation.NONE,
+        onNavigate = onBack,
+        navigationTag = "settings_hub_back",
+    ) { pagePadding ->
+      Column(Modifier.fillMaxSize().padding(pagePadding)) {
         Column(Modifier.weight(1f).fillMaxWidth().testTag("screen_settings")
-            .verticalScroll(rememberScrollState()).padding(24.dp),
+            .verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.semantics { heading() })
             Text(stringResource(R.string.settings_hub_description))
             if (widgetsAvailable) SettingsRow(
                 R.string.settings_widgets_title,
@@ -48,6 +48,7 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
             if (integrationsAvailable) SettingsRow(R.string.settings_integrations_title, R.string.settings_integrations_description,
                 "settings_integrations", onIntegrations)
         }
+      }
     }
 }
 
@@ -69,15 +70,14 @@ private fun SettingsRow(@StringRes title: Int, @StringRes description: Int, tag:
 fun SettingsSectionPage(@StringRes title: Int, onBack: () -> Unit,
     screenTag: String = "screen_settings_section", content: @Composable ColumnScope.() -> Unit) {
     BackHandler(onBack = onBack)
-    Column(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onBack, modifier = Modifier.testTag("settings_back")) { Text(stringResource(R.string.back)) }
-            Text(stringResource(title), style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.semantics { heading() })
-        }
+    AppPageScaffold(
+        title = stringResource(title), navigation = PageNavigation.BACK, onNavigate = onBack,
+        headerTag = "settings_page_header", titleTag = "settings_page_title", navigationTag = "settings_back",
+    ) { pagePadding ->
+      Column(Modifier.fillMaxSize().padding(pagePadding)) {
         Column(Modifier.weight(1f).fillMaxWidth().testTag(screenTag).verticalScroll(rememberScrollState())
-            .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
+      }
     }
 }

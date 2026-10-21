@@ -74,8 +74,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item(key = "header") {
                 Column {
-                    Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
-                    AppSectionHeading(stringResource(R.string.timeline), style = MaterialTheme.typography.headlineLarge)
+                    AppSectionHeading(stringResource(R.string.timeline), style = MaterialTheme.typography.titleLarge)
                     onSearch?.let { TextButton(onClick = it, modifier = Modifier.testTag("timeline_search")) { Text(stringResource(R.string.search_entries_title)) } }
                     DayNavigation(date, onSelectDate, onToday)
                     val usageSwitchLabel = stringResource(R.string.timeline_show_app_usage)

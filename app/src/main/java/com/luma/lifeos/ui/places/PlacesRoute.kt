@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -17,6 +18,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.EmptyStateCard
 import com.luma.lifeos.ui.common.DetailTopBar
+import com.luma.lifeos.ui.common.contextOptionMatches
+import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.domain.repository.PlaceRepository
 import com.luma.lifeos.domain.model.LifeEvent
 import com.luma.lifeos.domain.model.LifeEventRecord
@@ -28,12 +32,19 @@ import java.util.UUID
 @Composable
 fun PlacesRoute(repository: PlaceRepository, onBack: () -> Unit, onCreate: () -> Unit, onPlace: (UUID) -> Unit) {
     BackHandler(onBack = onBack)
-    PlacesListContent(repository, onCreate, onPlace, onBack = onBack)
+    AppPageScaffold(title = stringResource(R.string.places), navigation = PageNavigation.BACK,
+        onNavigate = onBack, navigationTag = "places_back") { padding ->
+        PlacesListContent(repository, onCreate, onPlace, modifier = Modifier.padding(padding))
+    }
 }
 
 @Composable
 fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace: (UUID) -> Unit,
-    modifier: Modifier = Modifier, onBack: (() -> Unit)? = null) {
+    modifier: Modifier = Modifier, onBack: (() -> Unit)? = null,
+    query: String? = null, onQueryChange: ((String) -> Unit)? = null) {
+    var localQuery by rememberSaveable { mutableStateOf("") }
+    val activeQuery = query ?: localQuery
+    val updateQuery = onQueryChange ?: { value: String -> localQuery = value }
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, retry) { observePlaces(repository) }
     val state by observation.collectAsStateWithLifecycle(PlacesState.Loading)
@@ -44,8 +55,10 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
             Column(Modifier.testTag(if (state is PlacesState.Data) "places_ready" else "places_header"),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (onBack != null) TextButton(onClick = onBack, modifier = Modifier.testTag("places_back")) { Text(stringResource(R.string.back)) }
-                Text(stringResource(R.string.places), style = MaterialTheme.typography.headlineLarge)
                 Text(stringResource(R.string.places_intro))
+                OutlinedTextField(value = activeQuery, onValueChange = updateQuery,
+                    label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("places_search"))
                 if (!empty) Button(onClick = onCreate, modifier = Modifier.testTag("places_create")) { Text(stringResource(R.string.place_create)) }
             }
         }
@@ -60,7 +73,11 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
                     EmptyStateCard(R.drawable.ic_nav_places, R.string.places_empty_heading, R.string.places_empty,
                         "places_empty", R.string.place_create, onCreate, "places_create")
                 }
-                items(current.places, key = { it.id.toString() }) { place ->
+                val filteredPlaces = current.places.filter { contextOptionMatches(it.name, it.note, activeQuery) }
+                if (current.places.isNotEmpty() && filteredPlaces.isEmpty()) item {
+                    Text(stringResource(R.string.search_no_options), modifier = Modifier.testTag("places_no_results"))
+                }
+                items(filteredPlaces, key = { it.id.toString() }) { place ->
                     Card(Modifier.fillMaxWidth().testTag("place_${place.id}").clickable { onPlace(place.id) }) {
                         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {

@@ -16,6 +16,8 @@ import com.luma.lifeos.domain.model.Person
 import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.domain.repository.PersonRepository
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.ContextOption
+import com.luma.lifeos.ui.common.ContextOptionPicker
 import java.util.UUID
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -57,13 +59,19 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
             }
             is PeopleState.Data -> {
                 if (catalog.isEmpty()) Text(stringResource(R.string.people_empty))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    catalog.filter { it.id !in selected }.forEach { person ->
-                        FilterChip(selected = false, enabled = enabled && selected.size < PersonTextLimits.SELECTION,
-                            onClick = { onToggle(person.id) }, modifier = Modifier.testTag("person_option_${person.id}"),
-                            label = { Text(person.name) })
-                    }
-                }
+                ContextOptionPicker(
+                    title = stringResource(R.string.people),
+                    options = catalog.map { ContextOption(it.id, it.name, it.note?.takeIf(String::isNotBlank)) },
+                    selectedIds = selected,
+                    maxSelections = PersonTextLimits.SELECTION,
+                    onApply = { result ->
+                        (selected - result).forEach(onToggle)
+                        (result - selected).forEach(onToggle)
+                    },
+                    onCreate = onCreate,
+                    onDismiss = { expanded = false },
+                    enabled = enabled,
+                )
             }
         }
         if (selected.size >= PersonTextLimits.SELECTION) AccessibleFeedback(

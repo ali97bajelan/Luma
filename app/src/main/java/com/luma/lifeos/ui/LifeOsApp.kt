@@ -14,6 +14,7 @@ import com.luma.lifeos.ui.settings.IntegrationsSettingsRoute
 import com.luma.lifeos.ui.usage.UsageForegroundRefresh
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -266,7 +267,7 @@ fun LifeOsApp(
         NavHost(
             navController = navController,
             startDestination = PrimaryDestination.TODAY.route,
-            modifier = Modifier.padding(padding),
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         ) {
             PrimaryDestination.entries.forEach { destination ->
                 composable(destination.route) { destinationEntry ->

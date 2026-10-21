@@ -19,6 +19,9 @@ import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoCount
 import com.luma.lifeos.ui.common.EmptyStateCard
 import com.luma.lifeos.ui.common.DetailTopBar
+import com.luma.lifeos.ui.common.contextOptionMatches
+import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PersonRepository
@@ -36,26 +39,32 @@ fun PeopleRoute(people: PersonRepository, places: PlaceRepository, onCreatePerso
     BackHandler(enabled = onBack != null) { onBack?.invoke() }
     // Owned by this destination so navigation's saveable state restores the selected catalog.
     var placesSelected by rememberSaveable { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize()) {
-        if (onBack != null) {
-            TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp).testTag("people_back")) {
-                Text(stringResource(R.string.back))
-            }
-        }
+    var peopleQuery by rememberSaveable { mutableStateOf("") }
+    var placesQuery by rememberSaveable { mutableStateOf("") }
+    AppPageScaffold(
+        title = stringResource(if (placesSelected) R.string.places else R.string.people),
+        navigation = if (onBack != null) PageNavigation.BACK else PageNavigation.NONE,
+        onNavigate = onBack,
+        navigationTag = "people_back",
+    ) { pagePadding ->
+      Column(Modifier.fillMaxSize().padding(pagePadding)) {
         TabRow(selectedTabIndex = if (placesSelected) 1 else 0) {
             Tab(selected = !placesSelected, onClick = { placesSelected = false },
                 modifier = Modifier.testTag("catalog_people"), text = { Text(stringResource(R.string.catalog_people)) })
             Tab(selected = placesSelected, onClick = { placesSelected = true },
                 modifier = Modifier.testTag("catalog_places"), text = { Text(stringResource(R.string.catalog_places)) })
         }
-        if (placesSelected) PlacesListContent(places, onCreatePlace, onPlace, modifier = Modifier.weight(1f))
-        else PeopleListContent(people, onCreatePerson, onPerson, modifier = Modifier.weight(1f))
+        if (placesSelected) PlacesListContent(places, onCreatePlace, onPlace, modifier = Modifier.weight(1f),
+            query = placesQuery, onQueryChange = { placesQuery = it })
+        else PeopleListContent(people, onCreatePerson, onPerson, query = peopleQuery,
+            onQueryChange = { peopleQuery = it }, modifier = Modifier.weight(1f))
+      }
     }
 }
 
 @Composable
 private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit,
-    onPerson: (UUID) -> Unit, modifier: Modifier = Modifier) {
+    onPerson: (UUID) -> Unit, query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, retry) { observePeople(repository) }
     val state by observation.collectAsStateWithLifecycle(PeopleState.Loading)
@@ -65,8 +74,10 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Column(Modifier.testTag(if (state is PeopleState.Data) "people_ready" else "people_header")) {
-                Text(stringResource(R.string.people), style = MaterialTheme.typography.headlineLarge)
                 Text(stringResource(R.string.people_intro))
+                OutlinedTextField(value = query, onValueChange = onQueryChange,
+                    label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("people_search"))
                 if (!empty) Button(onClick = onCreate, modifier = Modifier.testTag("people_create")) { Text(stringResource(R.string.person_create)) }
             }
         }
@@ -81,7 +92,11 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
                     EmptyStateCard(R.drawable.ic_nav_people, R.string.people_empty_heading, R.string.people_empty,
                         "people_empty", R.string.person_create, onCreate, "people_create")
                 }
-                items(current.people, key = { it.id.toString() }) { person ->
+                val filteredPeople = current.people.filter { contextOptionMatches(it.name, it.note, query) }
+                if (current.people.isNotEmpty() && filteredPeople.isEmpty()) item {
+                    Text(stringResource(R.string.search_no_options), modifier = Modifier.testTag("people_no_results"))
+                }
+                items(filteredPeople, key = { it.id.toString() }) { person ->
                     Card(Modifier.fillMaxWidth().testTag("person_${person.id}").clickable { onPerson(person.id) }) {
                         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {

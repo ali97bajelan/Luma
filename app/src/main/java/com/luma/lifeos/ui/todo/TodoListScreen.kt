@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -20,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +39,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.PageHeader
+import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.todoBucket
@@ -85,14 +87,13 @@ fun TodoListScreen(
 
     Scaffold(
         modifier = Modifier.testTag("screen_todo_list"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.todo_list_title)) },
-                navigationIcon = {
-                    TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp).testTag("todo_list_back")) {
-                        Text(stringResource(R.string.back))
-                    }
-                },
+            PageHeader(
+                title = stringResource(R.string.todo_list_title),
+                navigation = PageNavigation.BACK,
+                onNavigate = onBack,
+                navigationTag = "todo_list_back",
                 actions = {
                     TextButton(
                         onClick = onAddTask,

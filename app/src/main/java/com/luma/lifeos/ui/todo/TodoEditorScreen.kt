@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -110,6 +111,7 @@ fun TodoEditorScreen(
 
     Scaffold(
         modifier = Modifier.testTag("screen_todo_editor"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             EditorTopBar(
                 stringResource(if (state.editing) R.string.todo_edit_title else R.string.todo_new_title),

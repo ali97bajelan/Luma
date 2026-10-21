@@ -83,6 +83,7 @@ class PeopleCaptureTest {
         compose.onNodeWithTag("people_picker").performScrollTo().performClick()
         awaitText(name)
         compose.onNodeWithText(name).performScrollTo().performClick()
+        compose.onNodeWithTag("context_done").performClick()
         compose.onNodeWithTag("memory_save").performClick()
         awaitTag("screen_today")
         openPerson(name)

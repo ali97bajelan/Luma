@@ -127,7 +127,7 @@ class TodayTasksSemanticsTest {
             }
         }
 
-        compose.onNodeWithTag("today_task_feedback_open_${visible.id}").performClick()
+        compose.onNodeWithTag("todo_feedback_open_${visible.id}").performClick()
         compose.runOnIdle { assertEquals(listOf(visible.id), opened) }
         compose.onNodeWithTag("today_tasks_feedback_scroll")
             .performScrollToNode(hasTestTag("today_task_feedback_open_${retained.id}"))
@@ -165,7 +165,7 @@ class TodayTasksSemanticsTest {
 
         compose.onNodeWithTag("todo_open_${missing.id}", useUnmergedTree = true).assertIsNotEnabled()
         compose.onNodeWithTag("todo_status_${missing.id}", useUnmergedTree = true).assertIsNotEnabled()
-        compose.onNodeWithTag("today_task_feedback_dismiss_${missing.id}").performClick()
+        compose.onNodeWithTag("todo_dismiss_${missing.id}").performClick()
         compose.runOnIdle {
             assertEquals(0, opened)
             assertEquals(0, completions)

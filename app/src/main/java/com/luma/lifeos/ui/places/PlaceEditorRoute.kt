@@ -61,7 +61,7 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
     val enabled = state.ready && !state.busy && !state.completed
     fun close() { if (!state.busy) { if (state.hasChanges) discarding = true else onCancel() } }
     BackHandler { close() }
-    Scaffold(modifier = Modifier.testTag("screen_place_editor"), topBar = {
+    Scaffold(modifier = Modifier.testTag("screen_place_editor"), contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
         EditorTopBar(stringResource(if (state.editing) R.string.place_edit else R.string.place_create),
             "place_cancel", !state.busy, ::close)
     }, bottomBar = {

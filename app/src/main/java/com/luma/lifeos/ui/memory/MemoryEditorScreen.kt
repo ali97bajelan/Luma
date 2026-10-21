@@ -71,7 +71,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
         if (state.error == MemoryEditorError.PHOTO && more) photosBringIntoViewRequester.bringIntoView()
     }
     BackHandler { close() }
-    Scaffold(modifier = Modifier.testTag("screen_memory"), topBar = {
+    Scaffold(modifier = Modifier.testTag("screen_memory"), contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
         EditorTopBar(stringResource(if (state.editing) R.string.memory_edit else if (state.direct) R.string.memory_capture else R.string.memory_promote),
             "memory_cancel", !state.busy, ::close)
     }, bottomBar = {

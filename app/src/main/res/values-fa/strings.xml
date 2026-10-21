@@ -556,6 +556,7 @@
     <string name="search_no_options">نام ذخیره‌شدهٔ مطابقی پیدا نشد.</string>
     <string name="search_options_error">نام‌های ذخیره‌شده بارگذاری نشدند.</string>
     <string name="search_selection_count">%1$d مورد انتخاب‌شده · حداکثر ۱۰۰</string>
+    <string name="context_new">جدید</string>
     <string name="review_weekly_title">مرور هفتگی</string>
     <string name="review_sections">بخش‌ها</string>
     <string name="review_section_overview">نمای کلی</string>

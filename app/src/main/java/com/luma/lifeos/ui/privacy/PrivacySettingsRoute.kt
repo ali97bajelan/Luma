@@ -20,6 +20,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.PageNavigation
 
 @Composable
 fun PrivacySettingsRoute(reset: AppDataReset, onBack: () -> Unit) {
@@ -61,13 +63,17 @@ private fun PrivacySection(@StringRes heading: Int, @StringRes description: Int,
 internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
     onDelete: () -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit,
     onAppSettings: () -> Unit, settingsMissing: Boolean = false) {
-    Column(Modifier.fillMaxSize().testTag("screen_privacy").verticalScroll(rememberScrollState()).padding(24.dp),
+    AppPageScaffold(
+        title = stringResource(R.string.privacy_title),
+        navigation = PageNavigation.BACK,
+        onNavigate = onBack,
+        navigationEnabled = !state.busy,
+        titleTag = "privacy_heading",
+        navigationTag = "privacy_back",
+    ) { pagePadding ->
+      Column(Modifier.fillMaxSize().padding(pagePadding).testTag("screen_privacy")
+          .verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TextButton(onClick = onBack, enabled = !state.busy, modifier = Modifier.testTag("privacy_back")) {
-            Text(stringResource(R.string.back))
-        }
-        Text(stringResource(R.string.privacy_title), style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.semantics { heading() }.testTag("privacy_heading"))
         PrivacyPolicyContent {
             TextButton(onClick = onAppSettings, enabled = !state.busy, modifier = Modifier.testTag("privacy_app_settings")) {
                 Text(stringResource(R.string.privacy_app_settings))
@@ -91,6 +97,7 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
                 if (state.actionError) AccessibleFeedback(stringResource(R.string.privacy_reset_failed), Modifier.testTag("privacy_error"))
             }
         }
+      }
     }
     if (state.confirming) AlertDialog(onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.privacy_delete_title)) },

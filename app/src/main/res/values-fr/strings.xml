@@ -554,6 +554,7 @@
     <string name="search_no_options">Aucun nom enregistré ne correspond.</string>
     <string name="search_options_error">Impossible de charger les noms enregistrés.</string>
     <string name="search_selection_count">%1$d sélectionnés · maximum 100</string>
+    <string name="context_new">Nouveau</string>
     <string name="review_weekly_title">Bilan hebdomadaire</string>
     <string name="review_sections">Sections</string>
     <string name="review_section_overview">Vue d’ensemble</string>

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,7 +26,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.domain.habit.HabitRepository
 import java.time.DayOfWeek
@@ -101,9 +102,10 @@ fun HabitEditorScreen(
     BackHandler { close() }
     Scaffold(
         modifier = Modifier.testTag("screen_habit_editor"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(title = { Text(stringResource(if (state.editing) R.string.habit_editor_edit else R.string.habit_editor_new)) },
-                navigationIcon = { TextButton(enabled = !state.busy, onClick = ::close) { Text(stringResource(R.string.cancel)) } })
+            EditorTopBar(stringResource(if (state.editing) R.string.habit_editor_edit else R.string.habit_editor_new),
+                "habit_editor_close", !state.busy, ::close)
         },
         bottomBar = {
             Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

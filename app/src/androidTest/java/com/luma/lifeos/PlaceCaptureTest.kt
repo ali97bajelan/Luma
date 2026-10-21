@@ -79,6 +79,7 @@ class PlaceCaptureTest {
         compose.onNodeWithTag("place_picker").performScrollTo().performClick()
         awaitText(name)
         compose.onNodeWithText(name).performScrollTo().performClick()
+        compose.onNodeWithTag("context_done").performClick()
         compose.onNodeWithTag("memory_save").performClick()
         awaitTag("screen_today")
         openPlace(name)

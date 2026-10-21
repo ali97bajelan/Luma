@@ -15,6 +15,8 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Place
 import com.luma.lifeos.domain.repository.PlaceRepository
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.ContextOption
+import com.luma.lifeos.ui.common.ContextOptionPicker
 import java.util.UUID
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -54,14 +56,16 @@ fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
             }
             is PlacesState.Data -> {
                 if (catalog.isEmpty()) Text(stringResource(R.string.places_empty))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = selected == null, enabled = enabled, onClick = { onSelect(null) },
-                        label = { Text(stringResource(R.string.place_none)) }, modifier = Modifier.testTag("place_none"))
-                    catalog.forEach { place ->
-                        FilterChip(selected = selected == place.id, enabled = enabled, onClick = { onSelect(place.id) },
-                            modifier = Modifier.testTag("place_option_${place.id}"), label = { Text(place.name) })
-                    }
-                }
+                ContextOptionPicker(
+                    title = stringResource(R.string.place_optional),
+                    options = catalog.map { ContextOption(it.id, it.name, it.note?.takeIf(String::isNotBlank)) },
+                    selectedIds = selected?.let(::setOf).orEmpty(),
+                    maxSelections = 1,
+                    onApply = { result -> onSelect(result.firstOrNull()) },
+                    onCreate = onCreate,
+                    onDismiss = { expanded = false },
+                    enabled = enabled,
+                )
             }
         }
     }

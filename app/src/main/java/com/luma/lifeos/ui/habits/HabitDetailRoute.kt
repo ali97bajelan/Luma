@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -165,7 +166,8 @@ fun HabitDetailScreen(
         }
     }
     val canEditHabit = habit != null && detail?.loading != true
-    Scaffold(modifier = Modifier.testTag("screen_habit_detail"), topBar = {
+    Scaffold(modifier = Modifier.testTag("screen_habit_detail"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
         DetailTopBar(title = habit?.name ?: stringResource(R.string.habit_title),
             backTag = "habit_detail_back",
             onBack = { if (detail?.correction != null) requestCorrectionClose() else onBack() },

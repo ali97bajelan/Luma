@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -90,6 +91,7 @@ fun MoodEditorScreen(
     BackHandler { close() }
     Scaffold(
         modifier = Modifier.testTag("screen_mood"),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             EditorTopBar(stringResource(if (editing) R.string.mood_edit else R.string.mood_capture), "mood_cancel", !state.busy, ::close)
         },

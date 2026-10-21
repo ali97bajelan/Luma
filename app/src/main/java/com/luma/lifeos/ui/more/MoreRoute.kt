@@ -25,6 +25,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.PageNavigation
 
 @Composable
 internal fun MoreRoute(
@@ -32,16 +34,12 @@ internal fun MoreRoute(
     onSettings: () -> Unit,
     onTasks: (() -> Unit)? = null,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().testTag("screen_more")
-            .verticalScroll(rememberScrollState()).padding(24.dp),
+    AppPageScaffold(title = stringResource(R.string.more), navigation = PageNavigation.NONE) { pagePadding ->
+      Column(
+        modifier = Modifier.fillMaxSize().padding(pagePadding).testTag("screen_more")
+            .verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.more),
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.semantics { heading() },
-        )
+      ) {
         onTasks?.let { action ->
             MoreEntry(
                 title = R.string.more_tasks,
@@ -65,6 +63,7 @@ internal fun MoreRoute(
             testTag = "more_settings",
             onClick = onSettings,
         )
+      }
     }
 }
 

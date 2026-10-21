@@ -30,6 +30,9 @@ import com.luma.lifeos.domain.habit.HabitSchedule
 import com.luma.lifeos.ui.habits.HabitDayRow
 import com.luma.lifeos.ui.habits.HabitsUiState
 import java.util.UUID
+import android.text.format.DateFormat
+import androidx.test.platform.app.InstrumentationRegistry
+import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.EventSource
@@ -264,7 +267,11 @@ class TodayScreenTest {
         compose.onNodeWithTag("today_recent_entries").assertIsDisplayed()
         compose.onNodeWithText("A quiet morning").assertIsDisplayed()
         compose.onNodeWithText("Walked by the river").assertIsDisplayed()
-        compose.onNodeWithText("08:30").assertIsDisplayed()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val locale = context.resources.configuration.locales[0]
+        val expectedTime = instant.atZone(ZoneId.of("UTC"))
+            .format(localizedTime(DateFormat.is24HourFormat(context), locale))
+        compose.onNodeWithText(expectedTime).assertIsDisplayed()
     }
 
     @Test fun pickerCanOpenAfterNavigatingOutsideItsDefaultYearRange() {

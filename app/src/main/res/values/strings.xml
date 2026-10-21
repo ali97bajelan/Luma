@@ -542,6 +542,7 @@
     <string name="search_no_options">No saved names match.</string>
     <string name="search_options_error">Could not load saved names.</string>
     <string name="search_selection_count">%1$d selected · maximum 100</string>
+    <string name="context_new">New</string>
     <string name="review_weekly_title">Weekly Review</string>
     <string name="review_sections">Sections</string>
     <string name="review_section_overview">Overview</string>

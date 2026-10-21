@@ -61,7 +61,7 @@ fun PersonEditorScreen(state: PersonEditorState, onCancel: () -> Unit, onSave: (
     val enabled = state.ready && !state.busy && !state.completed
     fun close() { if (!state.busy) { if (state.hasChanges) discarding = true else onCancel() } }
     BackHandler { close() }
-    Scaffold(modifier = Modifier.testTag("screen_person_editor"), topBar = {
+    Scaffold(modifier = Modifier.testTag("screen_person_editor"), contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
         EditorTopBar(stringResource(if (state.editing) R.string.person_edit else R.string.person_create),
             "person_cancel", !state.busy, ::close)
     }, bottomBar = {

@@ -57,6 +57,33 @@ class PlaceCatalogFlowTest {
         awaitTag("people_empty")
     }
 
+    @Test fun bothCatalogsSearchNamesAndExistingNotes() {
+        val firstPerson = UUID.randomUUID()
+        val secondPerson = UUID.randomUUID()
+        val place = UUID.randomUUID()
+        runBlocking {
+            people.create(firstPerson, PersonInput("Sam", "North coast"))
+            people.create(secondPerson, PersonInput("Alex", "South coast"))
+            places.create(place, PlaceInput("Harbor studio", "North coast"))
+        }
+        compose.setContent { LifeOsTheme {
+            PeopleRoute(people, places, onCreatePerson = {}, onPerson = {}, onCreatePlace = {}, onPlace = {})
+        } }
+        awaitTag("people_ready")
+        compose.onNodeWithTag("people_search").performTextInput("north")
+        compose.onNodeWithTag("person_$firstPerson").assertIsDisplayed()
+        compose.onNodeWithTag("person_$secondPerson").assertDoesNotExist()
+
+        compose.onNodeWithTag("catalog_places").performClick()
+        awaitTag("places_ready")
+        compose.onNodeWithTag("places_search").performTextInput("harbor")
+        compose.onNodeWithTag("place_$place").assertIsDisplayed()
+        compose.onNodeWithTag("catalog_people").performClick()
+        compose.onNodeWithTag("people_search").assertTextContains("north")
+        compose.onNodeWithTag("person_$firstPerson").assertIsDisplayed()
+        compose.onNodeWithTag("person_$secondPerson").assertDoesNotExist()
+    }
+
     @Test fun placesSelectionSurvivesCreationAndRestoration() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { LifeOsTheme {
