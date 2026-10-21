@@ -60,6 +60,7 @@ internal fun EditorActionRow(
     primaryAction: @Composable (Modifier) -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val availableWidth = maxWidth
         if (maxWidth < 360.dp) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 secondaryAction?.invoke(Modifier.fillMaxWidth().heightIn(min = 48.dp))
@@ -67,7 +68,7 @@ internal fun EditorActionRow(
             }
         } else {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                secondaryAction?.invoke(Modifier.widthIn(max = maxWidth * 0.45f).heightIn(min = 48.dp))
+                secondaryAction?.invoke(Modifier.widthIn(max = availableWidth * 0.45f).heightIn(min = 48.dp))
                 primaryAction(Modifier.weight(1f).heightIn(min = 48.dp))
             }
         }
