@@ -719,6 +719,8 @@
     <string name="imports_details">À propos de ces importations</string>
     <string name="hide_details">Masquer les détails</string>
     <string name="review_overview">La semaine en bref</string>
+    <string name="review_saved_signals">Indicateurs enregistrés</string>
+    <string name="review_data_setup">Configuration des données</string>
     <string name="review_missing_context">Les valeurs absentes indiquent si les observations ou les imports manquent. Un zéro enregistré reste zéro.</string>
     <string name="review_latest_memory">Dernier souvenir enregistré</string>
     <string name="review_usage_summary">Historique enregistré : %1$d dates sur %2$d · Complètes : %3$d</string>

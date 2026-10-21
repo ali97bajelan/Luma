@@ -22,6 +22,7 @@ import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.today.pickerDate
@@ -102,33 +103,34 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             }
         }
         Box(Modifier.fillMaxSize().testTag("screen_review")) {
-            LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = if (report == null) placeholderListState else listState,
-                contentPadding = PaddingValues(start = 20.dp, top = 24.dp, end = 20.dp, bottom = captureBottomClearance),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                item(key = "heading") {
-                    ReviewHeader(period,
-                        onPrevious = { selected = period.current.start.minusWeeks(1).toString() },
-                        onNext = { selected = period.current.start.plusWeeks(1).toString() },
-                        onThisWeek = { selected = null }, onPick = { picking = true })
-                }
-                when (val current = state) {
-                    WeeklyReviewState.Loading -> item(key = "loading") { CircularProgressIndicator() }
-                    WeeklyReviewState.Error -> item(key = "error") {
-                        AccessibleFeedback(stringResource(R.string.review_error))
-                        TextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_retry")) { Text(stringResource(R.string.retry)) }
+            LumaReadingPane(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = if (report == null) placeholderListState else listState,
+                    contentPadding = PaddingValues(start = 20.dp, top = 24.dp, end = 20.dp, bottom = captureBottomClearance),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    item(key = "heading") {
+                        ReviewHeader(period,
+                            onPrevious = { selected = period.current.start.minusWeeks(1).toString() },
+                            onNext = { selected = period.current.start.plusWeeks(1).toString() },
+                            onThisWeek = { selected = null }, onPick = { picking = true })
                     }
-                    is WeeklyReviewState.Data -> {
-                        val report = current.report
-                        val a = report.current; val b = report.previous
-                        item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount,
-                            integrationAvailability, onIntegrations, onCheckIn, habitState,
-                            onHabits = { section = "habits"; sectionTarget = "habits" }) }
-                        stickyHeader(key = "sections") {
-                            Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
-                                ReviewSectionNavigation(section, period, onSection = { key ->
-                                    section = key
-                                    sectionTarget = key
-                                }, includeHabits = habits != null)
+                    when (val current = state) {
+                        WeeklyReviewState.Loading -> item(key = "loading") { CircularProgressIndicator() }
+                        WeeklyReviewState.Error -> item(key = "error") {
+                            AccessibleFeedback(stringResource(R.string.review_error))
+                            TextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_retry")) { Text(stringResource(R.string.retry)) }
+                        }
+                        is WeeklyReviewState.Data -> {
+                            val report = current.report
+                            val a = report.current; val b = report.previous
+                            item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount,
+                                integrationAvailability, onIntegrations, onCheckIn, habitState,
+                                onHabits = { section = "habits"; sectionTarget = "habits" }) }
+                            stickyHeader(key = "sections") {
+                                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
+                                    ReviewSectionNavigation(section, period, onSection = { key ->
+                                        section = key
+                                        sectionTarget = key
+                                    }, includeHabits = habits != null)
                             }
                         }
                         if (empty) item(key = "empty") {
@@ -169,6 +171,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         item(key = "activity") { ReviewActivities(report, onSources, integrationAvailability.health, onIntegrations) }
                         if (habits != null) item(key = "habits") {
                             ReviewHabits(requireNotNull(habitState), { habitRetry++ }, onHabit)
+                        }
                         }
                     }
                 }

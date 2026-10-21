@@ -707,6 +707,8 @@
     <string name="imports_details">About these imports</string>
     <string name="hide_details">Hide details</string>
     <string name="review_overview">Week at a glance</string>
+    <string name="review_saved_signals">Saved signals</string>
+    <string name="review_data_setup">Data setup</string>
     <string name="review_missing_context">Missing values explain whether observations or imports are missing. A saved zero remains zero.</string>
     <string name="review_latest_memory">Latest saved memory</string>
     <string name="review_usage_summary">Saved history: %1$d of %2$d dates · Complete: %3$d</string>

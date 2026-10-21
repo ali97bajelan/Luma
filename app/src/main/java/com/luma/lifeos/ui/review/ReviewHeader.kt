@@ -47,8 +47,8 @@ internal fun ReviewHeader(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineMedium.copy(hyphens = Hyphens.Auto),
-                fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)
+            Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.titleLarge.copy(hyphens = Hyphens.Auto),
+                fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f)
                     .semantics { heading() }.testTag("review_weekly_heading"))
             IconButton(onClick = { about = true }, modifier = Modifier.testTag("review_about")) {
                 Icon(painterResource(R.drawable.ic_info), stringResource(R.string.review_about),
