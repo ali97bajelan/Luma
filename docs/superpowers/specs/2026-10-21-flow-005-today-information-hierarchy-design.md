@@ -1,6 +1,6 @@
 # FLOW-005 — Refine Today’s information hierarchy
 
-**Status:** Draft specification; implementation has not started. Policy choices are proposed defaults for review.
+**Status:** Scoped implementation complete on 21 October 2026. Prerequisite integration and build, emulator, and visual verification remain pending; no Gradle or emulator tests were run at the user's request.
 **Date:** 21 October 2026
 **Source:** [App flow and UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21.md), Visual direction 2; integrates live observations 1, 2, 4, and 5.
 **Priority:** P2
@@ -13,9 +13,9 @@ Give Today a stable first glance for capture and daily actions, with personal en
 
 ## Evidence and current behavior
 
-TodayScreen already uses stable lazy keys in this order: header, capture, habits, tasks, recent entries, daily summary. TodayCaptureActions currently inserts an empty-entry sentence above its three shortcuts, moving those shortcuts when the first entry is saved. The plan refines that existing structure rather than inventing a new dashboard.
+At review time, TodayScreen already used stable lazy keys in this order: header, capture, habits, tasks, recent entries, daily summary. TodayCaptureActions inserted an empty-entry sentence above its three shortcuts, moving those shortcuts when the first entry was saved. The implementation refines that existing structure rather than inventing a new dashboard.
 
-The review contains a light emulator walkthrough, not a reproduction on the checked-out binary. This document does not claim new runtime verification or implementation.
+The review contains a light emulator walkthrough, not a reproduction on the checked-out binary. FLOW-005 now removes entry-state ownership from capture actions, uses equal-priority tonal capture buttons, and renders the empty sentence after Recent entries. No new runtime verification is claimed.
 
 ## Dependencies
 
@@ -60,4 +60,4 @@ No new primary tab, generic capture modal, prioritized mood choice, summary algo
 
 ## Completion evidence
 
-Use the matching plan's focused verification. A screenshot demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state. Document unavailable checks as pending. No app tests, build, or implementation were performed while preparing this spec.
+Use the matching plan's focused verification. The scoped implementation preserves the existing section keys, date-choice callbacks, 12 dp section gaps, recovery content, and localized copy. UX-021 and FLOW-001/002/004 are not implemented in this change; their shared header/gutter, explicit selected-date context, task-empty refinement, and counted habit preview remain pending integration. FLOW-003's progress presentation is retained. A screenshot demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state. No app tests, Gradle commands, emulator walkthrough, or visual verification were run for this implementation; the plan records static evidence and pending acceptance checks.

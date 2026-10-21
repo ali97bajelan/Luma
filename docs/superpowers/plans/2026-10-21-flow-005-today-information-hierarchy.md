@@ -10,7 +10,7 @@
 
 **Spec:** [FLOW-005 specification](../specs/2026-10-21-flow-005-today-information-hierarchy-design.md)
 
-**Status:** Draft plan; all implementation and verification steps remain unchecked.
+**Status:** Scoped implementation complete on 21 October 2026. Static source review complete; prerequisite integration, build, emulator, and visual verification remain pending. No Gradle commands or emulator tests were run at the user's request.
 
 ## Global Constraints
 
@@ -52,15 +52,15 @@ Requires UX-021 and FLOW-001–FLOW-004. Keep UX-022 headings and UX-020 action 
 - Produces: Change internal TodayCaptureActions to TodayCaptureActions(onDateCapture: (EventType) -> Unit): Unit by removing its empty parameter. TodayScreen owns the existing empty sentence in the Empty branch. Retain all capture test tags, requestCapture logic, onCapture/onHabit/onTask callbacks, current-day-only task behavior, and the lazy section keys. No new screen state or repository interface is required.
 - Does not change repository schemas, stored content, or callback target identity.
 
-- [ ] **Step 1: Review the integrated prerequisites.** Confirm UX-021 and FLOW-001–FLOW-004 are present. Retain their inset owner, date notice, counted two-row habit preview, legible track, and single task-empty sentence.
+- [ ] **Step 1: Review the integrated prerequisites.** Source review found FLOW-003 present, but UX-021 and FLOW-001/002/004 are still absent. Their shared header/gutter, date notice, counted two-row habit preview, and single task-empty sentence remain pending integration. Existing two-row/4 dp habit presentation and legible track are retained.
 
-- [ ] **Step 2: Remove empty-state ownership from capture actions.** Remove the empty parameter from TodayCaptureActions and update its caller. Preserve onDateCapture, requestCapture, and all three type-specific action tags.
+- [x] **Step 2: Remove empty-state ownership from capture actions.** Remove the empty parameter from TodayCaptureActions and update its caller. Preserve onDateCapture, requestCapture, and all three type-specific action tags.
 
-- [ ] **Step 3: Style the direct-action group.** Use equal-priority FilledTonalButton choices in the existing wrapping FlowRow, keeping at least 48 dp targets and the existing palette. Add no modal or preferred capture type.
+- [x] **Step 3: Style the direct-action group.** Use equal-priority FilledTonalButton choices in the existing wrapping FlowRow, keeping at least 48 dp targets and the existing palette. Add no modal or preferred capture type.
 
-- [ ] **Step 4: Move entry-empty copy to its section.** Render today_no_entries under Recent entries in TodayUiState.Empty and retain the today_empty tag. Keep the capture group free of entry-state-dependent introductory text.
+- [x] **Step 4: Move entry-empty copy to its section.** Render today_no_entries under Recent entries in TodayUiState.Empty and retain the today_empty tag. Keep the capture group free of entry-state-dependent introductory text.
 
-- [ ] **Step 5: Retain the section rhythm.** Use the shared header/gutter, 12 dp item gaps and existing lazy keys. Keep recent entries before the collapsed daily summary, current-day-only tasks, and all recovery content.
+- [ ] **Step 5: Retain the section rhythm.** Existing 12 dp item gaps, 4 dp metadata gaps, section keys, recent entries before the collapsed daily summary, route-owned current-day-only tasks, and recovery content are retained. Added a stable `empty` item key under Recent entries. Shared header/gutter integration awaits UX-021.
 
 - [ ] **Step 6: Verify the overview integration.** Run TodayScreenTest once, preserving currentDayShortcutsOpenEachCaptureTypeWithoutADatePrompt and the existing entry-before-summary assertion. Inspect empty/populated states in one fixture for capture-position stability and record AC-1–AC-5; add no tests that restate padding constants.
 
@@ -78,8 +78,24 @@ Expected: the selected existing test cases complete with zero failures. The comm
 
 After the integrated UI batch, run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` once to verify call sites and resources; repeat only if new changes or failures require it. Do not run the full app walkthrough again for each small visual task. Reuse the existing five-record fixtures and enter no extra demo data for this plan.
 
-- [ ] **Integration review:** Compare the diff with every behavior item and AC in the spec. Preserve the unrelated dirty tree and record actual build/device evidence and pending checks. Stage only this task's hunks if the selected execution workflow uses commits; suggested message: `fix: flow-005 today information hierarchy`.
+- [x] **Integration review (static only):** Compared the diff with the behavior items and ACs below; preserved unrelated untracked artifacts. An independent read-only code review found no concrete issues in the two-file product diff. `git diff --check` passed. Prerequisite integration and build/device checks remain pending. No files staged or committed; suggested message: `fix: flow-005 today information hierarchy`.
 
 ## Handoff
 
-Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. This plan is ready for review; no product code or tests were changed by its creation.
+Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. Product changes are limited to TodayCaptureActions.kt and TodayScreen.kt; no tests were added, changed, or run.
+
+## Execution notes and evidence — 21 October 2026
+
+- Ruling: Apply the FLOW-005-specific presentation changes in the current checkout and generate a commit message without creating a commit. The user requested implementation only; no branch, worktree, or unrelated prerequisite task is created. Cost: full overview integration remains pending until UX-021 and FLOW-001/002/004 land.
+- Ruling: Skip Gradle, emulator, app tests, and visual checks as requested. Preserve the existing regression fixtures; do not add tests that duplicate presentation constants. Cost: compile and runtime acceptance are unverified.
+- Static source review: TodayCaptureActions has one callback parameter and one updated caller. The three existing event types, localized labels, capture tags, wrapping FlowRow, and minimum 48 dp button heights remain. All choices now use FilledTonalButton's semantic default palette.
+- Static source review: today_no_entries and today_empty now belong only to TodayUiState.Empty, after recent_entries and before daily_summary. Capture no longer depends on TodayUiState. Existing loading/error/retry and entry-opening paths, requestCapture/date-choice logic, TodayRoute task gating, and habit recovery content are unchanged.
+- Static resource review: existing EN/FR/FA capture labels and empty copy are reused; no resource changes are needed.
+
+| Acceptance case | Static evidence | Runtime/visual outcome |
+|---|---|---|
+| AC-1 | Capture has no empty parameter or state-dependent introductory text; empty copy follows Recent entries. | Empty/populated position comparison pending. |
+| AC-2 | Event types, callback, requestCapture, date-choice handling, and action tags are retained. | Existing shortcut/date-choice tests not run. |
+| AC-3 | Existing capture, habits, tasks, recent entries, and daily summary order and keys retained. | Five-record fixture inspection pending. |
+| AC-4 | Entry items still precede the existing collapsed summary disclosure. | Existing entry-before-summary viewport assertion not run. |
+| AC-5 | Recovery paths unchanged; wrapping FlowRow and minimum 48 dp capture heights retained. | EN/FR/FA, RTL, light/dark, compact/landscape, and 100%/130%/200% text inspection pending. |

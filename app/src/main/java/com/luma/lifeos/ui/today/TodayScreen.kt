@@ -103,7 +103,7 @@ fun TodayScreen(
             }
         }
         item(key = "capture") {
-            TodayCaptureActions(onDateCapture = { requestCapture(it, date) }, empty = state == TodayUiState.Empty)
+            TodayCaptureActions(onDateCapture = { requestCapture(it, date) })
         }
         habitsState?.let { item(key = "habits") {
             TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
@@ -140,7 +140,10 @@ fun TodayScreen(
                     Text(stringResource(R.string.today_loading))
                 }
             }
-            TodayUiState.Empty -> Unit
+            TodayUiState.Empty -> item(key = "empty") {
+                Text(stringResource(R.string.today_no_entries), style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.testTag("today_empty"))
+            }
             TodayUiState.Error -> item(key = "error") {
                 Column(Modifier.testTag("today_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.today_error))
