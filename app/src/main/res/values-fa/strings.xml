@@ -387,6 +387,9 @@
     <string name="timeline_earlier">رویدادهای قدیمی‌تر</string>
     <string name="timeline_later">رویدادهای جدیدتر</string>
     <string name="timeline_show_app_usage">نمایش استفاده از برنامه‌ها</string>
+    <string name="timeline_view_options">گزینه‌های نمایش</string>
+    <string name="timeline_hide_view_options">پنهان کردن گزینه‌های نمایش</string>
+    <string name="timeline_app_usage_active">استفاده از برنامه‌ها نمایش داده می‌شود</string>
     <plurals name="habit_log_count">
         <item quantity="one">%1$d ثبت عادت</item>
         <item quantity="other">%1$d ثبت عادت</item>

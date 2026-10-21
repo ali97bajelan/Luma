@@ -2,7 +2,7 @@
 
 **Date:** 21 October 2026
 **Source:** [Fresh UI/UX review](APP_FLOW_UX_REVIEW_2026-10-21-FRESH.md)
-**Status:** FRESH-001 and FRESH-002 implementations are in place; Gradle and emulator verification are pending by request. Remaining tasks have not started.
+**Status:** FRESH-001, FRESH-002, and FRESH-003 implementations are in place; Gradle and emulator verification are pending by request. Remaining tasks have not started.
 
 This package develops the fresh review's recommended visual refresh. It preserves the current five destinations and product behavior. Earlier review documents and their task IDs are not prerequisites for this package.
 
@@ -15,7 +15,7 @@ This package develops the fresh review's recommended visual refresh. It preserve
 | --- | --- | --- | --- | --- | --- | --- |
 | FRESH-001 | Shared surfaces, typography roles, spacing, and accessible choice rows | 5, 6 | None | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-001) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-001) | Implemented; verification deferred at user request |
 | FRESH-002 | Compact Today previews and coherent habit presentation | 1, 2 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-002) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-002) | Implemented; verification deferred at user request |
-| FRESH-003 | Timeline header with direct search and expandable view options | 3 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-003) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-003) | Planned |
+| FRESH-003 | Timeline header with direct search and expandable view options | 3 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-003) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-003) | Implemented; Gradle and emulator verification deferred at user request |
 | FRESH-004 | Modular Weekly Review overview with quieter setup information | 4 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-004) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-004) | Planned |
 | FRESH-005 | Consistent More destinations and compact Quick Capture choices | 5 | FRESH-001 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-005) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-005) | Planned |
 | FRESH-006 | Confirmed save acknowledgement and restrained habit progress motion | 6 | FRESH-001, FRESH-002 | [Spec](superpowers/specs/2026-10-21-fresh-ui-refresh-design.md#fresh-006) | [Plan](superpowers/plans/2026-10-21-fresh-ui-refresh.md#fresh-006) | Planned |

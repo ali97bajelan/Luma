@@ -382,6 +382,9 @@
     <string name="timeline_earlier">Événements précédents</string>
     <string name="timeline_later">Événements suivants</string>
     <string name="timeline_show_app_usage">Afficher l’utilisation des applications</string>
+    <string name="timeline_view_options">Options d’affichage</string>
+    <string name="timeline_hide_view_options">Masquer les options d’affichage</string>
+    <string name="timeline_app_usage_active">Utilisation des applications incluse</string>
     <plurals name="habit_log_count">
         <item quantity="one">%1$d enregistrement d’habitude</item>
         <item quantity="many">%1$d enregistrements d’habitude</item>

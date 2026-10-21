@@ -11,7 +11,7 @@
 **Spec:** [Fresh UI refresh design](../specs/2026-10-21-fresh-ui-refresh-design.md)
 **Tasks:** [Task catalog](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH-TASKS.md)
 **Source review:** [Fresh UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH.md)
-**Status:** FRESH-001 and FRESH-002 implementations are in place; their planned test and visual verification steps remain pending by user request. Other tasks have not started.
+**Status:** FRESH-001, FRESH-002, and FRESH-003 implementations are in place; their planned test and visual verification steps remain pending by user request. FRESH-004–006 have not started.
 
 ## Global Constraints
 
@@ -127,8 +127,8 @@ Substitute the exact class/method named in the task. Expected result: the select
 - Produces: `TimelineViewOptions` with the complete signature in [FRESH-003](../specs/2026-10-21-fresh-ui-refresh-design.md#fresh-003). `TimelineRoute`'s callable contract remains unchanged. New UI state is only the hoisted saveable disclosure Boolean.
 
 - [ ] **Step 1:** Update `timelineSwitchShowsOnlyAppsOverOneMinuteAndPersistsTheChoice` to open `timeline_view_options` before accessing the existing switch. Add `viewOptionsSurviveDateNavigationWithoutChangingUsagePreference`: assert `timeline_view_options_panel` starts absent, expand it, turn usage on, change day, and assert it stays expanded with the switch on. Close it and assert the active indicator exists while the switch is absent. Verify the existing SharedPreferences value remains true. Run the focused new test against the old UI.
-- [ ] **Step 2:** Implement `TimelineViewOptions` and add the three specified `timeline_*` strings in all locales. Use a named 48 dp toggle with expanded/collapsed semantics; pass the current filter flag and the existing persistence/pager callback, with no local copy of that flag.
-- [ ] **Step 3:** Move disclosure state above `key(date, zone)` in `TimelineRoute`; render title/Search, `DayNavigation`, loaded counts/options, active-filter indicator, then the feed. Apply the reading pane and shared roles. Keep the current stable feed keys, paging effects, grouping, error/empty content, and capture clearance.
+- [x] **Step 2:** Implement `TimelineViewOptions` and add the three specified `timeline_*` strings in all locales. Use a named 48 dp toggle with expanded/collapsed semantics; pass the current filter flag and the existing persistence/pager callback, with no local copy of that flag.
+- [x] **Step 3:** Move disclosure state above `key(date, zone)` in `TimelineRoute`; render title/Search, `DayNavigation`, loaded counts/options, active-filter indicator, then the feed. Apply the reading pane and shared roles. Keep the current stable feed keys, paging effects, grouping, error/empty content, and capture clearance.
 - [ ] **Step 4:** Extend the new disclosure test with `StateRestorationTester` around the existing LifeOsApp fixture; assert the panel/filter/date restore together. Run the changed filtering test and existing mixed-entry/date-only/paging checks. Confirm opening Search remains one click and closing options does not change the saved preference.
 - [ ] **Step 5:** Inspect an empty and populated day in English/French/Persian and record acceptance results. Suggested commit: `feat(ui): group timeline view options`.
 

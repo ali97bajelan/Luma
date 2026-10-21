@@ -373,6 +373,9 @@
     <string name="timeline_earlier">Earlier events</string>
     <string name="timeline_later">Later events</string>
     <string name="timeline_show_app_usage">Show app usage</string>
+    <string name="timeline_view_options">View options</string>
+    <string name="timeline_hide_view_options">Hide view options</string>
+    <string name="timeline_app_usage_active">App usage included</string>
     <plurals name="habit_log_count">
         <item quantity="one">%1$d habit log</item>
         <item quantity="other">%1$d habit logs</item>
