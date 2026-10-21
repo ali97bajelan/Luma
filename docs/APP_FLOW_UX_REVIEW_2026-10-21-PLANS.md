@@ -3,7 +3,7 @@
 **Date:** 21 October 2026
 **Source:** [APP_FLOW_UX_REVIEW_2026-10-21.md](APP_FLOW_UX_REVIEW_2026-10-21.md)
 **Scope:** 24 task pairs: the review’s 17 remaining numbered findings and 7 focused tasks for uncovered live observations/design work.
-**Status:** Documentation prepared; implementation has not started. UX-028 remains optional and unselected.
+**Status:** FLOW-003 implementation complete; build, emulator, and visual verification pending at the user's request. Other task statuses are listed below. UX-028 remains optional and unselected.
 
 ## Coverage and reuse
 
@@ -34,7 +34,7 @@ The new specifications distinguish source behavior from the installed emulator b
 | UX-028 | Attached images cannot be inspected beyond their previews | [Spec](superpowers/specs/2026-10-20-audit-n-ux-028-optional-photo-viewer-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-028-optional-photo-viewer.md) | Optional / not selected |
 | FLOW-001 | Make Today’s selected-date context explicit | [Spec](superpowers/specs/2026-10-21-flow-001-today-date-context-design.md) | [Plan](superpowers/plans/2026-10-21-flow-001-today-date-context.md) | Draft / not started |
 | FLOW-002 | Remove duplicate empty-task messaging | [Spec](superpowers/specs/2026-10-21-flow-002-today-task-empty-state-design.md) | [Plan](superpowers/plans/2026-10-21-flow-002-today-task-empty-state.md) | Draft / not started |
-| FLOW-003 | Make habit progress visually legible | [Spec](superpowers/specs/2026-10-21-flow-003-habit-progress-track-design.md) | [Plan](superpowers/plans/2026-10-21-flow-003-habit-progress-track.md) | Draft / not started |
+| FLOW-003 | Make habit progress visually legible | [Spec](superpowers/specs/2026-10-21-flow-003-habit-progress-track-design.md) | [Plan](superpowers/plans/2026-10-21-flow-003-habit-progress-track.md) | Implementation complete / runtime verification pending |
 | FLOW-004 | Show the scheduled habit count in Today’s preview | [Spec](superpowers/specs/2026-10-21-flow-004-habit-preview-count-design.md) | [Plan](superpowers/plans/2026-10-21-flow-004-habit-preview-count.md) | Draft / not started |
 | FLOW-005 | Refine Today’s information hierarchy | [Spec](superpowers/specs/2026-10-21-flow-005-today-information-hierarchy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-005-today-information-hierarchy.md) | Draft / not started |
 | FLOW-006 | Unify populated card hierarchy | [Spec](superpowers/specs/2026-10-21-flow-006-content-card-hierarchy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-006-content-card-hierarchy.md) | Draft / not started |
@@ -100,7 +100,7 @@ Suggested batches are: privacy/status/recovery corrections; navigation/selectors
 
 ## Proportionate execution checks
 
-This request generates documents only. Every implementation checkbox remains unchecked, and prospective commands in the linked plans were not run. The 17 canonical pairs retain their issue-specific acceptance cases, including failure paths where those are the issue being corrected. The new visual plans reuse existing fixtures and avoid unit tests that merely restate spacing or copy.
+The original documentation pass ran no prospective commands and left implementation checkboxes unchecked. FLOW-003 has since been implemented; its linked plan records static evidence and pending build/device checks. The 17 canonical pairs retain their issue-specific acceptance cases, including failure paths where those are the issue being corrected. The new visual plans reuse existing fixtures and avoid unit tests that merely restate spacing or copy.
 
 When implementation is selected, use one ordinary visit per affected section/form and the existing five-record dataset. Add only the targeted regression needed for a changed state/navigation contract; do not repeat the full walkthrough per cosmetic change or create five more records per form. Run the integrated compile/resource/lint checks once per changed batch, repeating only for new changes or failures. Record any specialized release checks not executed as pending.
 

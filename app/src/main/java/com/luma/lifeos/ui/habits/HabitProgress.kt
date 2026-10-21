@@ -60,7 +60,12 @@ internal fun HabitProgressContent(day: HabitDay) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        LinearProgressIndicator(progress = { habitProgressFraction(day.count, target) },
-            modifier = Modifier.fillMaxWidth().height(4.dp))
+        LinearProgressIndicator(
+            progress = { habitProgressFraction(day.count, target) },
+            modifier = Modifier.fillMaxWidth().height(4.dp)
+                .testTag("habit_progress_track_${day.habit.id}"),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.outline,
+        )
     }
 }

@@ -1,6 +1,6 @@
 # FLOW-003 — Make habit progress visually legible
 
-**Status:** Draft specification; implementation has not started. Policy choices are proposed defaults for review.
+**Status:** Implementation complete on 21 October 2026; static source/palette review recorded in the plan. Build, emulator, and visual acceptance verification remain pending at the user's request.
 **Date:** 21 October 2026
 **Source:** [App flow and UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21.md), Additional live observation 4; visual directions 3 and 5.
 **Priority:** P2
@@ -60,4 +60,4 @@ No new tracker type, animated celebration, streak pressure, target calculation, 
 
 ## Completion evidence
 
-Use the matching plan's focused verification. A screenshot demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state. Document unavailable checks as pending. No app tests, build, or implementation were performed while preparing this spec.
+The matching plan records implementation and static source/palette evidence. No Gradle command, app test, or emulator check was run for this implementation, as requested. Matching-build reproduction and visual/assistive-technology acceptance remain pending. A screenshot, when available, demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state.

@@ -10,7 +10,7 @@
 
 **Spec:** [FLOW-003 specification](../specs/2026-10-21-flow-003-habit-progress-track-design.md)
 
-**Status:** Draft plan; all implementation and verification steps remain unchecked.
+**Status:** Implementation complete on 21 October 2026. Static source and palette review complete; matching-build, Gradle, emulator, and visual verification pending at the user's request.
 
 ## Global Constraints
 
@@ -52,9 +52,9 @@ None. FLOW-005 consumes the resulting compact progress presentation.
 
 - [ ] **Step 1: Compare a matching build.** Inspect HabitProgressContent in a build from the checked-out source using the existing component fixture. Record whether the observed isolated dot persists and whether the full track is already present.
 
-- [ ] **Step 2: Set explicit semantic track colors.** Keep the existing fraction and 4 dp height; set filled color to primary and unfilled trackColor to outline using supported current Material APIs. Preserve all numeric text.
+- [x] **Step 2: Set explicit semantic track colors.** Keep the existing fraction and 4 dp height; set filled color to primary and unfilled trackColor to outline using supported current Material APIs. Preserve all numeric text.
 
-- [ ] **Step 3: Keep one progress identity.** Add habit_progress_track_<id> to the indicator. Retain Material’s determinate range semantics and the existing readable count description without a duplicate conflicting range on the parent.
+- [x] **Step 3: Keep one progress identity.** Add habit_progress_track_<id> to the indicator. Retain Material’s determinate range semantics and the existing readable count description without a duplicate conflicting range on the parent.
 
 - [ ] **Step 4: Measure the same visual fixture.** Inspect zero, partial, and complete rows together in the light/dark palettes and record at least 3:1 track/card contrast. Do not create unit tests for color constants.
 
@@ -68,8 +68,25 @@ Use the single component/visual fixture in Step 3. No automated test is added me
 
 After the integrated UI batch, run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` once to verify call sites and resources; repeat only if new changes or failures require it. Do not run the full app walkthrough again for each small visual task. Reuse the existing five-record fixtures and enter no extra demo data for this plan.
 
-- [ ] **Integration review:** Compare the diff with every behavior item and AC in the spec. Preserve the unrelated dirty tree and record actual build/device evidence and pending checks. Stage only this task's hunks if the selected execution workflow uses commits; suggested message: `fix: flow-003 habit progress track`.
+- [x] **Integration review:** Compared the diff with every behavior item and AC in the spec, preserved unrelated files, and recorded static evidence and pending build/device checks below. No commit was created; suggested message: `fix: flow-003 habit progress track`.
+
+## Implementation evidence — 21 October 2026
+
+- User scope: implementation only, without Gradle or emulator tests. Steps 1, 4, and 5 remain pending where they require a running matching build; no build, lint, automated app tests, or emulator commands were run.
+- Source already contains a full-width 4 dp Material indicator. Set `color = MaterialTheme.colorScheme.primary` and `trackColor = MaterialTheme.colorScheme.outline`; added `habit_progress_track_<id>` to that indicator.
+- Reviewed cached Material 3 source: the existing determinate overload supports both color parameters, draws the track at zero, and supplies `ProgressBarRangeInfo`. No extra range or numeric announcement was added to the parent. This is source evidence, not matching-build reproduction of the reported dot.
+- Static sRGB relative-luminance calculation against the default Card `surfaceContainerHighest` yields outline/card contrast **3.41:1 light** (`#74796F` / `#E0E2DA`) and **3.91:1 dark** (`#8E9389` / `#323632`). Against `surface`, the ratios are 4.19:1 and 5.86:1. Both palettes exceed 3:1 for these backgrounds; actual rendered fixture measurement remains pending.
+- Exact count/target/unit text, full accessible description, fraction clamping, Material stop marker, RTL behavior, and separate open/log callbacks and 48 dp controls are unchanged. Today’s two-row limit and 4 dp internal gaps are unchanged. No dependencies, resources, or stored data changed.
+- Static diff review complete. No new tests were added for static colors or the unchanged fraction function, consistent with the focused verification policy.
+
+| Acceptance case | Static evidence | Runtime status |
+|---|---|---|
+| AC-1 — zero track | Full width/4 dp retained; explicit outline track; Material source draws track at zero. | Visual/matching-build check pending. |
+| AC-2 — partial count | Same exact numeric text and `habitProgressFraction`; no rounding change. | 1/8 fixture check pending. |
+| AC-3 — completion | Same exact count, including over-target counts; fraction remains clamped to 1. | Complete/over-target fixture check pending. |
+| AC-4 — both palettes | Static outline/card contrast exceeds 3:1 in both palettes; numeric text retained. | Rendered light/dark fixture check pending. |
+| AC-5 — progress/actions | One Material determinate range retained; parent count description and separate open/log targets unchanged. | Interaction/semantics inspection pending. |
 
 ## Handoff
 
-Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. This plan is ready for review; no product code or tests were changed by its creation.
+Implementation is ready for review with the static evidence above. Build, emulator, visual, and assistive-technology checks remain pending; no runtime acceptance case is marked passed.
