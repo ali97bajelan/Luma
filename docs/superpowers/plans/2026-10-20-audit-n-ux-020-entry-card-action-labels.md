@@ -1,6 +1,6 @@
 # UX-020 — Entry card accessibility actions promise Edit but open details Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** Implementation is complete. Use the Status field below for remaining verification work. No Gradle or emulator checks were run at the user's request.
 
 **Goal:** Make an entry card's announced action match its supplied navigation destination.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-020 specification](../specs/2026-10-20-audit-n-ux-020-entry-card-action-labels-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Implementation complete; automated, Gradle, and emulator verification pending at the user's request. No behavior tests were added. Relative effort: Low.
 
 ## Global Constraints
 
@@ -41,8 +41,9 @@ These five concrete failure modes are pinned to the regression cases owned by th
 - Modify: `app/src/main/java/com/luma/lifeos/ui/today/TodayScreen.kt`
 - Modify: `app/src/main/java/com/luma/lifeos/ui/timeline/TimelineRoute.kt`
 - Modify: `app/src/main/java/com/luma/lifeos/ui/search/SearchRoute.kt`
+- Modify: `app/src/main/java/com/luma/lifeos/ui/review/WeeklyReviewRoute.kt`
 - Modify: `app/src/main/java/com/luma/lifeos/ui/review/ReviewSourcesRoute.kt`
-- Modify: `app/src/main/java/com/luma/lifeos/ui/memory/MemoryReviewRoute.kt`
+- Modify: `app/src/main/java/com/luma/lifeos/ui/places/PlacesRoute.kt`
 - Extend test: `app/src/androidTest/java/com/luma/lifeos/EventCardTest.kt`
 - Extend test: `app/src/androidTest/java/com/luma/lifeos/DetailNavigationTest.kt`
 - Localized resources, only when copy changes: `app/src/main/res/values/strings.xml`
@@ -57,7 +58,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: EventCard gains required @StringRes openActionLabel: Int adjacent to onOpen. Use that resource for clickable(onClickLabel = stringResource(openActionLabel), onClick = onOpen). Migrate every EventCard call found by rg, including any additional callers beyond the listed starting files.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -77,9 +78,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Add the required resource parameter and replace internal type-based action-label inference.
+- [x] **Step 4: Implement the owning contract.** Add the required resource parameter and replace internal type-based action-label inference.
 
-- [ ] **Step 5: Connect the behavior.** Inventory and migrate every caller based on its real callback destination, preserving independent marker semantics.
+- [x] **Step 5: Connect the behavior.** Inventory and migrate every caller based on its real callback destination, preserving independent marker semantics.
 
 - [ ] **Step 6: Exercise the complete flow.** Verify detail-opening and direct-editing contexts in merged semantics and actual navigation.
 
@@ -90,4 +91,3 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 ## Handoff
 
 Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-

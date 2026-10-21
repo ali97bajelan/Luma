@@ -21,6 +21,7 @@ import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
+import com.luma.lifeos.language.formatActivityQuantity
 import com.luma.lifeos.ui.timeline.label
 import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.AccessibleFeedback
@@ -31,6 +32,7 @@ import com.luma.lifeos.ui.integrations.label
 import com.luma.lifeos.ui.integrations.metricAbsence
 import com.luma.lifeos.ui.integrations.needsAccessSecondary
 import java.time.format.FormatStyle
+import java.util.Locale
 
 internal fun mostSampledActivity(activities: List<ReviewActivity>): ReviewActivity? =
     activities.minWithOrNull(compareByDescending<ReviewActivity> { it.total.samples }
@@ -90,7 +92,7 @@ internal fun ReviewOverview(report: WeeklyReview, repository: WeeklyReviewReposi
                 val activity = mostSampledActivity(current.activities)
                 val value = activity?.total?.let {
                     stringResource(R.string.review_overview_activity_value,
-                        activityTypeDisplayName(it.type, it.unit, it.source), reviewNumber(it.total),
+                        activityTypeDisplayName(it.type, it.unit, it.source), formatActivityQuantity(it.total, Locale.getDefault()),
                         activityUnitDisplayName(it.type, it.unit, it.source), it.samples, stringResource(it.source.label()))
                 } ?: stringResource(R.string.metric_no_saved_measurements)
                 ReviewOverviewMetric(stringResource(R.string.review_activity), value, "review_overview_activity", dense = true,

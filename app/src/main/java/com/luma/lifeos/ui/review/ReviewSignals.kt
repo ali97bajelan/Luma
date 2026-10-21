@@ -21,8 +21,11 @@ import com.luma.lifeos.ui.integrations.metricAbsence
 import com.luma.lifeos.ui.integrations.needsAccessSecondary
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
+import com.luma.lifeos.language.formatActivityChange
+import com.luma.lifeos.language.formatActivityQuantity
 import java.time.LocalDate
 import java.time.format.FormatStyle
+import java.util.Locale
 import kotlin.math.abs
 
 @Composable
@@ -49,7 +52,7 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit,
             TextButton(onClick = onIntegrations, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                 .testTag("review_usage_integrations")) { Text(stringResource(R.string.metric_integrations_action)) }
         }
-        if (a != null || b != null) DetailsDisclosure(R.string.review_coverage_details, "review_usage_coverage_details", keepTitle = true) {
+        if (a != null || b != null) DetailsDisclosure(R.string.review_coverage_details, "review_usage_coverage_details") {
             a?.let { UsageCoverage(it) }
             b?.let {
                 Text(stringResource(R.string.review_previous_value, stringResource(R.string.review_usage)))
@@ -71,7 +74,7 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit,
                     reviewDuration(previousMillis, stringResource(R.string.review_usage_app_missing)), null, "app_${app.packageName}")
             }
         }
-        if (a?.days.orEmpty().isNotEmpty() || b?.days.orEmpty().isNotEmpty()) DetailsDisclosure(R.string.review_daily_evidence, "review_usage_daily_details", keepTitle = true) {
+        if (a?.days.orEmpty().isNotEmpty() || b?.days.orEmpty().isNotEmpty()) DetailsDisclosure(R.string.review_daily_evidence, "review_usage_daily_details") {
             val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
             (a?.days.orEmpty() + b?.days.orEmpty()).sortedBy { it.date }.forEach { day ->
                 TextButton(onClick = { onUsage(day.date) }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
@@ -116,10 +119,11 @@ internal fun ReviewActivities(report: WeeklyReview, onSources: (ReviewDates, Rev
                 val absence = if (healthSteps) metricAbsence(false, false, false, healthAvailability)
                     ?: MetricAbsence.NO_SAVED_DATA else MetricAbsence.NO_SAVED_DATA
                 @Composable fun value(row: ReviewActivity?): String = row?.let {
-                    stringResource(R.string.review_activity_value, reviewNumber(it.total.total), displayUnit, it.total.samples, it.dates)
+                    stringResource(R.string.review_activity_value,
+                        formatActivityQuantity(it.total.total, Locale.getDefault()), displayUnit, it.total.samples, it.dates)
                 } ?: stringResource(if (healthSteps) absence.label(MetricPeriod.WEEK) else R.string.review_no_measurement_period)
                 ReviewValue("$displayType · $displayUnit · ${stringResource(group.source.label())}", value(a), value(b),
-                    if (a != null && b != null) (if (a.total.total > b.total.total) "+" else "") + reviewNumber(a.total.total - b.total.total) + " " + displayUnit else null,
+                    formatActivityChange(a?.total?.total, b?.total?.total, Locale.getDefault())?.let { "$it $displayUnit" },
                     "activity_${group.type}_${group.unit}_${group.source}",
                     a?.let { { onSources(report.period.current, metric) } }, b?.let { { onSources(report.period.previous, metric) } })
             }

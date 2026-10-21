@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.habit.TimelineFeedItem
@@ -74,7 +75,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
             item(key = "header") {
                 Column {
                     Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
-                    Text(stringResource(R.string.timeline), style = MaterialTheme.typography.headlineLarge)
+                    AppSectionHeading(stringResource(R.string.timeline), style = MaterialTheme.typography.headlineLarge)
                     onSearch?.let { TextButton(onClick = it, modifier = Modifier.testTag("timeline_search")) { Text(stringResource(R.string.search_entries_title)) } }
                     DayNavigation(date, onSelectDate, onToday)
                     val usageSwitchLabel = stringResource(R.string.timeline_show_app_usage)
@@ -124,6 +125,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
             }) { item ->
                 when (item) {
                     is TimelineFeedItem.Entry -> EventCard(item.record, zone, onOpen = { onEvent(item.record) },
+                        openActionLabel = if (item.record.journal != null) R.string.journal_open else R.string.event_open,
                         onMemory = { onMemory(item.record.event.id) })
                     is TimelineFeedItem.Habit -> HabitTimelineCard(item, zone) {
                         onHabit(item.log.habitId, item.log.date, item.log.id)

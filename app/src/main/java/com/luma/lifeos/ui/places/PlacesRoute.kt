@@ -133,7 +133,8 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(record.event.occurredAt.atZone(zone)
                                 .format(displayTime.dateTime(FormatStyle.MEDIUM)))
-                            EventCard(record, zone, onOpen = { onEvent(record) })
+                            EventCard(record, zone, onOpen = { onEvent(record) },
+                                openActionLabel = if (record.journal != null) R.string.journal_open else R.string.event_open)
                         }
                     }
                 }

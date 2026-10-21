@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
@@ -100,7 +101,7 @@ fun TodayScreen(
     ) {
         item(key = "header") {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(heading), style = MaterialTheme.typography.titleLarge)
+                AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.titleLarge)
                 DayNavigation(date, onSelectDate, onToday)
                 if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
             }
@@ -128,7 +129,7 @@ fun TodayScreen(
         } }
         item(key = "recent_entries") {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.titleLarge,
+                AppSectionHeading(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.testTag("today_recent_entries"))
                 if (state is TodayUiState.Data || state == TodayUiState.Empty) {
                     Text(entryLogCounts((state as? TodayUiState.Data)?.events?.size ?: 0, habitLogCount),
@@ -159,6 +160,13 @@ fun TodayScreen(
                 items(state.events, key = { it.id.toString() }) { event ->
                     val record = state.records[event.id] ?: LifeEventRecord(event, state.moods[event.id],
                         state.journals[event.id], state.memories[event.id], state.people[event.id].orEmpty(), state.places[event.id])
+                    val openActionLabel = when {
+                        record.canEditContent && record.journal != null -> R.string.journal_edit
+                        record.canEditContent && event.type == EventType.MOOD -> R.string.mood_edit_action
+                        record.canEditContent && event.type == EventType.MEMORY -> R.string.memory_edit
+                        record.journal != null -> R.string.journal_open
+                        else -> R.string.event_open
+                    }
                     EventCard(record, zone, onOpen = {
                         when {
                             record.canEditContent && record.journal != null -> onJournalClick(event.id)
@@ -166,12 +174,12 @@ fun TodayScreen(
                             record.canEditContent && event.type == EventType.MEMORY -> onMemoryClick(event.id)
                             else -> onEventClick(event.id)
                         }
-                    }, onMemory = { onMemoryClick(event.id) })
+                    }, openActionLabel = openActionLabel, onMemory = { onMemoryClick(event.id) })
                 }
             }
         }
         summaryState?.let { summary -> item(key = "daily_summary") {
-            DetailsDisclosure(R.string.summary_heading, "today_daily_summary", keepTitle = true) {
+            DetailsDisclosure(R.string.summary_heading, "today_daily_summary") {
                 DailySummaryCard(summary, onSummaryRetry, habitLogCount, integrationAvailability, onIntegrations,
                     onCheckIn = { requestCapture(EventType.MOOD, it) })
             }

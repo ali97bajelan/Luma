@@ -19,14 +19,14 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 
 @Composable
-fun DetailsDisclosure(@StringRes title: Int, tag: String, keepTitle: Boolean = false, content: @Composable () -> Unit) {
+fun DetailsDisclosure(@StringRes title: Int, tag: String, content: @Composable () -> Unit) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val state = stringResource(if (expanded) R.string.review_details_expanded else R.string.review_details_collapsed)
     Column {
         TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag(tag)
-            .then(if (keepTitle) Modifier.semantics { stateDescription = state } else Modifier)) {
-            Text(if (expanded && keepTitle) stringResource(R.string.review_hide_details, stringResource(title))
-                else stringResource(if (expanded) R.string.hide_details else title))
+            .semantics { stateDescription = state }) {
+            Text(if (expanded) stringResource(R.string.review_hide_details, stringResource(title))
+                else stringResource(title))
         }
         if (expanded) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
     }

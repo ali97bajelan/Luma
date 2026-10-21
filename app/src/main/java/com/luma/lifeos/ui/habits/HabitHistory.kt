@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.domain.habit.HabitLog
 import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.time.ZoneId
@@ -44,7 +45,7 @@ fun LazyListScope.habitHistoryItems(
     historyError: Boolean = false,
 ) {
     item(key = "habit_history_heading") {
-        Text(stringResource(R.string.habit_history), style = MaterialTheme.typography.titleLarge,
+        AppSectionHeading(stringResource(R.string.habit_history), style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.testTag("habit_history_section"))
     }
     val visibleLogs = logs.filterNot { it.id == selectedLogId }

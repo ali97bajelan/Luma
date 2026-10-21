@@ -1,6 +1,6 @@
 # UX-026 — Weekly activity can render a nonzero value as zero
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implementation complete; automated, Gradle, and emulator verification pending at the user's request. The implementation follows the design decisions below.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-026](../../UI_UX_AUDIT-20261020N.md#ux-026--weekly-activity-can-render-a-nonzero-value-as-zero)
 **Priority / effort / confidence:** P2 — Medium / Low / High (copied from the static audit; not a delivery estimate).
@@ -38,7 +38,7 @@ None. Coordinate overlapping files using the index's integration order.
 
 Extract Daily Summary's existing precision-preserving NumberFormat policy into a pure shared activity formatter. Apply it to activity totals/deltas only and retain rating-average formatting.
 
-fun formatActivityQuantity(value: Double, locale: Locale): String uses NumberFormat.getNumberInstance(locale) with maximumFractionDigits = 340. fun formatActivityChange(current: Double?, previous: Double?, locale: Locale): String? preserves nonzero deltas, prepends localized positive sign convention and returns null if either sample is missing. Rating reviewNumber/reviewChange remain separate.
+fun formatActivityQuantity(value: BigDecimal, locale: Locale): String uses NumberFormat.getNumberInstance(locale) with maximumFractionDigits = 340. fun formatActivityChange(current: BigDecimal?, previous: BigDecimal?, locale: Locale): String? preserves nonzero deltas with exact decimal subtraction, prepends localized positive sign convention and returns null if either sample is missing. Rating reviewNumber/reviewChange remain separate.
 
 Types, properties and files described as additions are proposed interfaces. Existing APIs are named explicitly where they are reused; follow the implementation plan's file inventory to distinguish new from current code.
 
@@ -59,4 +59,3 @@ No precision change for mood ratings, new unit conversions, scientific-chart fea
 ## Validation and completion
 
 Use the matching plan's targeted commands and evidence checklist. Semantics-tree assertions establish structure; actual TalkBack speech/focus and layout claims require device evidence. Record any unavailable runtime checks as pending rather than passed. A corrective task closes only after its behavior and regression checks pass; UX-028 closes only if separately selected for implementation.
-

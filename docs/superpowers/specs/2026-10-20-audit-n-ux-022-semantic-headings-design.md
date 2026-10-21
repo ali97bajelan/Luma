@@ -1,6 +1,6 @@
 # UX-022 — Visible headings are missing semantic heading roles
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implementation complete; automated, Gradle, and emulator verification pending at the user's request. The implementation follows the design decisions below.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-022](../../UI_UX_AUDIT-20261020N.md#ux-022--visible-headings-are-missing-semantic-heading-roles)
 **Priority / effort / confidence:** P2 — Medium / Low / High (copied from the static audit; not a delivery estimate).
@@ -59,4 +59,3 @@ No wholesale typography redesign, invented numeric heading levels or marking eve
 ## Validation and completion
 
 Use the matching plan's targeted commands and evidence checklist. Semantics-tree assertions establish structure; actual TalkBack speech/focus and layout claims require device evidence. Record any unavailable runtime checks as pending rather than passed. A corrective task closes only after its behavior and regression checks pass; UX-028 closes only if separately selected for implementation.
-

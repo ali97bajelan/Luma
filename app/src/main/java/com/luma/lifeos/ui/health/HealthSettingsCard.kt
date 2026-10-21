@@ -141,7 +141,7 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
                     }
                 }
             }
-            DetailsDisclosure(R.string.imports_details, "health_details") {
+            DetailsDisclosure(R.string.health_title, "health_details") {
                 Text(stringResource(R.string.health_explanation))
                 Text(stringResource(R.string.health_privacy_retention), modifier = Modifier.testTag("health_retention"))
             }

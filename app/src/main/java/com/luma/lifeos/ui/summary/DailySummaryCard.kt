@@ -14,10 +14,12 @@ import com.luma.lifeos.domain.usage.APP_USAGE_DISPLAY_THRESHOLD_MILLIS
 import com.luma.lifeos.domain.summary.ScaleTotal
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
+import com.luma.lifeos.language.formatActivityQuantity
 import com.luma.lifeos.ui.timeline.label
 import com.luma.lifeos.ui.usage.appUsageDuration
 import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.DetailsDisclosure
+import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.domain.usage.UsageHistory
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
@@ -35,7 +37,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
     onIntegrations: () -> Unit = {}, onCheckIn: (LocalDate) -> Unit = {}) {
     Card(Modifier.fillMaxWidth().testTag("daily_summary")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.summary_heading), style = MaterialTheme.typography.titleMedium)
+            AppSectionHeading(stringResource(R.string.summary_heading), style = MaterialTheme.typography.titleMedium)
             when (state) {
                 DailySummaryState.Loading -> CircularProgressIndicator(Modifier.testTag("daily_summary_loading"))
                 DailySummaryState.Error -> {
@@ -123,11 +125,9 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                         }
                         else {
                             Text(stringResource(R.string.summary_activity), style = MaterialTheme.typography.titleMedium)
-                            // Preserve small nonzero recorded values instead of displaying a rounded zero.
-                            val activityFormat = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 340 }
                             activity.forEach { total ->
                                 Text(stringResource(R.string.summary_activity_value,
-                                    activityTypeDisplayName(total.type, total.unit, total.source), activityFormat.format(total.total),
+                                    activityTypeDisplayName(total.type, total.unit, total.source), formatActivityQuantity(total.total, java.util.Locale.getDefault()),
                                     activityUnitDisplayName(total.type, total.unit, total.source), stringResource(total.source.label()), total.samples),
                                     modifier = Modifier.testTag("summary_activity_${total.type}_${total.unit}_${total.source}"),
                                     style = MaterialTheme.typography.bodyMedium)

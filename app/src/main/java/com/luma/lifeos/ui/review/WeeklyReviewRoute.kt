@@ -230,7 +230,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             }
         }
         if (report.current.moodDays.any { it.mood != null }) {
-            DetailsDisclosure(R.string.review_daily_evidence, "review_mood_daily_details", keepTitle = true) {
+            DetailsDisclosure(R.string.review_daily_evidence, "review_mood_daily_details") {
                 val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
                 report.current.moodDays.filter { it.mood != null }.forEach { day ->
                     Text(day.date.format(format))
@@ -287,7 +287,9 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         is ReviewSourcesState.Data -> {
             if (current.page.records.isEmpty()) ReviewEmpty(R.string.review_memory_empty_short, "review_memories_empty")
             current.page.records.forEach { row ->
-                EventCard(row, period.zone, { onEvent(row) }, onMemory?.let { { it(row) } })
+                EventCard(row, period.zone, onOpen = { onEvent(row) },
+                    openActionLabel = if (row.journal != null) R.string.journal_open else R.string.event_open,
+                    onMemory = onMemory?.let { { it(row) } })
                 Spacer(Modifier.height(8.dp))
             }
         }

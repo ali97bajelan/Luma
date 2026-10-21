@@ -1,6 +1,6 @@
 # UX-026 — Weekly activity can render a nonzero value as zero Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** Implementation is complete. Use the Status field below for remaining verification work. No Gradle or emulator checks were run at the user's request.
 
 **Goal:** Keep small positive and negative activity values distinct from zero in Review and Daily Summary.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-026 specification](../specs/2026-10-20-audit-n-ux-026-activity-number-precision-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Implementation complete; automated, Gradle, and emulator verification pending at the user's request. No behavior tests were added. Relative effort: Low.
 
 ## Global Constraints
 
@@ -39,6 +39,7 @@ These five concrete failure modes are pinned to the regression cases owned by th
 
 - Modify: `app/src/main/java/com/luma/lifeos/ui/review/ReviewValues.kt`
 - Modify: `app/src/main/java/com/luma/lifeos/ui/review/ReviewSignals.kt`
+- Modify: `app/src/main/java/com/luma/lifeos/ui/review/ReviewOverview.kt`
 - Modify: `app/src/main/java/com/luma/lifeos/ui/summary/DailySummaryCard.kt`
 - Create: `app/src/main/java/com/luma/lifeos/language/ActivityFormats.kt`
 - Create test: `app/src/test/java/com/luma/lifeos/language/ActivityFormatsTest.kt`
@@ -52,10 +53,10 @@ Keep changes in their current screen/state/repository responsibility. New files 
 **Interfaces:**
 
 - Consumes the current route/ViewModel/repository contracts in the files listed above; no new cross-task API is required.
-- Produces: fun formatActivityQuantity(value: Double, locale: Locale): String uses NumberFormat.getNumberInstance(locale) with maximumFractionDigits = 340. fun formatActivityChange(current: Double?, previous: Double?, locale: Locale): String? preserves nonzero deltas, prepends localized positive sign convention and returns null if either sample is missing. Rating reviewNumber/reviewChange remain separate.
+- Produces: fun formatActivityQuantity(value: BigDecimal, locale: Locale): String uses NumberFormat.getNumberInstance(locale) with maximumFractionDigits = 340. fun formatActivityChange(current: BigDecimal?, previous: BigDecimal?, locale: Locale): String? preserves nonzero deltas with exact decimal subtraction, prepends localized positive sign convention and returns null if either sample is missing. Rating reviewNumber/reviewChange remain separate.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -79,9 +80,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Extract the precision-preserving formatter from Daily Summary into language/ActivityFormats.kt.
+- [x] **Step 4: Implement the owning contract.** Extract the precision-preserving formatter from Daily Summary into language/ActivityFormats.kt.
 
-- [ ] **Step 5: Connect the behavior.** Route only activity totals and deltas through it in ReviewSignals/ReviewValues and reuse it in DailySummaryCard.
+- [x] **Step 5: Connect the behavior.** Route activity totals and deltas through it in ReviewSignals/ReviewOverview and reuse it in DailySummaryCard.
 
 - [ ] **Step 6: Exercise the complete flow.** Test small, zero, large, negative-delta and missing values across EN/FR/FA without changing scale averages.
 
@@ -92,4 +93,3 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 ## Handoff
 
 Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-

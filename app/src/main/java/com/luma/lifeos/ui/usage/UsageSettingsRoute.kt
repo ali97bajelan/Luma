@@ -138,7 +138,7 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
             }
             TextButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                 modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
-            DetailsDisclosure(R.string.imports_details, "usage_details") {
+            DetailsDisclosure(R.string.usage_title, "usage_details") {
                 Text(stringResource(R.string.usage_access_explanation))
                 Text(stringResource(R.string.usage_privacy_retention), modifier = Modifier.testTag("usage_retention"))
             }

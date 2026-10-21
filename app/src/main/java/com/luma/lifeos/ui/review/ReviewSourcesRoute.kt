@@ -59,7 +59,9 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                         items(page.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { row ->
                             Column {
                                 Text(row.event.occurredAt.atZone(zone).toLocalDate().format(format))
-                                EventCard(row, zone, { onEvent(row) }, onMemory?.let { { it(row) } })
+                                EventCard(row, zone, onOpen = { onEvent(row) },
+                                    openActionLabel = if (row.journal != null) R.string.journal_open else R.string.event_open,
+                                    onMemory = onMemory?.let { { it(row) } })
                             }
                         }
                         if (page.offset + page.records.size < page.totalCount) item {

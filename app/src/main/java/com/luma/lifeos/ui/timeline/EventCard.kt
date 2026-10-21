@@ -28,15 +28,11 @@ import java.time.ZoneId
 import java.time.format.FormatStyle
 
 @Composable
-fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit, onMemory: (() -> Unit)? = null) {
+fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
+    @StringRes openActionLabel: Int, onMemory: (() -> Unit)? = null) {
     val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     val event = record.event
-    val action = stringResource(when {
-        record.canEditContent && event.type == EventType.MOOD -> R.string.mood_edit_action
-        record.canEditContent && event.type == EventType.MEMORY -> R.string.memory_edit
-        record.journal != null -> R.string.journal_open
-        else -> R.string.event_open
-    })
+    val action = stringResource(openActionLabel)
     Card(Modifier.fillMaxWidth().testTag("event_${event.id}").clickable(onClickLabel = action, onClick = onOpen)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,

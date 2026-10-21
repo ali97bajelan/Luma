@@ -40,7 +40,9 @@ class EventCardTest {
         val record = LifeEventRecord(LifeEvent(EventId.new(), EventType.MOOD, time, time),
             mood = MoodDetails(4, note = "Original mood note"),
             memory = MemoryDetails(5, "Why this moment matters"))
-        compose.setContent { LifeOsTheme { EventCard(record, ZoneOffset.UTC, {}) } }
+        compose.setContent { LifeOsTheme {
+            EventCard(record, ZoneOffset.UTC, {}, R.string.event_open)
+        } }
         compose.onNodeWithText("Original mood note").assertIsDisplayed()
         compose.onNodeWithText("Why this moment matters").assertIsDisplayed()
         compose.onNodeWithText("Importance: 5/5", substring = true).assertIsDisplayed()
@@ -68,7 +70,7 @@ class EventCardTest {
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(records, key = { it.event.id.toString() }) { record ->
                             EventCard(record, ZoneOffset.UTC, { opened = record.event.id },
-                                { remembered = record.event.id })
+                                R.string.event_open, onMemory = { remembered = record.event.id })
                         }
                     }
                 }

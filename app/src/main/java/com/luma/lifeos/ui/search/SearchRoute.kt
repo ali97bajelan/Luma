@@ -23,6 +23,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.SearchRepository
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -46,7 +47,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
     val hasCriteria = state.input.text.isNotBlank() || count > 0
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("screen_search")) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-        Text(stringResource(R.string.search_entries_title), style = MaterialTheme.typography.headlineMedium,
+        AppSectionHeading(stringResource(R.string.search_entries_title), style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.testTag("search_title"))
         OutlinedTextField(value = state.input.text, onValueChange = vm::setText, singleLine = true,
             label = { Text(stringResource(R.string.search_text_hint)) },
@@ -100,7 +101,8 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 items(state.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { record ->
                     Column {
                         Text(record.event.occurredAt.atZone(zone).toLocalDate().format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)), style = MaterialTheme.typography.labelLarge)
-                        EventCard(record, zone, onOpen = { vm.rememberResult(record.event.id); onEvent(record) })
+                        EventCard(record, zone, onOpen = { vm.rememberResult(record.event.id); onEvent(record) },
+                            openActionLabel = if (record.journal != null) R.string.journal_open else R.string.event_open)
                     }
                 }
                 if (state.canLoadLater) item(key = "later") {
