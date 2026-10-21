@@ -19,20 +19,18 @@ import com.luma.lifeos.domain.repository.MemoryRepository
 import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.ui.navigation.CatalogAttachmentFeedback
 import com.luma.lifeos.ui.navigation.CatalogEditorResult
+import com.luma.lifeos.ui.navigation.EntryEditorResult
 import com.luma.lifeos.ui.navigation.CatalogEntity
 import com.luma.lifeos.ui.navigation.catalogEditorResultIdFlow
 import com.luma.lifeos.ui.navigation.consumeCatalogEditorDelivery
 import com.luma.lifeos.ui.navigation.readCatalogEditorDelivery
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import com.luma.lifeos.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel: () -> Unit,
-    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
+    onFinished: (EntryEditorResult) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
     places: PlaceRepository, onCreatePlace: () -> Unit, photos: PhotoRepository, initialTimeMillis: Long? = null,
     catalogResultHandle: SavedStateHandle? = null) {
     val factory = remember(repository, eventId, photos, initialTimeMillis) {
@@ -104,8 +102,14 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
         handle.consumeCatalogEditorDelivery(delivery)
     }
     LaunchedEffect(state.completed) {
-        if (state.completed) onFinished(if (state.removed && state.direct) null else
-            Instant.ofEpochMilli(state.draft.occurredAtMillis).atZone(ZoneId.systemDefault()).toLocalDate())
+        if (state.completed) {
+            val id = editor.resultEventId
+            onFinished(when {
+                !state.removed -> EntryEditorResult.Saved(id)
+                state.direct -> EntryEditorResult.Deleted(id)
+                else -> EntryEditorResult.Unmarked(id)
+            })
+        }
     }
     MemoryEditorScreen(state, { editor.discardPhotos(onCancel) }, editor::save, editor::remove, editor::load,
         editor::setTitle, editor::setNote, editor::setImportance, editor::setLocalTime, peopleContent = {

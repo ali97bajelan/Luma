@@ -69,6 +69,7 @@ class JournalEditorViewModel(
     private val captureId = EventId.parse(saved.get<String>("capture_id") ?: EventId.new().toString().also { saved["capture_id"] = it })
     private var baseline = JournalDraft(initialTime)
     private var editingId: EventId? = eventId
+    val resultEventId: EventId get() = editingId ?: eventId ?: captureId
     private var loadingJob: Job? = null
     private val mutableState = MutableStateFlow(JournalEditorState(readDraft(), completed = saved["completed"] ?: false,
         deleted = saved["deleted"] ?: false, editing = eventId != null,

@@ -1,6 +1,6 @@
 # UX-013 — A historical habit link does not locate the requested repetition Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** Implementation is complete. Use the Status field below for remaining verification work. Steps use checkbox syntax for tracking. No Gradle or emulator checks were run at the user's request.
 
 **Goal:** Reveal the exact historical repetition selected from Timeline even when it is older than the first 50 history rows.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-013 specification](../specs/2026-10-20-audit-n-ux-013-habit-targeted-history-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implementation complete; Gradle and emulator verification pending at the user's request. Regression/evidence and commit steps remain unchecked. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -56,7 +56,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: HabitDetailUiState gains selectedLogId: UUID?, selectedLog: HabitLog?, selectedLogStatus: HabitTargetStatus where status is NONE/LOADING/FOUND/MISSING/ERROR. detail target loading uses HabitRepository.getLog(id) and validates log.habitId. No new repository history-window API is required.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -80,9 +80,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Load and validate selectedLogId independently of initial history with generation-safe target state.
+- [x] **Step 4: Implement the owning contract.** Load and validate selectedLogId independently of initial history with generation-safe target state.
 
-- [ ] **Step 5: Connect the behavior.** Render the selected arrival section and stable scroll target, selected semantics and one-time announcement; deduplicate regular history.
+- [x] **Step 5: Connect the behavior.** Render the selected arrival section and stable scroll target, selected semantics and one-time announcement; deduplicate regular history.
 
 - [ ] **Step 6: Exercise the complete flow.** Refresh the target after correction/deletion and preserve independent history/target retry paths.
 
@@ -93,4 +93,3 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 ## Handoff
 
 Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-

@@ -1,6 +1,6 @@
 # UX-010 — Deleting an entry can return to its missing detail page
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implementation complete; verification pending at the user's request. The implementation follows the design decisions below.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-010](../../UI_UX_AUDIT-20261020N.md#ux-010--deleting-an-entry-can-return-to-its-missing-detail-page)
 **Priority / effort / confidence:** P2 — Medium / Medium / High (copied from the static audit; not a delivery estimate).
@@ -59,4 +59,3 @@ No whole-stack reset, source-list refresh rewrite or deletion of the source even
 ## Validation and completion
 
 Use the matching plan's targeted commands and evidence checklist. Semantics-tree assertions establish structure; actual TalkBack speech/focus and layout claims require device evidence. Record any unavailable runtime checks as pending rather than passed. A corrective task closes only after its behavior and regression checks pass; UX-028 closes only if separately selected for implementation.
-

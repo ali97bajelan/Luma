@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -20,7 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +29,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.domain.habit.HabitDayState
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitRepository
@@ -66,7 +68,7 @@ fun HabitDetailRoute(
     }
     val habits: HabitsViewModel = viewModel(factory = factory)
     val state by habits.state.collectAsStateWithLifecycle()
-    LaunchedEffect(habitId, date, deviceZone) { habits.openDetail(habitId, date, deviceZone) }
+    LaunchedEffect(habitId, date, deviceZone, logId) { habits.openDetail(habitId, date, deviceZone, logId) }
     LaunchedEffect(state.detail?.deleted) { if (state.detail?.deleted == true) onBack() }
     val renderedState = state
     HabitLogSnackbarFeedback(
@@ -88,7 +90,9 @@ fun HabitDetailRoute(
         onDeleteHabit = { habits.deleteHabit(habitId) }, onDeleteLog = habits::deleteHistoryLog,
         onEditLog = habits::beginCorrection, onChangeDate = habits::changeCorrectionDate,
         onChangeTime = habits::changeCorrectionTime, onSaveCorrection = habits::saveCorrection,
-        onCancelCorrection = habits::cancelCorrection, onRetry = habits::retry)
+        onCancelCorrection = habits::cancelCorrection, onRetry = habits::retry,
+        onRetrySelectedLog = habits::retrySelectedLog,
+        onAnnounceSelectedLog = habits::consumeSelectedTargetAnnouncement)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,6 +120,8 @@ fun HabitDetailScreen(
     onSaveCorrection: () -> Unit,
     onCancelCorrection: () -> Unit,
     onRetry: () -> Unit,
+    onRetrySelectedLog: () -> Unit = {},
+    onAnnounceSelectedLog: () -> Boolean = { false },
     onOpenDate: (LocalDate) -> Unit = {},
 ) {
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
@@ -123,6 +129,8 @@ fun HabitDetailScreen(
     var correctionPickerOpen by rememberSaveable { mutableStateOf(false) }
     val detail = state.detail
     val habit = detail?.habit
+    val targetLogId = detail?.selectedLogId ?: selectedLogId
+    val selectedTarget = detail?.takeIf { it.selectedLogStatus == HabitTargetStatus.FOUND }?.selectedLog
     val day = detail?.day
     val row = state.rowsFor(date).firstOrNull { it.day.habit.id == habitId }
     val trackingZone = state.trackingZone ?: habit?.let { day?.zone } ?: ZoneId.systemDefault()
@@ -141,12 +149,31 @@ fun HabitDetailScreen(
         if (draft.hasChanges) confirmingDiscard = true else onCancelCorrection()
     }
     BackHandler(enabled = detail?.correction != null && !correctionPickerOpen) { requestCorrectionClose() }
+    val listState = rememberLazyListState()
+    val view = LocalView.current
+    val targetAnnouncement = selectedTarget?.let {
+        stringResource(R.string.habit_selected_repetition_arrived,
+            it.date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
+    }
+    LaunchedEffect(selectedTarget?.id, habit?.id, detail?.loading) {
+        if (selectedTarget != null && habit != null && detail?.loading != true) {
+            val targetItem = listState.layoutInfo.visibleItemsInfo.firstOrNull {
+                it.key == "habit_target_arrival_${selectedTarget.id}"
+            }
+            listState.animateScrollToItem(targetItem?.index ?: 0)
+            if (onAnnounceSelectedLog()) view.announceForAccessibility(targetAnnouncement.orEmpty())
+        }
+    }
+    val canEditHabit = habit != null && detail?.loading != true
     Scaffold(modifier = Modifier.testTag("screen_habit_detail"), topBar = {
-        TopAppBar(title = { Text(habit?.name ?: stringResource(R.string.habit_title)) },
-            navigationIcon = { TextButton(onClick = { if (detail?.correction != null) requestCorrectionClose() else onBack() },
-                modifier = Modifier.testTag("habit_detail_back")) { Text(stringResource(R.string.back)) } })
+        DetailTopBar(title = habit?.name ?: stringResource(R.string.habit_title),
+            backTag = "habit_detail_back",
+            onBack = { if (detail?.correction != null) requestCorrectionClose() else onBack() },
+            editTag = "habit_detail_edit".takeIf { canEditHabit },
+            editLabel = stringResource(R.string.detail_edit).takeIf { canEditHabit },
+            onEdit = onEdit.takeIf { canEditHabit })
     }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("habit_detail_list"), contentPadding = PaddingValues(20.dp),
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(padding).testTag("habit_detail_list"), contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (detail?.loading == true) item { CircularProgressIndicator(Modifier.testTag("habit_detail_loading")) }
             if (detail?.error == HabitUiError.LOAD || state.error == HabitUiError.LOAD) item {
@@ -154,6 +181,16 @@ fun HabitDetailScreen(
                 TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             if (detail != null && habit != null) {
+                if (targetLogId != null) item(key = "habit_target_arrival_$targetLogId") {
+                    HabitSelectedLogArrival(
+                        status = detail.selectedLogStatus,
+                        log = detail.selectedLog,
+                        screenZone = trackingZone,
+                        onEdit = onEditLog,
+                        onDelete = onDeleteLog,
+                        onRetry = onRetrySelectedLog,
+                    )
+                }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), style = MaterialTheme.typography.titleLarge)
@@ -206,8 +243,6 @@ fun HabitDetailScreen(
                 }
                 state.actionError?.let { item { Text(stringResource(R.string.habit_action_error),
                     color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_detail_action_error")) } }
-                item { HabitHistory(detail.history, detail.historyTotal, selectedLogId, trackingZone, onEditLog, onDeleteLog,
-                    onLoadMore, historyError = detail.actionErrors[HabitDetailOperation.HISTORY] is HabitDetailActionError.History) }
                 item(key = "schedule-${habit.id}") {
                     Column(Modifier.fillMaxWidth().testTag("habit_schedule_details"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.habit_schedule_details), style = MaterialTheme.typography.titleMedium)
@@ -235,7 +270,6 @@ fun HabitDetailScreen(
                     HabitManagementSection(
                         lifecycle = lifecycle,
                         futureStart = futureStart,
-                        onEdit = onEdit,
                         onLifecycle = onPauseResume,
                         onDelete = { confirmingDelete = true },
                         deleteError = (detail.actionErrors[HabitDetailOperation.DELETE] as? HabitDetailActionError.Delete)
@@ -243,6 +277,8 @@ fun HabitDetailScreen(
                         onRetryDelete = onDeleteHabit,
                     )
                 }
+                habitHistoryItems(detail.history, detail.historyTotal, selectedTarget?.id, trackingZone, onEditLog, onDeleteLog,
+                    onLoadMore, historyError = detail.actionErrors[HabitDetailOperation.HISTORY] is HabitDetailActionError.History)
             }
         }
     }

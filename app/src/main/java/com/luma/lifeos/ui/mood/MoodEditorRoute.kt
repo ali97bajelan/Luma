@@ -23,23 +23,21 @@ import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.ui.navigation.CatalogAttachmentFeedback
 import com.luma.lifeos.ui.navigation.CatalogEditorResult
+import com.luma.lifeos.ui.navigation.EntryEditorResult
 import com.luma.lifeos.ui.navigation.CatalogEntity
 import com.luma.lifeos.ui.navigation.catalogEditorResultIdFlow
 import com.luma.lifeos.ui.navigation.consumeCatalogEditorDelivery
 import com.luma.lifeos.ui.navigation.readCatalogEditorDelivery
 import com.luma.lifeos.R
-import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
-import java.time.LocalDate
-import java.time.ZoneId
 
 @Composable
 fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () -> Unit,
-    onFinished: (LocalDate?) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
+    onFinished: (EntryEditorResult) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
     places: PlaceRepository, onCreatePlace: () -> Unit, initialTimeMillis: Long? = null,
     draftStore: MoodDraftStore? = null, catalogResultHandle: SavedStateHandle? = null) {
     val factory = remember(repository, eventId, initialTimeMillis, draftStore) {
@@ -63,14 +61,13 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
     }
     val placeFeedbackText = placeFeedback?.let { stringResource(it.messageResource) }
     var cancelAfterDiscard by remember { mutableStateOf(false) }
-    fun finish(deleted: Boolean, occurredAtMillis: Long) {
-        onFinished(if (deleted) null else
-            Instant.ofEpochMilli(occurredAtMillis).atZone(ZoneId.systemDefault()).toLocalDate())
+    fun finish(deleted: Boolean, id: EventId) {
+        onFinished(if (deleted) EntryEditorResult.Deleted(id) else EntryEditorResult.Saved(id))
     }
     LaunchedEffect(state.completionEventId) {
         if (state.completionEventId != null && editor.acknowledgeCompletion()) {
             withContext(Dispatchers.Main.immediate) {
-                finish(state.deleted, state.draft.occurredAtMillis)
+                finish(state.deleted, requireNotNull(state.completionEventId))
             }
         }
     }
@@ -151,7 +148,7 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
             val completionId = state.completionEventId
             if (completionId != null) {
                 if (editor.acknowledgeCompletion()) withContext(Dispatchers.Main.immediate) {
-                    finish(state.deleted, state.draft.occurredAtMillis)
+                    finish(state.deleted, requireNotNull(state.completionEventId))
                 }
             } else if (editor.retryDraftStorage() && cancelAfterDiscard) {
                 withContext(Dispatchers.Main.immediate) {

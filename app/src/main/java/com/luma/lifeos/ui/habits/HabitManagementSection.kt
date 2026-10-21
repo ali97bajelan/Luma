@@ -27,7 +27,6 @@ import com.luma.lifeos.domain.habit.HabitLifecycle
 internal fun HabitManagementSection(
     lifecycle: HabitLifecycle?,
     futureStart: Boolean,
-    onEdit: () -> Unit,
     onLifecycle: (HabitLifecycle) -> Unit,
     onDelete: () -> Unit,
     deleteError: HabitDetailActionError.Delete?,
@@ -49,10 +48,6 @@ internal fun HabitManagementSection(
         }
         if (expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = onEdit, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .testTag("habit_manage_edit")) {
-                    Text(stringResource(R.string.detail_edit))
-                }
                 if (!futureStart && lifecycle != HabitLifecycle.ARCHIVED) {
                     val resume = lifecycle == HabitLifecycle.PAUSED
                     TextButton(

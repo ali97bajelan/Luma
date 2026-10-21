@@ -835,6 +835,11 @@
     <string name="habit_delete_log_body">Seule cette répétition sera supprimée.</string>
     <string name="habit_history">Historique des répétitions</string>
     <string name="habit_history_empty">Aucune répétition enregistrée.</string>
+    <string name="habit_selected_repetition">Répétition sélectionnée</string>
+    <string name="habit_selected_repetition_arrived">Répétition sélectionnée du %1$s.</string>
+    <string name="habit_target_loading">Chargement de la répétition sélectionnée…</string>
+    <string name="habit_target_unavailable">Cette répétition n’est plus disponible pour cette habitude.</string>
+    <string name="habit_target_error">Impossible de charger la répétition sélectionnée.</string>
     <string name="habit_load_older">Charger les répétitions plus anciennes</string>
     <string name="habit_history_error">Impossible de charger les répétitions plus anciennes.</string>
     <string name="habit_edit_log">Modifier</string>

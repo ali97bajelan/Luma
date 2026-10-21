@@ -821,6 +821,11 @@
     <string name="habit_delete_log_body">فقط همین تکرار حذف می‌شود.</string>
     <string name="habit_history">تاریخچه تکرارها</string>
     <string name="habit_history_empty">هنوز تکراری ثبت نشده است.</string>
+    <string name="habit_selected_repetition">تکرار انتخاب‌شده</string>
+    <string name="habit_selected_repetition_arrived">تکرار مربوط به %1$s انتخاب شد.</string>
+    <string name="habit_target_loading">در حال بارگذاری تکرار انتخاب‌شده…</string>
+    <string name="habit_target_unavailable">این تکرار دیگر برای این عادت در دسترس نیست.</string>
+    <string name="habit_target_error">بارگذاری تکرار انتخاب‌شده ممکن نشد.</string>
     <string name="habit_load_older">بارگذاری تکرارهای قدیمی‌تر</string>
     <string name="habit_history_error">بارگذاری تکرارهای قدیمی‌تر ممکن نشد.</string>
     <string name="habit_edit_log">ویرایش</string>

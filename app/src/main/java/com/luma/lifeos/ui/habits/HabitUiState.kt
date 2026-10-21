@@ -14,6 +14,7 @@ import java.util.UUID
 enum class HabitLogDisabledReason { FUTURE_DATE, NOT_SCHEDULED, PAUSED, ARCHIVED }
 enum class HabitUiError { LOAD, ACTION, VALIDATION }
 enum class HabitCorrectionError { DATE, TIME, SAVE, MISSING }
+enum class HabitTargetStatus { NONE, LOADING, FOUND, MISSING, ERROR }
 enum class HabitDetailOperation { HISTORY, DELETE }
 
 sealed interface HabitDetailActionError {
@@ -56,6 +57,9 @@ data class HabitDetailUiState(
     val history: List<HabitLog> = emptyList(),
     val historyOffset: Int = 0,
     val historyTotal: Int = 0,
+    val selectedLogId: UUID? = null,
+    val selectedLog: HabitLog? = null,
+    val selectedLogStatus: HabitTargetStatus = HabitTargetStatus.NONE,
     val loading: Boolean = true,
     val error: HabitUiError? = null,
     val actionErrors: Map<HabitDetailOperation, HabitDetailActionError> = emptyMap(),

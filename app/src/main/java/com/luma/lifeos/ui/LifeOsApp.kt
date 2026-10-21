@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.widthIn
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -76,6 +77,10 @@ import com.luma.lifeos.ui.navigation.beginCatalogRequest
 import com.luma.lifeos.ui.navigation.cancelCatalogRequest
 import com.luma.lifeos.ui.navigation.pendingCatalogRequest
 import com.luma.lifeos.ui.navigation.recordCatalogEditorResult
+import com.luma.lifeos.ui.navigation.EntryEditorResult
+import com.luma.lifeos.ui.navigation.consumeEntryEditorResult
+import com.luma.lifeos.ui.navigation.entryEditorResultIdFlow
+import com.luma.lifeos.ui.navigation.recordEntryEditorResult
 import com.luma.lifeos.ui.more.MoreRoute
 import com.luma.lifeos.ui.todo.TODO_ACTION_RESULT_KEY
 import com.luma.lifeos.ui.todo.TodoActionFeedbackHost
@@ -103,6 +108,12 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collect
+
+private fun NavBackStackEntry.matchesEntryDetailFor(id: EventId): Boolean {
+    val isDetailRoute = destination.route == "event_detail/{eventId}" || destination.route == "journal_detail/{eventId}"
+    return isDetailRoute && arguments?.getString("eventId") == id.toString()
+}
 
 @Composable
 fun LifeOsApp(
@@ -166,6 +177,32 @@ fun LifeOsApp(
     val currentDay by rememberCurrentDay()
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(backStackEntry) {
+        val editorEntry = backStackEntry ?: return@LaunchedEffect
+        editorEntry.savedStateHandle.entryEditorResultIdFlow().collect { resultId ->
+            if (resultId == null) return@collect
+            val result = editorEntry.savedStateHandle.consumeEntryEditorResult() ?: return@collect
+            val caller = navController.previousBackStackEntry
+            val removeMatchingDetail = result is EntryEditorResult.Deleted && caller?.matchesEntryDetailFor(result.id) == true
+            val removedDetail = removeMatchingDetail && caller != null &&
+                navController.popBackStack(caller.destination.id, inclusive = true)
+            if (!removedDetail) navController.popBackStack()
+            if (result !is EntryEditorResult.Deleted) {
+                photoScope.launch {
+                    val occurredAt = try {
+                        repository.get(result.id)?.occurredAt
+                    } catch (failure: Exception) {
+                        if (failure is CancellationException) throw failure
+                        null
+                    }
+                    occurredAt?.let {
+                        selectedDate = it.atZone(currentDay.zone).toLocalDate()
+                            .takeUnless { day -> day == currentDay.date }?.toString()
+                    }
+                }
+            }
+        }
+    }
     var capturing by rememberSaveable { mutableStateOf(false) }
     var widgetQuickCapture by rememberSaveable { mutableStateOf(false) }
     var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
@@ -528,10 +565,9 @@ fun LifeOsApp(
             )) { entry ->
                 MemoryEditorRoute(memories, entry.arguments?.getString("eventId")?.let(EventId::parse),
                     onCancel = { navController.popBackStack() },
-                    onFinished = { date ->
+                    onFinished = { result ->
                         cleanPhotos()
-                        if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
-                        navController.popBackStack()
+                        entry.savedStateHandle.recordEntryEditorResult(result)
                     }, people = people, onCreatePerson = {
                         entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PERSON)
                         navController.navigate("person")
@@ -554,13 +590,9 @@ fun LifeOsApp(
             )) { entry ->
                 JournalEditorRoute(journals, entry.arguments?.getString("eventId")?.let(EventId::parse),
                     onCancel = { navController.popBackStack() },
-                    onFinished = { date ->
+                    onFinished = { result ->
                         cleanPhotos()
-                        if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
-                        navController.popBackStack()
-                        if (date == null && navController.currentDestination?.route == "journal_detail/{eventId}") {
-                            navController.popBackStack()
-                        }
+                        entry.savedStateHandle.recordEntryEditorResult(result)
                     }, people = people, onCreatePerson = {
                         entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PERSON)
                         navController.navigate("person")
@@ -577,10 +609,9 @@ fun LifeOsApp(
             )) { entry ->
                 MoodEditorRoute(moods, entry.arguments?.getString("eventId")?.let(EventId::parse),
                     onCancel = { navController.popBackStack() },
-                    onFinished = { date ->
+                    onFinished = { result ->
                         cleanPhotos()
-                        if (date != null) selectedDate = date.takeUnless { it == currentDay.date }?.toString()
-                        navController.popBackStack()
+                        entry.savedStateHandle.recordEntryEditorResult(result)
                     }, people = people, onCreatePerson = {
                         entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PERSON)
                         navController.navigate("person")

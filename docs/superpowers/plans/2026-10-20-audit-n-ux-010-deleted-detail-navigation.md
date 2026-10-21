@@ -1,6 +1,6 @@
 # UX-010 — Deleting an entry can return to its missing detail page Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use superpowers:subagent-driven-development only if the user selects delegation. Steps use checkbox syntax for tracking. This documentation request does not start implementation or delegate work.
+> **For agentic workers:** Implementation is complete. Use the Status field below for remaining verification work. Steps use checkbox syntax for tracking. No Gradle or emulator checks were run at the user's request.
 
 **Goal:** Return deletion to the originating collection while preserving the source detail after memory unmarking.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [UX-010 specification](../specs/2026-10-20-audit-n-ux-010-deleted-detail-navigation-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implementation complete; Gradle and emulator verification pending at the user's request. Regression/evidence and commit steps remain unchecked. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -40,7 +40,9 @@ These five concrete failure modes are pinned to the regression cases owned by th
 - Modify: `app/src/main/java/com/luma/lifeos/ui/LifeOsApp.kt`
 - Modify: `app/src/main/java/com/luma/lifeos/ui/mood/MoodEditorRoute.kt`
 - Modify: `app/src/main/java/com/luma/lifeos/ui/memory/MemoryEditorRoute.kt`
+- Modify: `app/src/main/java/com/luma/lifeos/ui/memory/MemoryEditorViewModel.kt` — expose the stable completion event ID for typed results.
 - Modify: `app/src/main/java/com/luma/lifeos/ui/journal/JournalEditorRoute.kt`
+- Modify: `app/src/main/java/com/luma/lifeos/ui/journal/JournalEditorViewModel.kt` — expose the stable completion event ID for typed results.
 - Create: `app/src/main/java/com/luma/lifeos/ui/navigation/EntryEditorResult.kt`
 - Extend test: `app/src/androidTest/java/com/luma/lifeos/DetailNavigationTest.kt`
 - Extend test: `app/src/androidTest/java/com/luma/lifeos/AppNavigationTest.kt`
@@ -56,7 +58,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: sealed interface EntryEditorResult has Saved(id: EventId), Deleted(id: EventId), Unmarked(id: EventId). Editor completion callbacks become (EntryEditorResult) -> Unit. A navigation helper handles the result after popping the editor and removes only a matching source-detail destination exposed beneath it.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -76,9 +78,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Define EntryEditorResult and adapt each editor's existing completion state to the correct outcome and event ID.
+- [x] **Step 4: Implement the owning contract.** Define EntryEditorResult and adapt each editor's existing completion state to the correct outcome and event ID.
 
-- [ ] **Step 5: Connect the behavior.** Add one identity-aware result handler and replace per-editor pop-only/specialized cleanup logic.
+- [x] **Step 5: Connect the behavior.** Add one identity-aware result handler and replace per-editor pop-only/specialized cleanup logic.
 
 - [ ] **Step 6: Exercise the complete flow.** Test source → detail → editor → delete for all editors, plus unmark, save and mismatched-detail controls.
 
@@ -89,4 +91,3 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 ## Handoff
 
 Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-

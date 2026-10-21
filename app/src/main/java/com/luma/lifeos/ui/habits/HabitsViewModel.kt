@@ -44,6 +44,7 @@ class HabitsViewModel(
     private var currentDeviceZone: ZoneId? = null
     private var activeDetail: Pair<UUID, LocalDate>? = null
     private var detailGeneration = 0L
+    private var targetRequestGeneration = 0L
     private var historyRequestGeneration = 0L
     private var historyRequestInFlight: Pair<UUID, Int>? = null
     private var deleteRequestGeneration = 0L
@@ -201,6 +202,7 @@ class HabitsViewModel(
     fun deleteHistoryLog(id: UUID) {
         val current = state.value
         val target = current.detail?.history?.firstOrNull { it.id == id }
+            ?: current.detail?.selectedLog?.takeIf { it.id == id }
             ?: current.undoFailures.firstOrNull { it.id == id }
             ?: return
         deleteLog(target)
@@ -230,6 +232,7 @@ class HabitsViewModel(
                     undoFailures = current.undoFailures.filterNot { it.id == id },
                     undoingLogs = current.undoingLogs.filterNot { it.id == id },
                 ) }
+                reloadSelectedTarget()
                 mutableState.value.detail?.let { refreshDetail() }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
@@ -351,22 +354,88 @@ class HabitsViewModel(
         }
     }
 
-    fun openDetail(habitId: UUID, date: LocalDate, deviceZone: ZoneId) {
+    fun openDetail(habitId: UUID, date: LocalDate, deviceZone: ZoneId, selectedLogId: UUID? = null) {
         activeDetail = habitId to date
         detailGeneration += 1
+        targetRequestGeneration += 1
         historyRequestGeneration += 1
         historyRequestInFlight = null
         deleteRequestGeneration += 1
         deletingHabitId = null
         selectDate(date, deviceZone)
         detailObservationJob?.cancel()
-        mutableState.update { it.copy(detail = HabitDetailUiState(loading = true)) }
+        mutableState.update { it.copy(detail = HabitDetailUiState(
+            loading = true,
+            selectedLogId = selectedLogId,
+            selectedLogStatus = if (selectedLogId == null) HabitTargetStatus.NONE else HabitTargetStatus.LOADING,
+        )) }
+        val openedDetail = activeDetail ?: return
+        val openedDetailGeneration = detailGeneration
+        val targetGeneration = targetRequestGeneration
+        selectedLogId?.let { requestSelectedTarget(openedDetail, it, openedDetailGeneration, targetGeneration) }
         detailObservationJob = viewModelScope.launch {
             repository.observeChanges().collect {
                 refreshDetail(habitId, date)
             }
         }
         viewModelScope.launch { refreshDetail(habitId, date) }
+    }
+
+    fun retrySelectedLog() = reloadSelectedTarget()
+
+    fun consumeSelectedTargetAnnouncement(): Boolean {
+        val detail = state.value.detail ?: return false
+        val logId = detail.selectedLog?.id?.takeIf { detail.selectedLogStatus == HabitTargetStatus.FOUND } ?: return false
+        val habitId = activeDetail?.first ?: detail.habit?.id ?: return false
+        val token = "$habitId:$logId"
+        if (saved.get<String>(ANNOUNCED_TARGET) == token) return false
+        saved[ANNOUNCED_TARGET] = token
+        return true
+    }
+
+    private fun reloadSelectedTarget() {
+        val current = state.value.detail ?: return
+        val target = activeDetail ?: return
+        val logId = current.selectedLogId ?: return
+        val currentDetailGeneration = detailGeneration
+        val requestGeneration = ++targetRequestGeneration
+        mutableState.update { latest ->
+            val detail = latest.detail ?: return@update latest
+            if (detail.selectedLogId != logId) return@update latest
+            latest.copy(detail = detail.copy(selectedLog = null, selectedLogStatus = HabitTargetStatus.LOADING))
+        }
+        requestSelectedTarget(target, logId, currentDetailGeneration, requestGeneration)
+    }
+
+    private fun requestSelectedTarget(
+        target: Pair<UUID, LocalDate>,
+        logId: UUID,
+        requestDetailGeneration: Long,
+        requestGeneration: Long,
+    ) {
+        viewModelScope.launch {
+            try {
+                val log = repository.getLog(logId)
+                mutableState.update { latest ->
+                    val detail = latest.detail ?: return@update latest
+                    if (activeDetail != target || detailGeneration != requestDetailGeneration ||
+                        targetRequestGeneration != requestGeneration || detail.selectedLogId != logId) return@update latest
+                    val belongsToHabit = log?.takeIf { it.habitId == target.first }
+                    latest.copy(detail = detail.copy(
+                        selectedLog = belongsToHabit,
+                        selectedLogStatus = if (belongsToHabit == null) HabitTargetStatus.MISSING else HabitTargetStatus.FOUND,
+                    ))
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.update { latest ->
+                    val detail = latest.detail ?: return@update latest
+                    if (activeDetail != target || detailGeneration != requestDetailGeneration ||
+                        targetRequestGeneration != requestGeneration || detail.selectedLogId != logId) return@update latest
+                    latest.copy(detail = detail.copy(selectedLog = null, selectedLogStatus = HabitTargetStatus.ERROR))
+                }
+            }
+        }
     }
 
     private suspend fun refreshPendingSchedules(ids: List<UUID>, today: LocalDate,
@@ -499,6 +568,7 @@ class HabitsViewModel(
                 repository.updateLog(log.id, HabitLogInput(log.habitId, draft.selectedDate, draft.zone, occurredAt))
                 if (!isCurrentCorrection(draft.logId, generation)) return@launch
                 clearCorrection()
+                reloadSelectedTarget()
                 refreshDetail()
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
@@ -663,6 +733,7 @@ class HabitsViewModel(
     companion object {
         private const val PENDING_LOGS = "habit_pending_logs"
         private const val SELECTED_DATE = "habit_selected_date"
+        private const val ANNOUNCED_TARGET = "habit_announced_target"
         private const val CORRECTION_ID = "habit_correction_log_id"
         private const val CORRECTION_TYPED_VERSION = "habit_correction_typed_version"
         private const val CORRECTION_ORIGINAL_DATE = "habit_correction_original_date"

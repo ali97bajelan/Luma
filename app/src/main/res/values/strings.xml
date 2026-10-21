@@ -820,6 +820,11 @@
     <string name="habit_delete_log_body">Only this repetition will be removed.</string>
     <string name="habit_history">Repetition history</string>
     <string name="habit_history_empty">No repetitions recorded yet.</string>
+    <string name="habit_selected_repetition">Selected repetition</string>
+    <string name="habit_selected_repetition_arrived">Selected repetition from %1$s.</string>
+    <string name="habit_target_loading">Loading selected repetition…</string>
+    <string name="habit_target_unavailable">This repetition is no longer available for this habit.</string>
+    <string name="habit_target_error">Couldn’t load the selected repetition.</string>
     <string name="habit_load_older">Load older repetitions</string>
     <string name="habit_history_error">Couldn’t load older repetitions.</string>
     <string name="habit_edit_log">Edit</string>
