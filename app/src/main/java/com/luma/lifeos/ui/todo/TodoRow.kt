@@ -2,12 +2,12 @@ package com.luma.lifeos.ui.todo
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.todoBucket
@@ -46,6 +47,7 @@ internal fun TodoRow(
     onDismissError: () -> Unit,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
     val statusDescription = stringResource(if (task.isCompleted) R.string.todo_status_completed else R.string.todo_status_open)
     val checkboxDescription = stringResource(
@@ -74,9 +76,9 @@ internal fun TodoRow(
     } else null
     val accessDescription = listOfNotNull(task.title, secondary, originalDue, statusDescription).joinToString(". ")
 
-    Card(modifier.fillMaxWidth().testTag("todo_row_${task.id}")) {
+    val rowContent: @Composable ColumnScope.() -> Unit = {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().padding(horizontal = if (compact) 8.dp else 0.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -105,7 +107,7 @@ internal fun TodoRow(
         }
         if (pending || error != null) {
             Column(
-                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                Modifier.fillMaxWidth().padding(horizontal = if (compact) 8.dp else 0.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
@@ -146,5 +148,16 @@ internal fun TodoRow(
                 }
             }
         }
+    }
+
+    val rowModifier = modifier.fillMaxWidth().testTag("todo_row_${task.id}")
+    if (compact) {
+        Column(
+            modifier = rowModifier,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            content = rowContent,
+        )
+    } else {
+        LumaSectionSurface(modifier = rowModifier, content = rowContent)
     }
 }

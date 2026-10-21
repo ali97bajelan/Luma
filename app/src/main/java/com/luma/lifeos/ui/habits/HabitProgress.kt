@@ -2,7 +2,6 @@ package com.luma.lifeos.ui.habits
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LinearProgressIndicator
@@ -13,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.luma.lifeos.R
@@ -53,13 +51,15 @@ internal fun HabitProgressContent(day: HabitDay) {
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()
         .semantics { contentDescription = description }.testTag("habit_progress_${day.habit.id}")) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.habit_progress, count, formattedTarget),
-                style = MaterialTheme.typography.bodyLarge, maxLines = 1, softWrap = false)
-            Text(unit, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
+        Text(
+            stringResource(R.string.habit_progress, count, formattedTarget),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            unit,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         LinearProgressIndicator(
             progress = { habitProgressFraction(day.count, target) },
             modifier = Modifier.fillMaxWidth().height(4.dp)

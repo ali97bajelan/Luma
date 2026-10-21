@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +26,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaSectionHeader
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.domain.todo.TodoTask
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -46,131 +46,120 @@ fun TodayTasksCard(
     onRetryTask: (UUID) -> Unit,
     onDismissTaskError: (UUID) -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth().testTag("today_tasks_card")) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                Modifier.fillMaxWidth(),
+    LumaSectionSurface(modifier = Modifier.testTag("today_tasks_card")) {
+        LumaSectionHeader(
+            title = stringResource(R.string.todo_list_title),
+            modifier = Modifier.testTag("today_tasks_heading"),
+            actionLabel = stringResource(R.string.todo_today_view_all),
+            onAction = onAllTasks,
+            actionModifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_all"),
+        )
+        when (state) {
+            TodayTasksState.Loading -> Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                CircularProgressIndicator(Modifier.heightIn(min = 24.dp), strokeWidth = 2.dp)
+                Text(stringResource(R.string.todo_list_loading), modifier = Modifier.testTag("today_tasks_loading"))
+            }
+            TodayTasksState.Error -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    stringResource(R.string.todo_list_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f).semantics { heading() }.testTag("today_tasks_heading"),
+                    stringResource(R.string.todo_list_load_error),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("today_tasks_error"),
                 )
-                TextButton(
-                    onClick = onAllTasks,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_all"),
-                ) {
-                    Text(stringResource(R.string.todo_today_view_all))
+                TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_retry")) {
+                    Text(stringResource(R.string.retry))
                 }
             }
-            when (state) {
-                TodayTasksState.Loading -> Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    CircularProgressIndicator(Modifier.heightIn(min = 24.dp), strokeWidth = 2.dp)
-                    Text(stringResource(R.string.todo_list_loading), modifier = Modifier.testTag("today_tasks_loading"))
-                }
-                TodayTasksState.Error -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            is TodayTasksState.Data -> {
+                if (state.total > 0) {
                     Text(
-                        stringResource(R.string.todo_list_load_error),
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.testTag("today_tasks_error"),
+                        stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag("today_tasks_count"),
                     )
-                    TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_retry")) {
-                        Text(stringResource(R.string.retry))
-                    }
                 }
-                is TodayTasksState.Data -> {
-                    if (state.total > 0) {
-                        Text(
-                            stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.testTag("today_tasks_count"),
-                        )
-                    }
-                    if (state.total == 0 && state.tasks.isEmpty()) {
-                        Text(stringResource(R.string.todo_today_empty), modifier = Modifier.testTag("today_tasks_empty"))
-                    } else if (state.tasks.isNotEmpty()) {
-                        state.tasks.forEach { task ->
-                            key(task.id) {
-                                val focusRequester = remember { FocusRequester() }
-                                val rowError = actions.rowErrors[task.id]
-                                TodoRow(
-                                    task = task,
-                                    today = today,
-                                    completedList = false,
-                                    canOpen = rowError != TodoListRowError.MISSING,
-                                    canMutate = rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
-                                    pending = task.id in actions.pendingIntents,
-                                    error = rowError,
-                                    onOpen = { onTask(task.id) },
-                                    onSetCompleted = { onSetCompleted(task, it) },
-                                    onRetry = { onRetryTask(task.id) },
-                                    onDismissError = { onDismissTaskError(task.id) },
-                                    focusRequester = focusRequester,
-                                )
-                            }
+                if (state.total == 0 && state.tasks.isEmpty()) {
+                    Text(stringResource(R.string.todo_today_empty), modifier = Modifier.testTag("today_tasks_empty"))
+                } else if (state.tasks.isNotEmpty()) {
+                    state.tasks.forEach { task ->
+                        key(task.id) {
+                            val focusRequester = remember { FocusRequester() }
+                            val rowError = actions.rowErrors[task.id]
+                            TodoRow(
+                                task = task,
+                                today = today,
+                                completedList = false,
+                                canOpen = rowError != TodoListRowError.MISSING,
+                                canMutate = rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
+                                pending = task.id in actions.pendingIntents,
+                                error = rowError,
+                                onOpen = { onTask(task.id) },
+                                onSetCompleted = { onSetCompleted(task, it) },
+                                onRetry = { onRetryTask(task.id) },
+                                onDismissError = { onDismissTaskError(task.id) },
+                                focusRequester = focusRequester,
+                                compact = true,
+                            )
                         }
                     }
                 }
             }
-            val visibleTaskIds = state.visibleTaskIds()
-            val offPreviewIntents = actions.pendingIntents.values
-                .filter { it.taskId !in visibleTaskIds }
-                .sortedBy { it.title.lowercase() }
-            val offPreviewErrors = actions.rowFeedback.entries
-                .filter { (taskId, _) -> taskId !in visibleTaskIds && taskId !in actions.pendingIntents }
-                .sortedBy { it.value.title.lowercase() }
-            if (offPreviewIntents.isNotEmpty() || offPreviewErrors.isNotEmpty()) {
-                HorizontalDivider()
-                Text(
-                    stringResource(R.string.todo_today_task_feedback),
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.semantics { heading() }.testTag("today_tasks_feedback_heading"),
-                )
-                Column(
-                    Modifier.fillMaxWidth().heightIn(max = 240.dp).verticalScroll(rememberScrollState())
-                        .testTag("today_tasks_feedback_scroll"),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    offPreviewIntents.forEach { intent ->
-                        val feedback = actions.rowFeedback[intent.taskId]
-                        TodayTaskRecoverySummary(
-                            taskId = intent.taskId,
-                            title = intent.title,
-                            completesTask = intent.completed,
-                            error = feedback?.error,
-                            pending = intent.taskId in actions.inFlight,
-                            retryEnabled = feedback?.error == TodoListRowError.FAILED && intent.taskId !in actions.inFlight,
-                            onRetry = { onRetryTask(intent.taskId) },
-                            onOpen = { onTask(intent.taskId) },
-                            onDismiss = { onDismissTaskError(intent.taskId) },
-                        )
-                    }
-                    offPreviewErrors.forEach { (taskId, feedback) ->
-                        TodayTaskRecoverySummary(
-                            taskId = taskId,
-                            title = feedback.title,
-                            completesTask = feedback.completesTask,
-                            error = feedback.error,
-                            pending = false,
-                            retryEnabled = false,
-                            onRetry = {},
-                            onOpen = { onTask(taskId) },
-                            onDismiss = { onDismissTaskError(taskId) },
-                        )
-                    }
+        }
+        val visibleTaskIds = state.visibleTaskIds()
+        val offPreviewIntents = actions.pendingIntents.values
+            .filter { it.taskId !in visibleTaskIds }
+            .sortedBy { it.title.lowercase() }
+        val offPreviewErrors = actions.rowFeedback.entries
+            .filter { (taskId, _) -> taskId !in visibleTaskIds && taskId !in actions.pendingIntents }
+            .sortedBy { it.value.title.lowercase() }
+        if (offPreviewIntents.isNotEmpty() || offPreviewErrors.isNotEmpty()) {
+            HorizontalDivider()
+            Text(
+                stringResource(R.string.todo_today_task_feedback),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.semantics { heading() }.testTag("today_tasks_feedback_heading"),
+            )
+            Column(
+                Modifier.fillMaxWidth().heightIn(max = 240.dp).verticalScroll(rememberScrollState())
+                    .testTag("today_tasks_feedback_scroll"),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                offPreviewIntents.forEach { intent ->
+                    val feedback = actions.rowFeedback[intent.taskId]
+                    TodayTaskRecoverySummary(
+                        taskId = intent.taskId,
+                        title = intent.title,
+                        completesTask = intent.completed,
+                        error = feedback?.error,
+                        pending = intent.taskId in actions.inFlight,
+                        retryEnabled = feedback?.error == TodoListRowError.FAILED && intent.taskId !in actions.inFlight,
+                        onRetry = { onRetryTask(intent.taskId) },
+                        onOpen = { onTask(intent.taskId) },
+                        onDismiss = { onDismissTaskError(intent.taskId) },
+                    )
+                }
+                offPreviewErrors.forEach { (taskId, feedback) ->
+                    TodayTaskRecoverySummary(
+                        taskId = taskId,
+                        title = feedback.title,
+                        completesTask = feedback.completesTask,
+                        error = feedback.error,
+                        pending = false,
+                        retryEnabled = false,
+                        onRetry = {},
+                        onOpen = { onTask(taskId) },
+                        onDismiss = { onDismissTaskError(taskId) },
+                    )
                 }
             }
-            TextButton(
-                onClick = onAddTask,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_tasks_add"),
-            ) {
-                Text(stringResource(R.string.todo_list_add))
-            }
+        }
+        TextButton(
+            onClick = onAddTask,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_tasks_add"),
+        ) {
+            Text(stringResource(R.string.todo_list_add))
         }
     }
 }

@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.habits
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,10 +35,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitDayState
 import com.luma.lifeos.domain.habit.HabitDefinition
@@ -78,7 +82,8 @@ fun HabitsScreen(
         modifier = Modifier.testTag("screen_habits"),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.habit_title)) }, navigationIcon = {
+            TopAppBar(title = { Text(stringResource(R.string.habit_title),
+                style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() }) }, navigationIcon = {
                 onBack?.let { back ->
                     TextButton(onClick = back, modifier = Modifier.testTag("habits_back")) {
                         Text(stringResource(R.string.back))
@@ -91,135 +96,137 @@ fun HabitsScreen(
             }, windowInsets = WindowInsets(0, 0, 0, 0))
         },
     ) { padding ->
-        saveableStateHolder.SaveableStateProvider(selectedDate.toString()) {
-            var otherExpanded by rememberSaveable { mutableStateOf(false) }
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item { DayNavigation(selectedDate, onSelectDate, onToday) }
-                item(key = "habit_undo_status") {
-                    HabitUndoStatusFeedback(
-                        state = state,
-                        onRetry = onUndo,
-                        modifier = Modifier.testTag("habits_undo_feedback"),
-                    )
-                }
-                state.trackingZone?.let { zone ->
-                    item { Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.labelLarge) }
-                    item { Text(stringResource(R.string.habit_tracking_zone_note), style = MaterialTheme.typography.bodySmall) }
-                    if (state.trackingZone != deviceZone || (state.deviceDate != null && state.deviceDate != LocalDate.now(zone))) {
-                        item {
-                            Text(stringResource(R.string.habit_tracking_elsewhere,
-                                LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), zone.id),
-                                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_tracking_day_difference"))
-                        }
-                    }
-                }
-                if (state.loading || (state.date != date && state.error == null)) item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CircularProgressIndicator(Modifier.testTag("habits_loading"))
-                        Text(stringResource(R.string.habit_loading))
-                    }
-                }
-                if (state.error == HabitUiError.LOAD) item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("habits_error")) {
-                        Text(stringResource(R.string.habit_load_error))
-                        TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-                    }
-                }
-                if (!state.loading && state.loadedDate == date && rows.isEmpty() && state.error == null) item {
-                    Card(Modifier.fillMaxWidth().testTag("habits_empty")) {
-                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(stringResource(R.string.habit_empty_heading), style = MaterialTheme.typography.titleLarge)
-                            Text(stringResource(R.string.habit_empty_body))
-                            Button(onClick = onCreate, modifier = Modifier.heightIn(min = 48.dp)) {
-                                Text(stringResource(R.string.habit_add))
-                            }
-                        }
-                    }
-                }
-                if (rows.isNotEmpty()) {
-                    item {
-                        Text(stringResource(R.string.habit_scheduled_heading), style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.testTag("habits_scheduled_heading"))
-                    }
-                    if (groups.scheduled.isEmpty()) item {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("habits_none_scheduled")) {
-                            Text(stringResource(R.string.habit_no_scheduled))
-                            if (selectedDate != trackingDate) {
-                                TextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("habits_today")) {
-                                    Text(stringResource(R.string.today))
-                                }
-                            }
-                        }
-                    }
-                    items(groups.scheduled, key = { "scheduled:${it.day.habit.id}" }) { row ->
-                        HabitRow(
-                            row = row,
-                            pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id && it.input.date == selectedDate },
-                            pendingSchedule = state.pendingSchedules[row.day.habit.id],
-                            onOpen = { onHabit(row.day.habit.id) },
-                            onLog = { onLog(row.day.habit.id) },
-                            onRetry = onRetryLog,
-                            onOpenDate = onSelectDate,
-                            compact = false,
+        LumaReadingPane(modifier = Modifier.fillMaxSize().padding(padding)) {
+            saveableStateHolder.SaveableStateProvider(selectedDate.toString()) {
+                var otherExpanded by rememberSaveable { mutableStateOf(false) }
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item { DayNavigation(selectedDate, onSelectDate, onToday) }
+                    item(key = "habit_undo_status") {
+                        HabitUndoStatusFeedback(
+                            state = state,
+                            onRetry = onUndo,
+                            modifier = Modifier.testTag("habits_undo_feedback"),
                         )
                     }
-                    if (groups.other.isNotEmpty()) {
-                        item {
-                            val isExpanded = otherExpanded || forceOtherOpen
-                            val expansionDescription = stringResource(
-                                if (isExpanded) R.string.habit_other_expanded else R.string.habit_other_collapsed,
-                            )
-                            TextButton(enabled = !forceOtherOpen, onClick = { otherExpanded = !otherExpanded },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                                    .semantics { stateDescription = expansionDescription }
-                                    .testTag("habit_other_toggle")) {
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(pluralStringResource(R.plurals.habit_other_count, groups.other.size, groups.other.size),
-                                        modifier = Modifier.weight(1f))
-                                    Text(stringResource(when {
-                                        forceOtherOpen -> R.string.habit_other_expanded
-                                        isExpanded -> R.string.habit_other_hide
-                                        else -> R.string.habit_other_show
-                                    }))
+                    state.trackingZone?.let { zone ->
+                        item { Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.labelLarge) }
+                        item { Text(stringResource(R.string.habit_tracking_zone_note), style = MaterialTheme.typography.bodySmall) }
+                        if (state.trackingZone != deviceZone || (state.deviceDate != null && state.deviceDate != LocalDate.now(zone))) {
+                            item {
+                                Text(stringResource(R.string.habit_tracking_elsewhere,
+                                    LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), zone.id),
+                                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_tracking_day_difference"))
+                            }
+                        }
+                    }
+                    if (state.loading || (state.date != date && state.error == null)) item {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CircularProgressIndicator(Modifier.testTag("habits_loading"))
+                            Text(stringResource(R.string.habit_loading))
+                        }
+                    }
+                    if (state.error == HabitUiError.LOAD) item {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("habits_error")) {
+                            Text(stringResource(R.string.habit_load_error))
+                            TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                        }
+                    }
+                    if (!state.loading && state.loadedDate == date && rows.isEmpty() && state.error == null) item {
+                        Card(Modifier.fillMaxWidth().testTag("habits_empty")) {
+                            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(stringResource(R.string.habit_empty_heading), style = MaterialTheme.typography.titleLarge)
+                                Text(stringResource(R.string.habit_empty_body))
+                                Button(onClick = onCreate, modifier = Modifier.heightIn(min = 48.dp)) {
+                                    Text(stringResource(R.string.habit_add))
                                 }
                             }
                         }
-                        if (otherExpanded || forceOtherOpen) {
-                            items(groups.other, key = { "other:${it.day.habit.id}" }) { row ->
-                                HabitRow(
-                                    row = row,
-                                    pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id && it.input.date == selectedDate },
-                                    pendingSchedule = state.pendingSchedules[row.day.habit.id],
-                                    onOpen = { onHabit(row.day.habit.id) },
-                                    onLog = {},
-                                    onRetry = onRetryLog,
-                                    onOpenDate = onSelectDate,
-                                    compact = false,
-                                    showLog = false,
+                    }
+                    if (rows.isNotEmpty()) {
+                        item {
+                            Text(stringResource(R.string.habit_scheduled_heading), style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.testTag("habits_scheduled_heading"))
+                        }
+                        if (groups.scheduled.isEmpty()) item {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("habits_none_scheduled")) {
+                                Text(stringResource(R.string.habit_no_scheduled))
+                                if (selectedDate != trackingDate) {
+                                    TextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("habits_today")) {
+                                        Text(stringResource(R.string.today))
+                                    }
+                                }
+                            }
+                        }
+                        items(groups.scheduled, key = { "scheduled:${it.day.habit.id}" }) { row ->
+                            HabitRow(
+                                row = row,
+                                pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id && it.input.date == selectedDate },
+                                pendingSchedule = state.pendingSchedules[row.day.habit.id],
+                                onOpen = { onHabit(row.day.habit.id) },
+                                onLog = { onLog(row.day.habit.id) },
+                                onRetry = onRetryLog,
+                                onOpenDate = onSelectDate,
+                                compact = false,
+                            )
+                        }
+                        if (groups.other.isNotEmpty()) {
+                            item {
+                                val isExpanded = otherExpanded || forceOtherOpen
+                                val expansionDescription = stringResource(
+                                    if (isExpanded) R.string.habit_other_expanded else R.string.habit_other_collapsed,
                                 )
+                                TextButton(enabled = !forceOtherOpen, onClick = { otherExpanded = !otherExpanded },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                        .semantics { stateDescription = expansionDescription }
+                                        .testTag("habit_other_toggle")) {
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(pluralStringResource(R.plurals.habit_other_count, groups.other.size, groups.other.size),
+                                            modifier = Modifier.weight(1f))
+                                        Text(stringResource(when {
+                                            forceOtherOpen -> R.string.habit_other_expanded
+                                            isExpanded -> R.string.habit_other_hide
+                                            else -> R.string.habit_other_show
+                                        }))
+                                    }
+                                }
+                            }
+                            if (otherExpanded || forceOtherOpen) {
+                                items(groups.other, key = { "other:${it.day.habit.id}" }) { row ->
+                                    HabitRow(
+                                        row = row,
+                                        pending = state.pendingLogs.filter { it.input.habitId == row.day.habit.id && it.input.date == selectedDate },
+                                        pendingSchedule = state.pendingSchedules[row.day.habit.id],
+                                        onOpen = { onHabit(row.day.habit.id) },
+                                        onLog = {},
+                                        onRetry = onRetryLog,
+                                        onOpenDate = onSelectDate,
+                                        compact = false,
+                                        showLog = false,
+                                    )
+                                }
                             }
                         }
                     }
-                }
-                state.actionError?.let { item {
-                    Text(stringResource(R.string.habit_action_error), color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.testTag("habit_action_error"))
-                } }
-                val representedHabitIds = rows.mapTo(mutableSetOf()) { it.day.habit.id }
-                val retained = state.pendingLogs.filter {
-                    it.input.date != selectedDate || it.input.habitId !in representedHabitIds
-                }
-                if (retained.isNotEmpty()) {
-                    item(key = "habit_retained_actions_heading") {
-                        Text(stringResource(R.string.habit_retained_actions), style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.testTag("habit_retained_actions_heading"))
+                    state.actionError?.let { item {
+                        Text(stringResource(R.string.habit_action_error), color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.testTag("habit_action_error"))
+                    } }
+                    val representedHabitIds = rows.mapTo(mutableSetOf()) { it.day.habit.id }
+                    val retained = state.pendingLogs.filter {
+                        it.input.date != selectedDate || it.input.habitId !in representedHabitIds
                     }
-                    items(retained, key = { "retained:${it.id}" }) { action ->
-                        PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onSelectDate)
+                    if (retained.isNotEmpty()) {
+                        item(key = "habit_retained_actions_heading") {
+                            Text(stringResource(R.string.habit_retained_actions), style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.testTag("habit_retained_actions_heading"))
+                        }
+                        items(retained, key = { "retained:${it.id}" }) { action ->
+                            PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onSelectDate)
+                        }
                     }
                 }
             }
@@ -242,32 +249,43 @@ internal fun HabitRow(
     val day = row.day
     val logUnit = habitUnitLabel(day.habit, 1)
     val logLabel = stringResource(R.string.habit_log_accessibility, day.habit.name, logUnit)
-    Card(Modifier.fillMaxWidth().testTag("habit_row_${day.habit.id}")) {
-        Column(Modifier.fillMaxWidth().padding(if (compact) 12.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val stackAction = maxWidth < 336.dp || LocalDensity.current.fontScale >= 1.5f
-                if (showLog && !stackAction) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        HabitOpenTarget(day, pendingSchedule, onOpen, Modifier.weight(1f))
-                        HabitLogTarget(row, onLog, logLabel)
-                    }
-                } else {
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        HabitOpenTarget(day, pendingSchedule, onOpen, Modifier.fillMaxWidth())
-                        if (showLog) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                HabitLogTarget(row, onLog, logLabel)
-                            }
+    val showStatus = pendingSchedule != null || !compact || !row.canLog || day.state != HabitDayState.NO_RECORDS ||
+        day.skipRemaining || pending.isNotEmpty()
+    val rowContent: @Composable ColumnScope.() -> Unit = {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val minimumInlineWidth = if (compact) 240.dp else 336.dp
+            val stackAction = maxWidth < minimumInlineWidth || LocalDensity.current.fontScale >= 1.5f
+            if (showLog && !stackAction) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, Modifier.weight(1f))
+                    HabitLogTarget(row, onLog, logLabel)
+                }
+            } else {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, Modifier.fillMaxWidth())
+                    if (showLog) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            HabitLogTarget(row, onLog, logLabel)
                         }
                     }
                 }
             }
-            if (showLog) row.disabledReason?.let { Text(stringResource(disabledLabel(it)), style = MaterialTheme.typography.bodySmall) }
-            pending.forEach { action ->
-                PendingHabitFeedback(action, onRetry = { onRetry(action.id) }, onOpenDate = onOpenDate)
-            }
         }
+        if (showLog) row.disabledReason?.let { Text(stringResource(disabledLabel(it)), style = MaterialTheme.typography.bodySmall) }
+        pending.forEach { action ->
+            PendingHabitFeedback(action, onRetry = { onRetry(action.id) }, onOpenDate = onOpenDate)
+        }
+    }
+    val rowModifier = Modifier.fillMaxWidth().testTag("habit_row_${day.habit.id}")
+    if (compact) {
+        Column(
+            modifier = rowModifier.padding(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            content = rowContent,
+        )
+    } else {
+        LumaSectionSurface(modifier = rowModifier, content = rowContent)
     }
 }
 
@@ -276,6 +294,7 @@ private fun HabitOpenTarget(
     day: HabitDay,
     pendingSchedule: HabitSchedule?,
     onOpen: () -> Unit,
+    showStatus: Boolean,
     modifier: Modifier,
 ) {
     val target = day.reviewTarget()
@@ -291,7 +310,7 @@ private fun HabitOpenTarget(
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(day.habit.name, style = MaterialTheme.typography.titleMedium)
             HabitProgressContent(day)
-            Text(stringResource(stateLabel(day)), style = MaterialTheme.typography.bodyMedium)
+            if (showStatus) Text(stringResource(stateLabel(day)), style = MaterialTheme.typography.bodyMedium)
             if (day.skipRemaining && day.count > 0) Text(stringResource(R.string.habit_remaining_skipped),
                 style = MaterialTheme.typography.bodySmall)
             pendingSchedule?.let { schedule ->

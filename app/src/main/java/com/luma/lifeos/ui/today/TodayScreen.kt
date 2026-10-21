@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AppSectionHeading
+import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
@@ -94,96 +95,98 @@ fun TodayScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().testTag(screenTag),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item(key = "header") {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.titleLarge)
-                DayNavigation(date, onSelectDate, onToday)
-                if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
-            }
-        }
-        item(key = "capture") {
-            TodayCaptureActions(onDateCapture = { requestCapture(it, date) })
-        }
-        habitsState?.let { item(key = "habits") {
-            TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
-                onOpenDate = onHabitOpenDate)
-        } }
-        todayTasks?.let { taskState -> item(key = "today_tasks") {
-            TodayTasksCard(
-                state = taskState,
-                actions = todayTaskActions,
-                today = date,
-                onTask = onTask,
-                onSetCompleted = onSetTaskCompleted,
-                onAllTasks = onAllTasks,
-                onAddTask = onAddTask,
-                onRetry = onRetryTasks,
-                onRetryTask = onRetryTask,
-                onDismissTaskError = onDismissTaskError,
-            )
-        } }
-        item(key = "recent_entries") {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                AppSectionHeading(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.testTag("today_recent_entries"))
-                if (state is TodayUiState.Data || state == TodayUiState.Empty) {
-                    Text(entryLogCounts((state as? TodayUiState.Data)?.events?.size ?: 0, habitLogCount),
-                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("today_summary"))
+    LumaReadingPane(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().testTag(screenTag),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item(key = "header") {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.titleLarge)
+                    DayNavigation(date, onSelectDate, onToday)
+                    if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
                 }
             }
-        }
-        when (state) {
-            TodayUiState.Loading -> item(key = "loading") {
-                Column(Modifier.testTag("today_loading"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CircularProgressIndicator()
-                    Text(stringResource(R.string.today_loading))
-                }
+            item(key = "capture") {
+                TodayCaptureActions(onDateCapture = { requestCapture(it, date) })
             }
-            TodayUiState.Empty -> item(key = "empty") {
-                Text(stringResource(R.string.today_no_entries), style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.testTag("today_empty"))
-            }
-            TodayUiState.Error -> item(key = "error") {
-                Column(Modifier.testTag("today_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AccessibleFeedback(stringResource(R.string.today_error), Modifier.testTag("today_error_message"))
-                    TextButton(onClick = onRetry, modifier = Modifier.testTag("today_retry")) {
-                        Text(stringResource(R.string.retry))
+            habitsState?.let { item(key = "habits") {
+                TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
+                    onOpenDate = onHabitOpenDate)
+            } }
+            todayTasks?.let { taskState -> item(key = "today_tasks") {
+                TodayTasksCard(
+                    state = taskState,
+                    actions = todayTaskActions,
+                    today = date,
+                    onTask = onTask,
+                    onSetCompleted = onSetTaskCompleted,
+                    onAllTasks = onAllTasks,
+                    onAddTask = onAddTask,
+                    onRetry = onRetryTasks,
+                    onRetryTask = onRetryTask,
+                    onDismissTaskError = onDismissTaskError,
+                )
+            } }
+            item(key = "recent_entries") {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    AppSectionHeading(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.testTag("today_recent_entries"))
+                    if (state is TodayUiState.Data || state == TodayUiState.Empty) {
+                        Text(entryLogCounts((state as? TodayUiState.Data)?.events?.size ?: 0, habitLogCount),
+                            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("today_summary"))
                     }
                 }
             }
-            is TodayUiState.Data -> {
-                items(state.events, key = { it.id.toString() }) { event ->
-                    val record = state.records[event.id] ?: LifeEventRecord(event, state.moods[event.id],
-                        state.journals[event.id], state.memories[event.id], state.people[event.id].orEmpty(), state.places[event.id])
-                    val openActionLabel = when {
-                        record.canEditContent && record.journal != null -> R.string.journal_edit
-                        record.canEditContent && event.type == EventType.MOOD -> R.string.mood_edit_action
-                        record.canEditContent && event.type == EventType.MEMORY -> R.string.memory_edit
-                        record.journal != null -> R.string.journal_open
-                        else -> R.string.event_open
+            when (state) {
+                TodayUiState.Loading -> item(key = "loading") {
+                    Column(Modifier.testTag("today_loading"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator()
+                        Text(stringResource(R.string.today_loading))
                     }
-                    EventCard(record, zone, onOpen = {
-                        when {
-                            record.canEditContent && record.journal != null -> onJournalClick(event.id)
-                            record.canEditContent && event.type == EventType.MOOD -> onMoodClick(event.id)
-                            record.canEditContent && event.type == EventType.MEMORY -> onMemoryClick(event.id)
-                            else -> onEventClick(event.id)
+                }
+                TodayUiState.Empty -> item(key = "empty") {
+                    Text(stringResource(R.string.today_no_entries), style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.testTag("today_empty"))
+                }
+                TodayUiState.Error -> item(key = "error") {
+                    Column(Modifier.testTag("today_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AccessibleFeedback(stringResource(R.string.today_error), Modifier.testTag("today_error_message"))
+                        TextButton(onClick = onRetry, modifier = Modifier.testTag("today_retry")) {
+                            Text(stringResource(R.string.retry))
                         }
-                    }, openActionLabel = openActionLabel, onMemory = { onMemoryClick(event.id) })
+                    }
+                }
+                is TodayUiState.Data -> {
+                    items(state.events, key = { it.id.toString() }) { event ->
+                        val record = state.records[event.id] ?: LifeEventRecord(event, state.moods[event.id],
+                            state.journals[event.id], state.memories[event.id], state.people[event.id].orEmpty(), state.places[event.id])
+                        val openActionLabel = when {
+                            record.canEditContent && record.journal != null -> R.string.journal_edit
+                            record.canEditContent && event.type == EventType.MOOD -> R.string.mood_edit_action
+                            record.canEditContent && event.type == EventType.MEMORY -> R.string.memory_edit
+                            record.journal != null -> R.string.journal_open
+                            else -> R.string.event_open
+                        }
+                        EventCard(record, zone, onOpen = {
+                            when {
+                                record.canEditContent && record.journal != null -> onJournalClick(event.id)
+                                record.canEditContent && event.type == EventType.MOOD -> onMoodClick(event.id)
+                                record.canEditContent && event.type == EventType.MEMORY -> onMemoryClick(event.id)
+                                else -> onEventClick(event.id)
+                            }
+                        }, openActionLabel = openActionLabel, onMemory = { onMemoryClick(event.id) })
+                    }
                 }
             }
+            summaryState?.let { summary -> item(key = "daily_summary") {
+                DetailsDisclosure(R.string.summary_heading, "today_daily_summary") {
+                    DailySummaryCard(summary, onSummaryRetry, habitLogCount, integrationAvailability, onIntegrations,
+                        onCheckIn = { requestCapture(EventType.MOOD, it) })
+                }
+            } }
         }
-        summaryState?.let { summary -> item(key = "daily_summary") {
-            DetailsDisclosure(R.string.summary_heading, "today_daily_summary") {
-                DailySummaryCard(summary, onSummaryRetry, habitLogCount, integrationAvailability, onIntegrations,
-                    onCheckIn = { requestCapture(EventType.MOOD, it) })
-            }
-        } }
     }
     val selectedCaptureType = choosingDateFor
     val selectedCaptureDate = choosingCaptureDate?.let { LocalDate.parse(it) }

@@ -11,7 +11,7 @@
 **Spec:** [Fresh UI refresh design](../specs/2026-10-21-fresh-ui-refresh-design.md)
 **Tasks:** [Task catalog](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH-TASKS.md)
 **Source review:** [Fresh UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21-FRESH.md)
-**Status:** FRESH-001 implementation is in place; its planned test and visual verification steps remain pending by user request. Other tasks have not started.
+**Status:** FRESH-001 and FRESH-002 implementations are in place; their planned test and visual verification steps remain pending by user request. Other tasks have not started.
 
 ## Global Constraints
 
@@ -106,7 +106,7 @@ Substitute the exact class/method named in the task. Expected result: the select
 
 - [ ] **Step 1:** Extend `TodayScreenTest` with `populatedDailyPreviewKeepsCaptureAndTasksHeadingInFirstView`: use an explicitly sized 411 × 891 dp/1.0 fixture with two short-name habits, three due/overdue tasks, and one entry. Assert all three capture nodes, both habit-log nodes, and `today_tasks_heading` are displayed before scrolling. Capture the old layout's failure; do not make this expectation apply to arbitrary user text.
 - [ ] **Step 2:** Extend `HabitCaptureFlowTest.compactPreviewKeepsSeparateFortyEightDpActionsAtLargeText` to use long localized names/units at 320 dp/2.0. Assert `habit_open_<id>` and `habit_log_<id>` are separate actions, each at least 48 dp, and activating one never calls the other. Add `compactNoRecordsKeepsAccessibleStatusAndPendingRecovery`: assert the ordinary status is absent from visible Text but included in the open target's content description; then supply pending/disabled/skipped fixtures and assert their status/retry nodes exist.
-- [ ] **Step 3:** Apply shared sections/headers to Today previews and reading panes to Today/Habits. Flatten compact habit wrappers, use 4 dp between compact rows, 8 dp vertical row padding, and the 240 dp/1.5 compact layout rule. Preserve the standalone 336 dp rule, two-row cap, pending schedules, retained actions, tracking-zone differences, and all callback/tag wiring. Change `HabitProgressContent(day: HabitDay)` to wrap count/unit text without changing numeric formatting or progress semantics.
+- [x] **Step 3:** Apply shared sections/headers to Today previews and reading panes to Today/Habits. Flatten compact habit wrappers, use 4 dp between compact rows, 8 dp vertical row padding, and the 240 dp/1.5 compact layout rule. Preserve the standalone 336 dp rule, two-row cap, pending schedules, retained actions, tracking-zone differences, and all callback/tag wiring. Change `HabitProgressContent(day: HabitDay)` to wrap count/unit text without changing numeric formatting or progress semantics.
 - [ ] **Step 4:** Append `compact` to `TodoRow` and use its transparent variant only from `TodayTasksCard`; preserve the checkbox/open/error focus behavior. Keep three-row task limits and one ordinary empty message. Run the new regressions, existing `todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtTwo`, both stale-date rejection methods in `HabitDateSelectionFlowTest`, and the existing Today task visibility/undo and conflict/missing-row cases.
 - [ ] **Step 5:** Inspect normal and large-text previews, including historical dates, and record acceptance results. Suggested commit: `feat(ui): compact daily habit and task previews`.
 

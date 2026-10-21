@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.today
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
@@ -19,7 +20,11 @@ import com.luma.lifeos.domain.model.EventType
 internal fun TodayCaptureActions(
     onDateCapture: (EventType) -> Unit,
 ) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         listOf(EventType.MOOD to R.string.today_capture_mood, EventType.JOURNAL to R.string.today_capture_journal,
             EventType.MEMORY to R.string.today_capture_memory).forEach { (type, label) ->
             FilledTonalButton(onClick = { onDateCapture(type) },
