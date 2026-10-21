@@ -163,6 +163,7 @@
     <string name="capture_memory">خاطره</string>
     <string name="close">بستن</string>
     <string name="save">ذخیره</string>
+    <string name="entry_saved_feedback">ورودی ذخیره شد</string>
     <string name="saving">در حال ذخیره…</string>
     <string name="delete">حذف</string>
     <string name="discard">کنار گذاشتن</string>

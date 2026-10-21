@@ -163,6 +163,7 @@
     <string name="capture_memory">Memory</string>
     <string name="close">Close</string>
     <string name="save">Save</string>
+    <string name="entry_saved_feedback">Entry saved</string>
     <string name="saving">Saving…</string>
     <string name="delete">Delete</string>
     <string name="discard">Discard</string>

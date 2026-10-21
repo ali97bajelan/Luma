@@ -83,6 +83,7 @@ import com.luma.lifeos.ui.navigation.consumeEntryEditorResult
 import com.luma.lifeos.ui.navigation.entryEditorResultIdFlow
 import com.luma.lifeos.ui.navigation.recordEntryEditorResult
 import com.luma.lifeos.ui.more.MoreRoute
+import com.luma.lifeos.ui.common.acknowledgeSavedEntry
 import com.luma.lifeos.ui.todo.TODO_ACTION_RESULT_KEY
 import com.luma.lifeos.ui.todo.TodoActionFeedbackHost
 import com.luma.lifeos.ui.todo.TodoEditorRoute
@@ -166,6 +167,7 @@ fun LifeOsApp(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val entrySavedMessage = stringResource(R.string.entry_saved_feedback)
     val primaryScreen = PrimaryDestination.entries.any { it.route == backStackEntry?.destination?.route }
     fun editEvent(record: LifeEventRecord) {
         if (!record.canEditContent) return
@@ -182,7 +184,7 @@ fun LifeOsApp(
     val currentDay by rememberCurrentDay()
     // Null follows the current day; a chosen date survives tab switches and recreation.
     var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(backStackEntry) {
+    LaunchedEffect(backStackEntry, entrySavedMessage) {
         val editorEntry = backStackEntry ?: return@LaunchedEffect
         editorEntry.savedStateHandle.entryEditorResultIdFlow().collect { resultId ->
             if (resultId == null) return@collect
@@ -192,6 +194,11 @@ fun LifeOsApp(
             val removedDetail = removeMatchingDetail && caller != null &&
                 navController.popBackStack(caller.destination.id, inclusive = true)
             if (!removedDetail) navController.popBackStack()
+            if (result is EntryEditorResult.Saved) {
+                photoScope.launch {
+                    acknowledgeSavedEntry(result, snackbarHostState, entrySavedMessage)
+                }
+            }
             if (result !is EntryEditorResult.Deleted) {
                 photoScope.launch {
                     val occurredAt = try {
