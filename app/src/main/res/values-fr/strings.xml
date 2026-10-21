@@ -744,6 +744,8 @@
     <string name="habit_other_expanded">Développé</string>
     <string name="habit_other_collapsed">Réduit</string>
     <string name="habit_view_all">Tout voir</string>
+    <string name="habit_view_all_count">Tout voir (%1$s)</string>
+    <string name="habit_view_all_scheduled_accessibility">%1$s habitudes prévues pour le %2$s. Tout voir.</string>
     <string name="habit_tracking_zone">Fuseau de suivi : %1$s</string>
     <string name="habit_tracking_zone_note">Les dates d’habitude restent dans ce fuseau pendant vos déplacements.</string>
     <string name="habit_tracking_zone_details">À propos des dates</string>

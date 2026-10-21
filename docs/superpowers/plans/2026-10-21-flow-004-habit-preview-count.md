@@ -10,7 +10,7 @@
 
 **Spec:** [FLOW-004 specification](../specs/2026-10-21-flow-004-habit-preview-count-design.md)
 
-**Status:** Draft plan; all implementation and verification steps remain unchecked.
+**Status:** Implementation complete; focused instrumentation, build, and emulator verification pending per user request.
 
 ## Global Constraints
 
@@ -52,17 +52,17 @@ None. Preserve the existing local two-row preview change; FLOW-005 uses this hea
 - Produces: Keep TodayHabitsCard’s public signature. Introduce internal const val TODAY_HABIT_PREVIEW_LIMIT = 2 in TodayHabitsCard.kt, compute scheduled once, and reuse scheduled.take(TODAY_HABIT_PREVIEW_LIMIT) for rendering and visible IDs. Add habit_view_all_count (%1$s) and habit_view_all_scheduled_accessibility (%1$s count, %2$s date) in EN/FR/FA. Preserve habits_view_all and existing retained-action tags.
 - Does not change repository schemas, stored content, or callback target identity.
 
-- [ ] **Step 1: Update the existing preview regression.** Rename todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtThree to todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtTwo. Increase the mixed fixture to five scheduled rows and assert exactly two visible rows, the displayed count of five, and the existing View all callback.
+- [x] **Step 1: Update the existing preview regression.** Rename todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtThree to todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtTwo. Increase the mixed fixture to five scheduled rows and assert exactly two visible rows, the displayed count of five, and the existing View all callback.
 
 - [ ] **Step 2: Run the focused case before implementation.** Use the command below to record the missing-count mismatch against the existing source. Preserve the known local two-row change; do not restore three rows to make the old assertion pass.
 
-- [ ] **Step 3: Centralize preview row selection.** Add TODAY_HABIT_PREVIEW_LIMIT = 2, compute scheduled once, and reuse its two-row slice for visible rows and visibleHabitIds. Preserve the 4 dp card gap.
+- [x] **Step 3: Centralize preview row selection.** Add TODAY_HABIT_PREVIEW_LIMIT = 2, compute scheduled once, and reuse its two-row slice for visible rows and visibleHabitIds. Preserve the 4 dp card gap.
 
-- [ ] **Step 4: Add localized counted labels.** Add habit_view_all_count and habit_view_all_scheduled_accessibility with the exact placeholder meanings from the spec in EN/FR/FA. Use localized count/date formatting.
+- [x] **Step 4: Add localized counted labels.** Add habit_view_all_count and habit_view_all_scheduled_accessibility with the exact placeholder meanings from the spec in EN/FR/FA. Use localized count/date formatting.
 
-- [ ] **Step 5: Apply the current-data guard.** Show the count only when !state.loading && state.loadedDate == shownDate && state.error != HabitUiError.LOAD && scheduled.isNotEmpty(); otherwise keep generic View all. The accessible label names the shown date and scheduled meaning.
+- [x] **Step 5: Apply the current-data guard.** Show the count only when !state.loading && state.loadedDate == shownDate && state.error != HabitUiError.LOAD && scheduled.isNotEmpty(); otherwise keep generic View all. The accessible label names the shown date and scheduled meaning.
 
-- [ ] **Step 6: Preserve retained feedback.** Keep off-preview and other-date pending actions visible using the same visible-ID set. Update exact-text View all assertions only for the counted loaded Today preview.
+- [x] **Step 6: Preserve retained feedback.** Keep off-preview and other-date pending actions visible using the same visible-ID set. Update exact-text View all assertions only for the counted loaded Today preview.
 
 - [ ] **Step 7: Verify the focused preview.** Run the single updated preview method and record AC-1–AC-5 results. Open Today with the five scheduled fixture rows and activate View all once; confirm label wrapping and the existing 48 dp target.
 
@@ -80,8 +80,8 @@ Expected: the selected existing test cases complete with zero failures. The comm
 
 After the integrated UI batch, run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` once to verify call sites and resources; repeat only if new changes or failures require it. Do not run the full app walkthrough again for each small visual task. Reuse the existing five-record fixtures and enter no extra demo data for this plan.
 
-- [ ] **Integration review:** Compare the diff with every behavior item and AC in the spec. Preserve the unrelated dirty tree and record actual build/device evidence and pending checks. Stage only this task's hunks if the selected execution workflow uses commits; suggested message: `fix: flow-004 habit preview count`.
+- [x] **Integration review:** Compared the implementation with the behavior items and acceptance scenarios. The initial untracked release APK, baseline profiles, and widget evidence archive were preserved. Gradle instrumentation, build, and emulator checks were not run per user request and remain pending.
 
 ## Handoff
 
-Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. This plan is ready for review; no product code or tests were changed by its creation.
+Deliver the changed behavior and remaining verification status together. The UI, localized labels, and regression fixture are implemented. The focused instrumentation case, integrated build/lint, and emulator checks remain pending because the user requested implementation only.

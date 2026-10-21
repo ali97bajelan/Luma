@@ -17,12 +17,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.language.localizedDate
+import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.util.UUID
+
+internal const val TODAY_HABIT_PREVIEW_LIMIT = 2
 
 @Composable
 fun TodayHabitsCard(
@@ -40,15 +46,34 @@ fun TodayHabitsCard(
 ) {
     val shownDate = state.date ?: fallbackDate
     val rows = state.rowsFor(shownDate)
-    val visibleHabitIds = splitHabitRows(rows).scheduled.take(2).mapTo(mutableSetOf()) { it.day.habit.id }
+    val scheduled = splitHabitRows(rows).scheduled
+    val visible = scheduled.take(TODAY_HABIT_PREVIEW_LIMIT)
+    val visibleHabitIds = visible.mapTo(mutableSetOf()) { it.day.habit.id }
+    val showScheduledCount = !state.loading && state.loadedDate == shownDate &&
+        state.error != HabitUiError.LOAD && scheduled.isNotEmpty()
+    val scheduledCount = NumberFormat.getIntegerInstance().format(scheduled.size)
+    val viewAllText = if (showScheduledCount) {
+        stringResource(R.string.habit_view_all_count, scheduledCount)
+    } else {
+        stringResource(R.string.habit_view_all)
+    }
+    val viewAllDescription = if (showScheduledCount) {
+        stringResource(R.string.habit_view_all_scheduled_accessibility, scheduledCount,
+            shownDate.format(localizedDate(FormatStyle.FULL)))
+    } else {
+        null
+    }
     Card(Modifier.fillMaxWidth().testTag("today_habits_card")) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f))
-                TextButton(onClick = onViewAll, modifier = Modifier.heightIn(min = 48.dp).testTag("habits_view_all")) {
-                    Text(stringResource(R.string.habit_view_all))
+                TextButton(onClick = onViewAll, modifier = Modifier.heightIn(min = 48.dp)
+                    .testTag("habits_view_all").semantics {
+                        viewAllDescription?.let { contentDescription = it }
+                    }) {
+                    Text(viewAllText)
                 }
             }
             state.trackingZone?.let { zone ->
@@ -80,8 +105,6 @@ fun TodayHabitsCard(
                 }
             }
             if (rows.isNotEmpty()) {
-                val scheduled = splitHabitRows(rows).scheduled
-                val visible = scheduled.take(2)
                 if (visible.isEmpty()) Text(stringResource(R.string.habit_no_scheduled),
                     modifier = Modifier.testTag("today_habits_none_scheduled"))
                 visible.forEach { row ->

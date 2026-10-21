@@ -196,24 +196,27 @@ class HabitCaptureFlowTest {
         Unit
     }
 
-    @Test fun todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtThree() {
+    @Test fun todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtTwo() {
         val rows = buildList {
             repeat(3) { add(previewRow("old-$it", scheduled = false, paused = it == 0)) }
-            repeat(4) { add(previewRow("scheduled-$it", scheduled = true)) }
+            repeat(5) { add(previewRow("scheduled-$it", scheduled = true)) }
         }
+        var viewAllOpened = false
         compose.setContent {
             LifeOsTheme {
                 TodayHabitsCard(HabitsUiState(date = today, loadedDate = today, days = rows, loading = false), today, zone,
-                    onViewAll = {}, onCreate = {}, onHabit = { _, _ -> }, onLog = {}, onRetryLog = {},
+                    onViewAll = { viewAllOpened = true }, onCreate = {}, onHabit = { _, _ -> }, onLog = {}, onRetryLog = {},
                     onUndo = {}, onRetry = {})
             }
         }
 
         compose.onNodeWithTag("habit_row_${rows[3].day.habit.id}").assertIsDisplayed()
         compose.onNodeWithTag("habit_row_${rows[4].day.habit.id}").assertIsDisplayed()
-        compose.onNodeWithTag("habit_row_${rows[5].day.habit.id}").assertIsDisplayed()
+        compose.onNodeWithTag("habit_row_${rows[5].day.habit.id}").assertDoesNotExist()
         assertEquals(0, compose.onAllNodes(hasTestTag("habit_row_${rows[0].day.habit.id}")).fetchSemanticsNodes().size)
-        assertEquals(0, compose.onAllNodes(hasTestTag("habit_row_${rows[6].day.habit.id}")).fetchSemanticsNodes().size)
+        compose.onNodeWithTag("habits_view_all").assertTextContains("5")
+        compose.onNodeWithTag("habits_view_all").performClick()
+        assertTrue(viewAllOpened)
     }
 
     @Test fun committedSubMillisecondLogReconcilesFromSavedRequest() = runBlocking {

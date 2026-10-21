@@ -3,7 +3,7 @@
 **Date:** 21 October 2026
 **Source:** [APP_FLOW_UX_REVIEW_2026-10-21.md](APP_FLOW_UX_REVIEW_2026-10-21.md)
 **Scope:** 24 task pairs: the review’s 17 remaining numbered findings and 7 focused tasks for uncovered live observations/design work.
-**Status:** FLOW-003 implementation complete. FLOW-005 scoped implementation complete; prerequisite integration remains pending. Build, emulator, and visual verification are pending at the user's request. Other task statuses are listed below. UX-028 remains optional and unselected.
+**Status:** FLOW-003 implementation complete. FLOW-004 implementation complete; focused instrumentation, build, and emulator verification remain pending at the user's request. FLOW-005 scoped implementation complete; prerequisite integration remains pending. Other task statuses are listed below. UX-028 remains optional and unselected.
 
 ## Coverage and reuse
 
@@ -35,7 +35,7 @@ The new specifications distinguish source behavior from the installed emulator b
 | FLOW-001 | Make Today’s selected-date context explicit | [Spec](superpowers/specs/2026-10-21-flow-001-today-date-context-design.md) | [Plan](superpowers/plans/2026-10-21-flow-001-today-date-context.md) | Draft / not started |
 | FLOW-002 | Remove duplicate empty-task messaging | [Spec](superpowers/specs/2026-10-21-flow-002-today-task-empty-state-design.md) | [Plan](superpowers/plans/2026-10-21-flow-002-today-task-empty-state.md) | Draft / not started |
 | FLOW-003 | Make habit progress visually legible | [Spec](superpowers/specs/2026-10-21-flow-003-habit-progress-track-design.md) | [Plan](superpowers/plans/2026-10-21-flow-003-habit-progress-track.md) | Implementation complete / runtime verification pending |
-| FLOW-004 | Show the scheduled habit count in Today’s preview | [Spec](superpowers/specs/2026-10-21-flow-004-habit-preview-count-design.md) | [Plan](superpowers/plans/2026-10-21-flow-004-habit-preview-count.md) | Draft / not started |
+| FLOW-004 | Show the scheduled habit count in Today’s preview | [Spec](superpowers/specs/2026-10-21-flow-004-habit-preview-count-design.md) | [Plan](superpowers/plans/2026-10-21-flow-004-habit-preview-count.md) | Implementation complete / focused runtime verification pending |
 | FLOW-005 | Refine Today’s information hierarchy | [Spec](superpowers/specs/2026-10-21-flow-005-today-information-hierarchy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-005-today-information-hierarchy.md) | Scoped implementation complete / prerequisite integration and runtime verification pending |
 | FLOW-006 | Unify populated card hierarchy | [Spec](superpowers/specs/2026-10-21-flow-006-content-card-hierarchy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-006-content-card-hierarchy.md) | Draft / not started |
 | FLOW-007 | Standardize capture and editor form layout | [Spec](superpowers/specs/2026-10-21-flow-007-capture-form-anatomy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-007-capture-form-anatomy.md) | Draft / not started |

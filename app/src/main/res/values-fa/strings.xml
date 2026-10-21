@@ -732,6 +732,8 @@
     <string name="habit_other_expanded">باز</string>
     <string name="habit_other_collapsed">بسته</string>
     <string name="habit_view_all">مشاهده همه</string>
+    <string name="habit_view_all_count">مشاهده همه (%1$s)</string>
+    <string name="habit_view_all_scheduled_accessibility">%1$s عادت برای %2$s برنامه‌ریزی شده است. مشاهده همه عادت‌ها.</string>
     <string name="habit_tracking_zone">منطقه زمانی پیگیری: %1$s</string>
     <string name="habit_tracking_zone_note">تاریخ عادت‌ها هنگام سفر هم در همین منطقه زمانی می‌ماند.</string>
     <string name="habit_tracking_zone_details">دربارهٔ تاریخ عادت‌ها</string>

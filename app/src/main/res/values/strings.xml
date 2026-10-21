@@ -732,6 +732,8 @@
     <string name="habit_other_expanded">Expanded</string>
     <string name="habit_other_collapsed">Collapsed</string>
     <string name="habit_view_all">View all</string>
+    <string name="habit_view_all_count">View all (%1$s)</string>
+    <string name="habit_view_all_scheduled_accessibility">%1$s habits scheduled for %2$s. View all habits.</string>
     <string name="habit_tracking_zone">Tracking zone: %1$s</string>
     <string name="habit_tracking_zone_note">This zone stays fixed for your habit dates, including when you travel.</string>
     <string name="habit_tracking_zone_details">About habit dates</string>

@@ -1,6 +1,6 @@
 # FLOW-004 — Show the scheduled habit count in Today’s preview
 
-**Status:** Draft specification; implementation has not started. Policy choices are proposed defaults for review.
+**Status:** Implementation complete; focused runtime verification pending.
 **Date:** 21 October 2026
 **Source:** [App flow and UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21.md), Additional live observation 5; visual direction 5.
 **Priority:** P2
