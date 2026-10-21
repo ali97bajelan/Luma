@@ -54,7 +54,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 **Interfaces:**
 
 - Consumes the current route/ViewModel/repository contracts in the files listed above; no new cross-task API is required.
-- Produces: EventCard gains required @StringRes openActionLabel: Int adjacent to onOpen. Use that resource for clickable(onClickLabel = ...). Migrate every EventCard call found by rg, including any additional callers beyond the listed starting files.
+- Produces: EventCard gains required @StringRes openActionLabel: Int adjacent to onOpen. Use that resource for clickable(onClickLabel = stringResource(openActionLabel), onClick = onOpen). Migrate every EventCard call found by rg, including any additional callers beyond the listed starting files.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
 - [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.

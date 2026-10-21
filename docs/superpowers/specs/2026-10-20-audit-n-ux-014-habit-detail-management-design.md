@@ -38,7 +38,7 @@ None. Coordinate overlapping files using the index's integration order.
 
 Place Edit in the existing pinned detail bar and a compact schedule/Manage disclosure before history. Convert HabitHistory content into LazyListScope items with stable keys.
 
-Extract fun LazyListScope.habitHistoryItems(...) with the existing history callbacks and per-log UUID keys; it replaces one eager history Column. HabitDetailScreen supplies onEdit: () -> Unit to DetailTopBar actions and keeps management commands in HabitManagementSection.
+Extract fun LazyListScope.habitHistoryItems(logs: List<HabitLog>, total: Int, selectedLogId: UUID?, screenZone: ZoneId, onEdit: (HabitLog) -> Unit, onDelete: (UUID) -> Unit, onLoadMore: () -> Unit, historyError: Boolean = false): Unit. It replaces the eager history Column with a heading item, per-log UUID-keyed items, an error item, and a load-more item; retain existing row callbacks and tags. HabitDetailScreen supplies onEdit: () -> Unit to DetailTopBar actions and keeps management commands in HabitManagementSection.
 
 Types, properties and files described as additions are proposed interfaces. Existing APIs are named explicitly where they are reused; follow the implementation plan's file inventory to distinguish new from current code.
 

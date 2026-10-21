@@ -38,7 +38,7 @@ None. Coordinate overlapping files using the index's integration order.
 
 Require callers to provide the card action label instead of deriving it solely from record type. Preserve separate bookmark/marker actions.
 
-EventCard gains required @StringRes openActionLabel: Int adjacent to onOpen. Use that resource for clickable(onClickLabel = ...). Migrate every EventCard call found by rg, including any additional callers beyond the listed starting files.
+EventCard gains required @StringRes openActionLabel: Int adjacent to onOpen. Use that resource for clickable(onClickLabel = stringResource(openActionLabel), onClick = onOpen). Migrate every EventCard call found by rg, including any additional callers beyond the listed starting files.
 
 Types, properties and files described as additions are proposed interfaces. Existing APIs are named explicitly where they are reused; follow the implementation plan's file inventory to distinguish new from current code.
 

@@ -40,9 +40,9 @@ fun TodayHabitsCard(
 ) {
     val shownDate = state.date ?: fallbackDate
     val rows = state.rowsFor(shownDate)
-    val visibleHabitIds = splitHabitRows(rows).scheduled.take(3).mapTo(mutableSetOf()) { it.day.habit.id }
+    val visibleHabitIds = splitHabitRows(rows).scheduled.take(2).mapTo(mutableSetOf()) { it.day.habit.id }
     Card(Modifier.fillMaxWidth().testTag("today_habits_card")) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.titleMedium,
@@ -81,7 +81,7 @@ fun TodayHabitsCard(
             }
             if (rows.isNotEmpty()) {
                 val scheduled = splitHabitRows(rows).scheduled
-                val visible = scheduled.take(3)
+                val visible = scheduled.take(2)
                 if (visible.isEmpty()) Text(stringResource(R.string.habit_no_scheduled),
                     modifier = Modifier.testTag("today_habits_none_scheduled"))
                 visible.forEach { row ->

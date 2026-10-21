@@ -51,7 +51,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 **Interfaces:**
 
 - Consumes the current route/ViewModel/repository contracts in the files listed above; no new cross-task API is required.
-- Produces: Extract fun LazyListScope.habitHistoryItems(...) with the existing history callbacks and per-log UUID keys; it replaces one eager history Column. HabitDetailScreen supplies onEdit: () -> Unit to DetailTopBar actions and keeps management commands in HabitManagementSection.
+- Produces: Extract fun LazyListScope.habitHistoryItems(logs: List<HabitLog>, total: Int, selectedLogId: UUID?, screenZone: ZoneId, onEdit: (HabitLog) -> Unit, onDelete: (UUID) -> Unit, onLoadMore: () -> Unit, historyError: Boolean = false): Unit. It replaces the eager history Column with a heading item, per-log UUID-keyed items, an error item, and a load-more item; retain existing row callbacks and tags. HabitDetailScreen supplies onEdit: () -> Unit to DetailTopBar actions and keeps management commands in HabitManagementSection.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
 - [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
