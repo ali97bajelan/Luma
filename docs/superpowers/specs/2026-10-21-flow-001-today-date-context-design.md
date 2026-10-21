@@ -1,6 +1,6 @@
 # FLOW-001 — Make Today’s selected-date context explicit
 
-**Status:** Draft specification; implementation has not started. Policy choices are proposed defaults for review.
+**Status:** Selected for implementation; implementation is complete. Focused verification remains pending at the user's request.
 **Date:** 21 October 2026
 **Source:** [App flow and UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21.md), Additional live observation 1; visual direction 2.
 **Priority:** P2
@@ -60,4 +60,4 @@ No automatic date reset on ordinary resume, separate per-tab date state, clock r
 
 ## Completion evidence
 
-Use the matching plan's focused verification. A screenshot demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state. Document unavailable checks as pending. No app tests, build, or implementation were performed while preparing this spec.
+Use the matching plan's focused verification. A screenshot demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state. Document unavailable checks as pending. No app tests or build were run to prepare this spec; current implementation and verification status is recorded in the linked plan.

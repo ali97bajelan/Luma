@@ -12,6 +12,7 @@ class MemoryCaptureTest {
         compose.onNodeWithTag("today_capture_memory").performClick()
         awaitTag("memory_note")
         compose.onNodeWithTag("memory_note").performTextInput(note)
+        compose.onNodeWithTag("memory_importance_toggle").performClick()
         compose.onNodeWithTag("memory_importance_5").performScrollTo().performClick()
         compose.activityRule.scenario.recreate()
         awaitTag("memory_note")

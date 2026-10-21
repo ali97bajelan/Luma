@@ -52,6 +52,7 @@ class TodayTasksSemanticsTest {
                     todayTasks = TodayTasksState.Data(tasks, total = 4),
                     onAllTasks = { allTasks++ },
                     onAddTask = { addTask++ },
+                    deviceDate = date,
                 )
             }
         }
@@ -83,6 +84,7 @@ class TodayTasksSemanticsTest {
                     summaryState = DailySummaryState.Data(DailySummary(date, zone, 1, 0, 0)),
                     habitsState = HabitsUiState(date = date, loadedDate = date, trackingZone = zone, deviceDate = date, loading = false),
                     todayTasks = TodayTasksState.Error,
+                    deviceDate = date,
                 )
             }
         }
@@ -120,6 +122,7 @@ class TodayTasksSemanticsTest {
                     todayTasks = TodayTasksState.Data(listOf(visible), total = 1),
                     todayTaskActions = actions,
                     onTask = { opened.add(it) },
+                    deviceDate = date,
                 )
             }
         }
@@ -155,6 +158,7 @@ class TodayTasksSemanticsTest {
                     onTask = { opened++ },
                     onSetTaskCompleted = { _, _ -> completions++ },
                     onDismissTaskError = { dismissals++ },
+                    deviceDate = date,
                 )
             }
         }

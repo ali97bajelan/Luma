@@ -1,6 +1,6 @@
 # FLOW-007 — Standardize capture and editor form layout Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for inline implementation. Use superpowers:subagent-driven-development only if delegation is explicitly selected. Steps use checkbox syntax; this documentation request does not start implementation.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for inline implementation. Use superpowers:subagent-driven-development only if delegation is explicitly selected. Steps use checkbox syntax to track implementation and verification separately.
 
 **Goal:** Give each editor a clear primary input and a predictable optional-details area while keeping Save reachable and accepted drafts safe.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [FLOW-007 specification](../specs/2026-10-21-flow-007-capture-form-anatomy-design.md)
 
-**Status:** Draft plan; all implementation and verification steps remain unchecked.
+**Status:** Scoped implementation complete; UX-012/UX-021 integration and focused verification pending at the user's request.
 
 ## Global Constraints
 
@@ -54,8 +54,10 @@ Requires UX-021’s header/inset contract and UX-012’s searchable context cont
 - Modify only for changed labels: `app/src/main/res/values-fr/strings.xml`
 - Modify only for changed labels: `app/src/main/res/values-fa/strings.xml`
 - Existing verification fixture: `app/src/androidTest/java/com/luma/lifeos/JournalEditorScreenTest.kt`
+- Existing form-flow callsite updates: `app/src/androidTest/java/com/luma/lifeos/JournalCaptureTest.kt`
 - Existing verification fixture: `app/src/androidTest/java/com/luma/lifeos/CaptureAccessibilityTest.kt`
 - Existing verification fixture: `app/src/androidTest/java/com/luma/lifeos/MemoryCaptureTest.kt`
+- Existing localized-flow callsite update: `app/src/androidTest/java/com/luma/lifeos/language/LanguageFlowTest.kt`
 
 **Interfaces:**
 
@@ -65,17 +67,19 @@ Requires UX-021’s header/inset contract and UX-012’s searchable context cont
 
 - [ ] **Step 1: Extend the existing pending-tag regression.** In JournalEditorScreenTest extend rejectedPendingTagKeepsEditorOpenRetainsInputAndShowsFieldError to expect the Tags section expanded with the pending value intact after rejection. Record its baseline result; no replacement draft or test harness is introduced.
 
-- [ ] **Step 2: Create the controlled optional section.** Implement EditorOptionalSection with the exact spec signature, one subject-named toggle, expanded/collapsed semantics, optional collapsed summary, and content outside the toggle semantics node.
+- [x] **Step 2: Create the controlled optional section.** Implement EditorOptionalSection with the exact spec signature, one subject-named toggle, expanded/collapsed semantics, optional collapsed summary, and content outside the toggle semantics node.
 
-- [ ] **Step 3: Move Journal tags into the controlled group.** Add saveable ready-once expansion initialization from selected/pending tags. Keep pending text and selected IDs outside the disclosure, show the localized tag-count summary when collapsed, and set body minLines to six.
+- [x] **Step 3: Move Journal tags into the controlled group.** Add saveable ready-once expansion initialization from selected/pending tags. Keep pending text and selected IDs outside the disclosure, show the localized tag-count summary when collapsed, and set body minLines to six.
 
-- [ ] **Step 4: Keep Journal rejection visible.** Preserve the existing pending-tag flush function. On rejection expand Tags before the existing bring-into-view/focus request, retain the input/error, and keep Save from losing the draft.
+- [x] **Step 4: Keep Journal rejection visible.** Preserve the existing pending-tag flush function. On rejection expand Tags before the existing bring-into-view/focus request, retain the input/error, and keep Save from losing the draft.
 
-- [ ] **Step 5: Group Memory importance.** Initialize saveable importance expansion only once after the first ready state, use the selected-rating summary when collapsed, and retain the four-line growing description plus 1–5 tap-again-to-clear behavior.
+- [x] **Step 5: Group Memory importance.** Initialize saveable importance expansion only once after the first ready state, use the selected-rating summary when collapsed, and retain the four-line growing description plus 1–5 tap-again-to-clear behavior.
 
-- [ ] **Step 6: Align responsive footers.** Apply the spec’s below-360 dp stacked and 360 dp-or-wider wrapping-label row layout across the seven editors. Retain Save-last prominence, single IME ownership, 48 dp actions, busy/dirty guards, and distinct Delete/remove-marker confirmations.
+- [x] **Step 6: Align responsive footers.** Apply the spec’s below-360 dp stacked and 360 dp-or-wider wrapping-label row layout across the seven editors. Retain Save-last prominence, single IME ownership, 48 dp actions, busy/dirty guards, and distinct Delete/remove-marker confirmations.
 
-- [ ] **Step 7: Align remaining form groups.** Use 20 dp gutters and 12 dp group spacing while keeping Mood score/emotions, Task due date, Habit schedule/zone/start date, and simple Person/Place fields explicit. Reuse UX-012 context selectors and preserve all field/action tags.
+- [x] **Step 7a: Align remaining form groups.** Use 20 dp gutters and 12 dp group spacing while keeping Mood score/emotions, Task due date, Habit schedule/zone/start date, and simple Person/Place fields explicit. Preserve the existing field/action tags and current selector state.
+
+- [ ] **Step 7b: Integrate prerequisites.** Adopt UX-012 searchable selectors and UX-021 header/inset ownership when those prerequisite tasks are implemented. Both remain pending; this scoped change preserves the current selectors and header/inset owner.
 
 - [ ] **Step 8: Verify the changed form contracts.** Run the listed Journal/CaptureAccessibility suites once and record AC-1–AC-5. Use each affected form’s existing normal-save scenario once with the review fixtures; inspect both footer widths/IME in one layout fixture, and label unexecuted specialized checks pending.
 
@@ -93,8 +97,8 @@ Expected: the selected existing test cases complete with zero failures. The comm
 
 After the integrated UI batch, run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` once to verify call sites and resources; repeat only if new changes or failures require it. Do not run the full app walkthrough again for each small visual task. Reuse the existing five-record fixtures and enter no extra demo data for this plan.
 
-- [ ] **Integration review:** Compare the diff with every behavior item and AC in the spec. Preserve the unrelated dirty tree and record actual build/device evidence and pending checks. Stage only this task's hunks if the selected execution workflow uses commits; suggested message: `fix: flow-007 capture form anatomy`.
+- [x] **Integration review:** Compared the source diff with the implemented form contracts. Existing save/delete, dirty-state, draft, timestamp, and one-owner IME behavior remain in place. UX-012/UX-021 integration is pending; no Gradle, instrumentation, build, or emulator verification was run at the user's request. Suggested message: `fix: flow-007 capture form anatomy`.
 
 ## Handoff
 
-Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. This plan is ready for review; no product code or tests were changed by its creation.
+Deliver the changed behavior, focused evidence, and remaining limitations together. The scoped form implementation is complete. UX-012/UX-021 integration and acceptance-case runtime evidence remain pending.

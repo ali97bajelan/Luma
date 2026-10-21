@@ -1,6 +1,6 @@
 # FLOW-007 — Standardize capture and editor form layout
 
-**Status:** Draft specification; implementation has not started. Policy choices are proposed defaults for review.
+**Status:** Selected for scoped implementation; the form changes are implemented. UX-012/UX-021 integration and focused verification remain pending.
 **Date:** 21 October 2026
 **Source:** [App flow and UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21.md), Visual direction 6; complements UX-012, UX-019, UX-021, and UX-023.
 **Priority:** P2
@@ -61,4 +61,4 @@ No draft-store replacement, new text limits, automatic data deletion, photo view
 
 ## Completion evidence
 
-Use the matching plan's focused verification. A screenshot demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state. Document unavailable checks as pending. No app tests, build, or implementation were performed while preparing this spec.
+Use the matching plan's focused verification. A screenshot demonstrates appearance for its recorded build/configuration, not every device or assistive-technology state. Document unavailable checks as pending. No app tests or build were run to prepare this spec; current implementation and verification status is recorded in the linked plan.

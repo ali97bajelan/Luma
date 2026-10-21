@@ -40,8 +40,10 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit, onMemor
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(event.type.label()), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                Text(event.occurredAt.atZone(zone).format(com.luma.lifeos.language.localizedTime()), style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(event.type.label()), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(event.occurredAt.atZone(zone).format(com.luma.lifeos.language.localizedTime()),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (onMemory != null && (record.canPromoteToMemory || (event.type == EventType.MEMORY && record.canEditContent))) {
                     val memoryState = record.memory?.let { memory ->
                         memory.importance?.let { stringResource(R.string.memory_status_importance, it) }
@@ -96,7 +98,7 @@ private fun EventContext(record: LifeEventRecord) {
         }
         if (record.event.source != EventSource.MANUAL) add(stringResource(record.event.source.label()))
     }
-    if (context.isNotEmpty()) Text(context.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
+    if (context.isNotEmpty()) Text(context.joinToString(" · "), style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
         modifier = Modifier.testTag("event_context_${record.event.id}"))
 }

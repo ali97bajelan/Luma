@@ -72,7 +72,8 @@ class TodayScreenTest {
                 }) { padding ->
                     Box(Modifier.padding(padding)) {
                         TodayScreen(day, ZoneId.of("UTC"), TodayUiState.Empty, {}, {}, {}, habitsState = habits,
-                            summaryState = DailySummaryState.Data(DailySummary(day, ZoneId.of("UTC"), 0, 0, 0)))
+                            summaryState = DailySummaryState.Data(DailySummary(day, ZoneId.of("UTC"), 0, 0, 0)),
+                            deviceDate = day)
                     }
                 }
             }
@@ -100,7 +101,7 @@ class TodayScreenTest {
                 Scaffold(bottomBar = { NavigationBar {} }) { padding ->
                     Box(Modifier.padding(padding)) {
                         TodayScreen(day, zone, TodayUiState.Data(listOf(event)), {}, {}, {},
-                            summaryState = DailySummaryState.Data(summary))
+                            summaryState = DailySummaryState.Data(summary), deviceDate = day)
                     }
                 }
             }
@@ -146,7 +147,7 @@ class TodayScreenTest {
         compose.setContent {
             LifeOsTheme {
                 TodayScreen(day, ZoneId.of("UTC"), TodayUiState.Empty, onSelectDate = {}, onToday = {},
-                    onRetry = {}, summaryState = DailySummaryState.Data(summary))
+                    onRetry = {}, summaryState = DailySummaryState.Data(summary), deviceDate = day)
             }
         }
 
@@ -171,7 +172,8 @@ class TodayScreenTest {
         compose.setContent {
             LifeOsTheme {
                 TodayScreen(LocalDate.now(ZoneId.of("UTC")), ZoneId.of("UTC"), TodayUiState.Empty,
-                    {}, {}, {}, onCapture = { type, date -> captured += type to date })
+                    {}, {}, {}, onCapture = { type, date -> captured += type to date },
+                    deviceDate = LocalDate.now(ZoneId.of("UTC")))
             }
         }
         listOf("mood", "journal", "memory").forEach { type ->
@@ -192,7 +194,7 @@ class TodayScreenTest {
                 LocalLayoutDirection provides LayoutDirection.Rtl) {
                 LifeOsTheme {
                     TodayScreen(day, ZoneId.of("UTC"), TodayUiState.Empty, {}, {}, {},
-                        onCapture = { type, date -> captured += type to date })
+                        onCapture = { type, date -> captured += type to date }, deviceDate = day)
                 }
             }
         }
@@ -215,7 +217,8 @@ class TodayScreenTest {
         compose.setContent {
             LifeOsTheme {
                 TodayScreen(LocalDate.now(ZoneId.of("UTC")), ZoneId.of("UTC"), TodayUiState.Empty,
-                    {}, {}, {}, summaryState = DailySummaryState.Error, onSummaryRetry = { retries++ })
+                    {}, {}, {}, summaryState = DailySummaryState.Error, onSummaryRetry = { retries++ },
+                    deviceDate = LocalDate.now(ZoneId.of("UTC")))
             }
         }
         compose.onNodeWithTag("daily_summary_error").assertDoesNotExist()
@@ -234,7 +237,8 @@ class TodayScreenTest {
         compose.setContent {
             LifeOsTheme {
                 TodayScreen(LocalDate.parse("2026-10-11"), ZoneId.of("UTC"), state.value,
-                    onSelectDate = {}, onToday = {}, onRetry = { retries++ })
+                    onSelectDate = {}, onToday = {}, onRetry = { retries++ },
+                    deviceDate = LocalDate.parse("2026-10-11"))
             }
         }
         compose.onNodeWithTag("today_loading").assertIsDisplayed()
@@ -253,7 +257,8 @@ class TodayScreenTest {
         compose.setContent {
             LifeOsTheme {
                 TodayScreen(LocalDate.parse("2026-10-11"), ZoneId.of("UTC"),
-                    TodayUiState.Data(listOf(event)), onSelectDate = {}, onToday = {}, onRetry = {})
+                    TodayUiState.Data(listOf(event)), onSelectDate = {}, onToday = {}, onRetry = {},
+                    deviceDate = LocalDate.parse("2026-10-11"))
             }
         }
         compose.onNodeWithTag("today_recent_entries").assertIsDisplayed()
@@ -266,7 +271,7 @@ class TodayScreenTest {
         compose.setContent {
             LifeOsTheme {
                 TodayScreen(LocalDate.parse("1899-12-31"), ZoneId.of("UTC"), TodayUiState.Empty,
-                    onSelectDate = {}, onToday = {}, onRetry = {})
+                    onSelectDate = {}, onToday = {}, onRetry = {}, deviceDate = LocalDate.parse("1899-12-31"))
             }
         }
         compose.onNodeWithTag("day_picker").performClick()

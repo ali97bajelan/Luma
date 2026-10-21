@@ -31,16 +31,16 @@ fun HabitTimelineCard(item: TimelineFeedItem.Habit, screenZone: ZoneId, onOpen: 
         ?: stringResource(R.string.habit_time_not_recorded)
     Card(Modifier.fillMaxWidth().testTag("habit_timeline_${log.id}")
         .clickable(onClickLabel = stringResource(R.string.habit_open_accessibility, item.name), onClick = onOpen)) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(8.dp))
-                Text(time, style = MaterialTheme.typography.labelLarge)
+                Text(time, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(item.name, style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.habit_timeline_completion, unit), style = MaterialTheme.typography.bodyMedium)
-            if (log.zone != screenZone) Text(log.zone.id, style = MaterialTheme.typography.bodySmall,
+            if (log.zone != screenZone) Text(log.zone.id, style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("habit_timeline_zone_${log.id}"))
         }
     }

@@ -1,6 +1,6 @@
 # FLOW-006 — Unify populated card hierarchy Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for inline implementation. Use superpowers:subagent-driven-development only if delegation is explicitly selected. Steps use checkbox syntax; this documentation request does not start implementation.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for inline implementation. Use superpowers:subagent-driven-development only if delegation is explicitly selected. Steps use checkbox syntax to track implementation and verification separately.
 
 **Goal:** Make personal content easier to scan by giving titles, body previews, metadata, and row actions stable visual roles.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [FLOW-006 specification](../specs/2026-10-21-flow-006-content-card-hierarchy-design.md)
 
-**Status:** Draft plan; all implementation and verification steps remain unchecked.
+**Status:** Implementation complete; focused tests, build, and device verification pending at the user's request.
 
 ## Global Constraints
 
@@ -53,15 +53,15 @@ No hard prerequisite. Integrate after UX-019/UX-020 when changing EventCard call
 - Produces: Preserve EventCard, HabitTimelineCard, TodoRow, PeopleRoute/PeopleListContent, and PlacesListContent callback and identity contracts. Apply the listed Material roles and spacing at the existing sites; do not introduce a generic all-purpose card API or copy EventCard into other routes. If UX-020 has landed, retain its required openActionLabel parameter at every caller.
 - Does not change repository schemas, stored content, or callback target identity.
 
-- [ ] **Step 1: Identify actual presentation mismatches.** Compare the five listed card sites to the spec’s 12 dp/4 dp rhythm and role map. Preserve already-conforming sites; no generic card framework is introduced.
+- [x] **Step 1: Identify actual presentation mismatches.** Compare the five listed card sites to the spec’s 12 dp/4 dp rhythm and role map. Preserve already-conforming sites; no generic card framework is introduced.
 
-- [ ] **Step 2: Align entry metadata.** Use the specified metadata role/color in EventCard where needed. Keep title/body two-line previews, original data in detail, all context indicators, and the UX-020 action-label contract when present.
+- [x] **Step 2: Align entry metadata.** Use the specified metadata role/color in EventCard where needed. Keep title/body two-line previews, original data in detail, all context indicators, and the UX-020 action-label contract when present.
 
-- [ ] **Step 3: Align habit timeline spacing.** Change HabitTimelineCard from 14 dp/5 dp to 12 dp/4 dp. Retain completion text, source zone, and its existing navigation callback.
+- [x] **Step 3: Align habit timeline spacing.** Change HabitTimelineCard from 14 dp/5 dp to 12 dp/4 dp. Retain completion text, source zone, and its existing navigation callback.
 
-- [ ] **Step 4: Align catalog cards where needed.** Apply the same name/note/metadata roles to People/Places only at nonconforming sites. Keep stable IDs and current catalog/detail actions.
+- [x] **Step 4: Align catalog cards where needed.** Apply the same name/note/metadata roles to People/Places only at nonconforming sites. Keep stable IDs and current catalog/detail actions.
 
-- [ ] **Step 5: Retain task control layout.** Keep TodoRow title bodyLarge, checkbox/open-target separation, and at least 48 dp targets. Align supporting text to the title column without adding a parent click wrapper.
+- [x] **Step 5: Retain task control layout.** Keep TodoRow title bodyLarge, checkbox/open-target separation, and at least 48 dp targets. Align supporting text to the title column without adding a parent click wrapper.
 
 - [ ] **Step 6: Verify the populated card fixture.** Run the listed existing EventCardTest cases once and record AC-1–AC-5 in one populated fixture. Preserve existing compact/130%/RTL viewport behavior and independent action checks; add no tests for static spacing values.
 
@@ -79,8 +79,8 @@ Expected: the selected existing test cases complete with zero failures. The comm
 
 After the integrated UI batch, run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` once to verify call sites and resources; repeat only if new changes or failures require it. Do not run the full app walkthrough again for each small visual task. Reuse the existing five-record fixtures and enter no extra demo data for this plan.
 
-- [ ] **Integration review:** Compare the diff with every behavior item and AC in the spec. Preserve the unrelated dirty tree and record actual build/device evidence and pending checks. Stage only this task's hunks if the selected execution workflow uses commits; suggested message: `fix: flow-006 content card hierarchy`.
+- [x] **Integration review:** Compared the source diff with the behavior contract and acceptance cases. Existing card actions and identities remain unchanged. No Gradle, instrumentation, build, or emulator verification was run at the user's request; those checks remain pending. Suggested message: `fix: flow-006 content card hierarchy`.
 
 ## Handoff
 
-Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. This plan is ready for review; no product code or tests were changed by its creation.
+Deliver the changed behavior, focused evidence, and remaining limitations together. Implementation is recorded complete; acceptance-case runtime evidence remains pending because verification was not requested.

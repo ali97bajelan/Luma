@@ -27,6 +27,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.PlaceTextLimits
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
+import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.domain.repository.PlaceRepository
 import com.luma.lifeos.ui.navigation.CatalogEditorResult
 import java.text.NumberFormat
@@ -70,15 +71,19 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
                 PlaceEditorError.DELETE -> AccessibleFeedback(stringResource(R.string.place_delete_error), Modifier.testTag("place_action_error"))
                 else -> Unit
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("place_delete")) {
-                    Text(stringResource(R.string.delete))
-                }
-                Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
-                    modifier = Modifier.weight(1f).testTag("place_save")) {
-                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
-                }
-            }
+            EditorActionRow(
+                secondaryAction = if (state.editing) { actionModifier ->
+                    TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("place_delete")) {
+                        Text(stringResource(R.string.delete))
+                    }
+                } else null,
+                primaryAction = { actionModifier ->
+                    Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
+                        modifier = actionModifier.testTag("place_save")) {
+                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                    }
+                },
+            )
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),

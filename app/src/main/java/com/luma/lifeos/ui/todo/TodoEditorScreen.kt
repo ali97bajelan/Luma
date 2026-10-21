@@ -52,6 +52,7 @@ import com.luma.lifeos.domain.todo.TodoValidationReason
 import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
+import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.text.NumberFormat
@@ -140,30 +141,32 @@ fun TodoEditorScreen(
                         Text(stringResource(R.string.retry))
                     }
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (state.editing) {
+                EditorActionRow(
+                    secondaryAction = if (state.editing) { actionModifier ->
                         TextButton(
                             onClick = onRequestDelete,
                             enabled = canEdit && state.pendingAction == null,
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_delete"),
+                            modifier = actionModifier.testTag("todo_editor_delete"),
                         ) { Text(stringResource(R.string.delete)) }
-                    }
-                    Button(
-                        onClick = onSave,
-                        enabled = canEdit,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("todo_editor_save"),
-                    ) {
-                        Text(
-                            when {
-                                state.busy && state.pendingAction == "delete" -> stringResource(R.string.todo_deleting)
-                                state.busy && state.pendingAction == "complete" -> stringResource(R.string.todo_completing)
-                                state.busy && state.pendingAction == "reopen" -> stringResource(R.string.todo_reopening)
-                                state.busy -> stringResource(R.string.saving)
-                                else -> stringResource(R.string.save)
-                            },
-                        )
-                    }
-                }
+                    } else null,
+                    primaryAction = { actionModifier ->
+                        Button(
+                            onClick = onSave,
+                            enabled = canEdit,
+                            modifier = actionModifier.testTag("todo_editor_save"),
+                        ) {
+                            Text(
+                                when {
+                                    state.busy && state.pendingAction == "delete" -> stringResource(R.string.todo_deleting)
+                                    state.busy && state.pendingAction == "complete" -> stringResource(R.string.todo_completing)
+                                    state.busy && state.pendingAction == "reopen" -> stringResource(R.string.todo_reopening)
+                                    state.busy -> stringResource(R.string.saving)
+                                    else -> stringResource(R.string.save)
+                                },
+                            )
+                        }
+                    },
+                )
             }
         },
     ) { padding ->

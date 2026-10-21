@@ -3,7 +3,7 @@
 **Date:** 21 October 2026
 **Source:** [APP_FLOW_UX_REVIEW_2026-10-21.md](APP_FLOW_UX_REVIEW_2026-10-21.md)
 **Scope:** 24 task pairs: the review’s 17 remaining numbered findings and 7 focused tasks for uncovered live observations/design work.
-**Status:** FLOW-002 implementation complete; focused runtime verification pending at the user's request. FLOW-003 implementation complete. FLOW-004 implementation complete; focused instrumentation, build, and emulator verification remain pending at the user's request. FLOW-005 scoped implementation complete; prerequisite integration remains pending. Other task statuses are listed below. UX-028 remains optional and unselected.
+**Status:** FLOW-001 and FLOW-006 implementation complete; focused verification remains pending at the user's request. FLOW-002 implementation complete; focused runtime verification pending at the user's request. FLOW-003 implementation complete. FLOW-004 implementation complete; focused instrumentation, build, and emulator verification remain pending at the user's request. FLOW-005 scoped implementation complete; prerequisite integration remains pending. FLOW-007 scoped implementation complete; UX-012/UX-021 integration and focused verification remain pending at the user's request. Other task statuses are listed below. UX-028 remains optional and unselected.
 
 ## Coverage and reuse
 
@@ -32,13 +32,13 @@ The new specifications distinguish source behavior from the installed emulator b
 | UX-025 | Restore confirmation has an unbounded warning body | [Spec](superpowers/specs/2026-10-20-audit-n-ux-025-restore-dialog-reachability-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-025-restore-dialog-reachability.md) | Draft / not started |
 | UX-026 | Weekly activity can render a nonzero value as zero | [Spec](superpowers/specs/2026-10-20-audit-n-ux-026-activity-number-precision-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-026-activity-number-precision.md) | Draft / not started |
 | UX-028 | Attached images cannot be inspected beyond their previews | [Spec](superpowers/specs/2026-10-20-audit-n-ux-028-optional-photo-viewer-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-028-optional-photo-viewer.md) | Optional / not selected |
-| FLOW-001 | Make Today’s selected-date context explicit | [Spec](superpowers/specs/2026-10-21-flow-001-today-date-context-design.md) | [Plan](superpowers/plans/2026-10-21-flow-001-today-date-context.md) | Draft / not started |
+| FLOW-001 | Make Today’s selected-date context explicit | [Spec](superpowers/specs/2026-10-21-flow-001-today-date-context-design.md) | [Plan](superpowers/plans/2026-10-21-flow-001-today-date-context.md) | Implementation complete / focused verification pending at the user's request |
 | FLOW-002 | Remove duplicate empty-task messaging | [Spec](superpowers/specs/2026-10-21-flow-002-today-task-empty-state-design.md) | [Plan](superpowers/plans/2026-10-21-flow-002-today-task-empty-state.md) | Implementation complete / focused runtime verification pending |
 | FLOW-003 | Make habit progress visually legible | [Spec](superpowers/specs/2026-10-21-flow-003-habit-progress-track-design.md) | [Plan](superpowers/plans/2026-10-21-flow-003-habit-progress-track.md) | Implementation complete / runtime verification pending |
 | FLOW-004 | Show the scheduled habit count in Today’s preview | [Spec](superpowers/specs/2026-10-21-flow-004-habit-preview-count-design.md) | [Plan](superpowers/plans/2026-10-21-flow-004-habit-preview-count.md) | Implementation complete / focused runtime verification pending |
 | FLOW-005 | Refine Today’s information hierarchy | [Spec](superpowers/specs/2026-10-21-flow-005-today-information-hierarchy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-005-today-information-hierarchy.md) | Scoped implementation complete / prerequisite integration and runtime verification pending |
-| FLOW-006 | Unify populated card hierarchy | [Spec](superpowers/specs/2026-10-21-flow-006-content-card-hierarchy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-006-content-card-hierarchy.md) | Draft / not started |
-| FLOW-007 | Standardize capture and editor form layout | [Spec](superpowers/specs/2026-10-21-flow-007-capture-form-anatomy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-007-capture-form-anatomy.md) | Draft / not started |
+| FLOW-006 | Unify populated card hierarchy | [Spec](superpowers/specs/2026-10-21-flow-006-content-card-hierarchy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-006-content-card-hierarchy.md) | Implementation complete / focused verification pending at the user's request |
+| FLOW-007 | Standardize capture and editor form layout | [Spec](superpowers/specs/2026-10-21-flow-007-capture-form-anatomy-design.md) | [Plan](superpowers/plans/2026-10-21-flow-007-capture-form-anatomy.md) | Scoped implementation complete / UX-012 and UX-021 integration plus focused verification pending |
 
 ## Live observation mapping
 
@@ -87,7 +87,7 @@ Only the “requires” entries below are hard dependencies. Other ordering avoi
 | FLOW-007 | Requires UX-021 and UX-012. Retain UX-019/UX-023 formatting and disclosure behavior when present. |
 | UX-028 | Separate optional proposal; documentation does not select it for implementation. |
 
-Suggested batches are: privacy/status/recovery corrections; navigation/selectors/formatting; shared page pilot and focused Today/card fixes; then FLOW-005/FLOW-007. Use one integration owner for shared TodayScreen, EventCard, editor, and resource changes. This document does not select delegation or start implementation.
+Suggested batches are: privacy/status/recovery corrections; navigation/selectors/formatting; shared page pilot and focused Today/card fixes; then FLOW-005/FLOW-007. Use one integration owner for shared TodayScreen, EventCard, editor, and resource changes. This index does not choose an execution method for the remaining tasks.
 
 ## Preserved decisions and open product choices
 
@@ -95,12 +95,12 @@ Suggested batches are: privacy/status/recovery corrections; navigation/selectors
 - Date selection remains null-to-follow-current-day or an explicit selected date across tabs/recreation. FLOW-001 does not silently reset a deliberate selection on every resume.
 - FLOW-003 retains the standard Material indicator and exact numeric progress. It does not infer a missing source component from the unmatched emulator screenshot.
 - FLOW-006 changes only nonconforming presentation sites. Existing compliant card styling and independently clickable actions remain intact.
-- The 840 dp wide reading width in UX-021, counted View all label in FLOW-004, and form layout/disclosure choices in FLOW-007 are draft policy choices, not previously approved product behavior.
+- The 840 dp wide reading width in UX-021 and counted View all label in FLOW-004 remain draft policy choices. FLOW-007's form layout and disclosure choices were implemented as specified for this task.
 - UX-028’s photo decode/zoom proposal remains optional. No cloud, account, social, new primary tab, or palette replacement is added by these plans.
 
 ## Proportionate execution checks
 
-The original documentation pass ran no prospective commands and left implementation checkboxes unchecked. FLOW-003 has since been implemented. FLOW-005's capture styling and empty-message ownership have also been implemented; its UX-021 and FLOW-001/002/004 prerequisite integration remains pending. The linked plans record static evidence and pending build/device checks. The 17 canonical pairs retain their issue-specific acceptance cases, including failure paths where those are the issue being corrected. The new visual plans reuse existing fixtures and avoid unit tests that merely restate spacing or copy.
+The original documentation pass ran no prospective commands and left implementation checkboxes unchecked. FLOW-001, FLOW-003, and FLOW-006 have since been implemented. FLOW-005's capture styling and empty-message ownership have also been implemented; its UX-021 and FLOW-001/002/004 prerequisite integration remains pending. FLOW-007's scoped form work is implemented while UX-012/UX-021 integration remains pending. The linked plans record implementation steps and pending focused verification. The 17 canonical pairs retain their issue-specific acceptance cases, including failure paths where those are the issue being corrected. The new visual plans reuse existing fixtures and avoid unit tests that merely restate spacing or copy.
 
 When implementation is selected, use one ordinary visit per affected section/form and the existing five-record dataset. Add only the targeted regression needed for a changed state/navigation contract; do not repeat the full walkthrough per cosmetic change or create five more records per form. Run the integrated compile/resource/lint checks once per changed batch, repeating only for new changes or failures. Record any specialized release checks not executed as pending.
 

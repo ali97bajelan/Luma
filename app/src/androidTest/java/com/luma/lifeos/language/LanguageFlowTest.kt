@@ -67,6 +67,7 @@ class LanguageFlowTest {
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_title").performTextInput("عنوان / Titre")
         compose.onNodeWithTag("journal_body").performTextInput(body)
+        compose.onNodeWithTag("journal_tags_toggle").performClick()
         compose.onNodeWithTag("journal_tag_input").performScrollTo().performTextInput("من / Moi")
         compose.onNodeWithTag("journal_add_tag").performScrollTo().performClick()
         for (language in listOf(AppLanguage.PERSIAN, AppLanguage.FRENCH, AppLanguage.ENGLISH)) {

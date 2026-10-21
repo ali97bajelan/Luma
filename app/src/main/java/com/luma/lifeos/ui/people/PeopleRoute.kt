@@ -83,7 +83,7 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
                 }
                 items(current.people, key = { it.id.toString() }) { person ->
                     Card(Modifier.fillMaxWidth().testTag("person_${person.id}").clickable { onPerson(person.id) }) {
-                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Icon(painterResource(R.drawable.ic_nav_people), contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))

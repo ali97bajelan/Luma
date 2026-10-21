@@ -29,6 +29,7 @@ class JournalEditorScreenTest {
                 )
             }
         }
+        compose.onNodeWithTag("journal_tags_toggle").performClick()
         compose.onNodeWithTag("journal_tag_input").performTextInput("Unaccepted")
         compose.onNodeWithTag("journal_title").performScrollTo()
         compose.onNodeWithTag("journal_save").performClick()

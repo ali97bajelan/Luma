@@ -42,6 +42,7 @@ class JournalCaptureTest {
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_body").performTextInput(body)
         compose.onNodeWithTag("journal_title").performTextInput("A journal")
+        compose.onNodeWithTag("journal_tags_toggle").performClick()
         compose.onNodeWithTag("journal_tag_input").performScrollTo().performTextInput("Ideas")
         compose.onNodeWithTag("journal_add_tag").performScrollTo().performClick()
         compose.activityRule.scenario.recreate()

@@ -62,7 +62,7 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
                 }
                 items(current.places, key = { it.id.toString() }) { place ->
                     Card(Modifier.fillMaxWidth().testTag("place_${place.id}").clickable { onPlace(place.id) }) {
-                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Icon(painterResource(R.drawable.ic_nav_places), contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))

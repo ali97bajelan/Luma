@@ -45,6 +45,7 @@ import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.ui.common.EditorTopBar
+import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
@@ -104,17 +105,21 @@ fun MoodEditorScreen(
                     else -> null
                 }
                 actionError?.let { AccessibleFeedback(it, Modifier.testTag("mood_error")) }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (editing) TextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,
-                        onClick = { deleting = true }, modifier = Modifier.testTag("mood_delete")) {
-                        Text(stringResource(if (state.deleteRecovery == MoodDeleteRecovery.STILL_PRESENT)
-                            R.string.mood_delete_retry else R.string.delete))
-                    }
-                    Button(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting, onClick = onSave,
-                        modifier = Modifier.weight(1f).testTag("mood_save")) {
-                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
-                    }
-                }
+                EditorActionRow(
+                    secondaryAction = if (editing) { actionModifier ->
+                        TextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,
+                            onClick = { deleting = true }, modifier = actionModifier.testTag("mood_delete")) {
+                            Text(stringResource(if (state.deleteRecovery == MoodDeleteRecovery.STILL_PRESENT)
+                                R.string.mood_delete_retry else R.string.delete))
+                        }
+                    } else null,
+                    primaryAction = { actionModifier ->
+                        Button(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting,
+                            onClick = onSave, modifier = actionModifier.testTag("mood_save")) {
+                            Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                        }
+                    },
+                )
             }
         },
     ) { padding ->

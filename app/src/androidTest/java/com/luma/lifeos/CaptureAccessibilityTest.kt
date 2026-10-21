@@ -44,7 +44,7 @@ class CaptureAccessibilityTest {
         }
 
         compose.onNodeWithTag("editor_title").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
-        compose.onNodeWithTag("journal_tags").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+        compose.onNodeWithTag("journal_tags_toggle").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
     }
 
     @Test fun disclosureNamesContentsAndKeepsTimestampVisible() {

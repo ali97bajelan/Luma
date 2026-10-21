@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.domain.habit.HabitRepository
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -105,7 +106,7 @@ fun HabitEditorScreen(
                 navigationIcon = { TextButton(enabled = !state.busy, onClick = ::close) { Text(stringResource(R.string.cancel)) } })
         },
         bottomBar = {
-            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp)) {
+            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 state.error?.let { error ->
                     val message = when (error) {
                         HabitEditorError.LOAD -> R.string.habit_load_error
@@ -116,15 +117,17 @@ fun HabitEditorScreen(
                     Text(stringResource(message), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_editor_error"))
                     if (error == HabitEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
-                Button(onClick = onSave, enabled = enabled,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_save")) {
-                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                EditorActionRow { actionModifier ->
+                    Button(onClick = onSave, enabled = enabled,
+                        modifier = actionModifier.testTag("habit_save")) {
+                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                    }
                 }
             }
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.loading) androidx.compose.material3.CircularProgressIndicator()
             state.trackingZone?.let { zone ->
                 Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.labelLarge)

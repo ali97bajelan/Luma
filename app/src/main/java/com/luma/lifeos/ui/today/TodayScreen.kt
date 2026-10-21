@@ -80,6 +80,7 @@ fun TodayScreen(
     onRetryTask: (UUID) -> Unit = {},
     onDismissTaskError: (UUID) -> Unit = {},
     onHabitOpenDate: (LocalDate) -> Unit = {},
+    deviceDate: LocalDate,
 ) {
     var choosingDateFor by rememberSaveable(date) { mutableStateOf<EventType?>(null) }
     var choosingCaptureDate by rememberSaveable(date) { mutableStateOf<String?>(null) }
@@ -97,9 +98,10 @@ fun TodayScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(key = "header") {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(stringResource(heading), style = MaterialTheme.typography.titleLarge)
                 DayNavigation(date, onSelectDate, onToday)
+                if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
             }
         }
         item(key = "capture") {

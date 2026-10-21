@@ -17,9 +17,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.error
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
@@ -28,6 +28,8 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.domain.model.JournalTextLimits
 import com.luma.lifeos.ui.common.EditorTopBar
+import com.luma.lifeos.ui.common.EditorActionRow
+import com.luma.lifeos.ui.common.EditorOptionalSection
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
@@ -50,6 +52,8 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
     var discarding by rememberSaveable { mutableStateOf(false) }
     var tagText by rememberSaveable { mutableStateOf("") }
     var tagError by rememberSaveable { mutableStateOf(false) }
+    var tagsExpanded by rememberSaveable { mutableStateOf(false) }
+    var tagsExpansionInitialized by rememberSaveable { mutableStateOf(false) }
     var tagInputBringIntoViewRequest by remember { mutableIntStateOf(0) }
     var more by rememberSaveable { mutableStateOf(false) }
     var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
@@ -69,6 +73,13 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
             contextExpansionInitialized = true
         }
     }
+    LaunchedEffect(state.ready, state.draft.tagNames, tagText, tagError, state.textErrors) {
+        if (state.ready && !tagsExpansionInitialized) {
+            tagsExpanded = state.draft.tagNames.isNotEmpty() || tagText.isNotBlank() || tagError ||
+                JournalTextField.TAG in state.textErrors
+            tagsExpansionInitialized = true
+        }
+    }
     LaunchedEffect(state.error) {
         if (state.error == JournalEditorError.PHOTO) more = true
     }
@@ -86,6 +97,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
             return true
         }
         tagError = true
+        tagsExpanded = true
         tagInputBringIntoViewRequest++
         return false
     }
@@ -101,16 +113,20 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 else -> null
             }
             actionError?.let { AccessibleFeedback(it, Modifier.testTag("journal_error")) }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (state.editing) TextButton(enabled = enabled, onClick = { deleting = true }, modifier = Modifier.testTag("journal_delete")) {
-                    Text(stringResource(R.string.delete))
-                }
-                Button(enabled = enabled && state.draft.body.isNotBlank(), onClick = {
-                    if (addPendingTag()) onSave()
-                }, modifier = Modifier.weight(1f).testTag("journal_save")) {
-                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
-                }
-            }
+            EditorActionRow(
+                secondaryAction = if (state.editing) { actionModifier ->
+                    TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("journal_delete")) {
+                        Text(stringResource(R.string.delete))
+                    }
+                } else null,
+                primaryAction = { actionModifier ->
+                    Button(enabled = enabled && state.draft.body.isNotBlank(), onClick = {
+                        if (addPendingTag()) onSave()
+                    }, modifier = actionModifier.testTag("journal_save")) {
+                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                    }
+                },
+            )
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
@@ -149,7 +165,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
             val bodyError = if (JournalTextField.BODY in state.textErrors)
                 stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(JournalTextLimits.BODY)) else null
             OutlinedTextField(value = state.draft.body, onValueChange = onBody, enabled = enabled,
-                label = { Text(stringResource(R.string.journal_body)) }, minLines = 8,
+                label = { Text(stringResource(R.string.journal_body)) }, minLines = 6,
                 isError = bodyError != null,
                 supportingText = {
                     Column {
@@ -160,37 +176,57 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
                 modifier = Modifier.fillMaxWidth().focusRequester(bodyFocus)
                     .semantics { bodyError?.let { error(it) } }.testTag("journal_body"))
-            Text(stringResource(R.string.journal_tags), style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() }.testTag("journal_tags"))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                state.draft.tagNames.forEach { name ->
-                    InputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
-                        label = { Text(stringResource(R.string.journal_remove_tag, name)) })
-                }
-            }
-            val tagFeedback = if (tagError || JournalTextField.TAG in state.textErrors) stringResource(R.string.journal_tag_size_error) else null
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = tagText, onValueChange = {
-                    val (updatedText, hasError) = reduceJournalTagInput(tagText, tagError, it)
-                    tagText = updatedText
-                    tagError = hasError
-                }, enabled = enabled, singleLine = true, isError = tagFeedback != null,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = {
-                        if (tagText.isBlank()) keyboardController?.hide()
-                        else if (addPendingTag()) keyboardController?.hide()
-                    }),
-                    supportingText = { tagFeedback?.let { AccessibleFeedback(it) } },
-                    label = { Text(stringResource(R.string.journal_tag_name)) },
-                    modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester)
-                        .semantics { tagFeedback?.let { error(it) } }.testTag("journal_tag_input"))
-                TextButton(enabled = enabled && tagText.isNotBlank(), onClick = {
-                    addPendingTag()
-                }, modifier = Modifier.testTag("journal_add_tag")) { Text(stringResource(R.string.add)) }
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }.forEach { tag ->
-                    FilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
+            Column(Modifier.testTag("journal_tags")) {
+                EditorOptionalSection(
+                    title = R.string.journal_tags,
+                    tag = "journal_tags_toggle",
+                    expanded = tagsExpanded,
+                    onExpandedChange = { tagsExpanded = it },
+                    summary = if (state.draft.tagNames.isEmpty()) null else {
+                        {
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.journal_tags_summary,
+                                    state.draft.tagNames.size,
+                                    state.draft.tagNames.size,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                ) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        state.draft.tagNames.forEach { name ->
+                            InputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
+                                label = { Text(stringResource(R.string.journal_remove_tag, name)) })
+                        }
+                    }
+                    val tagFeedback = if (tagError || JournalTextField.TAG in state.textErrors) stringResource(R.string.journal_tag_size_error) else null
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = tagText, onValueChange = {
+                            val (updatedText, hasError) = reduceJournalTagInput(tagText, tagError, it)
+                            tagText = updatedText
+                            tagError = hasError
+                        }, enabled = enabled, singleLine = true, isError = tagFeedback != null,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = {
+                                if (tagText.isBlank()) keyboardController?.hide()
+                                else if (addPendingTag()) keyboardController?.hide()
+                            }),
+                            supportingText = { tagFeedback?.let { AccessibleFeedback(it) } },
+                            label = { Text(stringResource(R.string.journal_tag_name)) },
+                            modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester)
+                                .semantics { tagFeedback?.let { error(it) } }.testTag("journal_tag_input"))
+                        TextButton(enabled = enabled && tagText.isNotBlank(), onClick = {
+                            addPendingTag()
+                        }, modifier = Modifier.testTag("journal_add_tag")) { Text(stringResource(R.string.add)) }
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }.forEach { tag ->
+                            FilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
+                        }
+                    }
                 }
             }
             val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)

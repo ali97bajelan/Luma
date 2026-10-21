@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.MemoryTextLimits
 import com.luma.lifeos.ui.common.EditorTopBar
+import com.luma.lifeos.ui.common.EditorActionRow
+import com.luma.lifeos.ui.common.EditorOptionalSection
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
@@ -40,6 +42,8 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     var discarding by rememberSaveable { mutableStateOf(false) }
     var more by rememberSaveable { mutableStateOf(false) }
     var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
+    var importanceExpanded by rememberSaveable { mutableStateOf(false) }
+    var importanceExpansionInitialized by rememberSaveable { mutableStateOf(false) }
     val noteFocus = remember { FocusRequester() }
     val photosBringIntoViewRequester = remember { BringIntoViewRequester() }
     val enabled = state.ready && !state.busy && !state.completed
@@ -52,6 +56,12 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
             more = state.error == MemoryEditorError.PHOTO || state.editing || state.original != null || state.draft.personIds.isNotEmpty() ||
                 state.draft.placeId != null || state.draft.photos.isNotEmpty()
             contextExpansionInitialized = true
+        }
+    }
+    LaunchedEffect(state.ready, state.draft.importance) {
+        if (state.ready && !importanceExpansionInitialized) {
+            importanceExpanded = state.draft.importance != null
+            importanceExpansionInitialized = true
         }
     }
     LaunchedEffect(state.error) {
@@ -72,15 +82,19 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 else -> null
             }
             actionError?.let { AccessibleFeedback(it, Modifier.testTag("memory_action_error")) }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (state.editing) TextButton(enabled = enabled, onClick = { removing = true }, modifier = Modifier.testTag("memory_remove")) {
-                    Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark))
-                }
-                Button(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
-                    modifier = Modifier.weight(1f).testTag("memory_save")) {
-                    Text(stringResource(if (state.busy) R.string.saving else R.string.save))
-                }
-            }
+            EditorActionRow(
+                secondaryAction = if (state.editing) { actionModifier ->
+                    TextButton(enabled = enabled, onClick = { removing = true }, modifier = actionModifier.testTag("memory_remove")) {
+                        Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark))
+                    }
+                } else null,
+                primaryAction = { actionModifier ->
+                    Button(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
+                        modifier = actionModifier.testTag("memory_save")) {
+                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                    }
+                },
+            )
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
@@ -130,17 +144,36 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
                 modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
                     .semantics { noteError?.let { error(it) } }.testTag("memory_note"))
-            Text(stringResource(R.string.memory_importance), style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() }.testTag("memory_importance"))
-            Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (1..5).forEach { value ->
-                    val description = stringResource(R.string.memory_importance_value, value)
-                    FilterChip(selected = state.draft.importance == value, enabled = enabled,
-                        onClick = { onImportance(if (state.draft.importance == value) null else value) },
-                        label = { Text(NumberFormat.getIntegerInstance().format(value)) },
-                        modifier = Modifier.weight(1f).testTag("memory_importance_$value")
-                            .semantics { contentDescription = description })
+            Column(Modifier.testTag("memory_importance")) {
+                EditorOptionalSection(
+                    title = R.string.memory_importance,
+                    tag = "memory_importance_toggle",
+                    expanded = importanceExpanded,
+                    onExpandedChange = { importanceExpanded = it },
+                    summary = state.draft.importance?.let { value ->
+                        {
+                            Text(
+                                stringResource(
+                                    R.string.memory_importance_summary,
+                                    NumberFormat.getIntegerInstance().format(value),
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        (1..5).forEach { value ->
+                            val description = stringResource(R.string.memory_importance_value, value)
+                            FilterChip(selected = state.draft.importance == value, enabled = enabled,
+                                onClick = { onImportance(if (state.draft.importance == value) null else value) },
+                                label = { Text(NumberFormat.getIntegerInstance().format(value)) },
+                                modifier = Modifier.weight(1f).testTag("memory_importance_$value")
+                                    .semantics { contentDescription = description })
+                        }
+                    }
                 }
             }
             val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)

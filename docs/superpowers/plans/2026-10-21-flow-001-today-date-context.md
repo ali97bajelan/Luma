@@ -1,6 +1,6 @@
 # FLOW-001 — Make Today’s selected-date context explicit Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for inline implementation. Use superpowers:subagent-driven-development only if delegation is explicitly selected. Steps use checkbox syntax; this documentation request does not start implementation.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for inline implementation. Use superpowers:subagent-driven-development only if delegation is explicitly selected. Steps use checkbox syntax to track implementation and verification separately.
 
 **Goal:** Help a returning user distinguish the current day from an intentionally restored historical or future day without losing their browsing selection.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [FLOW-001 specification](../specs/2026-10-21-flow-001-today-date-context-design.md)
 
-**Status:** Draft plan; all implementation and verification steps remain unchecked.
+**Status:** Implementation complete; focused tests, build, and device verification pending at the user's request.
 
 ## Global Constraints
 
@@ -49,6 +49,7 @@ None. UX-021 and UX-022 must retain this notice during later header migration.
 - Modify: `app/src/main/res/values-fa/strings.xml`
 - Existing verification fixture: `app/src/androidTest/java/com/luma/lifeos/TodayPersistenceTest.kt`
 - Existing verification fixture: `app/src/androidTest/java/com/luma/lifeos/TodayScreenTest.kt`
+- Existing direct-call migration: `app/src/androidTest/java/com/luma/lifeos/todo/TodayTasksSemanticsTest.kt`
 
 **Interfaces:**
 
@@ -58,13 +59,13 @@ None. UX-021 and UX-022 must retain this notice during later header migration.
 
 - [ ] **Step 1: Extend the existing date assertions.** In TodayPersistenceTest/TodayScreenTest add the proposed currentDateHasNoNotice, restoredSelectionIsExplicit, and todayClearsSelection cases. Assert selected date, notice content, and the Today callback using the existing date fixtures; record the baseline result before changing rendering.
 
-- [ ] **Step 2: Add localized notice copy.** Add today_viewing_date with one numbered date placeholder in EN/FR/FA; use the existing localized full Gregorian-date formatter.
+- [x] **Step 2: Add localized notice copy.** Add today_viewing_date with one numbered date placeholder in EN/FR/FA; use the existing localized full Gregorian-date formatter.
 
-- [ ] **Step 3: Create TodayDateNotice.** Implement the exact spec signature in TodayDateNotice.kt. Render no node when the dates match and one visible today_date_notice node when they differ; use the semantic tonal/text colors.
+- [x] **Step 3: Create TodayDateNotice.** Implement the exact spec signature in TodayDateNotice.kt. Render no node when the dates match and one visible today_date_notice node when they differ; use the semantic tonal/text colors.
 
-- [ ] **Step 4: Thread current date to the screen.** Add the required deviceDate parameter to TodayScreen, pass the existing TodayRoute value in both branches, and migrate all direct screen test callers found by rg. Keep LifeOsApp selectedDate and rememberCurrentDay unchanged.
+- [x] **Step 4: Thread current date to the screen.** Add the required deviceDate parameter to TodayScreen, pass the existing TodayRoute value in both branches, and migrate all direct screen test callers found by rg. Keep LifeOsApp selectedDate and rememberCurrentDay unchanged.
 
-- [ ] **Step 5: Place the notice in the date header.** Insert it immediately after DayNavigation, keeping the existing Today, previous/next, and date-picker actions. Preserve the selected-date-versus-now capture handler.
+- [x] **Step 5: Place the notice in the date header.** Insert it immediately after DayNavigation, keeping the existing Today, previous/next, and date-picker actions. Preserve the selected-date-versus-now capture handler.
 
 - [ ] **Step 6: Verify the focused date path.** Run the listed existing Today suites once and record AC-1–AC-5 results. Visit one prior date and activate Today once; use the same fixture for resume/date-context checks and record any specialized unexecuted case as pending.
 
@@ -82,8 +83,8 @@ Expected: the selected existing test cases complete with zero failures. The comm
 
 After the integrated UI batch, run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` once to verify call sites and resources; repeat only if new changes or failures require it. Do not run the full app walkthrough again for each small visual task. Reuse the existing five-record fixtures and enter no extra demo data for this plan.
 
-- [ ] **Integration review:** Compare the diff with every behavior item and AC in the spec. Preserve the unrelated dirty tree and record actual build/device evidence and pending checks. Stage only this task's hunks if the selected execution workflow uses commits; suggested message: `fix: flow-001 today date context`.
+- [x] **Integration review:** Compared the source diff with the behavior contract and acceptance cases. The existing selected-date policy and capture callback remain unchanged. No Gradle, instrumentation, build, or emulator verification was run at the user's request; those checks remain pending. Suggested message: `fix: flow-001 today date context`.
 
 ## Handoff
 
-Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. This plan is ready for review; no product code or tests were changed by its creation.
+Deliver the changed behavior, focused evidence, and remaining limitations together. Implementation is recorded complete; acceptance-case runtime evidence remains pending because verification was not requested.

@@ -34,6 +34,7 @@
     <string name="today_capture_when">Quand souhaitez-vous enregistrer cette entrée ?</string>
     <string name="today_loading">Chargement de votre journée…</string>
     <string name="today_selected_date">Entrées du %1$s</string>
+    <string name="today_viewing_date">Affichage du %1$s</string>
     <string name="today_empty_heading">Aucune entrée d’humeur, de journal ou de souvenir pour le moment</string>
     <string name="today_empty_body">Explorez une autre journée ou ouvrez la Saisie rapide pour noter votre état d’esprit. Aucune autorisation ni aucun compte ne sont nécessaires.</string>
     <string name="today_error">Impossible de charger votre journée. Réessayez.</string>
@@ -262,6 +263,7 @@
     <string name="memory_marker_note">Pourquoi ce moment compte (facultatif)</string>
     <string name="memory_importance">Importance (facultatif)</string>
     <string name="memory_importance_value">Importance : %1$d/5</string>
+    <string name="memory_importance_summary">Importance : %1$s / 5</string>
     <string name="memory_status">Moment gardé en souvenir</string>
     <string name="memory_status_importance">Moment gardé en souvenir · Importance : %1$d/5</string>
     <string name="memory_unmark">Retirer le marquage</string>
@@ -348,6 +350,11 @@
     <string name="photo_retry_import">Réessayer d’ajouter la photo</string>
     <string name="photo_unavailable">Photo indisponible. L’entrée est toujours enregistrée.</string>
     <string name="photo_limits">Jusqu’à 20 photos de 25 Mo chacune. Les photos restent sur cet appareil.</string>
+    <plurals name="journal_tags_summary">
+        <item quantity="one">%1$d étiquette sélectionnée</item>
+        <item quantity="many">%1$d étiquettes sélectionnées</item>
+        <item quantity="other">%1$d étiquettes sélectionnées</item>
+    </plurals>
     <plurals name="photo_count">
         <item quantity="one">%d photo</item>
         <item quantity="many">%d photos</item>

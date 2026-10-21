@@ -34,6 +34,7 @@
     <string name="today_capture_when">When would you like to record this?</string>
     <string name="today_loading">Loading your day…</string>
     <string name="today_selected_date">Entries for %1$s</string>
+    <string name="today_viewing_date">Viewing %1$s</string>
     <string name="today_empty_heading">No mood, journal or memory entries yet</string>
     <string name="today_empty_body">Explore another day or open Quick Capture to record how you feel. No permissions or account are needed.</string>
     <string name="today_error">Your day could not be loaded. Try again.</string>
@@ -258,6 +259,7 @@
     <string name="memory_marker_note">Why it matters (optional)</string>
     <string name="memory_importance">Importance (optional)</string>
     <string name="memory_importance_value">Importance: %1$d/5</string>
+    <string name="memory_importance_summary">Importance: %1$s / 5</string>
     <string name="memory_status">Remembered moment</string>
     <string name="memory_status_importance">Remembered moment · Importance: %1$d/5</string>
     <string name="memory_unmark">Unmark</string>
@@ -344,6 +346,10 @@
     <string name="photo_retry_import">Retry adding photo</string>
     <string name="photo_unavailable">Photo unavailable. The entry is still saved.</string>
     <string name="photo_limits">Up to 20 photos, 25 MB each. Photos stay on this device.</string>
+    <plurals name="journal_tags_summary">
+        <item quantity="one">%1$d tag selected</item>
+        <item quantity="other">%1$d tags selected</item>
+    </plurals>
     <plurals name="photo_count"><item quantity="one">%d photo</item><item quantity="other">%d photos</item></plurals>
     <string name="event_edit">Edit</string>
     <string name="event_open">Open event</string>

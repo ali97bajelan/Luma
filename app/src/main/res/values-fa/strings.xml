@@ -34,6 +34,7 @@
     <string name="today_capture_when">این مورد را برای چه زمانی ثبت می‌کنید؟</string>
     <string name="today_loading">در حال بارگذاری روز شما…</string>
     <string name="today_selected_date">رویدادهای %1$s</string>
+    <string name="today_viewing_date">در حال مشاهدهٔ %1$s</string>
     <string name="today_empty_heading">هنوز ورودی حال‌وهوا، یادداشت روزانه یا خاطره‌ای ثبت نشده</string>
     <string name="today_empty_body">روز دیگری را ببینید یا برای ثبت حال‌وهوایتان، ثبت سریع را باز کنید. نیازی به مجوز یا حساب کاربری نیست.</string>
     <string name="today_error">اطلاعات این روز بارگذاری نشد. دوباره تلاش کنید.</string>
@@ -270,6 +271,7 @@
     <string name="memory_marker_note">چرا مهم است (اختیاری)</string>
     <string name="memory_importance">اهمیت (اختیاری)</string>
     <string name="memory_importance_value">اهمیت: %1$d/۵</string>
+    <string name="memory_importance_summary">اهمیت: %1$s / ۵</string>
     <string name="memory_status">لحظه‌ای به‌یادماندنی</string>
     <string name="memory_status_importance">لحظه‌ای به‌یادماندنی · اهمیت: %1$d/۵</string>
     <string name="memory_unmark">برداشتن نشان خاطره</string>
@@ -356,6 +358,10 @@
     <string name="photo_retry_import">تلاش دوباره برای افزودن عکس</string>
     <string name="photo_unavailable">عکس در دسترس نیست. نوشته همچنان ذخیره شده است.</string>
     <string name="photo_limits">حداکثر ۲۰ عکس، هرکدام ۲۵ مگابایت. عکس‌ها روی این دستگاه می‌مانند.</string>
+    <plurals name="journal_tags_summary">
+        <item quantity="one">%1$d برچسب انتخاب‌شده</item>
+        <item quantity="other">%1$d برچسب انتخاب‌شده</item>
+    </plurals>
     <plurals name="photo_count"><item quantity="one">%d عکس</item><item quantity="other">%d عکس</item></plurals>
     <string name="event_edit">ویرایش</string>
     <string name="event_open">باز کردن رویداد</string>
