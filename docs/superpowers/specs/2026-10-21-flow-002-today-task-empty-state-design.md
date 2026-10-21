@@ -1,6 +1,6 @@
 # FLOW-002 — Remove duplicate empty-task messaging
 
-**Status:** Draft specification; implementation has not started. Policy choices are proposed defaults for review.
+**Status:** Implementation complete; focused runtime verification pending.
 **Date:** 21 October 2026
 **Source:** [App flow and UI/UX review](../../APP_FLOW_UX_REVIEW_2026-10-21.md), Additional live observation 2; visual direction 7.
 **Priority:** P2

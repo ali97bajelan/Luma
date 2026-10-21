@@ -84,14 +84,16 @@ fun TodayTasksCard(
                     }
                 }
                 is TodayTasksState.Data -> {
-                    Text(
-                        stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.testTag("today_tasks_count"),
-                    )
-                    if (state.tasks.isEmpty()) {
+                    if (state.total > 0) {
+                        Text(
+                            stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.testTag("today_tasks_count"),
+                        )
+                    }
+                    if (state.total == 0 && state.tasks.isEmpty()) {
                         Text(stringResource(R.string.todo_today_empty), modifier = Modifier.testTag("today_tasks_empty"))
-                    } else {
+                    } else if (state.tasks.isNotEmpty()) {
                         state.tasks.forEach { task ->
                             key(task.id) {
                                 val focusRequester = remember { FocusRequester() }

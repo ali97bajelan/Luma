@@ -10,7 +10,7 @@
 
 **Spec:** [FLOW-002 specification](../specs/2026-10-21-flow-002-today-task-empty-state-design.md)
 
-**Status:** Draft plan; all implementation and verification steps remain unchecked.
+**Status:** Implementation complete; focused instrumentation, build, and emulator verification pending per user request.
 
 ## Global Constraints
 
@@ -50,15 +50,15 @@ None. Coordinate TodayTasksCard.kt changes with FLOW-005 after this task lands.
 - Produces: Preserve TodayTasksCard’s signature and TodayTasksState.Data. Change only rendering guards: show count when state.total > 0 and show empty copy only when state.total == 0 && state.tasks.isEmpty(). Keep today_tasks_empty, today_tasks_add, today_tasks_all, and recovery tags; today_tasks_count exists only for a positive total.
 - Does not change repository schemas, stored content, or callback target identity.
 
-- [ ] **Step 1: Inspect the ordinary empty fixture.** Render the existing zero-task Data state and note the two current messages. No new unit harness is needed for a rendering guard.
+- [x] **Step 1: Inspect the ordinary empty fixture.** Reviewed the existing Today flow fixture and card rendering: it expects the empty sentence and Add action, and has no assertion for the zero-count node.
 
-- [ ] **Step 2: Guard the total count.** Render today_tasks_count only when state.total > 0. Keep localized positive totals and the existing preview selection.
+- [x] **Step 2: Guard the total count.** Render today_tasks_count only when state.total > 0. Keep localized positive totals and the existing preview selection.
 
-- [ ] **Step 3: Guard the empty sentence.** Render today_tasks_empty only when state.total == 0 and state.tasks.isEmpty(). Preserve the one bottom Add task action and View all.
+- [x] **Step 3: Guard the empty sentence.** Render today_tasks_empty only when state.total == 0 and state.tasks.isEmpty(). Preserve the one bottom Add task action and View all.
 
-- [ ] **Step 4: Preserve recovery placement.** Review the off-preview pending/error region and leave it independent of count/empty guards. Keep all task IDs and callbacks unchanged.
+- [x] **Step 4: Preserve recovery placement.** Reviewed the off-preview pending/error region; it remains independent of count/empty guards. All task IDs and callbacks are unchanged.
 
-- [ ] **Step 5: Update stale existing assertions only.** If the existing TodayTasksSemanticsTest asserts a zero-count node, change that expectation to the single empty sentence. Preserve its positive-total assertions; add no test that merely duplicates the rendering expression.
+- [x] **Step 5: Update stale existing assertions only.** No zero-count assertion exists in the current Today task fixtures, so no test assertion needed updating. Existing positive-total assertions remain unchanged.
 
 - [ ] **Step 6: Verify the card once.** Run the listed semantics suite only if assertions changed, inspect one ordinary empty preview and one populated fixture, and record AC-1–AC-5 results. Use Add task/View all once where needed; do not re-walk all task or failure paths.
 
@@ -76,8 +76,8 @@ Expected: the selected existing test cases complete with zero failures. The comm
 
 After the integrated UI batch, run `./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` once to verify call sites and resources; repeat only if new changes or failures require it. Do not run the full app walkthrough again for each small visual task. Reuse the existing five-record fixtures and enter no extra demo data for this plan.
 
-- [ ] **Integration review:** Compare the diff with every behavior item and AC in the spec. Preserve the unrelated dirty tree and record actual build/device evidence and pending checks. Stage only this task's hunks if the selected execution workflow uses commits; suggested message: `fix: flow-002 today task empty state`.
+- [x] **Integration review:** Compared the implementation with the behavior items and acceptance scenarios. The initial untracked release APK, baseline profiles, and widget evidence archive were preserved. Gradle instrumentation, build, and emulator checks were not run per user request and remain pending.
 
 ## Handoff
 
-Deliver the changed behavior, focused evidence, and remaining limitations together. Update task status only from actual implementation and verification evidence. This plan is ready for review; no product code or tests were changed by its creation.
+Deliver the changed behavior and remaining verification status together. The card rendering guards are implemented. The focused instrumentation case, integrated build/lint, and emulator checks remain pending because the user requested implementation only.
