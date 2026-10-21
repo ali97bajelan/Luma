@@ -10,7 +10,7 @@
 
 **Spec:** [UX-025 specification](../specs/2026-10-20-audit-n-ux-025-restore-dialog-reachability-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Low.
+**Status:** Source implementation complete. Automated regression tests, Gradle checks, emulator checks, and commit remain pending at the user's request. Relative effort: Low.
 
 ## Global Constraints
 
@@ -51,7 +51,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: BackupCardContent retains existing onConfirmRestore/onCancelRestore callbacks. Dialog body uses a remembered vertical scroll state within dialog-measured available height; warnings keep separate semantics nodes and actions remain outside the body scroll.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -71,9 +71,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Add constrained scrollable warning content to the existing dialog without moving or omitting warnings.
+- [x] **Step 4: Implement the owning contract.** Add constrained scrollable warning content to the existing dialog without moving or omitting warnings.
 
-- [ ] **Step 5: Connect the behavior.** Keep confirm/cancel outside scroll content and make their action arrangement fit translated labels.
+- [x] **Step 5: Connect the behavior.** Keep confirm/cancel outside scroll content and make their action arrangement fit translated labels.
 
 - [ ] **Step 6: Exercise the complete flow.** Validate all warning combinations with a short landscape viewport, 200% font and EN/FR/FA.
 
@@ -83,5 +83,4 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-
+Source implementation is complete. Automated regression and device evidence remain pending at the user's request; do not mark the finding verified until those checks pass.

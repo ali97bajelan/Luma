@@ -10,7 +10,7 @@
 
 **Spec:** [UX-024 specification](../specs/2026-10-20-audit-n-ux-024-backup-departure-outcome-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Source implementation complete. Automated regression tests, Gradle checks, emulator checks, and commit remain pending at the user's request. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -52,10 +52,10 @@ Keep changes in their current screen/state/repository responsibility. New files 
 **Interfaces:**
 
 - Consumes the current route/ViewModel/repository contracts in the files listed above; no new cross-task API is required.
-- Produces: BackupOperation { IDLE, EXPORTING, PREPARING, RESTORING, CANCELLING }; BackupUiState gains operation. Track the active Job. export(open: () -> OutputStream, discardOutput: suspend () -> Boolean) records cleanup. cancelAndAwait(): BackupLeaveResult suspends until the active cancellable job/stream closes and cleanup completes; results CANCELLED_CLEAN, CANCELLED_OUTPUT_MAY_REMAIN, COMPLETED. Navigation serializes the leave result into the source entry's saved-state feedback.
+- Produces: BackupOperation { IDLE, EXPORTING, PREPARING, RESTORING, CANCELLING }; BackupUiState gains operation. Track the active Job. export(open: () -> OutputStream, discardOutput: suspend () -> Boolean) records cleanup. cancelAndAwait() returns BackupDeparture(operation, result) after the active cancellable job/stream closes and cleanup completes. Results distinguish clean cancellation, a possible remaining output file, completion, failure, and protected restore-in-progress. Navigation serializes the leave result into the source entry's saved-state feedback.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -79,9 +79,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Expose operation identity and track active export/preparation jobs with awaitable cancellation and provider cleanup callbacks.
+- [x] **Step 4: Implement the owning contract.** Expose operation identity and track active export/preparation jobs with awaitable cancellation and provider cleanup callbacks.
 
-- [ ] **Step 5: Connect the behavior.** Intercept page/system Back, implement Stay/Cancel-and-leave states and route protected restore Back through its status message.
+- [x] **Step 5: Connect the behavior.** Intercept page/system Back, implement Stay/Cancel-and-leave states and route protected restore Back through its status message.
 
 - [ ] **Step 6: Exercise the complete flow.** Deliver actual completion/cancellation cleanup outcome to source settings feedback, handling completion-versus-cancel races.
 
@@ -91,5 +91,4 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-
+Source implementation is complete. Automated regression and device evidence remain pending at the user's request; do not mark the finding verified until those checks pass.

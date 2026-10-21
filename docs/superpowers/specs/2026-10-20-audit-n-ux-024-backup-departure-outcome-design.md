@@ -1,6 +1,6 @@
 # UX-024 — Leaving during backup has no explicit operation outcome
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Source implementation complete; automated, Gradle, and emulator verification were not run at the user's request.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-024](../../UI_UX_AUDIT-20261020N.md#ux-024--leaving-during-backup-has-no-explicit-operation-outcome)
 **Priority / effort / confidence:** P2 — Medium / Medium / Medium (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Give export, restore preparation and protected restore an explicit navigation/cancellation outcome. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. Source implementation is complete; automated tests, runtime exercises and commits in the plan remain pending at the user's request.
 
 ## Dependencies
 
@@ -60,4 +60,3 @@ No new background worker, process-death survival promise, silent cancellation or
 ## Validation and completion
 
 Use the matching plan's targeted commands and evidence checklist. Semantics-tree assertions establish structure; actual TalkBack speech/focus and layout claims require device evidence. Record any unavailable runtime checks as pending rather than passed. A corrective task closes only after its behavior and regression checks pass; UX-028 closes only if separately selected for implementation.
-

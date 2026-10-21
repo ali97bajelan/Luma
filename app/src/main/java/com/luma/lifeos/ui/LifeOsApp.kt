@@ -87,6 +87,10 @@ import com.luma.lifeos.ui.todo.TodoActionFeedbackHost
 import com.luma.lifeos.ui.todo.TodoEditorRoute
 import com.luma.lifeos.ui.todo.TodoListRoute
 import com.luma.lifeos.ui.todo.encodeActionResult
+import com.luma.lifeos.ui.backup.BACKUP_DEPARTURE_FEEDBACK_KEY
+import com.luma.lifeos.ui.backup.BackupDepartureFeedbackHost
+import com.luma.lifeos.ui.backup.BackupDepartureSession
+import com.luma.lifeos.ui.backup.BackupSettingsCard
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.mood.MoodEditorRoute
 import com.luma.lifeos.ui.mood.FileMoodDraftStore
@@ -465,13 +469,26 @@ fun LifeOsApp(
                     screenTag = "screen_settings_language") { com.luma.lifeos.language.LanguageSettingsCard() }
             }
             if (backup != null) composable("settings_backup") {
-                SettingsSectionPage(R.string.settings_backup_title, onBack = { navController.popBackStack() },
-                    screenTag = "screen_settings_backup") {
-                    com.luma.lifeos.ui.backup.BackupSettingsCard(backup) {
+                BackupSettingsCard(
+                    service = backup,
+                    onRestored = {
                         todoRestoreGeneration += 1
                         snackbarHostState.currentSnackbarData?.dismiss()
-                    }
-                }
+                    },
+                    onBack = { departure ->
+                        if (navController.currentDestination?.route == "settings_backup") {
+                            val settingsEntry = navController.previousBackStackEntry
+                                ?.takeIf { it.destination.route == AppRoutes.SETTINGS }
+                            departure?.let {
+                                settingsEntry?.savedStateHandle?.set(
+                                    BACKUP_DEPARTURE_FEEDBACK_KEY,
+                                    "${BackupDepartureSession.id}:${it.encode()}",
+                                )
+                            }
+                            navController.popBackStack()
+                        }
+                    },
+                )
             }
             if (reset != null) composable("privacy") {
                 com.luma.lifeos.ui.privacy.PrivacySettingsRoute(reset, onBack = { navController.popBackStack() })
@@ -671,6 +688,7 @@ fun LifeOsApp(
             onWidgetLaunchConsumed(request.id)
         }
         TodoActionFeedbackHost(backStackEntry, todos, snackbarHostState, todoRestoreGeneration)
+        BackupDepartureFeedbackHost(backStackEntry, snackbarHostState, BackupDepartureSession.id)
     }
     val browsedDate = selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
     if (capturing) QuickCaptureSheet(browsedDate = browsedDate.takeUnless { widgetQuickCapture }, onDismiss = {
