@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,12 +23,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -50,7 +47,6 @@ import java.time.ZoneId
 class WidgetConfigurationActivity : ComponentActivity() {
     private var widgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var kind: WidgetKind? = null
-    private var showDetails by mutableStateOf(false)
     private var loaded by mutableStateOf(false)
     private var saving by mutableStateOf(false)
     private var loadFailed by mutableStateOf(false)
@@ -73,20 +69,16 @@ class WidgetConfigurationActivity : ComponentActivity() {
             return
         }
         savedInstanceState?.let {
-            showDetails = it.getBoolean(STATE_SHOW_DETAILS, false)
             loaded = it.getBoolean(STATE_LOADED, false)
-            hasRestoredDraft = loaded
         }
         setContent {
             LifeOsTheme {
                 ConfigurationContent(
                     kind = requireNotNull(kind),
-                    showDetails = showDetails,
                     loaded = loaded,
                     saving = saving,
                     loadFailed = loadFailed,
                     saveFailed = saveFailed,
-                    onShowDetailsChanged = { showDetails = it },
                     onSave = ::saveConfiguration,
                     onCancel = ::finish,
                     onRetryLoad = ::loadConfiguration,
@@ -97,7 +89,6 @@ class WidgetConfigurationActivity : ComponentActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putBoolean(STATE_SHOW_DETAILS, showDetails)
         outState.putBoolean(STATE_LOADED, loaded)
         super.onSaveInstanceState(outState)
     }
@@ -112,8 +103,6 @@ class WidgetConfigurationActivity : ComponentActivity() {
                 }
                 if (stored != null && stored.kind != kind) {
                     loadFailed = true
-                } else if (!hasRestoredDraft) {
-                    showDetails = stored?.showDetails ?: false
                 }
                 loaded = !loadFailed
             } catch (cancelled: CancellationException) {
@@ -124,12 +113,9 @@ class WidgetConfigurationActivity : ComponentActivity() {
         }
     }
 
-    private var hasRestoredDraft = false
-
     private fun saveConfiguration() {
         if (saving || !loaded) return
         val selectedKind = kind ?: return
-        val selectedShowDetails = showDetails
         val selectedWidgetId = widgetId
         saving = true
         saveFailed = false
@@ -143,7 +129,7 @@ class WidgetConfigurationActivity : ComponentActivity() {
                     if (liveKind(selectedWidgetId) != selectedKind) {
                         throw IllegalStateException("Widget provider is no longer live")
                     }
-                    storage.widgets.configure(WidgetInstance(selectedWidgetId, selectedKind, selectedShowDetails))
+                    storage.widgets.configure(WidgetInstance(selectedWidgetId, selectedKind))
                 }
                 val snapshot = try {
                     withContext(Dispatchers.IO) {
@@ -206,7 +192,6 @@ class WidgetConfigurationActivity : ComponentActivity() {
     private fun resultIntent() = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
 
     companion object {
-        private const val STATE_SHOW_DETAILS = "widget_config_show_details"
         private const val STATE_LOADED = "widget_config_loaded"
     }
 }
@@ -215,12 +200,10 @@ class WidgetConfigurationActivity : ComponentActivity() {
 @androidx.compose.runtime.Composable
 internal fun ConfigurationContent(
     kind: WidgetKind,
-    showDetails: Boolean,
     loaded: Boolean,
     saving: Boolean,
     loadFailed: Boolean,
     saveFailed: Boolean,
-    onShowDetailsChanged: (Boolean) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
     onRetryLoad: () -> Unit,
@@ -249,25 +232,10 @@ internal fun ConfigurationContent(
                     Button(onClick = onRetryLoad) { Text(stringResource(R.string.retry)) }
                 }
                 else -> {
-                    Text(stringResource(R.string.widget_config_summary_description))
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(stringResource(R.string.widget_config_show_details), style = MaterialTheme.typography.titleMedium)
-                            Text(stringResource(R.string.widget_config_show_details_description), style = MaterialTheme.typography.bodyMedium)
-                        }
-                        Switch(
-                            checked = showDetails,
-                            onCheckedChange = onShowDetailsChanged,
-                            enabled = !saving,
-                        )
-                    }
+                    Text(stringResource(R.string.widget_config_content_description))
                     Text(stringResource(R.string.widget_config_scroll_resize), style = MaterialTheme.typography.bodyMedium)
                     Text(stringResource(R.string.widget_config_privacy_note), style = MaterialTheme.typography.bodySmall)
-                    com.luma.lifeos.ui.widgets.WidgetExample(kind, showDetails)
+                    com.luma.lifeos.ui.widgets.WidgetExample(kind)
                     if (saveFailed) {
                         Text(stringResource(R.string.widget_config_save_error), color = MaterialTheme.colorScheme.error)
                     }

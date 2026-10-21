@@ -57,7 +57,7 @@ object WidgetRenderer {
         deviceZone: ZoneId,
     ): WidgetSnapshot? {
         val metadata = store.snapshot(widgetId, now, deviceZone, rowLimit = 0) ?: return null
-        if (!metadata.instance.showDetails || metadata.total <= 0) return metadata
+        if (metadata.total <= 0) return metadata
         return store.collectionPage(
             widgetId,
             now,
@@ -184,7 +184,7 @@ object WidgetRenderer {
         views.setTextViewText(R.id.widget_data_title, header.title)
         views.setTextViewText(R.id.widget_data_more, header.totalCountCue.orEmpty())
         views.setViewVisibility(R.id.widget_data_more, if (header.totalCountCue == null) View.GONE else View.VISIBLE)
-        views.setContentDescription(R.id.widget_data_open, viewAllDescription(appContext, kind, 0, showDetails = true))
+        views.setContentDescription(R.id.widget_data_open, viewAllDescription(appContext, kind, 0))
         views.setOnClickPendingIntent(
             R.id.widget_data_open,
             if (snapshot == null && !failure) WidgetIntents.configuration(context, widgetId)
@@ -203,7 +203,7 @@ object WidgetRenderer {
             views.setTextViewText(R.id.widget_data_summary, appContext.getString(R.string.widget_data_read_error))
             views.setTextColor(R.id.widget_data_summary,
                 appContext.getColor(if (dark) R.color.widget_error_dark else R.color.widget_error_light))
-            views.setContentDescription(R.id.widget_data_open, viewAllDescription(appContext, kind, 0, showDetails = true))
+            views.setContentDescription(R.id.widget_data_open, viewAllDescription(appContext, kind, 0))
         } else if (snapshot == null) {
             views.setTextViewText(R.id.widget_data_summary, appContext.getString(R.string.widget_data_setup))
             views.setTextViewText(R.id.widget_data_updated, "")
@@ -267,14 +267,10 @@ object WidgetRenderer {
         val inlineFeedback = useInlineFeedback(appContext, widthDp, feedbackText, snapshot.feedback)
 
         // This small page is only a sizing sample. The ListView adapter owns the full collection.
-        val measurementRows: List<WidgetRow> = if (snapshot.instance.showDetails) {
-            when (snapshot.instance.kind) {
-                WidgetKind.HABITS -> snapshot.rows.filterIsInstance<WidgetRow.Habit>()
-                WidgetKind.TASKS -> snapshot.rows.filterIsInstance<WidgetRow.Task>()
-            }.take(WidgetLayoutPolicy.MAX_MEASUREMENT_ROWS)
-        } else {
-            emptyList()
-        }
+        val measurementRows: List<WidgetRow> = when (snapshot.instance.kind) {
+            WidgetKind.HABITS -> snapshot.rows.filterIsInstance<WidgetRow.Habit>()
+            WidgetKind.TASKS -> snapshot.rows.filterIsInstance<WidgetRow.Task>()
+        }.take(WidgetLayoutPolicy.MAX_MEASUREMENT_ROWS)
         val density = appContext.resources.displayMetrics.density
         val textWidthPx = ((widthDp - 24).coerceAtLeast(1) * density).toInt()
         val fontScale = appContext.resources.configuration.fontScale
@@ -341,7 +337,7 @@ object WidgetRenderer {
                 scopeText)
         }
         val sampledHeights = measurements.map { it.heightDp }.ifEmpty {
-            if (snapshot.instance.showDetails && snapshot.total > 0) {
+            if (snapshot.total > 0) {
                 listOf(if (snapshot.instance.kind == WidgetKind.TASKS) 56 else 64)
             } else emptyList()
         }
@@ -361,10 +357,10 @@ object WidgetRenderer {
             reserved + scrollHintHeight,
             sampledHeights,
         )
-        val showScrollHint = snapshot.instance.showDetails && snapshot.total > capacityWithoutHint &&
+        val showScrollHint = snapshot.total > capacityWithoutHint &&
             capacityWithHint > 0
         val capacity = if (showScrollHint) capacityWithHint else capacityWithoutHint
-        if (snapshot.instance.showDetails && snapshot.total > 0 && capacity <= 0) {
+        if (snapshot.total > 0 && capacity <= 0) {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
                 scopeText)
         }
@@ -373,10 +369,10 @@ object WidgetRenderer {
             collectionAccessibilityDescription(appContext, snapshot.instance.kind, snapshot.total),
         )
         views.setViewVisibility(R.id.widget_data_rows,
-            if (snapshot.instance.showDetails && snapshot.total > 0) View.VISIBLE else View.GONE)
+            if (snapshot.total > 0) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_data_scroll_hint, if (showScrollHint) View.VISIBLE else View.GONE)
         views.setContentDescription(R.id.widget_data_open,
-            viewAllDescription(appContext, snapshot.instance.kind, snapshot.total, snapshot.instance.showDetails))
+            viewAllDescription(appContext, snapshot.instance.kind, snapshot.total))
         return views
     }
 
@@ -678,7 +674,6 @@ object WidgetRenderer {
         context: Context,
         kind: WidgetKind?,
         total: Int,
-        showDetails: Boolean,
     ): String {
         val label = when (kind) {
             WidgetKind.HABITS -> context.getString(R.string.widget_habits_view_all)
@@ -686,11 +681,7 @@ object WidgetRenderer {
             null -> context.getString(R.string.widget_data_open)
         }
         if (total <= 0) return label
-        return if (showDetails) {
-            bidiWrapped(context, context.getString(R.string.widget_view_all_count, label, total))
-        } else {
-            bidiWrapped(context, context.getString(R.string.widget_view_all_hidden_count, label, total))
-        }
+        return bidiWrapped(context, context.getString(R.string.widget_view_all_count, label, total))
     }
 
     private fun collectionAccessibilityDescription(context: Context, kind: WidgetKind, total: Int): String =

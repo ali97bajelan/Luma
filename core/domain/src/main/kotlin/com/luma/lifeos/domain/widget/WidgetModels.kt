@@ -10,7 +10,6 @@ enum class WidgetKind { HABITS, TASKS }
 data class WidgetInstance(
     val id: Int,
     val kind: WidgetKind,
-    val showDetails: Boolean = false,
 )
 
 sealed interface WidgetRow {

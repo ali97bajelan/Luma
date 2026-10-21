@@ -50,7 +50,7 @@ class WidgetRendererAcceptanceTest {
             actionToken = UUID.randomUUID(),
         )
         val before = WidgetSnapshot(
-            instance = WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true),
+            instance = WidgetInstance(widgetId, WidgetKind.TASKS),
             date = task.dueDate,
             zone = ZoneOffset.UTC,
             total = 1,
@@ -126,18 +126,17 @@ class WidgetRendererAcceptanceTest {
             compact.findViewById<TextView>(R.id.widget_compact_message).text.toString())
     }
 
-    @Test fun summaryModeKeepsNamesHiddenAndSaysSoInListNavigation() {
+    @Test fun populatedWidgetShowsCollectionWithoutPrivacyMode() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val snapshot = sampleSnapshot().copy(
-            instance = WidgetInstance(57, WidgetKind.TASKS, showDetails = false),
+            instance = WidgetInstance(57, WidgetKind.TASKS),
             total = 5,
-            rows = listOf(WidgetRow.Task(UUID.randomUUID(), "Private task name",
+            rows = listOf(WidgetRow.Task(UUID.randomUUID(), "Visible task name",
                 LocalDate.parse("2026-10-20"), UUID.randomUUID())),
         )
         val root = WidgetRenderer.render(context, 57, snapshot, false, expandedBounds()).apply(context, null)
-        assertEquals(View.GONE, root.findViewById<ListView>(R.id.widget_data_rows).visibility)
-        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_data_scroll_hint).visibility)
-        assertEquals(context.getString(R.string.widget_view_all_hidden_count,
+        assertEquals(View.VISIBLE, root.findViewById<ListView>(R.id.widget_data_rows).visibility)
+        assertEquals(context.getString(R.string.widget_view_all_count,
             context.getString(R.string.widget_tasks_view_all), 5),
             root.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
     }
@@ -145,7 +144,7 @@ class WidgetRendererAcceptanceTest {
     @Test fun emptyLibrariesOfferCreationActionsButEmptyScopesDoNot() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val habits = sampleSnapshot().copy(
-            instance = WidgetInstance(61, WidgetKind.HABITS, showDetails = true),
+            instance = WidgetInstance(61, WidgetKind.HABITS),
             total = 0,
             completed = 0,
             hasAnyItems = false,
@@ -159,7 +158,7 @@ class WidgetRendererAcceptanceTest {
         assertEquals(context.getString(R.string.widget_habits_add),
             compactHabits.findViewById<TextView>(R.id.widget_compact_primary).text.toString())
 
-        val tasks = habits.copy(instance = WidgetInstance(62, WidgetKind.TASKS, showDetails = true))
+        val tasks = habits.copy(instance = WidgetInstance(62, WidgetKind.TASKS))
         val tasksRoot = WidgetRenderer.render(context, 62, tasks, false, expandedBounds()).apply(context, null)
         val taskAction = tasksRoot.findViewById<TextView>(R.id.widget_data_empty_action)
         assertEquals(context.getString(R.string.widget_tasks_add), taskAction.text.toString())
@@ -275,7 +274,7 @@ class WidgetRendererAcceptanceTest {
                 0, 3, false, UUID.randomUUID())
         }
         val habitSnapshot = sampleSnapshot().copy(
-            instance = WidgetInstance(56, WidgetKind.HABITS, true),
+            instance = WidgetInstance(56, WidgetKind.HABITS),
             total = 8,
             completed = 0,
             rows = habits,
@@ -291,7 +290,7 @@ class WidgetRendererAcceptanceTest {
     @Test fun habitProgressUsesInlineLayoutWhenItFitsAndStacksLongNames() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val habit = WidgetRow.Habit(UUID.randomUUID(), "Read", 1, 4, false, UUID.randomUUID())
-        val inlineSnapshot = sampleSnapshot().copy(instance = WidgetInstance(52, WidgetKind.HABITS, true),
+        val inlineSnapshot = sampleSnapshot().copy(instance = WidgetInstance(52, WidgetKind.HABITS),
             total = 1, completed = 0, rows = listOf(habit))
         val inlineRow = WidgetRenderer.collectionRow(context, inlineSnapshot, habit, 373).apply(context, null)
         layoutAtBounds(inlineRow, context, 373, 100)
@@ -302,7 +301,7 @@ class WidgetRendererAcceptanceTest {
         org.junit.Assert.assertTrue(inlineTitle.width > 0 && inlineProgress.width > 0)
 
         val longHabit = habit.copy(title = "A very long mixed-script habit name عادتی با نام بلند")
-        val stackedSnapshot = sampleSnapshot().copy(instance = WidgetInstance(53, WidgetKind.HABITS, true),
+        val stackedSnapshot = sampleSnapshot().copy(instance = WidgetInstance(53, WidgetKind.HABITS),
             total = 1, completed = 0, rows = listOf(longHabit))
         val stackedRow = WidgetRenderer.collectionRow(context, stackedSnapshot, longHabit, 250).apply(context, null)
         assertEquals(LinearLayout.VERTICAL,
@@ -318,7 +317,7 @@ class WidgetRendererAcceptanceTest {
             WidgetRow.Habit(UUID.randomUUID(), "Skipped habit", 1, 3, true, null),
         )
         val snapshot = sampleSnapshot().copy(
-            instance = WidgetInstance(54, WidgetKind.HABITS, true),
+            instance = WidgetInstance(54, WidgetKind.HABITS),
             total = 2,
             completed = 1,
             rows = rows,
@@ -361,7 +360,7 @@ class WidgetRendererAcceptanceTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val habit = WidgetRow.Habit(UUID.randomUUID(), "Read", 2, 5, false, UUID.randomUUID())
         val snapshot = sampleSnapshot().copy(
-            instance = WidgetInstance(56, WidgetKind.HABITS, true),
+            instance = WidgetInstance(56, WidgetKind.HABITS),
             total = 1,
             completed = 0,
             rows = listOf(habit),
@@ -620,7 +619,7 @@ class WidgetRendererAcceptanceTest {
     }
 
     private fun sampleSnapshot() = WidgetSnapshot(
-        instance = WidgetInstance(51, WidgetKind.TASKS, showDetails = true),
+        instance = WidgetInstance(51, WidgetKind.TASKS),
         date = LocalDate.parse("2026-10-20"), zone = ZoneOffset.UTC,
         total = 1, completed = null, hasAnyItems = true, rows = emptyList(),
         feedback = null, updatedAt = Instant.parse("2026-10-20T08:00:00Z"),
@@ -635,7 +634,7 @@ class WidgetRendererAcceptanceTest {
                 val context = instrumentation.targetContext.createConfigurationContext(configuration)
                 for ((width, height) in listOf(180 to 160, 578 to 109, 180 to 220)) {
                     for (kind in WidgetKind.entries) {
-                        val base = sampleSnapshot().copy(instance = WidgetInstance(51, kind, true),
+                        val base = sampleSnapshot().copy(instance = WidgetInstance(51, kind),
                             zone = java.time.ZoneId.of("America/Argentina/Buenos_Aires"))
                         val states = listOf(null) + WidgetOutcome.entries.map { outcome ->
                             WidgetActionResult(outcome, retryToken = if (outcome == WidgetOutcome.FAILED) UUID.randomUUID() else null,

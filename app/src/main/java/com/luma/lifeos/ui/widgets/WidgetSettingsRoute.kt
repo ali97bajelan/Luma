@@ -80,7 +80,7 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
             withContext(Dispatchers.IO) {
                 live.map { (kind, id) ->
                     widgetStore.configurationOrNull(id)?.takeIf { it.kind == kind }
-                        ?: WidgetInstance(id = id, kind = kind, showDetails = false)
+                        ?: WidgetInstance(id = id, kind = kind)
                 }.sortedWith(compareBy<WidgetInstance>({ it.kind.ordinal }, { it.id }))
             }
         }
@@ -186,8 +186,7 @@ private fun InstanceCard(instance: WidgetInstance, ordinal: Int?, onConfigure: (
             val title = stringResource(if (instance.kind == WidgetKind.HABITS) R.string.widget_habits_title else R.string.widget_tasks_title)
             val name = if (ordinal != null) stringResource(R.string.widget_settings_instance_ordinal, title, ordinal) else title
             Text(
-                stringResource(R.string.widget_settings_instance_mode, name,
-                    stringResource(if (instance.showDetails) R.string.widget_mode_details_short else R.string.widget_mode_summary_short)),
+                name,
                 Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
             )
             Button(onClick = onConfigure) { Text(stringResource(R.string.widget_settings_configure)) }

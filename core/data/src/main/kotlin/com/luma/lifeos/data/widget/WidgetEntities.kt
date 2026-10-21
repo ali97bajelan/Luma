@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 data class WidgetInstanceEntity(
     @PrimaryKey @ColumnInfo(name = "widget_id") val widgetId: Int,
     val kind: String,
+    // Legacy column retained for database compatibility; its value no longer controls widget content.
     @ColumnInfo(name = "show_details") val showDetails: Boolean,
     @ColumnInfo(name = "feedback_json") val feedbackJson: String?,
 )

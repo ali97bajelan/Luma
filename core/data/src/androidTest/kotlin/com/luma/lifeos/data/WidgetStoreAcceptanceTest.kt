@@ -59,7 +59,7 @@ class WidgetStoreAcceptanceTest {
             UUID.randomUUID(),
             TodoInput("Widget task", dueDate = today),
         )
-        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS))
 
         val before = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 3))
         val completeToken = requireNotNull((before.rows.single() as WidgetRow.Task).actionToken)
@@ -75,14 +75,16 @@ class WidgetStoreAcceptanceTest {
         assertEquals(created.id, (requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, 3)).rows.single() as WidgetRow.Task).id)
     }
 
-    @Test fun reachedHabitTargetKeepsUndoCommandUsableAfterSnapshot() = runBlocking {
+    @Test fun legacySummaryHabitShowsProgressAndKeepsUndoCommandUsableAfterSnapshot() = runBlocking {
         val widgetId = 42
         val habitId = UUID.randomUUID()
         habits.create(
             habitId,
             HabitSaveInput("Widget habit", "minutes", today, 1, DayOfWeek.entries.toSet(), habitZone),
         )
-        widgets.configure(WidgetInstance(widgetId, WidgetKind.HABITS, showDetails = true))
+        database.widgets().upsertInstance(com.luma.lifeos.data.widget.WidgetInstanceEntity(
+            widgetId, WidgetKind.HABITS.name, showDetails = false, feedbackJson = null,
+        ))
 
         val before = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 3))
         val logToken = requireNotNull((before.rows.single() as WidgetRow.Habit).actionToken)
@@ -106,7 +108,7 @@ class WidgetStoreAcceptanceTest {
             todos.create(id, UUID.randomUUID(), TodoInput("Widget task ${index + 1}", dueDate = today))
             id
         }
-        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS))
 
         val snapshot = requireNotNull(widgets.snapshot(
             widgetId, now, ZoneOffset.UTC, rowLimit = com.luma.lifeos.domain.widget.WidgetStore.MAX_CANDIDATE_ROWS,
@@ -140,7 +142,7 @@ class WidgetStoreAcceptanceTest {
             todos.create(id, UUID.randomUUID(), TodoInput("Paged task ${index + 1}", dueDate = today))
             id
         }
-        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS))
 
         val expectedOrder = taskIds.sortedBy(UUID::toString)
         val middlePage = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 8, limit = 32))
@@ -155,14 +157,22 @@ class WidgetStoreAcceptanceTest {
         assertEquals(20, lastRows.size)
     }
 
-    @Test fun collectionPageRespectsSummaryPrivacyAndRejectsInvalidBounds() = runBlocking {
+    @Test fun legacySummaryWidgetShowsRowsAndAllowsActionsWithoutReconfiguration() = runBlocking {
         val widgetId = 45
         todos.create(UUID.randomUUID(), UUID.randomUUID(), TodoInput("Private task", dueDate = today))
-        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = false))
+        // Simulate an existing installation with the former Summary flag still persisted.
+        database.widgets().upsertInstance(com.luma.lifeos.data.widget.WidgetInstanceEntity(
+            widgetId, WidgetKind.TASKS.name, showDetails = false, feedbackJson = null,
+        ))
 
-        val summary = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 0, limit = 32))
-        assertEquals(1, summary.total)
-        assertEquals(emptyList<WidgetRow>(), summary.rows)
+        val page = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 0, limit = 32))
+        assertEquals(1, page.total)
+        val row = page.rows.single() as WidgetRow.Task
+        assertEquals("Private task", row.title)
+        assertEquals(true, widgets.isEligibleCollectionItem(widgetId, row.id, now, ZoneOffset.UTC))
+        val token = requireNotNull(row.actionToken)
+        assertEquals(true, widgets.isValidCollectionMutation(widgetId, row.id, token, today))
+        assertEquals(WidgetOutcome.SAVED, widgets.execute(widgetId, token, now, ZoneOffset.UTC).outcome)
         org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
             runBlocking { widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = -1, limit = 32) }
         }
@@ -178,7 +188,7 @@ class WidgetStoreAcceptanceTest {
         val secondId = UUID.randomUUID()
         todos.create(firstId, UUID.randomUUID(), TodoInput("First task", dueDate = today))
         todos.create(secondId, UUID.randomUUID(), TodoInput("Second task", dueDate = today))
-        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS))
         val page = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, offset = 0, limit = 32))
         val first = page.rows.filterIsInstance<WidgetRow.Task>().first { it.id == firstId }
         val token = requireNotNull(first.actionToken)
@@ -194,7 +204,7 @@ class WidgetStoreAcceptanceTest {
         val removedId = UUID.randomUUID()
         val changed = todos.create(changedId, UUID.randomUUID(), TodoInput("Changed later", dueDate = today))
         val removed = todos.create(removedId, UUID.randomUUID(), TodoInput("Removed later", dueDate = today))
-        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS, showDetails = true))
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS))
         val rows = requireNotNull(widgets.collectionPage(widgetId, now, ZoneOffset.UTC, 0, 32))
             .rows.filterIsInstance<WidgetRow.Task>()
         val changedToken = requireNotNull(rows.first { it.id == changedId }.actionToken)

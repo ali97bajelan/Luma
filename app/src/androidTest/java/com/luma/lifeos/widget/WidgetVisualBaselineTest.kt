@@ -235,7 +235,7 @@ class WidgetVisualBaselineTest {
             }
         }
         return WidgetSnapshot(
-            instance = WidgetInstance(if (kind == WidgetKind.HABITS) 61 else 62, kind, showDetails = true),
+            instance = WidgetInstance(if (kind == WidgetKind.HABITS) 61 else 62, kind),
             date = date,
             zone = ZoneOffset.UTC,
             total = count,

@@ -3,7 +3,13 @@
 **Date:** 21 October 2026
 **Source:** [APP_FLOW_UX_REVIEW_2026-10-21.md](APP_FLOW_UX_REVIEW_2026-10-21.md)
 **Scope:** 24 task pairs: the review’s 17 remaining numbered findings and 7 focused tasks for uncovered live observations/design work.
-**Status:** FLOW-001 and FLOW-006 implementation complete; focused verification remains pending at the user's request. FLOW-002 implementation complete; focused runtime verification pending at the user's request. FLOW-003 implementation complete. FLOW-004 implementation complete; focused instrumentation, build, and emulator verification remain pending at the user's request. FLOW-005 scoped implementation complete; prerequisite integration remains pending. FLOW-007 scoped implementation complete; UX-012/UX-021 integration and focused verification remain pending at the user's request. UX-010, UX-013, and UX-014 implementation complete; Gradle and emulator verification pending at the user's request. UX-020, UX-022, UX-023, and UX-026 source implementation complete; automated, Gradle, and emulator verification remain pending at the user's request. UX-024 and UX-025 source implementation complete; automated, Gradle, and emulator verification were not run at the user's request. Other task statuses are listed below. UX-028 remains optional and unselected.
+**Status:** Widget privacy mode has been removed at the user’s request; UX-002 and UX-003 are superseded. Widget source checks are complete; Gradle and emulator verification were not run at the user’s request. FLOW-001 and FLOW-006 implementation complete; focused verification remains pending at the user's request. FLOW-002 implementation complete; focused runtime verification pending at the user's request. FLOW-003 implementation complete. FLOW-004 implementation complete; focused instrumentation, build, and emulator verification remain pending at the user's request. FLOW-005 scoped implementation complete; prerequisite integration remains pending. FLOW-007 scoped implementation complete; UX-012/UX-021 integration and focused verification remain pending at the user's request. UX-010, UX-013, and UX-014 implementation complete; Gradle and emulator verification pending at the user's request. UX-020, UX-022, UX-023, and UX-026 source implementation complete; automated, Gradle, and emulator verification remain pending at the user's request. UX-024 and UX-025 source implementation complete; automated, Gradle, and emulator verification were not run at the user's request. Other task statuses are listed below. UX-028 remains optional and unselected.
+
+## Widget privacy mode removal
+
+The user selected removal of widget privacy mode instead of implementing UX-002 and UX-003. Habits and Tasks widgets always expose available names, progress and row actions, including existing instances whose old Summary flag is persisted. Configuration and previews no longer offer a mode switch, and existing-widget cards no longer claim a mode. English, French and Persian copy reflects this behavior. The legacy database column is retained for schema compatibility and ignored by content and action paths; new, remapped and restored instances use the same behavior. Existing size-based compact layouts remain available.
+
+The two linked UX-002/UX-003 spec and plan pairs are historical and superseded by this decision. Targeted regression sources were updated for the mode-free preview, collection and legacy stored configuration. Source/resource consistency and whitespace checks were performed; Gradle, instrumentation and emulator verification were not run at the user’s request.
 
 ## Coverage and reuse
 
@@ -15,8 +21,8 @@ The new specifications distinguish source behavior from the installed emulator b
 
 | Task | Deliverable | Specification | Implementation plan | Status |
 |---|---|---|---|---|
-| UX-002 | Unknown widget privacy mode is reported as Summary | [Spec](superpowers/specs/2026-10-20-audit-n-ux-002-widget-mode-status-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-002-widget-mode-status.md) | Draft / not started |
-| UX-003 | The widget privacy switch has no accessible name | [Spec](superpowers/specs/2026-10-20-audit-n-ux-003-widget-privacy-switch-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-003-widget-privacy-switch.md) | Draft / not started |
+| UX-002 | Unknown widget privacy mode is reported as Summary | [Spec](superpowers/specs/2026-10-20-audit-n-ux-002-widget-mode-status-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-002-widget-mode-status.md) | Superseded / widget privacy mode removed at the user’s request |
+| UX-003 | The widget privacy switch has no accessible name | [Spec](superpowers/specs/2026-10-20-audit-n-ux-003-widget-privacy-switch-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-003-widget-privacy-switch.md) | Superseded / widget privacy mode removed at the user’s request |
 | UX-010 | Deleting an entry can return to its missing detail page | [Spec](superpowers/specs/2026-10-20-audit-n-ux-010-deleted-detail-navigation-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-010-deleted-detail-navigation.md) | Implementation complete / Gradle and emulator verification pending at the user's request |
 | UX-012 | Context selection requires scanning the entire catalog | [Spec](superpowers/specs/2026-10-20-audit-n-ux-012-searchable-context-selection-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-012-searchable-context-selection.md) | Draft / not started |
 | UX-013 | A historical habit link does not locate the requested repetition | [Spec](superpowers/specs/2026-10-20-audit-n-ux-013-habit-targeted-history-design.md) | [Plan](superpowers/plans/2026-10-20-audit-n-ux-013-habit-targeted-history.md) | Implementation complete / Gradle and emulator verification pending at the user's request |
@@ -76,7 +82,7 @@ Only the “requires” entries below are hard dependencies. Other ordering avoi
 
 | Work | Prerequisite / coordination |
 |---|---|
-| UX-002 and UX-003 | No hard dependency; coordinate widget configuration files. |
+| UX-002 and UX-003 | Superseded by removal of widget privacy mode; the original mode-status and switch changes no longer apply. |
 | UX-010, UX-017–UX-020, UX-022–UX-026 | Individually scoped corrections; preserve their existing spec contracts and targeted regressions. |
 | UX-014 then UX-013 | Recommended integration order for lazy management/history before targeted-log arrival; UX-013 can use the existing getLog API independently. |
 | UX-012 | No new hard prerequisite; preserve the already-present catalog creation result behavior. |

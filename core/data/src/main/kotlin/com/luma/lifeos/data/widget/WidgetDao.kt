@@ -44,7 +44,7 @@ interface WidgetDao {
     @Query("UPDATE widget_instance SET feedback_json = :feedbackJson WHERE widget_id = :widgetId")
     suspend fun updateFeedback(widgetId: Int, feedbackJson: String?): Int
 
-    @Query("UPDATE widget_instance SET show_details = 0, feedback_json = NULL")
+    @Query("UPDATE widget_instance SET show_details = 1, feedback_json = NULL")
     suspend fun resetInstancesAfterRestore()
 
     @Query("DELETE FROM widget_instance WHERE widget_id = :widgetId")

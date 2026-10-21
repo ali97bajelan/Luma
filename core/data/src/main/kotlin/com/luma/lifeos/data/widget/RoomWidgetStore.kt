@@ -28,7 +28,7 @@ class RoomWidgetStore(
             WidgetInstanceEntity(
                 widgetId = instance.id,
                 kind = instance.kind.name,
-                showDetails = instance.showDetails,
+                showDetails = true,
                 feedbackJson = null,
             ),
         )
@@ -39,7 +39,6 @@ class RoomWidgetStore(
             WidgetInstance(
                 id = stored.widgetId,
                 kind = WidgetKind.valueOf(stored.kind),
-                showDetails = stored.showDetails,
             )
         }
     }
@@ -48,18 +47,18 @@ class RoomWidgetStore(
         val dao = database.widgets()
         val existing = dao.instance(instance.id)
         val configurationChanged = existing != null &&
-            (existing.kind != instance.kind.name || existing.showDetails != instance.showDetails)
+            existing.kind != instance.kind.name
         if (configurationChanged) {
             dao.deleteCommands(instance.id)
         }
         val feedback = existing?.takeIf {
-            it.kind == instance.kind.name && it.showDetails == instance.showDetails
+            it.kind == instance.kind.name
         }?.feedbackJson
         dao.upsertInstance(
             WidgetInstanceEntity(
                 widgetId = instance.id,
                 kind = instance.kind.name,
-                showDetails = instance.showDetails,
+                showDetails = true,
                 feedbackJson = feedback,
             ),
         )
@@ -112,7 +111,6 @@ class RoomWidgetStore(
         deviceZone: ZoneId,
     ): Boolean = database.withTransaction {
         val instance = database.widgets().instance(widgetId) ?: return@withTransaction false
-        if (!instance.showDetails) return@withTransaction false
         when (WidgetKind.valueOf(instance.kind)) {
             WidgetKind.HABITS -> {
                 val trackingZone = database.habits().settings()?.trackingZoneId
@@ -135,7 +133,6 @@ class RoomWidgetStore(
     ): Boolean = database.withTransaction {
         val dao = database.widgets()
         val instance = dao.instance(widgetId) ?: return@withTransaction false
-        if (!instance.showDetails) return@withTransaction false
         val command = dao.command(token.toString()) ?: return@withTransaction false
         if (command.widgetId != widgetId || command.status != WidgetCommandExecutor.READY) {
             return@withTransaction false
@@ -177,7 +174,7 @@ class RoomWidgetStore(
                         ?.let(ZoneId::of) ?: deviceZone
                     val date = now.atZone(trackingZone).toLocalDate()
                     val summary = database.habits().widgetSummary(date.toString())
-                    val rows = if (instance.showDetails && rowLimit > 0) {
+                    val rows = if (rowLimit > 0) {
                         database.habits().widgetDayRowsPage(date.toString(), rowLimit, rowOffset).map { row ->
                             val token = if (row.target != null && row.scheduleId != null &&
                                 row.scheduleState == "ACTIVE" && !row.skipRemaining && row.count < row.target
@@ -228,7 +225,7 @@ class RoomWidgetStore(
                 WidgetKind.TASKS -> {
                     val date = now.atZone(deviceZone).toLocalDate()
                     val summary = database.todos().widgetTodaySummary(date.toString())
-                    val rows = if (instance.showDetails && rowLimit > 0) {
+                    val rows = if (rowLimit > 0) {
                         database.todos().widgetTodayRowsPage(date.toString(), rowLimit, rowOffset).map { row ->
                             val token = issuer.tokenFor(
                                 WidgetCommandPayload.TaskComplete(
@@ -340,7 +337,7 @@ class RoomWidgetStore(
                     WidgetInstanceEntity(
                         widgetId = instance.id,
                         kind = instance.kind.name,
-                        showDetails = false,
+                        showDetails = true,
                         feedbackJson = null,
                     ),
                 )
@@ -355,7 +352,6 @@ class RoomWidgetStore(
     private fun WidgetInstanceEntity.toDomain(kind: WidgetKind) = WidgetInstance(
         id = widgetId,
         kind = kind,
-        showDetails = showDetails,
     )
 
     private suspend fun feedbackFor(dao: WidgetDao, widgetId: Int): WidgetActionResult? {

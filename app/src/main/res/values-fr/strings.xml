@@ -75,7 +75,7 @@
     <string name="widget_settings_intro">Ajoutez le widget Habitudes ou Tâches à l’écran d’accueil. Les deux incluent la saisie rapide, sans widget de saisie séparé.</string>
     <string name="widget_settings_legacy_capture_note">Les widgets Saisie rapide déjà placés restent sur l’écran d’accueil après une mise à jour. Pour en retirer un, utilisez l’action Supprimer du lanceur ; Luma ne le retire pas automatiquement.</string>
     <string name="widget_settings_capture_on_both">La saisie est disponible sur les deux widgets. Touchez le titre pour ouvrir la liste complète.</string>
-    <string name="widget_settings_scroll_resize">Avec les détails activés, faites défiler chaque widget pour voir la suite. Redimensionnez-le pour afficher plus de lignes à la fois.</string>
+    <string name="widget_settings_scroll_resize">Faites défiler chaque widget pour voir la suite. Redimensionnez-le pour afficher plus de lignes à la fois.</string>
     <string name="widget_settings_title_navigation_hint">Touchez le titre pour tout afficher.</string>
     <string name="widget_settings_add">Ajouter</string>
     <string name="widget_settings_existing_heading">Widgets Habitudes et Tâches existants</string>
@@ -89,11 +89,9 @@
     <string name="widget_settings_privacy_note">Le lanceur choisit où afficher les widgets et peut conserver une vue en cache. Supprimer un widget ou réinitialiser Luma ne contrôle pas les copies conservées par le lanceur.</string>
     <string name="widget_config_habits_title">Configurer Luma · Habitudes</string>
     <string name="widget_config_tasks_title">Configurer Luma · Tâches</string>
-    <string name="widget_config_summary_description">Le résumé affiche les compteurs. Les noms et les actions restent masqués jusqu’à l’activation des détails.</string>
-    <string name="widget_config_show_details">Afficher les noms et les actions par ligne</string>
-    <string name="widget_config_show_details_description">Option désactivée par défaut. Les noms, la progression et les actions seront visibles partout où le lanceur affiche ce widget.</string>
-    <string name="widget_config_scroll_resize">Avec les détails activés, faites défiler la liste pour voir la suite. Redimensionnez le widget pour afficher plus de lignes à la fois ; le défilement reste disponible.</string>
-    <string name="widget_config_privacy_note">Votre lanceur peut conserver cette vue, y compris les noms si les détails sont activés. Retirer le widget n’efface pas ces copies.</string>
+    <string name="widget_config_content_description">Les noms, la progression et les actions sont visibles partout où le lanceur affiche ce widget.</string>
+    <string name="widget_config_scroll_resize">Faites défiler la liste pour voir la suite. Redimensionnez le widget pour afficher plus de lignes à la fois ; le défilement reste disponible.</string>
+    <string name="widget_config_privacy_note">Votre lanceur peut conserver cette vue, y compris les noms. Retirer le widget n’efface pas ces copies.</string>
     <string name="widget_config_loading">Chargement des réglages du widget…</string>
     <string name="widget_config_load_error">Impossible de charger les réglages du widget. Réessayez ou annulez.</string>
     <string name="widget_config_save_error">Impossible de terminer la configuration. Votre choix a peut-être été enregistré. Rouvrez cet écran pour le vérifier.</string>
@@ -998,9 +996,7 @@
     <string name="widget_habits_view_all">Voir les habitudes</string>
     <string name="widget_tasks_view_all">Voir les tâches</string>
     <string name="widget_view_all_more">%1$s, %2$d autres éléments non affichés</string>
-    <string name="widget_view_all_hidden">%1$s ; les noms sont masqués dans ce widget</string>
     <string name="widget_view_all_count">%1$s, %2$d éléments au total</string>
-    <string name="widget_view_all_hidden_count">%1$s, %2$d éléments au total ; les noms sont masqués dans ce widget</string>
     <string name="widget_scroll_for_more">Faites défiler pour voir la suite</string>
     <string name="widget_collection_accessibility">Éléments défilants du widget</string>
     <plurals name="widget_tasks_collection_accessibility">
@@ -1020,8 +1016,6 @@
     </plurals>
     <string name="widget_task_saved">Tâche terminée</string>
     <string name="widget_habit_saved">Répétition enregistrée</string>
-    <string name="widget_mode_summary">Résumé — noms masqués</string>
-    <string name="widget_mode_details">Détails — noms et actions visibles</string>
     <string name="widget_preview_label">Exemple fictif</string>
     <string name="widget_preview_habits_title">Habitudes ›</string>
     <string name="widget_preview_tasks_title">Tâches ›</string>
@@ -1035,10 +1029,7 @@
     <string name="widget_preview_task_second_action">En retard · Terminer</string>
     <string name="widget_preview_date">20 oct.</string>
     <string name="widget_settings_add_named">Ajouter le widget %1$s</string>
-    <string name="widget_settings_instance_mode">%1$s · %2$s</string>
     <string name="widget_settings_instance_ordinal">%1$s %2$d</string>
-    <string name="widget_mode_summary_short">Résumé</string>
-    <string name="widget_mode_details_short">Détails</string>
     <string name="widget_preview_habits_summary">20 oct. · 1 objectif sur 3 atteint</string>
     <string name="widget_preview_tasks_summary">20 oct. · 3 tâches dues ou en retard</string>
     <string name="widget_preview_updated">Mis à jour à 13:07</string>

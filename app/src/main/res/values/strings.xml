@@ -74,7 +74,7 @@
     <string name="widget_settings_intro">Add a Habits or Tasks widget to your home screen. Both include quick capture, so you do not need a separate capture widget.</string>
     <string name="widget_settings_legacy_capture_note">Existing Quick capture widgets stay on your home screen after updates. Remove one there with your launcher’s Remove action; Luma does not remove it automatically.</string>
     <string name="widget_settings_capture_on_both">Capture is available on either widget. Tap its title to view the full list.</string>
-    <string name="widget_settings_scroll_resize">With Details on, scroll inside either widget to reach overflow items. Resize to change how many rows fit at once.</string>
+    <string name="widget_settings_scroll_resize">Scroll inside either widget to reach overflow items. Resize to change how many rows fit at once.</string>
     <string name="widget_settings_title_navigation_hint">Tap the title to view all.</string>
     <string name="widget_settings_add">Add</string>
     <string name="widget_settings_existing_heading">Existing Habits and Tasks widgets</string>
@@ -88,11 +88,9 @@
     <string name="widget_settings_privacy_note">The launcher controls where widgets appear and may cache their views. Removing a widget or resetting Luma does not control copies retained by the launcher.</string>
     <string name="widget_config_habits_title">Set up Luma Habits</string>
     <string name="widget_config_tasks_title">Set up Luma Tasks</string>
-    <string name="widget_config_summary_description">Summary shows counts. Names and row actions stay hidden until you choose to show details.</string>
-    <string name="widget_config_show_details">Show names and row actions</string>
-    <string name="widget_config_show_details_description">Optional and off by default. Names, progress and row actions will appear wherever your launcher shows this widget.</string>
-    <string name="widget_config_scroll_resize">With Details on, swipe inside the item list to reach more items. Resize the widget to show more rows at once; scrolling remains available.</string>
-    <string name="widget_config_privacy_note">Your launcher may cache this view, including names when details are on. Removing the widget does not erase launcher copies.</string>
+    <string name="widget_config_content_description">Names, progress and row actions appear wherever your launcher shows this widget.</string>
+    <string name="widget_config_scroll_resize">Swipe inside the item list to reach more items. Resize the widget to show more rows at once; scrolling remains available.</string>
+    <string name="widget_config_privacy_note">Your launcher may cache this view, including names. Removing the widget does not erase launcher copies.</string>
     <string name="widget_config_loading">Loading widget settings…</string>
     <string name="widget_config_load_error">Widget settings could not be loaded. Try again or cancel.</string>
     <string name="widget_config_save_error">Widget setup could not be completed. Your choice may have been saved. Reopen this screen to check it.</string>
@@ -983,9 +981,7 @@
     <string name="widget_habits_view_all">View all habits</string>
     <string name="widget_tasks_view_all">View all tasks</string>
     <string name="widget_view_all_more">%1$s, %2$d more not shown</string>
-    <string name="widget_view_all_hidden">%1$s; names are hidden in this widget</string>
     <string name="widget_view_all_count">%1$s, %2$d items total</string>
-    <string name="widget_view_all_hidden_count">%1$s, %2$d items total; names are hidden in this widget</string>
     <string name="widget_scroll_for_more">Scroll for more</string>
     <string name="widget_collection_accessibility">Scrollable widget items</string>
     <plurals name="widget_tasks_collection_accessibility">
@@ -1002,8 +998,6 @@
     </plurals>
     <string name="widget_task_saved">Task completed</string>
     <string name="widget_habit_saved">Repetition saved</string>
-    <string name="widget_mode_summary">Summary — names hidden</string>
-    <string name="widget_mode_details">Details — names and actions visible</string>
     <string name="widget_preview_label">Fictional example</string>
     <string name="widget_preview_habits_title">Habits ›</string>
     <string name="widget_preview_tasks_title">Tasks ›</string>
@@ -1017,10 +1011,7 @@
     <string name="widget_preview_task_second_action">Overdue · Complete</string>
     <string name="widget_preview_date">Oct 20</string>
     <string name="widget_settings_add_named">Add %1$s widget</string>
-    <string name="widget_settings_instance_mode">%1$s · %2$s</string>
     <string name="widget_settings_instance_ordinal">%1$s %2$d</string>
-    <string name="widget_mode_summary_short">Summary</string>
-    <string name="widget_mode_details_short">Details</string>
     <string name="widget_preview_habits_summary">Oct 20 · 1 of 3 targets reached</string>
     <string name="widget_preview_tasks_summary">Oct 20 · 3 due today or overdue</string>
     <string name="widget_preview_updated">Updated 13:07</string>

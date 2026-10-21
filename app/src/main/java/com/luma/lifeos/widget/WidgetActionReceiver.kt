@@ -93,7 +93,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 val deviceZone = ZoneId.systemDefault()
                 val store = app.storage.widgets
                 val snapshot = store.snapshot(widgetId, now, deviceZone, rowLimit = 0) ?: return@launch
-                if (snapshot.instance.kind != kind || !snapshot.instance.showDetails || snapshot.date != date ||
+                if (snapshot.instance.kind != kind || snapshot.date != date ||
                     !store.isEligibleCollectionItem(widgetId, itemId, now, deviceZone)
                 ) {
                     WidgetRefreshCoordinator.request(context)

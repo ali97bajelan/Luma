@@ -31,7 +31,6 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
         if (command.status != READY) return command.resultOrInvalid()
 
         val instance = widgets.instance(widgetId) ?: return reject(command, WidgetOutcome.INVALID)
-        if (!instance.showDetails) return reject(command, WidgetOutcome.INVALID)
 
         val payload = WidgetCommandPayload.decode(command.action, command.payloadJson)
             ?: return reject(command, WidgetOutcome.INVALID)

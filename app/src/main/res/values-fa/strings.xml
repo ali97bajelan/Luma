@@ -74,7 +74,7 @@
     <string name="widget_settings_intro">ابزارک عادت‌ها یا کارها را به صفحهٔ اصلی اضافه کنید. هر دو ثبت سریع دارند و به ابزارک جداگانهٔ ثبت نیاز نیست.</string>
     <string name="widget_settings_legacy_capture_note">ابزارک‌های ثبت سریعِ ازقبل‌جای‌گذاری‌شده پس از به‌روزرسانی روی صفحهٔ اصلی می‌مانند. برای حذف، از گزینهٔ حذف راه‌انداز استفاده کنید؛ لوما آن را خودکار حذف نمی‌کند.</string>
     <string name="widget_settings_capture_on_both">ثبت در هر دو ابزارک در دسترس است. برای دیدن فهرست کامل، عنوان را لمس کنید.</string>
-    <string name="widget_settings_scroll_resize">با روشن بودن جزئیات، داخل هر ویجت پیمایش کنید تا موارد بعدی را ببینید. برای نمایش ردیف‌های بیشتر، ویجت را تغییر اندازه دهید.</string>
+    <string name="widget_settings_scroll_resize">داخل هر ابزارک پیمایش کنید تا موارد بعدی را ببینید. برای نمایش ردیف‌های بیشتر، ابزارک را تغییر اندازه دهید.</string>
     <string name="widget_settings_title_navigation_hint">برای دیدن همه، عنوان را لمس کنید.</string>
     <string name="widget_settings_add">افزودن</string>
     <string name="widget_settings_existing_heading">ویجت‌های موجود عادت‌ها و کارها</string>
@@ -88,11 +88,9 @@
     <string name="widget_settings_privacy_note">راه‌انداز محل نمایش ویجت‌ها را کنترل می‌کند و ممکن است نمای آن‌ها را نگه دارد. حذف ویجت یا بازنشانی لوما نسخه‌های نگه‌داشته‌شده در راه‌انداز را کنترل نمی‌کند.</string>
     <string name="widget_config_habits_title">تنظیم عادت‌های لوما</string>
     <string name="widget_config_tasks_title">تنظیم کارهای لوما</string>
-    <string name="widget_config_summary_description">خلاصه، تعدادها را نشان می‌دهد. نام‌ها و اقدام‌های ردیف‌ها تا زمانی که جزئیات را روشن نکنید پنهان می‌مانند.</string>
-    <string name="widget_config_show_details">نمایش نام‌ها و کنش‌های ردیف‌ها</string>
-    <string name="widget_config_show_details_description">اختیاری و به‌طور پیش‌فرض خاموش است. نام‌ها، پیشرفت و اقدام‌های ردیف در هر جایی که راه‌انداز این ویجت را نشان دهد دیده می‌شوند.</string>
-    <string name="widget_config_scroll_resize">با روشن بودن جزئیات، داخل فهرست پیمایش کنید تا موارد بیشتری را ببینید. برای نمایش ردیف‌های بیشتر ویجت را تغییر اندازه دهید؛ پیمایش همچنان در دسترس است.</string>
-    <string name="widget_config_privacy_note">راه‌انداز ممکن است این نما و در حالت جزئیات، نام‌ها را نگه دارد. حذف ابزارک، نسخه‌های راه‌انداز را پاک نمی‌کند.</string>
+    <string name="widget_config_content_description">نام‌ها، پیشرفت و اقدام‌های ردیف‌ها در هر جایی که راه‌انداز این ابزارک را نشان دهد دیده می‌شوند.</string>
+    <string name="widget_config_scroll_resize">داخل فهرست پیمایش کنید تا موارد بیشتری را ببینید. برای نمایش ردیف‌های بیشتر ابزارک را تغییر اندازه دهید؛ پیمایش همچنان در دسترس است.</string>
+    <string name="widget_config_privacy_note">راه‌انداز ممکن است این نما، از جمله نام‌ها، را در حافظهٔ پنهان نگه دارد. حذف ابزارک نسخه‌های راه‌انداز را پاک نمی‌کند.</string>
     <string name="widget_config_loading">در حال بارگذاری تنظیمات ویجت…</string>
     <string name="widget_config_load_error">بارگذاری تنظیمات ویجت انجام نشد. دوباره تلاش کنید یا لغو کنید.</string>
     <string name="widget_config_save_error">تنظیم ویجت کامل نشد. ممکن است انتخاب شما ذخیره شده باشد. برای بررسی، این صفحه را دوباره باز کنید.</string>
@@ -984,9 +982,7 @@
     <string name="widget_habits_view_all">نمایش همهٔ عادت‌ها</string>
     <string name="widget_tasks_view_all">نمایش همهٔ کارها</string>
     <string name="widget_view_all_more">%1$s، %2$d مورد دیگر نمایش داده نشده</string>
-    <string name="widget_view_all_hidden">%1$s؛ نام‌ها در این ویجت پنهان هستند</string>
     <string name="widget_view_all_count">%1$s، در مجموع %2$d مورد</string>
-    <string name="widget_view_all_hidden_count">%1$s، در مجموع %2$d مورد؛ نام‌ها در این ویجت پنهان هستند</string>
     <string name="widget_scroll_for_more">برای دیدن موارد بیشتر پیمایش کنید</string>
     <string name="widget_collection_accessibility">موارد پیمایشی ویجت</string>
     <plurals name="widget_tasks_collection_accessibility">
@@ -1003,8 +999,6 @@
     </plurals>
     <string name="widget_task_saved">کار انجام شد</string>
     <string name="widget_habit_saved">تکرار ذخیره شد</string>
-    <string name="widget_mode_summary">خلاصه — نام‌ها پنهان</string>
-    <string name="widget_mode_details">جزئیات — نام‌ها و اقدام‌ها نمایان</string>
     <string name="widget_preview_label">نمونهٔ ساختگی</string>
     <string name="widget_preview_habits_title">عادت‌ها ‹</string>
     <string name="widget_preview_tasks_title">کارها ‹</string>
@@ -1018,10 +1012,7 @@
     <string name="widget_preview_task_second_action">عقب‌افتاده · تکمیل</string>
     <string name="widget_preview_date">۲۰ اکتبر</string>
     <string name="widget_settings_add_named">افزودن ابزارک %1$s</string>
-    <string name="widget_settings_instance_mode">%1$s · %2$s</string>
     <string name="widget_settings_instance_ordinal">%1$s %2$d</string>
-    <string name="widget_mode_summary_short">خلاصه</string>
-    <string name="widget_mode_details_short">جزئیات</string>
     <string name="widget_preview_habits_summary">۲۰ اکتبر · ۱ هدف از ۳ هدف</string>
     <string name="widget_preview_tasks_summary">۲۰ اکتبر · ۳ کار امروز یا عقب‌افتاده</string>
     <string name="widget_preview_updated">به‌روزرسانی ۱۳:۰۷</string>

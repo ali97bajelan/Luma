@@ -54,7 +54,7 @@ internal class WidgetCollectionFactory(
 
     @Synchronized
     override fun getCount(): Int = currentMetadata()?.let { snapshot ->
-        if (snapshot.instance.showDetails && snapshot.instance.kind == kind) snapshot.total.coerceAtLeast(0) else 0
+        if (snapshot.instance.kind == kind) snapshot.total.coerceAtLeast(0) else 0
     } ?: 0
 
     @Synchronized
@@ -81,7 +81,7 @@ internal class WidgetCollectionFactory(
 
     private fun rowAt(position: Int): WidgetRow? {
         val current = currentMetadata() ?: return null
-        if (!current.instance.showDetails || current.instance.kind != kind || position !in 0 until current.total) {
+        if (current.instance.kind != kind || position !in 0 until current.total) {
             return null
         }
         val start = (position / WidgetStore.COLLECTION_PAGE_SIZE) * WidgetStore.COLLECTION_PAGE_SIZE
@@ -105,7 +105,7 @@ internal class WidgetCollectionFactory(
         }
         pageSnapshot = runBlocking(Dispatchers.IO) {
             store.collectionPage(widgetId, snapshotNow, deviceZone, start, limit)
-                ?.takeIf { it.instance.showDetails && it.instance.kind == kind && it.date == current.date }
+                ?.takeIf { it.instance.kind == kind && it.date == current.date }
         }
     }
 
