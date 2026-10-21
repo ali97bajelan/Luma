@@ -1,6 +1,5 @@
 package com.luma.lifeos.ui.habits
 
-import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,15 +21,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
-import com.luma.lifeos.language.localizedDate
-import com.luma.lifeos.language.localizedTime
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.LocalTime
@@ -51,8 +48,8 @@ internal fun HabitLogCorrectionDialog(
 ) {
     var dateOpen by rememberSaveable { mutableStateOf(false) }
     var timeOpen by rememberSaveable { mutableStateOf(false) }
-    val context = LocalContext.current
-    val use24Hour = DateFormat.is24HourFormat(context)
+    val displayTime = rememberDisplayTimePolicy()
+    val use24Hour = displayTime.use24Hour
     fun openDate() { dateOpen = true; onPickerOpenChanged(true) }
     fun closeDate() { dateOpen = false; onPickerOpenChanged(false) }
     fun openTime() { timeOpen = true; onPickerOpenChanged(true) }
@@ -81,7 +78,7 @@ internal fun HabitLogCorrectionDialog(
                         .semantics { dateError?.let(::error) }
                         .testTag("habit_correction_date"),
                 ) {
-                    Text("${stringResource(R.string.habit_correction_date)} · ${draft.selectedDate.format(localizedDate(FormatStyle.MEDIUM))}")
+                    Text("${stringResource(R.string.habit_correction_date)} · ${draft.selectedDate.format(displayTime.date(FormatStyle.MEDIUM))}")
                 }
                 dateError?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_correction_date_error"))
@@ -93,7 +90,7 @@ internal fun HabitLogCorrectionDialog(
                         .semantics { timeError?.let(::error) }
                         .testTag("habit_correction_time"),
                 ) {
-                    val value = draft.selectedTime?.format(localizedTime(use24Hour))
+                    val value = draft.selectedTime?.format(displayTime.time())
                         ?: stringResource(R.string.habit_correction_no_time)
                     Text("${stringResource(R.string.habit_correction_time)} · $value")
                 }

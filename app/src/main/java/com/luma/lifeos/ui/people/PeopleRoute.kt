@@ -102,6 +102,7 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
 @Composable
 fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -> Unit,
     onEdit: () -> Unit, onEvent: (LifeEventRecord) -> Unit) {
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, personId, retry) { observePersonHistory(repository, personId) }
     val state by observation.collectAsStateWithLifecycle(PersonHistoryState.Loading)
@@ -148,7 +149,7 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                         Card(Modifier.fillMaxWidth().testTag("person_event_${record.event.id}")) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
-                                    .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
+                                    .format(displayTime.dateTime(FormatStyle.MEDIUM)))
                                 Text(stringResource(when (record.event.type) {
                                     EventType.MOOD -> R.string.event_mood
                                     EventType.JOURNAL -> R.string.event_journal

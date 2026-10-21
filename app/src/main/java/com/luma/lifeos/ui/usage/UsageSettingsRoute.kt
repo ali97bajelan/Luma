@@ -22,6 +22,7 @@ import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.ui.integrations.IntegrationAccessState
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.ui.integrations.IntegrationSettingsOperation
 import com.luma.lifeos.ui.integrations.needsAccessSecondary
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -34,6 +35,7 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
     val vm: UsageSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     var showAccessExplanation by rememberSaveable { mutableStateOf(false) }
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth().testTag("usage_integration_card")) {
@@ -64,14 +66,14 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
             if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
                 CircularProgressIndicator(Modifier.testTag("usage_busy"))
             currentAvailability.lastSync?.let { Text(stringResource(R.string.usage_last_sync,
-                it.atZone(zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
+                it.atZone(zone).format(displayTime.dateTime(FormatStyle.MEDIUM)))) }
             when {
                 currentAvailability.access == IntegrationAccessState.REQUIRED ->
                     Button(onClick = { showAccessExplanation = true }, enabled = !state.busy,
                         modifier = Modifier.testTag("usage_grant")) { Text(stringResource(R.string.usage_grant)) }
                 state.loading || currentAvailability.configurationFailed || currentAvailability.enabled == null ||
                     currentAvailability.access == IntegrationAccessState.ERROR || currentAvailability.access == IntegrationAccessState.CHECKING ->
-                    Button(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+                    Button(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                         modifier = Modifier.testTag("usage_refresh_primary")) { Text(stringResource(R.string.usage_refresh)) }
                 currentAvailability.access == IntegrationAccessState.LOCKED ->
                     Text(stringResource(R.string.usage_locked), modifier = Modifier.testTag("usage_locked_message"))
@@ -80,15 +82,19 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
                 currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true ->
                     Button(onClick = vm::importNow, enabled = !state.busy && !state.loading,
                         modifier = Modifier.testTag("usage_import")) {
-                        Text(stringResource(if (currentAvailability.importFailed) R.string.usage_retry_import else R.string.usage_import_now))
+                        Text(stringResource(if (currentAvailability.importFailed ||
+                            state.errors.containsKey(IntegrationSettingsOperation.IMPORT)) R.string.usage_retry_import else R.string.usage_import_now))
                     }
                 currentAvailability.access == IntegrationAccessState.ALLOWED ->
                     Button(onClick = { showAccessExplanation = true }, enabled = !state.busy,
                         modifier = Modifier.testTag("usage_manage_primary")) { Text(stringResource(R.string.usage_manage_access)) }
                 else -> Unit
             }
-            if (currentAvailability.importFailed && currentAvailability.access == IntegrationAccessState.ALLOWED) {
-                AccessibleFeedback(stringResource(R.string.usage_sync_error), Modifier.testTag("usage_import_error"), isError = true)
+            if ((currentAvailability.importFailed || state.errors.containsKey(IntegrationSettingsOperation.IMPORT)) &&
+                currentAvailability.access == IntegrationAccessState.ALLOWED) {
+                key(state.errors[IntegrationSettingsOperation.IMPORT]?.requestId) {
+                    AccessibleFeedback(stringResource(R.string.usage_sync_error), Modifier.testTag("usage_import_error"), isError = true)
+                }
             }
             if (currentAvailability.needsAccessSecondary()) {
                 Text(stringResource(R.string.integration_access_also_needed), modifier = Modifier.testTag("usage_access_secondary"),
@@ -100,8 +106,37 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
                 }
             }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.usage_settings_missing), Modifier.testTag("usage_settings_missing"))
-            if (state.actionError) AccessibleFeedback(stringResource(R.string.usage_action_error), Modifier.testTag("usage_action_error"))
-            TextButton(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+            state.errors.values.sortedBy { it.operation.ordinal }.forEach { error ->
+                val operation = error.operation
+                val message = when (operation) {
+                    IntegrationSettingsOperation.OBSERVE -> R.string.usage_observe_error
+                    IntegrationSettingsOperation.ACCESS_REFRESH -> R.string.usage_access_refresh_error
+                    IntegrationSettingsOperation.IMPORT -> R.string.usage_sync_error
+                    IntegrationSettingsOperation.PREFERENCE -> R.string.usage_preference_error
+                }
+                val retry: () -> Unit = when (operation) {
+                    IntegrationSettingsOperation.OBSERVE -> vm::retryConfiguration
+                    IntegrationSettingsOperation.ACCESS_REFRESH -> ({ vm.refresh(); onRefreshAccess() })
+                    IntegrationSettingsOperation.IMPORT -> vm::importNow
+                    IntegrationSettingsOperation.PREFERENCE -> vm::retryPreference
+                }
+                if (operation != IntegrationSettingsOperation.IMPORT ||
+                    currentAvailability.access != IntegrationAccessState.ALLOWED) {
+                    key(error.requestId) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            AccessibleFeedback(stringResource(message),
+                                Modifier.testTag("usage_${operation.name.lowercase()}_error"))
+                            if (operation != IntegrationSettingsOperation.IMPORT) {
+                                TextButton(onClick = retry, enabled = !state.busy,
+                                    modifier = Modifier.testTag("usage_${operation.name.lowercase()}_retry")) {
+                                    Text(stringResource(R.string.retry))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            TextButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                 modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
             DetailsDisclosure(R.string.imports_details, "usage_details") {
                 Text(stringResource(R.string.usage_access_explanation))

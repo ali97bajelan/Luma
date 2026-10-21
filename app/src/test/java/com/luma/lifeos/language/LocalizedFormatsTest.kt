@@ -15,7 +15,7 @@ class LocalizedFormatsTest {
     }
 
     @Test fun persianTimeUsesPersianDigitsWithoutChangingStoredDate() = inLocale("fa") {
-        assertEquals("۰۹:۰۵", LocalTime.of(9, 5).format(localizedTime()))
+        assertEquals("۰۹:۰۵", LocalTime.of(9, 5).format(localizedTime(use24Hour = true)))
         val date = LocalDate.of(2026, 10, 13)
         val display = date.format(localizedDate(FormatStyle.MEDIUM))
         assertTrue(display, display.contains("۲۰۲۶"))
@@ -24,6 +24,6 @@ class LocalizedFormatsTest {
 
     @Test fun frenchDateAndEnglishTimeFollowSelectedLocale() {
         inLocale("fr") { assertEquals("13 oct. 2026", LocalDate.of(2026, 10, 13).format(localizedDate(FormatStyle.MEDIUM))) }
-        inLocale("en") { assertEquals("09:05", LocalTime.of(9, 5).format(localizedTime())) }
+        inLocale("en") { assertEquals("09:05", LocalTime.of(9, 5).format(localizedTime(use24Hour = true))) }
     }
 }

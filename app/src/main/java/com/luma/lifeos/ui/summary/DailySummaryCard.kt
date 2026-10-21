@@ -18,6 +18,7 @@ import com.luma.lifeos.ui.timeline.label
 import com.luma.lifeos.ui.usage.appUsageDuration
 import com.luma.lifeos.ui.common.entryLogCounts
 import com.luma.lifeos.ui.common.DetailsDisclosure
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.domain.usage.UsageHistory
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import com.luma.lifeos.ui.integrations.MetricAbsence
@@ -38,7 +39,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
             when (state) {
                 DailySummaryState.Loading -> CircularProgressIndicator(Modifier.testTag("daily_summary_loading"))
                 DailySummaryState.Error -> {
-                    Text(stringResource(R.string.summary_error), modifier = Modifier.testTag("daily_summary_error"))
+                    AccessibleFeedback(stringResource(R.string.summary_error), Modifier.testTag("daily_summary_error"))
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("daily_summary_retry")) { Text(stringResource(R.string.retry)) }
                 }
                 is DailySummaryState.Data -> {

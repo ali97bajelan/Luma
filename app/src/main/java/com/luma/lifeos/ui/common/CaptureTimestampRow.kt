@@ -1,6 +1,5 @@
 package com.luma.lifeos.ui.common
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,15 +23,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
-import com.luma.lifeos.language.localizedDate
-import com.luma.lifeos.language.localizedTime
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.Instant
@@ -53,12 +50,13 @@ fun CaptureTimestampRow(
 ) {
     val zone = ZoneId.systemDefault()
     val current = Instant.ofEpochMilli(milliseconds).atZone(zone)
-    val use24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val displayTime = rememberDisplayTimePolicy()
+    val use24Hour = displayTime.use24Hour
     val dateText = if (current.toLocalDate() == LocalDate.now(zone)) {
-        stringResource(R.string.capture_timestamp_today, current.format(localizedTime(use24Hour)))
+        stringResource(R.string.capture_timestamp_today, current.format(displayTime.time()))
     } else {
         stringResource(R.string.capture_timestamp_value,
-            current.format(localizedDate(FormatStyle.MEDIUM)), current.format(localizedTime(use24Hour)))
+            current.format(displayTime.date(FormatStyle.MEDIUM)), current.format(displayTime.time()))
     }
     val timeErrorMessage = stringResource(R.string.mood_time_error)
     var dialogOpen by rememberSaveable(milliseconds) { mutableStateOf(false) }

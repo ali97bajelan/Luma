@@ -16,6 +16,7 @@ import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.domain.repository.TimelineRepository
 import com.luma.lifeos.ui.memory.MemoryStatus
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.ui.places.LinkedPlace
@@ -29,6 +30,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
     var retry by remember { mutableIntStateOf(0) }
     val flow = remember(repository, id, retry) { observeEventDetail(repository, id) }
     val state by flow.collectAsStateWithLifecycle(initialValue = EventDetailState.Loading)
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     BackHandler(onBack = onBack)
     val recordForEdit = (state as? EventDetailState.Data)?.record?.takeIf { it.canEditContent }
     val title = (state as? EventDetailState.Data)?.record?.event?.type?.label()?.let { stringResource(it) }
@@ -61,7 +63,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                 EventDetailState.Loading -> CircularProgressIndicator()
                 EventDetailState.Missing -> Text(stringResource(R.string.event_missing), modifier = Modifier.testTag("event_missing"))
                 EventDetailState.Error -> {
-                    Text(stringResource(R.string.event_detail_error))
+                    AccessibleFeedback(stringResource(R.string.event_detail_error), Modifier.testTag("event_detail_error"))
                     TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
                 is EventDetailState.Data -> {
@@ -73,7 +75,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                     }
                     if (!record.canEditContent) Text(stringResource(R.string.event_read_only))
                     if (!groupedUsageDetails) {
-                        val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)
+                        val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
                         Text(record.event.occurredAt.atZone(zone).format(formatter))
                         record.event.endedAt?.let { Text(stringResource(R.string.event_ended, it.atZone(zone).format(formatter))) }
                         Text(zone.id, style = MaterialTheme.typography.bodySmall)

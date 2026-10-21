@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
@@ -148,7 +149,7 @@ fun TodayScreen(
             }
             TodayUiState.Error -> item(key = "error") {
                 Column(Modifier.testTag("today_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.today_error))
+                    AccessibleFeedback(stringResource(R.string.today_error), Modifier.testTag("today_error_message"))
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("today_retry")) {
                         Text(stringResource(R.string.retry))
                     }

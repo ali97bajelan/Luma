@@ -20,14 +20,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.habit.TimelineFeedItem
-import com.luma.lifeos.language.localizedTime
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.time.ZoneId
 
 @Composable
 fun HabitTimelineCard(item: TimelineFeedItem.Habit, screenZone: ZoneId, onOpen: () -> Unit) {
+    val displayTime = rememberDisplayTimePolicy()
     val log = item.log
     val unit = item.unitLabel ?: pluralStringResource(R.plurals.habit_unit_default, 1)
-    val time = log.occurredAt?.atZone(log.zone)?.format(localizedTime())
+    val time = log.occurredAt?.atZone(log.zone)?.format(displayTime.time())
         ?: stringResource(R.string.habit_time_not_recorded)
     Card(Modifier.fillMaxWidth().testTag("habit_timeline_${log.id}")
         .clickable(onClickLabel = stringResource(R.string.habit_open_accessibility, item.name), onClick = onOpen)) {

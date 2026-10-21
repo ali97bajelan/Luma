@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AccessibleFeedback
 
 @Composable
 fun LanguageSettingsCard() {
@@ -24,6 +25,7 @@ fun LanguageSettingsCard() {
     val configuration = LocalConfiguration.current
     val current = AppLanguage.resolve(configuration.locales[0].language, emptyList())
     var saveError by rememberSaveable { mutableStateOf(false) }
+    var saveErrorRevision by rememberSaveable { mutableIntStateOf(0) }
     Card(Modifier.fillMaxWidth().testTag("language_settings")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.language_title), style = MaterialTheme.typography.titleLarge)
@@ -39,6 +41,7 @@ fun LanguageSettingsCard() {
                         .testTag("language_${language.tag}")
                         .selectable(selected = current == language, role = Role.RadioButton, onClick = {
                             saveError = context.activity()?.let { !AppLanguages.select(it, language) } ?: true
+                            if (saveError) saveErrorRevision++
                         }).padding(horizontal = 8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         RadioButton(selected = current == language, onClick = null)
@@ -46,7 +49,9 @@ fun LanguageSettingsCard() {
                     }
                 }
             }
-            if (saveError) Text(stringResource(R.string.language_save_error), color = MaterialTheme.colorScheme.error)
+            if (saveError) key(saveErrorRevision) {
+                AccessibleFeedback(stringResource(R.string.language_save_error), Modifier.testTag("language_save_error"))
+            }
         }
     }
 }

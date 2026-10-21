@@ -197,6 +197,7 @@ internal fun reviewUsageCoverageSummary(report: WeeklyReview, availability: Inte
 
 @Composable
 private fun LatestMemory(report: WeeklyReview, repository: WeeklyReviewRepository, onEvent: (LifeEventRecord) -> Unit) {
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     Text(stringResource(R.string.review_latest_memory), style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (report.current.memories == 0) {
@@ -223,7 +224,7 @@ private fun LatestMemory(report: WeeklyReview, repository: WeeklyReviewRepositor
             if (row == null) Text(stringResource(R.string.review_memory_empty_short), Modifier.testTag("review_overview_memory_empty"))
             else {
                 val date = row.event.occurredAt.atZone(report.period.zone)
-                    .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM))
+                    .format(displayTime.dateTime(FormatStyle.MEDIUM))
                 TextButton(onClick = { onEvent(row) }, contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.fillMaxWidth()
                     .defaultMinSize(minHeight = 48.dp).testTag("review_overview_memory_open")) {
                     Column(Modifier.weight(1f)) {

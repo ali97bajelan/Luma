@@ -29,6 +29,7 @@ import java.time.format.FormatStyle
 
 @Composable
 fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit, onMemory: (() -> Unit)? = null) {
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     val event = record.event
     val action = stringResource(when {
         record.canEditContent && event.type == EventType.MOOD -> R.string.mood_edit_action
@@ -42,7 +43,7 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit, onMemor
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(event.type.label()), style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                Text(event.occurredAt.atZone(zone).format(com.luma.lifeos.language.localizedTime()),
+                Text(event.occurredAt.atZone(zone).format(displayTime.time()),
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (onMemory != null && (record.canPromoteToMemory || (event.type == EventType.MEMORY && record.canEditContent))) {
                     val memoryState = record.memory?.let { memory ->
@@ -113,6 +114,7 @@ fun MoodContent(mood: MoodDetails) {
 
 @Composable
 fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 3 }
     val activities = if (full) record.activities else record.activities.take(1)
     activities.forEach { Text(stringResource(R.string.activity_value,
@@ -121,7 +123,7 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
     if (!full && record.activities.size > 1) Text(stringResource(R.string.activity_more, record.activities.size - 1))
     record.appUsage?.let { usage ->
         if (full) {
-            val formatter = com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)
+            val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
             Card(Modifier.fillMaxWidth().testTag("event_usage_detail"),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

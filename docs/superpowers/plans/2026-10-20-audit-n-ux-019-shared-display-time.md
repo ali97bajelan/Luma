@@ -10,7 +10,7 @@
 
 **Spec:** [UX-019 specification](../specs/2026-10-20-audit-n-ux-019-shared-display-time-design.md)
 
-**Status:** Draft plan. All implementation, test and commit steps remain unchecked. Relative effort: Medium.
+**Status:** Implementation complete; regression tests and runtime verification remain pending at the user's request. Relative effort: Medium.
 
 ## Global Constraints
 
@@ -57,7 +57,7 @@ Keep changes in their current screen/state/repository responsibility. New files 
 - Produces: data class DisplayTimePolicy(val locale: Locale, val use24Hour: Boolean) has time(): DateTimeFormatter and dateTime(style: FormatStyle): DateTimeFormatter. @Composable rememberDisplayTimePolicy(): DisplayTimePolicy reads app configuration locale and DateFormat.is24HourFormat(context), refreshing on resume/configuration changes. Remove the implicit true hour-cycle default once all callers migrate.
 - Other consumers: migrate every caller affected by these interface changes; preserve callback target identity and existing readiness/busy guards.
 
-- [ ] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
+- [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
 - [ ] **Step 2: Add the behavior regressions and manual checks.** Use the listed test suites, keeping state/repository assertions in JVM tests where provided and navigation/Compose assertions in device tests. Use the named cases, fixtures and assertions below; extend existing fixtures instead of introducing a parallel harness. For speech, gesture comfort and visual reachability, automate the semantics/bounds that can be checked and record actual manual device evidence under the same case ID. A test cannot certify TalkBack speech merely by finding a live-region node. For copy-only changes, extend existing UI assertions.
 
@@ -81,9 +81,9 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [ ] **Step 4: Implement the owning contract.** Add pure DisplayTimePolicy and configuration/resume-aware Compose provider; test explicit locale/hour inputs.
+- [x] **Step 4: Implement the owning contract.** Add pure DisplayTimePolicy and configuration/resume-aware Compose provider. Formatter tests remain pending.
 
-- [ ] **Step 5: Connect the behavior.** Run a complete formatter-call inventory and migrate capture plus saved-record surfaces, updating APIs where a policy must be passed.
+- [x] **Step 5: Connect the behavior.** Run a complete formatter-call inventory and migrate capture plus saved-record surfaces, updating APIs where a policy must be passed.
 
 - [ ] **Step 6: Exercise the complete flow.** Remove unsafe implicit-hour defaults and verify the same instant across editor, Timeline, Search, Review and histories.
 
@@ -93,5 +93,4 @@ Device commands require a connected, configured test device/emulator. Locale/fon
 
 ## Handoff
 
-Deliver this task's code changes, five scenario results and remaining device limitations together. No implementation has been performed by generating this plan. Do not mark the finding fixed solely because a plan, test name or historical screenshot exists.
-
+Deliver this task's code changes and outstanding verification together. No Gradle or emulator checks were run, and no new tests were added, at the user's request. Do not mark runtime acceptance complete solely from source changes.

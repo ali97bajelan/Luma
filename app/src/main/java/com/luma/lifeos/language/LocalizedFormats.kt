@@ -7,10 +7,13 @@ import java.util.Locale
 
 /** Localized display only: persisted ISO dates/times remain untouched. */
 fun localizedDate(style: FormatStyle): DateTimeFormatter =
-    DateTimeFormatter.ofLocalizedDate(style).localizedDigits()
-fun localizedDateTime(style: FormatStyle): DateTimeFormatter =
-    DateTimeFormatter.ofLocalizedDateTime(style).localizedDigits()
-fun localizedTime(use24Hour: Boolean = true): DateTimeFormatter =
-    DateTimeFormatter.ofPattern(if (use24Hour) "HH:mm" else "h:mm a").localizedDigits()
-private fun DateTimeFormatter.localizedDigits(): DateTimeFormatter =
-    withLocale(Locale.getDefault()).withDecimalStyle(DecimalStyle.of(Locale.getDefault()))
+    DateTimeFormatter.ofLocalizedDate(style)
+        .withLocale(Locale.getDefault())
+        .withChronology(java.time.chrono.IsoChronology.INSTANCE)
+        .withDecimalStyle(DecimalStyle.of(Locale.getDefault()))
+
+fun localizedTime(use24Hour: Boolean, locale: Locale = Locale.getDefault()): DateTimeFormatter {
+    return DateTimeFormatter.ofPattern(if (use24Hour) "HH:mm" else "h:mm a", locale)
+        .withChronology(java.time.chrono.IsoChronology.INSTANCE)
+        .withDecimalStyle(DecimalStyle.of(locale))
+}

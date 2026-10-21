@@ -27,6 +27,7 @@ import java.time.format.FormatStyle
 fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneId,
     onMemory: (EventId) -> Unit, onJournal: (EventId) -> Unit,
     captureBottomClearance: Dp = 0.dp) {
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     var retry by remember { mutableIntStateOf(0) }
     val week = memoryWeekRange(date, zone)
     key(repository, week, retry) {
@@ -57,7 +58,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                                 LinkedPeople(record.people)
                                 LinkedPlace(record.place)
                             PhotoCount(record.photos.size)
-                                Text(record.event.occurredAt.atZone(zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.SHORT)))
+                                Text(record.event.occurredAt.atZone(zone).format(displayTime.dateTime(FormatStyle.SHORT)))
                                 record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
                                 record.journal?.let { Text(it.body, maxLines = 3, overflow = TextOverflow.Ellipsis) }
                                 record.mood?.let {

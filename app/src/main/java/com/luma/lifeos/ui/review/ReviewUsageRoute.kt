@@ -26,7 +26,8 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
     key(date, zone, retry) {
         val observation = remember(integration) { observeUsageDay(integration, date, zone) }
         val state by observation.collectAsStateWithLifecycle(UsageDayState.Loading)
-        val format = com.luma.lifeos.language.localizedDateTime(FormatStyle.SHORT)
+        val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
+        val format = displayTime.dateTime(FormatStyle.SHORT)
         LazyColumn(Modifier.fillMaxSize().testTag("screen_review_usage"), contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {

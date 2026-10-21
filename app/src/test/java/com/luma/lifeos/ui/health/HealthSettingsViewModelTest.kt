@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.health
 
 import com.luma.lifeos.domain.health.*
+import com.luma.lifeos.ui.integrations.IntegrationSettingsOperation
 import java.time.ZoneId
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -25,16 +26,16 @@ class HealthSettingsViewModelTest {
     }
     @Test fun errorsCanRetryAndCancellationIsNotDisplayedAsFailure() = runTest(dispatcher) {
         val integration = Integration(); val vm = HealthSettingsViewModel(integration); advanceUntilIdle()
-        integration.failure = IllegalStateException(); vm.refresh(); advanceUntilIdle(); assertTrue(vm.state.value.actionError)
-        integration.failure = null; vm.refresh(); advanceUntilIdle(); assertFalse(vm.state.value.actionError)
+        integration.failure = IllegalStateException(); vm.refresh(); advanceUntilIdle(); assertTrue(vm.state.value.errors.containsKey(IntegrationSettingsOperation.ACCESS_REFRESH))
+        integration.failure = null; vm.refresh(); advanceUntilIdle(); assertFalse(vm.state.value.errors.containsKey(IntegrationSettingsOperation.ACCESS_REFRESH))
         integration.failure = CancellationException(); vm.importNow(); advanceUntilIdle()
-        assertFalse(vm.state.value.actionError); assertFalse(vm.state.value.busy)
+        assertFalse(vm.state.value.errors.containsKey(IntegrationSettingsOperation.IMPORT)); assertFalse(vm.state.value.busy)
     }
     @Test fun failedStateObservationCanRestart() = runTest(dispatcher) {
         val integration = Integration(); integration.observationFailure = true
-        val vm = HealthSettingsViewModel(integration); advanceUntilIdle(); assertTrue(vm.state.value.actionError)
+        val vm = HealthSettingsViewModel(integration); advanceUntilIdle(); assertTrue(vm.state.value.errors.containsKey(IntegrationSettingsOperation.OBSERVE))
         integration.observationFailure = false; vm.refresh(); advanceUntilIdle()
-        assertFalse(vm.state.value.loading); assertFalse(vm.state.value.actionError)
+        assertFalse(vm.state.value.loading); assertFalse(vm.state.value.errors.containsKey(IntegrationSettingsOperation.OBSERVE))
     }
     private class Integration : HealthIntegration {
         val flow = MutableStateFlow(HealthState()); var failure: Exception? = null

@@ -17,7 +17,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.backup.BackupService
-import com.luma.lifeos.language.localizedDateTime
+import com.luma.lifeos.language.rememberDisplayTimePolicy
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -47,6 +48,7 @@ fun BackupSettingsCard(service: BackupService, onRestored: () -> Unit = {}) {
 @Composable
 internal fun BackupCardContent(state: BackupUiState, onExport: () -> Unit, onRestore: () -> Unit,
     onConfirm: () -> Unit, onCancel: () -> Unit) {
+    val displayTime = rememberDisplayTimePolicy()
     Card(Modifier.fillMaxWidth().testTag("backup_settings")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleLarge)
@@ -68,7 +70,8 @@ internal fun BackupCardContent(state: BackupUiState, onExport: () -> Unit, onRes
                     BackupMessage.RESTORE_FAILED -> R.string.backup_restore_failed
                     BackupMessage.PICKER_UNAVAILABLE -> R.string.backup_picker_unavailable
                 }
-                Text(stringResource(text), modifier = Modifier.testTag("backup_message"))
+                AccessibleFeedback(stringResource(text), Modifier.testTag("backup_message"),
+                    isError = message != BackupMessage.EXPORTED && message != BackupMessage.RESTORED)
             }
         }
     }
@@ -81,7 +84,7 @@ internal fun BackupCardContent(state: BackupUiState, onExport: () -> Unit, onRes
                     NumberFormat.getIntegerInstance().format(preview.habitCount),
                     NumberFormat.getIntegerInstance().format(preview.habitLogCount),
                     NumberFormat.getIntegerInstance().format(preview.todoCount),
-                    preview.createdAt.atZone(ZoneId.systemDefault()).format(localizedDateTime(FormatStyle.MEDIUM))))
+                    preview.createdAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM))))
                 Text(stringResource(R.string.backup_replace_warning))
                 if (preview.todoCount == 0L) Text(stringResource(R.string.backup_no_tasks_warning))
             } },

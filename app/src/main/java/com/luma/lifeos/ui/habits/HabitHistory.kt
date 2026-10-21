@@ -28,10 +28,9 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.habit.HabitLog
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.Locale
 import java.util.UUID
 
 fun LazyListScope.habitHistoryItems(
@@ -108,6 +107,7 @@ private fun HabitLogCard(
     onDelete: (UUID) -> Unit,
 ) {
     var confirmingDelete by rememberSaveable(log.id.toString()) { mutableStateOf(false) }
+    val displayTime = rememberDisplayTimePolicy()
     val selectedDescription = stringResource(R.string.habit_selected_repetition)
     Column(Modifier.fillMaxWidth().testTag(if (selected) "habit_target_log_${log.id}" else "habit_log_${log.id}")) {
         Card(Modifier.fillMaxWidth().semantics {
@@ -117,15 +117,14 @@ private fun HabitLogCard(
             }
         }.testTag(if (selected) "habit_log_selected" else "habit_log_card_${log.id}")) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(log.date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
+                Text(log.date.format(displayTime.date(FormatStyle.MEDIUM)),
                     style = MaterialTheme.typography.titleMedium)
                 val occurred = log.occurredAt?.atZone(log.zone)
                 Text(occurred?.let {
-                    val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault()).format(it)
+                    val time = displayTime.time().format(it)
                     if (log.zone != screenZone) "$time · ${log.zone.id}" else time
                 } ?: stringResource(R.string.habit_time_not_recorded))
-                val recorded = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
-                    .withZone(screenZone).format(log.recordedAt)
+                val recorded = displayTime.dateTime(FormatStyle.MEDIUM).withZone(screenZone).format(log.recordedAt)
                 Text(stringResource(R.string.habit_recorded_at, recorded), style = MaterialTheme.typography.bodySmall)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically) {

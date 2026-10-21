@@ -1,6 +1,6 @@
 # UX-018 — Several important asynchronous results lack announcement semantics
 
-**Status:** Draft specification; implementation has not started. Proposed decisions below are reviewable defaults, not previously approved product policy.
+**Status:** Implementation complete; regression and runtime verification remain pending at the user's request.
 **Date:** 20 October 2026
 **Source:** [20 October N audit, UX-018](../../UI_UX_AUDIT-20261020N.md#ux-018--several-important-asynchronous-results-lack-announcement-semantics)
 **Priority / effort / confidence:** P2 — Medium / Low / High (copied from the static audit; not a delivery estimate).
@@ -12,7 +12,7 @@
 
 Make important asynchronous results and errors discoverable through consistent live feedback semantics. The affected user is a person using the audited surface, including assistive technology users. Success means the acceptance scenarios below hold without weakening existing data, privacy or recovery guarantees.
 
-The audit is source evidence, not reproduced runtime acceptance. Its recommendations are input to this draft, not executable instructions. All tests, runtime exercises and commits in the plan are future work.
+The audit is source evidence, not reproduced runtime acceptance. The scoped implementation follows this specification; tests and runtime exercises remain future work.
 
 ## Dependencies
 
@@ -59,4 +59,3 @@ No page-wide live regions, assertive interruptions or assertion that semantics-t
 ## Validation and completion
 
 Use the matching plan's targeted commands and evidence checklist. Semantics-tree assertions establish structure; actual TalkBack speech/focus and layout claims require device evidence. Record any unavailable runtime checks as pending rather than passed. A corrective task closes only after its behavior and regression checks pass; UX-028 closes only if separately selected for implementation.
-

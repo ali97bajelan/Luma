@@ -25,6 +25,7 @@ import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.ui.integrations.IntegrationAccessState
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.ui.integrations.IntegrationSettingsOperation
 import java.time.ZoneId
 import java.time.format.FormatStyle
 
@@ -35,11 +36,12 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
     val vm: HealthSettingsViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     val currentAvailability = availability.health
     var showPermissionExplanation by rememberSaveable { mutableStateOf(false) }
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
     val contract = remember { PermissionController.createRequestPermissionResultContract() }
-    val permissions = rememberLauncherForActivityResult(contract) { onRefreshAccess() }
+    val permissions = rememberLauncherForActivityResult(contract) { vm.refresh(); onRefreshAccess() }
     Card(Modifier.fillMaxWidth().testTag("health_card")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.health_title), style = MaterialTheme.typography.titleLarge)
@@ -67,7 +69,7 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
             if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
                 CircularProgressIndicator(Modifier.testTag("health_busy"))
             currentAvailability.lastSync?.let { Text(stringResource(R.string.health_last_sync,
-                it.atZone(state.current.importZone ?: zone).format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))) }
+                it.atZone(state.current.importZone ?: zone).format(displayTime.dateTime(FormatStyle.MEDIUM)))) }
             state.current.importZone?.let { Text(stringResource(R.string.health_zone, it.id)) }
             if (currentAvailability.enabled == false) Text(stringResource(R.string.health_open_imports_to_refresh),
                 style = MaterialTheme.typography.bodySmall)
@@ -80,12 +82,13 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
                         modifier = Modifier.testTag("health_install")) { Text(stringResource(R.string.health_install)) }
                 state.loading || currentAvailability.configurationFailed || currentAvailability.enabled == null ||
                     currentAvailability.access == IntegrationAccessState.ERROR || currentAvailability.access == IntegrationAccessState.CHECKING ->
-                    Button(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+                    Button(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                         modifier = Modifier.testTag("health_refresh_primary")) { Text(stringResource(R.string.health_refresh)) }
                 currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true ->
                     Button(onClick = vm::importNow, enabled = !state.busy && !state.loading,
                         modifier = Modifier.testTag("health_import")) {
-                        Text(stringResource(if (currentAvailability.importFailed) R.string.health_retry_import else R.string.health_import))
+                        Text(stringResource(if (currentAvailability.importFailed ||
+                            state.errors.containsKey(IntegrationSettingsOperation.IMPORT)) R.string.health_retry_import else R.string.health_import))
                     }
                 currentAvailability.access == IntegrationAccessState.ALLOWED ->
                     Button(onClick = { settingsMissing = !openHealthSettings(context) }, enabled = !state.busy,
@@ -96,16 +99,48 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
                     Text(stringResource(R.string.health_unavailable), modifier = Modifier.testTag("health_unavailable_message"))
                 else -> Unit
             }
-            if (currentAvailability.importFailed && currentAvailability.access == IntegrationAccessState.ALLOWED) {
-                AccessibleFeedback(stringResource(R.string.health_error), Modifier.testTag("health_import_error"), isError = true)
+            if ((currentAvailability.importFailed || state.errors.containsKey(IntegrationSettingsOperation.IMPORT)) &&
+                currentAvailability.access == IntegrationAccessState.ALLOWED) {
+                key(state.errors[IntegrationSettingsOperation.IMPORT]?.requestId) {
+                    AccessibleFeedback(stringResource(R.string.health_error), Modifier.testTag("health_import_error"), isError = true)
+                }
             }
             TextButton(onClick = { settingsMissing = !openHealthSettings(context) }, modifier = Modifier.testTag("health_manage")) {
                 Text(stringResource(R.string.health_manage))
             }
-            TextButton(onClick = { vm.retryConfiguration(); onRefreshAccess() }, enabled = !state.busy,
+            TextButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                 modifier = Modifier.testTag("health_refresh")) { Text(stringResource(R.string.health_refresh)) }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.health_settings_missing), Modifier.testTag("health_settings_missing"))
-            if (state.actionError) AccessibleFeedback(stringResource(R.string.health_action_error), Modifier.testTag("health_action_error"))
+            state.errors.values.sortedBy { it.operation.ordinal }.forEach { error ->
+                val operation = error.operation
+                val message = when (operation) {
+                    IntegrationSettingsOperation.OBSERVE -> R.string.health_observe_error
+                    IntegrationSettingsOperation.ACCESS_REFRESH -> R.string.health_access_refresh_error
+                    IntegrationSettingsOperation.IMPORT -> R.string.health_error
+                    IntegrationSettingsOperation.PREFERENCE -> R.string.health_preference_error
+                }
+                val retry: () -> Unit = when (operation) {
+                    IntegrationSettingsOperation.OBSERVE -> vm::retryConfiguration
+                    IntegrationSettingsOperation.ACCESS_REFRESH -> ({ vm.refresh(); onRefreshAccess() })
+                    IntegrationSettingsOperation.IMPORT -> vm::importNow
+                    IntegrationSettingsOperation.PREFERENCE -> vm::retryPreference
+                }
+                if (operation != IntegrationSettingsOperation.IMPORT ||
+                    currentAvailability.access != IntegrationAccessState.ALLOWED) {
+                    key(error.requestId) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            AccessibleFeedback(stringResource(message),
+                                Modifier.testTag("health_${operation.name.lowercase()}_error"))
+                            if (operation != IntegrationSettingsOperation.IMPORT) {
+                                TextButton(onClick = retry, enabled = !state.busy,
+                                    modifier = Modifier.testTag("health_${operation.name.lowercase()}_retry")) {
+                                    Text(stringResource(R.string.retry))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             DetailsDisclosure(R.string.imports_details, "health_details") {
                 Text(stringResource(R.string.health_explanation))
                 Text(stringResource(R.string.health_privacy_retention), modifier = Modifier.testTag("health_retention"))

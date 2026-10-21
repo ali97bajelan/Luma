@@ -406,6 +406,9 @@
     <string name="usage_sync_error">Import failed. Saved usage is unchanged; try again.</string>
     <string name="usage_settings_missing">Usage access settings could not be opened. Look for Usage access in Android Settings.</string>
     <string name="usage_action_error">This action could not finish. Try again.</string>
+    <string name="usage_observe_error">App usage settings could not be read. Refresh to retry.</string>
+    <string name="usage_access_refresh_error">Android Usage access status could not refresh. Refresh to retry.</string>
+    <string name="usage_preference_error">Automatic app usage imports could not be saved. Retry to save this preference.</string>
     <string name="usage_daily_title">Saved daily foreground usage</string>
     <string name="usage_daily_explanation">View app visits or total foreground time for the selected day. Visits crossing midnight count only their time within this day. Apps used at the same time may be counted separately; the total is not device screen-on time.</string>
     <string name="usage_view_timeline">Timeline</string>
@@ -455,6 +458,9 @@
     <string name="health_refresh">Refresh access status</string>
     <string name="health_settings_missing">The requested screen could not open. Use device Settings to find Health Connect.</string>
     <string name="health_action_error">Health controls could not load or save. Refresh to retry.</string>
+    <string name="health_observe_error">Health Connect settings could not be read. Refresh to retry.</string>
+    <string name="health_access_refresh_error">Health Connect access status could not refresh. Refresh to retry.</string>
+    <string name="health_preference_error">The step import preference could not be saved. Retry to save it.</string>
     <string name="health_privacy_title">How Luma uses steps</string>
     <string name="health_privacy_retention">Luma stores imported daily step totals in its private local database. It does not upload them, use telemetry, or enable automatic backup. Imports run only while the app is open. Turning imports off stops Luma reads and keeps saved history; manage Health Connect access to revoke permission. Successful imports reconcile corrections and removed data in the last seven dates. Older saved totals remain snapshots. Missing data is shown as unavailable, not zero. Clearing Luma’s app storage or uninstalling deletes these local copies without changing Health Connect data.</string>
     <string name="health_close">Close</string>

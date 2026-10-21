@@ -418,6 +418,9 @@
     <string name="usage_sync_error">L’importation a échoué. Les données d’utilisation enregistrées sont inchangées ; réessayez.</string>
     <string name="usage_settings_missing">Impossible d’ouvrir les paramètres d’accès aux données d’utilisation. Recherchez cet accès dans les paramètres Android.</string>
     <string name="usage_action_error">Impossible de terminer cette action. Réessayez.</string>
+    <string name="usage_observe_error">Impossible de lire les réglages d’utilisation des applications. Actualisez pour réessayer.</string>
+    <string name="usage_access_refresh_error">Impossible d’actualiser l’accès aux données d’utilisation d’Android. Actualisez pour réessayer.</string>
+    <string name="usage_preference_error">Impossible d’enregistrer les imports automatiques d’utilisation. Réessayez d’enregistrer ce choix.</string>
     <string name="usage_daily_title">Utilisation quotidienne au premier plan enregistrée</string>
     <string name="usage_daily_explanation">Consultez les sessions d’utilisation des applications ou la durée totale au premier plan pour la journée choisie. Pour les sessions qui passent minuit, seule la durée comprise dans cette journée est comptée. Les applications utilisées simultanément peuvent être comptées séparément ; le total ne correspond pas à la durée pendant laquelle l’écran de l’appareil est allumé.</string>
     <string name="usage_view_timeline">Chronologie</string>
@@ -467,6 +470,9 @@
     <string name="health_refresh">Actualiser l’état de l’accès</string>
     <string name="health_settings_missing">Impossible d’ouvrir l’écran demandé. Recherchez Health Connect dans les paramètres de l’appareil.</string>
     <string name="health_action_error">Impossible de charger ou d’enregistrer les réglages de santé. Actualisez pour réessayer.</string>
+    <string name="health_observe_error">Impossible de lire les réglages de Health Connect. Actualisez pour réessayer.</string>
+    <string name="health_access_refresh_error">Impossible d’actualiser l’accès à Health Connect. Actualisez pour réessayer.</string>
+    <string name="health_preference_error">Impossible d’enregistrer le choix d’import des pas. Réessayez de l’enregistrer.</string>
     <string name="health_privacy_title">Comment Luma utilise les pas</string>
     <string name="health_privacy_retention">Luma conserve les totaux quotidiens de pas importés dans sa base de données locale privée. Luma ne les téléverse pas, n’utilise pas de télémétrie et n’active pas la sauvegarde automatique. Les importations ont lieu uniquement lorsque l’application est ouverte. Leur désactivation interrompt les lectures par Luma et conserve l’historique enregistré ; gérez l’accès à Health Connect pour révoquer l’autorisation. Les importations réussies prennent en compte les corrections et les données supprimées des sept derniers jours. Les totaux plus anciens restent tels qu’ils ont été enregistrés. Les données manquantes sont indiquées comme indisponibles, et non comme nulles. Effacer le stockage de l’application Luma ou la désinstaller supprime ces copies locales sans modifier les données de Health Connect.</string>
     <string name="health_close">Fermer</string>

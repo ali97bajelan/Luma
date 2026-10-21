@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.habit.TimelineFeedItem
@@ -96,7 +97,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
             if (state.loading) item(key = "loading") { CircularProgressIndicator(Modifier.testTag("timeline_loading")) }
             if (state.error != null) item(key = "error") {
                 Column(Modifier.testTag("timeline_error")) {
-                    Text(stringResource(R.string.timeline_error))
+                    AccessibleFeedback(stringResource(R.string.timeline_error), Modifier.testTag("timeline_error_message"))
                     TextButton(onClick = pager::retry) { Text(stringResource(R.string.retry)) }
                 }
             }

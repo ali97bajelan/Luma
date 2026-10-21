@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.usage
 
 import com.luma.lifeos.domain.usage.*
+import com.luma.lifeos.ui.integrations.IntegrationSettingsOperation
 import java.time.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -27,10 +28,10 @@ class UsageSettingsViewModelTest {
     @Test fun failedActionCanRetryAndCancellationDoesNotBecomeAnError() = runTest(dispatcher) {
         val integration = Integration(); val vm = UsageSettingsViewModel(integration); advanceUntilIdle()
         integration.failure = IllegalStateException("Database unavailable")
-        vm.setEnabled(true); advanceUntilIdle(); assertTrue(vm.state.value.actionError)
-        integration.failure = null; vm.setEnabled(true); advanceUntilIdle(); assertFalse(vm.state.value.actionError)
+        vm.setEnabled(true); advanceUntilIdle(); assertTrue(vm.state.value.errors.containsKey(IntegrationSettingsOperation.PREFERENCE))
+        integration.failure = null; vm.setEnabled(true); advanceUntilIdle(); assertFalse(vm.state.value.errors.containsKey(IntegrationSettingsOperation.PREFERENCE))
         integration.failure = CancellationException("Stopped")
-        vm.importNow(); advanceUntilIdle(); assertFalse(vm.state.value.actionError); assertFalse(vm.state.value.busy)
+        vm.importNow(); advanceUntilIdle(); assertFalse(vm.state.value.errors.containsKey(IntegrationSettingsOperation.IMPORT)); assertFalse(vm.state.value.busy)
     }
     @Test fun dailyLoadingMissingDataAndFailuresAreDistinct() = runTest(dispatcher) {
         val day = LocalDate.parse("2026-10-11"); val zone = ZoneOffset.UTC

@@ -81,6 +81,7 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
 @Composable
 fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> Unit,
     onEdit: () -> Unit, onEvent: (LifeEventRecord) -> Unit) {
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     var retry by remember { mutableIntStateOf(0) }
     val observation = remember(repository, placeId, retry) { observePlaceHistory(repository, placeId) }
     val state by observation.collectAsStateWithLifecycle(PlaceHistoryState.Loading)
@@ -131,7 +132,7 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
                         Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(record.event.occurredAt.atZone(zone)
-                                .format(com.luma.lifeos.language.localizedDateTime(FormatStyle.MEDIUM)))
+                                .format(displayTime.dateTime(FormatStyle.MEDIUM)))
                             EventCard(record, zone, onOpen = { onEvent(record) })
                         }
                     }

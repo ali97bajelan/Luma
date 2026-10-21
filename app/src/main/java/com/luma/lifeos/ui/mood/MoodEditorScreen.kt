@@ -1,6 +1,5 @@
 package com.luma.lifeos.ui.mood
 
-import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,7 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -42,8 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.language.emotionDisplayName
-import com.luma.lifeos.language.localizedDate
-import com.luma.lifeos.language.localizedTime
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.ui.common.AccessibleFeedback
@@ -269,12 +266,12 @@ fun MoodEditorScreen(
 private fun MoodRecoveryContent(state: MoodEditorState) {
     val zone = ZoneId.systemDefault()
     val moment = Instant.ofEpochMilli(state.draft.occurredAtMillis).atZone(zone)
-    val use24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val displayTime = rememberDisplayTimePolicy()
     val timeText = if (moment.toLocalDate() == LocalDate.now(zone)) {
-        stringResource(R.string.capture_timestamp_today, moment.format(localizedTime(use24Hour)))
+        stringResource(R.string.capture_timestamp_today, moment.format(displayTime.time()))
     } else {
         stringResource(R.string.capture_timestamp_value,
-            moment.format(localizedDate(FormatStyle.MEDIUM)), moment.format(localizedTime(use24Hour)))
+            moment.format(displayTime.date(FormatStyle.MEDIUM)), moment.format(displayTime.time()))
     }
     Text(stringResource(R.string.mood_recovery_time, timeText), modifier = Modifier.testTag("mood_recovery_time"))
     state.draft.score?.let { score ->
