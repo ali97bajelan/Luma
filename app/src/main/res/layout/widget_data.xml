@@ -86,6 +86,7 @@
 
     <TextView
         android:id="@+id/widget_data_updated"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="@color/widget_text_secondary_light"

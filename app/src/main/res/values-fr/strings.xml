@@ -88,7 +88,7 @@
     <string name="widget_settings_privacy_note">Le lanceur choisit où afficher les widgets et peut conserver une vue en cache. Supprimer un widget ou réinitialiser Luma ne contrôle pas les copies conservées par le lanceur.</string>
     <string name="widget_config_habits_title">Configurer Luma · Habitudes</string>
     <string name="widget_config_tasks_title">Configurer Luma · Tâches</string>
-    <string name="widget_config_summary_description">Le résumé affiche la date et les compteurs. Les noms et les actions restent masqués jusqu’à l’activation des détails.</string>
+    <string name="widget_config_summary_description">Le résumé affiche les compteurs. Les noms et les actions restent masqués jusqu’à l’activation des détails.</string>
     <string name="widget_config_show_details">Afficher les noms et les actions par ligne</string>
     <string name="widget_config_show_details_description">Option désactivée par défaut. Les noms, la progression et les actions seront visibles partout où le lanceur affiche ce widget.</string>
     <string name="widget_config_scroll_resize">Avec les détails activés, faites défiler la liste pour voir la suite. Redimensionnez le widget pour afficher plus de lignes à la fois ; le défilement reste disponible.</string>

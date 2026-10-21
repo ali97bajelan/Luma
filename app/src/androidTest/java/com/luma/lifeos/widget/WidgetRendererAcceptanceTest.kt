@@ -110,7 +110,7 @@ class WidgetRendererAcceptanceTest {
             root.findViewById<android.view.View>(R.id.widget_feedback_actions).visibility)
     }
 
-    @Test fun hiddenCountIncludesItemsOutsideSnapshotPrefixAndUpdateUsesActualDate() {
+    @Test fun hiddenCountIncludesItemsOutsideSnapshotPrefixWithoutSummaryHeader() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val snapshot = sampleSnapshot().copy(total = 7, updatedAt = Instant.parse("2026-10-21T08:00:00Z"))
         val root = WidgetRenderer.render(context, 51, snapshot, false, expandedBounds()).apply(context, null)
@@ -119,8 +119,11 @@ class WidgetRendererAcceptanceTest {
             root.findViewById<View>(R.id.widget_data_open).contentDescription.toString())
         org.junit.Assert.assertTrue(root.findViewById<TextView>(R.id.widget_data_title).text.toString()
             .startsWith(context.getString(R.string.widget_tasks_title)))
-        val update = root.findViewById<TextView>(R.id.widget_data_updated).text.toString()
-        org.junit.Assert.assertTrue(update.contains("21"))
+        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_data_summary).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_data_updated).visibility)
+        val compact = WidgetRenderer.render(context, 51, snapshot, false, bounds(250, 96)).apply(context, null)
+        assertEquals(context.resources.getQuantityString(R.plurals.widget_tasks_total, 7, 7),
+            compact.findViewById<TextView>(R.id.widget_compact_message).text.toString())
     }
 
     @Test fun summaryModeKeepsNamesHiddenAndSaysSoInListNavigation() {
@@ -477,7 +480,7 @@ class WidgetRendererAcceptanceTest {
         }
     }
 
-    @Test fun wd10GroupsScopeAndDatedFreshnessBeforeFeedbackAndRows() {
+    @Test fun populatedWidgetsOmitSummaryAndFreshnessBeforeFeedbackAndRows() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val date = LocalDate.parse("2026-10-19")
         val rows = (0 until 8).map { index ->
@@ -498,11 +501,10 @@ class WidgetRendererAcceptanceTest {
         val freshness = root.findViewById<TextView>(R.id.widget_data_updated)
         val feedback = root.findViewById<View>(R.id.widget_feedback_slot)
         val rowsView = root.findViewById<View>(R.id.widget_data_rows)
-        assertFalse("Scope has no duplicate date", scope.text.toString().contains("Oct 19, 2026"))
-        assertTrue("Freshness names the snapshot date", freshness.text.toString().contains("Oct 19, 2026"))
-        assertTrue("Freshness names the successful update date", freshness.text.toString().contains("Oct 20, 2026"))
-        assertTrue("Freshness preserves the tracking zone", freshness.text.toString().contains("America/Los_Angeles"))
-        assertTrue("Freshness precedes feedback", boundsIn(root, freshness).bottom <= boundsIn(root, feedback).top)
+        assertEquals(View.GONE, scope.visibility)
+        assertEquals(View.GONE, freshness.visibility)
+        val header = root.findViewById<View>(R.id.widget_data_open)
+        assertTrue("Feedback follows the title directly", boundsIn(root, header).bottom <= boundsIn(root, feedback).top)
         assertTrue("Rows follow feedback", boundsIn(root, feedback).bottom <= boundsIn(root, rowsView).top)
     }
 

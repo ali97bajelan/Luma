@@ -33,11 +33,19 @@ internal fun WidgetExample(kind: WidgetKind, details: Boolean = false) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(
-                        stringResource(if (kind == WidgetKind.HABITS) R.string.widget_preview_habits_title else R.string.widget_preview_tasks_title),
-                        Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(if (kind == WidgetKind.HABITS) R.string.widget_preview_habits_title else R.string.widget_preview_tasks_title),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            androidx.compose.ui.res.pluralStringResource(
+                                if (kind == WidgetKind.HABITS) R.plurals.widget_habits_total else R.plurals.widget_tasks_total,
+                                3, 3,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
                         Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
                             Text(stringResource(R.string.widget_capture), style = MaterialTheme.typography.labelLarge)
@@ -51,12 +59,6 @@ internal fun WidgetExample(kind: WidgetKind, details: Boolean = false) {
                         )
                     }
                 }
-                val summary = if (kind == WidgetKind.HABITS) {
-                    stringResource(R.string.widget_habits_summary, 1, 3)
-                } else {
-                    androidx.compose.ui.res.pluralStringResource(R.plurals.widget_tasks_summary, 3, 3)
-                }
-                Text("${stringResource(R.string.widget_preview_date)} · $summary", style = MaterialTheme.typography.bodyMedium)
                 if (details) {
                     val rowNames = if (kind == WidgetKind.HABITS) {
                         listOf(R.string.widget_preview_habit, R.string.widget_preview_habit_second)
@@ -80,7 +82,6 @@ internal fun WidgetExample(kind: WidgetKind, details: Boolean = false) {
                     }
                     Text(stringResource(R.string.widget_scroll_for_more), style = MaterialTheme.typography.bodySmall)
                 }
-                Text(stringResource(R.string.widget_data_updated_time, "13:07"), style = MaterialTheme.typography.bodySmall)
                 if (!details) {
                     Text(stringResource(R.string.widget_settings_title_navigation_hint), style = MaterialTheme.typography.bodySmall)
                 }

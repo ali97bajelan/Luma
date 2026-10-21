@@ -39,6 +39,11 @@ internal object WidgetCompactRenderer {
                 WidgetOutcome.MISSING -> R.string.widget_feedback_missing
                 WidgetOutcome.INVALID -> R.string.widget_feedback_unavailable
             })
+            snapshot.total > 0 -> appContext.resources.getQuantityString(
+                if (kind == WidgetKind.HABITS) R.plurals.widget_habits_total else R.plurals.widget_tasks_total,
+                snapshot.total,
+                snapshot.total,
+            )
             else -> summary
         }
         val emptyLibraryAction = if (snapshot?.hasAnyItems == false && !failure && feedback == null) {
@@ -87,16 +92,6 @@ internal object WidgetCompactRenderer {
             appContext.getString(capture.first), 14f) / density).toInt() + 12)
         val locale = com.luma.lifeos.language.AppLanguages.current(appContext).locale
         val bidi = android.text.BidiFormatter.getInstance(locale)
-        val shortDate = snapshot?.let {
-            bidi.unicodeWrap(java.time.format.DateTimeFormatter
-                .ofLocalizedDate(java.time.format.FormatStyle.SHORT)
-                .withLocale(locale).format(it.date)) +
-                if (it.zone != java.time.ZoneId.systemDefault()) {
-                    val offset = it.zone.rules.getOffset(it.updatedAt)
-                    val zoneText = if (offset == java.time.ZoneOffset.UTC) "UTC" else "UTC$offset"
-                    " · " + bidi.unicodeWrap(zoneText)
-                } else ""
-        }.orEmpty()
         val shortMessage = when {
             loadingKind != null -> appContext.getString(R.string.widget_loading_short)
             failure -> appContext.getString(R.string.widget_compact_read_error)
@@ -108,7 +103,7 @@ internal object WidgetCompactRenderer {
                 WidgetOutcome.MISSING, WidgetOutcome.INVALID -> appContext.getString(R.string.widget_compact_missing)
                 else -> fullMessage
             }
-            else -> shortDate + "\n" + bidi.unicodeWrap(if (kind == WidgetKind.HABITS)
+            else -> bidi.unicodeWrap(if (kind == WidgetKind.HABITS)
                 java.lang.String.format(locale, "%d / %d", snapshot.completed ?: 0, snapshot.total)
                 else java.lang.String.format(locale, "%d", snapshot.total))
         }
@@ -122,9 +117,7 @@ internal object WidgetCompactRenderer {
         }
         fun fitsVertically(text: String): Boolean = WidgetRenderer.measureTextHeight(appContext,
             text, (innerWidth * density).toInt(), 14f) + 8 + primaryHeight <= heightDp - 24
-        // Retain date/zone before optional counts and freshness at the tightest bounds.
-        val alternatives = listOf(fullMessage, shortMessage) +
-            if (feedback == null && snapshot != null && !failure) listOf(shortDate) else emptyList()
+        val alternatives = listOf(fullMessage, shortMessage)
         val message = alternatives.firstOrNull { fitsHorizontally(it) || fitsVertically(it) } ?: shortMessage
         val horizontal = fitsHorizontally(message)
         val views = RemoteViews(context.packageName,

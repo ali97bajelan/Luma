@@ -50,13 +50,6 @@
             android:src="@drawable/ic_widget_refresh" />
     </LinearLayout>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_preview_habits_summary"
-        android:textColor="@color/widget_on_primary"
-        android:textSize="14sp" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -107,13 +100,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/widget_scroll_for_more"
-        android:textColor="@color/widget_on_primary"
-        android:textSize="12sp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_preview_updated"
         android:textColor="@color/widget_on_primary"
         android:textSize="12sp" />
 

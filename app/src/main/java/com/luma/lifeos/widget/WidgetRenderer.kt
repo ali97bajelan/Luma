@@ -164,7 +164,8 @@ object WidgetRenderer {
                 WidgetIntents.collectionTemplate(context, widgetId),
             )
         }
-        views.setViewVisibility(R.id.widget_data_updated, if (snapshot == null || failure) View.GONE else View.VISIBLE)
+        views.setViewVisibility(R.id.widget_data_summary, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_data_updated, View.GONE)
         views.setInt(R.id.widget_data_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
         views.setInt(R.id.widget_data_root, "setBackgroundResource", widgetBackground)
         views.setTextColor(R.id.widget_data_title, textColor)
@@ -238,17 +239,6 @@ object WidgetRenderer {
         utilityBackground: Int,
         rowActionBackground: Int,
     ): RemoteViews {
-        val locale = AppLanguages.current(appContext).locale
-        val snapshotDate = bidiWrapped(appContext,
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(snapshot.date))
-        val deviceZone = ZoneId.systemDefault()
-        val zoneSuffix = if (snapshot.zone != deviceZone) {
-            appContext.getString(R.string.widget_data_tracking_zone,
-                BidiFormatter.getInstance(locale).unicodeWrap(snapshot.zone.id.takeUnless { it == "Z" } ?: "UTC"))
-        } else {
-            ""
-        }
-
         val summary = when (snapshot.instance.kind) {
             WidgetKind.HABITS -> when {
                 !snapshot.hasAnyItems -> appContext.getString(R.string.widget_habits_empty_library)
@@ -271,20 +261,8 @@ object WidgetRenderer {
         }
         val scopeText = summary
         views.setTextViewText(R.id.widget_data_summary, bidiWrapped(appContext, scopeText))
-        val time = bidiWrapped(appContext, DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)
-            .format(snapshot.updatedAt.atZone(snapshot.zone)))
-        val updatedDate = snapshot.updatedAt.atZone(snapshot.zone).toLocalDate()
-        val updatedText = if (updatedDate == snapshot.date) {
-            appContext.getString(R.string.widget_data_fresh_same, snapshotDate, time, zoneSuffix)
-        } else {
-            appContext.getString(R.string.widget_data_fresh_different,
-                snapshotDate,
-                bidiWrapped(appContext,
-                    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(updatedDate)),
-                time,
-                zoneSuffix)
-        }
-        views.setTextViewText(R.id.widget_data_updated, updatedText)
+        val showEmptyMessage = snapshot.total == 0
+        views.setViewVisibility(R.id.widget_data_summary, if (showEmptyMessage) View.VISIBLE else View.GONE)
         val feedbackText = snapshot.feedback?.let { feedbackText(appContext, it.outcome, snapshot.instance.kind) }.orEmpty()
         val inlineFeedback = useInlineFeedback(appContext, widthDp, feedbackText, snapshot.feedback)
 
@@ -302,9 +280,11 @@ object WidgetRenderer {
         val fontScale = appContext.resources.configuration.fontScale
         val header = headerPlan(appContext, snapshot.instance.kind, widthDp, snapshot.total)
         val emptyActionHeight = if (!snapshot.hasAnyItems) 52 else 0
+        val emptyMessageHeight = if (showEmptyMessage) {
+            measureTextHeight(appContext, scopeText, textWidthPx, 14f) + 4
+        } else 0
         val reserved = 24 + header.heightDp +
-            measureTextHeight(appContext, scopeText, textWidthPx, 14f) + 4 +
-            measureTextHeight(appContext, updatedText, textWidthPx, 12f) +
+            emptyMessageHeight +
             8 +
             emptyActionHeight +
             (snapshot.feedback?.let {
@@ -314,7 +294,7 @@ object WidgetRenderer {
             } ?: 0)
         if (!header.actionsFit || WidgetLayoutPolicy.needsCompactShell(heightDp, reserved)) {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
-                "$scopeText\n$updatedText")
+                scopeText)
         }
         if (!snapshot.hasAnyItems) {
             val (label, description, destination) = when (snapshot.instance.kind) {
@@ -358,7 +338,7 @@ object WidgetRenderer {
         }
         if (measurements.any { !it.fitsWidth }) {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
-                "$scopeText\n$updatedText")
+                scopeText)
         }
         val sampledHeights = measurements.map { it.heightDp }.ifEmpty {
             if (snapshot.instance.showDetails && snapshot.total > 0) {
@@ -386,7 +366,7 @@ object WidgetRenderer {
         val capacity = if (showScrollHint) capacityWithHint else capacityWithoutHint
         if (snapshot.instance.showDetails && snapshot.total > 0 && capacity <= 0) {
             return compactState(context, appContext, widgetId, snapshot, false, widthDp, heightDp,
-                "$scopeText\n$updatedText")
+                scopeText)
         }
         views.setContentDescription(
             R.id.widget_data_rows,
