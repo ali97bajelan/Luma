@@ -1,365 +1,307 @@
 <!DOCTYPE html>
 
 <html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "outline": "#8b726a", "on-secondary": "#ffffff", "background": "#fff8f4", "tertiary-fixed-dim": "#eabf8a", "on-background": "#1e1b18", "on-tertiary": "#ffffff", "inverse-primary": "#ffb59e", "surface-bright": "#fff8f4", "inverse-on-surface": "#f7efea", "inverse-surface": "#33302d", "secondary": "#526350", "on-primary-container": "#fff1ed", "on-error": "#ffffff", "primary-fixed-dim": "#ffb59e", "tertiary-container": "#8b693b", "error": "#ba1a1a", "primary": "#993612", "on-tertiary-fixed": "#2a1800", "error-container": "#ffdad6", "surface-container-highest": "#e8e1dc", "surface-container-low": "#faf2ed", "surface-container-lowest": "#ffffff", "on-surface-variant": "#57423b", "primary-fixed": "#ffdbd0", "secondary-container": "#d2e5cd", "on-primary-fixed-variant": "#832602", "outline-variant": "#dec0b7", "surface-container": "#f4ece7", "on-secondary-container": "#566754", "on-secondary-fixed-variant": "#3b4b39", "tertiary-fixed": "#ffddb5", "surface-tint": "#a43d19", "surface-variant": "#e8e1dc", "tertiary": "#705125", "secondary-fixed-dim": "#b9ccb5", "secondary-fixed": "#d5e8d0", "primary-container": "#ba4d28", "on-error-container": "#93000a", "surface": "#fff8f4", "on-tertiary-container": "#fff1e5", "on-tertiary-fixed-variant": "#5e4117", "on-primary-fixed": "#3a0b00", "on-secondary-fixed": "#101f10", "surface-dim": "#e0d9d4", "on-primary": "#ffffff", "on-surface": "#1e1b18", "surface-container-high": "#eee7e2" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "margin-tablet": "2rem", "space-sm": "0.5rem", "gutter": "1rem", "margin-desktop": "3rem", "gutter-desktop": "2rem", "space-lg": "1.5rem", "space-xs": "0.25rem", "margin": "1rem", "space-xl": "2.25rem", "gutter-tablet": "1.5rem", "space-md": "1rem" }, "fontFamily": { "label-sm": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "title-lg": ["Plus Jakarta Sans"], "display-lg-mobile": ["Newsreader"], "body-lg": ["Plus Jakarta Sans"], "display-lg": ["Newsreader"], "headline-lg": ["Newsreader"], "title-sm": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "headline-md": ["Newsreader"], "headline-sm": ["Newsreader"], "title-md": ["Plus Jakarta Sans"] }, "fontSize": { "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "title-lg": ["20px", { "lineHeight": "26px", "fontWeight": "600" }], "display-lg-mobile": ["40px", { "lineHeight": "48px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }], "display-lg": ["56px", { "lineHeight": "64px", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "500" }], "title-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "headline-md": ["26px", { "lineHeight": "34px", "fontWeight": "500" }], "headline-sm": ["22px", { "lineHeight": "28px", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }] } } } }</script></head><body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 px-margin flex items-center justify-between gap-space-sm"><div class="flex flex-col justify-center min-w-0"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">lock</span><span class="font-label-sm text-label-sm text-secondary tracking-wide uppercase">Encrypted on-device</span></div><h1 class="font-headline-sm text-headline-sm text-on-surface truncate mt-0.5 tracking-tight">Review</h1></div><div class="flex items-center gap-space-xs shrink-0"><button aria-label="Search and Filter" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[24px]">tune</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-20 pb-28 px-margin bg-surface"><div class="flex flex-col w-full pb-6 space-y-4">
-<!-- Period Navigation Bar -->
-<div class="w-full bg-surface-container-low rounded-lg p-space-md flex flex-col gap-space-xs shadow-sm">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "outline": "#8b726a", "on-secondary": "#ffffff", "background": "#fff8f4", "tertiary-fixed-dim": "#eabf8a", "on-background": "#1e1b18", "on-tertiary": "#ffffff", "inverse-primary": "#ffb59e", "surface-bright": "#fff8f4", "inverse-on-surface": "#f7efea", "inverse-surface": "#33302d", "secondary": "#526350", "on-primary-container": "#fff1ed", "on-error": "#ffffff", "primary-fixed-dim": "#ffb59e", "tertiary-container": "#8b693b", "error": "#ba1a1a", "primary": "#993612", "on-tertiary-fixed": "#2a1800", "error-container": "#ffdad6", "surface-container-highest": "#e8e1dc", "surface-container-low": "#faf2ed", "surface-container-lowest": "#ffffff", "on-surface-variant": "#57423b", "primary-fixed": "#ffdbd0", "secondary-container": "#d2e5cd", "on-primary-fixed-variant": "#832602", "outline-variant": "#dec0b7", "surface-container": "#f4ece7", "on-secondary-container": "#566754", "on-secondary-fixed-variant": "#3b4b39", "tertiary-fixed": "#ffddb5", "surface-tint": "#a43d19", "surface-variant": "#e8e1dc", "tertiary": "#705125", "secondary-fixed-dim": "#b9ccb5", "secondary-fixed": "#d5e8d0", "primary-container": "#ba4d28", "on-error-container": "#93000a", "surface": "#fff8f4", "on-tertiary-container": "#fff1e5", "on-tertiary-fixed-variant": "#5e4117", "on-primary-fixed": "#3a0b00", "on-secondary-fixed": "#101f10", "surface-dim": "#e0d9d4", "on-primary": "#ffffff", "on-surface": "#1e1b18", "surface-container-high": "#eee7e2" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "margin-tablet": "2rem", "space-sm": "0.5rem", "gutter": "1rem", "margin-desktop": "3rem", "gutter-desktop": "2rem", "space-lg": "1.5rem", "space-xs": "0.25rem", "margin": "1rem", "space-xl": "2.25rem", "gutter-tablet": "1.5rem", "space-md": "1rem" }, "fontFamily": { "label-sm": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "title-lg": ["Plus Jakarta Sans"], "display-lg-mobile": ["Newsreader"], "body-lg": ["Plus Jakarta Sans"], "display-lg": ["Newsreader"], "headline-lg": ["Newsreader"], "title-sm": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "headline-md": ["Newsreader"], "headline-sm": ["Newsreader"], "title-md": ["Plus Jakarta Sans"] }, "fontSize": { "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "title-lg": ["20px", { "lineHeight": "26px", "fontWeight": "600" }], "display-lg-mobile": ["40px", { "lineHeight": "48px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }], "display-lg": ["56px", { "lineHeight": "64px", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "500" }], "title-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "headline-md": ["26px", { "lineHeight": "34px", "fontWeight": "500" }], "headline-sm": ["22px", { "lineHeight": "28px", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }] } } } }</script></head><body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 px-margin flex items-center justify-between gap-space-sm"><div class="flex flex-col justify-center min-w-0"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">lock</span><span class="font-label-sm text-label-sm text-secondary tracking-wide uppercase">Encrypted on-device</span></div><h1 class="font-headline-sm text-headline-sm text-on-surface truncate mt-0.5 tracking-tight">Timeline</h1></div><div class="flex items-center gap-space-xs shrink-0"><button aria-label="Search and Filter" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[24px]">tune</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-20 pb-28 px-margin bg-surface"><div class="flex flex-col w-full gap-space-md">
+<!-- Date Navigation & Summary Ribbon -->
+<div class="flex flex-col gap-space-sm bg-surface-container-low p-space-md rounded-lg shadow-sm">
+<!-- Date Selector Bar -->
 <div class="flex items-center justify-between">
-<button aria-label="Previous week" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-transform active:scale-95">
+<button aria-label="Previous day" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all">
 <span class="material-symbols-outlined text-[20px]">chevron_left</span>
 </button>
-<div class="flex flex-col items-center text-center">
 <div class="flex items-center gap-space-xs">
-<span class="font-headline-sm text-headline-sm text-on-surface">Oct 19 – 22, 2026</span>
-<button aria-label="Period details" class="text-on-surface-variant hover:text-primary transition-colors">
-<span class="material-symbols-outlined text-[18px]">info</span>
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+<button class="font-headline-sm text-headline-sm text-on-surface hover:text-primary transition-colors flex items-center gap-1">
+<span>Oct 22, 2026</span>
+<span class="material-symbols-outlined text-[16px] text-outline">arrow_drop_down</span>
 </button>
 </div>
-<div class="mt-1 flex items-center gap-1.5">
-<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">
-<span class="w-1.5 h-1.5 rounded-full bg-secondary mr-1 animate-pulse"></span>
-            Week in progress
-          </span>
-</div>
-</div>
-<button aria-label="Next week" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant/40 cursor-not-allowed" disabled="">
+<div class="flex items-center gap-1">
+<button class="px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md hover:bg-secondary-fixed transition-colors">
+          Today
+        </button>
+<button aria-label="Next day" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all">
 <span class="material-symbols-outlined text-[20px]">chevron_right</span>
 </button>
 </div>
-<div class="text-center font-label-md text-label-md text-on-surface-variant/80 mt-1">
-      Compared with <span class="font-medium text-on-surface">Oct 12 – 15, 2026</span>
 </div>
+<!-- Metadata Counts & View Options -->
+<div class="flex items-center justify-between pt-space-xs px-1">
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="font-body-sm text-body-sm">1 entry</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-body-sm text-body-sm font-medium text-secondary">3 habit logs</span>
 </div>
-<!-- Horizontal Scrollable Segmented Filters -->
-<div class="w-full overflow-x-auto no-scrollbar py-0.5 -mx-margin px-margin flex items-center gap-space-xs">
-<button class="filter-tab active px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg shrink-0 transition-all flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-      Overview
-    </button>
-<button class="filter-tab px-4 py-2 rounded-full bg-surface-container text-on-surface-variant font-label-lg text-label-lg shrink-0 transition-all hover:bg-surface-container-high flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px]">view_agenda</span>
-      Sections
-    </button>
-<button class="filter-tab px-4 py-2 rounded-full bg-surface-container text-on-surface-variant font-label-lg text-label-lg shrink-0 transition-all hover:bg-surface-container-high flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px]">mood</span>
-      Mood
-    </button>
-<button class="filter-tab px-4 py-2 rounded-full bg-surface-container text-on-surface-variant font-label-lg text-label-lg shrink-0 transition-all hover:bg-surface-container-high flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px]">bookmark_heart</span>
-      Memories
-    </button>
-<button class="filter-tab px-4 py-2 rounded-full bg-surface-container text-on-surface-variant font-label-lg text-label-lg shrink-0 transition-all hover:bg-surface-container-high flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px]">group_work</span>
-      People &amp; Places
-    </button>
-</div>
-<!-- Week at a Glance Card -->
-<section class="w-full bg-surface-container-low rounded-lg p-space-lg flex flex-col gap-space-md">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
-<span class="material-symbols-outlined text-[18px]">auto_stories</span>
-</div>
-<h2 class="font-headline-sm text-headline-sm text-on-surface">Week at a glance</h2>
-</div>
-<span class="font-label-sm text-label-sm text-secondary bg-secondary-container px-2.5 py-1 rounded-full font-semibold">4 active days</span>
-</div>
-<!-- Editorial Count Line -->
-<div class="flex items-baseline gap-2">
-<span class="font-display-lg-mobile text-display-lg-mobile text-primary tracking-tight">4</span>
-<span class="font-headline-sm text-headline-sm text-on-surface-variant">entries</span>
-<span class="text-outline-variant font-headline-sm">·</span>
-<span class="font-display-lg-mobile text-display-lg-mobile text-secondary tracking-tight">13</span>
-<span class="font-headline-sm text-headline-sm text-on-surface-variant">habit logs</span>
-</div>
-<div class="h-px bg-surface-container-highest/80 my-0.5"></div>
-<!-- Habits Subsection -->
-<div class="flex flex-col gap-1.5">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-secondary text-[18px]">task_alt</span>
-<span class="font-title-sm text-title-sm text-on-surface">Habits this week</span>
-</div>
-<span class="font-label-md text-label-md text-on-surface-variant">100% streak</span>
-</div>
-<p class="font-body-md text-body-md text-on-surface-variant">
-<span class="font-medium text-on-surface">13 repetitions</span> logged across 13 scheduled habit-days
-      </p>
-<!-- Mini weekly habit tracker pips -->
-<div class="grid grid-cols-7 gap-1.5 mt-1 py-1">
-<div class="flex flex-col items-center gap-1">
-<span class="font-label-sm text-[10px] text-on-surface-variant">M</span>
-<div class="w-full h-2 rounded-full bg-secondary"></div>
-</div>
-<div class="flex flex-col items-center gap-1">
-<span class="font-label-sm text-[10px] text-on-surface-variant">T</span>
-<div class="w-full h-2 rounded-full bg-secondary"></div>
-</div>
-<div class="flex flex-col items-center gap-1">
-<span class="font-label-sm text-[10px] text-on-surface-variant">W</span>
-<div class="w-full h-2 rounded-full bg-secondary"></div>
-</div>
-<div class="flex flex-col items-center gap-1">
-<span class="font-label-sm text-[10px] text-on-surface-variant">T</span>
-<div class="w-full h-2 rounded-full bg-secondary"></div>
-</div>
-<div class="flex flex-col items-center gap-1 opacity-40">
-<span class="font-label-sm text-[10px] text-on-surface-variant">F</span>
-<div class="w-full h-2 rounded-full bg-surface-container-highest"></div>
-</div>
-<div class="flex flex-col items-center gap-1 opacity-40">
-<span class="font-label-sm text-[10px] text-on-surface-variant">S</span>
-<div class="w-full h-2 rounded-full bg-surface-container-highest"></div>
-</div>
-<div class="flex flex-col items-center gap-1 opacity-40">
-<span class="font-label-sm text-[10px] text-on-surface-variant">S</span>
-<div class="w-full h-2 rounded-full bg-surface-container-highest"></div>
-</div>
-</div>
-<div class="pt-1">
-<button class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-title-sm text-title-sm transition-colors">
-          View habits
-          <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-primary hover:text-primary-container transition-colors py-0.5 px-2 rounded-full hover:bg-primary-fixed/20" id="viewOptionsBtn">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+<span>View options</span>
 </button>
 </div>
 </div>
-<!-- Mood Subsection (Tactile prompt invitation) -->
-<div class="bg-surface-container rounded-lg p-space-md flex flex-col gap-2">
+<!-- Search & Filter Quick Bar -->
+<div class="flex items-center gap-space-xs overflow-x-auto pb-1 no-scrollbar">
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check</span>
+<span>All events</span>
+</button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[15px]">psychology</span>
+<span>Reflections</span>
+</button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[15px]">spa</span>
+<span>Habits</span>
+</button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[15px]">vital_signs</span>
+<span>Health</span>
+</button>
+</div>
+<!-- Chronological Timeline Stream -->
+<div class="relative flex flex-col gap-space-md mt-1">
+<!-- Gentle Ambient Timeline Stem (Line) -->
+<div class="absolute left-6 top-6 bottom-6 w-0.5 bg-surface-container-high -z-0"></div>
+<!-- ENTRY CARD 1: Habit Log - Neck Mobility (13:59) -->
+<div class="relative z-10 flex items-start gap-space-sm group">
+<!-- Glyph Node -->
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">self_improvement</span>
+</div>
+<!-- Card Surface -->
+<div class="flex-1 bg-surface-container-low hover:bg-surface-container transition-all rounded-lg p-space-md flex flex-col gap-1 cursor-pointer">
 <div class="flex items-center justify-between">
-<div class="flex items-center gap-1.5 text-on-surface">
-<span class="material-symbols-outlined text-[18px] text-tertiary">sentiment_content</span>
-<span class="font-title-sm text-title-sm">Mood reflections</span>
+<div class="flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider">Habit</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Neck Stretch</span>
 </div>
-<span class="font-label-sm text-label-sm text-on-surface-variant">0 this week</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">13:59</span>
 </div>
-<p class="font-body-md text-body-md text-on-surface-variant italic font-headline-sm">
-        "No check-ins saved for this week yet. Pausing to name your state of mind can bring clarity."
-      </p>
-<div>
-<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md transition-all active:scale-95 shadow-sm hover:bg-tertiary-fixed-dim">
-<span class="material-symbols-outlined text-[16px]">add_reaction</span>
-          Check in now
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight capitalize">neck</h3>
+<div class="flex items-center gap-2 pt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+            One habit log · posture break
+          </span>
+<span class="ml-auto px-2 py-0.5 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm">
+            Completed
+          </span>
+</div>
+</div>
+</div>
+<!-- ENTRY CARD 2: Habit Log - Water (13:59) -->
+<div class="relative z-10 flex items-start gap-space-sm group">
+<!-- Glyph Node -->
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+</div>
+<!-- Card Surface -->
+<div class="flex-1 bg-surface-container-low hover:bg-surface-container transition-all rounded-lg p-space-md flex flex-col gap-1 cursor-pointer">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">Hydration</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">250 ml</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">13:59</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Water</h3>
+<div class="flex items-center justify-between pt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant">One habit log · time</span>
+<div class="flex items-center gap-1 text-tertiary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">local_cafe</span>
+<span>Glass 4 of 6</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ENTRY CARD 3: Journal Moment - Tehran Garden (Afternoon Reflection) -->
+<div class="relative z-10 flex items-start gap-space-sm group">
+<!-- Glyph Node -->
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+</div>
+<!-- Card Surface -->
+<div class="flex-1 bg-surface-container-low hover:bg-surface-container transition-all rounded-lg p-space-md flex flex-col gap-2 cursor-pointer">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Reflection</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px] text-primary">location_on</span>
+              Tehran
+            </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">12:15</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-serif italic">Afternoon quiet in the courtyard</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">
+          Pomegranate leaves catching the pale autumn sun. Stepped outside after typing for three solid hours; the air carries a crisp scent of woodsmoke and dried mint.
+        </p>
+<!-- Visual Media Snapshot -->
+<div class="w-full h-28 rounded-lg overflow-hidden relative mt-1 bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="A tranquil courtyard garden in autumn, warm sunlight filtering through leafy pomegranate trees onto weathered terracotta bricks, quiet serene botanical mood in soft earth tones of sage green and burnt sienna." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWzJmmaSi9PnF_Jhh9Nepd43y8nNZ5Caqc97WOp5Oben54yyfQsXGKlNlsnk1rAZKoQFARbNoksy_vg65YjVeIYKy7AT1GoSxakOudv5hv_s9f0lPZ_hAqWfnDIP4vxfG-8dZ4tzXYBT56hclJ4kH7H-CREK49amHkOGoAwiwS5YyIel1llH-cvQi8JanUm7PpQIJbmSCEsjUhncDo8NcSpJaYV85bVMzfcXac17eD67iwuDL33v1Vpw"/>
+<div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-md flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[12px]">lock</span>
+<span class="font-label-sm text-label-sm">Private snapshot</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ENTRY CARD 4: Habit Log - Water (09:38) -->
+<div class="relative z-10 flex items-start gap-space-sm group">
+<!-- Glyph Node -->
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+</div>
+<!-- Card Surface -->
+<div class="flex-1 bg-surface-container-low hover:bg-surface-container transition-all rounded-lg p-space-md flex flex-col gap-1 cursor-pointer">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">Hydration</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Morning Wake-up</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">09:38</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Water</h3>
+<div class="flex items-center justify-between pt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant">One habit log · time</span>
+<span class="font-label-sm text-label-sm text-secondary font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">check</span> First hydration
+          </span>
+</div>
+</div>
+</div>
+<!-- ENTRY CARD 5: Activity Telemetry - Steps (00:00) -->
+<div class="relative z-10 flex items-start gap-space-sm group">
+<!-- Glyph Node -->
+<div class="w-12 h-12 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]">directions_walk</span>
+</div>
+<!-- Card Surface -->
+<div class="flex-1 bg-surface-container-low hover:bg-surface-container transition-all rounded-lg p-space-md flex flex-col gap-2 cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Activity</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">00:00</span>
+</div>
+<div class="flex items-baseline justify-between">
+<div class="flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Steps: 36 count</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Midnight cadence baseline</span>
+</div>
+<!-- Micro Sparkline SVG -->
+<div class="w-16 h-8 flex items-end justify-between px-1">
+<div class="w-1.5 h-2 bg-primary/20 rounded-full"></div>
+<div class="w-1.5 h-3 bg-primary/30 rounded-full"></div>
+<div class="w-1.5 h-6 bg-primary/60 rounded-full"></div>
+<div class="w-1.5 h-4 bg-primary/40 rounded-full"></div>
+<div class="w-1.5 h-2 bg-primary/20 rounded-full"></div>
+</div>
+</div>
+<!-- Integration Sync Tag -->
+<div class="flex items-center gap-1.5 pt-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Synced with <strong class="text-on-surface font-semibold">Health Connect</strong></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Ambient Micro Quote / Delight Footer Card -->
+<div class="bg-surface-container/60 rounded-lg p-space-md flex items-center gap-space-sm mt-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center shrink-0 text-on-primary-fixed">
+<span class="material-symbols-outlined text-[16px]">nature_people</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant italic">
+      "Small rhythms weave the tapestry of tranquil days."
+    </p>
+</div>
+<!-- Expressive Material 3 Quick Capture FAB Anchor -->
+<div class="sticky bottom-4 right-0 self-end z-40 mt-space-sm">
+<button class="flex items-center gap-2 pl-4 pr-5 py-3.5 rounded-full bg-secondary text-on-secondary shadow-lg hover:shadow-xl active:scale-95 transition-all" id="quickCaptureBtn">
+<span class="material-symbols-outlined text-[22px]">add</span>
+<span class="font-title-sm text-title-sm tracking-wide">Quick Capture</span>
+</button>
+</div>
+<!-- Interactive Quick Capture Modal Sheet -->
+<div class="hidden fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm flex items-end justify-center p-space-sm" id="quickCaptureSheet">
+<div class="w-full max-w-lg bg-surface rounded-lg p-space-md shadow-2xl flex flex-col gap-space-md transition-all">
+<div class="flex items-center justify-between pb-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Capture Moment</h4>
+<button class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant" id="closeSheetBtn">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors">
+<span class="w-10 h-10 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">water_drop</span>
+</span>
+<span class="font-label-md text-label-md text-on-surface">Water</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors">
+<span class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">self_improvement</span>
+</span>
+<span class="font-label-md text-label-md text-on-surface">Stretch</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors">
+<span class="w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">edit_note</span>
+</span>
+<span class="font-label-md text-label-md text-on-surface">Thought</span>
+</button>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span> Encrypted automatically
+        </span>
+<button class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface font-label-md text-label-md" id="dismissSheetBtn">
+          Cancel
         </button>
 </div>
 </div>
-<!-- Linked Entities Meta -->
-<div class="flex items-center justify-between text-on-surface-variant pt-1 font-label-md text-label-md">
-<div class="flex items-center gap-1">
-<span class="material-symbols-outlined text-[16px]">person_outline</span>
-<span>Linked people: <strong class="text-on-surface font-semibold">0</strong></span>
-</div>
-<span class="text-outline-variant">·</span>
-<div class="flex items-center gap-1">
-<span class="material-symbols-outlined text-[16px]">location_on</span>
-<span>Linked places: <strong class="text-on-surface font-semibold">0</strong></span>
-</div>
-</div>
-</section>
-<!-- Saved Signals Card (Health Connect & System Telemetry) -->
-<section class="w-full bg-surface-container-low rounded-lg p-space-lg flex flex-col gap-space-md">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
-<span class="material-symbols-outlined text-[18px]">vital_signs</span>
-</div>
-<h2 class="font-headline-sm text-headline-sm text-on-surface">Saved signals</h2>
-</div>
-<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm bg-surface-container px-2 py-0.5 rounded-full">
-<span class="material-symbols-outlined text-[14px] text-secondary">sync</span>
-        Health Connect
-      </div>
-</div>
-<!-- App Usage Telemetry -->
-<div class="bg-surface-container rounded-lg p-space-md flex flex-col gap-2">
-<div class="flex items-center justify-between">
-<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Saved screen engagement</span>
-<span class="font-label-sm text-label-sm text-secondary font-medium">4 of 4 dates</span>
-</div>
-<div class="flex items-baseline gap-2">
-<span class="font-headline-lg text-headline-lg text-on-surface">16 <span class="font-body-md text-body-md text-on-surface-variant">h</span> 41 <span class="font-body-md text-body-md text-on-surface-variant">min</span></span>
-</div>
-<!-- Progress Bar Graphic -->
-<div class="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden flex">
-<div class="bg-primary h-full rounded-full" style="width: 65%;"></div>
-</div>
-<div class="flex justify-between items-center text-on-surface-variant font-label-sm text-label-sm">
-<span>Coverage: Complete</span>
-<span>Daily avg ~4h 10m</span>
-</div>
-</div>
-<!-- Physical Activity Block -->
-<div class="flex items-start justify-between bg-surface-container rounded-lg p-space-md">
-<div class="flex flex-col gap-1">
-<div class="flex items-center gap-1 text-on-surface-variant font-label-md text-label-md">
-<span class="material-symbols-outlined text-[16px] text-primary">directions_walk</span>
-          Activity · Health Connect
-        </div>
-<div class="flex items-baseline gap-1.5 mt-0.5">
-<span class="font-headline-md text-headline-md text-on-surface">12,639</span>
-<span class="font-label-md text-label-md text-on-surface-variant">steps</span>
-</div>
-<span class="font-label-sm text-label-sm text-on-surface-variant">4 continuous samples recorded</span>
-</div>
-<!-- Sparkline Inline SVG -->
-<div class="w-24 h-12 flex items-end justify-center">
-<svg class="w-full h-10 overflow-visible" fill="none" viewbox="0 0 100 40" xmlns="http://www.w3.org/2000/svg">
-<path d="M0 32 L25 24 L50 35 L75 12 L100 18" stroke="#ba4d28" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
-<circle cx="0" cy="32" fill="#ba4d28" r="2.5"></circle>
-<circle cx="25" cy="24" fill="#ba4d28" r="2.5"></circle>
-<circle cx="50" cy="35" fill="#ba4d28" r="2.5"></circle>
-<circle cx="75" cy="12" fill="#993612" r="3.5"></circle>
-<circle cx="100" cy="18" fill="#ba4d28" r="2.5"></circle>
-</svg>
-</div>
-</div>
-<div>
-<button class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-title-sm text-title-sm transition-colors">
-        View this period's sources
-        <span class="material-symbols-outlined text-[16px]">open_in_new</span>
-</button>
-</div>
-</section>
-<!-- Comparative Period Card (Saved Entries & Journals) -->
-<section class="w-full bg-surface-container-low rounded-lg p-space-lg flex flex-col gap-space-md">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
-<span class="material-symbols-outlined text-[18px]">compare_arrows</span>
-</div>
-<h2 class="font-headline-sm text-headline-sm text-on-surface">Saved entries &amp; archives</h2>
-</div>
-<button class="text-on-surface-variant hover:text-primary transition-colors font-title-sm text-title-sm">
-        Sources
-      </button>
-</div>
-<!-- Comparative 2-Column Grid -->
-<div class="grid grid-cols-2 gap-3">
-<!-- Entries Metric Tile -->
-<div class="bg-surface-container rounded-lg p-3.5 flex flex-col justify-between">
-<div>
-<span class="font-label-md text-label-md text-on-surface-variant block mb-1">Journal Notes</span>
-<div class="flex items-baseline gap-2">
-<span class="font-headline-lg text-headline-lg text-on-surface">4</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">vs 5 prev</span>
-</div>
-</div>
-<div class="mt-2.5 flex items-center gap-1 text-on-error-container bg-error-container/60 w-fit px-2 py-0.5 rounded-full font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]">trending_down</span>
-<span>-1 entry</span>
-</div>
-</div>
-<!-- Journals Metric Tile -->
-<div class="bg-surface-container rounded-lg p-3.5 flex flex-col justify-between">
-<div>
-<span class="font-label-md text-label-md text-on-surface-variant block mb-1">Formal Volumes</span>
-<div class="flex items-baseline gap-2">
-<span class="font-headline-lg text-headline-lg text-on-surface">0</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">vs 0 prev</span>
-</div>
-</div>
-<div class="mt-2.5 flex items-center gap-1 text-on-surface-variant bg-surface-container-highest w-fit px-2 py-0.5 rounded-full font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]">remove</span>
-<span>No change</span>
-</div>
-</div>
-</div>
-<!-- Contextual memory quote banner -->
-<div class="bg-surface-container-high/60 rounded-lg p-space-md flex items-center gap-space-sm">
-<span class="material-symbols-outlined text-tertiary text-[24px]">bookmark</span>
-<div class="flex flex-col">
-<span class="font-title-sm text-title-sm text-on-surface">Latest saved memory</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant">No spotlight memories tagged in this date range.</span>
-</div>
-</div>
-</section>
-<!-- People & Places Bento Section -->
-<section class="w-full bg-surface-container-low rounded-lg p-space-lg flex flex-col gap-space-md">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
-<span class="material-symbols-outlined text-[18px]">explore</span>
-</div>
-<h2 class="font-headline-sm text-headline-sm text-on-surface">People &amp; places</h2>
-</div>
-<button aria-label="People and places info" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container">
-<span class="material-symbols-outlined text-[18px]">info</span>
-</button>
-</div>
-<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-      Keep the people in your life alongside the moments you share, anchoring thoughts to geography and community.
-    </p>
-<!-- Empty State for People -->
-<div class="bg-surface-container rounded-lg p-space-md flex items-center justify-between">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
-<span class="material-symbols-outlined text-[20px]">person_off</span>
-</div>
-<div>
-<span class="font-title-sm text-title-sm text-on-surface block">People</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant">No connections tagged this week</span>
-</div>
-</div>
-<button class="text-primary hover:text-primary-container font-label-md text-label-md">
-        + Tag
-      </button>
-</div>
-<!-- Places Subsection with Arabic metro tag -->
-<div class="bg-surface-container rounded-lg p-space-md flex flex-col gap-2">
-<div class="flex items-center justify-between">
-<span class="font-title-sm text-title-sm text-on-surface">Places logged</span>
-<span class="font-label-sm text-label-sm text-secondary bg-secondary-container px-2 py-0.5 rounded-full">Recent</span>
-</div>
-<!-- Specific Place Row -->
-<div class="flex items-center justify-between bg-surface-container-low rounded-md p-3">
-<div class="flex items-center gap-2.5">
-<div class="w-9 h-9 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
-<span class="material-symbols-outlined text-[18px]">train</span>
-</div>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface font-semibold tracking-tight">مترو <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">(Metro)</span></span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">0 this period · 1 previous</span>
-</div>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-full">-1 change</span>
-</div>
-</div>
-<div class="pt-1">
-<button class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-title-sm text-title-sm transition-colors">
-          View previous sources
-          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-</button>
-</div>
-</div>
-</section>
-<!-- Ambient Micro Habit Celebration -->
-<div class="w-full bg-gradient-to-r from-secondary-container/40 via-surface-container to-secondary-container/30 rounded-lg p-space-md flex items-center gap-space-md shadow-sm">
-<div class="w-12 h-12 rounded-full bg-secondary text-on-secondary flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-[24px]">spa</span>
-</div>
-<div class="flex flex-col">
-<span class="font-title-sm text-title-sm text-on-surface">Consistency on track</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant">You've preserved your reflection routine 4 days running this cycle.</span>
-</div>
-</div>
-<!-- Floating Quick Capture Action (Anchored nicely above navigation) -->
-<div class="sticky bottom-2 z-40 flex justify-end pr-1 pointer-events-none">
-<button aria-label="Quick capture thought" class="pointer-events-auto shadow-xl bg-primary hover:bg-primary-container active:scale-95 transition-all text-on-primary flex items-center gap-2 px-5 py-3.5 rounded-full group cursor-pointer">
-<span class="material-symbols-outlined text-[22px] transition-transform group-hover:rotate-45">edit_note</span>
-<span class="font-label-lg text-label-lg font-semibold tracking-wide">Quick Capture</span>
-</button>
 </div>
 </div>
 <script>
-  // Interactive micro-state for filter tabs
-  document.querySelectorAll('.filter-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.filter-tab').forEach(t => {
-        t.classList.remove('bg-primary-container', 'text-on-primary-container');
-        t.classList.add('bg-surface-container', 'text-on-surface-variant');
+  (function initTimelineInteractions() {
+    const quickCaptureBtn = document.getElementById('quickCaptureBtn');
+    const quickCaptureSheet = document.getElementById('quickCaptureSheet');
+    const closeSheetBtn = document.getElementById('closeSheetBtn');
+    const dismissSheetBtn = document.getElementById('dismissSheetBtn');
+    const viewOptionsBtn = document.getElementById('viewOptionsBtn');
+
+    function openModal() {
+      if (quickCaptureSheet) {
+        quickCaptureSheet.classList.remove('hidden');
+      }
+    }
+
+    function closeModal() {
+      if (quickCaptureSheet) {
+        quickCaptureSheet.classList.add('hidden');
+      }
+    }
+
+    if (quickCaptureBtn) {
+      quickCaptureBtn.addEventListener('click', openModal);
+    }
+
+    if (closeSheetBtn) {
+      closeSheetBtn.addEventListener('click', closeModal);
+    }
+
+    if (dismissSheetBtn) {
+      dismissSheetBtn.addEventListener('click', closeModal);
+    }
+
+    if (viewOptionsBtn) {
+      viewOptionsBtn.addEventListener('click', () => {
+        const currentText = viewOptionsBtn.querySelector('span:last-child');
+        if (currentText) {
+          currentText.textContent = currentText.textContent === 'View options' ? 'Compact' : 'View options';
+        }
       });
-      tab.classList.remove('bg-surface-container', 'text-on-surface-variant');
-      tab.classList.add('bg-primary-container', 'text-on-primary-container');
-    });
-  });
-</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(78,48,38,0.05)]" data-active-classes="[&amp;&gt;div]:bg-primary-container [&amp;&gt;div&gt;span]:text-on-primary-container text-primary font-semibold"><div class="flex justify-around items-center h-20 px-space-sm max-w-md mx-auto"><a class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] text-on-surface-variant hover:text-on-surface transition-all" data-path="today" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">check_circle</span></div><span class="font-label-sm text-label-sm tracking-wide">Today</span></a><a class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] text-on-surface-variant hover:text-on-surface transition-all" data-path="timeline" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">view_stream</span></div><span class="font-label-sm text-label-sm tracking-wide">Timeline</span></a><a aria-current="page" class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] transition-all [&amp;&gt;div]:bg-primary-container [&amp;&gt;div&gt;span]:text-on-primary-container text-primary font-semibold" data-path="review" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">monitoring</span></div><span class="font-label-sm text-label-sm tracking-wide">Review</span></a><a class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] text-on-surface-variant hover:text-on-surface transition-all" data-path="more" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">grid_view</span></div><span class="font-label-sm text-label-sm tracking-wide">More</span></a></div></nav></body></html>
+    }
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(78,48,38,0.05)]" data-active-classes="[&amp;&gt;div]:bg-primary-container [&amp;&gt;div&gt;span]:text-on-primary-container text-primary font-semibold"><div class="flex justify-around items-center h-20 px-space-sm max-w-md mx-auto"><a class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] text-on-surface-variant hover:text-on-surface transition-all" data-path="today" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">check_circle</span></div><span class="font-label-sm text-label-sm tracking-wide">Today</span></a><a aria-current="page" class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] transition-all [&amp;&gt;div]:bg-primary-container [&amp;&gt;div&gt;span]:text-on-primary-container text-primary font-semibold" data-path="timeline" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">view_stream</span></div><span class="font-label-sm text-label-sm tracking-wide">Timeline</span></a><a class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] text-on-surface-variant hover:text-on-surface transition-all" data-path="review" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">monitoring</span></div><span class="font-label-sm text-label-sm tracking-wide">Review</span></a><a class="group flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[48px] text-on-surface-variant hover:text-on-surface transition-all" data-path="more" href="#"><div class="w-16 h-8 rounded-full flex items-center justify-center transition-colors"><span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105">grid_view</span></div><span class="font-label-sm text-label-sm tracking-wide">More</span></a></div></nav></body></html>
