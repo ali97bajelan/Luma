@@ -3,11 +3,11 @@
     android:id="@+id/widget_habit_row_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/widget_row_background"
     android:gravity="center_vertical"
-    android:minHeight="48dp"
+    android:minHeight="64dp"
     android:orientation="horizontal"
-    android:paddingTop="0dp"
-    android:paddingBottom="0dp">
+    android:padding="8dp">
 
     <LinearLayout
         android:id="@+id/widget_habit_row_text"
@@ -17,32 +17,54 @@
         android:orientation="vertical"
         android:minHeight="48dp"
         android:gravity="center_vertical"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="@drawable/widget_row_target_background"
         android:paddingStart="0dp"
         android:paddingEnd="0dp">
 
-        <TextView
-            android:id="@+id/widget_habit_row_title"
+        <LinearLayout
+            android:id="@+id/widget_habit_row_details"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textDirection="firstStrong"
-            android:textAlignment="viewStart"
-            android:gravity="start|center_vertical"
-            android:textColor="@color/widget_on_primary"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/widget_habit_row_count"
+            <TextView
+                android:id="@+id/widget_habit_row_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textDirection="firstStrong"
+                android:textAlignment="viewStart"
+                android:gravity="start|center_vertical"
+                android:textColor="@color/widget_on_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_habit_row_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end|center_vertical"
+                android:textAlignment="viewEnd"
+                android:textDirection="firstStrong"
+                android:textColor="@color/widget_on_primary"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/widget_habit_row_progress"
+            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="end|center_vertical"
-            android:textAlignment="viewEnd"
-            android:textDirection="firstStrong"
-            android:textColor="@color/widget_on_primary"
-            android:textSize="14sp" />
+            android:layout_height="8dp"
+            android:layout_marginTop="4dp"
+            android:indeterminate="false"
+            android:max="1000"
+            android:progress="0"
+            android:progressDrawable="@drawable/widget_habit_progress"
+            android:focusable="false"
+            android:clickable="false"
+            android:importantForAccessibility="no" />
     </LinearLayout>
 
     <TextView

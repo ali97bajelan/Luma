@@ -1,7 +1,7 @@
 # T34 — Tasks and Habits launcher widget redesign specification
 
 Date: 2026-10-22  
-Status: Implementation in progress; T34-A implemented (validation pending), T34-B/C/D pending. Documentation does not establish runtime acceptance.
+Status: Implementation in progress; T34-A/B/C implemented (validation pending), T34-D pending. Documentation does not establish runtime acceptance.
 Task: [T34 in UI_REDESIGN_TASKS](../../UI_REDESIGN_TASKS.md#t34--tasks-and-habits-launcher-widgets)  
 Plan: [Implementation plan](../plans/2026-10-22-t34-launcher-widgets-redesign.md)
 
@@ -9,7 +9,7 @@ Plan: [Implementation plan](../plans/2026-10-22-t34-launcher-widgets-redesign.md
 
 Make the existing Tasks and Habits home-screen widgets match the supplied cream/sage light and charcoal/sage dark references. Users must still be able to scan saved records, scroll the collection, open a record or full list, capture, refresh, complete a task and log a habit. This is a visual extension of the UI redesign, using existing saved values and mutation contracts.
 
-The requested deliverables are a task, specification and plan. Implementation is outside this documentation pass. The scope assumption is the two newly supplied widget reference pairs; existing Today, Timeline and Review work retains its status.
+This specification defines the base scope for the two newly supplied widget reference pairs; existing Today, Timeline and Review work retains its status. Source implementation and validation progress are tracked in the implementation plan and task index.
 
 Keep the RemoteViews implementation. A palette-only change would miss the inset row cards and progress tracks; a Glance rewrite would expand the work without serving the reference. The selected approach extends existing XML layouts and measured rendering. T32-C continues to own in-app widget settings/configuration; T34 owns launcher presentation. Shared drawable/color consumers include compact states, picker previews and the legacy Quick Capture widget, whose behavior must be preserved.
 
@@ -31,9 +31,9 @@ The dark HTML retains a light-oriented toggle script with `isDarkMode = false`; 
 ## Current implementation and boundaries
 
 - `widget/WidgetRenderer.kt` owns header measurement, theme selection, collection row binding, overflow, empty/error/feedback states and text measurement. Titles already navigate; Capture and Refresh already have separate targets.
-- `widget/WidgetCollectionFactory.kt` pages records by stable identity. Its current habit view-type count is two (inline/stacked); tasks use one.
-- `res/layout/widget_task_row.xml`, `widget_habit_row.xml` and `widget_habit_row_inline.xml` currently have no inset row-card surface or graphical progress track. Count text and mutation eligibility already exist.
-- `widget/WidgetLayoutPolicy.kt` and `WidgetCompactRenderer.kt` determine capacity and fallback. Decoration must be included in their geometry; never force the screenshot's three visible rows.
+- `widget/WidgetCollectionFactory.kt` pages records by stable identity and now advertises four habit view types (light/dark × inline/stacked); tasks use one.
+- The task and habit collection layouts now use inset row-card surfaces. Habit rows include a theme-specific progress track; count text and mutation eligibility continue to use saved data and existing tokens.
+- `widget/WidgetLayoutPolicy.kt` and `WidgetCompactRenderer.kt` determine capacity and fallback. Card and track geometry is included in row measurements; never force the screenshot's three visible rows.
 - `core/domain/.../widget/WidgetModels.kt` already supplies `Habit.count`, `target`, `skipped`, and `actionToken`; there is no saved emoji/icon field. Do not infer icons from habit names or expand the schema.
 - Provider XML retains 250 × 250 dp initial minimum, 180 × 160 dp resize minimum, 4 × 3 target cells and horizontal/vertical resizing.
 

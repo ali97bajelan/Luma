@@ -66,7 +66,7 @@ internal class WidgetCollectionFactory(
 
     override fun getLoadingView(): RemoteViews? = null
 
-    override fun getViewTypeCount(): Int = if (kind == WidgetKind.HABITS) 2 else 1
+    override fun getViewTypeCount(): Int = if (kind == WidgetKind.HABITS) 4 else 1
 
     @Synchronized
     override fun getItemId(position: Int): Long = rowAt(position)?.let { row ->

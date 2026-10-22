@@ -343,7 +343,7 @@ object WidgetRenderer {
         }
         val sampledHeights = measurements.map { it.heightDp }.ifEmpty {
             if (snapshot.total > 0) {
-                listOf(if (snapshot.instance.kind == WidgetKind.TASKS) 56 else 64)
+                listOf(if (snapshot.instance.kind == WidgetKind.TASKS) 64 else 76)
             } else emptyList()
         }
         val capacityWithoutHint = WidgetLayoutPolicy.rowCapacity(
@@ -391,8 +391,17 @@ object WidgetRenderer {
         rowActionBackground: Int,
         inline: Boolean,
         progressColumnWidthPx: Int,
+        dark: Boolean,
     ) = RemoteViews(context.packageName,
-        if (inline) R.layout.widget_habit_row_inline else R.layout.widget_habit_row).apply {
+        when {
+            dark && inline -> R.layout.widget_habit_row_inline_dark
+            dark -> R.layout.widget_habit_row_dark
+            inline -> R.layout.widget_habit_row_inline
+            else -> R.layout.widget_habit_row
+        }).apply {
+        setInt(R.id.widget_habit_row_root, "setBackgroundResource",
+            if (dark) R.drawable.widget_row_background_dark else R.drawable.widget_row_background)
+        setInt(R.id.widget_habit_row_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
         setTextColor(R.id.widget_habit_row_title, textColor)
         setTextColor(R.id.widget_habit_row_count, secondaryTextColor)
         setTextColor(R.id.widget_habit_row_action,
@@ -414,6 +423,17 @@ object WidgetRenderer {
         setTextViewText(R.id.widget_habit_row_count, count)
         setContentDescription(R.id.widget_habit_row_text,
             appContext.getString(R.string.widget_habit_open_description, bidiWrapped(appContext, row.title)) + ", " + count)
+
+        val showProgress = !row.skipped && row.target > 0
+        setProgressBar(
+            R.id.widget_habit_row_progress,
+            1000,
+            WidgetLayoutPolicy.habitProgressPermille(row.count, row.target),
+            false,
+        )
+        setInt(R.id.widget_habit_row_progress, "setLayoutDirection",
+            appContext.resources.configuration.layoutDirection)
+        setViewVisibility(R.id.widget_habit_row_progress, if (showProgress) View.VISIBLE else View.GONE)
 
         val canLog = !row.skipped && row.count < row.target && row.actionToken != null
         setViewVisibility(R.id.widget_habit_row_action, if (canLog) View.VISIBLE else View.GONE)
@@ -439,7 +459,12 @@ object WidgetRenderer {
         textColor: Int,
         secondaryTextColor: Int,
         rowActionBackground: Int,
+        dark: Boolean,
     ) = RemoteViews(context.packageName, R.layout.widget_task_row).apply {
+        setInt(R.id.widget_task_row_root, "setBackgroundResource",
+            if (dark) R.drawable.widget_row_background_dark else R.drawable.widget_row_background)
+        setInt(R.id.widget_task_row_text, "setBackgroundResource",
+            if (dark) R.drawable.widget_row_target_background_dark else R.drawable.widget_row_target_background)
         setTextColor(R.id.widget_task_row_title, textColor)
         val dueColor = if (row.dueDate.isBefore(snapshot.date)) {
             appContext.getColor(if (isAppDark(context, appContext)) R.color.widget_overdue_dark else R.color.widget_overdue_light)
@@ -499,12 +524,12 @@ object WidgetRenderer {
                 val measured = measureHabitRow(appContext, widthDp, row, progressWidth)
                 habitRow(
                     context, appContext, snapshot, row, textColor, secondaryTextColor,
-                    rowActionBackground, measured.inlineHabit, progressWidth,
+                    rowActionBackground, measured.inlineHabit, progressWidth, dark,
                 )
             }
             is WidgetRow.Task -> taskRow(
                 context, appContext, snapshot, row, textColor, secondaryTextColor,
-                rowActionBackground,
+                rowActionBackground, dark,
             )
         }
     }
@@ -729,25 +754,28 @@ object WidgetRenderer {
         val canLog = !row.skipped && row.count < row.target && row.actionToken != null
         val actionWidthDp = if (canLog) max(48f,
             measureTextWidth(context, context.getString(R.string.widget_habit_log_short), 14f) / density + 24f) else 0f
-        val rawTextWidthDp = widthDp - 24 - actionWidthDp - if (canLog) 8 else 0
+        val rawTextWidthDp = widthDp - 24 - 16 - actionWidthDp - if (canLog) 8 else 0
         val textWidthDp = rawTextWidthDp.coerceAtLeast(1f)
         val textWidthPx = (textWidthDp * density).toInt().coerceAtLeast(1)
         val count = habitProgressText(context, row)
         val countWidthDp = progressColumnWidthPx / density
         val inlineTitleWidthDp = (textWidthDp - countWidthDp - 8).coerceAtLeast(1f)
-        val inline = measureTextWidth(context, count, 14f) <= progressColumnWidthPx &&
+        val inline = progressColumnWidthPx <= textWidthPx &&
+            measureTextWidth(context, count, 14f) <= progressColumnWidthPx &&
             measureTextWidth(context, row.title, 16f, bold = true) <= inlineTitleWidthDp * density
-        val height = if (inline) {
+        val titleCountHeight = if (inline) {
             val titleHeight = measureTextHeight(context, row.title,
                 (inlineTitleWidthDp * density).toInt(), 16f, maxLines = 1, bold = true)
             val countHeight = measureTextHeight(context, count,
                 (countWidthDp * density).toInt(), 14f, maxLines = 1)
-            max(48, max(titleHeight, countHeight))
+            max(titleHeight, countHeight)
         } else {
             val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
             val countHeight = measureTextHeight(context, count, textWidthPx, 14f)
-            max(48, titleHeight + countHeight)
+            titleHeight + countHeight
         }
+        val trackHeight = if (!row.skipped && row.target > 0) 12 else 0
+        val height = max(48, titleCountHeight + trackHeight) + 16
         return MeasuredRow(height, inline, progressColumnWidthPx, rawTextWidthDp >= 48f)
     }
 
@@ -762,11 +790,11 @@ object WidgetRenderer {
         val actionText = context.getString(R.string.widget_task_complete)
         val actionWidthDp = if (canComplete) max(48f,
             measureTextWidth(context, actionText, 14f) / density + 16f) else 0f
-        val rawTextWidthDp = widthDp - 24f - actionWidthDp - if (canComplete) 8f else 0f
+        val rawTextWidthDp = widthDp - 24f - 16f - actionWidthDp - if (canComplete) 8f else 0f
         val textWidthPx = (rawTextWidthDp.coerceAtLeast(1f) * density).toInt()
         val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
         val dueHeight = measureTextHeight(context, taskDueLabel(context, row, date), textWidthPx, 14f)
-        return MeasuredRow(max(56, titleHeight + dueHeight), fitsWidth = rawTextWidthDp >= 48f)
+        return MeasuredRow(max(48, titleHeight + dueHeight) + 16, fitsWidth = rawTextWidthDp >= 48f)
     }
 
     private fun habitProgressText(context: Context, row: WidgetRow.Habit): String = when {

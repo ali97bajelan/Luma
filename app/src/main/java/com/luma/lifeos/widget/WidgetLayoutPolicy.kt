@@ -80,6 +80,13 @@ internal object WidgetLayoutPolicy {
     fun distinctSizes(sizes: List<Pair<Float, Float>>): List<Pair<Float, Float>> =
         sizes.filter { (width, height) -> width > 0f && height > 0f }.distinct()
 
+    /** Maps a saved habit count to a clamped, 0..1000 presentation value. */
+    fun habitProgressPermille(count: Int, target: Int): Int {
+        if (target <= 0) return 0
+        val clampedCount = count.coerceIn(0, target)
+        return (clampedCount.toLong() * 1000L / target.toLong()).toInt()
+    }
+
     /** Counts the complete ordered prefix whose individually measured heights fit the budget. */
     fun rowCapacity(
         widthDp: Int,

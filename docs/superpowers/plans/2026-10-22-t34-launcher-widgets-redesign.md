@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Android RemoteViews/XML, JUnit, Android instrumentation, Gradle, JDK 17.
 
-**Spec:** [T34 launcher widget specification](../specs/2026-10-22-t34-launcher-widgets-redesign-design.md). Execution is in progress: T34-A implementation is present and validation is pending; T34-B through T34-D remain pending.
+**Spec:** [T34 launcher widget specification](../specs/2026-10-22-t34-launcher-widgets-redesign-design.md). Execution is in progress: T34-A/B/C source implementation is present and validation is pending; T34-D remains pending.
 
 ## Global constraints
 
@@ -64,16 +64,20 @@ Suggested commit message for T34-A: `feat: restyle widget shells and semantic ro
 
 ### T34-B: Inset Tasks cards
 
+**Status:** Implemented (validation pending). Gradle tests and emulator checks were not run at the user's request.
+
 **Modify:** `app/src/main/res/layout/widget_task_row.xml`; `WidgetRenderer.kt` (`taskRow`, `measureTaskRow`); existing `app/src/androidTest/java/com/luma/lifeos/widget/WidgetRendererAcceptanceTest.kt` and, if action coverage changes, `WidgetIntentsTest.kt`.
 
 **Interfaces:** Consumes A's row backgrounds, existing `WidgetRow.Task` and fill-in intents. Produces the same collection row API with 8 dp card padding and the task sizing formula from the spec; task view-type count remains one.
 
-- [ ] Add `paddedTaskRowsKeepDueAndCompleteInsideBounds` in the renderer test: long mixed-script title, overdue/today dates, en/fr/fa, 1.0/2.0 text, 180/373 dp widths, and a tokenless row. Assert complete/due bounds, separate 48 dp targets, full accessible name and tokenless action hidden.
-- [ ] Extend existing completed-task/retry/reapply tests to confirm new backgrounds do not change action identity or retain unsafe rows/old feedback. Run the class and confirm geometry assertions fail before layout changes.
-- [ ] Bind explicit app-theme row backgrounds, add padding and preserve the existing due-label and `canComplete` logic. Recalculate available text width for 24 dp shell inset, 16 dp row inset, action width and 8 dp gap; use `max(48, titleHeight + dueHeight) + 16` for row height.
-- [ ] Rerun renderer and intent classes; inspect light/dark task fixture captures at recorded/expanded/compact bounds, including fallback rather than a clipped card. Commit B as `feat: add inset task widget cards`.
+- [ ] Add `paddedTaskRowsKeepDueAndCompleteInsideBounds` in the renderer test: long mixed-script title, overdue/today dates, en/fr/fa, 1.0/2.0 text, 180/373 dp widths, and a tokenless row. Tests were not added or run at the user's request; acceptance remains NOT RUN.
+- [ ] Extend existing completed-task/retry/reapply tests to confirm new backgrounds do not change action identity or retain unsafe rows/old feedback. NOT RUN at the user's request.
+- [x] Bind explicit app-theme row backgrounds, add padding and preserve the existing due-label and `canComplete` logic. Recalculate available text width for 24 dp shell inset, 16 dp row inset, action width and 8 dp gap; use `max(48, titleHeight + dueHeight) + 16` for row height.
+- [ ] Rerun renderer and intent classes; inspect light/dark task fixture captures at recorded/expanded/compact bounds, including fallback rather than a clipped card. NOT RUN at the user's request. Suggested commit message: `feat: add inset task widget cards`.
 
 ### T34-C: Habits cards and saved progress
+
+**Status:** Implemented (validation pending). Gradle tests and emulator checks were not run at the user's request.
 
 **Modify:** `app/src/main/res/layout/widget_habit_row.xml`, `widget_habit_row_inline.xml`; `WidgetRenderer.kt`; `WidgetLayoutPolicy.kt`; `WidgetCollectionFactory.kt`.
 
@@ -83,13 +87,11 @@ Suggested commit message for T34-A: `feat: restyle widget shells and semantic ro
 
 **Interfaces:** Consumes A's roles and `WidgetRow.Habit` unchanged. Produces `WidgetLayoutPolicy.habitProgressPermille(count: Int, target: Int): Int` and `widget_habit_row_progress` in all four habit layouts. Factory advertises four habit view types and one task type. Existing render/collection entry points remain compatible.
 
-- [ ] Add JVM cases for progress: `(0,5)=0`, `(1,5)=200`, `(2,8)=250`, `(5,5)=1000`, `(6,5)=1000`, `(-1,5)=0`, `(1,0)=0`, `(1,-1)=0`, `(Int.MAX_VALUE,Int.MAX_VALUE)=1000`. Run focused policy tests and confirm the missing interface fails; implement the spec's Long arithmetic and rerun.
-- [ ] Add `savedHabitProgressRendersAndClearsAcrossStates` asserting exact max/progress, 0% stays empty, skipped/invalid targets hide the track, and saved count text is unchanged. Reapply a populated row as zero/skipped to expose recycled state. Preserve existing reached/skipped/tokenless action eligibility.
-- [ ] Extend `habitProgressUsesInlineLayoutWhenItFitsAndStacksLongNames` to assert the inner title/count arrangement and track bounds rather than the old text-container orientation; retain a narrow long-name case, full accessible state and separate +1 hit target. Ensure the track adds no accessibility focus stop.
-- [ ] Update the factory's existing view-type assertion to four habits/one tasks, and test stable identity/paging across refreshed theme row resources. Run the focused renderer/factory classes to establish failing behavior.
-- [ ] Build the four layout variants with matching IDs, native determinate ProgressBar max 1000, themed progress drawables and explicit app-theme selection. Bind progress/visibility on every row. Use a vertical outer text block and an inner inline/stacked title/count block; mirror progress with RTL layout direction.
-- [ ] Add 16 dp row inset to width calculation and `max(48, titleCountHeight + 4 + 8) + 16` to height measurement. Keep no-fit compact fallback and bounded measurement. Increase habit view types without changing stable IDs, paging, tokens, receivers or workers.
-- [ ] Rerun policy/renderer/factory/contrast suites and inspect zero/partial/reached/skipped in both themes. Commit C as `feat: show saved habit progress in widget cards`.
+- [ ] Add JVM cases for progress: `(0,5)=0`, `(1,5)=200`, `(2,8)=250`, `(5,5)=1000`, `(6,5)=1000`, `(-1,5)=0`, `(1,0)=0`, `(1,-1)=0`, `(Int.MAX_VALUE,Int.MAX_VALUE)=1000`. Tests were not added or run at the user's request; acceptance remains NOT RUN.
+- [ ] Add `savedHabitProgressRendersAndClearsAcrossStates` plus inline/stacked layout and factory assertions for recycled state, accessibility focus, stable identity and paging. Tests were not added or run at the user's request; acceptance remains NOT RUN.
+- [x] Build the four layout variants with matching IDs, native determinate ProgressBar max 1000, themed progress drawables and explicit app-theme selection. Bind progress/visibility on every row. Use a vertical outer text block and an inner inline/stacked title/count block; mirror progress with RTL layout direction.
+- [x] Add 16 dp row inset to width calculation and `max(48, titleCountHeight + 4 + 8) + 16` to height measurement. Keep no-fit compact fallback and bounded measurement. Increase habit view types without changing stable IDs, paging, tokens, receivers or workers.
+- [ ] Rerun policy/renderer/factory/contrast suites and inspect zero/partial/reached/skipped in both themes. NOT RUN at the user's request. Suggested commit message: `feat: show saved habit progress in widget cards`.
 
 ### T34-D: Preview consistency and launcher acceptance
 
@@ -122,4 +124,4 @@ For a focused red/green step, pass only its owning class in the same instrumenta
 
 W34-1 → A; W34-2 → B; W34-3 → C; W34-4 → A/B/C geometry plus D matrix; W34-5 → D and A contrast tests. Every review-focus case has an owning task. Completion requires no missing acceptance row; do not mark T34 complete while a required launcher/API/locale check is NOT RUN.
 
-The user explicitly requested implementation of T34-A from this spec and plan. T34-A's source changes are present; its planned tests and rendered/launcher acceptance remain NOT RUN at the user's request. T34-B through T34-D have not started.
+The user requested implementation of T34-B and T34-C from this spec and plan without Gradle tests or emulator runs. T34-A/B/C source changes are present; planned tests and rendered/launcher acceptance remain NOT RUN. T34-D has not started.
