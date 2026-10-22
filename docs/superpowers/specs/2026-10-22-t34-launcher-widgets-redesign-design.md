@@ -1,7 +1,7 @@
 # T34 — Tasks and Habits launcher widget redesign specification
 
 Date: 2026-10-22  
-Status: Implementation in progress; T34-A/B/C implemented (validation pending), T34-D pending. Documentation does not establish runtime acceptance.
+Status: T34-A/B/C/D source implemented (validation pending). Focused API 36 offscreen renderer and picker-preview checks pass; actual launcher acceptance is incomplete. See the [T34 acceptance record](../../luma-redesign/evidence/2026-10-22/t34/acceptance.md). Documentation does not establish runtime acceptance.
 Task: [T34 in UI_REDESIGN_TASKS](../../UI_REDESIGN_TASKS.md#t34--tasks-and-habits-launcher-widgets)  
 Plan: [Implementation plan](../plans/2026-10-22-t34-launcher-widgets-redesign.md)
 

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Android RemoteViews/XML, JUnit, Android instrumentation, Gradle, JDK 17.
 
-**Spec:** [T34 launcher widget specification](../specs/2026-10-22-t34-launcher-widgets-redesign-design.md). Execution is in progress: T34-A/B/C source implementation is present and validation is pending; T34-D remains pending.
+**Spec:** [T34 launcher widget specification](../specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A/B/C and T34-D source implementation is present. Local build/unit/lint checks and focused API 36 offscreen renderer/preview checks pass; real launcher acceptance remains incomplete. See the [T34 acceptance record](../../luma-redesign/evidence/2026-10-22/t34/acceptance.md).
 
 ## Global constraints
 
@@ -101,16 +101,16 @@ Suggested commit message for T34-A: `feat: restyle widget shells and semantic ro
 
 **Interfaces:** Consumes A/B/C and all five spec acceptance rows. Produces reproducible renderer evidence plus separate real-host evidence. No new app route or widget provider.
 
-- [ ] Align fictional picker previews with the new card/header/progress roles. Preserve reconfiguration and legacy Quick Capture placements/actions; rerun existing preview/configuration/settings/intent coverage.
-- [ ] Extend the existing synthetic matrix exporter to render both resolved app themes and collection rows, including saved progress cases. Use a new `t34` output directory, not its existing `wd10-after` directory. Record app override and system appearance separately; identify offscreen captures honestly.
-- [ ] Run the exact matrix in the spec: both kinds/themes, the nine record counts and three baseline sizes; then narrow/flat French/Persian and large-text cases. Include feedback reapply and >first-page overflow. Record pixel bounds, accessible descriptions and contrast against actual new backgrounds.
-- [ ] Run JVM, packaging/lint and focused connected commands below. Each command must report success; failures remain open with logs. Unavailable devices/tooling are NOT RUN, never inferred passes.
-- [ ] On isolated API 28, 31 and 36 launcher test installs, place/resize/rotate both widgets, scroll beyond the first page, verify target sizes/TalkBack/RTL and trigger Complete/+1/Undo/Retry. Verify theme overrides and locale refresh with existing widget IDs. Do not clear or seed the user's database.
-- [ ] Write the acceptance ledger with W34-1 through W34-5, build SHA/APK identity, launcher/API, fixture, locale/theme/font/bounds and image paths. Review light/dark references side by side with captures. Keep WG08/T30–T33 historical statuses independent. Commit D as `test: record launcher widget redesign acceptance` only after the recorded work is done.
+- [x] Align fictional picker previews with the new card/header/progress roles. Preserve reconfiguration and legacy Quick Capture placements/actions. The focused preview assertion passes for day/night layouts; broader configuration/settings/intent coverage is NOT RUN.
+- [x] Extend the synthetic matrix exporter to render both resolved app themes and collection rows, including saved progress cases. It writes to unique `t34/run-*` output directories and records app override/system appearance separately; it identifies offscreen output explicitly.
+- [x] Run the offscreen matrix on API 36: both kinds and theme overrides, nine counts, three baseline bounds, French/Persian 1.3/2.0 font scales at narrow/flat bounds, edge progress rows and feedback reapply. The test passed, but connected-test teardown removed the app and its private external-files output; no screenshot bundle remains. Offscreen output does not verify real scrolling beyond page one.
+- [x] Run the focused layout-policy unit test, full app unit-test task, debug APK/Android-test APK packaging and lint. Focused API 36 `WidgetVisualBaselineTest` and picker-preview assertion pass. The broader connected class list below is NOT RUN.
+- [ ] On isolated API 28, 31 and 36 launcher test installs, place/resize/rotate both widgets, scroll beyond the first page, verify target sizes/TalkBack/RTL and trigger Complete/+1/Undo/Retry. Verify theme overrides and locale refresh with existing widget IDs. API 28/31 images are unavailable. The API 36 connected-test teardown removed the preexisting Luma package and may have removed its app data, so no further device operations were performed.
+- [x] Write the partial acceptance ledger with W34-1 through W34-5, build/device identity and precise NOT RUN entries. Screenshot paths could not be retained because the connected-test teardown removed the app-private output directory; side-by-side screenshot review remains NOT RUN. Keep WG08/T30–T33 statuses independent. Do not commit D as `test: record launcher widget redesign acceptance` until the remaining launcher evidence is complete.
 
 ## Verification commands
 
-Run from the repository root with JDK 17 and an isolated configured emulator/device. These are planned commands; no Android tests were run by this documentation pass.
+Run from the repository root with JDK 17 and an isolated configured emulator/device. The focused renderer and preview classes passed on API 36; the broader connected suite and API 28/31/launcher matrix remain NOT RUN. The Gradle connected-test teardown uninstalled the target package, so do not rerun on this AVD.
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests 'com.luma.lifeos.widget.WidgetLayoutPolicyTest'
@@ -124,4 +124,4 @@ For a focused red/green step, pass only its owning class in the same instrumenta
 
 W34-1 → A; W34-2 → B; W34-3 → C; W34-4 → A/B/C geometry plus D matrix; W34-5 → D and A contrast tests. Every review-focus case has an owning task. Completion requires no missing acceptance row; do not mark T34 complete while a required launcher/API/locale check is NOT RUN.
 
-The user requested implementation of T34-B and T34-C from this spec and plan without Gradle tests or emulator runs. T34-A/B/C source changes are present; planned tests and rendered/launcher acceptance remain NOT RUN. T34-D has not started.
+T34-A through T34-D source changes are present. Local unit/build/lint checks and focused API 36 offscreen renderer/picker-preview checks pass. T34 remains implemented (validation pending) because real launcher/API, accessibility, durable screenshot and side-by-side visual acceptance remain NOT RUN. See the [partial acceptance record](../../luma-redesign/evidence/2026-10-22/t34/acceptance.md); do not mark T34 complete or commit D until remaining launcher evidence is captured on an isolated test install.

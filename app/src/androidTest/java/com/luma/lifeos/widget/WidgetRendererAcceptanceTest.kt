@@ -33,6 +33,7 @@ import java.time.ZoneOffset
 import java.util.Locale
 import java.util.UUID
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -172,34 +173,72 @@ class WidgetRendererAcceptanceTest {
     }
 
     @Test fun pickerPreviewsShowFictionalContentWithSharedCaptureHeader() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val baseContext = InstrumentationRegistry.getInstrumentation().targetContext
         val expectations = listOf(
             R.layout.widget_preview_habits to R.string.widget_preview_habits_title,
             R.layout.widget_preview_tasks to R.string.widget_preview_tasks_title,
         )
-        expectations.forEach { (layoutId, titleId) ->
-            val root = android.view.LayoutInflater.from(context).inflate(layoutId, null)
-            val textViews = ArrayList<View>()
-            root.findViewsWithText(textViews, context.getString(R.string.widget_preview_label), View.FIND_VIEWS_WITH_TEXT)
-            assertEquals(1, textViews.size)
-            val captureViews = ArrayList<View>()
-            root.findViewsWithText(captureViews, context.getString(R.string.widget_capture), View.FIND_VIEWS_WITH_TEXT)
-            assertEquals(1, captureViews.size)
-            val titleViews = ArrayList<View>()
-            root.findViewsWithText(titleViews, context.getString(titleId), View.FIND_VIEWS_WITH_TEXT)
-            assertEquals(1, titleViews.size)
-            val secondRowId = if (layoutId == R.layout.widget_preview_habits) {
-                R.string.widget_preview_habit_second
-            } else R.string.widget_preview_task_second
-            val secondRows = ArrayList<View>()
-            root.findViewsWithText(secondRows, context.getString(secondRowId), View.FIND_VIEWS_WITH_TEXT)
-            assertEquals(1, secondRows.size)
-            val scrollHints = ArrayList<View>()
-            root.findViewsWithText(scrollHints, context.getString(R.string.widget_scroll_for_more), View.FIND_VIEWS_WITH_TEXT)
-            assertEquals(1, scrollHints.size)
-            val oldFooterViews = ArrayList<View>()
-            root.findViewsWithText(oldFooterViews, context.getString(R.string.widget_habits_view_all), View.FIND_VIEWS_WITH_TEXT)
-            assertEquals(0, oldFooterViews.size)
+        listOf(
+            android.content.res.Configuration.UI_MODE_NIGHT_NO,
+            android.content.res.Configuration.UI_MODE_NIGHT_YES,
+        ).forEach { nightMode ->
+            val configuration = android.content.res.Configuration(baseContext.resources.configuration).apply {
+                uiMode = (uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()) or nightMode
+            }
+            val context = baseContext.createConfigurationContext(configuration)
+            expectations.forEach { (layoutId, titleId) ->
+                val root = android.view.LayoutInflater.from(context).inflate(layoutId, null)
+                val textViews = ArrayList<View>()
+                root.findViewsWithText(textViews, context.getString(R.string.widget_preview_label), View.FIND_VIEWS_WITH_TEXT)
+                assertEquals(1, textViews.size)
+                val captureViews = ArrayList<View>()
+                root.findViewsWithText(captureViews, context.getString(R.string.widget_capture), View.FIND_VIEWS_WITH_TEXT)
+                assertEquals(1, captureViews.size)
+                val titleViews = ArrayList<View>()
+                root.findViewsWithText(titleViews, context.getString(titleId), View.FIND_VIEWS_WITH_TEXT)
+                assertEquals(1, titleViews.size)
+                val secondRowId = if (layoutId == R.layout.widget_preview_habits) {
+                    R.string.widget_preview_habit_second
+                } else R.string.widget_preview_task_second
+                val secondRows = ArrayList<View>()
+                root.findViewsWithText(secondRows, context.getString(secondRowId), View.FIND_VIEWS_WITH_TEXT)
+                assertEquals(1, secondRows.size)
+                val scrollHints = ArrayList<View>()
+                root.findViewsWithText(
+                    scrollHints,
+                    context.getString(R.string.widget_scroll_for_more),
+                    View.FIND_VIEWS_WITH_TEXT,
+                )
+                assertEquals(1, scrollHints.size)
+                val oldFooterViews = ArrayList<View>()
+                root.findViewsWithText(
+                    oldFooterViews,
+                    context.getString(R.string.widget_habits_view_all),
+                    View.FIND_VIEWS_WITH_TEXT,
+                )
+                assertEquals(0, oldFooterViews.size)
+                assertNotNull(root.findViewById<View>(R.id.widget_preview_count).background)
+
+                if (layoutId == R.layout.widget_preview_tasks) {
+                    assertNotNull(root.findViewById<LinearLayout>(R.id.widget_preview_task_card).background)
+                    assertEquals(context.getString(R.string.widget_task_due_today),
+                        root.findViewById<TextView>(R.id.widget_preview_task_due).text.toString())
+                    assertEquals(context.getString(R.string.widget_preview_task_action),
+                        root.findViewById<TextView>(R.id.widget_preview_task_action).text.toString())
+                    assertEquals(context.getString(R.string.widget_preview_task_overdue),
+                        root.findViewById<TextView>(R.id.widget_preview_task_overdue).text.toString())
+                } else {
+                    assertNotNull(root.findViewById<LinearLayout>(R.id.widget_preview_habit_card).background)
+                    assertEquals(0, root.findViewById<android.widget.ProgressBar>(R.id.widget_preview_habit_progress).progress)
+                    assertEquals(1000, root.findViewById<android.widget.ProgressBar>(R.id.widget_preview_habit_second_progress).progress)
+                    assertEquals(1000, root.findViewById<android.widget.ProgressBar>(R.id.widget_preview_habit_second_progress).max)
+                    assertEquals(context.getString(R.string.widget_habit_log_short),
+                        root.findViewById<TextView>(R.id.widget_preview_habit_action).text.toString())
+                    assertEquals(View.VISIBLE, root.findViewById<TextView>(R.id.widget_preview_habit_action).visibility)
+                    assertEquals(context.getString(R.string.widget_preview_habit_second_action),
+                        root.findViewById<TextView>(R.id.widget_preview_habit_second_count).text.toString())
+                }
+            }
         }
     }
 

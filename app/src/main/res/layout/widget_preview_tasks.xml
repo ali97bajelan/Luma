@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_preview_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
@@ -7,10 +8,11 @@
     android:padding="12dp">
 
     <TextView
+        android:id="@+id/widget_preview_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/widget_preview_label"
-        android:textColor="@color/widget_on_primary"
+        android:textColor="@color/widget_text_secondary_light"
         android:textSize="12sp" />
 
     <LinearLayout
@@ -25,9 +27,25 @@
             android:layout_weight="1"
             android:gravity="center_vertical"
             android:text="@string/widget_preview_tasks_title"
-            android:textColor="@color/widget_on_primary"
+            android:textColor="@color/widget_text_primary_light"
             android:textSize="18sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_preview_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/widget_count_background"
+            android:gravity="center"
+            android:minWidth="28dp"
+            android:paddingStart="8dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="2dp"
+            android:text="@string/widget_preview_total_count"
+            android:textColor="@color/widget_action_utility_light"
+            android:textSize="12sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -38,75 +56,125 @@
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
             android:text="@string/widget_capture"
-            android:textColor="@color/widget_on_primary"
+            android:textColor="@color/widget_mutation_text_light"
             android:textSize="14sp" />
 
         <ImageView
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:background="@drawable/widget_utility_background"
             android:contentDescription="@null"
             android:importantForAccessibility="no"
             android:padding="12dp"
-            android:src="@drawable/ic_widget_refresh" />
+            android:src="@drawable/ic_widget_refresh"
+            android:tint="@color/widget_action_utility_light" />
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/widget_preview_task_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/widget_row_background"
         android:gravity="center_vertical"
-        android:minHeight="48dp"
-        android:orientation="horizontal">
+        android:minHeight="64dp"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/widget_preview_task"
-            android:textColor="@color/widget_on_primary"
-            android:textSize="14sp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="2"
+                android:text="@string/widget_preview_task"
+                android:textColor="@color/widget_text_primary_light"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_preview_task_due"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/widget_task_due_today"
+                android:textColor="@color/widget_text_secondary_light"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
+            android:id="@+id/widget_preview_task_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_row_action_background"
+            android:gravity="center"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:text="@string/widget_preview_task_action"
-            android:textColor="@color/widget_on_primary"
+            android:textColor="@color/widget_mutation_text_light"
             android:textSize="14sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/widget_row_background"
         android:gravity="center_vertical"
-        android:minHeight="48dp"
-        android:orientation="horizontal">
+        android:minHeight="64dp"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/widget_preview_task_second"
-            android:textColor="@color/widget_on_primary"
-            android:textSize="14sp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="2"
+                android:text="@string/widget_preview_task_second"
+                android:textColor="@color/widget_text_primary_light"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_preview_task_overdue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/widget_preview_task_overdue"
+                android:textColor="@color/widget_overdue_light"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_row_action_background"
+            android:gravity="center"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:text="@string/widget_preview_task_second_action"
-            android:textColor="@color/widget_on_primary"
+            android:textColor="@color/widget_mutation_text_light"
             android:textSize="14sp" />
     </LinearLayout>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:text="@string/widget_scroll_for_more"
-        android:textColor="@color/widget_on_primary"
-        android:textSize="12sp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_settings_title_navigation_hint"
-        android:textColor="@color/widget_on_primary"
+        android:textColor="@color/widget_text_secondary_light"
         android:textSize="12sp" />
 </LinearLayout>

@@ -2,7 +2,7 @@
 
 Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. Fresh source audit, all 271 unit tests, debug assembly and lint pass. The clean API 36 connected run completed 224 cases with 15 failures, 0 errors and 1 skipped; a focused 36-test Timeline/Review/navigation run passes. T30, T31, T32-C and T32-D remain blocked by connected failures; T32-A and T32-B implementation and focused checks pass, with rendered acceptance pending. T32 coordination and T33 remain blocked by child failures and the incomplete visual/accessibility matrix. The EventCard density and provider-absent Review gaps are fixed; stale timeline disclosure and clock-format test assumptions are corrected. See the [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md). Optional features remain deferred.
 
-Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A, T34-B and T34-C are implemented with validation pending; no Gradle tests or emulator checks were run at the user's request. T34-D remains pending.
+Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A through T34-D source work is implemented (validation pending). The focused API 36 offscreen renderer matrix and picker-preview check passed; unit tests, debug packaging and lint passed. Real launcher acceptance remains NOT RUN, API 28/31 images are unavailable, and the connected-test teardown removed the preexisting Luma package from the API 36 AVD. See the [T34 acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md) for the device/data incident and remaining checks.
 
 ## Scope and reference decisions
 
@@ -30,7 +30,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T32-C | More, catalogs, search, lists and settings | T30 | blocked | [Spec](superpowers/specs/2026-10-22-t32-c-supporting-screens-design.md) | [Plan](superpowers/plans/2026-10-22-t32-c-supporting-screens.md) |
 | T32-D | Editors, details, sheets and dialogs | T30; consume T32-A EventCard treatment | blocked | [Spec](superpowers/specs/2026-10-22-t32-d-editors-details-modals-design.md) | [Plan](superpowers/plans/2026-10-22-t32-d-editors-details-modals.md) |
 | T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | blocked (acceptance pending) | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
-| T34 | Tasks and Habits launcher widgets | T30 design baseline; existing widget contracts | in progress | [Spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) |
+| T34 | Tasks and Habits launcher widgets | T30 design baseline; existing widget contracts | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) |
 
 ### T30 — Shared visual system and app shell
 
@@ -114,7 +114,7 @@ Produce auditable acceptance evidence for the required redesign and separately r
 
 ### T34 — Tasks and Habits launcher widgets
 
-**Status (22 October 2026): in progress.** T34-A, T34-B and T34-C are implemented (validation pending); T34-D remains pending. No Gradle tests or emulator checks were run at the user's request. Source references: [light image](luma-redesign/widgets-light.png), [light HTML](luma-redesign/widgets-light.html), [dark image](luma-redesign/widgets-dark.png), [dark HTML](luma-redesign/widgets-dark.html).
+**Status (22 October 2026): implemented (validation pending).** T34-A through T34-D source work is implemented. Unit tests, debug app/test APK assembly, and lint pass. The focused API 36 synthetic renderer matrix and picker-preview assertion pass; actual launcher behavior, API 28/31, TalkBack, RTL host output and durable screenshots remain NOT RUN. The connected-test teardown removed the existing Luma package from the API 36 AVD, which may have removed its app-private data. See the [T34 acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md). Source references: [light image](luma-redesign/widgets-light.png), [light HTML](luma-redesign/widgets-light.html), [dark image](luma-redesign/widgets-dark.png), [dark HTML](luma-redesign/widgets-dark.html).
 
 **Outcome:** Cream/charcoal rounded shells, count badges, inset record cards, sage actions and saved-count habit progress while retaining the current collection, navigation, mutations and recovery behavior.
 
@@ -123,11 +123,13 @@ Produce auditable acceptance evidence for the required redesign and separately r
 | T34-A | Semantic palette, shell, padded count badges and responsive state surfaces | Existing renderer; T30 reference direction | implemented (validation pending) |
 | T34-B | Inset task cards with due metadata and separate Complete action | T34-A | implemented (validation pending) |
 | T34-C | Inset habit cards, accurate progress and inline/stacked theme variants | T34-A | implemented (validation pending) |
-| T34-D | Picker/compact consistency, regression matrix and actual launcher acceptance | T34-A/B/C | pending |
+| T34-D | Picker/compact consistency, regression matrix and actual launcher acceptance | T34-A/B/C | implemented (validation pending) |
 
 **Preserve:** Offline operation, System/Light/Dark, en/fr/fa, widget IDs, saved date/zone, paging/stable record IDs, Capture/Refresh/list targets, Complete/+1 eligibility, Undo/Retry, setup/loading/empty/error states, resizing and legacy Quick Capture placements. No launcher chrome, sample data, inferred habit emoji, schema change, Glance migration or new dependency.
 
 **Acceptance:** All W34-1 through W34-5 in the [spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) require current-build evidence. Verify both themes, narrow/expanded/flat bounds, large text, RTL, progress edge cases, record overflow, theme overrides, actual collection scrolling and mutation delivery on API 28/31/36. Missing checks are NOT RUN. T34 does not close WG08 or T30–T33 blockers; overall redesign acceptance requires T33 and T34.
+
+T34-D status: the offscreen exporter covered both kinds, both app-theme overrides, opposite system appearances, the nine requested counts, baseline/stress bounds, French/Persian large text, collection-row progress fixtures and feedback reapply. The picker preview check passed in day/night configurations. Offscreen captures do not establish launcher actions or scrolling, and the generated files were removed when connected-test teardown uninstalled the app. See the [acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md). Do not mark T34 complete.
 
 ## Optional features and behavior changes
 
