@@ -1,6 +1,6 @@
 # Luma redesign reference brief
 
-Prepared 22 October 2026 from the six local PNGs and six local HTML files. This is the common specification for the [task index](../UI_REDESIGN_TASKS.md) and every linked task spec/plan. App code was inspected to separate visual work from feature changes. T30 and T31 are implemented with validation pending; T32 coordination is in progress, its four screen-family tasks are pending, and device acceptance is pending.
+Prepared 22 October 2026 from the six local PNGs and six local HTML files. This is the common specification for the [task index](../UI_REDESIGN_TASKS.md) and every linked task spec/plan. App code was inspected to separate visual work from feature changes. T30, T31 and T32-A are implemented with validation pending; T32 coordination is in progress, T32-B/C/D remain pending, and device acceptance is pending.
 
 ## Intent and scope
 
@@ -98,7 +98,7 @@ Unselected optional tasks are documented scope differences, not release failures
 
 ## Planning and verification status
 
-All specs/plans created in the original documentation pass are proposed artifacts. The previous backlog’s blanket “Approved” label does not approve the regenerated scope or optional additions. T30 and T31 are implemented (validation pending); T32 coordination is in progress, T32-A/B/C/D and T33 remain pending, and optional status is deferred. The current route inventory and evidence gaps are recorded in [T32 route coverage](route-coverage.md). T31 assemble/lint results and outstanding runtime checks are recorded in [T31 implementation evidence](evidence/2026-10-22/t31-review.md). Existing behavior baseline includes the implemented portions of `docs/superpowers/specs/2026-10-21-fresh-ui-refresh-design.md`; retain its behavior safeguards unless an optional task expressly changes them.
+All specs/plans created in the original documentation pass are proposed artifacts. The previous backlog’s blanket “Approved” label does not approve the regenerated scope or optional additions. T30, T31 and T32-A are implemented (validation pending); T32 coordination is in progress, T32-B/C/D remain pending, T33 acceptance is in progress, and optional status is deferred. The current route inventory and evidence gaps are recorded in [T32 route coverage](route-coverage.md). T31 and T32-A assemble/lint results and outstanding runtime checks are recorded in their [implementation evidence](evidence/2026-10-22/t31-review.md) and [T32-A implementation evidence](evidence/2026-10-22/t32-a-review.md). Existing behavior baseline includes the implemented portions of `docs/superpowers/specs/2026-10-21-fresh-ui-refresh-design.md`; retain its behavior safeguards unless an optional task expressly changes them.
 
 ## Source inventory
 

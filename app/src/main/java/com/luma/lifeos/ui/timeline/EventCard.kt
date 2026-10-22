@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.timeline
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +21,7 @@ import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.language.activityTypeDisplayName
 import com.luma.lifeos.language.activityUnitDisplayName
 import com.luma.lifeos.language.emotionDisplayName
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.mood.moodScoreLabel
 import com.luma.lifeos.ui.usage.appUsageDuration
 import com.luma.lifeos.ui.common.exactDuration
@@ -33,12 +35,22 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
     val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     val event = record.event
     val action = stringResource(openActionLabel)
-    Card(Modifier.fillMaxWidth().testTag("event_${event.id}").clickable(onClickLabel = action, onClick = onOpen)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(event.type.label()), style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("event_${event.id}")
+            .clickable(onClickLabel = action, onClick = onOpen),
+        shape = RoundedCornerShape(LumaUi.SectionRadius),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(stringResource(event.type.label()), modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(event.occurredAt.atZone(zone).format(displayTime.time()),
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (onMemory != null && (record.canPromoteToMemory || (event.type == EventType.MEMORY && record.canEditContent))) {
@@ -56,8 +68,12 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
             }
             // Usage already supplies its app name as the primary content.
             if (record.appUsage == null) event.title?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = if (record.journal != null) MaterialTheme.typography.titleLarge
-                    else MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val titleStyle = if (record.journal != null) {
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = MaterialTheme.typography.headlineSmall.fontFamily,
+                    )
+                } else MaterialTheme.typography.titleMedium
+                Text(it, style = titleStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             record.mood?.let { mood ->
                 Text(stringResource(R.string.mood_score_value, mood.score, stringResource(moodScoreLabel(mood.score))),
@@ -65,7 +81,10 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
             }
             val body = record.journal?.body ?: record.mood?.note ?: event.note ?: record.memory?.note
             body?.takeIf { it.isNotBlank() }?.let {
-                Text(it.take(500), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(it.take(500), style = MaterialTheme.typography.bodyMedium,
+                    color = if (record.journal != null) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             // Some browsing surfaces only open the source mood editor. Keep its marker
             // preview until those callers offer a separate memory action.

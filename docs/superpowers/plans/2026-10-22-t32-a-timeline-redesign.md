@@ -10,6 +10,8 @@
 
 **Spec:** [Corresponding specification](../specs/2026-10-22-t32-a-timeline-redesign-design.md).
 
+**Execution status (22 October 2026):** Timeline source implementation, assemble and lint are complete. Gradle test tasks and emulator were not run as requested; screenshots and rendered checks remain pending. See [T32-A implementation evidence](../../luma-redesign/evidence/2026-10-22/t32-a-review.md). No commit was created; the proposed message is `feat(ui): redesign Timeline feed and editorial cards`.
+
 ## Global constraints
 
 - Native Android, Kotlin, Compose Material 3 and Navigation Compose; keep minSdk 28, compileSdk 35, targetSdk 35 and JDK 17.
@@ -53,9 +55,9 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: TimelinePagingRouteTest: stable keys/order across bounded windows, equal timestamps, date-only logs, usage toggle and selected-day restoration; error/empty retains controls.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Use the corrected timeline-light.html alongside its PNG to group date controls above counts/View options in a rounded ribbon; keep direct Search. Apply the spec’s 48/32 dp node-column adaptation, 8 dp gap, 2 dp rail, 16 dp row gap/padding and shared 24 dp radius. Keep the pager/query and real View options disclosure unchanged; omit an unmapped date dropdown and do not copy the HTML’s label-only Compact toggle. Connect decorative rail segments without collecting a second feed.
+- [x] Use the corrected timeline-light.html alongside its PNG to group date controls above counts/View options in a rounded ribbon; keep direct Search. Apply the spec’s 48/32 dp node-column adaptation, 8 dp gap, 2 dp rail, 16 dp row gap/padding and shared 24 dp radius. Keep the pager/query and real View options disclosure unchanged; omit an unmapped date dropdown and do not copy the HTML’s label-only Compact toggle. Connect decorative rail segments without collecting a second feed.
 - [ ] Rerun the affected regression tests and inspect: Inspect decorative rail continuity and RTL placement, no extra semantic focus targets and last-row clearance above capture FAB.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [x] Record source/build results and review the diff against every owned spec requirement. Runtime evidence remains NOT RUN; the proposed commit message is recorded above and no commit was created.
 
 ### Task 2: Event and habit cards
 
@@ -63,13 +65,13 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: EventCardTest and HabitTimelineFlowTest: open/memory/correction targets retain record/log IDs, zone labels and exact activity units; standalone logs do not acquire inferred targets.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Restyle EventCard and HabitTimelineCard using existing models and callbacks. Apply serif journal headings and concise metadata; preserve memory action semantics and source/zone labels.
+- [x] Restyle EventCard and HabitTimelineCard using existing models and callbacks. Apply serif journal headings and concise metadata; preserve memory action semantics and source/zone labels.
 - [ ] Rerun the affected regression tests and inspect: Inspect serif journal title/excerpt, metadata-only photo count and all non-journal card variants in both themes and shared consumers.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [x] Record source/build results and review the diff against every owned spec requirement. Runtime evidence remains NOT RUN; the proposed commit message is recorded above and no commit was created.
 
 ## Planned verification and completion
 
-Run focused classes while iterating; extend their fixtures rather than duplicate the same state contract in a new suite. Also run any new test classes named in the spec. Commands are planned checks and have not run in this documentation change.
+The focused instrumentation command below remains NOT RUN at the user's request. The build/lint command was run successfully and is recorded in the execution evidence. No new test classes were added.
 
 ```bash
 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.TimelineFlowTest,com.luma.lifeos.TimelinePagingRouteTest,com.luma.lifeos.habits.HabitTimelineFlowTest,com.luma.lifeos.EventCardTest,com.luma.lifeos.DetailNavigationTest
