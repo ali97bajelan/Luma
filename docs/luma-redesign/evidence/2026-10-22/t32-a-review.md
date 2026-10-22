@@ -2,7 +2,7 @@
 
 Status: **implemented (validation pending)**. This records the Timeline source implementation and build/lint result; it is not rendered or release acceptance.
 
-Execution date: 2026-10-22, Asia/Tehran. Base revision: `57dc056e7ba68e66b881f5586cc9f2c8d4cde259` plus the uncommitted T32-A source diff. The APK was built from that working tree; build SHA: **N/A — no commit was created**. Device/API/locale/theme/window/font scale: **NOT RUN**.
+Execution date: 2026-10-22, Asia/Tehran. At validation time, the source was an uncommitted T32-A diff on base revision `57dc056e7ba68e66b881f5586cc9f2c8d4cde259`; it was subsequently committed as `b8d0b1a`. The APK was built from the implementation working tree before that commit and has no recorded build SHA. Device/API/locale/theme/window/font scale: **NOT RUN**.
 
 ## Implemented scope
 

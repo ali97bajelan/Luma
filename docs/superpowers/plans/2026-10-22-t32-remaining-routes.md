@@ -42,10 +42,10 @@ Inventory result: [route-coverage.md](../../luma-redesign/route-coverage.md). Th
 
 ### Task 2: Cross-family integration
 
-- [ ] After child tasks, verify each ledger entry against implementation and evidence; resolve incompatible shared-component changes and forward the completed ledger to T33. Blocked until T32-A/B/C/D have implementation evidence.
-- [ ] Verify every child acceptance scenario against its evidence; resolve duplicate ownership or inconsistent component treatments. Keep task status pending/validation pending until checks actually pass. Blocked until T32-A/B/C/D evidence exists.
+- [x] Reconcile the route ledger against current route declarations and T32-A/B/C/D source evidence; no conflicting ownership or shared-component treatment was found. Forward the ledger and its unresolved provider-absent route gaps to T33. Rendered/runtime acceptance remains open; see [coordinator evidence](../../luma-redesign/evidence/2026-10-22/t32-coordinator-review.md).
+- [ ] Verify every child behavior and rendered acceptance scenario against runtime evidence. Child source records exist, but the required Gradle tests and emulator checks were not run at the user's request; no child acceptance is signed off by this source review.
 - [x] Check the complete route set against current registrations again and hand off uncovered/blocked rows explicitly to T33.
-- [ ] Review and commit only the resulting ledger/evidence documents when executing; do not call a future implementation or device check complete from this plan.
+- [ ] Commit the reviewed ledger/evidence documents. Suggested message for this documentation update: `docs(ui): reconcile T32 route coverage and status`. No Gradle tests or emulator checks were run, per the user's instruction.
 
 ## Planned verification
 

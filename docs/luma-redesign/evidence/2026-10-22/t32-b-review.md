@@ -2,7 +2,7 @@
 
 Status: **implemented (validation pending)**. This is a source implementation record and T33 handoff, not release acceptance.
 
-Execution date: 2026-10-22, Asia/Tehran. Base revision: `b8d0b1a09dfdae82d9b13852022aef4cc7044fb4`; implementation remains an uncommitted working-tree diff on `main`. Build SHA, device, API, locale, theme, window size and font scale: **N/A — no build or device run**. Required rendered matrix remains English/French/Persian, Light/Dark/System, 320 dp at 2.0, 411 × 891 dp at 1.0, and 840 dp width.
+Execution date: 2026-10-22, Asia/Tehran. At evidence capture, the implementation was an uncommitted working-tree diff on base revision `b8d0b1a09dfdae82d9b13852022aef4cc7044fb4`; it was subsequently committed as `a0e57fa`. Build SHA, device, API, locale, theme, window size and font scale: **N/A — no build or device run**. Required rendered matrix remains English/French/Persian, Light/Dark/System, 320 dp at 2.0, 411 × 891 dp at 1.0, and 840 dp width.
 
 ## Implemented scope
 
