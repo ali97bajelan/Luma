@@ -42,7 +42,8 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit,
             ReviewValue(stringResource(R.string.review_usage_total), usageValue(a, currentTotal, availability.usage),
                 usageValue(b, previousTotal, availability.usage),
                 delta?.let { stringResource(R.string.review_duration_change, if (it > 0) "+" else if (it < 0) "−" else "",
-                    reviewDuration(abs(it), stringResource(R.string.review_usage_partial_total_unknown))) }, "usage")
+                    reviewDuration(abs(it), stringResource(R.string.review_usage_partial_total_unknown))) }, "usage",
+                currentUnavailable = currentTotal == null, previousUnavailable = previousTotal == null)
         }
         if (a == null && b == null) {
             val absence = metricAbsence(false, false, false, availability.usage) ?: MetricAbsence.NO_SAVED_DATA
@@ -71,7 +72,8 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit,
                 val previousMillis = previous?.durationMillis ?: if (b != null && b.completeDates == report.period.previous.dates.size) 0L else null
                 ReviewValue(app.appLabel ?: app.packageName,
                     reviewDuration(currentMillis, stringResource(R.string.review_usage_app_missing)),
-                    reviewDuration(previousMillis, stringResource(R.string.review_usage_app_missing)), null, "app_${app.packageName}")
+                    reviewDuration(previousMillis, stringResource(R.string.review_usage_app_missing)), null, "app_${app.packageName}",
+                    currentUnavailable = currentMillis == null, previousUnavailable = previousMillis == null)
             }
         }
         if (a?.days.orEmpty().isNotEmpty() || b?.days.orEmpty().isNotEmpty()) DetailsDisclosure(R.string.review_daily_evidence, "review_usage_daily_details") {
@@ -125,7 +127,8 @@ internal fun ReviewActivities(report: WeeklyReview, onSources: (ReviewDates, Rev
                 ReviewValue("$displayType · $displayUnit · ${stringResource(group.source.label())}", value(a), value(b),
                     formatActivityChange(a?.total?.total, b?.total?.total, Locale.getDefault())?.let { "$it $displayUnit" },
                     "activity_${group.type}_${group.unit}_${group.source}",
-                    a?.let { { onSources(report.period.current, metric) } }, b?.let { { onSources(report.period.previous, metric) } })
+                    a?.let { { onSources(report.period.current, metric) } }, b?.let { { onSources(report.period.previous, metric) } },
+                    currentUnavailable = a == null, previousUnavailable = b == null)
             }
         }
     }

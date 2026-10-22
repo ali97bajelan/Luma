@@ -58,7 +58,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: WeeklyReviewFlowTest: current/previous partial-week ranges restore, every section remains reachable and methodology opens/closes.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Restyle ReviewHeader, ReviewSectionNavigation and ReviewSection containers using T30, preserving sticky anchors, methodology dialogs and selected-week behavior.
+- [x] Restyle ReviewHeader, ReviewSectionNavigation and ReviewSection containers using T30, preserving sticky anchors, methodology dialogs and selected-week behavior.
 - [ ] Rerun the affected regression tests and inspect: Inspect period badge/caption and sticky section controls with long French/Persian labels.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 
@@ -68,7 +68,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: ReviewOverviewTest/HabitWeekPresentationTest and ReviewUsageFlowTest: missing vs recorded zero, fractional activity, partial coverage, source IDs and per-habit future slots remain distinct.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Apply shared value, absence and delta treatments to overview/signals/memory and detailed sections; keep data calculations and order unchanged. Use existing habit-day slots only where their current model applies.
+- [x] Apply shared value, absence and delta treatments to overview/signals/memory and detailed sections; keep data calculations and order unchanged. Use existing habit-day slots only where their current model applies.
 - [ ] Rerun the affected regression tests and inspect: Inspect personal→memory→signals overview and detailed comparisons without invented streak/chart/active-day text; all current/previous sources still work.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 

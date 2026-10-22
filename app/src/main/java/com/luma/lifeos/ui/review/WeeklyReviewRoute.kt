@@ -228,7 +228,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                     ReviewValue(stringResource(kind.label()), reviewScale(scales.first, currentAbsence), reviewScale(scales.second, previousAbsence),
                     reviewChange(scales.first?.average, scales.second?.average), kind.name.lowercase(),
                     scales.first?.let { { onSources(report.period.current, ReviewMetric(kind)) } },
-                    scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } })
+                    scales.second?.let { { onSources(report.period.previous, ReviewMetric(kind)) } },
+                    currentUnavailable = scales.first == null, previousUnavailable = scales.second == null)
                 }
             }
         }

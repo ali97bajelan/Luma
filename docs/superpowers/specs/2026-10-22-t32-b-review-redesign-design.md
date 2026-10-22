@@ -1,7 +1,7 @@
 # T32-B — Weekly Review modules and comparisons specification
 
-Date: 2026-10-22  
-Status: Proposed / pending implementation. This document is a planning artifact, not release acceptance.  
+Date: 2026-10-22
+Status: Implemented (validation pending). This document remains the design contract, not release acceptance.
 Depends on: T30
 
 ## Intent and sources

@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaSectionSurface
 
 @Composable
@@ -32,13 +33,13 @@ internal fun ReviewSection(
 ) {
     var about by rememberSaveable { mutableStateOf(false) }
     LumaSectionSurface(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 Icon(painterResource(icon), contentDescription = null,
-                    modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                Text(stringResource(title), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.size(LumaUi.IconSize), tint = MaterialTheme.colorScheme.primary)
+                Text(stringResource(title), style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.weight(1f).testTag("review_heading_$tag").semantics { heading() })
                 if (explanation != null) {
                     val state = stringResource(if (about) R.string.review_details_expanded else R.string.review_details_collapsed)
@@ -46,7 +47,7 @@ internal fun ReviewSection(
                         .semantics { stateDescription = state }) {
                         Icon(painterResource(R.drawable.ic_info),
                             contentDescription = "${stringResource(title)} · ${stringResource(R.string.review_methodology)}",
-                            modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            modifier = Modifier.size(LumaUi.IconSize), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

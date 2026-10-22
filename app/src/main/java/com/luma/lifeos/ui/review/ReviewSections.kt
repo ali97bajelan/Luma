@@ -2,6 +2,7 @@ package com.luma.lifeos.ui.review
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -25,14 +27,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.review.ReviewPeriod
 import com.luma.lifeos.language.localizedDate
+import com.luma.lifeos.ui.common.LumaUi
 import java.time.format.FormatStyle
 
 internal data class ReviewSectionDestination(val key: String, @StringRes val title: Int)
@@ -76,55 +81,62 @@ internal fun ReviewSectionNavigation(
         selected?.let { requesters[it]?.bringIntoView() }
     }
 
-    Column(
-        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LumaUi.InnerCardRadius),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-        Row(
-            Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                contentDescription = stickyDescription
-            }.testTag("review_sticky_week"),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Column(Modifier.weight(1f).padding(end = 8.dp)) {
-                Text(range, style = MaterialTheme.typography.titleSmall)
-                if (period.partial) {
-                    Text(inProgress, style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+                    contentDescription = stickyDescription
+                }.testTag("review_sticky_week"),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(range, style = MaterialTheme.typography.titleSmall)
+                    if (period.partial) {
+                        Text(inProgress, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                TextButton(
+                    onClick = { onSection("overview") },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_action"),
+                ) {
+                    Text(stringResource(R.string.review_overview_action))
                 }
             }
-            TextButton(
-                onClick = { onSection("overview") },
-                modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_action"),
-            ) {
-                Text(stringResource(R.string.review_overview_action))
-            }
-        }
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        ) {
-            TextButton(
-                onClick = { showSections = true },
-                modifier = Modifier.heightIn(min = 48.dp).testTag("review_sections_open"),
-            ) {
-                Text(stringResource(R.string.review_sections))
-            }
-            Row(
-                Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                shortcuts.forEach { destination ->
-                    FilterChip(
-                        selected = selected == destination.key,
-                        onClick = { onSection(destination.key) },
-                        label = { Text(stringResource(destination.title)) },
-                        modifier = Modifier.heightIn(min = 48.dp)
-                            .bringIntoViewRequester(requesters.getValue(destination.key))
-                            .testTag("review_section_${destination.key}"),
-                    )
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val compact = maxWidth < 320.dp || LocalDensity.current.fontScale >= 1.5f
+                if (compact) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(
+                            onClick = { showSections = true },
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("review_sections_open"),
+                        ) {
+                            Text(stringResource(R.string.review_sections))
+                        }
+                        SectionShortcuts(shortcuts, selected, onSection, requesters)
+                    }
+                } else {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    ) {
+                        TextButton(
+                            onClick = { showSections = true },
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("review_sections_open"),
+                        ) {
+                            Text(stringResource(R.string.review_sections))
+                        }
+                        SectionShortcuts(shortcuts, selected, onSection, requesters, Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -159,5 +171,30 @@ internal fun ReviewSectionNavigation(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun SectionShortcuts(
+    shortcuts: List<ReviewSectionDestination>,
+    selected: String?,
+    onSection: (String) -> Unit,
+    requesters: Map<String, BringIntoViewRequester>,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        shortcuts.forEach { destination ->
+            FilterChip(
+                selected = selected == destination.key,
+                onClick = { onSection(destination.key) },
+                label = { Text(stringResource(destination.title)) },
+                modifier = Modifier.heightIn(min = 48.dp)
+                    .bringIntoViewRequester(requesters.getValue(destination.key))
+                    .testTag("review_section_${destination.key}"),
+            )
+        }
     }
 }

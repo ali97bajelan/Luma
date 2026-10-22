@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,7 @@ import com.luma.lifeos.domain.habit.HabitWeekComparisonRow
 import com.luma.lifeos.domain.habit.compareHabitWeeks
 import com.luma.lifeos.domain.habit.reviewTarget
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.habits.habitUnitLabel
 import java.time.LocalDate
 import java.time.format.FormatStyle
@@ -146,10 +148,11 @@ private fun HabitReviewRow(
 
     Card(
         Modifier.fillMaxWidth().testTag("review_habit_${row.habit.id}"),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape = RoundedCornerShape(LumaUi.InnerCardRadius),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(12.dp),
+            Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(row.habit.name, style = MaterialTheme.typography.titleMedium)

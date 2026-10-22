@@ -8,6 +8,7 @@ import android.icu.util.DateInterval
 import android.icu.util.TimeZone
 import android.icu.util.ULocale
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -29,6 +30,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.review.ReviewDates
 import com.luma.lifeos.domain.review.ReviewPeriod
 import com.luma.lifeos.language.localizedDate
+import com.luma.lifeos.ui.common.LumaUi
 import java.time.ZoneOffset
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -50,7 +52,7 @@ internal fun ReviewHeader(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.titleLarge.copy(hyphens = Hyphens.Auto),
+            Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineMedium.copy(hyphens = Hyphens.Auto),
                 fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f)
                     .semantics { heading() }.testTag("review_weekly_heading"))
             IconButton(onClick = { about = true }, modifier = Modifier.testTag("review_about")) {
@@ -58,7 +60,10 @@ internal fun ReviewHeader(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        Surface(
+            shape = RoundedCornerShape(LumaUi.SectionRadius),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+        ) {
             Row(Modifier.fillMaxWidth().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(enabled = period.current.start.year > -999999998,
                     onClick = onPrevious, modifier = Modifier.testTag("review_previous")) {

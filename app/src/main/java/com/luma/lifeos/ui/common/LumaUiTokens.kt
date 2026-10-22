@@ -12,6 +12,7 @@ internal object LumaUi {
     val ChoiceGap = 12.dp
     val GroupGap = 24.dp
     val SectionRadius = 24.dp
+    val InnerCardRadius = 16.dp
     val ChoiceRadius = 12.dp
     val IconSize = 24.dp
     val HabitTrackHeight = 8.dp

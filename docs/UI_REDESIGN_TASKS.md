@@ -1,6 +1,6 @@
 # App-wide UI redesign tasks
 
-Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30, T31 and T32-A are implemented with validation pending; T32 coordination is in progress while T32-B/C/D remain pending. T33 acceptance evidence is in progress, with runtime validation pending. Optional features remain deferred.
+Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30, T31, T32-A and T32-B are implemented with validation pending; T32 coordination is in progress while T32-C/D remain pending. T33 acceptance evidence is in progress, with runtime validation pending. Optional features remain deferred.
 
 ## Scope and reference decisions
 
@@ -23,7 +23,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T31 | Today visual hierarchy | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t31-today-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t31-today-redesign.md) |
 | T32 | Remaining routes rollout coordinator | T30; complete T32-A through T32-D before T33 | in progress | [Spec](superpowers/specs/2026-10-22-t32-remaining-routes-design.md) | [Plan](superpowers/plans/2026-10-22-t32-remaining-routes.md) |
 | T32-A | Timeline stream and editorial cards | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t32-a-timeline-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-a-timeline-redesign.md) |
-| T32-B | Weekly Review modules and comparisons | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-b-review-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-b-review-redesign.md) |
+| T32-B | Weekly Review modules and comparisons | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t32-b-review-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-b-review-redesign.md) |
 | T32-C | More, catalogs, search, lists and settings | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-c-supporting-screens-design.md) | [Plan](superpowers/plans/2026-10-22-t32-c-supporting-screens.md) |
 | T32-D | Editors, details, sheets and dialogs | T30; consume T32-A EventCard treatment | pending | [Spec](superpowers/specs/2026-10-22-t32-d-editors-details-modals-design.md) | [Plan](superpowers/plans/2026-10-22-t32-d-editors-details-modals.md) |
 | T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | in progress | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
@@ -50,7 +50,7 @@ Make date context, capture, habit progress, tasks and recent saved records scan 
 
 ### T32 — Remaining routes rollout coordinator
 
-**Status (22 October 2026): in progress.** Static route and modal inventory is recorded in the [T32 route coverage ledger](luma-redesign/route-coverage.md), including conditional providers, shared `EventCard` consumers, launcher-widget scope and explicit evidence gaps. T32-A is implemented (validation pending); T32-B/C/D remain pending. Gradle tests and emulator runs were NOT RUN as requested; rendered acceptance and locale/window checks remain pending.
+**Status (22 October 2026): in progress.** Static route and modal inventory is recorded in the [T32 route coverage ledger](luma-redesign/route-coverage.md), including conditional providers, shared `EventCard` consumers, launcher-widget scope and explicit evidence gaps. T32-A and T32-B are implemented (validation pending); T32-C/D remain pending. Gradle tests and emulator runs were NOT RUN as requested; rendered acceptance and locale/window checks remain pending.
 
 Replace the old catch-all remaining-screen task with four independently reviewable screen-family tasks and a route coverage ledger.
 
@@ -69,6 +69,8 @@ Present the existing mixed chronological feed with a continuous visual rail, typ
 **Acceptance:** A mixed fixture of timestamped entries, equal-time logs, date-only logs and imported activity retains original order and correct open/correction targets. Paging beyond the loaded window creates no duplicate items, disconnected hit targets or hidden retry controls; last item clears the FAB. An empty/error day retains Search, View options and recovery; toggling usage persists across day changes/recreation. Shared EventCard still opens/edits/promotes the correct record in Today, search and detail/history consumers.
 
 ### T32-B — Weekly Review modules and comparisons
+
+**Status (22 October 2026): implemented (validation pending).** The Review period selector, sticky section navigation, overview modules and detailed metric comparisons now use the shared editorial roles while keeping saved values and route callbacks. No Gradle tests or emulator were run as requested; the assemble/lint attempt could not start in the restricted environment. See the [T32-B implementation evidence](luma-redesign/evidence/2026-10-22/t32-b-review.md).
 
 Apply the editorial Review layout to existing saved metrics, comparison periods, source links and section navigation.
 
@@ -94,7 +96,7 @@ Make capture/edit/detail surfaces and modal UI consistent while retaining drafts
 
 ### T33 — Accessibility, regression and visual acceptance
 
-**Status (22 October 2026): in progress.** The acceptance ledger and source-level contrast/font audit are recorded. T31 and T32-A are implemented (validation pending), T32-B/C/D remain pending, and rendered/device acceptance remains pending because no emulator/device run was made. See the [T33 execution evidence](luma-redesign/evidence/2026-10-22/t33-review.md) and [acceptance ledger](luma-redesign/acceptance-2026-10-22.md).
+**Status (22 October 2026): in progress.** The acceptance ledger and source-level contrast/font audit are recorded. T31, T32-A and T32-B are implemented (validation pending), T32-C/D remain pending, and rendered/device acceptance remains pending because no emulator/device run was made. See the [T33 execution evidence](luma-redesign/evidence/2026-10-22/t33-review.md) and [acceptance ledger](luma-redesign/acceptance-2026-10-22.md).
 
 Produce auditable acceptance evidence for the required redesign and separately record any opted-in feature results.
 

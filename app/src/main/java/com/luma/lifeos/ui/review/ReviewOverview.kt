@@ -80,7 +80,7 @@ internal fun ReviewOverview(
                 detail = samples,
             )
             if (mood == null) {
-                TextButton(onClick = onCheckIn, modifier = Modifier.testTag("review_overview_checkin")) {
+                TextButton(onClick = onCheckIn, modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_checkin")) {
                     Text(stringResource(R.string.review_checkin_action))
                 }
             }
