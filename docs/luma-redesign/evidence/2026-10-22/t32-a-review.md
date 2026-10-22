@@ -1,6 +1,8 @@
 # T32-A implementation review — 2026-10-22
 
-Status: **implemented (validation pending)**. This records the Timeline source implementation and build/lint result; it is not rendered or release acceptance.
+Follow-up validation (2026-10-22): the clean 36-test focused Timeline/Review/navigation run passes, including both larger-text EventCard viewport cases, RTL controls, Timeline disclosure behavior, date-only logs, paging and source navigation. EventCard now uses a 4 dp content gap at font scale 1.3 and above; the date test follows the device's locale and 12/24-hour setting. See the [T30–T33 recheck](t33-revalidation.md). Current status: **implemented (validation pending)**; required visual/accessibility evidence remains NOT RUN.
+
+Initial implementation review status: **blocked**, before the follow-up code and test changes described above. This records the Timeline source implementation and original build/lint result.
 
 Execution date: 2026-10-22, Asia/Tehran. At validation time, the source was an uncommitted T32-A diff on base revision `57dc056e7ba68e66b881f5586cc9f2c8d4cde259`; it was subsequently committed as `b8d0b1a`. The APK was built from the implementation working tree before that commit and has no recorded build SHA. Device/API/locale/theme/window/font scale: **NOT RUN**.
 
@@ -32,4 +34,4 @@ The user explicitly requested no Gradle tests or emulator. None were run.
 | English/French/Persian, RTL, 320 dp at 2.0, 411 × 891 dp at 1.0, and 840 dp layout matrix | NOT RUN | Verify long dates, names, units, wrapping and all action reachability. |
 | TalkBack, keyboard focus, target reachability, system bars, FAB clearance and animation scale | NOT RUN | Inspect rendered behavior on device. |
 
-No release acceptance is claimed. T32-A remains **implemented (validation pending)** until the listed behavior and rendered checks have recorded results.
+No release acceptance is claimed. The remaining behavior, rendered and accessibility checks are listed above and in the [current validation recheck](t33-revalidation.md).

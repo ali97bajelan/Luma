@@ -589,6 +589,7 @@
     <string name="review_view_sources">دیدن منابع این بازه</string>
     <string name="review_view_previous_sources">دیدن منابع بازهٔ قبل</string>
     <string name="review_source_heading">منابع مرور</string>
+    <string name="review_sources_provider_unavailable">منابع ذخیره‌شدهٔ مرور باز نمی‌شوند، چون ارائه‌دهندهٔ مرور در دسترس نیست.</string>
     <string name="review_source_previous_page">صفحهٔ قبلی</string>
     <string name="review_source_next_page">صفحهٔ بعدی</string>
     <string name="review_no_sources">اطلاعاتی که در این انتخاب سهم داشته باشند باقی نمانده است.</string>
@@ -634,6 +635,7 @@
     <string name="review_activity_value">%1$s %2$s · مشاهده‌ها: %3$d · روزها: %4$d</string>
     <string name="review_activity_explanation">مجموع‌ها بر اساس نوع، واحد و منبع گروه‌بندی می‌شوند. روزهای بدون داده، در دسترس نیستند؛ داده‌های ارائه‌دهندگان مختلف با هم جمع نمی‌شوند.</string>
     <string name="review_saved_usage">استفادهٔ ذخیره‌شده از برنامه‌ها</string>
+    <string name="review_usage_provider_unavailable">جزئیات استفادهٔ ذخیره‌شده باز نمی‌شود، چون ارائه‌دهندهٔ استفاده در دسترس نیست. ممکن است مجموع‌های هفتگی همچنان در مرور دیده شوند.</string>
     <string name="review_all_memories">دیدن خاطره‌ها</string>
     <string name="review_catalog_detail">باز کردن جزئیات</string>
     <string name="review_duration_change">%1$s%2$s</string>

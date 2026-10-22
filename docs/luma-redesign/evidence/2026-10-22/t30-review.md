@@ -1,6 +1,8 @@
 # T30 implementation review — 2026-10-22
 
-Status: **implemented (validation pending)**. This is source evidence and a T33 handoff, not release acceptance.
+Follow-up validation: see the [T30–T33 recheck](t33-revalidation.md). It supersedes the pending build/test statements below: host checks passed, while `LanguageFlowTest.journalDraftTextTagsAndDateSurviveLanguageChangeThenSaveAndDetail` failed in the connected run.
+
+Status: **blocked**. This is source evidence and a T33 handoff, not release acceptance; see the latest validation recheck above.
 
 Execution date: 2026-10-22, Asia/Tehran. Base revision: `867413e5dbe9620cf88076f8ec45f4099a13db79`; implementation is an uncommitted working-tree diff. Build SHA, device, API, measured window and runtime font scale: **N/A — no build or device run**. Required runtime matrix remains English/French/Persian, Light/Dark/System, 320 dp at 2.0, 411 × 891 dp at 1.0, and 840 dp width.
 

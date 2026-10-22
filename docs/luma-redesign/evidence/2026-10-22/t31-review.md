@@ -1,6 +1,8 @@
 # T31 implementation review — 2026-10-22
 
-Status: **implemented (validation pending)**. This records source/build checks and a T33 handoff, not release acceptance.
+Follow-up validation: see the [T30–T33 recheck](t33-revalidation.md). It supersedes the pending test statement below: host checks passed, while `HabitCaptureFlowTest.todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtTwo` failed in the connected run.
+
+Status: **blocked**. This records implementation evidence and a T33 handoff, not release acceptance; see the latest validation recheck above.
 
 Execution date: 2026-10-22, Asia/Tehran. Base revision: `a03eeb86a7a898d558e7ed7b16909af1ad5e1047`; implementation is an uncommitted working-tree diff on `main`. Build SHA/device/API/locale/theme/window/font scale: **N/A — no device run**. The required runtime matrix remains English/French/Persian, Light/Dark/System, 320 dp at 2.0, 411 × 891 dp at 1.0, and 840 dp width.
 

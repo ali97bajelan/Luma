@@ -24,6 +24,23 @@ import java.time.ZoneId
 import java.time.format.FormatStyle
 
 @Composable
+fun ReviewSourcesDestination(repository: WeeklyReviewRepository?, dates: ReviewDates, zone: ZoneId, metric: ReviewMetric,
+    onBack: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: ((LifeEventRecord) -> Unit)? = null) {
+    if (repository == null) {
+        ReviewProviderUnavailableRoute(
+            title = R.string.review_source_heading,
+            message = R.string.review_sources_provider_unavailable,
+            screenTag = "screen_review_sources",
+            messageTag = "review_sources_unavailable_message",
+            backTag = "review_sources_back",
+            onBack = onBack,
+        )
+    } else {
+        ReviewSourcesRoute(repository, dates, zone, metric, onBack, onEvent, onMemory)
+    }
+}
+
+@Composable
 fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, zone: ZoneId, metric: ReviewMetric,
     onBack: () -> Unit, onEvent: (LifeEventRecord) -> Unit, onMemory: ((LifeEventRecord) -> Unit)? = null) {
     var offset by rememberSaveable(dates, metric) { mutableIntStateOf(0) }
@@ -31,7 +48,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
     val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review_sources")) {
      Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+        TextButton(onClick = onBack, modifier = Modifier.testTag("review_sources_back")) { Text(stringResource(R.string.back)) }
         AppSectionHeading(stringResource(R.string.review_source_heading))
         LumaSectionSurface {
             Text(stringResource(metric.kind.label()), style = MaterialTheme.typography.titleMedium)

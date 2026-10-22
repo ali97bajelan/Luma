@@ -1,8 +1,10 @@
 # T32-C implementation evidence
 
+Follow-up validation: see the [T30–T33 recheck](t33-revalidation.md). Host checks passed; Search recovery, habit navigation/management and task recovery assertions failed in the full connected run and remain pending isolation.
+
 Date: 2026-10-22
 
-Status: implemented (validation pending)
+Status: blocked
 
 T32-C applies the T30 shared presentation to supporting browse and settings routes. Catalog, search, task, habit, review-history and in-app widget configuration content now uses the shared reading width and neutral list/section surfaces. Settings destinations use the same choice-row treatment, and compact dates and source labels use the shared secondary text roles. More already used the shared reading pane and choice rows, so its existing treatment was retained.
 
@@ -17,4 +19,4 @@ The existing route IDs, repositories, callbacks, saved catalog queries, filters,
 | Gradle unit/instrumentation tests | NOT RUN | User requested no Gradle tests. |
 | Emulator/device, Light/Dark, locale, window and font-scale captures | NOT RUN | User requested no emulator; no rendered evidence was produced. |
 
-The task remains implemented (validation pending). Update the route ledger only as checks are performed; planned capture paths are not evidence.
+The task remains blocked by the connected-test failures recorded in the [latest validation recheck](t33-revalidation.md). Planned capture paths are not evidence.

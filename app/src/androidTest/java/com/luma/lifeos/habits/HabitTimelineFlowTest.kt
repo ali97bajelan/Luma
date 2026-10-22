@@ -1,5 +1,6 @@
 package com.luma.lifeos.habits
 
+import android.text.format.DateFormat
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.room.Room
@@ -13,6 +14,7 @@ import com.luma.lifeos.domain.habit.HabitSaveInput
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.MoodInput
 import com.luma.lifeos.ui.theme.LifeOsTheme
+import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.ui.timeline.TimelineRoute
 import java.time.Clock
 import java.time.DayOfWeek
@@ -52,6 +54,10 @@ class HabitTimelineFlowTest {
         val timed = UUID.randomUUID()
         val eventId = EventId.new()
         val happened = date.atTime(9, 0).atZone(habitZone).toInstant()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val locale = context.resources.configuration.locales[0]
+        val expectedTime = localizedTime(DateFormat.is24HourFormat(context), locale)
+            .format(happened.atZone(habitZone))
         runBlocking {
             habits.create(habitId, HabitSaveInput("Water", "glasses", date.minusDays(7), 8,
                 DayOfWeek.entries.toSet(), habitZone))
@@ -72,7 +78,7 @@ class HabitTimelineFlowTest {
         compose.onNodeWithTag("timeline_date_only_group").assertIsDisplayed()
         compose.onNodeWithTag("habit_timeline_$dateOnly").assertTextContains("Time not recorded", substring = true)
         compose.onNodeWithTag("habit_timeline_zone_$dateOnly", useUnmergedTree = true).assertTextContains("Asia/Tehran")
-        compose.onNodeWithTag("habit_timeline_$timed").assertTextContains("09:00")
+        compose.onNodeWithTag("habit_timeline_$timed").assertTextContains(expectedTime)
         compose.onNodeWithTag("habit_timeline_zone_$timed", useUnmergedTree = true).assertTextContains("Asia/Tehran")
         compose.onNodeWithTag("timeline_counts").assertTextEquals("1 entry · 2 habit logs")
         compose.onNodeWithTag("habit_timeline_$dateOnly").performScrollTo().performClick()

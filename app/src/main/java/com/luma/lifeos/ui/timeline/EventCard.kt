@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -33,6 +34,7 @@ import java.time.format.FormatStyle
 fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
     @StringRes openActionLabel: Int, onMemory: (() -> Unit)? = null) {
     val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
+    val contentSpacing = if (LocalDensity.current.fontScale >= 1.3f) 4.dp else 8.dp
     val event = record.event
     val action = stringResource(openActionLabel)
     Card(
@@ -42,7 +44,7 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(contentSpacing)) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

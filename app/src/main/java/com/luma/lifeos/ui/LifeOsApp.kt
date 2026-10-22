@@ -457,21 +457,19 @@ fun LifeOsApp(
                 arguments = listOf("start", "through", "kind", "id", "activity", "unit", "source").map { name ->
                     navArgument(name) { type = NavType.StringType; if (name in setOf("id", "activity", "unit", "source")) defaultValue = "" }
                 }) { entry ->
-                reviews?.let { reviewRepository ->
-                    val args = requireNotNull(entry.arguments)
-                    val kind = ReviewMetricKind.valueOf(requireNotNull(args.getString("kind")))
-                    val metric = ReviewMetric(kind, args.getString("id")?.takeIf { it.isNotEmpty() }?.let(UUID::fromString),
-                        if (kind == ReviewMetricKind.ACTIVITY) ReviewActivityKey(requireNotNull(args.getString("activity")),
-                            requireNotNull(args.getString("unit")), com.luma.lifeos.domain.model.EventSource.valueOf(requireNotNull(args.getString("source")))) else null)
-                    ReviewSourcesRoute(reviewRepository,
-                        ReviewDates(LocalDate.parse(args.getString("start")), LocalDate.parse(args.getString("through"))),
-                        currentDay.zone, metric, onBack = { navController.popBackStack() }, onEvent = ::openEvent,
-                        onMemory = { navController.navigate("memory?eventId=${it.event.id}") })
-                }
+                val args = requireNotNull(entry.arguments)
+                val kind = ReviewMetricKind.valueOf(requireNotNull(args.getString("kind")))
+                val metric = ReviewMetric(kind, args.getString("id")?.takeIf { it.isNotEmpty() }?.let(UUID::fromString),
+                    if (kind == ReviewMetricKind.ACTIVITY) ReviewActivityKey(requireNotNull(args.getString("activity")),
+                        requireNotNull(args.getString("unit")), com.luma.lifeos.domain.model.EventSource.valueOf(requireNotNull(args.getString("source")))) else null)
+                ReviewSourcesDestination(reviews,
+                    ReviewDates(LocalDate.parse(args.getString("start")), LocalDate.parse(args.getString("through"))),
+                    currentDay.zone, metric, onBack = { navController.popBackStack() }, onEvent = ::openEvent,
+                    onMemory = { navController.navigate("memory?eventId=${it.event.id}") })
             }
             composable("review_usage/{date}", arguments = listOf(navArgument("date") { type = NavType.StringType })) { entry ->
-                usage?.let { ReviewUsageRoute(it, LocalDate.parse(entry.arguments?.getString("date")), currentDay.zone,
-                    onBack = { navController.popBackStack() }) }
+                ReviewUsageDestination(usage, LocalDate.parse(entry.arguments?.getString("date")), currentDay.zone,
+                    onBack = { navController.popBackStack() })
             }
             composable("search") {
                 search?.let { com.luma.lifeos.ui.search.SearchRoute(it, currentDay.zone,

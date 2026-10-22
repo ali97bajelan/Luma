@@ -79,7 +79,8 @@ class EventCardTest {
         compose.onNodeWithText("A quiet walk 3").assertIsDisplayed()
         val last = compose.onNodeWithTag("event_${records.last().event.id}").getUnclippedBoundsInRoot()
         val viewport = compose.onNodeWithTag("viewport").getUnclippedBoundsInRoot()
-        assertTrue("Three short entries should fit entirely in the feed viewport", last.bottom <= viewport.bottom)
+        assertTrue("Three short entries should fit entirely in the feed viewport; last bottom=${last.bottom}, viewport bottom=${viewport.bottom}",
+            last.bottom <= viewport.bottom)
         compose.onNodeWithTag("event_${records.first().event.id}").performClick()
         compose.runOnIdle { assertEquals(records.first().event.id, opened) }
         compose.onNodeWithTag("event_memory_${records.first().event.id}")

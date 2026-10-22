@@ -1,6 +1,8 @@
 # T32-D implementation evidence — 2026-10-22
 
-Status: **implemented (validation pending)**. The source styling pass is recorded here; behavior, automated and rendered acceptance remain open. Gradle tests and emulator checks were not run, as requested.
+Follow-up validation: see the [T30–T33 recheck](t33-revalidation.md). Host checks passed, but several connected capture/editor lifecycle tests failed and remain pending isolation.
+
+Status: **blocked**. The source styling pass is recorded here; later connected tests found capture/editor failures. See the latest validation recheck linked above.
 
 ## Source changes
 
@@ -26,4 +28,4 @@ Dark/light rendering, English/French/Persian strings, RTL, large fonts, 320 dp a
 
 ## Acceptance
 
-T32-D is **implemented (validation pending)**. T33 route, state and rendered acceptance remains open. No screenshots or test outcomes are inferred from source inspection.
+T32-D is **blocked**. T33 route, state and rendered acceptance remain open. No screenshots or test outcomes are inferred from source inspection.

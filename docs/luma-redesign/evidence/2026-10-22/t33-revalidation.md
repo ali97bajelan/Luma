@@ -1,49 +1,81 @@
 # T30–T33 validation recheck — 2026-10-22
 
-Status after this recheck: T30, T31, T32 and T32-A through T32-D remain **implemented (validation pending)**. T33 remains **blocked; release acceptance NOT RUN**. The host regression/build checks passed, but the required current-build route, state, locale, theme, window and accessibility matrix is incomplete, and the provider-absent Review routes remain a source-confirmed blocker.
+## Decision and task status
 
-## Source and build
+Release acceptance is **NOT ACCEPTED**. T30, T31, T32-C and T32-D remain **blocked** by full-suite connected failures. T32 coordination and T33 are **blocked** on those child failures and the required rendered/accessibility matrix. T32-A and T32-B are **implemented (validation pending)**: their 36-test focused regression run passes, while visual, locale/window and accessibility evidence remains NOT RUN. Optional O01–O08 remain deferred.
 
-- Source revision: `10178b40767302293b7818598218e0cf225fe842`; working tree was clean before this documentation update. No application source was changed during the recheck.
-- Runtime: OpenJDK 17.0.20.1; cached Gradle 9.1.0, offline.
-- `:app:testDebugUnitTest`: **PASS**, 271 tests, 0 failures, 0 errors, 0 skipped across 39 result files.
-- `:app:assembleDebug`: **PASS**.
-- `:app:lintDebug`: **PASS**, report contains 144 warnings; the warnings were not triaged in this pass.
-- `python3 docs/luma-redesign/audit-t30.py`: **PASS**, 158 opaque light/dark role pairs and bundled font metadata/coverage, 0 audit failures.
-- `git diff --check` and a trailing-whitespace check across the updated docs: **PASS** after the status/evidence edits.
-- Debug APK SHA-256: `77b28d05653dd239947199f92bb7766a670a8f23704dd569be40f0dcbf3ff964` (`app/build/outputs/apk/debug/app-debug.apk`).
+The EventCard viewport issue and provider-absent Review routes are fixed and covered by passing focused instrumentation. Two Timeline disclosure assertions and the date-only log's hard-coded 24-hour expectation were stale; the tests now follow the expanded disclosure and the device's time-format setting. The full connected run still has 15 failures outside the passing focused T32-A/B set.
 
-The final successful Gradle invocation used the preinstalled Gradle 9.1.0 binary and cache with `--offline`:
+## Environment and commands
 
-```text
-:app:testDebugUnitTest :app:assembleDebug :app:lintDebug --offline --console=plain
-BUILD SUCCESSFUL in 1s
+- Date: 2026-10-22, Asia/Tehran.
+- Tested baseline revision: `3825167781a29cd25f7e37c761d32a787edddec8`; the tested source also included uncommitted follow-up changes in the working tree.
+- Runtime: OpenJDK 17.0.20.1; Gradle 9.1.0; offline dependencies.
+- Device: clean disposable `LumaFix_API36` clone of the `Medium_Phone_API_36.1` configuration, API 36, 1080 × 2400 px at 420 dpi (about 411 × 914 dp), font scale 1.0. Locale property was unset and was not recorded. The configured AVD user data was not used or cleared.
+- Debug APK SHA-256: `5b67fb18e710a3f664fb717577bf2ea12f4f9a3a15af0351c380da0ae3d01ae6`.
+
+Host validation command:
+
+```bash
+bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --offline --console=plain
 ```
 
-## Emulator spot-check
+Result: **BUILD SUCCESSFUL**. Unit tests: 271, 0 failures/errors/skips. Debug assembly passed. Lint passed with 144 warnings.
 
-An `emulator-5554` device was available: API 36, 1080 × 2400 px at 420 dpi (about 411 × 914 dp), `en-US`, font scale 1.0. System night mode was off and the installed app preference showed Light. The installed package was `com.luma.lifeos` v1.1.0, last updated at 2026-10-22 16:18:48.
+The current source color/font audit was also run:
 
-The app was already running before this recheck. I opened Today, Timeline, Habits, Review, More, Tasks, People/Places and Settings, expanded Timeline View options, and opened then dismissed Quick Capture. I did not save or edit records, change theme/language, toggle app-usage import, or install the new APK. The visible Timeline totals were unchanged after Quick Capture dismissal. The app was returned to Today afterward.
+```bash
+python3 docs/luma-redesign/audit-t30.py
+```
 
-These views were exploratory only: the installed package predates the APK built at 19:04, so they do not verify the current checkout. Temporary captures showed existing saved records and were not retained in the repository. Only English/Light at this single width and font scale was observed. No test fixture was seeded into the existing app.
+Result: **PASS**, 158 opaque light/dark role pairs and bundled-font checks, 0 failures. This is source evidence, not rendered contrast or Android font-shaping evidence.
 
-## Acceptance results
+Focused affected instrumentation command:
 
-| Check | Result | Evidence / remaining limit |
+```bash
+bash ./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.EventCardTest,com.luma.lifeos.TimelineFlowTest,com.luma.lifeos.TimelinePagingRouteTest,com.luma.lifeos.habits.HabitTimelineFlowTest,com.luma.lifeos.DetailNavigationTest,com.luma.lifeos.review.ReviewProviderFallbackTest,com.luma.lifeos.review.WeeklyReviewFlowTest,com.luma.lifeos.usage.ReviewUsageFlowTest,com.luma.lifeos.habits.HabitReviewFlowTest \
+  --offline --console=plain
+```
+
+Result: **BUILD SUCCESSFUL**, 36 tests, 0 failures, 0 skipped. Both enlarged-text EventCard viewport assertions and RTL secondary-action targets pass. Timeline disclosure and date-only log checks pass. Both missing-provider Review destination tests show the unavailable message and return action.
+
+Full connected command:
+
+```bash
+bash ./gradlew :app:connectedDebugAndroidTest --offline --console=plain
+```
+
+Result: **BUILD FAILED** from instrumentation failures. The XML test summary reports 224 cases, 15 failures, 0 errors and 1 skipped (208 passed).
+
+## Full connected-run failures
+
+The current full run reports the following failures. Causes outside the stale Timeline assertions have not been isolated, so they remain blockers rather than assumed production defects.
+
+| Owner | Failed test(s) | Result |
 | --- | --- | --- |
-| T30 opaque color contrast and bundled font audit | PASS | Source audit above; rendered alpha/disabled states and Android shaping remain unverified. |
-| Static route inventory and ownership | PASS | Reconciled in the [route coverage ledger](../../route-coverage.md); this is source evidence, not runtime proof. |
-| Unit tests, debug assembly and lint | PASS | 271 unit tests pass; APK assembled; lint completed with 144 warnings. |
-| Device availability | PASS | API 36 emulator attached and inspected. |
-| Current-checkout runtime review | NOT RUN | The installed v1.1.0 predates the newly built APK; it was not replaced to preserve the existing install and its data. |
-| Provider-absent `review_sources` / `review_usage` routes | BLOCKER | Source review confirms either route can render blank when its required repository/integration is absent. The current installed app had providers/data available; this condition was not exercised. |
-| Focused Android instrumentation and controlled fixtures | NOT RUN | No isolated test install was available. Tests were not run against the existing install because it contains saved data. |
-| Six primary captures, route-family captures and full locale/theme/window/font matrix | NOT RUN | No accepted current-build screenshots were retained. Required locales are English/French/Persian, themes System/Light/Dark, widths 320 dp at 2.0, 411 × 891 dp at 1.0 and 840 dp. |
-| TalkBack, keyboard focus, 48 dp targets, insets, animation-disabled progress, recovery and all route callbacks | NOT RUN | Requires current-build instrumented/manual acceptance with controlled fixtures. |
+| T30 | `LanguageFlowTest.journalDraftTextTagsAndDateSurviveLanguageChangeThenSaveAndDetail` | Could not scroll to the journal tag input after language change. |
+| T31 | `HabitCaptureFlowTest.todayPreviewShowsScheduledRowsBeforeOlderUnscheduledHabitsAndCapsAtTwo` | Expected scheduled-habit count text was absent. |
+| T32-C | `SearchStatesTest.scopeHelpRemainsVisibleInNoMatchAndErrorStates`; `HabitCaptureFlowTest.historyPrecedesCollapsedManagementAndDeleteRemainsConfirmed`; `HabitsNavigationTest.primaryHabitsDestinationCanCreateAndLogOneRepetition`; `TodoAccessibilitySemanticsTest.filterChangeKeepsRecoveryActionIdentity` | Search recovery, habit management/navigation and task recovery assertions failed; focused isolation is pending. |
+| T32-D | `AppNavigationTest.dataWidgetCaptureUsesOneCurrentTimeChooserFromEitherProvider`; `AppNavigationTest.pastDayCaptureStartsExpandedAndKeepsEachDateChoice`; `JournalCaptureTest.captureRestoresDraftAndOpensDetailThenEditsAndDeletes`; `MemoryCaptureTest.directCaptureRestoresDraftAppearsInReviewAndCanBeEditedAndDeleted`; `MemoryCaptureTest.journalPromotionAndUnmarkingRetainOriginalBody`; `MoodCaptureTest.capturesMultipleEmotionsRestoresDraftAndEditsAndDeletesFromTimeline`; `PeopleCaptureTest.journalKeepsDraftAcrossNewPeopleAndHistoryReflectsExplicitRemoval`; `PlaceCaptureTest.existingPlaceIsReusableAndDeletingItKeepsLinkedMemory`; `PlaceCaptureTest.journalDraftSurvivesPlaceCreationAndSelectionCanBeRenamedAndCleared` | Nine Quick Capture/editor lifecycle and interaction checks failed; focused isolation remains pending. |
 
-## Decision
+No T32-A or T32-B case failed in the full run. The focused run provides more specific passing evidence for those two families.
 
-T33 is **blocked** and release acceptance is **NOT RUN**. The source contrast/font audit and host unit/build checks pass, but the required runtime matrix is not complete and the provider-absent Review route behavior still needs resolution before sign-off. T30–T32-D therefore remain implemented with validation pending. Optional O01–O08 remain deferred / not selected.
+## Acceptance matrix
 
-Suggested commit message for the documentation update: `docs(ui): record redesign validation results and blockers`.
+| Check | Result | Evidence / remaining work |
+| --- | --- | --- |
+| T30 role contrast and bundled-font source audit | PASS | Source audit: 158 pairs, 0 failures; rendered colors, alpha/disabled states and Android font shaping remain open. |
+| Unit tests | PASS | 271 tests, 0 failures/errors/skips. |
+| Debug assembly | PASS | Current working-tree source assembled the debug APK listed above. |
+| Lint | PASS | 144 warnings; not triaged in this pass. |
+| Focused Timeline/Review/navigation instrumentation | PASS | 36 tests, 0 failures/skips. |
+| Full connected instrumentation | FAIL | 15 failures and 1 skipped case; see grouped failure table. |
+| Provider-absent `review_sources` / `review_usage` | PASS (focused) | Localized unavailable messages, route tags and Back actions are exercised in `ReviewProviderFallbackTest`. |
+| Six primary-screen captures and route-family rendered evidence | NOT RUN | No controlled fixtures or screenshots were retained. |
+| English/French/Persian, System/Light/Dark, 320 dp at 2.0, 411 × 891 dp at 1.0 and 840 dp matrix | NOT RUN | Includes RTL wrapping, keyboard/IME, final-row/FAB clearance, 48 dp reachability, TalkBack/focus, rendered contrast, system bars and animation scale. |
+| Optional O01–O08 | Deferred / not selected | No optional behavior was implemented. |
+
+No screenshots or release acceptance are claimed. Reconsider T33 after remaining connected failures are isolated and resolved or shown to be stale, and the required visual/accessibility evidence is recorded.
+
+Suggested commit message: `fix(ui): fit timeline cards and guard Review routes`

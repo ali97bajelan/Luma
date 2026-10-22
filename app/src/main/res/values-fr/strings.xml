@@ -587,6 +587,7 @@
     <string name="review_view_sources">Voir les sources de cette période</string>
     <string name="review_view_previous_sources">Voir les sources précédentes</string>
     <string name="review_source_heading">Sources du bilan</string>
+    <string name="review_sources_provider_unavailable">Les sources enregistrées du bilan ne sont pas accessibles, car le fournisseur du bilan est indisponible.</string>
     <string name="review_source_previous_page">Page précédente</string>
     <string name="review_source_next_page">Page suivante</string>
     <string name="review_no_sources">Aucune donnée contribuant à cette sélection n’est encore disponible.</string>
@@ -632,6 +633,7 @@
     <string name="review_activity_value">%1$s %2$s · Observations : %3$d · Dates : %4$d</string>
     <string name="review_activity_explanation">Les totaux sont regroupés par type, unité et source. Les dates manquantes sont indiquées comme indisponibles ; les données de différents fournisseurs ne sont pas additionnées.</string>
     <string name="review_saved_usage">Utilisation des applications enregistrée</string>
+    <string name="review_usage_provider_unavailable">Les détails d’utilisation enregistrés ne sont pas accessibles, car leur fournisseur est indisponible. Les totaux hebdomadaires peuvent rester visibles dans le bilan.</string>
     <string name="review_all_memories">Voir les souvenirs</string>
     <string name="review_catalog_detail">Ouvrir les détails</string>
     <string name="review_duration_change">%1$s%2$s</string>

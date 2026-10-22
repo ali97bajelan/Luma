@@ -69,6 +69,7 @@ class TimelineFlowTest {
         awaitTag("event_${activity.id}")
         compose.onNodeWithTag("event_${unused.id}").assertDoesNotExist()
         compose.onNodeWithTag("timeline_counts").assertTextEquals("1 entry · 0 habit logs")
+        compose.onNodeWithTag("timeline_view_options").performClick()
         compose.onNodeWithTag("timeline_order").assertTextEquals("Newest first")
         compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_${activity.id}"))
         compose.onNodeWithTag("event_${activity.id}").performClick()
@@ -180,6 +181,7 @@ class TimelineFlowTest {
         show()
         compose.onNodeWithTag("nav_timeline").performClick()
         awaitTag("timeline_counts")
+        compose.onNodeWithTag("timeline_view_options").performClick()
 
         compose.onNodeWithTag("timeline_show_app_usage").assertIsOff()
         compose.onNodeWithTag("event_${oneMinute.id}").assertDoesNotExist()

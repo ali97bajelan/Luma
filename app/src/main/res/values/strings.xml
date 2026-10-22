@@ -575,6 +575,7 @@
     <string name="review_view_sources">View this period’s sources</string>
     <string name="review_view_previous_sources">View previous sources</string>
     <string name="review_source_heading">Review sources</string>
+    <string name="review_sources_provider_unavailable">Saved review sources cannot be opened because the review provider is unavailable.</string>
     <string name="review_source_previous_page">Previous page</string>
     <string name="review_source_next_page">Next page</string>
     <string name="review_no_sources">No contributing records remain for this selection.</string>
@@ -620,6 +621,7 @@
     <string name="review_activity_value">%1$s %2$s · Observations: %3$d · Dates: %4$d</string>
     <string name="review_activity_explanation">Totals are grouped by type, unit and source. Missing dates are unavailable; different providers are not added together.</string>
     <string name="review_saved_usage">Saved app usage</string>
+    <string name="review_usage_provider_unavailable">Saved app usage details cannot be opened because the usage provider is unavailable. Weekly totals may still appear in Review.</string>
     <string name="review_all_memories">View memories</string>
     <string name="review_catalog_detail">Open details</string>
     <string name="review_duration_change">%1$s%2$s</string>

@@ -1,5 +1,7 @@
 # T32-B implementation review — 2026-10-22
 
+Follow-up validation (2026-10-22): the focused 36-test Timeline/Review/navigation run passes, including both Review flows and the new source/usage provider-absent fallback tests. Missing providers now produce localized unavailable content and a working Back action. See the [T30–T33 recheck](t33-revalidation.md). Current status: **implemented (validation pending)**; rendered comparisons and the locale/window/accessibility matrix remain NOT RUN.
+
 Status: **implemented (validation pending)**. This is a source implementation record and T33 handoff, not release acceptance.
 
 Execution date: 2026-10-22, Asia/Tehran. At evidence capture, the implementation was an uncommitted working-tree diff on base revision `b8d0b1a09dfdae82d9b13852022aef4cc7044fb4`; it was subsequently committed as `a0e57fa`. Build SHA, device, API, locale, theme, window size and font scale: **N/A — no build or device run**. Required rendered matrix remains English/French/Persian, Light/Dark/System, 320 dp at 2.0, 411 × 891 dp at 1.0, and 840 dp width.
@@ -39,4 +41,4 @@ No Gradle test task or emulator/device run was made, as requested.
 - Added `LumaUi.InnerCardRadius = 16.dp` because the shared brief defines a 16 dp inner-card role and the common token file did not yet expose it. Cost if wrong: the shared token can be removed or renamed without changing Review behavior.
 - Worked in the supplied checkout on `main`, following the existing T30/T31/T32-A evidence flow. No commit was created; the generated message is `feat(ui): redesign weekly review comparisons and navigation`. Cost if wrong: the working-tree changes still need to be committed by the user.
 
-No release acceptance is claimed. T32-B remains **implemented (validation pending)** until build, regression, rendered, locale/window and accessibility evidence is recorded.
+No release acceptance is claimed. T32-B remains **implemented (validation pending)** until rendered, locale/window and accessibility evidence is recorded.

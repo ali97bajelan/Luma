@@ -25,6 +25,22 @@ import java.time.format.FormatStyle
 
 /** Read-only saved evidence. Opening this route does not request access or import native data. */
 @Composable
+fun ReviewUsageDestination(integration: UsageIntegration?, date: LocalDate, zone: ZoneId, onBack: () -> Unit) {
+    if (integration == null) {
+        ReviewProviderUnavailableRoute(
+            title = R.string.review_saved_usage,
+            message = R.string.review_usage_provider_unavailable,
+            screenTag = "screen_review_usage",
+            messageTag = "review_usage_unavailable_message",
+            backTag = "review_usage_back",
+            onBack = onBack,
+        )
+    } else {
+        ReviewUsageRoute(integration, date, zone, onBack)
+    }
+}
+
+@Composable
 fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneId, onBack: () -> Unit) {
     var retry by remember { mutableIntStateOf(0) }
     key(date, zone, retry) {
@@ -36,7 +52,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
          LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                TextButton(onClick = onBack, modifier = Modifier.testTag("review_usage_back")) { Text(stringResource(R.string.back)) }
                 AppSectionHeading(stringResource(R.string.review_saved_usage))
                 LumaSectionSurface {
                     Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
