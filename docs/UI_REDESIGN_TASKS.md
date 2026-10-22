@@ -1,6 +1,6 @@
 # App-wide UI redesign tasks
 
-Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30, T31 and T32-A through T32-D are implemented with validation pending; the T32 route handoff is reconciled, while T33 acceptance remains in progress. Optional features remain deferred.
+Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30, T31 and T32-A through T32-D are implemented with validation pending; the T32 route handoff is reconciled. T33 acceptance is blocked by unavailable build/device tooling and an unresolved provider-absent Review route state. Optional features remain deferred.
 
 ## Scope and reference decisions
 
@@ -15,7 +15,7 @@ The [reference brief](luma-redesign/README.md) defines visual precedence, palett
 
 ## Required backlog
 
-Status vocabulary: **pending**, **in progress**, **implemented (validation pending)**, **complete**. A task is complete only when its acceptance scenarios have recorded passing evidence. A blocked/unavailable check is **NOT RUN**, not a pass.
+Status vocabulary: **pending**, **in progress**, **implemented (validation pending)**, **blocked**, **complete**. A task is complete only when its acceptance scenarios have recorded passing evidence. A blocked/unavailable check is **NOT RUN**, not a pass.
 
 | ID | Task | Depends on | Status | Specification | Implementation plan |
 | --- | --- | --- | --- | --- | --- |
@@ -26,7 +26,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T32-B | Weekly Review modules and comparisons | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t32-b-review-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-b-review-redesign.md) |
 | T32-C | More, catalogs, search, lists and settings | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t32-c-supporting-screens-design.md) | [Plan](superpowers/plans/2026-10-22-t32-c-supporting-screens.md) |
 | T32-D | Editors, details, sheets and dialogs | T30; consume T32-A EventCard treatment | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t32-d-editors-details-modals-design.md) | [Plan](superpowers/plans/2026-10-22-t32-d-editors-details-modals.md) |
-| T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | in progress | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
+| T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | blocked (acceptance pending) | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
 
 ### T30 — Shared visual system and app shell
 
@@ -100,7 +100,7 @@ Make capture/edit/detail surfaces and modal UI consistent while retaining drafts
 
 ### T33 — Accessibility, regression and visual acceptance
 
-**Status (22 October 2026): in progress.** The acceptance ledger and source-level contrast/font audit are recorded. T31 and T32-A through T32-D are implemented (validation pending); rendered/device acceptance remains pending because no emulator/device run was made. See the [T33 execution evidence](luma-redesign/evidence/2026-10-22/t33-review.md) and [acceptance ledger](luma-redesign/acceptance-2026-10-22.md).
+**Status (22 October 2026): blocked; release acceptance NOT RUN.** The source-level contrast/font audit passes, but the planned Gradle suite could not start and Android device tooling is unavailable. Source review also confirms provider-absent Review destinations can render blank. T31 and T32-A through T32-D remain implemented (validation pending). See the [T33 execution evidence](luma-redesign/evidence/2026-10-22/t33-review.md), [acceptance ledger](luma-redesign/acceptance-2026-10-22.md) and [route coverage ledger](luma-redesign/route-coverage.md).
 
 Produce auditable acceptance evidence for the required redesign and separately record any opted-in feature results.
 
