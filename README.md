@@ -1,5 +1,14 @@
 # Luma
 
+## Meet Luma
+
+Luma is a private place to keep track of everyday life, all on your Android
+device. Capture how you feel, save journal entries and memories, keep up with
+tasks and habits, and connect moments with the people and places that matter.
+Later, look back through your days and weeks to notice what stands out. Your
+records stay on your device, and optional health and app-usage imports are
+available when you choose to enable them.
+
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline

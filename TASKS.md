@@ -1,9 +1,11 @@
 # Ordered implementation tasks
 
 Based on the supplied Word task document and product definition v0.1, plus the
-user-approved counted-habits extension of 17 October 2026. Original Word documents
-remain unchanged; the readable product definition has a clearly marked section 14
-addendum. T01–T21 are the original baseline; T22–T29 are the approved extension.
+user-approved counted-habits extension. Original Word documents remain unchanged;
+the readable product definition has a clearly marked section 14 addendum.
+T01–T21 are the original baseline; T22–T29 are the approved habits extension.
+The approved visual redesign tasks T30–T33 are tracked separately in
+[UI_REDESIGN_TASKS.md](docs/UI_REDESIGN_TASKS.md).
 
 Status: pending, in progress, implemented (validation pending), or complete.
 A task is complete only after its acceptance criteria have been verified.
@@ -974,7 +976,7 @@ supports per-log history and disabled-reminder restore, and works in all support
 languages/layouts/TalkBack. Current docs describe actual implementation. Older
 T11/T13/T15–T20 release gaps stay separately tracked until independently verified.
 
-## Future backlog — outside the original MVP and approved habit extension
+## Future backlog — outside the original MVP and approved extensions
 
 - Voice notes and transcription
 - Goal management and habit capabilities beyond the approved counted-habit slice
