@@ -1,6 +1,6 @@
 # App-wide UI redesign tasks
 
-Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30, T31 and T32-A through T32-D are implemented with validation pending; the T32 route handoff is reconciled. T33 acceptance is blocked by unavailable build/device tooling and an unresolved provider-absent Review route state. Optional features remain deferred.
+Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30, T31 and T32-A through T32-D are implemented with validation pending; the T32 route handoff is reconciled. The 22 October recheck passed the source audit, 271 unit tests, debug assembly and lint (144 warnings). T33 remains blocked by an unresolved provider-absent Review route state and incomplete current-build runtime acceptance. See the [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md). Optional features remain deferred.
 
 ## Scope and reference decisions
 
@@ -30,7 +30,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 
 ### T30 — Shared visual system and app shell
 
-**Status (22 October 2026): implemented (validation pending).** Shared warm-paper/obsidian roles, offline Latin/Persian typography, shapes, section/navigation styling and capture treatment are in place. Source contrast/font checks passed; Gradle tests, build/lint, emulator and visual/accessibility checks were NOT RUN in this execution at the user’s request. See the [T30 evidence and remaining checks](luma-redesign/evidence/2026-10-22/t30-review.md).
+**Status (22 October 2026): implemented (validation pending).** Shared warm-paper/obsidian roles, offline Latin/Persian typography, shapes, section/navigation styling and capture treatment are in place. The recheck passed the source contrast/font audit, all 271 unit tests, debug assembly and lint. Current-build theme restoration, rendered contrast, font shaping and accessibility acceptance remain open. See the [T30 implementation evidence](luma-redesign/evidence/2026-10-22/t30-review.md) and [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md).
 
 Replace the existing green-led appearance with a coherent warm-paper/obsidian system and editorial typography across existing components.
 
@@ -40,7 +40,7 @@ Replace the existing green-led appearance with a coherent warm-paper/obsidian sy
 
 ### T31 — Today visual hierarchy
 
-**Status (22 October 2026): implemented (validation pending).** Today now presents date and habit tracking-zone context before capture, clearer habit progress, grouped due-task previews, and a stronger recent-entry/summary hierarchy while retaining existing routes, queries and callbacks. Build/lint passed; tests, emulator and rendered acceptance were NOT RUN at the user's request. See the [T31 implementation evidence](luma-redesign/evidence/2026-10-22/t31-review.md).
+**Status (22 October 2026): implemented (validation pending).** Today now presents date and habit tracking-zone context before capture, clearer habit progress, grouped due-task previews, and a stronger recent-entry/summary hierarchy while retaining existing routes, queries and callbacks. The unit suite, debug assembly and lint pass; fixture-specific percentages, historical-date/recovery states and current-build rendering remain unverified. See the [T31 implementation evidence](luma-redesign/evidence/2026-10-22/t31-review.md) and [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md).
 
 Make date context, capture, habit progress, tasks and recent saved records scan clearly while preserving the bounded Today previews.
 
@@ -50,7 +50,7 @@ Make date context, capture, habit progress, tasks and recent saved records scan 
 
 ### T32 — Remaining routes rollout coordinator
 
-**Status (22 October 2026): implemented (validation pending).** The route ledger has been reconciled against the current route declarations and child implementation records. It assigns conditional providers, shared `EventCard` consumers and launcher-widget scope, and hands known provider-absent route gaps to T33. T32-A through T32-D are implemented (validation pending). No Gradle tests or emulator runs were made as requested; rendered, behavior and locale/window acceptance remain pending. See the [T32 coordinator review](luma-redesign/evidence/2026-10-22/t32-coordinator-review.md).
+**Status (22 October 2026): implemented (validation pending).** The route ledger has been reconciled against the current route declarations and child implementation records. It assigns conditional providers, shared `EventCard` consumers and launcher-widget scope, and hands known provider-absent route gaps to T33. The unit suite, debug assembly and lint pass. Route-family behavior, conditional-provider states and the full rendered locale/window matrix remain pending. See the [T32 coordinator review](luma-redesign/evidence/2026-10-22/t32-coordinator-review.md) and [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md).
 
 Replace the old catch-all remaining-screen task with four independently reviewable screen-family tasks and a route coverage ledger.
 
@@ -60,7 +60,7 @@ Replace the old catch-all remaining-screen task with four independently reviewab
 
 ### T32-A — Timeline stream and editorial cards
 
-**Status (22 October 2026): implemented (validation pending).** The date/count ribbon, responsive day controls, continuous RTL-aware type rail and editorial event/habit cards are in place. Assembly and lint passed. Gradle tests and emulator runs were NOT RUN as requested; screenshots and rendered acceptance remain pending. See the [T32-A implementation evidence](luma-redesign/evidence/2026-10-22/t32-a-review.md).
+**Status (22 October 2026): implemented (validation pending).** The date/count ribbon, responsive day controls, continuous RTL-aware type rail and editorial event/habit cards are in place. The recheck passed all unit tests, debug assembly and lint; the existing emulator showed the light Timeline layout and its View options disclosure. That install predates the rebuilt APK, so paging, callbacks and current-build rendered acceptance remain pending. See the [T32-A implementation evidence](luma-redesign/evidence/2026-10-22/t32-a-review.md) and [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md).
 
 Present the existing mixed chronological feed with a continuous visual rail, type nodes and readable editorial cards.
 
@@ -70,7 +70,7 @@ Present the existing mixed chronological feed with a continuous visual rail, typ
 
 ### T32-B — Weekly Review modules and comparisons
 
-**Status (22 October 2026): implemented (validation pending).** The Review period selector, sticky section navigation, overview modules and detailed metric comparisons now use the shared editorial roles while keeping saved values and route callbacks. No Gradle tests or emulator were run as requested; the assemble/lint attempt could not start in the restricted environment. See the [T32-B implementation evidence](luma-redesign/evidence/2026-10-22/t32-b-review.md).
+**Status (22 October 2026): implemented (validation pending).** The Review period selector, sticky section navigation, overview modules and detailed metric comparisons now use the shared editorial roles while keeping saved values and route callbacks. The unit suite, debug assembly and lint pass, and the existing emulator displayed the light Review page. Review period/source callbacks, provider-absent routes and current-build visual acceptance remain pending. See the [T32-B implementation evidence](luma-redesign/evidence/2026-10-22/t32-b-review.md) and [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md).
 
 Apply the editorial Review layout to existing saved metrics, comparison periods, source links and section navigation.
 
@@ -80,7 +80,7 @@ Apply the editorial Review layout to existing saved metrics, comparison periods,
 
 ### T32-C — More, catalogs, search, lists and settings
 
-**Status (22 October 2026): implemented (validation pending).** Supporting browse, settings, integration and in-app widget configuration surfaces now use the shared reading width and neutral surfaces while preserving existing callbacks and saved state. Gradle tests and emulator/rendered acceptance were NOT RUN at the user's request. See the [T32-C implementation evidence](luma-redesign/evidence/2026-10-22/t32-c-review.md) and updated [route coverage ledger](luma-redesign/route-coverage.md).
+**Status (22 October 2026): implemented (validation pending).** Supporting browse, settings, integration and in-app widget configuration surfaces now use the shared reading width and neutral surfaces while preserving existing callbacks and saved state. Unit tests pass, and the existing emulator showed More, Tasks, People/Places and Settings in Light mode; search, settings safeguards, conditional providers and current-build locale/window acceptance remain pending. See the [T32-C implementation evidence](luma-redesign/evidence/2026-10-22/t32-c-review.md), [route coverage ledger](luma-redesign/route-coverage.md) and [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md).
 
 Carry the new visual language to supporting browse and settings screens without introducing new directory features.
 
@@ -90,7 +90,7 @@ Carry the new visual language to supporting browse and settings screens without 
 
 ### T32-D — Editors, details, sheets and dialogs
 
-**Status (22 October 2026): implemented (validation pending).** Shared editor fields, rounded optional sections, centered reading widths, capture/detail surfaces and modal roles are in place. Gradle tests and emulator checks were NOT RUN as requested; assembly/lint could not start because the Gradle wrapper cache is read-only. See the [T32-D implementation evidence](luma-redesign/evidence/2026-10-22/t32-d-review.md).
+**Status (22 October 2026): implemented (validation pending).** Shared editor fields, rounded optional sections, centered reading widths, capture/detail surfaces and modal roles are in place. Unit tests, assembly and lint pass; the existing emulator showed Quick Capture opening and dismissing without a visible record-count change. Editor draft, validation, picker, modal and current-build acceptance remain pending. See the [T32-D implementation evidence](luma-redesign/evidence/2026-10-22/t32-d-review.md) and [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md).
 
 Make capture/edit/detail surfaces and modal UI consistent while retaining drafts, validation, editing and recovery.
 
@@ -100,7 +100,7 @@ Make capture/edit/detail surfaces and modal UI consistent while retaining drafts
 
 ### T33 — Accessibility, regression and visual acceptance
 
-**Status (22 October 2026): blocked; release acceptance NOT RUN.** The source-level contrast/font audit passes, but the planned Gradle suite could not start and Android device tooling is unavailable. Source review also confirms provider-absent Review destinations can render blank. T31 and T32-A through T32-D remain implemented (validation pending). See the [T33 execution evidence](luma-redesign/evidence/2026-10-22/t33-review.md), [acceptance ledger](luma-redesign/acceptance-2026-10-22.md) and [route coverage ledger](luma-redesign/route-coverage.md).
+**Status (22 October 2026): blocked; release acceptance NOT RUN.** The source audit, 271 unit tests, debug assembly and lint pass. An API 36 emulator was available, but the installed app predates the rebuilt APK, so its Light-mode route spot-checks are exploratory only. The required current-build locale/theme/window/accessibility matrix remains unrun, and source review confirms provider-absent Review destinations can render blank. T30 and T31–T32-D remain implemented (validation pending). See the [T33 revalidation evidence](luma-redesign/evidence/2026-10-22/t33-revalidation.md), [acceptance ledger](luma-redesign/acceptance-2026-10-22.md) and [route coverage ledger](luma-redesign/route-coverage.md).
 
 Produce auditable acceptance evidence for the required redesign and separately record any opted-in feature results.
 
