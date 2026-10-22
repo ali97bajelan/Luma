@@ -35,6 +35,11 @@ import com.luma.lifeos.ui.common.CaptureTimestampRow
 import java.text.NumberFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 
 internal fun reduceJournalTagInput(current: String, hasError: Boolean, proposed: String): Pair<String, Boolean> = when {
     proposed.length > JournalTextLimits.TAG -> current to true
@@ -106,149 +111,155 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
         EditorTopBar(stringResource(if (state.editing) R.string.journal_edit else R.string.journal_capture),
             "journal_cancel", !state.busy, ::close)
     }, bottomBar = {
-        Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val actionError = when (state.error) {
-                JournalEditorError.SAVE -> stringResource(R.string.journal_save_error)
-                JournalEditorError.DELETE -> stringResource(R.string.journal_delete_error)
-                else -> null
-            }
-            actionError?.let { AccessibleFeedback(it, Modifier.testTag("journal_error")) }
-            EditorActionRow(
-                secondaryAction = if (state.editing) { actionModifier ->
-                    TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("journal_delete")) {
-                        Text(stringResource(R.string.delete))
-                    }
-                } else null,
-                primaryAction = { actionModifier ->
-                    Button(enabled = enabled && state.draft.body.isNotBlank(), onClick = {
-                        if (addPendingTag()) onSave()
-                    }, modifier = actionModifier.testTag("journal_save")) {
-                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
-                    }
-                },
-            )
-        }
-    }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.loading) CircularProgressIndicator()
-            state.error?.let { error ->
-                val message = stringResource(when (error) {
-                    JournalEditorError.LOAD -> R.string.journal_load_error
-                    JournalEditorError.SAVE -> R.string.journal_save_error
-                    JournalEditorError.DELETE -> R.string.journal_delete_error
-                    JournalEditorError.TIME -> R.string.mood_time_error
-                    JournalEditorError.PHOTO -> R.string.photo_error
-                    JournalEditorError.TEXT -> R.string.journal_text_error
-                })
-                val showBodyError = when {
-                    error == JournalEditorError.SAVE || error == JournalEditorError.DELETE -> false
-                    error == JournalEditorError.TIME || error == JournalEditorError.PHOTO -> false
-                    error == JournalEditorError.TEXT && (state.textErrors.isNotEmpty() || tagError) -> false
-                    else -> true
+        LumaReadingPane(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val actionError = when (state.error) {
+                    JournalEditorError.SAVE -> stringResource(R.string.journal_save_error)
+                    JournalEditorError.DELETE -> stringResource(R.string.journal_delete_error)
+                    else -> null
                 }
-                if (showBodyError) AccessibleFeedback(message, Modifier.testTag("journal_error"))
-                if (error == JournalEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-            }
-            if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled,
-                state.error == JournalEditorError.TIME, onTime)
-            // Restored text remains visible even if loading fails.
-            val titleError = if (JournalTextField.TITLE in state.textErrors)
-                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(JournalTextLimits.TITLE)) else null
-            OutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled, singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { bodyFocus.requestFocus() }),
-                isError = titleError != null,
-                supportingText = { titleError?.let { AccessibleFeedback(it) } },
-                label = { Text(stringResource(R.string.journal_title)) }, modifier = Modifier.fillMaxWidth()
-                    .semantics { titleError?.let { error(it) } }.testTag("journal_title"))
-            val bodyError = if (JournalTextField.BODY in state.textErrors)
-                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(JournalTextLimits.BODY)) else null
-            OutlinedTextField(value = state.draft.body, onValueChange = onBody, enabled = enabled,
-                label = { Text(stringResource(R.string.journal_body)) }, minLines = 6,
-                isError = bodyError != null,
-                supportingText = {
-                    Column {
-                        Text(stringResource(R.string.journal_body_hint))
-                        bodyError?.let { AccessibleFeedback(it) }
-                    }
-                },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                modifier = Modifier.fillMaxWidth().focusRequester(bodyFocus)
-                    .semantics { bodyError?.let { error(it) } }.testTag("journal_body"))
-            Column(Modifier.testTag("journal_tags")) {
-                EditorOptionalSection(
-                    title = R.string.journal_tags,
-                    tag = "journal_tags_toggle",
-                    expanded = tagsExpanded,
-                    onExpandedChange = { tagsExpanded = it },
-                    summary = if (state.draft.tagNames.isEmpty()) null else {
-                        {
-                            Text(
-                                pluralStringResource(
-                                    R.plurals.journal_tags_summary,
-                                    state.draft.tagNames.size,
-                                    state.draft.tagNames.size,
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                actionError?.let { AccessibleFeedback(it, Modifier.testTag("journal_error")) }
+                EditorActionRow(
+                    secondaryAction = if (state.editing) { actionModifier ->
+                        TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("journal_delete")) {
+                            Text(stringResource(R.string.delete))
+                        }
+                    } else null,
+                    primaryAction = { actionModifier ->
+                        Button(enabled = enabled && state.draft.body.isNotBlank(), onClick = {
+                            if (addPendingTag()) onSave()
+                        }, modifier = actionModifier.testTag("journal_save")) {
+                            Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                         }
                     },
-                ) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        state.draft.tagNames.forEach { name ->
-                            InputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
-                                label = { Text(stringResource(R.string.journal_remove_tag, name)) })
+                )
+            }
+        }
+    }) { padding ->
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (state.loading) CircularProgressIndicator()
+                state.error?.let { error ->
+                    val message = stringResource(when (error) {
+                        JournalEditorError.LOAD -> R.string.journal_load_error
+                        JournalEditorError.SAVE -> R.string.journal_save_error
+                        JournalEditorError.DELETE -> R.string.journal_delete_error
+                        JournalEditorError.TIME -> R.string.mood_time_error
+                        JournalEditorError.PHOTO -> R.string.photo_error
+                        JournalEditorError.TEXT -> R.string.journal_text_error
+                    })
+                    val showBodyError = when {
+                        error == JournalEditorError.SAVE || error == JournalEditorError.DELETE -> false
+                        error == JournalEditorError.TIME || error == JournalEditorError.PHOTO -> false
+                        error == JournalEditorError.TEXT && (state.textErrors.isNotEmpty() || tagError) -> false
+                        else -> true
+                    }
+                    if (showBodyError) AccessibleFeedback(message, Modifier.testTag("journal_error"))
+                    if (error == JournalEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                }
+                if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled,
+                    state.error == JournalEditorError.TIME, onTime)
+                // Restored text remains visible even if loading fails.
+                val titleError = if (JournalTextField.TITLE in state.textErrors)
+                    stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(JournalTextLimits.TITLE)) else null
+                LumaOutlinedTextField(value = state.draft.title, onValueChange = onTitle, enabled = enabled, singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { bodyFocus.requestFocus() }),
+                    isError = titleError != null,
+                    supportingText = { titleError?.let { AccessibleFeedback(it) } },
+                    label = { Text(stringResource(R.string.journal_title)) }, modifier = Modifier.fillMaxWidth()
+                        .semantics { titleError?.let { error(it) } }.testTag("journal_title"))
+                val bodyError = if (JournalTextField.BODY in state.textErrors)
+                    stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(JournalTextLimits.BODY)) else null
+                LumaOutlinedTextField(value = state.draft.body, onValueChange = onBody, enabled = enabled,
+                    label = { Text(stringResource(R.string.journal_body)) }, minLines = 6,
+                    isError = bodyError != null,
+                    supportingText = {
+                        Column {
+                            Text(stringResource(R.string.journal_body_hint))
+                            bodyError?.let { AccessibleFeedback(it) }
                         }
-                    }
-                    val tagFeedback = if (tagError || JournalTextField.TAG in state.textErrors) stringResource(R.string.journal_tag_size_error) else null
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = tagText, onValueChange = {
-                            val (updatedText, hasError) = reduceJournalTagInput(tagText, tagError, it)
-                            tagText = updatedText
-                            tagError = hasError
-                        }, enabled = enabled, singleLine = true, isError = tagFeedback != null,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = {
-                                if (tagText.isBlank()) keyboardController?.hide()
-                                else if (addPendingTag()) keyboardController?.hide()
-                            }),
-                            supportingText = { tagFeedback?.let { AccessibleFeedback(it) } },
-                            label = { Text(stringResource(R.string.journal_tag_name)) },
-                            modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester)
-                                .semantics { tagFeedback?.let { error(it) } }.testTag("journal_tag_input"))
-                        TextButton(enabled = enabled && tagText.isNotBlank(), onClick = {
-                            addPendingTag()
-                        }, modifier = Modifier.testTag("journal_add_tag")) { Text(stringResource(R.string.add)) }
-                    }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }.forEach { tag ->
-                            FilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                    modifier = Modifier.fillMaxWidth().focusRequester(bodyFocus)
+                        .semantics { bodyError?.let { error(it) } }.testTag("journal_body"))
+                Column(Modifier.testTag("journal_tags")) {
+                    EditorOptionalSection(
+                        title = R.string.journal_tags,
+                        tag = "journal_tags_toggle",
+                        expanded = tagsExpanded,
+                        onExpandedChange = { tagsExpanded = it },
+                        summary = if (state.draft.tagNames.isEmpty()) null else {
+                            {
+                                Text(
+                                    pluralStringResource(
+                                        R.plurals.journal_tags_summary,
+                                        state.draft.tagNames.size,
+                                        state.draft.tagNames.size,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                    ) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            state.draft.tagNames.forEach { name ->
+                                InputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
+                                    label = { Text(stringResource(R.string.journal_remove_tag, name)) })
+                            }
+                        }
+                        val tagFeedback = if (tagError || JournalTextField.TAG in state.textErrors) stringResource(R.string.journal_tag_size_error) else null
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            LumaOutlinedTextField(value = tagText, onValueChange = {
+                                val (updatedText, hasError) = reduceJournalTagInput(tagText, tagError, it)
+                                tagText = updatedText
+                                tagError = hasError
+                            }, enabled = enabled, singleLine = true, isError = tagFeedback != null,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = {
+                                    if (tagText.isBlank()) keyboardController?.hide()
+                                    else if (addPendingTag()) keyboardController?.hide()
+                                }),
+                                supportingText = { tagFeedback?.let { AccessibleFeedback(it) } },
+                                label = { Text(stringResource(R.string.journal_tag_name)) },
+                                modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester)
+                                    .semantics { tagFeedback?.let { error(it) } }.testTag("journal_tag_input"))
+                            TextButton(enabled = enabled && tagText.isNotBlank(), onClick = {
+                                addPendingTag()
+                            }, modifier = Modifier.testTag("journal_add_tag")) { Text(stringResource(R.string.add)) }
+                        }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }.forEach { tag ->
+                                FilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
+                            }
                         }
                     }
                 }
-            }
-            val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
-            TextButton(onClick = { more = !more }, enabled = enabled && contextExpansionInitialized,
-                modifier = Modifier.testTag("journal_more").semantics { stateDescription = disclosureState }) {
-                Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
-            }
-            Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
-            if (more) {
-                peopleContent()
-                placeContent()
-                Column(Modifier.bringIntoViewRequester(photosBringIntoViewRequester)) { photosContent() }
+                val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
+                TextButton(onClick = { more = !more }, enabled = enabled && contextExpansionInitialized,
+                    modifier = Modifier.testTag("journal_more").semantics { stateDescription = disclosureState }) {
+                    Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
+                }
+                Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
+                if (more) {
+                    LumaSectionSurface {
+                        peopleContent()
+                        placeContent()
+                        Column(Modifier.bringIntoViewRequester(photosBringIntoViewRequester)) { photosContent() }
+                    }
+                }
             }
         }
     }
-    if (deleting) AlertDialog(onDismissRequest = { deleting = false },
+    if (deleting) LumaAlertDialog(onDismissRequest = { deleting = false },
         title = { Text(stringResource(R.string.journal_delete_title)) },
         text = { Text(stringResource(R.string.journal_delete_body)) },
-        confirmButton = { TextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("journal_confirm_delete")) {
+        confirmButton = { LumaDestructiveTextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("journal_confirm_delete")) {
             Text(stringResource(R.string.delete)) } },
         dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } })
-    if (discarding) AlertDialog(onDismissRequest = { discarding = false },
+    if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.journal_discard_title)) },
         text = { Text(stringResource(R.string.journal_discard_body)) },
         confirmButton = { TextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },

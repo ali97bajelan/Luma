@@ -18,6 +18,7 @@ import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.ui.photos.PhotoGallery
 import com.luma.lifeos.ui.common.DetailTopBar
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.domain.model.EventId
@@ -26,6 +27,7 @@ import com.luma.lifeos.domain.repository.JournalRepository
 import java.time.ZoneId
 import java.time.format.FormatStyle
 import kotlinx.coroutines.CancellationException
+import com.luma.lifeos.ui.common.LumaReadingPane
 
 @Composable
 fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: () -> Unit, onEdit: () -> Unit, onMemory: () -> Unit, photos: PhotoRepository) {
@@ -64,33 +66,34 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp)
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
             .testTag("journal_detail_content"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (loading) CircularProgressIndicator()
-            if (failed) {
-                Text(stringResource(R.string.journal_load_error), color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
-            }
-            if (!loading) record?.let { entry ->
-                val journal = requireNotNull(entry.journal)
-                Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
-                Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM)))
-                if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
-                Card(Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                    Text(journal.body, style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(16.dp).testTag("journal_detail_body"))
+                if (loading) CircularProgressIndicator()
+                if (failed) {
+                    Text(stringResource(R.string.journal_load_error), color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
-                LinkedPeople(entry.people)
-                LinkedPlace(entry.place)
-                entry.memory?.let {
-                    MemoryStatus(it)
-                    it.note?.let { note -> Text(note) }
+                if (!loading) record?.let { entry ->
+                    val journal = requireNotNull(entry.journal)
+                    Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
+                    Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM)))
+                    if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
+                    LumaSectionSurface(modifier = Modifier.testTag("journal_detail_reading_surface")) {
+                        Text(journal.body, style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.testTag("journal_detail_body"))
+                    }
+                    LinkedPeople(entry.people)
+                    LinkedPlace(entry.place)
+                    entry.memory?.let {
+                        MemoryStatus(it)
+                        it.note?.let { note -> Text(note) }
+                    }
+                    if (entry.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("journal_memory")) {
+                        Text(stringResource(if (entry.memory == null) R.string.memory_promote else R.string.memory_edit))
+                    }
+                    PhotoGallery(photos, entry.photos)
                 }
-                if (entry.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("journal_memory")) {
-                    Text(stringResource(if (entry.memory == null) R.string.memory_promote else R.string.memory_edit))
-                }
-                PhotoGallery(photos, entry.photos)
             }
         }
     }

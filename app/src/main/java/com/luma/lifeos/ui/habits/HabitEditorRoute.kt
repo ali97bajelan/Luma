@@ -14,15 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,6 +56,9 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.UUID
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaReadingPane
 
 @Composable
 fun HabitEditorRoute(
@@ -108,127 +110,138 @@ fun HabitEditorScreen(
                 "habit_editor_close", !state.busy, ::close)
         },
         bottomBar = {
-            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                state.error?.let { error ->
-                    val message = when (error) {
-                        HabitEditorError.LOAD -> R.string.habit_load_error
-                        HabitEditorError.SAVE -> R.string.habit_save_error
-                        HabitEditorError.INPUT -> state.fieldError?.let(::habitFieldErrorMessage)
-                            ?: R.string.habit_save_error
+            LumaReadingPane(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.error?.let { error ->
+                        val message = when (error) {
+                            HabitEditorError.LOAD -> R.string.habit_load_error
+                            HabitEditorError.SAVE -> R.string.habit_save_error
+                            HabitEditorError.INPUT -> state.fieldError?.let(::habitFieldErrorMessage)
+                                ?: R.string.habit_save_error
+                        }
+                        Text(stringResource(message), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_editor_error"))
+                        if (error == HabitEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                     }
-                    Text(stringResource(message), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_editor_error"))
-                    if (error == HabitEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-                }
-                EditorActionRow { actionModifier ->
-                    Button(onClick = onSave, enabled = enabled,
-                        modifier = actionModifier.testTag("habit_save")) {
-                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                    EditorActionRow { actionModifier ->
+                        Button(onClick = onSave, enabled = enabled,
+                            modifier = actionModifier.testTag("habit_save")) {
+                            Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                        }
                     }
                 }
             }
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.loading) androidx.compose.material3.CircularProgressIndicator()
-            state.trackingZone?.let { zone ->
-                Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.labelLarge)
-                if (zone != deviceZone) {
-                    Text(stringResource(R.string.habit_tracking_zone_mismatch,
-                        LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
-                        zone.id,
-                        LocalDate.now(deviceZone).format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
-                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_tracking_day_difference"))
+                if (state.loading) androidx.compose.material3.CircularProgressIndicator()
+                state.trackingZone?.let { zone ->
+                    Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.labelLarge)
+                    if (zone != deviceZone) {
+                        Text(stringResource(R.string.habit_tracking_zone_mismatch,
+                            LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
+                            zone.id,
+                            LocalDate.now(deviceZone).format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+                            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_tracking_day_difference"))
+                    }
                 }
-            }
-            val nameError = state.fieldError?.takeIf {
-                it == HabitEditorFieldError.NAME_REQUIRED || it == HabitEditorFieldError.NAME_TOO_LONG
-            }?.let { stringResource(habitFieldErrorMessage(it)) }
-            OutlinedTextField(state.draft.name, onName, enabled = enabled, singleLine = true,
-                label = { Text(stringResource(R.string.habit_name)) },
-                isError = nameError != null,
-                modifier = Modifier.fillMaxWidth().semantics {
-                    nameError?.let(::error)
-                }.testTag("habit_name"))
-            val unitError = state.fieldError?.takeIf { it == HabitEditorFieldError.UNIT_TOO_LONG }
-                ?.let { stringResource(habitFieldErrorMessage(it)) }
-            OutlinedTextField(state.draft.unitLabel, onUnit, enabled = enabled, singleLine = true,
-                label = { Text(stringResource(R.string.habit_unit)) },
-                placeholder = { Text(stringResource(R.string.habit_unit_example)) },
-                supportingText = { Text(stringResource(R.string.habit_count_explanation)) },
-                isError = unitError != null,
-                modifier = Modifier.fillMaxWidth().semantics {
-                    unitError?.let(::error)
-                }.testTag("habit_unit"))
-            val targetError = state.fieldError?.takeIf { it == HabitEditorFieldError.TARGET_RANGE }
-                ?.let { stringResource(habitFieldErrorMessage(it)) }
-            OutlinedTextField(state.draft.target, onTarget, enabled = enabled, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                label = { Text(stringResource(R.string.habit_target)) },
-                isError = targetError != null,
-                modifier = Modifier.fillMaxWidth().semantics { targetError?.let(::error) }.testTag("habit_target"))
-            val startError = state.fieldError?.takeIf { it == HabitEditorFieldError.START_IN_PAST }
-                ?.let { stringResource(habitFieldErrorMessage(it)) }
-            OutlinedButton(onClick = { choosingStart = true }, enabled = enabled && !state.editing,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { startError?.let(::error) }
-                    .testTag("habit_start_date")) {
-                val date = state.draft.start.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
-                Text("${stringResource(R.string.habit_start_date)}: $date")
-            }
-            Text(stringResource(R.string.habit_weekdays), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.habit_schedule_presets), style = MaterialTheme.typography.bodyMedium)
-            val selectedPreset = schedulePreset(state.draft.weekdays)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.testTag("habit_schedule_presets")) {
-                HabitSchedulePreset.entries.forEach { preset ->
-                    FilterChip(selected = selectedPreset == preset, enabled = enabled,
-                        onClick = { onWeekdays(schedulePresetDays(preset, state.draft.weekdays)) },
-                        label = { Text(stringResource(schedulePresetLabel(preset))) },
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("habit_schedule_preset_${preset.name.lowercase(Locale.ROOT)}"))
+                val nameError = state.fieldError?.takeIf {
+                    it == HabitEditorFieldError.NAME_REQUIRED || it == HabitEditorFieldError.NAME_TOO_LONG
+                }?.let { stringResource(habitFieldErrorMessage(it)) }
+                LumaOutlinedTextField(state.draft.name, onName, enabled = enabled, singleLine = true,
+                    label = { Text(stringResource(R.string.habit_name)) },
+                    isError = nameError != null,
+                    modifier = Modifier.fillMaxWidth().semantics {
+                        nameError?.let(::error)
+                    }.testTag("habit_name"))
+                val unitError = state.fieldError?.takeIf { it == HabitEditorFieldError.UNIT_TOO_LONG }
+                    ?.let { stringResource(habitFieldErrorMessage(it)) }
+                LumaOutlinedTextField(state.draft.unitLabel, onUnit, enabled = enabled, singleLine = true,
+                    label = { Text(stringResource(R.string.habit_unit)) },
+                    placeholder = { Text(stringResource(R.string.habit_unit_example)) },
+                    supportingText = { Text(stringResource(R.string.habit_count_explanation)) },
+                    isError = unitError != null,
+                    modifier = Modifier.fillMaxWidth().semantics {
+                        unitError?.let(::error)
+                    }.testTag("habit_unit"))
+                val targetError = state.fieldError?.takeIf { it == HabitEditorFieldError.TARGET_RANGE }
+                    ?.let { stringResource(habitFieldErrorMessage(it)) }
+                LumaOutlinedTextField(state.draft.target, onTarget, enabled = enabled, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = { Text(stringResource(R.string.habit_target)) },
+                    isError = targetError != null,
+                    modifier = Modifier.fillMaxWidth().semantics { targetError?.let(::error) }.testTag("habit_target"))
+                val startError = state.fieldError?.takeIf { it == HabitEditorFieldError.START_IN_PAST }
+                    ?.let { stringResource(habitFieldErrorMessage(it)) }
+                OutlinedButton(onClick = { choosingStart = true }, enabled = enabled && !state.editing,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { startError?.let(::error) }
+                        .testTag("habit_start_date")) {
+                    val date = state.draft.start.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
+                    Text("${stringResource(R.string.habit_start_date)}: $date")
                 }
-            }
-            val weekdaysError = state.fieldError?.takeIf { it == HabitEditorFieldError.WEEKDAYS_REQUIRED }
-                ?.let { stringResource(habitFieldErrorMessage(it)) }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.semantics { weekdaysError?.let(::error) }.testTag("habit_weekdays")) {
-                DayOfWeek.entries.forEach { day ->
-                    FilterChip(selected = day in state.draft.weekdays, enabled = enabled,
-                        onClick = { onWeekdays(if (day in state.draft.weekdays) state.draft.weekdays - day else state.draft.weekdays + day) },
-                        label = { Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("habit_weekday_${day.value}"))
+                Text(stringResource(R.string.habit_weekdays), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.habit_schedule_presets), style = MaterialTheme.typography.bodyMedium)
+                val selectedPreset = schedulePreset(state.draft.weekdays)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.testTag("habit_schedule_presets")) {
+                    HabitSchedulePreset.entries.forEach { preset ->
+                        FilterChip(selected = selectedPreset == preset, enabled = enabled,
+                            onClick = { onWeekdays(schedulePresetDays(preset, state.draft.weekdays)) },
+                            label = { Text(stringResource(schedulePresetLabel(preset))) },
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("habit_schedule_preset_${preset.name.lowercase(Locale.ROOT)}"))
+                    }
                 }
-            }
-            weekdaysError?.let { Text(it, color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("habit_weekdays_error")) }
-            state.effectiveDate?.let { effective ->
-                val futureStart = effective.isAfter(LocalDate.now(state.trackingZone ?: deviceZone))
-                val message = if (state.editing && !futureStart) R.string.habit_effective_tomorrow else R.string.habit_effective_start
-                Text(stringResource(message, effective.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
-                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_effective_date"))
-            }
-            if (state.trackingZone != null) {
-                TextButton(onClick = { trackingDetailsExpanded = !trackingDetailsExpanded },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_tracking_zone_disclosure")) {
-                    Text(stringResource(R.string.habit_tracking_zone_details), modifier = Modifier.weight(1f))
-                    Text(stringResource(if (trackingDetailsExpanded) R.string.habit_other_hide else R.string.habit_other_show))
+                val weekdaysError = state.fieldError?.takeIf { it == HabitEditorFieldError.WEEKDAYS_REQUIRED }
+                    ?.let { stringResource(habitFieldErrorMessage(it)) }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.semantics { weekdaysError?.let(::error) }.testTag("habit_weekdays")) {
+                    DayOfWeek.entries.forEach { day ->
+                        FilterChip(selected = day in state.draft.weekdays, enabled = enabled,
+                            onClick = { onWeekdays(if (day in state.draft.weekdays) state.draft.weekdays - day else state.draft.weekdays + day) },
+                            label = { Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("habit_weekday_${day.value}"))
+                    }
                 }
-                if (trackingDetailsExpanded) Text(stringResource(R.string.habit_tracking_zone_note),
-                    style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("habit_tracking_zone_explanation"))
+                weekdaysError?.let { Text(it, color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("habit_weekdays_error")) }
+                state.effectiveDate?.let { effective ->
+                    val futureStart = effective.isAfter(LocalDate.now(state.trackingZone ?: deviceZone))
+                    val message = if (state.editing && !futureStart) R.string.habit_effective_tomorrow else R.string.habit_effective_start
+                    Text(stringResource(message, effective.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_effective_date"))
+                }
+                if (state.trackingZone != null) {
+                    TextButton(onClick = { trackingDetailsExpanded = !trackingDetailsExpanded },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_tracking_zone_disclosure")) {
+                        Text(stringResource(R.string.habit_tracking_zone_details), modifier = Modifier.weight(1f))
+                        Text(stringResource(if (trackingDetailsExpanded) R.string.habit_other_hide else R.string.habit_other_show))
+                    }
+                    if (trackingDetailsExpanded) Text(stringResource(R.string.habit_tracking_zone_note),
+                        style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("habit_tracking_zone_explanation"))
+                }
             }
         }
     }
     if (choosingStart) {
         val picker = rememberDatePickerState(initialSelectedDateMillis = state.draft.start.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-        DatePickerDialog(onDismissRequest = { choosingStart = false }, confirmButton = {
+        DatePickerDialog(
+            onDismissRequest = { choosingStart = false },
+            shape = MaterialTheme.shapes.large,
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            tonalElevation = 0.dp,
+            confirmButton = {
             TextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { onStart(pickerLocalDate(it)) }
                 choosingStart = false
             }) { Text(stringResource(R.string.select_date)) }
-        }, dismissButton = { TextButton(onClick = { choosingStart = false }) { Text(stringResource(R.string.cancel)) } }) {
+            },
+            dismissButton = { TextButton(onClick = { choosingStart = false }) { Text(stringResource(R.string.cancel)) } },
+        ) {
             DatePicker(state = picker)
         }
     }
-    if (discarding) AlertDialog(onDismissRequest = { discarding = false },
+    if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.habit_discard_title)) },
         text = { Text(stringResource(R.string.habit_discard_body)) },
         confirmButton = { TextButton(onClick = { discarding = false; onBack() }) { Text(stringResource(R.string.discard)) } },

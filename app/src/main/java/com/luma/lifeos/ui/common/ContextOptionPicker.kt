@@ -11,11 +11,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -71,13 +69,13 @@ fun ContextOptionPicker(
     }
     fun apply() = onApply(workingIds.mapNotNullTo(linkedSetOf(), UUID::fromString))
 
-    AlertDialog(
+    LumaAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title, style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.semantics { heading() }) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                LumaOutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
                     label = { Text(stringResource(R.string.search_options_hint)) },
@@ -125,20 +123,22 @@ fun ContextOptionPicker(
                         items(filtered, key = { it.id.toString() }) { option ->
                             val checked = option.id in selected
                             val canChange = enabled && (checked || selected.size < maxSelections)
-                            Row(
-                                Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                                    .clickable(enabled = canChange) { toggle(option.id) }
-                                    .testTag("context_option_${option.id}")
-                                    .padding(horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Checkbox(checked = checked, enabled = canChange,
-                                    onCheckedChange = { toggle(option.id) })
-                                Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
-                                    Text(option.label, style = MaterialTheme.typography.bodyLarge)
-                                    option.secondary?.let {
-                                        Text(it, style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            LumaListSurface {
+                                Row(
+                                    Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                        .clickable(enabled = canChange) { toggle(option.id) }
+                                        .testTag("context_option_${option.id}")
+                                        .padding(horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Checkbox(checked = checked, enabled = canChange,
+                                        onCheckedChange = { toggle(option.id) })
+                                    Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
+                                        Text(option.label, style = MaterialTheme.typography.bodyLarge)
+                                        option.secondary?.let {
+                                            Text(it, style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
                                 }
                             }

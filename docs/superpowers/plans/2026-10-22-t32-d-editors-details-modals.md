@@ -4,6 +4,8 @@
 
 **Goal:** Make capture/edit/detail surfaces and modal UI consistent while retaining drafts, validation, editing and recovery.
 
+**Implementation status (22 October 2026): implemented (validation pending).** Source changes and the restricted verification record are in [T32-D evidence](../../luma-redesign/evidence/2026-10-22/t32-d-review.md). Per the user's instruction, Gradle tests and emulator checks were not run.
+
 **Architecture:** Existing repositories/view models retain data ownership and LifeOsApp retains navigation. Shared T30 roles/components provide presentation; the spec defines any optional new interface. Keep current product behavior.
 
 **Tech Stack:** Kotlin, Compose Material 3, Navigation Compose, JUnit/Compose instrumentation, Gradle and JDK 17.
@@ -45,11 +47,14 @@
 - Modify: `app/src/main/java/com/luma/lifeos/ui/places/PlaceEditorRoute.kt`.
 - Modify: `app/src/main/java/com/luma/lifeos/ui/places/PlacesRoute.kt`.
 - Modify: `app/src/main/java/com/luma/lifeos/ui/timeline/EventDetailRoute.kt`.
-- Modify: `app/src/main/java/com/luma/lifeos/ui/common/EditorTopBar.kt`.
-- Modify: `app/src/main/java/com/luma/lifeos/ui/common/DetailTopBar.kt`.
+- Reuse unchanged: `app/src/main/java/com/luma/lifeos/ui/common/EditorTopBar.kt` (already delegates to shared `PageHeader`).
+- Reuse unchanged: `app/src/main/java/com/luma/lifeos/ui/common/DetailTopBar.kt` (already delegates to shared `PageHeader`).
 - Modify: `app/src/main/java/com/luma/lifeos/ui/common/ContextOptionPicker.kt`.
 - Modify: `app/src/main/java/com/luma/lifeos/ui/common/CaptureTimestampRow.kt`.
 - Modify: `app/src/main/java/com/luma/lifeos/ui/common/EditorOptionalSection.kt`.
+- Modify: `app/src/main/java/com/luma/lifeos/ui/common/LumaUiComponents.kt`.
+- Modify: `app/src/main/java/com/luma/lifeos/ui/common/CaptureDateChoice.kt`.
+- Modify: `app/src/main/java/com/luma/lifeos/ui/habits/HabitHistory.kt`.
 - Modify: `app/src/main/java/com/luma/lifeos/ui/photos/PhotoGallery.kt`.
 
 Consumes: current signatures/state/callbacks in these files and shared T30 roles. Produces: the linked spec’s screen contract. Preserve existing composable signatures except extensions explicitly named in that spec; new named interfaces use the exact types defined there. String additions go into all three existing values/values-fr/values-fa catalogs with matching placeholders/plurals.
@@ -71,33 +76,33 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 **Interfaces:** Implement this unit against the file map and contract above; no independent repository observations for decorative content. Existing state/callback contracts remain authoritative.
 
-- [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: JournalEditorScreenTest, MoodCaptureTest, MemoryCaptureTest, TodoEditorFlowTest and HabitCaptureFlowTest: validation, draft restore, Save/Cancel and now/selected-date capture rules retain stored values.
-- [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Restyle QuickCaptureSheet using the rounded surface/title/cancel treatment in corrected timeline-light.html, while retaining full-width Mood/Journal/Memory/Task choices, selected-date policy and existing dismissal behavior. Do not copy hard-coded Water/Stretch actions, three-column grid or encryption claim. Restyle editor top bars, fields, optional sections and pickers using shared tokens; keep view models, result types and drafts unchanged.
-- [ ] Rerun the affected regression tests and inspect: Inspect IME, long fields, large text and picker/sheet scrolling; Quick Capture dismissal must write nothing.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [ ] Establish the fixture/test baseline and before capture. NOT RUN: the user excluded Gradle tests and emulator work.
+- [ ] Run the selected test and confirm any new behavior test fails first. NOT RUN per the user's instruction.
+- [x] Restyle Quick Capture, editor fields, optional sections and date/context pickers with shared roles while retaining existing choices, callbacks, validation and draft state.
+- [ ] Rerun focused regression tests and inspect IME, long fields, large text and rendered sheet behavior. NOT RUN per the user's instruction; dismissal remains source-reviewed only.
+- [x] Record source evidence and review the implementation diff against the owned spec requirements. Runtime and automated acceptance remain pending.
 
 ### Task 2: Details and modal recovery
 
 **Interfaces:** Implement this unit against the file map and contract above; no independent repository observations for decorative content. Existing state/callback contracts remain authoritative.
 
-- [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: DetailNavigationTest, PhotoCaptureTest and FeedbackAccessibilityTest: missing/deleted/imported records keep correct actions, photo failures retry and consumed save feedback does not replay.
-- [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Restyle detail routes, photo gallery containers and existing dialogs. Verify destructive/recovery flows and imported-record restrictions without adding new routes.
-- [ ] Rerun the affected regression tests and inspect: Inspect detail photo/gallery/source metadata, correction dialogs, unsaved/delete/reset/restore confirmations and modal focus/Back behavior in both themes.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [ ] Establish the fixture/test baseline and before capture. NOT RUN: the user excluded Gradle tests and emulator work.
+- [ ] Run the selected test and confirm any new behavior test fails first. NOT RUN per the user's instruction.
+- [x] Restyle detail routes, photo gallery containers, and owned confirmation, date/time and correction dialogs; preserve existing route and mutation callbacks.
+- [ ] Rerun focused regression tests and inspect rendered gallery/source metadata, recovery flows and modal focus/Back behavior. NOT RUN per the user's instruction.
+- [x] Record source evidence and review the implementation diff against the owned spec requirements. Runtime and automated acceptance remain pending.
 
 ## Planned verification and completion
 
-Run focused classes while iterating; extend their fixtures rather than duplicate the same state contract in a new suite. Also run any new test classes named in the spec. Commands are planned checks and have not run in this documentation change.
+Run focused classes while iterating; extend their fixtures rather than duplicate the same state contract in a new suite. Also run any new test classes named in the spec. For this execution, Gradle tests and emulator checks were not run at the user's request. `bash gradlew :app:assembleDebug :app:lintDebug --offline` was attempted but blocked before task execution by the read-only wrapper cache; see the [T32-D evidence](../../luma-redesign/evidence/2026-10-22/t32-d-review.md).
 
 ```bash
 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.CaptureAccessibilityTest,com.luma.lifeos.JournalEditorScreenTest,com.luma.lifeos.MoodCaptureTest,com.luma.lifeos.MemoryCaptureTest,com.luma.lifeos.PhotoCaptureTest,com.luma.lifeos.ContextOptionPickerTest,com.luma.lifeos.DetailNavigationTest,com.luma.lifeos.todo.TodoEditorFlowTest,com.luma.lifeos.habits.HabitCaptureFlowTest,com.luma.lifeos.FeedbackAccessibilityTest
 ./gradlew :app:assembleDebug :app:lintDebug
 ```
 
-Expected: BUILD SUCCESSFUL, zero selected test failures/lint errors, actual device results for instrumentation. Missing prerequisites or skipped device tasks are NOT RUN with the exact reason. Confirm each acceptance scenario in the spec against implementation and evidence; record commands, build/device configuration and screenshots in the T33 ledger. Do not repeat passing checks unless changes/failures justify it.
+Expected for a later validation pass: BUILD SUCCESSFUL, zero selected test failures/lint errors, actual device results for instrumentation. Missing prerequisites or skipped device tasks are NOT RUN with the exact reason. Confirm each acceptance scenario in the spec against implementation and evidence; record commands, build/device configuration and screenshots in the T33 ledger. Do not repeat passing checks unless changes/failures justify it.
 
 ## Handoff
 
-Depends on: T30; consume T32-A EventCard treatment. Execute after dependency/spec review and hand results to T33. This plan does not begin app implementation.
+Depends on: T30; consume T32-A EventCard treatment. Source implementation and review are recorded; hand off to T33 for required automated and rendered acceptance. Commit the reviewed implementation and evidence with: `feat(ui): restyle T32-D editors, details, and modals`.

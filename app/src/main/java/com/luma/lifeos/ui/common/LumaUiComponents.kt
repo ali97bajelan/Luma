@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,10 +16,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,9 +35,115 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.luma.lifeos.R
 
 internal enum class LumaSurfaceTone { Neutral, Reflective }
+
+@Composable
+internal fun LumaOutlinedTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    readOnly: Boolean = false,
+    singleLine: Boolean = false,
+    minLines: Int = 1,
+    maxLines: Int = Int.MAX_VALUE,
+    label: (@Composable () -> Unit)? = null,
+    placeholder: (@Composable () -> Unit)? = null,
+    supportingText: (@Composable () -> Unit)? = null,
+    isError: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+) {
+    val colors = MaterialTheme.colorScheme
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        enabled = enabled,
+        readOnly = readOnly,
+        singleLine = singleLine,
+        minLines = minLines,
+        maxLines = maxLines,
+        label = label,
+        placeholder = placeholder,
+        supportingText = supportingText,
+        isError = isError,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        shape = MaterialTheme.shapes.medium,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = colors.onSurface,
+            unfocusedTextColor = colors.onSurface,
+            disabledTextColor = colors.onSurfaceVariant,
+            errorTextColor = colors.onSurface,
+            focusedContainerColor = colors.surfaceContainerLow,
+            unfocusedContainerColor = colors.surfaceContainerLow,
+            disabledContainerColor = colors.surfaceContainerLow,
+            errorContainerColor = colors.surfaceContainerLow,
+            cursorColor = colors.primary,
+            errorCursorColor = colors.error,
+            focusedBorderColor = colors.primary,
+            unfocusedBorderColor = colors.outlineVariant,
+            disabledBorderColor = colors.outlineVariant,
+            errorBorderColor = colors.error,
+            focusedLabelColor = colors.primary,
+            unfocusedLabelColor = colors.onSurfaceVariant,
+            disabledLabelColor = colors.onSurfaceVariant,
+            errorLabelColor = colors.error,
+            focusedSupportingTextColor = colors.onSurfaceVariant,
+            unfocusedSupportingTextColor = colors.onSurfaceVariant,
+            disabledSupportingTextColor = colors.onSurfaceVariant,
+            errorSupportingTextColor = colors.error,
+        ),
+    )
+}
+
+@Composable
+internal fun LumaAlertDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null,
+    properties: DialogProperties = DialogProperties(),
+) {
+    val colors = MaterialTheme.colorScheme
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        modifier = modifier,
+        dismissButton = dismissButton,
+        title = title,
+        text = text,
+        shape = MaterialTheme.shapes.large,
+        containerColor = colors.surfaceContainerHigh,
+        iconContentColor = colors.primary,
+        titleContentColor = colors.onSurface,
+        textContentColor = colors.onSurfaceVariant,
+        tonalElevation = 0.dp,
+        properties = properties,
+    )
+}
+
+@Composable
+internal fun LumaDestructiveTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        content = content,
+    )
+}
 
 @Composable
 internal fun LumaReadingPane(

@@ -21,6 +21,7 @@ import com.luma.lifeos.ui.common.contextOptionMatches
 import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.LumaClickableListSurface
 import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionHeader
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.domain.repository.PlaceRepository
@@ -30,6 +31,7 @@ import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.util.UUID
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 
 @Composable
 fun PlacesRoute(repository: PlaceRepository, onBack: () -> Unit, onCreate: () -> Unit, onPlace: (UUID) -> Unit) {
@@ -61,7 +63,7 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
                  verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (onBack != null) TextButton(onClick = onBack, modifier = Modifier.testTag("places_back")) { Text(stringResource(R.string.back)) }
                 Text(stringResource(R.string.places_intro))
-                OutlinedTextField(value = activeQuery, onValueChange = updateQuery,
+                LumaOutlinedTextField(value = activeQuery, onValueChange = updateQuery,
                     label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("places_search"))
                 if (!empty) Button(onClick = onCreate, modifier = Modifier.testTag("places_create")) { Text(stringResource(R.string.place_create)) }
@@ -126,40 +128,46 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
             )
         },
     ) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("place_detail_content"), contentPadding = PaddingValues(20.dp),
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            LazyColumn(Modifier.fillMaxSize().testTag("place_detail_content"), contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            when (val current = state) {
-                PlaceHistoryState.Loading -> item { CircularProgressIndicator() }
-                PlaceHistoryState.Missing -> item { Text(stringResource(R.string.place_missing), modifier = Modifier.testTag("place_detail_missing")) }
-                PlaceHistoryState.Error -> item {
-                    Text(stringResource(R.string.places_load_error), color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
-                }
-                is PlaceHistoryState.Data -> {
-                    val events = current.history.events.sortedWith(
-                        compareBy<LifeEventRecord, LifeEvent>(LifeEvent.chronologicalOrder) { it.event })
-                    item {
-                        val place = current.history.place
-                        Text(place.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.testTag("place_detail_name"))
-                        place.note?.let { Text(it, modifier = Modifier.testTag("place_detail_note")) }
-                        place.latitude?.let { latitude ->
-                            Text(stringResource(R.string.place_coordinates, latitude, requireNotNull(place.longitude)))
-                        }
-                        Text(stringResource(R.string.place_history), style = MaterialTheme.typography.titleLarge)
-                        if (events.isNotEmpty()) Text(stringResource(R.string.entry_order_oldest_first),
-                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place_history_order"))
-                        if (events.isEmpty()) EmptyStateCard(R.drawable.ic_nav_places,
-                            R.string.place_history_empty_heading, R.string.place_history_empty, "place_history_empty")
+                when (val current = state) {
+                    PlaceHistoryState.Loading -> item { CircularProgressIndicator() }
+                    PlaceHistoryState.Missing -> item { Text(stringResource(R.string.place_missing), modifier = Modifier.testTag("place_detail_missing")) }
+                    PlaceHistoryState.Error -> item {
+                        Text(stringResource(R.string.places_load_error), color = MaterialTheme.colorScheme.error)
+                        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
-                    items(events, key = { it.event.id.toString() }) { record ->
-                        Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(record.event.occurredAt.atZone(zone)
-                                .format(displayTime.dateTime(FormatStyle.MEDIUM)),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            EventCard(record, zone, onOpen = { onEvent(record) },
-                                openActionLabel = if (record.journal != null) R.string.journal_open else R.string.event_open)
+                    is PlaceHistoryState.Data -> {
+                        val events = current.history.events.sortedWith(
+                            compareBy<LifeEventRecord, LifeEvent>(LifeEvent.chronologicalOrder) { it.event })
+                        item {
+                            val place = current.history.place
+                            LumaSectionSurface(modifier = Modifier.testTag("place_detail_summary")) {
+                                Text(place.name, style = MaterialTheme.typography.headlineMedium,
+                                    modifier = Modifier.testTag("place_detail_name"))
+                                place.note?.let { Text(it, style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.testTag("place_detail_note")) }
+                                place.latitude?.let { latitude ->
+                                    Text(stringResource(R.string.place_coordinates, latitude, requireNotNull(place.longitude)))
+                                }
+                            }
+                            LumaSectionHeader(stringResource(R.string.place_history))
+                            if (events.isNotEmpty()) Text(stringResource(R.string.entry_order_oldest_first),
+                                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("place_history_order"))
+                            if (events.isEmpty()) EmptyStateCard(R.drawable.ic_nav_places,
+                                R.string.place_history_empty_heading, R.string.place_history_empty, "place_history_empty")
+                        }
+                        items(events, key = { it.event.id.toString() }) { record ->
+                            Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(record.event.occurredAt.atZone(zone)
+                                    .format(displayTime.dateTime(FormatStyle.MEDIUM)),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                EventCard(record, zone, onOpen = { onEvent(record) },
+                                    openActionLabel = if (record.journal != null) R.string.journal_open else R.string.event_open)
+                            }
                         }
                     }
                 }

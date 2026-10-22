@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +33,7 @@ import com.luma.lifeos.ui.today.pickerMillis
 import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.FormatStyle
+import com.luma.lifeos.ui.common.LumaAlertDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +67,7 @@ internal fun HabitLogCorrectionDialog(
         else -> null
     }
 
-    AlertDialog(
+    LumaAlertDialog(
         onDismissRequest = { if (!busy) onRequestClose() },
         title = { Text(stringResource(R.string.habit_log_correction)) },
         text = {
@@ -134,6 +135,9 @@ internal fun HabitLogCorrectionDialog(
         )
         DatePickerDialog(
             onDismissRequest = ::closeDate,
+            shape = MaterialTheme.shapes.large,
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            tonalElevation = 0.dp,
             confirmButton = {
                 TextButton(enabled = date.selectedDateMillis != null, onClick = {
                     date.selectedDateMillis?.let { onDate(pickerDate(it)) }
@@ -149,7 +153,7 @@ internal fun HabitLogCorrectionDialog(
     if (timeOpen) {
         val selected = draft.selectedTime ?: LocalTime.NOON
         val time = rememberTimePickerState(initialHour = selected.hour, initialMinute = selected.minute, is24Hour = use24Hour)
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = ::closeTime,
             title = { Text(stringResource(R.string.habit_correction_time)) },
             text = { TimeInput(state = time, modifier = Modifier.testTag("habit_correction_time_picker")) },

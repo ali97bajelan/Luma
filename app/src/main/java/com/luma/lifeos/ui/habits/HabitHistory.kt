@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,7 +26,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.AppSectionHeading
+import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 import com.luma.lifeos.domain.habit.HabitLog
 import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.time.ZoneId
@@ -137,10 +138,10 @@ private fun HabitLogCard(
             }
         }
     }
-    if (confirmingDelete) AlertDialog(onDismissRequest = { confirmingDelete = false },
+    if (confirmingDelete) LumaAlertDialog(onDismissRequest = { confirmingDelete = false },
         title = { Text(stringResource(R.string.habit_delete_log_title)) },
         text = { Text(stringResource(R.string.habit_delete_log_body)) },
-        confirmButton = { TextButton(onClick = { confirmingDelete = false; onDelete(log.id) },
+        confirmButton = { LumaDestructiveTextButton(onClick = { confirmingDelete = false; onDelete(log.id) },
             modifier = Modifier.testTag("habit_confirm_delete_log_${log.id}")) {
             Text(stringResource(R.string.habit_delete_log))
         } },

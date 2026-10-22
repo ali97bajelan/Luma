@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -62,22 +62,26 @@ fun CaptureTimestampRow(
     var dialogOpen by rememberSaveable(milliseconds) { mutableStateOf(false) }
     var timezoneExpanded by rememberSaveable(milliseconds) { mutableStateOf(false) }
 
-    Row(
+    LumaListSurface(
         modifier = modifier.fillMaxWidth().heightIn(min = 48.dp)
             .semantics { if (timeError) error(timeErrorMessage) }
             .testTag("capture_timestamp"),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        TextButton(
-            enabled = enabled,
-            onClick = { dialogOpen = true },
-            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("capture_timestamp_value"),
-        ) { Text(dateText, style = MaterialTheme.typography.bodyLarge) }
-        TextButton(
-            enabled = enabled,
-            onClick = { dialogOpen = true },
-            modifier = Modifier.heightIn(min = 48.dp).testTag("capture_timestamp_change"),
-        ) { Text(stringResource(R.string.capture_timestamp_change)) }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            TextButton(
+                enabled = enabled,
+                onClick = { dialogOpen = true },
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("capture_timestamp_value"),
+            ) { Text(dateText, style = MaterialTheme.typography.bodyLarge) }
+            TextButton(
+                enabled = enabled,
+                onClick = { dialogOpen = true },
+                modifier = Modifier.heightIn(min = 48.dp).testTag("capture_timestamp_change"),
+            ) { Text(stringResource(R.string.capture_timestamp_change)) }
+        }
     }
     if (timeError && !dialogOpen) {
         AccessibleFeedback(timeErrorMessage, Modifier.testTag("mood_time_error"))
@@ -97,7 +101,7 @@ fun CaptureTimestampRow(
         val selectedTime = captureTimestampForSelection(
             current.toLocalDateTime(), selectedDate, time.hour, time.minute,
         ).toLocalTime()
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { dialogOpen = false },
             title = { Text(stringResource(R.string.mood_timestamp)) },
             text = {
@@ -109,6 +113,7 @@ fun CaptureTimestampRow(
                     Text(stringResource(R.string.capture_timestamp_date), style = MaterialTheme.typography.titleSmall)
                     DatePicker(
                         state = date,
+                        colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         modifier = Modifier.testTag("capture_timestamp_date_picker"),
                     )
                     Text(stringResource(R.string.capture_timestamp_time), style = MaterialTheme.typography.titleSmall)

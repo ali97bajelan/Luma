@@ -26,6 +26,7 @@ import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.model.PhotoLimits
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaListSurface
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +62,7 @@ fun PhotoGallery(repository: PhotoRepository, photos: List<PhotoAttachment>, ena
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         photos.forEachIndexed { index, photo ->
             key(photo.id) {
-                Card(Modifier.fillMaxWidth()) {
+                LumaListSurface(Modifier.testTag("photo_card_${photo.id}")) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         PhotoPreview(repository, photo, index + 1)
                         onRemove?.let { remove ->

@@ -7,7 +7,7 @@ Execution date: 2026-10-22, Asia/Tehran. Source base revision: `b8d0b1a09dfdae82
 ## Dependency state
 
 - T31, T32-A and T32-B are **implemented (validation pending)**; their source/build records are [t31-review.md](t31-review.md), [t32-a-review.md](t32-a-review.md) and [t32-b-review.md](t32-b-review.md).
-- T32-C is **implemented (validation pending)**; T32-D is **pending**. T32-C source changes are recorded in its [implementation evidence](t32-c-review.md); route captures and acceptance checks remain outstanding in the [route coverage ledger](../../route-coverage.md).
+- T32-C and T32-D are **implemented (validation pending)**. Source changes are recorded in the [T32-C evidence](t32-c-review.md) and [T32-D evidence](t32-d-review.md); route captures and acceptance checks remain outstanding in the [route coverage ledger](../../route-coverage.md).
 - Because those screen-family tasks are incomplete, T33 cannot sign off route, state, navigation or rendered acceptance.
 
 ## Results
@@ -19,7 +19,7 @@ Execution date: 2026-10-22, Asia/Tehran. Source base revision: `b8d0b1a09dfdae82
 | T32-B assemble and lint | NOT RUN | The standard wrapper could not write its lock under the read-only Gradle home. A retry using a temporary Gradle home stopped before task execution because the restricted environment could not determine a usable wildcard IP. See [t32-b-review.md](t32-b-review.md). |
 | Static route inventory and ownership | PASS | The [route coverage ledger](../../route-coverage.md) records route owners and conditional providers. This is an inventory result only; every route's visual/runtime matrix remains NOT RUN. |
 | Six primary-screen captures | NOT RUN | No rendered screen was captured. The six light/dark captures require an implemented screen and device/emulator. No source reference image is being presented as an app capture. |
-| Route-family screens, sheets, dialogs and provider-state captures | NOT RUN | T32-C is implemented (validation pending) and T32-D remains pending. No emulator/device was used, and T32-A/B rendered evidence is still unrun. Planned paths in the route ledger are not evidence files. |
+| Route-family screens, sheets, dialogs and provider-state captures | NOT RUN | T32-C and T32-D are implemented (validation pending). No emulator/device was used, and T32-A/B rendered evidence is still unrun. Planned paths in the route ledger are not evidence files. |
 | Gradle unit/instrumented tests | NOT RUN | Explicitly skipped at the user's request. No test task was invoked. |
 | Device/API, locale, theme, width and font-scale matrix | NOT RUN | No emulator/device was run. Required configurations remain English/French/Persian; Light/Dark/System; 320 dp at 2.0, 411 × 891 dp at 1.0, and 840 dp width. |
 | TalkBack order/names/states, keyboard focus, 48 dp targets, system bars, animation scale, final-row/FAB clearance | NOT RUN | Requires rendered interaction checks after T31/T32 implementation. |
@@ -33,4 +33,4 @@ Fixture status: **NOT CREATED / NOT RUN**. This execution records the reproducib
 
 ## Acceptance decision
 
-T33 remains **in progress**. The source-level contrast/font audit and T32-A compile/assemble/lint pass are recorded. T32-B source implementation is recorded, but its build and runtime checks remain NOT RUN. T32-C source implementation is recorded; Gradle tests and emulator checks were not run at the user's request, and its assemble/lint attempt could not start because the restricted environment blocked Gradle startup. Release acceptance remains NOT RUN until T32-D and the required automated and rendered/device evidence are available in a later authorized validation pass.
+T33 remains **in progress**. The source-level contrast/font audit and T32-A compile/assemble/lint pass are recorded. T32-B source implementation is recorded, but its build and runtime checks remain NOT RUN. T32-C and T32-D source implementations are recorded; Gradle tests and emulator checks were not run at the user's request, and their assemble/lint attempts could not start because the restricted environment blocked Gradle startup. Release acceptance remains NOT RUN until the required automated and rendered/device evidence are available in a later authorized validation pass.

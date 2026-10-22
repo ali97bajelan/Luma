@@ -32,6 +32,10 @@ import com.luma.lifeos.domain.repository.PlaceRepository
 import com.luma.lifeos.ui.navigation.CatalogEditorResult
 import java.text.NumberFormat
 import java.util.UUID
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 
 @Composable
 fun PlaceEditorRoute(
@@ -65,66 +69,70 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
         EditorTopBar(stringResource(if (state.editing) R.string.place_edit else R.string.place_create),
             "place_cancel", !state.busy, ::close)
     }, bottomBar = {
-        Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            when (state.error) {
-                PlaceEditorError.SAVE -> AccessibleFeedback(stringResource(R.string.place_save_error), Modifier.testTag("place_action_error"))
-                PlaceEditorError.DELETE -> AccessibleFeedback(stringResource(R.string.place_delete_error), Modifier.testTag("place_action_error"))
-                else -> Unit
+        LumaReadingPane(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                when (state.error) {
+                    PlaceEditorError.SAVE -> AccessibleFeedback(stringResource(R.string.place_save_error), Modifier.testTag("place_action_error"))
+                    PlaceEditorError.DELETE -> AccessibleFeedback(stringResource(R.string.place_delete_error), Modifier.testTag("place_action_error"))
+                    else -> Unit
+                }
+                EditorActionRow(
+                    secondaryAction = if (state.editing) { actionModifier ->
+                        TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("place_delete")) {
+                            Text(stringResource(R.string.delete))
+                        }
+                    } else null,
+                    primaryAction = { actionModifier ->
+                        Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
+                            modifier = actionModifier.testTag("place_save")) {
+                            Text(stringResource(if (state.busy) R.string.saving else R.string.save))
+                        }
+                    },
+                )
             }
-            EditorActionRow(
-                secondaryAction = if (state.editing) { actionModifier ->
-                    TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("place_delete")) {
-                        Text(stringResource(R.string.delete))
-                    }
-                } else null,
-                primaryAction = { actionModifier ->
-                    Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
-                        modifier = actionModifier.testTag("place_save")) {
-                        Text(stringResource(if (state.busy) R.string.saving else R.string.save))
-                    }
-                },
-            )
         }
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.loading) CircularProgressIndicator()
-            state.error?.let { error ->
-                val message = stringResource(when (error) {
-                    PlaceEditorError.LOAD -> R.string.places_load_error
-                    PlaceEditorError.SAVE -> R.string.place_save_error
-                    PlaceEditorError.DELETE -> R.string.place_delete_error
-                    PlaceEditorError.TEXT -> R.string.place_text_error
-                })
-                if (error == PlaceEditorError.LOAD || (error == PlaceEditorError.TEXT && state.textErrors.isEmpty())) {
-                    AccessibleFeedback(message, Modifier.testTag("place_error"))
+                if (state.loading) CircularProgressIndicator()
+                state.error?.let { error ->
+                    val message = stringResource(when (error) {
+                        PlaceEditorError.LOAD -> R.string.places_load_error
+                        PlaceEditorError.SAVE -> R.string.place_save_error
+                        PlaceEditorError.DELETE -> R.string.place_delete_error
+                        PlaceEditorError.TEXT -> R.string.place_text_error
+                    })
+                    if (error == PlaceEditorError.LOAD || (error == PlaceEditorError.TEXT && state.textErrors.isEmpty())) {
+                        AccessibleFeedback(message, Modifier.testTag("place_error"))
+                    }
+                    if (error == PlaceEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
-                if (error == PlaceEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                val nameError = if (PlaceTextField.NAME in state.textErrors)
+                    stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PlaceTextLimits.NAME)) else null
+                LumaOutlinedTextField(state.draft.name, onName, enabled = enabled, singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
+                    isError = nameError != null, supportingText = { nameError?.let { AccessibleFeedback(it) } },
+                    label = { Text(stringResource(R.string.place_name)) }, modifier = Modifier.fillMaxWidth()
+                        .semantics { nameError?.let { error(it) } }.testTag("place_name"))
+                val noteError = if (PlaceTextField.NOTE in state.textErrors)
+                    stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PlaceTextLimits.NOTE)) else null
+                LumaOutlinedTextField(state.draft.note, onNote, enabled = enabled, minLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                    isError = noteError != null, supportingText = { noteError?.let { AccessibleFeedback(it) } },
+                    label = { Text(stringResource(R.string.place_note)) }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
+                        .semantics { noteError?.let { error(it) } }.testTag("place_note"))
             }
-            val nameError = if (PlaceTextField.NAME in state.textErrors)
-                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PlaceTextLimits.NAME)) else null
-            OutlinedTextField(state.draft.name, onName, enabled = enabled, singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
-                isError = nameError != null, supportingText = { nameError?.let { AccessibleFeedback(it) } },
-                label = { Text(stringResource(R.string.place_name)) }, modifier = Modifier.fillMaxWidth()
-                    .semantics { nameError?.let { error(it) } }.testTag("place_name"))
-            val noteError = if (PlaceTextField.NOTE in state.textErrors)
-                stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PlaceTextLimits.NOTE)) else null
-            OutlinedTextField(state.draft.note, onNote, enabled = enabled, minLines = 4,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                isError = noteError != null, supportingText = { noteError?.let { AccessibleFeedback(it) } },
-                label = { Text(stringResource(R.string.place_note)) }, modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
-                    .semantics { noteError?.let { error(it) } }.testTag("place_note"))
         }
     }
-    if (deleting) AlertDialog(onDismissRequest = { deleting = false },
+    if (deleting) LumaAlertDialog(onDismissRequest = { deleting = false },
         title = { Text(stringResource(R.string.place_delete_title)) },
         text = { Text(stringResource(R.string.place_delete_body)) },
-        confirmButton = { TextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("place_confirm_delete")) {
+        confirmButton = { LumaDestructiveTextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("place_confirm_delete")) {
             Text(stringResource(R.string.delete)) } },
         dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } })
-    if (discarding) AlertDialog(onDismissRequest = { discarding = false },
+    if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.place_discard_title)) },
         text = { Text(stringResource(R.string.place_discard_body)) },
         confirmButton = { TextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },

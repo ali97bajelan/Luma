@@ -33,22 +33,24 @@ internal fun EditorOptionalSection(
     val disclosureState = stringResource(
         if (expanded) R.string.review_details_expanded else R.string.review_details_collapsed,
     )
-    Column(Modifier.fillMaxWidth()) {
-        TextButton(
-            onClick = { onExpandedChange(!expanded) },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                .semantics { heading(); stateDescription = disclosureState }.testTag(tag),
-        ) {
-            Text(
-                stringResource(title),
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            if (!expanded) summary?.invoke()
-        }
-        if (expanded) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                content()
+    LumaSectionSurface(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth()) {
+            TextButton(
+                onClick = { onExpandedChange(!expanded) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .semantics { heading(); stateDescription = disclosureState }.testTag(tag),
+            ) {
+                Text(
+                    stringResource(title),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                if (!expanded) summary?.invoke()
+            }
+            if (expanded) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    content()
+                }
             }
         }
     }

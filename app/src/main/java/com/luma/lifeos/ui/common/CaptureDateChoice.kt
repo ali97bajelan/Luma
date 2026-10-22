@@ -1,6 +1,5 @@
 package com.luma.lifeos.ui.common
 
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -19,7 +18,7 @@ internal fun CaptureDateChoice(
     onDismiss: () -> Unit,
 ) {
     val formattedDate = date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
-    AlertDialog(
+    LumaAlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.testTag("today_capture_date_dialog"),
         title = { Text(stringResource(R.string.today_capture_when)) },

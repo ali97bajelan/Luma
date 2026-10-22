@@ -17,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -25,7 +24,6 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -59,6 +57,10 @@ import com.luma.lifeos.ui.today.pickerMillis
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.FormatStyle
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,182 +123,186 @@ fun TodoEditorScreen(
             )
         },
         bottomBar = {
-            Column(
-                Modifier.fillMaxWidth().imePadding().padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                state.error?.let { error ->
-                    val message = stringResource(
-                        when (error) {
-                            TodoEditorError.LOAD -> R.string.todo_load_error
-                            TodoEditorError.SAVE -> R.string.todo_save_error
-                            TodoEditorError.STATUS -> R.string.todo_status_error
-                            TodoEditorError.DELETE -> R.string.todo_delete_error
-                        },
-                    )
-                    AccessibleFeedback(message, Modifier.testTag("todo_editor_action_error"))
-                    TextButton(
-                        onClick = onRetry,
-                        enabled = !state.busy,
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_retry"),
-                    ) {
-                        Text(stringResource(R.string.retry))
-                    }
-                }
-                EditorActionRow(
-                    secondaryAction = if (state.editing) { actionModifier ->
+            LumaReadingPane(Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.fillMaxWidth().imePadding().padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    state.error?.let { error ->
+                        val message = stringResource(
+                            when (error) {
+                                TodoEditorError.LOAD -> R.string.todo_load_error
+                                TodoEditorError.SAVE -> R.string.todo_save_error
+                                TodoEditorError.STATUS -> R.string.todo_status_error
+                                TodoEditorError.DELETE -> R.string.todo_delete_error
+                            },
+                        )
+                        AccessibleFeedback(message, Modifier.testTag("todo_editor_action_error"))
                         TextButton(
-                            onClick = onRequestDelete,
-                            enabled = canEdit && state.pendingAction == null,
-                            modifier = actionModifier.testTag("todo_editor_delete"),
-                        ) { Text(stringResource(R.string.delete)) }
-                    } else null,
-                    primaryAction = { actionModifier ->
-                        Button(
-                            onClick = onSave,
-                            enabled = canEdit,
-                            modifier = actionModifier.testTag("todo_editor_save"),
+                            onClick = onRetry,
+                            enabled = !state.busy,
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_retry"),
                         ) {
-                            Text(
-                                when {
-                                    state.busy && state.pendingAction == "delete" -> stringResource(R.string.todo_deleting)
-                                    state.busy && state.pendingAction == "complete" -> stringResource(R.string.todo_completing)
-                                    state.busy && state.pendingAction == "reopen" -> stringResource(R.string.todo_reopening)
-                                    state.busy -> stringResource(R.string.saving)
-                                    else -> stringResource(R.string.save)
-                                },
-                            )
+                            Text(stringResource(R.string.retry))
                         }
-                    },
-                )
+                    }
+                    EditorActionRow(
+                        secondaryAction = if (state.editing) { actionModifier ->
+                            TextButton(
+                                onClick = onRequestDelete,
+                                enabled = canEdit && state.pendingAction == null,
+                                modifier = actionModifier.testTag("todo_editor_delete"),
+                            ) { Text(stringResource(R.string.delete)) }
+                        } else null,
+                        primaryAction = { actionModifier ->
+                            Button(
+                                onClick = onSave,
+                                enabled = canEdit,
+                                modifier = actionModifier.testTag("todo_editor_save"),
+                            ) {
+                                Text(
+                                    when {
+                                        state.busy && state.pendingAction == "delete" -> stringResource(R.string.todo_deleting)
+                                        state.busy && state.pendingAction == "complete" -> stringResource(R.string.todo_completing)
+                                        state.busy && state.pendingAction == "reopen" -> stringResource(R.string.todo_reopening)
+                                        state.busy -> stringResource(R.string.saving)
+                                        else -> stringResource(R.string.save)
+                                    },
+                                )
+                            }
+                        },
+  )
+                }
             }
         },
     ) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (state.loading) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircularProgressIndicator()
-                    Text(stringResource(R.string.todo_loading), style = MaterialTheme.typography.bodyMedium)
+                if (state.loading) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularProgressIndicator()
+                        Text(stringResource(R.string.todo_loading), style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
-            }
-            if (state.conflict) {
-                AccessibleFeedback(stringResource(R.string.todo_conflict), Modifier.testTag("todo_editor_conflict"))
-                TextButton(
-                    onClick = {
-                        if (state.dirty && !state.canRetryConfirmedReload) reloadConfirmation = true else onReload()
-                    },
-                    enabled = !state.busy && !state.loading,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_reload"),
-                ) { Text(stringResource(R.string.todo_reload_latest)) }
-            }
-            if (state.missing) {
-                AccessibleFeedback(stringResource(R.string.todo_missing), Modifier.testTag("todo_editor_missing"))
-            }
-            val titleError = titleErrorText(state)
-            OutlinedTextField(
-                value = state.draft.title,
-                onValueChange = onTitle,
-                enabled = state.ready && !state.busy,
-                readOnly = readOnly,
-                minLines = 1,
-                maxLines = 3,
-                isError = titleError != null,
-                supportingText = {
-                    Column {
-                        Text(stringResource(R.string.todo_title_hint))
-                        titleError?.let { AccessibleFeedback(it) }
-                    }
-                },
-                label = { Text(stringResource(R.string.todo_title_label)) },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
-                modifier = Modifier.fillMaxWidth().focusRequester(titleFocus)
-                    .semantics { titleError?.let { error(it) } }.testTag("todo_editor_title"),
-            )
-
-            val noteError = noteErrorText(state)
-            OutlinedTextField(
-                value = state.draft.note,
-                onValueChange = onNote,
-                enabled = state.ready && !state.busy,
-                readOnly = readOnly,
-                minLines = 4,
-                isError = noteError != null,
-                supportingText = {
-                    Column {
-                        Text(stringResource(R.string.todo_note_hint))
-                        noteError?.let { AccessibleFeedback(it) }
-                    }
-                },
-                label = { Text(stringResource(R.string.todo_note_label)) },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
-                    .bringIntoViewRequester(noteBringIntoView)
-                    .semantics { noteError?.let { error(it) } }.testTag("todo_editor_note"),
-            )
-
-            val dueDateError = if (state.fieldErrors[TodoField.DUE_DATE] == TodoValidationReason.OUT_OF_RANGE) {
-                stringResource(R.string.todo_date_out_of_range)
-            } else null
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(R.string.todo_due_date_label), style = MaterialTheme.typography.labelLarge)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    val dueText = state.draft.dueDate?.let { date ->
-                        val formatted = date.format(localizedDate(FormatStyle.LONG))
-                        if (date == LocalDate.now()) stringResource(R.string.todo_due_today, formatted) else formatted
-                    } ?: stringResource(R.string.todo_no_date)
-                    Text(
-                        dueText,
-                        modifier = Modifier.weight(1f).padding(vertical = 12.dp)
-                            .semantics { dueDateError?.let { error(it) } }.testTag("todo_editor_due_date_value"),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                if (state.conflict) {
+                    AccessibleFeedback(stringResource(R.string.todo_conflict), Modifier.testTag("todo_editor_conflict"))
                     TextButton(
                         onClick = {
-                            pickerStartDate = (state.draft.dueDate ?: LocalDate.now()).toString()
-                            pickingDate = true
+                            if (state.dirty && !state.canRetryConfirmedReload) reloadConfirmation = true else onReload()
                         },
-                        enabled = canEdit,
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_change_due_date"),
-                    ) { Text(stringResource(R.string.todo_change_date)) }
-                    if (state.draft.dueDate != null) {
-                        TextButton(
-                            onClick = { onDueDate(null) },
-                            enabled = canEdit,
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_clear_due_date"),
-                        ) { Text(stringResource(R.string.todo_remove_date)) }
-                    }
+                        enabled = !state.busy && !state.loading,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_reload"),
+                    ) { Text(stringResource(R.string.todo_reload_latest)) }
                 }
-                dueDateError?.let { AccessibleFeedback(it) }
-            }
+                if (state.missing) {
+                    AccessibleFeedback(stringResource(R.string.todo_missing), Modifier.testTag("todo_editor_missing"))
+                }
+                val titleError = titleErrorText(state)
+                LumaOutlinedTextField(
+                    value = state.draft.title,
+                    onValueChange = onTitle,
+                    enabled = state.ready && !state.busy,
+                    readOnly = readOnly,
+                    minLines = 1,
+                    maxLines = 3,
+                    isError = titleError != null,
+                    supportingText = {
+                        Column {
+                            Text(stringResource(R.string.todo_title_hint))
+                            titleError?.let { AccessibleFeedback(it) }
+                        }
+                    },
+                    label = { Text(stringResource(R.string.todo_title_label)) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { noteFocus.requestFocus() }),
+                    modifier = Modifier.fillMaxWidth().focusRequester(titleFocus)
+                        .semantics { titleError?.let { error(it) } }.testTag("todo_editor_title"),
+                )
 
-            if (state.editing) {
+                val noteError = noteErrorText(state)
+                LumaOutlinedTextField(
+                    value = state.draft.note,
+                    onValueChange = onNote,
+                    enabled = state.ready && !state.busy,
+                    readOnly = readOnly,
+                    minLines = 4,
+                    isError = noteError != null,
+                    supportingText = {
+                        Column {
+                            Text(stringResource(R.string.todo_note_hint))
+                            noteError?.let { AccessibleFeedback(it) }
+                        }
+                    },
+                    label = { Text(stringResource(R.string.todo_note_label)) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                    modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
+                        .bringIntoViewRequester(noteBringIntoView)
+                        .semantics { noteError?.let { error(it) } }.testTag("todo_editor_note"),
+                )
+
+                val dueDateError = if (state.fieldErrors[TodoField.DUE_DATE] == TodoValidationReason.OUT_OF_RANGE) {
+                    stringResource(R.string.todo_date_out_of_range)
+                } else null
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        stringResource(if (state.taskCompleted) R.string.todo_status_completed else R.string.todo_status_open),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    val statusEnabled = canEdit && !state.dirty && state.pendingAction == null
-                    OutlinedButton(
-                        onClick = { onSetCompleted(!state.taskCompleted) },
-                        enabled = statusEnabled,
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_status"),
-                    ) {
-                        Text(stringResource(if (state.taskCompleted) R.string.todo_reopen else R.string.todo_mark_complete))
-                    }
-                    if (state.dirty) {
-                        AccessibleFeedback(
-                            stringResource(if (state.taskCompleted) R.string.todo_save_before_reopen else R.string.todo_save_before_complete),
-                            Modifier.testTag("todo_editor_status_help"),
-                            isError = false,
+                    Text(stringResource(R.string.todo_due_date_label), style = MaterialTheme.typography.labelLarge)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        val dueText = state.draft.dueDate?.let { date ->
+                            val formatted = date.format(localizedDate(FormatStyle.LONG))
+                            if (date == LocalDate.now()) stringResource(R.string.todo_due_today, formatted) else formatted
+                        } ?: stringResource(R.string.todo_no_date)
+                        Text(
+                            dueText,
+                            modifier = Modifier.weight(1f).padding(vertical = 12.dp)
+                                .semantics { dueDateError?.let { error(it) } }.testTag("todo_editor_due_date_value"),
+                            style = MaterialTheme.typography.bodyLarge,
                         )
+                        TextButton(
+                            onClick = {
+                                pickerStartDate = (state.draft.dueDate ?: LocalDate.now()).toString()
+                                pickingDate = true
+                            },
+                            enabled = canEdit,
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_change_due_date"),
+                        ) { Text(stringResource(R.string.todo_change_date)) }
+                        if (state.draft.dueDate != null) {
+                            TextButton(
+                                onClick = { onDueDate(null) },
+                                enabled = canEdit,
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_clear_due_date"),
+                            ) { Text(stringResource(R.string.todo_remove_date)) }
+                        }
+                    }
+                    dueDateError?.let { AccessibleFeedback(it) }
+                }
+
+                if (state.editing) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            stringResource(if (state.taskCompleted) R.string.todo_status_completed else R.string.todo_status_open),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        val statusEnabled = canEdit && !state.dirty && state.pendingAction == null
+                        OutlinedButton(
+                            onClick = { onSetCompleted(!state.taskCompleted) },
+                            enabled = statusEnabled,
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_status"),
+                        ) {
+                            Text(stringResource(if (state.taskCompleted) R.string.todo_reopen else R.string.todo_mark_complete))
+                        }
+                        if (state.dirty) {
+                            AccessibleFeedback(
+                                stringResource(if (state.taskCompleted) R.string.todo_save_before_reopen else R.string.todo_save_before_complete),
+                                Modifier.testTag("todo_editor_status_help"),
+                                isError = false,
+                            )
+                        }
                     }
                 }
+                Spacer(Modifier.heightIn(min = 4.dp))
             }
-            Spacer(Modifier.heightIn(min = 4.dp))
         }
     }
 
@@ -305,13 +311,13 @@ fun TodoEditorScreen(
             if (state.dirty) R.string.todo_delete_dirty_body else R.string.todo_delete_body,
             state.baselineTitle.ifEmpty { state.draft.title },
         )
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = onCancelDelete,
             modifier = Modifier.testTag("todo_editor_delete_dialog"),
             title = { Text(stringResource(R.string.todo_delete_title)) },
             text = { Text(deleteBody) },
             confirmButton = {
-                TextButton(onClick = onConfirmDelete, modifier = Modifier.testTag("todo_editor_confirm_delete")) {
+                LumaDestructiveTextButton(onClick = onConfirmDelete, modifier = Modifier.testTag("todo_editor_confirm_delete")) {
                     Text(stringResource(R.string.delete))
                 }
             },
@@ -322,7 +328,7 @@ fun TodoEditorScreen(
     }
 
     if (discarding) {
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { discarding = false },
             modifier = Modifier.testTag("todo_editor_discard_dialog"),
             title = { Text(stringResource(R.string.todo_discard_title)) },
@@ -339,7 +345,7 @@ fun TodoEditorScreen(
     }
 
     if (reloadConfirmation) {
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { reloadConfirmation = false },
             modifier = Modifier.testTag("todo_editor_reload_dialog"),
             title = { Text(stringResource(R.string.todo_reload_title)) },
@@ -364,6 +370,9 @@ fun TodoEditorScreen(
         DatePickerDialog(
             onDismissRequest = { pickingDate = false },
             modifier = Modifier.testTag("todo_editor_date_dialog"),
+            shape = MaterialTheme.shapes.large,
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            tonalElevation = 0.dp,
             confirmButton = {
                 TextButton(
                     enabled = picker.selectedDateMillis != null,

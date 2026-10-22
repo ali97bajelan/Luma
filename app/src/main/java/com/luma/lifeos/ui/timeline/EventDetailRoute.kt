@@ -18,11 +18,13 @@ import com.luma.lifeos.domain.repository.TimelineRepository
 import com.luma.lifeos.ui.memory.MemoryStatus
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailTopBar
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoGallery
 import java.time.ZoneId
 import java.time.format.FormatStyle
+import com.luma.lifeos.ui.common.LumaReadingPane
 
 @Composable
 fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id: EventId, zone: ZoneId,
@@ -57,42 +59,46 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp)
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
             .testTag("event_detail_content"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            when (val current = state) {
-                EventDetailState.Loading -> CircularProgressIndicator()
-                EventDetailState.Missing -> Text(stringResource(R.string.event_missing), modifier = Modifier.testTag("event_missing"))
-                EventDetailState.Error -> {
-                    AccessibleFeedback(stringResource(R.string.event_detail_error), Modifier.testTag("event_detail_error"))
-                    TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
-                }
-                is EventDetailState.Data -> {
-                    val record = current.record
-                    val groupedUsageDetails = record.appUsage != null
-                    if (!groupedUsageDetails) {
-                        Text(record.event.title ?: stringResource(record.event.type.label()), style = MaterialTheme.typography.headlineMedium)
-                        Text(stringResource(record.event.source.label()))
+                when (val current = state) {
+                    EventDetailState.Loading -> CircularProgressIndicator()
+                    EventDetailState.Missing -> Text(stringResource(R.string.event_missing), modifier = Modifier.testTag("event_missing"))
+                    EventDetailState.Error -> {
+                        AccessibleFeedback(stringResource(R.string.event_detail_error), Modifier.testTag("event_detail_error"))
+                        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
-                    if (!record.canEditContent) Text(stringResource(R.string.event_read_only))
-                    if (!groupedUsageDetails) {
-                        val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
-                        Text(record.event.occurredAt.atZone(zone).format(formatter))
-                        record.event.endedAt?.let { Text(stringResource(R.string.event_ended, it.atZone(zone).format(formatter))) }
-                        Text(zone.id, style = MaterialTheme.typography.bodySmall)
-                    }
-                    record.mood?.let { MoodContent(it) }
-                    val body = record.journal?.body ?: record.mood?.note ?: record.event.note ?: record.memory?.note
-                    body?.let { Text(it, modifier = Modifier.testTag("event_detail_body")) }
-                    record.journal?.tags?.takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(", ") { tag -> tag.name }) }
-                    SignalContent(record, zone, full = true)
-                    record.memory?.let { marker ->
-                        MemoryStatus(marker)
-                        marker.note?.takeUnless { it == body }?.let { Text(it) }
-                    }
-                    LinkedPeople(record.people); LinkedPlace(record.place)
-                    PhotoGallery(photos, record.photos)
-                    if (record.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("event_promote")) {
-                        Text(stringResource(if (record.memory == null) R.string.memory_promote else R.string.memory_edit))
+                    is EventDetailState.Data -> {
+                        val record = current.record
+                        LumaSectionSurface(modifier = Modifier.testTag("event_detail_record")) {
+                            val groupedUsageDetails = record.appUsage != null
+                            if (!groupedUsageDetails) {
+                                Text(record.event.title ?: stringResource(record.event.type.label()), style = MaterialTheme.typography.headlineMedium)
+                                Text(stringResource(record.event.source.label()))
+                            }
+                            if (!record.canEditContent) Text(stringResource(R.string.event_read_only))
+                            if (!groupedUsageDetails) {
+                                val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
+                                Text(record.event.occurredAt.atZone(zone).format(formatter))
+                                record.event.endedAt?.let { Text(stringResource(R.string.event_ended, it.atZone(zone).format(formatter))) }
+                                Text(zone.id, style = MaterialTheme.typography.bodySmall)
+                            }
+                            record.mood?.let { MoodContent(it) }
+                            val body = record.journal?.body ?: record.mood?.note ?: record.event.note ?: record.memory?.note
+                            body?.let { Text(it, modifier = Modifier.testTag("event_detail_body")) }
+                            record.journal?.tags?.takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(", ") { tag -> tag.name }) }
+                            SignalContent(record, zone, full = true)
+                            record.memory?.let { marker ->
+                                MemoryStatus(marker)
+                                marker.note?.takeUnless { it == body }?.let { Text(it) }
+                            }
+                            LinkedPeople(record.people); LinkedPlace(record.place)
+                            PhotoGallery(photos, record.photos)
+                            if (record.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("event_promote")) {
+                                Text(stringResource(if (record.memory == null) R.string.memory_promote else R.string.memory_edit))
+                            }
+                        }
                     }
                 }
             }
