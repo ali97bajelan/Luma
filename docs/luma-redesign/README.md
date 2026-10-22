@@ -4,6 +4,8 @@ Prepared 22 October 2026 from the six local PNGs and six local HTML files. This 
 
 ## Intent and scope
 
+**Widget-reference addendum (22 October 2026):** The reference set now contains eight PNGs and eight HTML files, including newly supplied Tasks/Habits launcher widget light/dark pairs. Their [T34 task](../UI_REDESIGN_TASKS.md#t34--tasks-and-habits-launcher-widgets), [specification](../superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) and [plan](../superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) extend the original six-screen brief below. This documentation pass reviewed those assets and current RemoteViews sources; widget implementation and device validation have not started. Existing task blockers and historical evidence retain their status.
+
 Regenerate the redesign backlog from the supplied Today, Timeline and Review designs, then provide a specification and implementation plan for every required and optional task. Required work changes presentation while preserving the current product. New features or existing-feature behavior changes are separate optional tasks, deferred by default. The planning pass did not begin app implementation; subsequent T30 and T31 work is recorded in the task index and its evidence.
 
 A single all-app task would hide navigation/query changes; copying each mockup literally would introduce unsupported behavior. The selected approach shares a visual foundation and divides work by screen family, with explicit optional feature tasks. Existing T30/T31/T32/T33 identities are retained; T32 now delegates to T32-A/B/C/D instead of remaining an undifferentiated catch-all.
@@ -13,8 +15,9 @@ A single all-app task would hide navigation/query changes; copying each mockup l
 1. Existing product/data/privacy contracts govern what can be claimed or mutated; optional task specs explicitly identify any proposed changes.
 2. For visual composition, use the matching PNG; use corresponding valid HTML to extract roles, typography and spacing. Shared role decisions below resolve differences between the six valid screen HTML documents.
 3. The corrected `timeline-light.html` is a distinct, valid Timeline reference. Use it with `timeline-light.png` for the grouped date/count ribbon, type chips, rail/node geometry, editorial card metadata, photo placement and capture styling. The hidden capture sheet is also a reference; its open/close script is illustrative. The View options script only renames the control “Compact” and does not implement a compact layout. Preserve the app’s working disclosure. Keep source assets unchanged by documentation edits.
-4. There are no More, Settings, Habits list, editor, detail or launcher-widget screen mockups in this folder. Their required treatment extrapolates the shared system. Quick Capture is the exception among modal flows: corrected timeline-light.html contains a hidden reference sheet, whose styling informs T32-D while habit shortcuts remain optional O08.
+4. There are no More, Settings, in-app Habits list, editor or detail screen mockups in this folder. Their required treatment extrapolates the shared system. Quick Capture is the exception among modal flows: corrected timeline-light.html contains a hidden reference sheet, whose styling informs T32-D while habit shortcuts remain optional O08. Tasks/Habits launcher widgets now have direct references and belong to T34; in-app widget settings/configuration remain T32-C.
 5. Source text, people, Persian task names, dates, step counts, chart shapes, hydration volumes, progress and quoted prose are illustrative. Fixtures may reproduce representative states in a dedicated test install; production renders actual saved data.
+6. For launcher widgets only, T34's explicit opaque cream/charcoal/sage roles and RemoteViews typography/geometry override the main-screen palette and type rules below. Its matching PNG governs composition; static HTML supplies roles. The HTML's theme-toggle scripts, static scrollbar and 4% fill for zero progress are prototype artifacts. Preserve actual app themes, real collection scrolling and saved progress. Wallpaper, dock, status bars and the theme pill are launcher context, not Luma UI.
 
 ## Visual observations
 
@@ -23,8 +26,11 @@ A single all-app task would hide navigation/query changes; copying each mockup l
 | Today | Warm paper, light nested habit/task surfaces, sage/ember progress and rounded controls | Obsidian canvas, elevated group cards, muted nested rows and mint/ember progress | Date and tracking context; capture chips; habit count/target with +1; task groups; recent saved records and summary |
 | Timeline | Grouped date/count ribbon, thin left rail, pastel type nodes, soft rounded editorial cards, photo crop and hidden capture sheet | Dark rail/nodes, charcoal cards, warm serif journal title and ember capture action | Date/search/view controls; mixed feed; saved source and time labels; contextual capture above navigation |
 | Review | Soft period selector, rounded summary/signal/archive/catalog modules and comparison chips | Elevated dark modules, mint/ember accents, high-contrast value hierarchy | Partial-week context, section shortcuts, entry/habit/mood summary, saved signals, comparison and people/place provenance |
+| Tasks/Habits launcher widgets | Cream shell, pale inset cards, sage action/count pills | Charcoal shell, outlined rows, warm text and mint/sage actions | Title/list target; count; separate Capture/Refresh; task due/Complete; habit count/target, track and +1; real overflow |
 
 PNG dimensions are Today 380/381 × 1600, Timeline 466/430 × 1600 and Review 272/342 × 1600 (light/dark). These are tall reference captures, not dp or fixed target viewport specifications. Their small text/controls and clipping are not accessibility requirements.
+
+Widget PNG dimensions are 564 × 1280 light and 706 × 1600 dark. They show two independent launcher widgets, not a new combined app screen. Retain actual responsive bounds rather than fixed screenshot dimensions or a mandatory three-row capacity.
 
 ## Shared design decisions
 
@@ -102,6 +108,8 @@ All specs/plans created in the original documentation pass are proposed artifact
 
 ## Source inventory
 
+The final four entries were added with the T34 documentation pass. All source assets remain unchanged.
+
 | File | SHA-256 |
 | --- | --- |
 | [review-dark.html](review-dark.html) | 5e254189a7cf162f7f5e353ba5b827fbc9d5fd623b481282607ecfc0dcfe51e6 |
@@ -116,3 +124,7 @@ All specs/plans created in the original documentation pass are proposed artifact
 | [today-dark.png](today-dark.png) | c5fa90790c47e7382ac0d82e98205ee2c355969e95bebad8a99e38c99df1015b |
 | [today-light.html](today-light.html) | 43717ba96537042f3bfaaacf3b5fb67b2cdc52613f7a0299bdb28ec5fbebc1f5 |
 | [today-light.png](today-light.png) | 550641fab24fe1fcc88ff3305a6c33c811857f98b9fb5ff8e7e5e0baa7213067 |
+| [widgets-dark.html](widgets-dark.html) | c8a7d26d9a738f843b2fb9172ca1fa32f4b168933c07eca45c8018f9eef04596 |
+| [widgets-dark.png](widgets-dark.png) | 08510ddefaa23e38eeb23bbab4f730dafb6e4eec610e449ca7f9f255d4b14fc2 |
+| [widgets-light.html](widgets-light.html) | fc8ea9f78315b7f9ea3ed95bbebfc9550958de67f211ceff58e92b262c0aa47a |
+| [widgets-light.png](widgets-light.png) | f1c8ff881558dc11e167b4b2feacfe58b1e08aee38d372b622fdc0a3650c5fc5 |

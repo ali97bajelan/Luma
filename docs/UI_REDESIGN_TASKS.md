@@ -2,6 +2,8 @@
 
 Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. Fresh source audit, all 271 unit tests, debug assembly and lint pass. The clean API 36 connected run completed 224 cases with 15 failures, 0 errors and 1 skipped; a focused 36-test Timeline/Review/navigation run passes. T30, T31, T32-C and T32-D remain blocked by connected failures; T32-A and T32-B implementation and focused checks pass, with rendered acceptance pending. T32 coordination and T33 remain blocked by child failures and the incomplete visual/accessibility matrix. The EventCard density and provider-absent Review gaps are fixed; stale timeline disclosure and clock-format test assumptions are corrected. See the [validation recheck](luma-redesign/evidence/2026-10-22/t33-revalidation.md). Optional features remain deferred.
 
+Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34 is **pending**, with no widget implementation or Android validation performed in this documentation pass. Existing task statuses above are unchanged.
+
 ## Scope and reference decisions
 
 - Required tasks update both themes while retaining product behavior, route IDs, dates, drafts, counts, permissions and privacy guarantees.
@@ -9,6 +11,7 @@ Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-red
 - New features and behavior changes implied by the mockups are optional, deferred by default and described explicitly below. They do not block the base redesign.
 - The corrected `timeline-light.html` is a valid Timeline reference alongside its PNG. Use its date/count ribbon, rail, cards and capture-sheet styling with the shared tokens; preserve existing behavior unless an optional task explicitly changes it. Source assets remain unchanged by the documentation update.
 - Today, Timeline and Review have direct references. The corrected Timeline HTML also contains a hidden Quick Capture sheet; use its styling within the existing capture contract. There are no supplied More/Settings/editor screen mockups.
+- Tasks and Habits launcher widgets now have direct light/dark references. T34 owns their RemoteViews; T32-C continues to own in-app widget settings/configuration. Widget-specific palette roles are defined in T34 rather than replacing the app-wide T30 palette.
 - Keep factual local-data wording; never copy the unsupported “Encrypted on-device” claim, fabricated metrics, sample records or stock photos into production.
 
 The [reference brief](luma-redesign/README.md) defines visual precedence, palette, typography, spacing, source hashes, product differences and common acceptance rules. Read it with each task spec.
@@ -27,6 +30,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T32-C | More, catalogs, search, lists and settings | T30 | blocked | [Spec](superpowers/specs/2026-10-22-t32-c-supporting-screens-design.md) | [Plan](superpowers/plans/2026-10-22-t32-c-supporting-screens.md) |
 | T32-D | Editors, details, sheets and dialogs | T30; consume T32-A EventCard treatment | blocked | [Spec](superpowers/specs/2026-10-22-t32-d-editors-details-modals-design.md) | [Plan](superpowers/plans/2026-10-22-t32-d-editors-details-modals.md) |
 | T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | blocked (acceptance pending) | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
+| T34 | Tasks and Habits launcher widgets | T30 design baseline; existing widget contracts | pending | [Spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) |
 
 ### T30 — Shared visual system and app shell
 
@@ -107,6 +111,23 @@ Produce auditable acceptance evidence for the required redesign and separately r
 **Scope:** Create `docs/luma-redesign/acceptance-2026-10-22.md` and `docs/luma-redesign/evidence/<actual-run-date>/`. Record actual run date/build SHA/device/API, locale, theme, window dp and font scale. The filename is the planning baseline, not a claim tests ran on that date.
 
 **Acceptance:** Evidence includes six primary-screen captures, the route ledger, measured color-pair results and a reproducible environment/fixture description. Relevant existing unit/instrumented regression suites pass; any blocked build/device checks have explicit NOT RUN entries. No unresolved clipping, inaccessible action, false metric/privacy statement, obscured final row or broken state/navigation remains in required scope.
+
+### T34 — Tasks and Habits launcher widgets
+
+**Status (22 October 2026): pending; specification and plan prepared, implementation not started.** Source references: [light image](luma-redesign/widgets-light.png), [light HTML](luma-redesign/widgets-light.html), [dark image](luma-redesign/widgets-dark.png), [dark HTML](luma-redesign/widgets-dark.html).
+
+**Outcome:** Cream/charcoal rounded shells, count badges, inset record cards, sage actions and saved-count habit progress while retaining the current collection, navigation, mutations and recovery behavior.
+
+| Work item | Deliverable | Depends on | Status |
+| --- | --- | --- | --- |
+| T34-A | Semantic palette, shell, padded count badges and responsive state surfaces | Existing renderer; T30 reference direction | pending |
+| T34-B | Inset task cards with due metadata and separate Complete action | T34-A | pending |
+| T34-C | Inset habit cards, accurate progress and inline/stacked theme variants | T34-A | pending |
+| T34-D | Picker/compact consistency, regression matrix and actual launcher acceptance | T34-A/B/C | pending |
+
+**Preserve:** Offline operation, System/Light/Dark, en/fr/fa, widget IDs, saved date/zone, paging/stable record IDs, Capture/Refresh/list targets, Complete/+1 eligibility, Undo/Retry, setup/loading/empty/error states, resizing and legacy Quick Capture placements. No launcher chrome, sample data, inferred habit emoji, schema change, Glance migration or new dependency.
+
+**Acceptance:** All W34-1 through W34-5 in the [spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) require current-build evidence. Verify both themes, narrow/expanded/flat bounds, large text, RTL, progress edge cases, record overflow, theme overrides, actual collection scrolling and mutation delivery on API 28/31/36. Missing checks are NOT RUN. T34 does not close WG08 or T30–T33 blockers; overall redesign acceptance requires T33 and T34.
 
 ## Optional features and behavior changes
 
@@ -195,5 +216,6 @@ Do not add an account/profile, claim encryption, enable Markdown export, create 
 2. Implement T31 and T32-A/B/C/D using their paired plans; T32 maintains the route ledger and coordinates shared EventCard consumers.
 3. Run T33 against the required base. Record intentional differences for all unselected options.
 4. If any O-task is selected, implement its plan after its dependencies and rerun its affected acceptance scenarios plus the T33 checks for changed surfaces.
+5. Implement T34-A/B/C and run T34-D for the newly supplied launcher references. Record its acceptance separately from the original T33 app-route gate; both are required for overall redesign release acceptance.
 
 These artifacts do not begin app implementation and do not claim build/device checks passed. Plans use focused regression and visual evidence, avoiding tests that only mirror spacing/color assignments.

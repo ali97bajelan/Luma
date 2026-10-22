@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Material You Expressive Android Widgets</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter & Vazirmatn for Persian text -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Vazirmatn:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            persian: ['"Vazirmatn"', 'sans-serif'],
+          },
+          colors: {
+            m3: {
+              sage: {
+                50: '#F0F5F1',
+                100: '#D8E6DB',
+                200: '#BCD4C1',
+                300: '#94BBA0',
+                700: '#285438',
+                800: '#1D3F2A',
+                900: '#0F2618',
+              },
+              terracotta: {
+                100: '#FDEEE9',
+                200: '#F7C6B7',
+                400: '#D97757',
+                500: '#C05621',
+                800: '#7C2D12',
+              },
+              surface: {
+                light: '#FAF9F6',
+                lightElevated: '#F3F2EC',
+                dark: '#1C1B1F',
+                darkElevated: '#2B2930',
+              }
+            }
+          },
+          borderRadius: {
+            '3xl': '28px',
+            '4xl': '32px',
+          },
+          boxShadow: {
+            'widget': '0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 2px 8px 0 rgba(0, 0, 0, 0.2)',
+            'widget-light': '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+            'pill': '0 2px 4px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.4)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Layout & Scrollbar Styles -->
+<style data-purpose="custom-layout">
+    /* Hide default scrollbars for smooth widget look */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    /* Subtle starry cosmic background simulating night sky */
+    .cosmic-wallpaper {
+      background-color: #060913;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(45, 85, 155, 0.45) 0%, transparent 60%),
+        radial-gradient(circle at 80% 30%, rgba(120, 150, 230, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 10% 70%, rgba(20, 30, 60, 0.7) 0%, transparent 60%),
+        radial-gradient(2px 2px at 40px 60px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 150px 120px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 280px 90px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 200px 220px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(2.5px 2.5px at 320px 310px, rgba(210,230,255,0.9), rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 80px 340px, #ffffff, rgba(0,0,0,0));
+      background-size: 100% 100%, 100% 100%, 100% 100%, 350px 350px, 350px 350px, 350px 350px, 350px 350px, 350px 350px, 350px 350px;
+    }
+
+    /* M3 Ripple and tactile active scale */
+    .tactile-btn {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tactile-btn:active {
+      transform: scale(0.94);
+    }
+  </style>
+<!-- END: Custom Layout & Scrollbar Styles -->
+</head>
+<body class="h-full bg-neutral-950 text-neutral-800 flex items-center justify-center p-0 sm:p-4 select-none antialiased font-sans">
+<!-- BEGIN: Phone Frame Outer Wrapper -->
+<div class="relative w-full max-w-[420px] h-full sm:h-[890px] sm:max-h-[92vh] sm:rounded-[48px] overflow-hidden shadow-2xl flex flex-col justify-between cosmic-wallpaper border sm:border-neutral-800/80" data-purpose="mobile-device-container">
+<!-- BEGIN: Top Bar & Status Icons -->
+<header class="pt-3 px-6 pb-2 text-white flex justify-between items-center text-xs tracking-tight z-20 backdrop-blur-xs select-none">
+<!-- Time -->
+<div class="font-medium flex items-center gap-2">
+<span class="text-sm font-semibold tracking-normal">20:32</span>
+<div class="flex items-center gap-1.5 opacity-80 text-[11px]">
+<!-- App notification indicator -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-13h-2v6h2zm0 8h-2v2h2z"></path></svg>
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"></path></svg>
+</div>
+</div>
+<!-- Theme Switcher & Status Indicators -->
+<div class="flex items-center gap-2.5">
+<!-- Quick Palette Toggle (Light/Dark Widget Theme) -->
+<button class="px-2 py-0.5 rounded-full bg-white/20 hover:bg-white/30 text-[10px] font-medium tracking-wide backdrop-blur-md transition-all flex items-center gap-1 text-white/90 border border-white/20" id="themeToggle">
+<span id="themeLabel">Light</span>
+<svg class="w-2.5 h-2.5 fill-current" viewbox="0 0 24 24"><path d="M12 3v2a7 7 0 0 1 7 7h2a9 9 0 0 0-9-9zm0 14a5 5 0 0 1-5-5H5a7 7 0 0 0 7 7v-2zm-7-7a5 5 0 0 1 5-5V3a7 7 0 0 0-7 7h2z"></path></svg>
+</button>
+<span class="text-[10px] text-white/80 font-mono">26.9 KB/s</span>
+<!-- Network, Signal, Battery Icons -->
+<div class="flex items-center gap-1 opacity-90">
+<!-- Bluetooth -->
+<svg class="w-3 h-3 fill-current" viewbox="0 0 24 24"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"></path></svg>
+<!-- Cellular -->
+<svg class="w-3 h-3 fill-current" viewbox="0 0 24 24"><path d="M2 22h20V2L2 22z"></path></svg>
+<!-- Battery Pill with 16% indicator -->
+<div class="flex items-center gap-0.5 border border-white/70 rounded px-1 py-0.2 text-[9px] font-mono leading-none font-bold">
+            16
+          </div>
+</div>
+</div>
+</header>
+<!-- END: Top Bar & Status Icons -->
+<!-- BEGIN: Main Widgets Scrollable Space -->
+<main class="flex-1 px-4 py-2 space-y-4 overflow-y-auto no-scrollbar flex flex-col justify-start">
+<!-- ========================================== -->
+<!-- BEGIN: Redesigned Tasks Widget (4x3 / 4x2) -->
+<!-- ========================================== -->
+<section class="widget-card bg-[#F4F4EB] text-neutral-900 rounded-3xl p-5 shadow-widget transition-all duration-300 border border-white/40 relative backdrop-blur-xl" data-purpose="tasks-widget" id="tasksWidget">
+<!-- Widget Header -->
+<div class="flex items-start justify-between mb-3.5">
+<div>
+<div class="flex items-center gap-1.5 cursor-pointer group">
+<h2 class="text-xl font-bold tracking-tight text-neutral-900 group-hover:text-emerald-900 transition-colors">Tasks</h2>
+<svg class="w-4 h-4 text-neutral-500 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-xs font-semibold text-emerald-800/80 bg-emerald-100/70 px-2 py-0.5 rounded-full">3 tasks</span>
+<span class="text-[11px] text-neutral-500">Scroll for more</span>
+</div>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-1">
+<button class="tactile-btn flex items-center gap-1 text-xs font-semibold text-emerald-900 bg-emerald-700/10 hover:bg-emerald-700/20 active:bg-emerald-700/30 px-3 py-1.5 rounded-full transition-colors" title="Quick capture">
+<svg class="w-3.5 h-3.5 stroke-current" fill="none" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M12 4.5v15m7.5-7.5h-15" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Capture</span>
+</button>
+<button class="tactile-btn p-1.5 rounded-full text-emerald-900 hover:bg-emerald-700/10 transition-colors" title="Refresh">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Task List Items -->
+<div class="space-y-2.5 relative">
+<!-- Item 1 -->
+<article class="task-row flex items-center justify-between p-2 rounded-2xl bg-white/70 border border-neutral-200/50 hover:bg-white transition-all shadow-sm">
+<div class="flex-1 pr-3">
+<h3 class="font-persian font-bold text-base text-neutral-900 leading-snug">متن قرارداد</h3>
+<div class="flex items-center gap-1.5 text-[11px] font-medium text-amber-700 mt-0.5">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+<span>Overdue</span>
+<span class="text-neutral-400">•</span>
+<span>Oct 19, 2026</span>
+</div>
+</div>
+<button class="complete-btn tactile-btn px-4 py-2 bg-[#CCE8DB] hover:bg-[#BBDCCB] text-[#0D3823] text-xs font-semibold rounded-2xl shadow-pill transition-all shrink-0">
+              Complete
+            </button>
+</article>
+<!-- Item 2 -->
+<article class="task-row flex items-center justify-between p-2 rounded-2xl bg-white/70 border border-neutral-200/50 hover:bg-white transition-all shadow-sm">
+<div class="flex-1 pr-3">
+<h3 class="font-persian font-bold text-base text-neutral-900 leading-snug">تستتتت</h3>
+<div class="flex items-center gap-1.5 text-[11px] font-medium text-amber-700 mt-0.5">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+<span>Overdue</span>
+<span class="text-neutral-400">•</span>
+<span>Oct 21, 2026</span>
+</div>
+</div>
+<button class="complete-btn tactile-btn px-4 py-2 bg-[#CCE8DB] hover:bg-[#BBDCCB] text-[#0D3823] text-xs font-semibold rounded-2xl shadow-pill transition-all shrink-0">
+              Complete
+            </button>
+</article>
+<!-- Item 3 -->
+<article class="task-row flex items-center justify-between p-2 rounded-2xl bg-white/70 border border-neutral-200/50 hover:bg-white transition-all shadow-sm">
+<div class="flex-1 pr-3">
+<h3 class="font-persian font-bold text-base text-neutral-900 leading-snug">تسک سوم</h3>
+<div class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-800 mt-0.5">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+<span>Due today</span>
+<span class="text-neutral-400">•</span>
+<span>Oct 22, 2026</span>
+</div>
+</div>
+<button class="complete-btn tactile-btn px-4 py-2 bg-[#CCE8DB] hover:bg-[#BBDCCB] text-[#0D3823] text-xs font-semibold rounded-2xl shadow-pill transition-all shrink-0">
+              Complete
+            </button>
+</article>
+</div>
+<!-- Material scroll indicator pill -->
+<div class="absolute right-1.5 top-20 bottom-8 w-1 bg-neutral-300/60 rounded-full overflow-hidden">
+<div class="w-full h-10 bg-neutral-500/80 rounded-full"></div>
+</div>
+</section>
+<!-- END: Redesigned Tasks Widget -->
+<!-- ========================================== -->
+<!-- BEGIN: Redesigned Habits Widget (4x3)     -->
+<!-- ========================================== -->
+<section class="widget-card bg-[#F4F4EB] text-neutral-900 rounded-3xl p-5 shadow-widget transition-all duration-300 border border-white/40 relative backdrop-blur-xl" data-purpose="habits-widget" id="habitsWidget">
+<!-- Widget Header -->
+<div class="flex items-start justify-between mb-3.5">
+<div>
+<div class="flex items-center gap-1.5 cursor-pointer group">
+<h2 class="text-xl font-bold tracking-tight text-neutral-900 group-hover:text-emerald-900 transition-colors">Habits</h2>
+<svg class="w-4 h-4 text-neutral-500 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-xs font-semibold text-emerald-800/80 bg-emerald-100/70 px-2 py-0.5 rounded-full">4 habits</span>
+<span class="text-[11px] text-neutral-500">Scroll for more</span>
+</div>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-1">
+<button class="tactile-btn flex items-center gap-1 text-xs font-semibold text-emerald-900 bg-emerald-700/10 hover:bg-emerald-700/20 active:bg-emerald-700/30 px-3 py-1.5 rounded-full transition-colors" title="Add habit">
+<svg class="w-3.5 h-3.5 stroke-current" fill="none" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M12 4.5v15m7.5-7.5h-15" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Capture</span>
+</button>
+<button class="tactile-btn p-1.5 rounded-full text-emerald-900 hover:bg-emerald-700/10 transition-colors" title="Refresh">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Habits List -->
+<div class="space-y-3 relative">
+<!-- Habit 1: Water -->
+<div class="habit-row flex items-center justify-between p-2 rounded-2xl bg-white/70 border border-neutral-200/50 hover:bg-white transition-all shadow-sm">
+<div class="flex-1 pr-3">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-bold text-sm tracking-tight text-neutral-900 flex items-center gap-1.5">
+<span class="text-blue-500 text-sm">💧</span> Water
+                </span>
+<span class="text-xs font-semibold text-neutral-600 font-mono tracking-tight habit-score">2 / 8</span>
+</div>
+<!-- Material Expressive mini progress track -->
+<div class="w-full bg-neutral-200/70 h-2 rounded-full overflow-hidden">
+<div class="bg-gradient-to-r from-teal-500 to-emerald-500 h-full rounded-full transition-all duration-300" style="width: 25%"></div>
+</div>
+</div>
+<button class="habit-plus-btn tactile-btn w-11 h-10 bg-[#CCE8DB] hover:bg-[#BBDCCB] text-[#0D3823] font-bold text-sm rounded-2xl flex items-center justify-center shadow-pill transition-all shrink-0">
+              +1
+            </button>
+</div>
+<!-- Habit 2: Neck -->
+<div class="habit-row flex items-center justify-between p-2 rounded-2xl bg-white/70 border border-neutral-200/50 hover:bg-white transition-all shadow-sm">
+<div class="flex-1 pr-3">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-bold text-sm tracking-tight text-neutral-900 flex items-center gap-1.5">
+<span class="text-amber-500 text-sm">🧘</span> Neck stretch
+                </span>
+<span class="text-xs font-semibold text-neutral-600 font-mono tracking-tight habit-score">1 / 5</span>
+</div>
+<div class="w-full bg-neutral-200/70 h-2 rounded-full overflow-hidden">
+<div class="bg-gradient-to-r from-amber-500 to-emerald-500 h-full rounded-full transition-all duration-300" style="width: 20%"></div>
+</div>
+</div>
+<button class="habit-plus-btn tactile-btn w-11 h-10 bg-[#CCE8DB] hover:bg-[#BBDCCB] text-[#0D3823] font-bold text-sm rounded-2xl flex items-center justify-center shadow-pill transition-all shrink-0">
+              +1
+            </button>
+</div>
+<!-- Habit 3: Reading / Deep work (c in original) -->
+<div class="habit-row flex items-center justify-between p-2 rounded-2xl bg-white/70 border border-neutral-200/50 hover:bg-white transition-all shadow-sm">
+<div class="flex-1 pr-3">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-bold text-sm tracking-tight text-neutral-900 flex items-center gap-1.5">
+<span class="text-purple-500 text-sm">📖</span> Core read &amp; work
+                </span>
+<span class="text-xs font-semibold text-neutral-600 font-mono tracking-tight habit-score">0 / 5</span>
+</div>
+<div class="w-full bg-neutral-200/70 h-2 rounded-full overflow-hidden">
+<div class="bg-neutral-300 h-full rounded-full transition-all duration-300" style="width: 4%"></div>
+</div>
+</div>
+<button class="habit-plus-btn tactile-btn w-11 h-10 bg-[#CCE8DB] hover:bg-[#BBDCCB] text-[#0D3823] font-bold text-sm rounded-2xl flex items-center justify-center shadow-pill transition-all shrink-0">
+              +1
+            </button>
+</div>
+</div>
+<!-- Material scroll indicator pill -->
+<div class="absolute right-1.5 top-20 bottom-8 w-1 bg-neutral-300/60 rounded-full overflow-hidden">
+<div class="w-full h-10 bg-neutral-500/80 rounded-full"></div>
+</div>
+</section>
+<!-- END: Redesigned Habits Widget -->
+</main>
+<!-- END: Main Widgets Scrollable Space -->
+<!-- BEGIN: Android Dock & Gesture Navigation Area -->
+<footer class="pt-2 pb-3 px-6 z-20 flex flex-col items-center">
+<!-- App Dock Bar -->
+<div class="w-full max-w-[340px] flex justify-around items-center mb-3">
+<!-- Camera App Icon -->
+<div class="w-13 h-13 p-2.5 rounded-2xl bg-gradient-to-b from-neutral-100 to-neutral-300 shadow-lg flex items-center justify-center cursor-pointer active:scale-95 transition-transform" data-purpose="dock-camera">
+<div class="relative w-8 h-8 rounded-full bg-neutral-900 border-2 border-neutral-700 flex items-center justify-center">
+<div class="w-4 h-4 rounded-full bg-neutral-800 border border-neutral-600"></div>
+<span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500"></span>
+</div>
+</div>
+<!-- Phone Dialer Icon -->
+<div class="w-13 h-13 p-2.5 rounded-2xl bg-gradient-to-b from-blue-400 to-blue-600 shadow-lg flex items-center justify-center cursor-pointer active:scale-95 transition-transform" data-purpose="dock-phone">
+<svg class="w-7 h-7 text-white fill-current transform rotate-12" viewbox="0 0 24 24">
+<path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path>
+</svg>
+</div>
+<!-- Messages App Icon (with unread badge) -->
+<div class="relative w-13 h-13 p-2.5 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-500 shadow-lg flex items-center justify-center cursor-pointer active:scale-95 transition-transform" data-purpose="dock-messages">
+<svg class="w-7 h-7 text-white fill-current" viewbox="0 0 24 24">
+<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"></path>
+</svg>
+<!-- Unread Badge count 9 -->
+<span class="absolute -top-1 -right-1 bg-red-600 text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-neutral-900 shadow">
+            9
+          </span>
+</div>
+</div>
+<!-- Android 3-Button Navigation Bar Indicator -->
+<nav aria-label="System navigation" class="w-full max-w-[200px] flex justify-between items-center py-1 opacity-80" data-purpose="android-nav-bar">
+<!-- Back Button (Square / Triangle) -->
+<button class="w-4 h-4 rounded-[3px] bg-white/70 hover:bg-white active:scale-90 transition-all"></button>
+<!-- Home Button (Circle) -->
+<button class="w-4 h-4 rounded-full border-2 border-white/80 hover:border-white active:scale-90 transition-all"></button>
+<!-- Recents (Triangle / Chevron) -->
+<button class="w-4 h-4 border-l-[8px] border-l-white/70 border-y-[6px] border-y-transparent hover:border-l-white active:scale-90 transition-all transform -rotate-90"></button>
+</nav>
+</footer>
+<!-- END: Android Dock & Gesture Navigation Area -->
+</div>
+<!-- END: Phone Frame Outer Wrapper -->
+<!-- BEGIN: Interactive Theme Toggle and Tactile Interactions -->
+<script data-purpose="interactive-enhancements">
+    document.addEventListener('DOMContentLoaded', () => {
+      const themeToggleBtn = document.getElementById('themeToggle');
+      const themeLabel = document.getElementById('themeLabel');
+      const tasksWidget = document.getElementById('tasksWidget');
+      const habitsWidget = document.getElementById('habitsWidget');
+
+      let isDarkMode = false;
+
+      // Toggle Theme presentation for widgets: Material Light Cream vs Obsidian Deep
+      themeToggleBtn.addEventListener('click', () => {
+        isDarkMode = !isDarkMode;
+        
+        if (isDarkMode) {
+          themeLabel.textContent = 'Dark';
+          
+          // Switch to M3 Dark Surface Palette
+          [tasksWidget, habitsWidget].forEach(widget => {
+            widget.classList.remove('bg-[#F4F4EB]', 'text-neutral-900', 'border-white/40');
+            widget.classList.add('bg-[#1E2320]/90', 'text-neutral-100', 'border-white/10');
+            
+            // Subcontainers styling
+            widget.querySelectorAll('.task-row, .habit-row').forEach(row => {
+              row.classList.remove('bg-white/70', 'border-neutral-200/50');
+              row.classList.add('bg-black/30', 'border-white/5');
+            });
+
+            // Headers
+            widget.querySelectorAll('h2, h3').forEach(t => {
+              t.classList.remove('text-neutral-900');
+              t.classList.add('text-neutral-100');
+            });
+            
+            // Buttons dark adaptation
+            widget.querySelectorAll('.complete-btn, .habit-plus-btn').forEach(btn => {
+              btn.classList.remove('bg-[#CCE8DB]', 'text-[#0D3823]');
+              btn.classList.add('bg-[#294536]', 'text-[#D8EADB]');
+            });
+          });
+
+        } else {
+          themeLabel.textContent = 'Light';
+
+          // Switch back to Warm Light Expressive
+          [tasksWidget, habitsWidget].forEach(widget => {
+            widget.classList.add('bg-[#F4F4EB]', 'text-neutral-900', 'border-white/40');
+            widget.classList.remove('bg-[#1E2320]/90', 'text-neutral-100', 'border-white/10');
+            
+            widget.querySelectorAll('.task-row, .habit-row').forEach(row => {
+              row.classList.add('bg-white/70', 'border-neutral-200/50');
+              row.classList.remove('bg-black/30', 'border-white/5');
+            });
+
+            widget.querySelectorAll('h2, h3').forEach(t => {
+              t.classList.add('text-neutral-900');
+              t.classList.remove('text-neutral-100');
+            });
+
+            widget.querySelectorAll('.complete-btn, .habit-plus-btn').forEach(btn => {
+              btn.classList.add('bg-[#CCE8DB]', 'text-[#0D3823]');
+              btn.classList.remove('bg-[#294536]', 'text-[#D8EADB]');
+            });
+          });
+        }
+      });
+
+      // Interactive feedback for habit +1 increments
+      document.querySelectorAll('.habit-plus-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const row = this.closest('.habit-row');
+          const scoreEl = row.querySelector('.habit-score');
+          const progressBar = row.querySelector('.bg-gradient-to-r, .bg-neutral-300');
+          
+          if (scoreEl && scoreEl.textContent.includes('/')) {
+            const parts = scoreEl.textContent.split('/').map(s => parseInt(s.trim()));
+            let current = parts[0];
+            const max = parts[1];
+            
+            if (current < max) {
+              current += 1;
+              scoreEl.textContent = `${current} / ${max}`;
+              const pct = Math.round((current / max) * 100);
+              progressBar.style.width = `${pct}%`;
+              
+              // Haptic bounce animation
+              this.classList.add('ring-2', 'ring-emerald-400');
+              setTimeout(() => this.classList.remove('ring-2', 'ring-emerald-400'), 300);
+            }
+          }
+        });
+      });
+
+      // Complete button interactive check-off
+      document.querySelectorAll('.complete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const row = this.closest('.task-row');
+          row.style.opacity = '0.5';
+          this.textContent = 'Done ✓';
+          this.disabled = true;
+          this.classList.add('pointer-events-none');
+        });
+      });
+    });
+  </script>
+<!-- END: Interactive Theme Toggle and Tactile Interactions -->
+</body></html>
