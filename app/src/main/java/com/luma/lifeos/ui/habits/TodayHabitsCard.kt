@@ -71,10 +71,13 @@ fun TodayHabitsCard(
             },
         )
         state.trackingZone?.let { zone ->
-            if (zone != deviceZone || (state.deviceDate != null && state.deviceDate != LocalDate.now(zone))) {
-                Text(stringResource(R.string.habit_tracking_elsewhere,
-                    LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), zone.id),
-                    style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("today_habit_tracking_day_difference"))
+            val currentDeviceDate = state.deviceDate ?: LocalDate.now(deviceZone)
+            if (shownDate == currentDeviceDate && currentDeviceDate != LocalDate.now(zone)) {
+                Text(stringResource(R.string.habit_tracking_zone_mismatch,
+                    LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), zone.id,
+                    currentDeviceDate.format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL))),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag("today_habit_tracking_day_difference"))
             }
         }
         if (state.loading) {

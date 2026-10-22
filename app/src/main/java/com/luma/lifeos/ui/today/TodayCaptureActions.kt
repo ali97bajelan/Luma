@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,12 +24,13 @@ internal fun TodayCaptureActions(
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         listOf(EventType.MOOD to R.string.today_capture_mood, EventType.JOURNAL to R.string.today_capture_journal,
             EventType.MEMORY to R.string.today_capture_memory).forEach { (type, label) ->
             FilledTonalButton(onClick = { onDateCapture(type) },
-                modifier = Modifier.heightIn(min = 48.dp).testTag("today_capture_${type.name.lowercase()}")) {
+                modifier = Modifier.heightIn(min = 48.dp).testTag("today_capture_${type.name.lowercase()}"),
+                shape = CircleShape) {
                 Text(stringResource(label))
             }
         }

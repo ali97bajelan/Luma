@@ -10,6 +10,8 @@
 
 **Spec:** [Corresponding specification](../specs/2026-10-22-t31-today-redesign-design.md).
 
+**Execution status (22 October 2026):** Implementation complete; validation pending. `assembleDebug`, `lintDebug` and `git diff --check` passed. Gradle tests, emulator and rendered checks were not run at the user's request; see [T31 evidence](../../luma-redesign/evidence/2026-10-22/t31-review.md).
+
 ## Global constraints
 
 - Native Android, Kotlin, Compose Material 3 and Navigation Compose; keep minSdk 28, compileSdk 35, targetSdk 35 and JDK 17.
@@ -59,9 +61,10 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: TodayScreenTest and habit date-selection fixtures: 2/8 → 25%, 1/5 → 20%; pending/failure leaves counts; confirmed undo restores once. Historical date must not reuse prior rows.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Recompose Today header and TodayHabitsCard with existing state/callbacks and shared tokens; style HabitRow and HabitProgressContent without changing their interfaces or repository observations.
+- [x] Recompose Today header and TodayHabitsCard with existing state/callbacks and shared tokens; style HabitRow and HabitProgressContent without changing their interfaces or repository observations.
 - [ ] Rerun the affected regression tests and inspect: Inspect tracking/device-zone mismatch, two-row preview, full count, separate open/+1 actions and long units in both themes.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [x] Record implementation results/evidence for this unit and review the diff against every owned spec requirement.
+- [ ] Commit the reviewed implementation with a task-specific message.
 
 ### Task 2: Task, records and summary hierarchy
 
@@ -69,9 +72,10 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: TodayTasksFlowTest: four eligible rows still yield a three-row preview and full total; hidden-row conflict/retry remains reachable. TodayScreenTest retains selected-date hiding/capture behavior.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Style TodayTasksCard/TodoRow and Today record/summary sections. Partition only already-returned preview tasks into overdue/today headings; keep full totals, feedback and selected-date rules.
+- [x] Style TodayTasksCard/TodoRow and Today record/summary sections. Partition only already-returned preview tasks into overdue/today headings; keep full totals, feedback and selected-date rules.
 - [ ] Rerun the affected regression tests and inspect: Inspect overdue/today headings for only returned rows, Add/View all, recent activity provenance and summary absence/retry in both themes.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [x] Record implementation results/evidence for this unit and review the diff against every owned spec requirement.
+- [ ] Commit the reviewed implementation with a task-specific message.
 
 ## Planned verification and completion
 

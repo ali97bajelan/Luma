@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -152,11 +153,18 @@ internal fun TodoRow(
 
     val rowModifier = modifier.fillMaxWidth().testTag("todo_row_${task.id}")
     if (compact) {
-        Column(
+        Surface(
             modifier = rowModifier,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            content = rowContent,
-        )
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                content = rowContent,
+            )
+        }
     } else {
         LumaSectionSurface(modifier = rowModifier, content = rowContent)
     }

@@ -19,6 +19,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -249,8 +250,7 @@ internal fun HabitRow(
     val day = row.day
     val logUnit = habitUnitLabel(day.habit, 1)
     val logLabel = stringResource(R.string.habit_log_accessibility, day.habit.name, logUnit)
-    val showStatus = pendingSchedule != null || !compact || !row.canLog || day.state != HabitDayState.NO_RECORDS ||
-        day.skipRemaining || pending.isNotEmpty()
+    val showStatus = true
     val rowContent: @Composable ColumnScope.() -> Unit = {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val minimumInlineWidth = if (compact) 240.dp else 336.dp
@@ -279,11 +279,18 @@ internal fun HabitRow(
     }
     val rowModifier = Modifier.fillMaxWidth().testTag("habit_row_${day.habit.id}")
     if (compact) {
-        Column(
-            modifier = rowModifier.padding(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            content = rowContent,
-        )
+        Surface(
+            modifier = rowModifier,
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                content = rowContent,
+            )
+        }
     } else {
         LumaSectionSurface(modifier = rowModifier, content = rowContent)
     }

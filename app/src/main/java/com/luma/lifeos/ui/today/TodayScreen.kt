@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
@@ -99,13 +102,27 @@ fun TodayScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag(screenTag),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item(key = "header") {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.titleLarge)
+                    AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.headlineMedium)
                     DayNavigation(date, onSelectDate, onToday)
                     if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
+                    habitsState?.trackingZone?.let { trackingZone ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().testTag("today_habit_tracking_zone"),
+                            shape = MaterialTheme.shapes.large,
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ) {
+                            Text(
+                                stringResource(R.string.habit_tracking_zone, trackingZone.id),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
             item(key = "capture") {
@@ -131,7 +148,7 @@ fun TodayScreen(
             } }
             item(key = "recent_entries") {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    AppSectionHeading(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.titleMedium,
+                    AppSectionHeading(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.testTag("today_recent_entries"))
                     if (state is TodayUiState.Data || state == TodayUiState.Empty) {
                         Text(entryLogCounts((state as? TodayUiState.Data)?.events?.size ?: 0, habitLogCount),

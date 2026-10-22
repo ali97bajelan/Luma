@@ -1,6 +1,6 @@
 # App-wide UI redesign tasks
 
-Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30 is implemented with validation pending; the remaining required tasks are pending and optional features remain deferred.
+Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30 and T31 are implemented with validation pending; the remaining required tasks are pending and optional features remain deferred.
 
 ## Scope and reference decisions
 
@@ -20,7 +20,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | ID | Task | Depends on | Status | Specification | Implementation plan |
 | --- | --- | --- | --- | --- | --- |
 | T30 | Shared visual system and app shell | None | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t30-shared-visual-system-design.md) | [Plan](superpowers/plans/2026-10-22-t30-shared-visual-system.md) |
-| T31 | Today visual hierarchy | T30 | pending | [Spec](superpowers/specs/2026-10-22-t31-today-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t31-today-redesign.md) |
+| T31 | Today visual hierarchy | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t31-today-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t31-today-redesign.md) |
 | T32 | Remaining routes rollout coordinator | T30; complete T32-A through T32-D before T33 | pending | [Spec](superpowers/specs/2026-10-22-t32-remaining-routes-design.md) | [Plan](superpowers/plans/2026-10-22-t32-remaining-routes.md) |
 | T32-A | Timeline stream and editorial cards | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-a-timeline-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-a-timeline-redesign.md) |
 | T32-B | Weekly Review modules and comparisons | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-b-review-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-b-review-redesign.md) |
@@ -39,6 +39,8 @@ Replace the existing green-led appearance with a coherent warm-paper/obsidian sy
 **Acceptance:** Theme switches persist through recreation and System follows the system appearance; all primary destinations still resolve. All ordinary/selected/error/disabled/focus surfaces are distinguishable in both themes; measured role pairs meet the shared contrast thresholds. Font resources render offline; French accents and mixed Persian/Latin names and units are readable without truncating actions. The final row, snackbar and capture FAB remain clear of system bars and each other at all required widths.
 
 ### T31 — Today visual hierarchy
+
+**Status (22 October 2026): implemented (validation pending).** Today now presents date and habit tracking-zone context before capture, clearer habit progress, grouped due-task previews, and a stronger recent-entry/summary hierarchy while retaining existing routes, queries and callbacks. Build/lint passed; tests, emulator and rendered acceptance were NOT RUN at the user's request. See the [T31 implementation evidence](luma-redesign/evidence/2026-10-22/t31-review.md).
 
 Make date context, capture, habit progress, tasks and recent saved records scan clearly while preserving the bounded Today previews.
 

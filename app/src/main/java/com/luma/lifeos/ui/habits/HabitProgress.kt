@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LinearProgressIndicator
@@ -70,6 +71,7 @@ internal fun HabitProgressContent(day: HabitDay) {
     val numberFormat = NumberFormat.getIntegerInstance()
     val count = numberFormat.format(day.count)
     val formattedTarget = numberFormat.format(target)
+    val percentage = NumberFormat.getPercentInstance().apply { maximumFractionDigits = 0 }.format(fraction)
     val description = stringResource(R.string.habit_progress_accessibility, day.habit.name, day.count, target, unit)
 
     Column(
@@ -85,17 +87,23 @@ internal fun HabitProgressContent(day: HabitDay) {
             stringResource(R.string.habit_progress, count, formattedTarget),
             style = MaterialTheme.typography.bodyLarge,
         )
-        Text(
-            unit,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(unit, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(percentage, style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("habit_progress_percentage_${day.habit.id}"))
+        }
         LinearProgressIndicator(
             progress = { animatedProgress.value },
             modifier = Modifier.fillMaxWidth().height(LumaUi.HabitTrackHeight)
                 .clearAndSetSemantics { }
                 .testTag("habit_progress_track_${day.habit.id}"),
-            color = MaterialTheme.colorScheme.primary,
+            color = if ((day.habit.id.leastSignificantBits and 1L) == 0L) {
+                MaterialTheme.colorScheme.secondary
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
     }

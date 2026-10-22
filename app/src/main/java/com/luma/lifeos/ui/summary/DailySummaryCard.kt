@@ -35,9 +35,13 @@ import java.time.LocalDate
 fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCount: Int? = null,
     availability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {}, onCheckIn: (LocalDate) -> Unit = {}) {
-    Card(Modifier.fillMaxWidth().testTag("daily_summary")) {
+    Card(
+        modifier = Modifier.fillMaxWidth().testTag("daily_summary"),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppSectionHeading(stringResource(R.string.summary_heading), style = MaterialTheme.typography.titleMedium)
+            AppSectionHeading(stringResource(R.string.summary_heading), style = MaterialTheme.typography.headlineSmall)
             when (state) {
                 DailySummaryState.Loading -> CircularProgressIndicator(Modifier.testTag("daily_summary_loading"))
                 DailySummaryState.Error -> {
@@ -46,7 +50,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                 }
                 is DailySummaryState.Data -> {
                     val summary = state.summary
-                    Text(entryLogCounts(summary.records, habitLogCount), style = MaterialTheme.typography.bodyLarge,
+                    Text(entryLogCounts(summary.records, habitLogCount), style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.testTag("summary_records"))
                     val mood = summary.mood
                     if (mood != null) ScaleLine(stringResource(R.string.summary_mood), mood.score, "summary_mood")

@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaSectionHeader
 import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoTask
+import com.luma.lifeos.domain.todo.todoBucket
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.util.UUID
@@ -83,25 +85,40 @@ fun TodayTasksCard(
                 if (state.total == 0 && state.tasks.isEmpty()) {
                     Text(stringResource(R.string.todo_today_empty), modifier = Modifier.testTag("today_tasks_empty"))
                 } else if (state.tasks.isNotEmpty()) {
-                    state.tasks.forEach { task ->
-                        key(task.id) {
-                            val focusRequester = remember { FocusRequester() }
-                            val rowError = actions.rowErrors[task.id]
-                            TodoRow(
-                                task = task,
-                                today = today,
-                                completedList = false,
-                                canOpen = rowError != TodoListRowError.MISSING,
-                                canMutate = rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
-                                pending = task.id in actions.pendingIntents,
-                                error = rowError,
-                                onOpen = { onTask(task.id) },
-                                onSetCompleted = { onSetCompleted(task, it) },
-                                onRetry = { onRetryTask(task.id) },
-                                onDismissError = { onDismissTaskError(task.id) },
-                                focusRequester = focusRequester,
-                                compact = true,
+                    listOf(TodoBucket.OVERDUE, TodoBucket.TODAY).forEach { bucket ->
+                        val bucketTasks = state.tasks.filter { task ->
+                            !task.isCompleted && todoBucket(task, today) == bucket
+                        }
+                        if (bucketTasks.isNotEmpty()) {
+                            Text(
+                                stringResource(if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue else R.string.todo_group_today),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.semantics { heading() }
+                                    .testTag("today_tasks_group_${bucket.name.lowercase()}"),
                             )
+                            bucketTasks.forEach { task ->
+                                key(task.id) {
+                                    val focusRequester = remember { FocusRequester() }
+                                    val rowError = actions.rowErrors[task.id]
+                                    TodoRow(
+                                        task = task,
+                                        today = today,
+                                        completedList = false,
+                                        canOpen = rowError != TodoListRowError.MISSING,
+                                        canMutate = rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
+                                        pending = task.id in actions.pendingIntents,
+                                        error = rowError,
+                                        onOpen = { onTask(task.id) },
+                                        onSetCompleted = { onSetCompleted(task, it) },
+                                        onRetry = { onRetryTask(task.id) },
+                                        onDismissError = { onDismissTaskError(task.id) },
+                                        focusRequester = focusRequester,
+                                        compact = true,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
