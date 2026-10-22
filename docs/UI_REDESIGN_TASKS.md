@@ -1,6 +1,6 @@
 # App-wide UI redesign tasks
 
-Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30 and T31 are implemented with validation pending; the remaining required tasks are pending and optional features remain deferred.
+Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30 and T31 are implemented with validation pending; T32 coordination is in progress while T32-A/B/C/D and T33 remain pending. Optional features remain deferred.
 
 ## Scope and reference decisions
 
@@ -21,7 +21,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | --- | --- | --- | --- | --- | --- |
 | T30 | Shared visual system and app shell | None | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t30-shared-visual-system-design.md) | [Plan](superpowers/plans/2026-10-22-t30-shared-visual-system.md) |
 | T31 | Today visual hierarchy | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t31-today-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t31-today-redesign.md) |
-| T32 | Remaining routes rollout coordinator | T30; complete T32-A through T32-D before T33 | pending | [Spec](superpowers/specs/2026-10-22-t32-remaining-routes-design.md) | [Plan](superpowers/plans/2026-10-22-t32-remaining-routes.md) |
+| T32 | Remaining routes rollout coordinator | T30; complete T32-A through T32-D before T33 | in progress | [Spec](superpowers/specs/2026-10-22-t32-remaining-routes-design.md) | [Plan](superpowers/plans/2026-10-22-t32-remaining-routes.md) |
 | T32-A | Timeline stream and editorial cards | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-a-timeline-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-a-timeline-redesign.md) |
 | T32-B | Weekly Review modules and comparisons | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-b-review-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-b-review-redesign.md) |
 | T32-C | More, catalogs, search, lists and settings | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-c-supporting-screens-design.md) | [Plan](superpowers/plans/2026-10-22-t32-c-supporting-screens.md) |
@@ -49,6 +49,8 @@ Make date context, capture, habit progress, tasks and recent saved records scan 
 **Acceptance:** Two fixture habits (2/8 and 1/5) show exact 25% and 20% progress with separate open/log actions; pending, failure and undo preserve stored counts. More than two habits/three eligible tasks retains full totals and reachable View all/recovery actions; no completed or undated task appears in the base Today query. Navigating to a historical date shows explicit context and correct capture choices, hides Today tasks and never displays the previous date’s habit rows beneath a new date. Empty/loading/error/missing-summary/integration-disabled states remain useful and all existing callbacks work in both themes and RTL.
 
 ### T32 — Remaining routes rollout coordinator
+
+**Status (22 October 2026): in progress.** Static route and modal inventory is recorded in the [T32 route coverage ledger](luma-redesign/route-coverage.md), including conditional providers, shared `EventCard` consumers, launcher-widget scope and explicit evidence gaps. T32-A/B/C/D implementation and rendered acceptance remain pending; locale/window checks, Gradle tests and emulator runs were NOT RUN at the user's request.
 
 Replace the old catch-all remaining-screen task with four independently reviewable screen-family tasks and a route coverage ledger.
 

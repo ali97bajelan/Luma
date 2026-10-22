@@ -32,17 +32,19 @@ Unregistered conditional routes; shared-card callback drift; unsupported mockup 
 
 Consumes: paired child specifications, current route registrations and actual implementation evidence. Produces: a complete coverage ledger for T33.
 
-### Task 1: Coverage inventory
+### Task 1: Coverage inventory — complete (static inventory)
 
-- [ ] Enumerate registered routes and dialogs into the new route ledger and assign each to T32-A/B/C/D. Include shared card consumers and conditional integrations/widgets.
-- [ ] For each route include route ID, owning task, direct-reference/extrapolated classification, providers required, light/dark evidence paths, locale/width/font-scale result, blocker and status. Include every sheet/dialog and conditional integration/widget configuration route.
-- [ ] Check owners against T32-A/B/C/D and assign shared EventCard changes to T32-A; mark launcher RemoteViews out of scope with links to their existing acceptance docs.
+- [x] Enumerate registered routes and dialogs into the new route ledger and assign each to T32-A/B/C/D. Include shared card consumers and conditional integrations/widgets.
+- [x] For each route include route ID, owning task, direct-reference/extrapolated classification, providers required, light/dark evidence paths, locale/width/font-scale result, blocker and status. Include every sheet/dialog and conditional integration/widget configuration route.
+- [x] Check owners against T32-A/B/C/D and assign shared EventCard changes to T32-A; mark launcher RemoteViews out of scope with links to their existing acceptance docs.
+
+Inventory result: [route-coverage.md](../../luma-redesign/route-coverage.md). The ownership ruling for Today is recorded in the ledger: T31 owns the route, while T32-A owns its shared EventCard consumer check.
 
 ### Task 2: Cross-family integration
 
-- [ ] After child tasks, verify each ledger entry against implementation and evidence; resolve incompatible shared-component changes and forward the completed ledger to T33.
-- [ ] Verify every child acceptance scenario against its evidence; resolve duplicate ownership or inconsistent component treatments. Keep task status pending/validation pending until checks actually pass.
-- [ ] Check the complete route set against current registrations again and hand off uncovered/blocked rows explicitly to T33.
+- [ ] After child tasks, verify each ledger entry against implementation and evidence; resolve incompatible shared-component changes and forward the completed ledger to T33. Blocked until T32-A/B/C/D have implementation evidence.
+- [ ] Verify every child acceptance scenario against its evidence; resolve duplicate ownership or inconsistent component treatments. Keep task status pending/validation pending until checks actually pass. Blocked until T32-A/B/C/D evidence exists.
+- [x] Check the complete route set against current registrations again and hand off uncovered/blocked rows explicitly to T33.
 - [ ] Review and commit only the resulting ledger/evidence documents when executing; do not call a future implementation or device check complete from this plan.
 
 ## Planned verification
