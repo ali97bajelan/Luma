@@ -56,7 +56,8 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
             }
             // Usage already supplies its app name as the primary content.
             if (record.appUsage == null) event.title?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(it, style = if (record.journal != null) MaterialTheme.typography.titleLarge
+                    else MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             record.mood?.let { mood ->
                 Text(stringResource(R.string.mood_score_value, mood.score, stringResource(moodScoreLabel(mood.score))),

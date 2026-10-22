@@ -13,6 +13,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -79,12 +80,17 @@ fun PageHeader(
         "Page navigation requires a callback, and a callback is only valid with navigation."
     }
     val closeDescription = stringResource(R.string.cancel)
+    val titleStyle = MaterialTheme.typography.headlineMedium
+    // Reserve two scaled title lines plus breathing room. The app scaffold
+    // continues to own system insets; the header owns only its content height.
+    val titleHeight = with(LocalDensity.current) { titleStyle.lineHeight.toDp() * 2 + 16.dp }
     TopAppBar(
         modifier = modifier.testTag(headerTag),
+        expandedHeight = maxOf(TopAppBarDefaults.TopAppBarExpandedHeight, titleHeight),
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = titleStyle,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.semantics { heading() }.testTag(titleTag),

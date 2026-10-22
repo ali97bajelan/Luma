@@ -1,7 +1,7 @@
 # T30 — Shared visual system and app shell specification
 
 Date: 2026-10-22  
-Status: Proposed / pending implementation. This document is a planning artifact, not release acceptance.  
+Status: Implemented (validation pending), 2026-10-22. Source audit passed; Gradle/build/device and rendered acceptance checks remain NOT RUN. See [T30 evidence](../../luma-redesign/evidence/2026-10-22/t30-review.md). This is not release acceptance.
 Depends on: None
 
 ## Intent and sources

@@ -44,8 +44,8 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 ### Regression owners
 
 - Extend only when behavior/semantics change: `app/src/androidTest/java/com/luma/lifeos/settings/ThemeSettingsTest.kt`.
-- Extend only when behavior/semantics change: `app/src/test/java/com/luma/lifeos/ui/PrimaryNavigationAccessibilityTest.kt`.
-- Extend only when behavior/semantics change: `app/src/test/java/com/luma/lifeos/ui/PageInsetsContractTest.kt`.
+- Extend only when behavior/semantics change: `app/src/androidTest/java/com/luma/lifeos/ui/PrimaryNavigationAccessibilityTest.kt`.
+- Extend only when behavior/semantics change: `app/src/androidTest/java/com/luma/lifeos/ui/PageInsetsContractTest.kt`.
 - Extend only when behavior/semantics change: `app/src/androidTest/java/com/luma/lifeos/language/LanguageFlowTest.kt`.
 
 ### Task 1: Theme and typography
@@ -54,7 +54,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: ThemeSettingsTest: select Light/Dark/System, recreate, assert selected option and resolved appearance. Inspect bundled font rendering offline, including French accents and Persian/Latin mixes.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Update role colors in Theme.kt using the reference brief’s corrected Timeline light container/foreground, primaryFixed, outline and inverse pairs; verify consumers use paired roles and preserve pale chips via primaryFixed. Introduce LumaTypography.kt and bundled res/font resources with license notices, and pass typography/shapes to MaterialTheme. Preserve theme preference and system-bar behavior.
+- [x] Update role colors in Theme.kt using the reference brief’s corrected Timeline light container/foreground, primaryFixed, outline and inverse pairs; verify consumers use paired roles and preserve pale chips via primaryFixed. Introduce LumaTypography.kt and bundled res/font resources with license notices, and pass typography/shapes to MaterialTheme. Preserve theme preference and system-bar behavior.
 - [ ] Rerun the affected regression tests and inspect: All essential color-pair measurements meet 4.5:1 text/3:1 large-text and non-text thresholds; no app-local palette bypasses shared roles.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 
@@ -64,7 +64,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: PrimaryNavigationAccessibilityTest and PageInsetsContractTest retain five destinations, selected semantics and system-bar ownership.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Update LumaUi token use, LumaSectionSurface/LumaSectionHeader/LumaChoiceRow and PrimaryNavigationBar treatment. Keep existing signatures and tags. Add factual local-data copy in all three string catalogs only where the shell displays it.
+- [x] Update LumaUi token use, LumaSectionSurface/LumaSectionHeader/LumaChoiceRow and PrimaryNavigationBar treatment. Keep existing signatures and tags. Add factual local-data copy in all three string catalogs only where the shell displays it.
 - [ ] Rerun the affected regression tests and inspect: At 320 dp/2.0 and 840 dp, inspect every primary action, snackbar and final row in both themes; retain focus and 48 dp targets.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 
@@ -73,8 +73,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 Run focused classes while iterating; extend their fixtures rather than duplicate the same state contract in a new suite. Also run any new test classes named in the spec. Commands are planned checks and have not run in this documentation change.
 
 ```bash
-./gradlew :app:testDebugUnitTest --tests 'com.luma.lifeos.ui.PrimaryNavigationAccessibilityTest' --tests 'com.luma.lifeos.ui.PageInsetsContractTest'
-./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.settings.ThemeSettingsTest,com.luma.lifeos.language.LanguageFlowTest
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.settings.ThemeSettingsTest,com.luma.lifeos.language.LanguageFlowTest,com.luma.lifeos.ui.PrimaryNavigationAccessibilityTest,com.luma.lifeos.ui.PageInsetsContractTest
 ./gradlew :app:assembleDebug :app:lintDebug
 ```
 
@@ -82,4 +81,18 @@ Expected: BUILD SUCCESSFUL, zero selected test failures/lint errors, actual devi
 
 ## Handoff
 
-Depends on: None. Execute after dependency/spec review and hand results to T33. This plan does not begin app implementation.
+Depends on: None. Execute after dependency/spec review and hand results to T33. T30 implementation is recorded below; release acceptance remains pending.
+
+## Execution record — 2026-10-22
+
+Status: **implemented (validation pending)**. Both production implementation steps above are done. Unchecked baseline, regression, capture and commit steps are deliberately not claimed complete. The user requested implementation without Gradle tests or emulator use and requested a commit message; no Gradle command, emulator or commit was run/created. Build/lint and rendered acceptance were also left NOT RUN. Existing regression coverage is unchanged because product behavior and semantics remain unchanged.
+
+- Task 1: shared palette, fixed roles, variable-font typography and shapes implemented. Source contrast and font metadata/coverage audit PASS. Font rendering and theme-restoration regression execution NOT RUN.
+- Task 2: shared surfaces/headings/choice icons, five-tab pills and capture FAB implemented. Header height accounts for two scaled lines; existing inset ownership and measured FAB clearance remain. Static contract/diff review done; runtime layout/accessibility/regressions NOT RUN.
+- Pre-flight: both tasks share MaterialTheme roles and typography. The existing Review partial-week badge consumes the old pale primaryContainer; it now uses primaryFixed/onPrimaryFixed. The reflective reading section uses a neutral surface to retain contrast for its existing primary actions and secondary text.
+- Ruling: provide fixed-role extensions on ColorScheme — the pinned Compose BOM selects Material 3 1.3.2, before native fixed roles; keep dependencies unchanged. A future Material upgrade can replace the extensions.
+- Ruling: adapt AppSectionHeading, the journal title in shared EventCard, ReviewHeader and shared HabitProgress as palette/typography consumers — this avoids leaving headings sans or progress fill indistinct after shared changes; no callbacks/data/state contracts change. Progress fill/track contrast improves from 1.630/1.873 to 5.616/6.832 (light/dark) using surfaceContainerHighest, with the specified 8 dp track and unchanged 180 ms animation.
+- Ruling: keep the supplied working checkout and generate a commit message without creating a commit — this keeps the requested result reviewable in the workspace. All edits remain uncommitted.
+- Final review: self-review of the working diff against the spec and cached dependency APIs; no delegation, as directed by this plan. Source checks cannot establish build or device acceptance.
+
+Evidence, audit reproduction, exact skipped checks and remaining acceptance: [T30 review](../../luma-redesign/evidence/2026-10-22/t30-review.md).

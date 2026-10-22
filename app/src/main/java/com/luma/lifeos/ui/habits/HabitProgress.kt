@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.reviewTarget
 import java.text.NumberFormat
@@ -91,11 +92,11 @@ internal fun HabitProgressContent(day: HabitDay) {
         )
         LinearProgressIndicator(
             progress = { animatedProgress.value },
-            modifier = Modifier.fillMaxWidth().height(4.dp)
+            modifier = Modifier.fillMaxWidth().height(LumaUi.HabitTrackHeight)
                 .clearAndSetSemantics { }
                 .testTag("habit_progress_track_${day.habit.id}"),
             color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.outline,
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
     }
 }

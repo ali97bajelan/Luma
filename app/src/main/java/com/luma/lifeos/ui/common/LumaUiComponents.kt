@@ -57,7 +57,9 @@ internal fun LumaSectionSurface(
     val colorScheme = MaterialTheme.colorScheme
     val (containerColor, contentColor) = when (tone) {
         LumaSurfaceTone.Neutral -> colorScheme.surfaceContainerLow to colorScheme.onSurface
-        LumaSurfaceTone.Reflective -> colorScheme.tertiaryContainer to colorScheme.onTertiaryContainer
+        // Keep a reading surface: consumers include secondary text and primary
+        // actions, whose paired colors need a neutral container in both themes.
+        LumaSurfaceTone.Reflective -> colorScheme.surfaceContainer to colorScheme.onSurface
     }
 
     Surface(
@@ -93,7 +95,7 @@ internal fun LumaSectionHeader(
         Text(
             text = title,
             modifier = modifier.then(titleModifier),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Start,
         )
         return
@@ -107,7 +109,7 @@ internal fun LumaSectionHeader(
                 verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                 horizontalAlignment = Alignment.Start,
             ) {
-                Text(title, modifier = titleModifier, style = MaterialTheme.typography.titleMedium)
+                Text(title, modifier = titleModifier, style = MaterialTheme.typography.headlineSmall)
                 SectionActionButton(actionLabel, onAction, actionModifier)
             }
         } else {
@@ -119,7 +121,7 @@ internal fun LumaSectionHeader(
                 Text(
                     title,
                     modifier = Modifier.weight(1f).then(titleModifier),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                 )
                 SectionActionButton(actionLabel, onAction, actionModifier)
             }
@@ -170,7 +172,7 @@ internal fun LumaChoiceRow(
             Icon(
                 painter = painterResource(icon),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(LumaUi.IconSize),
                 tint = colorScheme.onSurfaceVariant,
             )
             Column(
@@ -190,7 +192,7 @@ internal fun LumaChoiceRow(
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_forward),
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(LumaUi.IconSize),
                     tint = colorScheme.onSurfaceVariant,
                 )
             }

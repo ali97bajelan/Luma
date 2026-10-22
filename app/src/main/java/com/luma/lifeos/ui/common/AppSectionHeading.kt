@@ -12,7 +12,8 @@ import androidx.compose.ui.text.TextStyle
 fun AppSectionHeading(
     text: String,
     modifier: Modifier = Modifier,
-    style: TextStyle = MaterialTheme.typography.titleLarge,
+    style: TextStyle = MaterialTheme.typography.headlineSmall,
 ) {
-    Text(text, modifier = modifier.semantics { heading() }, style = style)
+    Text(text, modifier = modifier.semantics { heading() },
+        style = style.copy(fontFamily = MaterialTheme.typography.headlineSmall.fontFamily))
 }

@@ -1,10 +1,10 @@
 # Luma redesign reference brief
 
-Prepared 22 October 2026 from the six local PNGs and six local HTML files. This is the common specification for the [task index](../UI_REDESIGN_TASKS.md) and every linked task spec/plan. App code was inspected to separate visual work from feature changes. Implementation and device acceptance remain pending.
+Prepared 22 October 2026 from the six local PNGs and six local HTML files. This is the common specification for the [task index](../UI_REDESIGN_TASKS.md) and every linked task spec/plan. App code was inspected to separate visual work from feature changes. T30 is implemented with validation pending; device acceptance and the remaining implementation tasks are pending.
 
 ## Intent and scope
 
-Regenerate the redesign backlog from the supplied Today, Timeline and Review designs, then provide a specification and implementation plan for every required and optional task. Required work changes presentation while preserving the current product. New features or existing-feature behavior changes are separate optional tasks, deferred by default. This request does not begin app implementation.
+Regenerate the redesign backlog from the supplied Today, Timeline and Review designs, then provide a specification and implementation plan for every required and optional task. Required work changes presentation while preserving the current product. New features or existing-feature behavior changes are separate optional tasks, deferred by default. The planning pass did not begin app implementation; subsequent T30 work is recorded in the task index and its evidence.
 
 A single all-app task would hide navigation/query changes; copying each mockup literally would introduce unsupported behavior. The selected approach shares a visual foundation and divides work by screen family, with explicit optional feature tasks. Existing T30/T31/T32/T33 identities are retained; T32 now delegates to T32-A/B/C/D instead of remaining an undifferentiated catch-all.
 
@@ -98,7 +98,7 @@ Unselected optional tasks are documented scope differences, not release failures
 
 ## Planning and verification status
 
-All specs/plans created in this documentation pass are proposed artifacts. The previous backlog’s blanket “Approved” label does not approve the regenerated scope or optional additions. Required task status is pending; optional status is deferred. No product build, emulator run, accessibility measurement or visual implementation acceptance has been performed by this documentation change. Existing behavior baseline includes the implemented portions of `docs/superpowers/specs/2026-10-21-fresh-ui-refresh-design.md`; retain its behavior safeguards unless an optional task expressly changes them.
+All specs/plans created in this documentation pass are proposed artifacts. The previous backlog’s blanket “Approved” label does not approve the regenerated scope or optional additions. T30 is implemented (validation pending); remaining required task status is pending and optional status is deferred. No product build, emulator run, accessibility measurement or visual implementation acceptance has been performed by this documentation change. Existing behavior baseline includes the implemented portions of `docs/superpowers/specs/2026-10-21-fresh-ui-refresh-design.md`; retain its behavior safeguards unless an optional task expressly changes them.
 
 ## Source inventory
 

@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.theme.primaryFixed
+import com.luma.lifeos.ui.theme.onPrimaryFixed
+
 import android.icu.text.DateIntervalFormat
 import android.icu.util.DateInterval
 import android.icu.util.TimeZone
@@ -66,7 +69,8 @@ internal fun ReviewHeader(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(range, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                         if (period.partial) Surface(shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.primaryContainer) {
+                            color = MaterialTheme.colorScheme.primaryFixed,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryFixed) {
                             Text(stringResource(R.string.review_in_progress), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp).testTag("review_in_progress"))
                         }

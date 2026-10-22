@@ -1,6 +1,6 @@
 # App-wide UI redesign tasks
 
-Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. This is a documentation deliverable; application implementation has not started.
+Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. T30 is implemented with validation pending; the remaining required tasks are pending and optional features remain deferred.
 
 ## Scope and reference decisions
 
@@ -19,7 +19,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 
 | ID | Task | Depends on | Status | Specification | Implementation plan |
 | --- | --- | --- | --- | --- | --- |
-| T30 | Shared visual system and app shell | None | pending | [Spec](superpowers/specs/2026-10-22-t30-shared-visual-system-design.md) | [Plan](superpowers/plans/2026-10-22-t30-shared-visual-system.md) |
+| T30 | Shared visual system and app shell | None | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t30-shared-visual-system-design.md) | [Plan](superpowers/plans/2026-10-22-t30-shared-visual-system.md) |
 | T31 | Today visual hierarchy | T30 | pending | [Spec](superpowers/specs/2026-10-22-t31-today-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t31-today-redesign.md) |
 | T32 | Remaining routes rollout coordinator | T30; complete T32-A through T32-D before T33 | pending | [Spec](superpowers/specs/2026-10-22-t32-remaining-routes-design.md) | [Plan](superpowers/plans/2026-10-22-t32-remaining-routes.md) |
 | T32-A | Timeline stream and editorial cards | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-a-timeline-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-a-timeline-redesign.md) |
@@ -29,6 +29,8 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | pending | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
 
 ### T30 — Shared visual system and app shell
+
+**Status (22 October 2026): implemented (validation pending).** Shared warm-paper/obsidian roles, offline Latin/Persian typography, shapes, section/navigation styling and capture treatment are in place. Source contrast/font checks passed; Gradle tests, build/lint, emulator and visual/accessibility checks were NOT RUN in this execution at the user’s request. See the [T30 evidence and remaining checks](luma-redesign/evidence/2026-10-22/t30-review.md).
 
 Replace the existing green-led appearance with a coherent warm-paper/obsidian system and editorial typography across existing components.
 
