@@ -1,7 +1,6 @@
 package com.luma.lifeos.ui.people
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +20,10 @@ import com.luma.lifeos.ui.common.EmptyStateCard
 import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.ui.common.contextOptionMatches
 import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.LumaClickableListSurface
+import com.luma.lifeos.ui.common.LumaListSurface
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
@@ -47,7 +50,8 @@ fun PeopleRoute(people: PersonRepository, places: PlaceRepository, onCreatePerso
         onNavigate = onBack,
         navigationTag = "people_back",
     ) { pagePadding ->
-      Column(Modifier.fillMaxSize().padding(pagePadding)) {
+      LumaReadingPane(Modifier.fillMaxSize().padding(pagePadding)) {
+       Column(Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = if (placesSelected) 1 else 0) {
             Tab(selected = !placesSelected, onClick = { placesSelected = false },
                 modifier = Modifier.testTag("catalog_people"), text = { Text(stringResource(R.string.catalog_people)) })
@@ -58,6 +62,7 @@ fun PeopleRoute(people: PersonRepository, places: PlaceRepository, onCreatePerso
             query = placesQuery, onQueryChange = { placesQuery = it })
         else PeopleListContent(people, onCreatePerson, onPerson, query = peopleQuery,
             onQueryChange = { peopleQuery = it }, modifier = Modifier.weight(1f))
+       }
       }
     }
 }
@@ -73,12 +78,15 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Column(Modifier.testTag(if (state is PeopleState.Data) "people_ready" else "people_header")) {
+            LumaSectionSurface {
+             Column(Modifier.testTag(if (state is PeopleState.Data) "people_ready" else "people_header"),
+                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.people_intro))
                 OutlinedTextField(value = query, onValueChange = onQueryChange,
                     label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("people_search"))
                 if (!empty) Button(onClick = onCreate, modifier = Modifier.testTag("people_create")) { Text(stringResource(R.string.person_create)) }
+             }
             }
         }
         when (val current = state) {
@@ -97,8 +105,8 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
                     Text(stringResource(R.string.search_no_options), modifier = Modifier.testTag("people_no_results"))
                 }
                 items(filteredPeople, key = { it.id.toString() }) { person ->
-                    Card(Modifier.fillMaxWidth().testTag("person_${person.id}").clickable { onPerson(person.id) }) {
-                        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    LumaClickableListSurface(onClick = { onPerson(person.id) }, modifier = Modifier.testTag("person_${person.id}")) {
+                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Icon(painterResource(R.drawable.ic_nav_people), contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
@@ -161,10 +169,12 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                             "person_history_empty")
                     }
                     items(events, key = { it.event.id.toString() }) { record ->
-                        Card(Modifier.fillMaxWidth().testTag("person_event_${record.event.id}")) {
+                        LumaListSurface(Modifier.testTag("person_event_${record.event.id}")) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
-                                    .format(displayTime.dateTime(FormatStyle.MEDIUM)))
+                                    .format(displayTime.dateTime(FormatStyle.MEDIUM)),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(stringResource(when (record.event.type) {
                                     EventType.MOOD -> R.string.event_mood
                                     EventType.JOURNAL -> R.string.event_journal

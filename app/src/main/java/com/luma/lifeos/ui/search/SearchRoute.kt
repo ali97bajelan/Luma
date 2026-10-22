@@ -24,6 +24,8 @@ import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.SearchRepository
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppSectionHeading
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -45,26 +47,30 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
     var filters by rememberSaveable { mutableStateOf(false) }
     val count = state.input.activeFilterCount
     val hasCriteria = state.input.text.isNotBlank() || count > 0
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("screen_search")) {
+    LumaReadingPane(Modifier.fillMaxSize().testTag("screen_search")) {
+     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         AppSectionHeading(stringResource(R.string.search_entries_title), style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.testTag("search_title"))
-        OutlinedTextField(value = state.input.text, onValueChange = vm::setText, singleLine = true,
-            label = { Text(stringResource(R.string.search_text_hint)) },
-            supportingText = if (state.input.text.length >= 180) {
-                { Text(stringResource(R.string.search_text_help, state.input.text.length), Modifier.testTag("search_text_limit")) }
-            } else null,
-            modifier = Modifier.fillMaxWidth().testTag("search_text"))
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) { Text(stringResource(R.string.search_filter_count, count)) }
-            TextButton(onClick = vm::clearFilters, enabled = count > 0, modifier = Modifier.testTag("search_reset_filters")) { Text(stringResource(R.string.search_reset_filters)) }
-            TextButton(onClick = vm::clear, enabled = state.input.text.isNotEmpty() || count > 0,
-                modifier = Modifier.testTag("search_clear")) { Text(stringResource(R.string.search_clear)) }
+        LumaSectionSurface {
+            OutlinedTextField(value = state.input.text, onValueChange = vm::setText, singleLine = true,
+                label = { Text(stringResource(R.string.search_text_hint)) },
+                supportingText = if (state.input.text.length >= 180) {
+                    { Text(stringResource(R.string.search_text_help, state.input.text.length), Modifier.testTag("search_text_limit")) }
+                } else null,
+                modifier = Modifier.fillMaxWidth().testTag("search_text"))
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) { Text(stringResource(R.string.search_filter_count, count)) }
+                TextButton(onClick = vm::clearFilters, enabled = count > 0, modifier = Modifier.testTag("search_reset_filters")) { Text(stringResource(R.string.search_reset_filters)) }
+                TextButton(onClick = vm::clear, enabled = state.input.text.isNotEmpty() || count > 0,
+                    modifier = Modifier.testTag("search_clear")) { Text(stringResource(R.string.search_clear)) }
+            }
+            if (state.loaded && hasCriteria) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
+                Modifier.testTag("search_result_count"), isError = false)
+            if (state.loaded && state.records.isNotEmpty()) Text(stringResource(R.string.entry_order_newest_first),
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("search_order"))
         }
-        if (state.loaded && hasCriteria) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
-            Modifier.testTag("search_result_count"), isError = false)
-        if (state.loaded && state.records.isNotEmpty()) Text(stringResource(R.string.entry_order_newest_first),
-            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("search_order"))
         key(state.input, zone) {
             val list = rememberLazyListState()
             LaunchedEffect(list, state.windowVersion) {
@@ -110,6 +116,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 }
             }
         }
+    }
     }
     if (filters) SearchFilters(state, vm, onDone = { filters = false })
 }

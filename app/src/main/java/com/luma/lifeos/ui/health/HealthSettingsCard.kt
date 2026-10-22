@@ -22,6 +22,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.health.*
 import com.luma.lifeos.integration.health.*
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.ui.integrations.IntegrationAccessState
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
@@ -42,8 +43,8 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
     val contract = remember { PermissionController.createRequestPermissionResultContract() }
     val permissions = rememberLauncherForActivityResult(contract) { vm.refresh(); onRefreshAccess() }
-    Card(Modifier.fillMaxWidth().testTag("health_card")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LumaSectionSurface(Modifier.testTag("health_card")) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.health_title), style = MaterialTheme.typography.titleLarge)
             val canToggle = !state.loading && (!state.busy || state.current.enabled) &&
                 currentAvailability.enabled != null && !currentAvailability.configurationFailed

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.search.SearchOption
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaListSurface
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.time.LocalDate
@@ -70,15 +71,18 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
 
 @Composable
 private fun SearchDate(label: String, date: LocalDate?, tag: String, invalid: Boolean, onPick: () -> Unit, onClear: () -> Unit) {
-    Column {
+    LumaListSurface {
+     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.labelLarge)
         val invalidMessage = if (invalid) stringResource(R.string.search_invalid_dates) else null
-        TextButton(onClick = onPick, modifier = Modifier.semantics { invalidMessage?.let { error(it) } }.testTag(tag)) {
+        TextButton(onClick = onPick, modifier = Modifier.heightIn(min = 48.dp)
+            .semantics { invalidMessage?.let { error(it) } }.testTag(tag)) {
             Text(date?.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)) ?: stringResource(R.string.search_any_date))
         }
-        if (date != null) TextButton(onClick = onClear, modifier = Modifier.testTag("${tag}_clear")) {
+        if (date != null) TextButton(onClick = onClear, modifier = Modifier.heightIn(min = 48.dp).testTag("${tag}_clear")) {
             Text(stringResource(R.string.search_clear_date, label))
         }
+     }
     }
 }
 
@@ -86,8 +90,10 @@ private fun SearchDate(label: String, date: LocalDate?, tag: String, invalid: Bo
 private fun SelectionButton(label: String, tag: String, options: List<SearchOption>, selected: Set<UUID>, onClick: () -> Unit) {
     val unknown = stringResource(R.string.search_unavailable)
     val names = selected.take(3).map { id -> options.find { it.id == id }?.name ?: "$unknown (${id.toString().take(8)})" }
-    Column {
-        TextButton(onClick = onClick, modifier = Modifier.testTag(tag)) { Text(stringResource(R.string.search_category, label, selected.size)) }
+    LumaListSurface {
+     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).testTag(tag)) { Text(stringResource(R.string.search_category, label, selected.size)) }
         if (names.isNotEmpty()) Text(names.joinToString(", "), style = MaterialTheme.typography.bodySmall, maxLines = 3)
+     }
     }
 }

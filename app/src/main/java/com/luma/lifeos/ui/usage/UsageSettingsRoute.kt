@@ -19,6 +19,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.integration.usage.openUsageAccessSettings
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import com.luma.lifeos.ui.integrations.IntegrationAccessState
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
@@ -38,8 +39,8 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
     val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     var showAccessExplanation by rememberSaveable { mutableStateOf(false) }
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
-    Card(Modifier.fillMaxWidth().testTag("usage_integration_card")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LumaSectionSurface(Modifier.testTag("usage_integration_card")) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.usage_title), style = MaterialTheme.typography.titleLarge)
             val currentAvailability = availability.usage
             val canToggle = !state.loading && (!state.busy || state.current.enabled) &&

@@ -1,7 +1,6 @@
 package com.luma.lifeos.ui.places
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +19,9 @@ import com.luma.lifeos.ui.common.EmptyStateCard
 import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.ui.common.contextOptionMatches
 import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.LumaClickableListSurface
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.domain.repository.PlaceRepository
 import com.luma.lifeos.domain.model.LifeEvent
@@ -34,7 +36,9 @@ fun PlacesRoute(repository: PlaceRepository, onBack: () -> Unit, onCreate: () ->
     BackHandler(onBack = onBack)
     AppPageScaffold(title = stringResource(R.string.places), navigation = PageNavigation.BACK,
         onNavigate = onBack, navigationTag = "places_back") { padding ->
-        PlacesListContent(repository, onCreate, onPlace, modifier = Modifier.padding(padding))
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+            PlacesListContent(repository, onCreate, onPlace, modifier = Modifier.fillMaxSize())
+        }
     }
 }
 
@@ -52,14 +56,16 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
     LazyColumn(modifier.fillMaxSize().testTag("screen_places"), contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Column(Modifier.testTag(if (state is PlacesState.Data) "places_ready" else "places_header"),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LumaSectionSurface {
+             Column(Modifier.testTag(if (state is PlacesState.Data) "places_ready" else "places_header"),
+                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (onBack != null) TextButton(onClick = onBack, modifier = Modifier.testTag("places_back")) { Text(stringResource(R.string.back)) }
                 Text(stringResource(R.string.places_intro))
                 OutlinedTextField(value = activeQuery, onValueChange = updateQuery,
                     label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("places_search"))
                 if (!empty) Button(onClick = onCreate, modifier = Modifier.testTag("places_create")) { Text(stringResource(R.string.place_create)) }
+             }
             }
         }
         when (val current = state) {
@@ -78,8 +84,8 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
                     Text(stringResource(R.string.search_no_options), modifier = Modifier.testTag("places_no_results"))
                 }
                 items(filteredPlaces, key = { it.id.toString() }) { place ->
-                    Card(Modifier.fillMaxWidth().testTag("place_${place.id}").clickable { onPlace(place.id) }) {
-                        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    LumaClickableListSurface(onClick = { onPlace(place.id) }, modifier = Modifier.testTag("place_${place.id}")) {
+                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Icon(painterResource(R.drawable.ic_nav_places), contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
@@ -149,7 +155,9 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
                         Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(record.event.occurredAt.atZone(zone)
-                                .format(displayTime.dateTime(FormatStyle.MEDIUM)))
+                                .format(displayTime.dateTime(FormatStyle.MEDIUM)),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                             EventCard(record, zone, onOpen = { onEvent(record) },
                                 openActionLabel = if (record.journal != null) R.string.journal_open else R.string.event_open)
                         }

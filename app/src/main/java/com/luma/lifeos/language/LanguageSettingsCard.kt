@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaSectionSurface
 
 @Composable
 fun LanguageSettingsCard() {
@@ -26,8 +27,8 @@ fun LanguageSettingsCard() {
     val current = AppLanguage.resolve(configuration.locales[0].language, emptyList())
     var saveError by rememberSaveable { mutableStateOf(false) }
     var saveErrorRevision by rememberSaveable { mutableIntStateOf(0) }
-    Card(Modifier.fillMaxWidth().testTag("language_settings")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LumaSectionSurface(Modifier.testTag("language_settings")) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.language_title), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.language_description))
             Column(Modifier.selectableGroup()) {

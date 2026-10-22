@@ -3,6 +3,8 @@ package com.luma.lifeos.ui.search
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -47,8 +49,19 @@ internal fun SearchOptionPicker(title: String, options: List<SearchOption>, sele
                         val selection = if (single) Modifier.selectable(selected = checked, role = Role.RadioButton,
                             onClick = { onToggle(option.id) }) else Modifier.toggleable(value = checked, enabled = enabled,
                             role = Role.Checkbox, onValueChange = { onToggle(option.id) })
-                        Row(Modifier.fillMaxWidth().then(selection).testTag("search_option_${option.id}").padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                .background(
+                                    color = if (checked) MaterialTheme.colorScheme.surfaceContainerHigh
+                                        else MaterialTheme.colorScheme.surfaceContainerLow,
+                                    shape = RoundedCornerShape(12.dp),
+                                )
+                                .then(selection)
+                                .testTag("search_option_${option.id}")
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
                             if (single) RadioButton(selected = checked, onClick = null)
                             else Checkbox(checked = checked, onCheckedChange = null)
                             Text(option.name, Modifier.weight(1f))

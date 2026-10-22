@@ -51,6 +51,8 @@
 - Modify: `app/src/main/java/com/luma/lifeos/ui/review/ReviewUsageRoute.kt`.
 - Modify: `app/src/main/java/com/luma/lifeos/ui/memory/MemoryReviewRoute.kt`.
 - Modify: `app/src/main/java/com/luma/lifeos/widget/WidgetConfigurationActivity.kt`; `ui/LifeOsApp.kt` only for existing language/configuration wiring.
+- Modify: `app/src/main/java/com/luma/lifeos/language/LanguageSettingsCard.kt` for the existing locale selector's shared presentation.
+- Modify: `app/src/main/java/com/luma/lifeos/ui/common/LumaUiComponents.kt` for shared neutral list surfaces consumed by these routes.
 
 Consumes: current signatures/state/callbacks in these files and shared T30 roles. Produces: the linked spec’s screen contract. Preserve existing composable signatures except extensions explicitly named in that spec; new named interfaces use the exact types defined there. String additions go into all three existing values/values-fr/values-fa catalogs with matching placeholders/plurals.
 
@@ -71,32 +73,32 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 **Interfaces:** Implement this unit against the file map and contract above; no independent repository observations for decorative content. Existing state/callback contracts remain authoritative.
 
-- [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: SearchFlowTest, ActiveSearchFiltersTest, PlaceCatalogFlowTest and navigation suites: independent catalog queries restore, filters/results/Create/Edit/Back remain reachable.
-- [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Update More, catalogs, search, Habits and task lists using shared components; restyle existing catalog tabs rather than replacing their state. Include source/usage/memory-review browsing.
-- [ ] Rerun the affected regression tests and inspect: Inspect empty/error/populated lists, details/history navigation, all source/usage/memory-review browse routes and both catalog tabs.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [ ] Establish the baseline with existing fixtures and a before capture. **NOT RUN:** no before capture was made because emulator use was excluded; existing regression suites were not run at the user's request.
+- [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. **NOT RUN:** the changes are presentation-only and the user excluded Gradle tests.
+- [x] Update More, catalogs, search, Habits and task lists using shared components; restyle existing catalog tabs without replacing their state. Include source/usage/memory-review browsing.
+- [ ] Rerun affected regression tests and inspect empty/error/populated lists, details/history navigation, source/usage/memory-review routes and catalog tabs. **NOT RUN:** runtime and test acceptance remain pending.
+- [x] Record implementation and validation status in the T32-C evidence and route ledger; source diff reviewed against the owned screen contract. Commit the reviewed changes with a task-specific message when executing this plan.
 
 ### Task 2: Settings and integration routes
 
 **Interfaces:** Implement this unit against the file map and contract above; no independent repository observations for decorative content. Existing state/callback contracts remain authoritative.
 
-- [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: SettingsHubFlowTest, BackupSettingsFlowTest, PrivacySettingsFlowTest and WidgetSettingsRouteTest: selectors, progress, confirmations, rejected integrations and restore outcomes remain available.
-- [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Apply shared treatments to Settings, theme/language, backup/privacy, integrations and in-app widget settings/configuration. Keep status, disclosure and confirmation wording factual and preserve existing flows.
-- [ ] Rerun the affected regression tests and inspect: Inspect factual local-data/unencrypted-ZIP copy, all supported languages and in-app widget configuration in both themes; launcher layouts are unchanged.
-- [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
+- [ ] Establish the baseline with existing fixtures and a before capture. **NOT RUN:** no before capture was made because emulator use was excluded; existing regression suites were not run at the user's request.
+- [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. **NOT RUN:** the changes are presentation-only and the user excluded Gradle tests.
+- [x] Apply shared treatments to Settings, theme/language, backup/privacy, integrations and in-app widget settings/configuration. Keep status, disclosure and confirmation wording factual and preserve existing flows.
+- [ ] Rerun affected regression tests and inspect factual local-data/unencrypted-ZIP copy, supported languages and in-app widget configuration in both themes. **NOT RUN:** runtime and test acceptance remain pending; launcher layouts were not changed.
+- [x] Record implementation and validation status in the T32-C evidence and route ledger; source diff reviewed against the owned screen contract. Commit the reviewed changes with a task-specific message when executing this plan.
 
 ## Planned verification and completion
 
-Run focused classes while iterating; extend their fixtures rather than duplicate the same state contract in a new suite. Also run any new test classes named in the spec. Commands are planned checks and have not run in this documentation change.
+Run focused classes while iterating; extend their fixtures rather than duplicate the same state contract in a new suite. Also run any new test classes named in the spec. The requested execution did not run Gradle tests or an emulator. The assemble/lint command was attempted but Gradle could not start in the restricted environment; see the [execution evidence](../../luma-redesign/evidence/2026-10-22/t32-c-review.md). `git diff --check` passed.
 
 ```bash
 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.AppNavigationTest,com.luma.lifeos.SearchFlowTest,com.luma.lifeos.ActiveSearchFiltersTest,com.luma.lifeos.PlaceCatalogFlowTest,com.luma.lifeos.PeopleCaptureTest,com.luma.lifeos.todo.TodoNavigationTest,com.luma.lifeos.settings.SettingsHubFlowTest,com.luma.lifeos.backup.BackupSettingsFlowTest,com.luma.lifeos.privacy.PrivacySettingsFlowTest,com.luma.lifeos.widget.WidgetSettingsRouteTest
 ./gradlew :app:assembleDebug :app:lintDebug
 ```
 
-Expected: BUILD SUCCESSFUL, zero selected test failures/lint errors, actual device results for instrumentation. Missing prerequisites or skipped device tasks are NOT RUN with the exact reason. Confirm each acceptance scenario in the spec against implementation and evidence; record commands, build/device configuration and screenshots in the T33 ledger. Do not repeat passing checks unless changes/failures justify it.
+Expected: BUILD SUCCESSFUL, zero selected test failures/lint errors, actual device results for instrumentation. **Execution:** tests and device checks are NOT RUN at the user's request; assemble/lint did not reach project configuration because Gradle startup was blocked. Confirm each acceptance scenario in the spec against implementation and evidence; record commands, build/device configuration and screenshots in the T33 ledger before marking T32-C complete.
 
 ## Handoff
 

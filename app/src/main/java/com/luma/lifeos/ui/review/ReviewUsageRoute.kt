@@ -13,7 +13,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.usage.*
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.ui.common.exactDuration
+import com.luma.lifeos.ui.common.LumaListSurface
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.usage.UsageDayState
 import com.luma.lifeos.ui.usage.observeUsageDay
 import java.time.*
@@ -28,14 +32,19 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
         val state by observation.collectAsStateWithLifecycle(UsageDayState.Loading)
         val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
         val format = displayTime.dateTime(FormatStyle.SHORT)
-        LazyColumn(Modifier.fillMaxSize().testTag("screen_review_usage"), contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp),
+        LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review_usage")) {
+         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                Text(stringResource(R.string.review_saved_usage), style = MaterialTheme.typography.headlineMedium)
-                Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
-                Text(zone.id)
-                Text(stringResource(R.string.review_usage_explanation))
+                AppSectionHeading(stringResource(R.string.review_saved_usage))
+                LumaSectionSurface {
+                    Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
+                        style = MaterialTheme.typography.titleMedium)
+                    Text(zone.id, style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.review_usage_explanation))
+                }
             }
             when (val current = state) {
                 UsageDayState.Loading -> item { CircularProgressIndicator() }
@@ -46,6 +55,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                 UsageDayState.Empty -> item { Text(stringResource(R.string.usage_daily_empty)) }
                 is UsageDayState.Data -> {
                     item {
+                      LumaSectionSurface {
                         Text(stringResource(when (current.report.history) {
                             UsageHistory.COMPLETE -> R.string.usage_daily_explanation
                             UsageHistory.PARTIAL -> R.string.usage_history_partial
@@ -54,22 +64,27 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                         Text(reviewDuration(current.report.totalMillis.takeUnless {
                             current.report.apps.isEmpty() && current.report.history == UsageHistory.PARTIAL
                         }, stringResource(R.string.review_usage_partial_total_unknown)))
+                      }
                     }
                     items(current.report.apps, key = { "app:${it.packageName}" }) { app ->
-                        Column {
+                        LumaListSurface {
+                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(app.appLabel ?: app.packageName)
-                            if (app.appLabel != null) Text(app.packageName)
+                            if (app.appLabel != null) Text(app.packageName, style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(reviewDuration(app.durationMillis, stringResource(R.string.review_usage_app_missing)))
+                         }
                         }
                     }
                     items(current.report.sessions, key = { it.identity }) { session ->
-                        Card(Modifier.fillMaxWidth().testTag("review_usage_session_${session.identity}")) {
+                        LumaListSurface(Modifier.testTag("review_usage_session_${session.identity}")) {
                             Column(Modifier.padding(16.dp)) {
                                 Text(session.appLabel ?: session.packageName)
                                 Text(stringResource(R.string.usage_session_times, session.start.atZone(zone).format(format), session.end.atZone(zone).format(format)))
                                 Text(reviewDuration(session.durationMillis, stringResource(R.string.review_usage_app_missing)))
                                 Text(stringResource(R.string.usage_exact_duration, exactDuration(session.durationMillis)),
-                                    style = MaterialTheme.typography.bodySmall)
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 if (session.openedAt < session.start) Text(stringResource(R.string.usage_session_continued, session.openedAt.atZone(zone).format(format)))
                                 if (session.ongoing) Text(stringResource(R.string.usage_session_ongoing))
                             }
@@ -77,6 +92,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                     }
                 }
             }
+        }
         }
     }
 }

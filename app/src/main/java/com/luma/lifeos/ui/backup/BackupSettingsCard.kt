@@ -24,6 +24,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.backup.BackupService
 import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.navigation.AppRoutes
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 import java.text.NumberFormat
@@ -177,8 +178,8 @@ internal fun BackupCardContent(
     showRestoreConfirmation: Boolean = true,
 ) {
     val displayTime = rememberDisplayTimePolicy()
-    Card(Modifier.fillMaxWidth().testTag("backup_settings")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LumaSectionSurface(Modifier.testTag("backup_settings")) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.backup_description))
             Text(stringResource(R.string.backup_private))

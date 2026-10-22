@@ -15,6 +15,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.people.LinkedPeople
 import com.luma.lifeos.ui.places.LinkedPlace
 import com.luma.lifeos.ui.photos.PhotoCount
+import com.luma.lifeos.ui.common.LumaListSurface
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
@@ -34,12 +37,13 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
         val observation = remember { observeMemoryReview(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(MemoryReviewState.Loading)
         val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
-        Box(Modifier.fillMaxSize().testTag("screen_review")) {
+        LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review")) {
+         Box(Modifier.fillMaxSize()) {
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = captureBottomClearance),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item {
-                    Text(stringResource(R.string.memory_review_heading), style = MaterialTheme.typography.headlineLarge)
+                    AppSectionHeading(stringResource(R.string.memory_review_heading), style = MaterialTheme.typography.headlineLarge)
                     Text(stringResource(R.string.memory_review_intro))
                     Text(stringResource(R.string.memory_review_range, week.start.atZone(zone).toLocalDate().format(format),
                         week.endExclusive.atZone(zone).toLocalDate().minusDays(1).format(format)))
@@ -52,13 +56,15 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                         TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
                     is MemoryReviewState.Data -> items(current.records, key = { it.event.id.toString() }) { record ->
-                        Card(Modifier.fillMaxWidth()) {
+                        LumaListSurface {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 record.memory?.let { MemoryStatus(it) }
                                 LinkedPeople(record.people)
                                 LinkedPlace(record.place)
                             PhotoCount(record.photos.size)
-                                Text(record.event.occurredAt.atZone(zone).format(displayTime.dateTime(FormatStyle.SHORT)))
+                                Text(record.event.occurredAt.atZone(zone).format(displayTime.dateTime(FormatStyle.SHORT)),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
                                 record.journal?.let { Text(it.body, maxLines = 3, overflow = TextOverflow.Ellipsis) }
                                 record.mood?.let {
@@ -78,6 +84,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                     }
                 }
             }
+         }
         }
     }
 }

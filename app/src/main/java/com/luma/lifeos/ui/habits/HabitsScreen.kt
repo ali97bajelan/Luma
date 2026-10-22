@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -137,8 +136,8 @@ fun HabitsScreen(
                         }
                     }
                     if (!state.loading && state.loadedDate == date && rows.isEmpty() && state.error == null) item {
-                        Card(Modifier.fillMaxWidth().testTag("habits_empty")) {
-                            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        LumaSectionSurface(Modifier.testTag("habits_empty")) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text(stringResource(R.string.habit_empty_heading), style = MaterialTheme.typography.titleLarge)
                                 Text(stringResource(R.string.habit_empty_body))
                                 Button(onClick = onCreate, modifier = Modifier.heightIn(min = 48.dp)) {

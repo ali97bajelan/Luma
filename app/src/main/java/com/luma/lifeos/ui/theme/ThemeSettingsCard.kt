@@ -12,13 +12,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaSectionSurface
 
 @Composable
 fun ThemeSettingsCard() {
     val preferences = rememberThemePreferences()
     val selectedTheme = rememberAppTheme(preferences)
-    OutlinedCard(Modifier.fillMaxWidth().testTag("theme_settings")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LumaSectionSurface(Modifier.testTag("theme_settings")) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.theme_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.theme_description), style = MaterialTheme.typography.bodyMedium)
             Column(Modifier.selectableGroup()) {

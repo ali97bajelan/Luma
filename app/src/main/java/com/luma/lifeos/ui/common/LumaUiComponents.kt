@@ -79,6 +79,40 @@ internal fun LumaSectionSurface(
 }
 
 @Composable
+internal fun LumaListSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LumaUi.InnerCardRadius),
+        color = colorScheme.surfaceContainerLow,
+        contentColor = colorScheme.onSurface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) { content() }
+}
+
+@Composable
+internal fun LumaClickableListSurface(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LumaUi.InnerCardRadius),
+        color = colorScheme.surfaceContainerLow,
+        contentColor = colorScheme.onSurface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) { content() }
+}
+
+@Composable
 internal fun LumaSectionHeader(
     title: String,
     modifier: Modifier = Modifier,

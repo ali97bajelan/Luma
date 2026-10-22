@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -41,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.PageHeader
 import com.luma.lifeos.ui.common.PageNavigation
+import com.luma.lifeos.ui.common.LumaListSurface
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.todoBucket
@@ -106,10 +108,11 @@ fun TodoListScreen(
             )
         },
     ) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
+         Column(
+            Modifier.fillMaxSize().padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = !state.completed,
@@ -285,8 +288,8 @@ fun TodoListScreen(
                         }
                         if (state.dataFresh && state.page.items.isEmpty()) {
                             item(key = "empty") {
-                                Card(Modifier.fillMaxWidth().testTag("todo_list_empty")) {
-                                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                LumaSectionSurface(Modifier.testTag("todo_list_empty")) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                         Text(
                                             stringResource(
                                                 if (state.completed) R.string.todo_list_empty_completed
@@ -437,6 +440,7 @@ fun TodoListScreen(
         }
     }
 }
+}
 
 private data class PendingRowFocus(
     val taskId: UUID,
@@ -454,7 +458,7 @@ private fun TodoPendingActionCard(
     onRetry: () -> Unit,
     onOpen: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth().testTag("todo_pending_${intent.taskId}")) {
+    LumaListSurface(Modifier.testTag("todo_pending_${intent.taskId}")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(intent.title, style = MaterialTheme.typography.bodyLarge)
             Text(
@@ -490,7 +494,7 @@ private fun TodoTerminalRowErrorCard(
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth().testTag("todo_row_error_$taskId")) {
+    LumaListSurface(Modifier.testTag("todo_row_error_$taskId")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(
@@ -514,8 +518,8 @@ private fun TodoTerminalRowErrorCard(
 
 @Composable
 private fun TodoListErrorCard(message: Int, onRetry: () -> Unit, retryTag: String) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LumaSectionSurface {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(message), color = MaterialTheme.colorScheme.error)
             TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag(retryTag)) {
                 Text(stringResource(R.string.retry))

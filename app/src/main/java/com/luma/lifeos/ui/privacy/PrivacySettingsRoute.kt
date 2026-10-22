@@ -21,6 +21,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.PageNavigation
 
 @Composable
@@ -49,8 +51,8 @@ fun PrivacyPolicyContent(accessAction: (@Composable () -> Unit)? = null) {
 @Composable
 private fun PrivacySection(@StringRes heading: Int, @StringRes description: Int, tag: String,
     content: @Composable ColumnScope.() -> Unit = {}) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LumaSectionSurface {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(heading), style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() })
             Text(stringResource(description), modifier = Modifier.testTag(tag))
@@ -71,7 +73,8 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
         titleTag = "privacy_heading",
         navigationTag = "privacy_back",
     ) { pagePadding ->
-      Column(Modifier.fillMaxSize().padding(pagePadding).testTag("screen_privacy")
+      LumaReadingPane(Modifier.fillMaxSize().padding(pagePadding)) {
+       Column(Modifier.fillMaxSize().testTag("screen_privacy")
           .verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         PrivacyPolicyContent {
@@ -80,8 +83,8 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
             }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.privacy_settings_missing), Modifier.testTag("privacy_settings_missing"))
         }
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LumaSectionSurface {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.privacy_delete_section), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { heading() })
                 Text(stringResource(R.string.privacy_delete_description))
@@ -97,6 +100,7 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
                 if (state.actionError) AccessibleFeedback(stringResource(R.string.privacy_reset_failed), Modifier.testTag("privacy_error"))
             }
         }
+      }
       }
     }
     if (state.confirming) AlertDialog(onDismissRequest = onCancel,

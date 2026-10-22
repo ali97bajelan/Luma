@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,6 +38,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
 import com.luma.lifeos.domain.widget.WidgetStore
+import com.luma.lifeos.ui.common.LumaListSurface
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 import com.luma.lifeos.widget.HabitsWidgetProvider
 import com.luma.lifeos.widget.TasksWidgetProvider
@@ -163,7 +163,7 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
 
 @Composable
 private fun ProviderCard(kind: WidgetKind, title: Int, description: Int, onAdd: () -> Unit) {
-    OutlinedCard(Modifier.fillMaxWidth()) {
+    LumaListSurface {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(description), style = MaterialTheme.typography.bodyMedium)
@@ -177,7 +177,7 @@ private fun ProviderCard(kind: WidgetKind, title: Int, description: Int, onAdd: 
 
 @Composable
 private fun InstanceCard(instance: WidgetInstance, ordinal: Int?, onConfigure: () -> Unit) {
-    OutlinedCard(Modifier.fillMaxWidth()) {
+    LumaListSurface {
         Row(
             Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),

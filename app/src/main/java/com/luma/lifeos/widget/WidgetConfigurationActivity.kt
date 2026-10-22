@@ -35,6 +35,8 @@ import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -210,51 +212,59 @@ internal fun ConfigurationContent(
 ) {
     BackHandler(enabled = saving) { }
     Scaffold { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
+        LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = 24.dp),
+                Modifier.fillMaxSize().padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-            Text(
-                stringResource(if (kind == WidgetKind.HABITS) R.string.widget_config_habits_title else R.string.widget_config_tasks_title),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            when {
-                !loaded && !loadFailed -> {
-                    CircularProgressIndicator()
-                    Text(stringResource(R.string.widget_config_loading))
-                }
-                loadFailed -> {
-                    Text(stringResource(R.string.widget_config_load_error), color = MaterialTheme.colorScheme.error)
-                    Button(onClick = onRetryLoad) { Text(stringResource(R.string.retry)) }
-                }
-                else -> {
-                    Text(stringResource(R.string.widget_config_content_description))
-                    Text(stringResource(R.string.widget_config_scroll_resize), style = MaterialTheme.typography.bodyMedium)
-                    Text(stringResource(R.string.widget_config_privacy_note), style = MaterialTheme.typography.bodySmall)
-                    com.luma.lifeos.ui.widgets.WidgetExample(kind)
-                    if (saveFailed) {
-                        Text(stringResource(R.string.widget_config_save_error), color = MaterialTheme.colorScheme.error)
+                Column(
+                    Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    Text(
+                        stringResource(if (kind == WidgetKind.HABITS) R.string.widget_config_habits_title else R.string.widget_config_tasks_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                    when {
+                        !loaded && !loadFailed -> {
+                            CircularProgressIndicator()
+                            Text(stringResource(R.string.widget_config_loading))
+                        }
+                        loadFailed -> {
+                            LumaSectionSurface {
+                                Text(stringResource(R.string.widget_config_load_error), color = MaterialTheme.colorScheme.error)
+                                Button(onClick = onRetryLoad) { Text(stringResource(R.string.retry)) }
+                            }
+                        }
+                        else -> {
+                            LumaSectionSurface {
+                                Text(stringResource(R.string.widget_config_content_description))
+                                Text(stringResource(R.string.widget_config_scroll_resize), style = MaterialTheme.typography.bodyMedium)
+                                Text(stringResource(R.string.widget_config_privacy_note), style = MaterialTheme.typography.bodySmall)
+                            }
+                            com.luma.lifeos.ui.widgets.WidgetExample(kind)
+                            if (saveFailed) {
+                                LumaSectionSurface {
+                                    Text(stringResource(R.string.widget_config_save_error), color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            }
-            FlowRow(
-                Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                OutlinedButton(onClick = onCancel, enabled = !saving) {
-                    Text(stringResource(R.string.widget_config_cancel))
-                }
-                Button(
-                    onClick = onSave,
-                    enabled = loaded && !loadFailed && !saving,
+                FlowRow(
+                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(stringResource(if (saving) R.string.widget_config_saving else R.string.widget_config_save))
+                    OutlinedButton(onClick = onCancel, enabled = !saving) {
+                        Text(stringResource(R.string.widget_config_cancel))
+                    }
+                    Button(
+                        onClick = onSave,
+                        enabled = loaded && !loadFailed && !saving,
+                    ) {
+                        Text(stringResource(if (saving) R.string.widget_config_saving else R.string.widget_config_save))
+                    }
                 }
             }
         }

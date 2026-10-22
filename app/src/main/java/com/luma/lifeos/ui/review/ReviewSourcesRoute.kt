@@ -9,8 +9,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
@@ -18,6 +16,9 @@ import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.AppSectionHeading
+import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -28,13 +29,16 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
     var offset by rememberSaveable(dates, metric) { mutableIntStateOf(0) }
     var retry by remember { mutableIntStateOf(0) }
     val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("screen_review_sources")) {
+    LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review_sources")) {
+     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-        Text(stringResource(R.string.review_source_heading), style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.semantics { heading() })
-        Text(stringResource(metric.kind.label()))
-        Text(stringResource(R.string.memory_review_range, dates.start.format(format), dates.through.format(format)))
-        Text(zone.id, style = MaterialTheme.typography.bodySmall)
+        AppSectionHeading(stringResource(R.string.review_source_heading))
+        LumaSectionSurface {
+            Text(stringResource(metric.kind.label()), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.memory_review_range, dates.start.format(format), dates.through.format(format)),
+                style = MaterialTheme.typography.bodyMedium)
+            Text(zone.id, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         key(dates, metric, zone, offset, retry) {
             val flow = remember(repository) { observeReviewSources(repository, dates, zone, metric, offset) }
             val state by flow.collectAsStateWithLifecycle(ReviewSourcesState.Loading)
@@ -58,7 +62,9 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                         if (page.offset > 0) item { TextButton(onClick = { offset = maxOf(0, page.offset - 50) }, modifier = Modifier.testTag("review_source_previous")) { Text(stringResource(R.string.review_source_previous_page)) } }
                         items(page.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { row ->
                             Column {
-                                Text(row.event.occurredAt.atZone(zone).toLocalDate().format(format))
+                                Text(row.event.occurredAt.atZone(zone).toLocalDate().format(format),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 EventCard(row, zone, onOpen = { onEvent(row) },
                                     openActionLabel = if (row.journal != null) R.string.journal_open else R.string.event_open,
                                     onMemory = onMemory?.let { { it(row) } })
@@ -71,6 +77,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                 }
             }
         }
+     }
     }
 }
 internal fun ReviewMetricKind.label(): Int = when (this) {
