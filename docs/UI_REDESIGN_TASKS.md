@@ -1,191 +1,176 @@
-# App-wide visual redesign tasks
+# App-wide UI redesign tasks
 
-Approved 22 October 2026. Use the supplied Today screenshot for the light
-appearance and the dark-screen overview below for the dark appearance. Redesign
-both themes across the app while retaining the theme selector and existing
-product behavior.
+Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-redesign/README.md), with current app behavior checked against the source. This replaces the previous overview and removes its blanket approval statement. This is a documentation deliverable; application implementation has not started.
 
-## Light screens overview
+## Scope and reference decisions
 
-These are visual and content-hierarchy references. Example people, titles,
-dates and measurements must come from saved data in the finished app. Do not
-hard-code sample records or present metrics the app does not calculate.
+- Required tasks update both themes while retaining product behavior, route IDs, dates, drafts, counts, permissions and privacy guarantees.
+- Every task below has a specification and implementation plan. T32 remains the parent rollout task and is split into T32-A/B/C/D for reviewable implementation.
+- New features and behavior changes implied by the mockups are optional, deferred by default and described explicitly below. They do not block the base redesign.
+- `timeline-light.html` duplicates `review-light.html`; use `timeline-light.png` for composition and the shared light tokens. Source assets remain unchanged.
+- Today, Timeline and Review have direct references. All other screens use the shared system; there are no supplied More/Settings/editor mockups.
+- Keep factual local-data wording; never copy the unsupported “Encrypted on-device” claim, fabricated metrics, sample records or stock photos into production.
 
-### Habits and daily tasks — Today
+The [reference brief](luma-redesign/README.md) defines visual precedence, palette, typography, spacing, source hashes, product differences and common acceptance rules. Read it with each task spec.
 
-- Show scheduled Water (`2 of 8`) and Neck Mobility (`1 of 5`) with smooth
-  progress bars, clear status tags, tactile `+1` actions and the timezone badge
-  (example: Asia/Tehran).
-- Separate overdue, today and undated task cards, with clear urgency badges and
-  clean checkboxes. Example Persian titles are `متن قرارداد`, `تستتتت`,
-  `تسک سوم` and `تسک بدون زمان`.
-- Include a Health Connect activity card (example: 36 steps) and a shortcut to
-  the saved daily summary.
+## Required backlog
 
-### Timeline and activity log
+Status vocabulary: **pending**, **in progress**, **implemented (validation pending)**, **complete**. A task is complete only when its acceptance scenarios have recorded passing evidence. A blocked/unavailable check is **NOT RUN**, not a pass.
 
-- Use a continuous chronological stream with icon badges for time-anchored habit
-  completions. Examples: 13:59 Neck Mobility, 13:59 Water and 09:38 Morning Water.
-- Pair editorial journal cards (example: “Afternoon quiet in the courtyard”)
-  with available Health Connect step counts and a prominent Quick Capture action.
+| ID | Task | Depends on | Status | Specification | Implementation plan |
+| --- | --- | --- | --- | --- | --- |
+| T30 | Shared visual system and app shell | None | pending | [Spec](superpowers/specs/2026-10-22-t30-shared-visual-system-design.md) | [Plan](superpowers/plans/2026-10-22-t30-shared-visual-system.md) |
+| T31 | Today visual hierarchy | T30 | pending | [Spec](superpowers/specs/2026-10-22-t31-today-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t31-today-redesign.md) |
+| T32 | Remaining routes rollout coordinator | T30; complete T32-A through T32-D before T33 | pending | [Spec](superpowers/specs/2026-10-22-t32-remaining-routes-design.md) | [Plan](superpowers/plans/2026-10-22-t32-remaining-routes.md) |
+| T32-A | Timeline stream and editorial cards | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-a-timeline-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-a-timeline-redesign.md) |
+| T32-B | Weekly Review modules and comparisons | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-b-review-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-b-review-redesign.md) |
+| T32-C | More, catalogs, search, lists and settings | T30 | pending | [Spec](superpowers/specs/2026-10-22-t32-c-supporting-screens-design.md) | [Plan](superpowers/plans/2026-10-22-t32-c-supporting-screens.md) |
+| T32-D | Editors, details, sheets and dialogs | T30; consume T32-A EventCard treatment | pending | [Spec](superpowers/specs/2026-10-22-t32-d-editors-details-modals-design.md) | [Plan](superpowers/plans/2026-10-22-t32-d-editors-details-modals.md) |
+| T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | pending | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
 
-### Weekly review and analytics
+### T30 — Shared visual system and app shell
 
-- Show the active week and previous-period comparison (example: October 19–22
-  versus October 12–15, 2026).
-- Group the review into a week-at-a-glance summary, saved usage/Health Connect
-  signals with mini charts, and people/place comparisons. Example values are
-  four entries, 13 habit logs, 12,639 steps and 16h 41m screen time.
-- Treat “100% streak” as illustrative only. Show a streak metric only if its
-  calculation and source data are defined and implemented; otherwise use the
-  existing habit/review metrics and mood check-in prompt.
+Replace the existing green-led appearance with a coherent warm-paper/obsidian system and editorial typography across existing components.
 
-### People, places and settings — More
+**Scope:** Use the role mapping and component measurements in the reference brief. Keep `LifeOsTheme(content: @Composable () -> Unit)` and the stored `AppTheme` values unchanged. Define typography and shapes centrally, not inside routes.
 
-- Present People and Places as a searchable segmented directory, with a `+ New
-  person` action and example cards for Farshad, Maede and Tehran Metro.
-- Keep System/Light/Dark theme choices, language selection, widget settings,
-  on-device backup/restore and local privacy controls easy to find. Preserve
-  English, Persian/RTL and French support.
-- Explain that records stay on device and cloud sync is not provided. Make
-  manual backup/export behavior clear, including that ZIP backups are unencrypted.
+**Acceptance:** Theme switches persist through recreation and System follows the system appearance; all primary destinations still resolve. All ordinary/selected/error/disabled/focus surfaces are distinguishable in both themes; measured role pairs meet the shared contrast thresholds. Font resources render offline; French accents and mixed Persian/Latin names and units are readable without truncating actions. The final row, snackbar and capture FAB remain clear of system bars and each other at all required widths.
 
-### Light design system
+### T31 — Today visual hierarchy
 
-- Palette: warm paper surface (`#fff8f4`), terracotta ember (`#ba4d28`) and soft
-  sage (`#526350`), mapped to Material 3 roles and checked for accessible contrast.
-- Use rounded containers and expressive pill chips through shared shape tokens,
-  Material 3 floating actions and Newsreader editorial serif headings. Keep data,
-  controls and localized Persian text clear and readable.
+Make date context, capture, habit progress, tasks and recent saved records scan clearly while preserving the bounded Today previews.
 
-## Dark screens overview
+**Scope:** Order: title/date/current-day notice; habit tracking-zone context; existing Mood/Journal/Memory capture choices; scheduled habit preview; task preview; recent entries and saved daily summary. Tracking-zone text must come from habit state, not the device zone or the sample Asia/Tehran.
 
-These are visual and content-hierarchy references. Values and records shown in
-the finished app come from the user's saved data; example values below must not
-be hard-coded as real records.
+**Acceptance:** Two fixture habits (2/8 and 1/5) show exact 25% and 20% progress with separate open/log actions; pending, failure and undo preserve stored counts. More than two habits/three eligible tasks retains full totals and reachable View all/recovery actions; no completed or undated task appears in the base Today query. Navigating to a historical date shows explicit context and correct capture choices, hides Today tasks and never displays the previous date’s habit rows beneath a new date. Empty/loading/error/missing-summary/integration-disabled states remain useful and all existing callbacks work in both themes and RTL.
 
-### Habits and daily tasks — Today
+### T32 — Remaining routes rollout coordinator
 
-- Use a deep obsidian canvas (`#131413`) with elevated surfaces (`#1b1c1b`,
-  `#262726`), sage mint (`#94b49f`) and terracotta ember (`#ff8c69`) for progress
-  and action emphasis.
-- Make Water progress easy to scan (`2 of 8 glasses`) and Neck Mobility
-  (`1 of 5 sessions`), with tactile `+1` actions and an active timezone pill.
-  The supplied example is Asia/Tehran.
-- Group tasks into overdue, today and undated sections. Keep overdue badges,
-  checkboxes and Persian task titles legible in dark surfaces. Example titles are
-  `متن قرارداد`, `تستتتت` and `تسک سوم`.
+Replace the old catch-all remaining-screen task with four independently reviewable screen-family tasks and a route coverage ledger.
 
-### Timeline and activity log
+**Scope:** T32 is a coordination task, not permission to redesign unrelated behavior. T32-A owns Timeline, T32-B Review, T32-C supporting browse/settings surfaces and T32-D capture/detail/modal surfaces.
 
-- Use a chronological dark stream with clear event nodes for hydration,
-  habit completions and Health Connect activity records, including midnight
-  cadence baselines.
-- Give journal entries an editorial card treatment that can accommodate a photo
-  thumbnail and location metadata, with a visible Quick Capture action. The
-  supplied example title is “Afternoon quiet in the courtyard.”
+**Acceptance:** Every route and major sheet/dialog has one implementation owner and an evidence row; absent providers are recorded rather than silently omitted. T32-A/B/C/D acceptance is verified individually; no legacy hard-coded screen palette remains except explicitly documented platform/launcher surfaces. Optional feature omissions appear as intentional differences, not failed visual requirements.
 
-### Weekly review and analytics
+### T32-A — Timeline stream and editorial cards
 
-- Show the selected review period and period-over-period changes with distinct,
-  readable delta badges. The supplied period example is October 19–22, 2026.
-- Use high-contrast charts for cadence, screen-time and activity data. Example
-  values include 12,639 steps, 16h 41m of screen time and Tehran Metro transit;
-  render actual saved metrics and unavailable states in the app.
+Present the existing mixed chronological feed with a continuous visual rail, type nodes and readable editorial cards.
 
-### People, places and settings — More
+**Scope:** Use timeline-light.png for light structure, timeline-dark.png/HTML for dark structure and T30 for shared roles. Do not use the mislabeled light HTML as a Timeline design.
 
-- Use elevated directory cards for people and places, with search and filter
-  controls where those features exist. The supplied examples are Farshad, Maede
-  and Tehran Metro.
-- Keep theme and language selection, on-device backup/export and local privacy
-  controls easy to find. Show the selected Dark theme state clearly and the
-  supported languages, including English, فارسی/RTL and French.
-- Use local-data/privacy indicators that reflect the documented safeguards;
-  don't imply hardware-backed encryption or encrypted backups.
-- The supplied export example lists Markdown and ZIP. ZIP backup is supported;
-  Markdown export is not currently implemented and must not appear as an active
-  option unless it receives a separate implementation task.
+**Acceptance:** A mixed fixture of timestamped entries, equal-time logs, date-only logs and imported activity retains original order and correct open/correction targets. Paging beyond the loaded window creates no duplicate items, disconnected hit targets or hidden retry controls; last item clears the FAB. An empty/error day retains Search, View options and recovery; toggling usage persists across day changes/recreation. Shared EventCard still opens/edits/promotes the correct record in Today, search and detail/history consumers.
 
-### Dark design system
+### T32-B — Weekly Review modules and comparisons
 
-- Palette: obsidian background (`#131413`), elevated containers (`#1b1c1b`,
-  `#262726`), terracotta glow (`#ff8c69`), sage mint (`#94b49f`) and warm cream
-  typography (`#ede0d8`), mapped through Material 3 roles with verified contrast.
-- Typography: editorial Newsreader serif headlines with a clean sans-serif for
-  body copy, controls and data metrics. Bundle fonts for offline use and provide
-  a suitable fallback for Persian/RTL text.
+Apply the editorial Review layout to existing saved metrics, comparison periods, source links and section navigation.
 
-Status: pending, in progress, implemented (validation pending), or complete.
-A task is complete only after its acceptance criteria have been verified.
+**Scope:** Use a rounded selected-period container, explicit partial-week badge and comparable previous-period caption. Keep saved/restored week, current comparison calculation and all section anchors.
 
-## T30 — Shared visual system for light and dark themes
+**Acceptance:** Partial and complete weeks retain their original ranges and comparison calculations, and section selection/restoration still works. No-data, recorded zero, fractional activity and incomplete usage fixtures retain their exact meaning, units and explanations in both appearances. All current/previous source links, View habits, memory open/retry, mood check-in and setup links reach the original routes. Base UI contains no “100% streak”, fabricated active-day badge, invented chart or unsupported pinned-memory model.
 
-Status: pending
+### T32-C — More, catalogs, search, lists and settings
 
-Scope: Material 3 color roles, type hierarchy, spacing, shapes and reusable
-surface/component treatments for both screen overviews. Define purposeful light
-and dark palettes, including warm paper (`#fff8f4`), light terracotta (`#ba4d28`),
-light sage (`#526350`), obsidian, elevated charcoal, dark terracotta, dark sage
-and warm cream colors. Preserve the existing System/Light/Dark setting. Use
-bundled Newsreader serif headlines and sans-serif data typography with a
-Persian/RTL-compatible fallback.
+Carry the new visual language to supporting browse and settings screens without introducing new directory features.
 
-Acceptance: shared tokens and components express both references consistently
-without screen-local substitute palettes. Text, icons, states, focus and disabled
-controls remain legible and differentiated in both themes. Fonts work offline and
-Persian/RTL content remains readable. The redesign does not change data,
-navigation or feature behavior.
+**Scope:** More retains Tasks, People & Places and Settings. Restyle the existing People/Places tabs, independent saved search queries, Create and history/edit routes; search and catalog switching already exist and are required preservation, not a new optional feature.
 
-## T31 — Today screen redesign
+**Acceptance:** More and all catalog/search/list routes retain working selection, query restoration, Create/Edit/Back and no-results behavior in all three languages. Settings expose the same choices and safeguards; rejected/unavailable integration states and backup/restore progress/results remain visible. Source/usage/memory-review routes preserve pagination, period context and record navigation. No unseen screen is described as a supplied design; route coverage distinguishes shared-style extrapolation and out-of-scope launcher surfaces.
 
-Status: pending
+### T32-D — Editors, details, sheets and dialogs
 
-Depends on: T30.
+Make capture/edit/detail surfaces and modal UI consistent while retaining drafts, validation, editing and recovery.
 
-Scope: rebuild Today’s visual hierarchy around both references: date navigation
-and tracking-zone context, quick capture actions, scheduled habit progress,
-overdue/today/undated task groups, recent entries, Health Connect activity and
-the saved daily summary. Use distinct habit progress colors and legible localized
-task badges and checkboxes in both themes. Keep the existing navigation and entry
-points, adapting them to Luma’s Material 3 components.
+**Scope:** Use shared editor headers, text-field roles, rounded optional sections and consistent Save/Cancel/Back actions. Keep required fields, limits, validation timing and disabled/pending behavior.
 
-Acceptance: current and selected dates, habit logging/progress, task completion
-and editing, capture shortcuts, recent-entry navigation and summary details retain
-their current behavior. Empty, loading and error states use the same visual system.
+**Acceptance:** Mood/journal/memory/task/habit/person/place create and edit preserve saved values, validation and drafts through recreation and Back/Cancel. Imported/read-only/missing/deleted details retain correct actions and return paths; deleting a detail does not leave a stale screen. Long text, IME, Persian RTL and 2.0 fonts keep Save/Cancel, photo retry, picker results and dialog confirmation reachable. Quick Capture retains date selection across rotation and emits no record on dismissal; successful saves retain single existing feedback.
 
-## T32 — Redesign remaining app screens and flows
+### T33 — Accessibility, regression and visual acceptance
 
-Status: pending
+Produce auditable acceptance evidence for the required redesign and separately record any opted-in feature results.
 
-Depends on: T30.
+**Scope:** Create `docs/luma-redesign/acceptance-2026-10-22.md` and `docs/luma-redesign/evidence/<actual-run-date>/`. Record actual run date/build SHA/device/API, locale, theme, window dp and font scale. The filename is the planning baseline, not a claim tests ran on that date.
 
-Scope: apply the shared light and dark systems to all remaining user-facing
-routes, including Timeline, Habits, Review, More, Settings, catalogs, capture/edit
-forms, details, dialogs and sheets. Give Timeline a readable chronological stream
-and editorial journal cards; give Review clear period comparisons and grouped
-usage, health and people/place metrics; and give More searchable people/place
-directories plus clear theme, language, widget, export and privacy controls.
-Preserve each screen’s content hierarchy, navigation, actions and
-privacy/integration explanations.
+**Acceptance:** Evidence includes six primary-screen captures, the route ledger, measured color-pair results and a reproducible environment/fixture description. Relevant existing unit/instrumented regression suites pass; any blocked build/device checks have explicit NOT RUN entries. No unresolved clipping, inaccessible action, false metric/privacy statement, obscured final row or broken state/navigation remains in required scope.
 
-Acceptance: no user-facing route is left with an unrelated legacy palette or
-component treatment. Existing actions, drafts, selected dates, access states and
-content remain available; charts and activity cards reflect saved data and retain
-unavailable states. Do not display a streak or other metric that the app does not
-calculate. The redesign introduces no new permissions or data requirements.
+## Optional features and behavior changes
 
-## T33 — Visual redesign accessibility and release acceptance
+All optional tasks are **deferred / not selected**. Each has a reviewable spec and plan, but documenting it does not authorize implementation. Choose only the additions wanted; the base UI uses existing behavior when an option is omitted.
 
-Status: pending
+| ID | Optional change | Why it is optional | Depends on | Specification | Implementation plan |
+| --- | --- | --- | --- | --- | --- |
+| O01 | four-tab navigation | Removes the existing primary Habits destination and changes back-stack/selection behavior. | T30 and T32-C | [Spec](superpowers/specs/2026-10-22-o01-optional-four-tab-navigation-design.md) | [Plan](superpowers/plans/2026-10-22-o01-optional-four-tab-navigation.md) |
+| O02 | Timeline event-type filters | Adds a new query/count/paging state, not merely chip styling. | T32-A | [Spec](superpowers/specs/2026-10-22-o02-optional-timeline-filters-design.md) | [Plan](superpowers/plans/2026-10-22-o02-optional-timeline-filters.md) |
+| O03 | expanded Today task panel | Changes Today eligibility, completion browsing, counts and paging. | T31 | [Spec](superpowers/specs/2026-10-22-o03-optional-today-task-panel-design.md) | [Plan](superpowers/plans/2026-10-22-o03-optional-today-task-panel.md) |
+| O04 | Timeline photo previews | Adds image decoding, loading and privacy/performance behavior to the feed. | T32-A | [Spec](superpowers/specs/2026-10-22-o04-optional-feed-photo-previews-design.md) | [Plan](superpowers/plans/2026-10-22-o04-optional-feed-photo-previews.md) |
+| O05 | saved-data Review charts | Requires real daily projections, especially for currently aggregate-only activity. | T32-B | [Spec](superpowers/specs/2026-10-22-o05-optional-review-charts-design.md) | [Plan](superpowers/plans/2026-10-22-o05-optional-review-charts.md) |
+| O06 | defined cadence and active-day metrics | Adds new calculations and definitions; source “streak” wording cannot be copied as-is. | T32-B | [Spec](superpowers/specs/2026-10-22-o06-optional-review-cadence-design.md) | [Plan](superpowers/plans/2026-10-22-o06-optional-review-cadence.md) |
+| O07 | reflection shortcut and editorial quotes | Adds an alternate capture entry point and new editorial content. | T31 and T32-A | [Spec](superpowers/specs/2026-10-22-o07-optional-reflection-quotes-design.md) | [Plan](superpowers/plans/2026-10-22-o07-optional-reflection-quotes.md) |
 
-Depends on: T31 and T32.
+### O01 — four-tab navigation
 
-Scope: verify the redesigned routes in light and dark themes, English, French and
-Persian/RTL, compact and expanded widths, and larger system font scales. Capture
-dated emulator evidence and run relevant UI/accessibility regression checks.
+**Proposed change:** Match the four reference tabs while keeping Habits reachable as a secondary destination.
 
-Acceptance: layouts remain usable without clipped or obscured content, interactive
-targets and contrast meet accessibility requirements, RTL order and localized text
-remain correct, and all existing navigation and feature flows pass. Record any
-unavailable device checks as NOT RUN rather than implying acceptance.
+Change primary navigation to Today, Timeline, Review, More; add a clearly labeled Habits row to More and preserve Today/Review View habits entry points. Retain the `habits` route and old saved-back-stack resolution; do not delete its screen, widget/deep-link targets or selected-date contract. Return from Habits preserves the originating destination and selected date. A restored Habits destination must show a coherent navigation state with More selected and a usable Back path. This is a navigation behavior change, excluded from required visual acceptance. No account/profile destination is added.
+
+**Acceptance if selected:** Exactly four primary actions remain and Habits can be reached from More, Today, Review and existing widget links. Restoring an old Habits stack and switching tabs retains dates/state and a valid Back path.
+
+### O02 — Timeline event-type filters
+
+**Proposed change:** Add functional All events, Reflections, Habits and Health filters over the full paged feed.
+
+Introduce a single-selection `TimelineFilter` enum: ALL, REFLECTIONS, HABITS, HEALTH. Reflections includes manual mood/journal/memory entries; HABITS standalone habit logs; HEALTH imported Health Connect activity only. Existing app usage remains available only under ALL when its persisted switch is on. Apply the filter at repository query/count/window level before paging, not to currently loaded rows. Extend TimelineRepository.feed and implementations using the same enum contract; default ALL keeps every existing caller compatible. Store selected filter in SavedStateHandle, retain across day navigation/recreation and reset paging on change. Counts describe the filtered query; keep all-events counts separate if shown, labeled explicitly. Type-specific empty/retry states retain visible filter controls and an All events escape. No sample sync event or hydration-specific type is introduced.
+
+**Acceptance if selected:** A matching record outside the initial 150-row window is found by the appropriate filter; total count and page controls are correct. Rapid day/filter changes never show stale results; app-usage preference remains independent and restored correctly.
+
+### O03 — expanded Today task panel
+
+**Proposed change:** Add the full task-status switch and undated group pictured on Today without silently changing the existing due-task preview.
+
+Replace the bounded preview only when this option is selected. Open shows overdue, due-today and undated open tasks; future-dated open tasks remain in View all. Completed shows completed tasks through existing repository list semantics, labeled independently of the due summary. Keep the headline count limited to open overdue/due-today items. Open tab count includes undated items; never equate these two counts. Use bounded repository-backed prefixes, initially 50 and increasing by 50 up to 300 with explicit Load more, not an unbounded collection. Introduce TodayTaskPanelFilter OPEN/COMPLETED and a saved selected filter; reset the prefix limit on date/status changes. Preserve historical-day hiding and all pending/conflict/missing/retry/reopen feedback, including when a completed item disappears from the active list. Continue to expose View all. Extend repository queries only if current list contracts cannot express this panel; no new persistence fields or migration are needed.
+
+**Acceptance if selected:** Three due/overdue plus one undated open task yields headline 3 and Open (4); future-dated tasks do not enter this panel. More than 50 eligible tasks pages correctly; completing/reopening/filter switching/recreation keeps totals and recoverable feedback coherent.
+
+### O04 — Timeline photo previews
+
+**Proposed change:** Show the first saved photo attachment inside eligible Timeline editorial cards using local preview data.
+
+Add an optional trailing composable slot `photoPreview: (@Composable () -> Unit)? = null` to EventCard so existing consumers remain source-compatible. Timeline supplies a shared local preview component only for records with photos; Today/search remain metadata-only by default. Create `ui/photos/FeedPhotoPreview.kt` with `FeedPhotoPreview(repository: PhotoRepository, photo: PhotoAttachment, modifier: Modifier = Modifier)`. Render one 16:9 cropped image with a 160 dp maximum height; clicking the card keeps its existing detail action. Use PhotoRepository.preview on a background dispatcher with bounded decoded dimensions, lifecycle cancellation and attachment-ID keyed state. Loading/missing/corrupt previews fall back to photo-count metadata; never retain an image from another record. No remote stock images, new storage permission, full-screen viewer, encryption badge or automatic import. Add localized attachment semantics and avoid a redundant focus target.
+
+**Acceptance if selected:** Saved preview appears offline and opens the same source record; no-photo/loading/corrupt/deleted attachments retain a usable card. Paging/rebinding rapidly between records never swaps thumbnails or decodes full-resolution images on the main thread.
+
+### O05 — saved-data Review charts
+
+**Proposed change:** Add small accessible charts backed by saved daily usage/activity data, with gaps instead of invented observations.
+
+Create a pure `ReviewChartPoint(date: LocalDate, value: Double?)` projection and a `ReviewSignalChart(points: List<ReviewChartPoint>, unitLabel: String, modifier: Modifier = Modifier)` component. Use one point per selected-period date, ascending by date. Null is unknown, not zero. For usage use existing saved daily report totals only when known; preserve COMPLETE/PARTIAL/UNAVAILABLE state in adjacent text. For activity, extend WeeklyReview with saved per-day totals grouped by type/unit/source; the current aggregate activity model cannot support a genuine sparkline. No interpolation over gaps, smoothing that implies intermediate samples, extrapolated future dates or mixed-unit/source sums. Display isolated points honestly and an absence label when no values exist. Keep exact totals, sample counts, source actions and a textual date/value alternative. A chart cannot be the sole way to inspect a metric. No charting/network dependency is required; use Compose Canvas.
+
+**Acceptance if selected:** Missing dates remain gaps; recorded zero sits at baseline; fractional activity and period boundaries retain precision and grouping. Chart/text values reconcile with source data and existing weekly aggregates; TalkBack can inspect date/value alternatives.
+
+### O06 — defined cadence and active-day metrics
+
+**Proposed change:** Replace illustrative coaching claims with explicitly defined optional calculations over saved records and habit schedules.
+
+Call the habit metric “Scheduled habit-days completed”, never “streak”. Numerator: eligible non-skipped scheduled habit-days whose stored repetition count meets target; denominator: all non-skipped scheduled habit-days through the selected period end. Exclude upcoming and unscheduled days; no eligible denominator means unavailable, not 100%. Define active reflection days as distinct dates containing at least one manual mood/journal/memory record in the review zone. A promoted memory shares its event ID and counts once; imported activity/app usage and standalone habit logs do not create reflection days. Create pure domain review projection functions for the two metrics, expose their definitions in methodology and retain existing repetition totals. Aggregate daily cadence uses the same eligible-day rule; skipped/unscheduled/upcoming/unknown remain distinguishable. Do not add all-time streaks, motivational diagnoses or “on track”/“4 days running” claims. This option supplies truthful period metrics only; a future streak feature requires its own product rules.
+
+**Acceptance if selected:** Multiple repetitions of a single scheduled habit-day never inflate the numerator; skipped/future/unscheduled days and denominator zero are handled by the defined rules. Active days de-duplicate entries by date in review zone, exclude imports and remain correct across midnight/timezone boundaries.
+
+### O07 — reflection shortcut and editorial quotes
+
+**Proposed change:** Offer a clearly defined reflection shortcut and static editorial footer without presenting invented personal insight.
+
+Reflect opens the existing Journal editor using the same now/selected-date confirmation and draft behavior as Journal. It creates no record until Save and adds no new event type, AI service or automatic summary. If the fourth chip is included, label it “Reflect in journal” and preserve the existing Journal action so the difference is explicit. Treat this as an optional alternate entry point; omit it if a duplicate shortcut is not wanted. Use at most one bundled, translated, original editorial sentence per locale, identified as “Reflection prompt”. It is static editorial content, not attributed as the user’s own words or inferred from their records. Do not copy the reference quotation without confirmed reuse rights; do not invent source attribution. Footer remains secondary, accessible and clear of capture controls; it must not replace empty/error guidance.
+
+**Acceptance if selected:** Shortcut respects selected-date capture rules and cancellation/draft restoration; it makes no silent write. Quote/prompt works offline in all locales, is explicitly editorial and never claims a saved reflection or calculated cadence insight.
+
+## Excluded or unsupported mockup elements
+
+Do not add an account/profile, claim encryption, enable Markdown export, create a pinned-memory subsystem, infer hydration volume/first-glass status or turn a saved daily aggregate into a fabricated midnight activity. Review +Link/+Tag controls require a specific target record and flow; use existing editor linking instead of shipping placeholder actions. People/Places search and catalog switching already exist and belong to required preservation, not an optional feature proposal.
+
+## Execution order and acceptance
+
+1. Review the shared brief and T30; implement shared roles/components first.
+2. Implement T31 and T32-A/B/C/D using their paired plans; T32 maintains the route ledger and coordinates shared EventCard consumers.
+3. Run T33 against the required base. Record intentional differences for all unselected options.
+4. If any O-task is selected, implement its plan after its dependencies and rerun its affected acceptance scenarios plus the T33 checks for changed surfaces.
+
+These artifacts do not begin app implementation and do not claim build/device checks passed. Plans use focused regression and visual evidence, avoiding tests that only mirror spacing/color assignments.
