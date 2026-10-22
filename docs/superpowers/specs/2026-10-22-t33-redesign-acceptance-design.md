@@ -27,6 +27,7 @@ References: All six reference PNGs; reference-resolution brief. Read the [shared
 - Capture Today, Timeline and Review in light/dark English at 411 × 891 dp/font scale 1.0 using equivalent controlled records. Compare composition, type roles, surfaces and hierarchy rather than raw pixels against narrow 1600px-tall references.
 - For every route family, inspect English/French/Persian in both themes at 320 dp/2.0 and 840 dp width. Capture representative screenshots; the route ledger must record each route result, even when sharing family evidence.
 - Exercise empty/loading/error/retry/undo, unavailable/partial/zero integrations, historical date and partial week, long names/body/units, restored drafts and off-preview recovery. Check TalkBack order/names/states, keyboard focus, contrast, system bars and animation-disabled progress.
+- Include the corrected Timeline light date/count ribbon and the existing Quick Capture sheet in visual inspection; verify View options expands its actual controls, and capture dismissal writes nothing. Optional habit action O08 is absent unless selected.
 - Optional tasks appear in a separate acceptance section with their decision status. Four-tab mismatch, absent type filters/photo previews/streaks/charts/quotes are intentional in the required base.
 - Use PASS, FAIL or NOT RUN per check; missing device/tool/data is NOT RUN with a reason and follow-up. Do not mark release acceptance complete while required checks are unrun or failing. Never clear real user data for fixtures.
 

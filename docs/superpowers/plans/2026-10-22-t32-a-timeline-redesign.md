@@ -24,7 +24,7 @@
 ## Review focus
 
 - TimelinePagingRouteTest: stable keys/order across bounded windows, equal timestamps, date-only logs, usage toggle and selected-day restoration; error/empty retains controls.
-- Inspect decorative rail continuity and RTL placement, no extra semantic focus targets and last-row clearance above capture FAB.
+- Inspect light date/count ribbon wrapping, real View options expansion, decorative rail continuity/RTL placement, no extra focus targets and last-row clearance above capture FAB.
 - EventCardTest and HabitTimelineFlowTest: open/memory/correction targets retain record/log IDs, zone labels and exact activity units; standalone logs do not acquire inferred targets.
 - Inspect serif journal title/excerpt, metadata-only photo count and all non-journal card variants in both themes and shared consumers.
 - Long French/Persian at 320 dp/2.0, restored context and system/IME insets must retain every action and exact value.
@@ -53,7 +53,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: TimelinePagingRouteTest: stable keys/order across bounded windows, equal timestamps, date-only logs, usage toggle and selected-day restoration; error/empty retains controls.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Update TimelineRoute lazy-row wrappers and existing header/View options styling. Keep the pager and query unchanged; connect decorative rail segments without collecting a second feed.
+- [ ] Use the corrected timeline-light.html alongside its PNG to group date controls above counts/View options in a rounded ribbon; keep direct Search. Apply the spec’s 48/32 dp node-column adaptation, 8 dp gap, 2 dp rail, 16 dp row gap/padding and shared 24 dp radius. Keep the pager/query and real View options disclosure unchanged; omit an unmapped date dropdown and do not copy the HTML’s label-only Compact toggle. Connect decorative rail segments without collecting a second feed.
 - [ ] Rerun the affected regression tests and inspect: Inspect decorative rail continuity and RTL placement, no extra semantic focus targets and last-row clearance above capture FAB.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 

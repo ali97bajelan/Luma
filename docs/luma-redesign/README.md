@@ -11,9 +11,9 @@ A single all-app task would hide navigation/query changes; copying each mockup l
 ## Source resolution and precedence
 
 1. Existing product/data/privacy contracts govern what can be claimed or mutated; optional task specs explicitly identify any proposed changes.
-2. For visual composition, use the matching PNG; use corresponding valid HTML to extract roles, typography and spacing. Shared role decisions below resolve differences between files and provide the theme adaptation for missing markup.
-3. `timeline-light.html` is byte-for-byte identical to `review-light.html` (SHA-256 in inventory below), with a Review title and content. It is not a valid light Timeline reference. `timeline-light.png` is a real Timeline screen and supplies its composition; apply shared light tokens and the valid dark Timeline structure. Keep source assets unchanged.
-4. There are no More, Settings, Habits list, editor, detail or launcher-widget mockups in this folder. Their required treatment is an extrapolation of the shared system, not an invented source reference.
+2. For visual composition, use the matching PNG; use corresponding valid HTML to extract roles, typography and spacing. Shared role decisions below resolve differences between the six valid screen HTML documents.
+3. The corrected `timeline-light.html` is a distinct, valid Timeline reference. Use it with `timeline-light.png` for the grouped date/count ribbon, type chips, rail/node geometry, editorial card metadata, photo placement and capture styling. The hidden capture sheet is also a reference; its open/close script is illustrative. The View options script only renames the control “Compact” and does not implement a compact layout. Preserve the app’s working disclosure. Keep source assets unchanged by documentation edits.
+4. There are no More, Settings, Habits list, editor, detail or launcher-widget screen mockups in this folder. Their required treatment extrapolates the shared system. Quick Capture is the exception among modal flows: corrected timeline-light.html contains a hidden reference sheet, whose styling informs T32-D while habit shortcuts remain optional O08.
 5. Source text, people, Persian task names, dates, step counts, chart shapes, hydration volumes, progress and quoted prose are illustrative. Fixtures may reproduce representative states in a dedicated test install; production renders actual saved data.
 
 ## Visual observations
@@ -21,7 +21,7 @@ A single all-app task would hide navigation/query changes; copying each mockup l
 | Family | Light reference | Dark reference | Shared composition |
 | --- | --- | --- | --- |
 | Today | Warm paper, light nested habit/task surfaces, sage/ember progress and rounded controls | Obsidian canvas, elevated group cards, muted nested rows and mint/ember progress | Date and tracking context; capture chips; habit count/target with +1; task groups; recent saved records and summary |
-| Timeline | Thin left rail, pastel type nodes, soft rounded editorial cards and photo crop | Dark rail/nodes, charcoal cards, warm serif journal title and ember capture action | Date/search/view controls; mixed feed; saved source and time labels; contextual capture above navigation |
+| Timeline | Grouped date/count ribbon, thin left rail, pastel type nodes, soft rounded editorial cards, photo crop and hidden capture sheet | Dark rail/nodes, charcoal cards, warm serif journal title and ember capture action | Date/search/view controls; mixed feed; saved source and time labels; contextual capture above navigation |
 | Review | Soft period selector, rounded summary/signal/archive/catalog modules and comparison chips | Elevated dark modules, mint/ember accents, high-contrast value hierarchy | Partial-week context, section shortcuts, entry/habit/mood summary, saved signals, comparison and people/place provenance |
 
 PNG dimensions are Today 380/381 × 1600, Timeline 466/430 × 1600 and Review 272/342 × 1600 (light/dark). These are tall reference captures, not dp or fixed target viewport specifications. Their small text/controls and clipping are not accessibility requirements.
@@ -34,7 +34,7 @@ Retain existing reading width 600 dp and 20 dp page gutter; group gap 24 dp, sec
 
 ### Color role baseline
 
-The HTML light primary is `#993612`; the old backlog’s `#ba4d28` is an ember accent seen in light Timeline treatment. Use these as distinct roles rather than assigning multiple primaries per screen. Dark HTML includes a malformed `on-surface-variant: dcc0b9`; normalize it to `#dcc0b9`. Values below are implementation targets, not a claim that contrast has already been measured. If an intended pair fails, adjust the foreground/border and document the measured final pair in T33 while retaining the palette direction.
+The corrected Timeline HTML confirms light primary `#993612` and primaryContainer `#ba4d28` with onPrimaryContainer `#fff1ed`. Use its primaryContainer, tertiaryContainer, outlineVariant and inverse role pairs app-wide; use primaryFixed/onPrimaryFixed for pale terracotta chips instead of treating the pale fill as primaryContainer. Keep one shared palette rather than per-screen substitutes. The secondary-container foreground below is deliberately darker than the HTML’s `#566754` for legibility. Dark HTML includes a malformed `on-surface-variant: dcc0b9`; normalize it to `#dcc0b9`. Values below are implementation targets, not a claim that contrast has already been measured. If an intended pair fails, adjust the foreground/border and document the measured final pair in T33 while retaining the palette direction.
 
 | Role | Light | Dark |
 | --- | --- | --- |
@@ -47,15 +47,16 @@ The HTML light primary is `#993612`; the old backlog’s `#ba4d28` is an ember a
 | onSurface | `#1e1b18` | `#ede0d8` |
 | onSurfaceVariant | `#57423b` | `#dcc0b9` |
 | primary / onPrimary | `#993612` / `#ffffff` | `#ffb5a0` / `#5f1600` |
-| primaryContainer / onPrimaryContainer | `#ffdbd1` / `#3a0a00` | `#ff8c69` / `#5f1600` |
+| primaryContainer / onPrimaryContainer | `#ba4d28` / `#fff1ed` | `#ff8c69` / `#5f1600` |
+| primaryFixed / onPrimaryFixed | `#ffdbd0` / `#3a0b00` | `#ffdbd1` / `#3a0a00` |
 | secondary / onSecondary | `#526350` / `#ffffff` | `#aeceb8` / `#193627` |
 | secondaryContainer / onSecondaryContainer | `#d2e5cd` / `#304d3c` | `#304d3c` / `#c9ead4` |
 | tertiary / onTertiary | `#705125` / `#ffffff` | `#ffb59f` / `#5e1700` |
-| tertiaryContainer / onTertiaryContainer | `#ffddb2` / `#291a06` | `#782102` / `#ffdbd0` |
-| outline / outlineVariant | `#8b726a` / `#ddc1b8` | `#a48b84` / `#56423d` |
+| tertiaryContainer / onTertiaryContainer | `#8b693b` / `#fff1e5` | `#782102` / `#ffdbd0` |
+| outline / outlineVariant | `#8b726a` / `#dec0b7` | `#a48b84` / `#56423d` |
 | error / onError | `#ba1a1a` / `#ffffff` | `#ffb4ab` / `#690005` |
 | errorContainer / onErrorContainer | `#ffdad6` / `#410002` | `#93000a` / `#ffdad6` |
-| inverseSurface / inverseOnSurface | `#34302d` / `#fff8f4` | `#ede0d8` / `#30312f` |
+| inverseSurface / inverseOnSurface | `#33302d` / `#f7efea` | `#ede0d8` / `#30312f` |
 | decorative sage accent | `#526350` | `#94b49f` |
 | decorative ember accent | `#ba4d28` | `#ff8c69` |
 
@@ -72,9 +73,12 @@ Use role-paired text rather than a decorative accent as arbitrary foreground. Di
 | Review sparklines | Daily usage evidence, aggregate activity and per-habit week slots | Keep supported metrics/slots and sources; no fake chart | O05 |
 | “100% streak”, active days and consistency coaching | Repetition/scheduled-day summaries; no defined new streak contract | Keep current summaries; omit new claims | O06 |
 | Reflect chip and cadence quotation | Mood/Journal/Memory capture | Keep three choices and omit synthetic insight footer | O07 |
+| Water/Stretch shortcuts in capture sheet | No habit entry in current Quick Capture sheet | Retain current choices; no hard-coded sample habits | O08 |
+| View options → Compact script | Real View options disclosure exists | Preserve actual disclosure; no label-only toggle or implied compact-mode feature | T32-A |
+| Calendar dropdown glyph | Existing day navigation | Preserve existing date actions; omit unmapped picker affordance | T32-A |
 | People/Places search and switching | Already implemented with separate saved queries | Restyle and preserve; no optional feature needed | T32-C |
 | Profile avatar / unnamed tune action | No account/profile product | Omit unless mapped to an existing clearly named action | Excluded |
-| “Encrypted on-device” / lock badge | Local storage; ZIP backup unencrypted | Use factual local-storage copy; no encryption claim | Excluded |
+| “Encrypted on-device” / “Encrypted automatically” / lock badges | Local storage; ZIP backup unencrypted | Use factual local-storage copy; no encryption claim | Excluded |
 | +Link/+Tag in Review | Linking is available through editors | Preserve editor/source routes; omit a data-free direct-link action | Excluded |
 | “Pinned spotlight”, “Formal Volumes” | Latest saved memory and existing journal/memory counts | Keep actual existing names/semantics | T32-B |
 | Markdown export in old backlog | Not implemented; not present in supplied designs | Do not add active export format | Excluded |
@@ -106,7 +110,7 @@ All specs/plans created in this documentation pass are proposed artifacts. The p
 | [review-light.png](review-light.png) | e04d6d907c0d5ccf10039b2f2fa7f0b609cdddf453184961645ae15e7c3e03a6 |
 | [timeline-dark.html](timeline-dark.html) | 5f690f960c21e5f0c698b8e441755a69a90a86a684965ff401ed87dbe0d70316 |
 | [timeline-dark.png](timeline-dark.png) | b7f70ea0ae85e19aa6ddd0171a7f116dc9f258dd9e788d06d8f6da9101ac12e0 |
-| [timeline-light.html](timeline-light.html) | 2631a457c0a969bbcee23350a75b9d29df20b71cf4e01f902a0ec91a81147c57 |
+| [timeline-light.html](timeline-light.html) | 0b0de9c044a9ee9af36d6c7cd33aeb03918078077a2155964fae590667fb4e69 |
 | [timeline-light.png](timeline-light.png) | 0abe3f9556758719fda3725dc1ca1717fe36f753a40d3953dac8837e3d4b2ae8 |
 | [today-dark.html](today-dark.html) | 665b2c69623dd003d75e3164d90dbd146f9104156b528188a98816434adb9dab |
 | [today-dark.png](today-dark.png) | c5fa90790c47e7382ac0d82e98205ee2c355969e95bebad8a99e38c99df1015b |

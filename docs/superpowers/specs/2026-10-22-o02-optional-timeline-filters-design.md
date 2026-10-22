@@ -8,7 +8,7 @@ Depends on: T32-A
 
 Add functional All events, Reflections, Habits and Health filters over the full paged feed.
 
-References: timeline-light.png; timeline-dark PNG/HTML filter chips. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+References: timeline-light.png + corrected timeline-light.html; timeline-dark PNG/HTML filter chips. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
 
 ## Global constraints
 

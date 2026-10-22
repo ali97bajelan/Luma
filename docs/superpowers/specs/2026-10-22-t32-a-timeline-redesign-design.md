@@ -8,7 +8,7 @@ Depends on: T30
 
 Present the existing mixed chronological feed with a continuous visual rail, type nodes and readable editorial cards.
 
-References: timeline-light.png; timeline-dark.png + timeline-dark.html; timeline-light.html is invalid for Timeline. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+References: timeline-light.png + corrected timeline-light.html; timeline-dark.png + timeline-dark.html. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
 
 ## Global constraints
 
@@ -23,12 +23,12 @@ References: timeline-light.png; timeline-dark.png + timeline-dark.html; timeline
 
 ## Screen and behavior contract
 
-- Use timeline-light.png for light structure, timeline-dark.png/HTML for dark structure and T30 for shared roles. Do not use the mislabeled light HTML as a Timeline design.
-- Keep title/Search, DayNavigation, entry/habit counts, collapsed View options and visible active app-usage indicator. Preserve persisted usage toggle, timezone and newest-first explanation. New type filters are O02.
-- Add a decorative leading rail and type icon node around each existing lazy row, with a distinct end treatment. Rail and node do not become separate focus/click targets; hide duplicate decorative semantics. Mirror placement with layout direction.
+- Use timeline-light.png + the corrected timeline-light.html for light composition/details, timeline-dark.png + timeline-dark.html for dark treatment, and T30 for shared roles. The light date ribbon groups date controls above entry/habit counts and View options; retain a direct, named Search action.
+- Keep title/Search, DayNavigation, entry/habit counts, collapsed View options and visible active app-usage indicator. In the light theme put date controls in the top ribbon row, with counts and View options below; stack rather than clip at large text. The calendar/dropdown glyph does not add a date picker: omit any dropdown affordance unless a working existing action supplies it. Preserve persisted usage toggle, timezone and newest-first explanation. The HTML View options script only flips its label to “Compact”; do not implement a compact mode or replace the real disclosure with that label-only behavior. New type filters are O02.
+- Use the light reference’s 48 dp type-node column, 8 dp node-to-card gap, 2 dp decorative rail and 16 dp row gap as baseline geometry, with 16 dp inner padding and the shared 24 dp card radius. At 320 dp/2.0, shrink the decorative node column to 32 dp and allow metadata/actions to wrap; the rail is not an interactive target. Add a decorative leading rail and type icon node around each existing lazy row, with a distinct end treatment. Rail and node do not become separate focus/click targets; hide duplicate decorative semantics. Mirror placement with layout direction.
 - Keep EventCard(record, zone, onOpen, openActionLabel, onMemory) and HabitTimelineCard(item, screenZone, onOpen) source-compatible. Journal text uses serif title, short excerpt, saved place/source/photo-count metadata; photo bitmap preview is O04.
 - Preserve actual timestamps, equal-time ordering, date-only habit group, cross-zone labels, stable keys, bounded paging, retry/load-earlier/load-later and capture clearance. A daily aggregate at 00:00 must remain labeled as a saved source, not implied to be a timed walk or invented sync.
-- Do not infer hydration volumes, “glass 4 of 6”, completion targets or first-glass labels from a standalone repetition. Render existing log information; omit footer quotations pending O07.
+- Do not infer hydration volumes, “glass 4 of 6”, completion targets or first-glass labels from a standalone repetition. Render existing log information; omit footer quotations pending O07. Style the existing Quick Capture sheet under T32-D; the hidden reference sheet’s Water/Stretch actions are optional O08, and its “Encrypted automatically” claim must not appear.
 
 ## Implementation boundaries
 
@@ -44,7 +44,7 @@ Existing public/internal composable signatures remain compatible except addition
 
 1. A mixed fixture of timestamped entries, equal-time logs, date-only logs and imported activity retains original order and correct open/correction targets.
 2. Paging beyond the loaded window creates no duplicate items, disconnected hit targets or hidden retry controls; last item clears the FAB.
-3. An empty/error day retains Search, View options and recovery; toggling usage persists across day changes/recreation.
+3. An empty/error day retains Search, View options and recovery; toggling usage persists across day changes/recreation. The light ribbon keeps date, counts and View options readable at 320 dp/2.0; View options opens its real disclosure and never becomes a label-only Compact toggle.
 4. Shared EventCard still opens/edits/promotes the correct record in Today, search and detail/history consumers.
 
 ## Verification and completion

@@ -61,7 +61,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: Extend EventCardTest with `previewRetainsSingleRecordOpenAction`; assert thumbnail content routes through the card and memory action remains separately named.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Add the trailing EventCard slot and supply the PhotoRepository-backed preview from Timeline, threading the dependency through LifeOsApp without changing other consumers.
+- [ ] Add the trailing EventCard slot and supply the PhotoRepository-backed preview from Timeline, threading the dependency through LifeOsApp without changing other consumers. Follow corrected timeline-light.html for rounded image placement below the excerpt, using the spec’s 16:9/160 dp bounds and actual local attachment rather than its remote stock image or “Private snapshot” lock badge.
 - [ ] Rerun the affected regression tests and inspect: Inspect offline image crop, 160 dp cap, no-photo fallback and paging performance; confirm Today/search remain metadata-only.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 

@@ -8,7 +8,7 @@ Depends on: T32-A
 
 Show the first saved photo attachment inside eligible Timeline editorial cards using local preview data.
 
-References: timeline-light.png and timeline-dark PNG/HTML journal imagery. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+References: timeline-light.png + corrected timeline-light.html and timeline-dark PNG/HTML journal imagery. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
 
 ## Global constraints
 

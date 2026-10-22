@@ -8,7 +8,7 @@ Depends on: None
 
 Replace the existing green-led appearance with a coherent warm-paper/obsidian system and editorial typography across existing components.
 
-References: All six PNGs; five distinct HTML documents. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+References: All six PNGs and six distinct HTML documents, including the corrected timeline-light.html. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
 
 ## Global constraints
 
@@ -23,7 +23,7 @@ References: All six PNGs; five distinct HTML documents. Read the [shared referen
 
 ## Screen and behavior contract
 
-- Use the role mapping and component measurements in the reference brief. Keep `LifeOsTheme(content: @Composable () -> Unit)` and the stored `AppTheme` values unchanged. Define typography and shapes centrally, not inside routes.
+- Use the role mapping and component measurements in the reference brief, including corrected Timeline light primaryContainer/onPrimaryContainer `#ba4d28`/`#fff1ed` and tertiaryContainer/onTertiaryContainer `#8b693b`/`#fff1e5`. Pale terracotta chips use primaryFixed/onPrimaryFixed rather than overwriting primaryContainer. Keep `LifeOsTheme(content: @Composable () -> Unit)` and the stored `AppTheme` values unchanged. Define typography and shapes centrally, not inside routes.
 - Create `ui/theme/LumaTypography.kt` for bundled Newsreader headings, bundled Plus Jakarta Sans Latin body/data, and an offline Persian-capable fallback. Retain font license notices with the resources; use platform sans until a redistributable resource is available, record the visual gap and do not download fonts at runtime.
 - Use serif page/section and journal titles; use sans for values, dates, labels, controls and Persian runs. Do not force serif Latin glyphs onto Persian text. Text must scale without fixed-height clipping.
 - Keep the five destinations Today, Timeline, Habits, Review, More. Apply selected pills, muted surfaces and shared icon sizing to the existing bar. Four tabs are O01.

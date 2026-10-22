@@ -73,7 +73,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: JournalEditorScreenTest, MoodCaptureTest, MemoryCaptureTest, TodoEditorFlowTest and HabitCaptureFlowTest: validation, draft restore, Save/Cancel and now/selected-date capture rules retain stored values.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Restyle QuickCaptureSheet, editor top bars, fields, optional sections and pickers using shared tokens; keep view models, result types and drafts unchanged.
+- [ ] Restyle QuickCaptureSheet using the rounded surface/title/cancel treatment in corrected timeline-light.html, while retaining full-width Mood/Journal/Memory/Task choices, selected-date policy and existing dismissal behavior. Do not copy hard-coded Water/Stretch actions, three-column grid or encryption claim. Restyle editor top bars, fields, optional sections and pickers using shared tokens; keep view models, result types and drafts unchanged.
 - [ ] Rerun the affected regression tests and inspect: Inspect IME, long fields, large text and picker/sheet scrolling; Quick Capture dismissal must write nothing.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 

@@ -54,7 +54,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: ThemeSettingsTest: select Light/Dark/System, recreate, assert selected option and resolved appearance. Inspect bundled font rendering offline, including French accents and Persian/Latin mixes.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Update role colors in Theme.kt, introduce LumaTypography.kt and bundled res/font resources with license notices, and pass typography/shapes to MaterialTheme. Preserve theme preference and system-bar behavior.
+- [ ] Update role colors in Theme.kt using the reference brief’s corrected Timeline light container/foreground, primaryFixed, outline and inverse pairs; verify consumers use paired roles and preserve pale chips via primaryFixed. Introduce LumaTypography.kt and bundled res/font resources with license notices, and pass typography/shapes to MaterialTheme. Preserve theme preference and system-bar behavior.
 - [ ] Rerun the affected regression tests and inspect: All essential color-pair measurements meet 4.5:1 text/3:1 large-text and non-text thresholds; no app-local palette bypasses shared roles.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 

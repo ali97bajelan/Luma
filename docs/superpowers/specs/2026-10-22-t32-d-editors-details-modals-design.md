@@ -8,7 +8,7 @@ Depends on: T30; consume T32-A EventCard treatment
 
 Make capture/edit/detail surfaces and modal UI consistent while retaining drafts, validation, editing and recovery.
 
-References: No direct screen mockups; shared T30 tokens and editorial saved-content treatment. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+References: Corrected timeline-light.html contains a hidden Quick Capture modal; editor/detail screens extrapolate shared T30 tokens and editorial saved-content treatment. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
 
 ## Global constraints
 
@@ -24,7 +24,7 @@ References: No direct screen mockups; shared T30 tokens and editorial saved-cont
 ## Screen and behavior contract
 
 - Use shared editor headers, text-field roles, rounded optional sections and consistent Save/Cancel/Back actions. Keep required fields, limits, validation timing and disabled/pending behavior.
-- Quick Capture remains a scrollable modal sheet with existing life-record/task grouping and now/selected-date choice; Task remains undated unless the existing caller supplies its due date.
+- Quick Capture remains a scrollable modal sheet with existing life-record/task grouping and now/selected-date choice; Task remains undated unless the existing caller supplies its due date. Use the corrected Timeline HTML’s rounded surface, serif title and subdued cancel treatment, but retain full-width native choices and existing Close/Back/outside dismissal. Its Water/Stretch/Thought grid does not replace Mood/Journal/Memory/Task: Thought maps only to the existing Journal action, and a new habit entry point is optional O08. Omit “Encrypted automatically” and preserve actual privacy disclosures.
 - Journal/event/habit/person/place details use serif content headings, clear metadata and existing photo galleries. Keep read-only imported records distinct from editable manual records.
 - Keep draft persistence, unsaved-change prompts, save-result consumption, deletion reconciliation, memory unmark semantics, retry and undo. No autosave policy or new step in capture is introduced.
 - Restyle correction, selection, date/time, methodology, destructive/reset and restore dialogs through shared roles. Keep sheet scroll, IME/insets and current modal focus/dismissal behavior.

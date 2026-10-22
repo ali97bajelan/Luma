@@ -61,7 +61,7 @@ Consumes: current signatures/state/callbacks in these files and shared T30 roles
 
 - [ ] Establish the baseline with existing fixtures and a before capture. For behavior/semantics additions, add the focused regression scenario before production changes: Add `filteredEmptyStateCanReturnToAll` to TimelinePagingRouteTest; assert each enum predicate including manual mood/journal/memory vs Health Connect activity.
 - [ ] Run the selected test; a new behavior test must fail for its intended missing behavior. Existing visual-only baseline tests should remain green; do not invent failing padding/token tests.
-- [ ] Connect chips to a SavedStateHandle-owned filter in TimelineViewModel and reset the paging window on changes; preserve selected date and usage preference.
+- [ ] Use the four chip labels/order in corrected timeline-light.html (All events, Reflections, Habits, Health), with native selected semantics and 48 dp targets; connect them to a SavedStateHandle-owned filter in TimelineViewModel and reset the paging window on changes. Preserve selected date and usage preference; the reference chips do not define additional hydration types.
 - [ ] Rerun the affected regression tests and inspect: Inspect active filter visibility, accessibility selected state, wrap/scroll and no-match recovery in RTL/large text.
 - [ ] Record results/evidence for this unit and review the diff against every owned spec requirement. Commit the reviewed implementation/tests with a task-specific message when executing this plan.
 

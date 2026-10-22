@@ -36,7 +36,7 @@ Consumes: paired child specifications, current route registrations and actual im
 
 - [ ] Use a dedicated test install/emulator and existing fixtures to seed equivalent current/historical dates, counted habits, tasks and records. Capture the prescribed matrix and fill route-family outcomes; restore settings afterwards.
 - [ ] Create isolated fixture data with two counted habits, three due/overdue tasks, one undated task for full-list preservation, a journal, real local attachment, date-only habit log and imported/absent/zero/partial signal variants. Use equivalent records for comparison screenshots; do not hard-code fixtures into production.
-- [ ] Capture the six main screen/theme combinations and family matrix at the spec widths/locales/font scales. Inspect against the matching PNG and record intentional optional-feature omissions.
+- [ ] Capture the six main screen/theme combinations and family matrix at the spec widths/locales/font scales. Inspect against the matching PNG and corrected Timeline HTML, including its date/count ribbon and T32-D’s adapted capture sheet; exercise real View options and no-write dismissal. Record intentional optional-feature omissions, including O08.
 
 ### Task 2: Regression and sign-off evidence
 

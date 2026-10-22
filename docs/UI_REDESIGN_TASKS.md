@@ -7,8 +7,8 @@ Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-red
 - Required tasks update both themes while retaining product behavior, route IDs, dates, drafts, counts, permissions and privacy guarantees.
 - Every task below has a specification and implementation plan. T32 remains the parent rollout task and is split into T32-A/B/C/D for reviewable implementation.
 - New features and behavior changes implied by the mockups are optional, deferred by default and described explicitly below. They do not block the base redesign.
-- `timeline-light.html` duplicates `review-light.html`; use `timeline-light.png` for composition and the shared light tokens. Source assets remain unchanged.
-- Today, Timeline and Review have direct references. All other screens use the shared system; there are no supplied More/Settings/editor mockups.
+- The corrected `timeline-light.html` is a valid Timeline reference alongside its PNG. Use its date/count ribbon, rail, cards and capture-sheet styling with the shared tokens; preserve existing behavior unless an optional task explicitly changes it. Source assets remain unchanged by the documentation update.
+- Today, Timeline and Review have direct references. The corrected Timeline HTML also contains a hidden Quick Capture sheet; use its styling within the existing capture contract. There are no supplied More/Settings/editor screen mockups.
 - Keep factual local-data wording; never copy the unsupported “Encrypted on-device” claim, fabricated metrics, sample records or stock photos into production.
 
 The [reference brief](luma-redesign/README.md) defines visual precedence, palette, typography, spacing, source hashes, product differences and common acceptance rules. Read it with each task spec.
@@ -56,7 +56,7 @@ Replace the old catch-all remaining-screen task with four independently reviewab
 
 Present the existing mixed chronological feed with a continuous visual rail, type nodes and readable editorial cards.
 
-**Scope:** Use timeline-light.png for light structure, timeline-dark.png/HTML for dark structure and T30 for shared roles. Do not use the mislabeled light HTML as a Timeline design.
+**Scope:** Use timeline-light.png + the corrected timeline-light.html for light composition/details, timeline-dark.png + timeline-dark.html for dark treatment, and T30 for shared roles. The light date ribbon groups date controls above entry/habit counts and View options; retain a direct, named Search action.
 
 **Acceptance:** A mixed fixture of timestamped entries, equal-time logs, date-only logs and imported activity retains original order and correct open/correction targets. Paging beyond the loaded window creates no duplicate items, disconnected hit targets or hidden retry controls; last item clears the FAB. An empty/error day retains Search, View options and recovery; toggling usage persists across day changes/recreation. Shared EventCard still opens/edits/promotes the correct record in Today, search and detail/history consumers.
 
@@ -80,7 +80,7 @@ Carry the new visual language to supporting browse and settings screens without 
 
 Make capture/edit/detail surfaces and modal UI consistent while retaining drafts, validation, editing and recovery.
 
-**Scope:** Use shared editor headers, text-field roles, rounded optional sections and consistent Save/Cancel/Back actions. Keep required fields, limits, validation timing and disabled/pending behavior.
+**Scope:** Use shared editor headers, text-field roles, rounded optional sections and consistent Save/Cancel/Back actions. Adapt the hidden Quick Capture sheet in corrected timeline-light.html while retaining current choices/date rules and omitting its encryption claim; habit entry is optional O08. Keep required fields, limits, validation timing and disabled/pending behavior.
 
 **Acceptance:** Mood/journal/memory/task/habit/person/place create and edit preserve saved values, validation and drafts through recreation and Back/Cancel. Imported/read-only/missing/deleted details retain correct actions and return paths; deleting a detail does not leave a stale screen. Long text, IME, Persian RTL and 2.0 fonts keep Save/Cancel, photo retry, picker results and dialog confirmation reachable. Quick Capture retains date selection across rotation and emits no record on dismissal; successful saves retain single existing feedback.
 
@@ -105,6 +105,7 @@ All optional tasks are **deferred / not selected**. Each has a reviewable spec a
 | O05 | saved-data Review charts | Requires real daily projections, especially for currently aggregate-only activity. | T32-B | [Spec](superpowers/specs/2026-10-22-o05-optional-review-charts-design.md) | [Plan](superpowers/plans/2026-10-22-o05-optional-review-charts.md) |
 | O06 | defined cadence and active-day metrics | Adds new calculations and definitions; source “streak” wording cannot be copied as-is. | T32-B | [Spec](superpowers/specs/2026-10-22-o06-optional-review-cadence-design.md) | [Plan](superpowers/plans/2026-10-22-o06-optional-review-cadence.md) |
 | O07 | reflection shortcut and editorial quotes | Adds an alternate capture entry point and new editorial content. | T31 and T32-A | [Spec](superpowers/specs/2026-10-22-o07-optional-reflection-quotes-design.md) | [Plan](superpowers/plans/2026-10-22-o07-optional-reflection-quotes.md) |
+| O08 | habit shortcut in Quick Capture | Adds a date-aware habit entry point absent from the current capture sheet. | T32-D and T32-A | [Spec](superpowers/specs/2026-10-22-o08-optional-capture-habit-shortcut-design.md) | [Plan](superpowers/plans/2026-10-22-o08-optional-capture-habit-shortcut.md) |
 
 ### O01 — four-tab navigation
 
@@ -161,6 +162,12 @@ Call the habit metric “Scheduled habit-days completed”, never “streak”. 
 Reflect opens the existing Journal editor using the same now/selected-date confirmation and draft behavior as Journal. It creates no record until Save and adds no new event type, AI service or automatic summary. If the fourth chip is included, label it “Reflect in journal” and preserve the existing Journal action so the difference is explicit. Treat this as an optional alternate entry point; omit it if a duplicate shortcut is not wanted. Use at most one bundled, translated, original editorial sentence per locale, identified as “Reflection prompt”. It is static editorial content, not attributed as the user’s own words or inferred from their records. Do not copy the reference quotation without confirmed reuse rights; do not invent source attribution. Footer remains secondary, accessible and clear of capture controls; it must not replace empty/error guidance.
 
 **Acceptance if selected:** Shortcut respects selected-date capture rules and cancellation/draft restoration; it makes no silent write. Quote/prompt works offline in all locales, is explicitly editorial and never claims a saved reflection or calculated cadence insight.
+
+### O08 — habit shortcut in Quick Capture
+
+**Proposed change:** Add an optional “Log a habit” choice, inspired by Water/Stretch in the corrected Timeline HTML’s hidden sheet. Open the existing Habits screen for the chosen date; users select an actual saved habit and explicitly log there. Keep Mood/Journal/Memory/Task and their date policies. Do not hard-code Water/Stretch, add silent writes or claim automatic encryption.
+
+**Acceptance if selected:** Missing callback omits the choice; selected date/Now follows the actual habit tracking zone; opening/dismissing creates no log; empty/error and RTL/large-text capture flows remain usable. The paired spec defines the callback and recovery rules.
 
 ## Excluded or unsupported mockup elements
 
