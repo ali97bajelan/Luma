@@ -2,21 +2,21 @@
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
             <solid android:color="@color/widget_mutation_fill_pressed_dark" />
-            <corners android:radius="16dp" />
+            <corners android:radius="24dp" />
             <stroke android:width="2dp" android:color="@color/widget_focus_ring_dark" />
         </shape>
     </item>
     <item android:state_focused="true">
         <shape android:shape="rectangle">
             <solid android:color="@color/widget_mutation_fill_dark" />
-            <corners android:radius="16dp" />
+            <corners android:radius="24dp" />
             <stroke android:width="2dp" android:color="@color/widget_focus_ring_dark" />
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
             <solid android:color="@color/widget_mutation_fill_dark" />
-            <corners android:radius="16dp" />
+            <corners android:radius="24dp" />
         </shape>
     </item>
 </selector>

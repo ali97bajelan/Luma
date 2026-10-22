@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Android RemoteViews/XML, JUnit, Android instrumentation, Gradle, JDK 17.
 
-**Spec:** [T34 launcher widget specification](../specs/2026-10-22-t34-launcher-widgets-redesign-design.md). Status: proposed; all execution steps pending.
+**Spec:** [T34 launcher widget specification](../specs/2026-10-22-t34-launcher-widgets-redesign-design.md). Execution is in progress: T34-A implementation is present and validation is pending; T34-B through T34-D remain pending.
 
 ## Global constraints
 
@@ -53,12 +53,14 @@ Execution order: A → B/C → D. Execute B and C sequentially in this session b
 
 **Interfaces:** Consumes existing render API, theme resolver, totals and localized plurals. Produces the spec's resource roles, 28 dp shell/16 dp row/24 dp action shapes, padded badge and consistent compact shells. Keep existing view IDs. No product-state interface changes.
 
-- [ ] Record current focused widget results and synthetic baseline before edits; do not relabel historical passes as current evidence.
-- [ ] Add contrast assertions for primary/secondary/overdue text on both shell and row, badge/pressed-action pairs, focus states, and progress fill versus track. Assert 4.5:1 text and 3:1 indicators; avoid tests that merely compare hex literals.
+- [ ] Record current focused widget results and synthetic baseline before edits; do not relabel historical passes as current evidence. NOT RUN at the user's request.
+- [ ] Add contrast assertions for primary/secondary/overdue text on both shell and row, badge/pressed-action pairs, focus states, and progress fill versus track. Assert 4.5:1 text and 3:1 indicators; avoid tests that merely compare hex literals. Tests were not added in this pass.
 - [ ] Extend `headerTargetsKeepLocalizedLabelsWholeAcrossFontScales` and `constrainedStateShellsKeepPrimaryRecoveryInsideBounds` for badge padding, opposite app/system themes, narrow French/Persian and loading unknown counts. Preserve existing list/Capture/Refresh identity assertions.
-- [ ] Run the focused contrast/renderer classes using the commands below; confirm added assertions expose the current missing role/badge behavior before implementing.
-- [ ] Apply the spec palette/shape values and count badge backgrounds. Account for the badge's extra 16 dp width and 4 dp height in `headerPlan`; retain count omission when it cannot fit. Preserve the hint below the header and measured stacked/compact transitions.
-- [ ] Render setup/loading/empty/read failure and all feedback outcomes with shared colors; check legacy capture consumers of changed resources. Repeat focused tests and record results. Commit A as `feat: restyle widget shells and semantic roles`.
+- [ ] Run the focused contrast/renderer classes using the commands below; confirm added assertions expose the current missing role/badge behavior before implementing. NOT RUN at the user's request.
+- [x] Apply the spec palette/shape values and count badge backgrounds. Account for the badge's extra 16 dp width and 4 dp height in `headerPlan`; retain count omission when it cannot fit. Preserve the hint below the header and measured stacked/compact transitions.
+- [ ] Render setup/loading/empty/read failure and all feedback outcomes with shared colors; check legacy capture consumers of changed resources. NOT RUN; no renderer or emulator validation was performed.
+
+Suggested commit message for T34-A: `feat: restyle widget shells and semantic roles`
 
 ### T34-B: Inset Tasks cards
 
@@ -120,4 +122,4 @@ For a focused red/green step, pass only its owning class in the same instrumenta
 
 W34-1 → A; W34-2 → B; W34-3 → C; W34-4 → A/B/C geometry plus D matrix; W34-5 → D and A contrast tests. Every review-focus case has an owning task. Completion requires no missing acceptance row; do not mark T34 complete while a required launcher/API/locale check is NOT RUN.
 
-This plan is ready for review with its spec. Execution has not started; no execution method or implementation approval is inferred from the documentation request.
+The user explicitly requested implementation of T34-A from this spec and plan. T34-A's source changes are present; its planned tests and rendered/launcher acceptance remain NOT RUN at the user's request. T34-B through T34-D have not started.

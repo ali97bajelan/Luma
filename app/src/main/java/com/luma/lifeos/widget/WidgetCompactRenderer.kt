@@ -122,7 +122,17 @@ internal object WidgetCompactRenderer {
         val horizontal = fitsHorizontally(message)
         val views = RemoteViews(context.packageName,
             if (horizontal) R.layout.widget_data_compact_wide else R.layout.widget_data_compact)
-        val color = appContext.getColor(if (dark) R.color.widget_on_primary_dark else R.color.widget_on_primary)
+        val color = appContext.getColor(if (dark) R.color.widget_text_primary_dark else R.color.widget_text_primary_light)
+        val utilityTextColor = appContext.getColor(
+            if (dark) R.color.widget_action_utility_dark else R.color.widget_action_utility_light,
+        )
+        val mutationTextColor = appContext.getColor(
+            if (dark) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light,
+        )
+        val utilityBackground = if (dark) R.drawable.widget_utility_background_dark
+            else R.drawable.widget_utility_background
+        val buttonBackground = if (dark) R.drawable.widget_button_background_dark
+            else R.drawable.widget_button_background
         views.setInt(R.id.widget_compact_root, "setBackgroundResource",
             if (dark) R.drawable.widget_background_dark else R.drawable.widget_background)
         views.setInt(R.id.widget_compact_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
@@ -170,20 +180,21 @@ internal object WidgetCompactRenderer {
             views.setContentDescription(id, appContext.getString(description))
             val mutationAction = action.first == R.string.widget_feedback_undo ||
                 action.first == R.string.widget_feedback_retry
-            views.setTextColor(id, if (mutationAction) appContext.getColor(
-                if (dark) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light) else color)
+            val createAction = action.first == R.string.widget_habits_add ||
+                action.first == R.string.widget_tasks_add
+            views.setTextColor(id, if (mutationAction || createAction) mutationTextColor else utilityTextColor)
             views.setInt(id, "setBackgroundResource", when {
                 mutationAction && dark -> R.drawable.widget_row_action_background_dark
                 mutationAction -> R.drawable.widget_row_action_background
-                dark -> R.drawable.widget_button_background_dark
-                else -> R.drawable.widget_button_background
+                createAction -> buttonBackground
+                else -> utilityBackground
             })
             views.setOnClickPendingIntent(id, action.second)
         }
         views.setTextViewText(R.id.widget_compact_capture, appContext.getString(capture.first))
         views.setContentDescription(R.id.widget_compact_capture,
             appContext.getString(R.string.widget_open_quick_capture_description))
-        views.setTextColor(R.id.widget_compact_capture, color)
+        views.setTextColor(R.id.widget_compact_capture, mutationTextColor)
         views.setInt(R.id.widget_compact_capture, "setBackgroundResource", if (dark)
             R.drawable.widget_button_background_dark else R.drawable.widget_button_background)
         views.setOnClickPendingIntent(R.id.widget_compact_capture, capture.second)

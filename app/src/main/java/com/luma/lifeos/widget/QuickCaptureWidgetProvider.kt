@@ -178,7 +178,9 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
             else R.drawable.widget_button_background
         buttonIds.forEach { id ->
             setInt(id, "setBackgroundResource", buttonBackground)
-            setTextColor(id, appContext.getColor(if (dark) R.color.widget_on_primary_dark else R.color.widget_on_primary))
+            setTextColor(id, appContext.getColor(
+                if (dark) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light,
+            ))
         }
     }
 

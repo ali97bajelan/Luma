@@ -142,12 +142,15 @@ object WidgetRenderer {
         val textColor = appContext.getColor(if (dark) R.color.widget_text_primary_dark else R.color.widget_text_primary_light)
         val secondaryTextColor = appContext.getColor(if (dark) R.color.widget_text_secondary_dark else R.color.widget_text_secondary_light)
         val utilityTextColor = appContext.getColor(if (dark) R.color.widget_action_utility_dark else R.color.widget_action_utility_light)
+        val mutationTextColor = appContext.getColor(if (dark) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light)
         val buttonBackground = if (dark) R.drawable.widget_button_background_dark
         else R.drawable.widget_button_background
         val rowActionBackground = if (dark) R.drawable.widget_row_action_background_dark
         else R.drawable.widget_row_action_background
         val utilityBackground = if (dark) R.drawable.widget_utility_background_dark
         else R.drawable.widget_utility_background
+        val countBackground = if (dark) R.drawable.widget_count_background_dark
+        else R.drawable.widget_count_background
         val widgetBackground = if (dark) R.drawable.widget_background_dark else R.drawable.widget_background
 
         views.removeAllViews(R.id.widget_data_action_slot)
@@ -169,13 +172,15 @@ object WidgetRenderer {
         views.setInt(R.id.widget_data_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
         views.setInt(R.id.widget_data_root, "setBackgroundResource", widgetBackground)
         views.setTextColor(R.id.widget_data_title, textColor)
-        views.setTextColor(R.id.widget_data_more, secondaryTextColor)
+        views.setTextColor(R.id.widget_data_more, utilityTextColor)
         views.setTextColor(R.id.widget_data_summary, textColor)
         views.setTextColor(R.id.widget_data_updated, secondaryTextColor)
-        views.setTextColor(R.id.widget_data_refresh, utilityTextColor)
+        views.setTextColor(R.id.widget_data_refresh, mutationTextColor)
         views.setTextColor(R.id.widget_data_scroll_hint, secondaryTextColor)
-        views.setInt(R.id.widget_data_refresh, "setBackgroundResource", utilityBackground)
+        views.setInt(R.id.widget_data_refresh, "setBackgroundResource", buttonBackground)
         views.setInt(R.id.widget_data_open, "setBackgroundResource", utilityBackground)
+        views.setInt(R.id.widget_header_refresh, "setBackgroundResource", utilityBackground)
+        views.setInt(R.id.widget_data_more, "setBackgroundResource", countBackground)
         views.setInt(R.id.widget_header_refresh, "setColorFilter", utilityTextColor)
         views.setContentDescription(R.id.widget_header_refresh, appContext.getString(
             if (kind == WidgetKind.TASKS) R.string.widget_tasks_refresh_description else R.string.widget_habits_refresh_description))
@@ -191,7 +196,7 @@ object WidgetRenderer {
             else WidgetIntents.navigation(context, widgetId, destination),
         )
         views.setTextViewText(R.id.widget_data_refresh, appContext.getString(R.string.widget_capture))
-        views.setTextColor(R.id.widget_data_refresh, utilityTextColor)
+        views.setTextColor(R.id.widget_data_refresh, mutationTextColor)
         views.setContentDescription(R.id.widget_data_refresh,
             appContext.getString(R.string.widget_open_quick_capture_description))
         views.setOnClickPendingIntent(R.id.widget_data_refresh,
@@ -654,17 +659,23 @@ object WidgetRenderer {
         val actionsFit = widthDp - 24 >= captureWidthDp + 48 + 8
         val titleBlockWidthDp = if (stacked) widthDp - 24 else widthDp - 24 - captureWidthDp - 48 - 16
         val titleTextWidthPx = ((titleBlockWidthDp - 8).coerceAtLeast(1) * density).toInt()
+        val countBadgeHorizontalPaddingPx = (16f * density).roundToInt()
+        val countBadgeVerticalPaddingDp = 4
         val countCue = if (total != null && total > 0) {
             val countResource = when (kind) {
                 WidgetKind.HABITS -> R.plurals.widget_habits_total
                 else -> R.plurals.widget_tasks_total
             }
             bidiWrapped(context, context.resources.getQuantityString(countResource, total, total)).takeIf {
-                measureTextWidth(context, it, 12f) <= titleTextWidthPx
+                measureTextWidth(context, it, 12f) <=
+                    (titleTextWidthPx - countBadgeHorizontalPaddingPx).coerceAtLeast(0)
             }
         } else null
         val titleHeight = measureTextHeight(context, navigationTitle, titleTextWidthPx, 18f, maxLines = 1, bold = true)
-        val countHeight = countCue?.let { measureTextHeight(context, it, titleTextWidthPx, 12f, maxLines = 1) } ?: 0
+        val countHeight = countCue?.let {
+            measureTextHeight(context, it, titleTextWidthPx - countBadgeHorizontalPaddingPx, 12f, maxLines = 1) +
+                countBadgeVerticalPaddingDp
+        } ?: 0
         val titleBlockHeight = max(48, titleHeight + countHeight)
         val headerHeight = if (stacked) titleBlockHeight + 8 + 48 else titleBlockHeight
         return HeaderPlan(stacked, actionsFit, headerHeight, captureWidthDp, navigationTitle, countCue)
