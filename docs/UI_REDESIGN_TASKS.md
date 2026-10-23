@@ -4,7 +4,7 @@ Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-red
 
 Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A through T34-D source work is implemented (validation pending). The focused API 36 offscreen renderer matrix and picker-preview check passed; unit tests, debug packaging and lint passed. Real launcher acceptance remains NOT RUN, API 28/31 images are unavailable, and the connected-test teardown removed the preexisting Luma package from the API 36 AVD. See the [T34 acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md) for the device/data incident and remaining checks.
 
-Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35–T37 source implementations are complete; validation is pending. T38 remains pending.** These tasks own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** No Gradle test or emulator run is claimed for T35–T37; H35, M36 and T37 acceptance remain NOT RUN.
+Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35–T38 source implementations are complete; validation is pending.** These tasks own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** No Gradle test or emulator run is claimed for T35–T38; H35, M36, T37 and R38 acceptance remain NOT RUN. See the [T38 implementation record](luma-redesign/evidence/2026-10-23/t38/acceptance.md).
 
 ## Scope and reference decisions
 
@@ -36,7 +36,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T35 | Habit editor reference refinement | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t35-habit-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t35-habit-editor-redesign.md) |
 | T36 | Mood check-in and shared timestamp pill | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t36-mood-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t36-mood-editor-redesign.md) |
 | T37 | Task editor reference refinement | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t37-task-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t37-task-editor-redesign.md) |
-| T38 | Memory editor reference refinement | T30 baseline; T32-D components; T36 timestamp | pending | [Spec](superpowers/specs/2026-10-23-t38-memory-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t38-memory-editor-redesign.md) |
+| T38 | Memory editor reference refinement | T30 baseline; T32-D components; T36 timestamp | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t38-memory-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t38-memory-editor-redesign.md) |
 
 ### T30 — Shared visual system and app shell
 
@@ -167,7 +167,7 @@ T34-D status: the offscreen exporter covered both kinds, both app-theme override
 
 ### T38 — Memory editor reference refinement
 
-**Status: pending.** Sources: [PNG](luma-redesign/new-memory-light.png), [HTML](luma-redesign/new-memory-light.html).
+**Status: implemented (validation pending).** Sources: [PNG](luma-redesign/new-memory-light.png), [HTML](luma-redesign/new-memory-light.html). The reference-specific source work is recorded in the [T38 implementation record](luma-redesign/evidence/2026-10-23/t38/acceptance.md); R38-1 through R38-5 remain NOT RUN.
 
 **Scope:** Editorial header, shared timestamp pill, optional direct title, description/marker-note field, rounded importance/context groups and Save footer. Preserve current disclosures, clearable nullable importance, actual people/place/photo slots, photo retry/bring-into-view, direct-delete versus promoted-unmark behavior, source preview and locked promotion timestamp. Keep the existing text-length policy and no sample names/photos/default rating.
 

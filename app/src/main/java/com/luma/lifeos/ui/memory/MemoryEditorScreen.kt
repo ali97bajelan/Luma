@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -81,7 +82,10 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
             "memory_cancel", !state.busy, ::close)
     }, bottomBar = {
         LumaReadingPane(Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 val actionError = when (state.error) {
                     MemoryEditorError.SAVE -> stringResource(R.string.memory_save_error)
                     MemoryEditorError.REMOVE -> stringResource(R.string.memory_remove_error)
@@ -96,7 +100,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     } else null,
                     primaryAction = { actionModifier ->
                         Button(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
-                            modifier = actionModifier.testTag("memory_save")) {
+                            modifier = actionModifier.heightIn(min = 56.dp).testTag("memory_save"), shape = CircleShape) {
                             Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                         }
                     },
@@ -106,7 +110,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     }) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 if (state.loading) CircularProgressIndicator()
                 state.error?.let { error ->
                     val message = stringResource(when (error) {
@@ -129,12 +133,15 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled && state.direct,
                     state.error == MemoryEditorError.TIME, onTime)
                 state.original?.let { original ->
-                    Text(stringResource(R.string.memory_original), style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() }.testTag("memory_original_heading"))
-                    original.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
-                    Text(original.journal?.body ?: original.mood?.note ?: original.event.note.orEmpty(), modifier = Modifier.testTag("memory_original"))
-                    original.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
-                    Text(stringResource(R.string.memory_source_kept), style = MaterialTheme.typography.bodySmall)
+                    LumaSectionSurface {
+                        Text(stringResource(R.string.memory_original), style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.semantics { heading() }.testTag("memory_original_heading"))
+                        original.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
+                        Text(original.journal?.body ?: original.mood?.note ?: original.event.note.orEmpty(),
+                            modifier = Modifier.testTag("memory_original"))
+                        original.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
+                        Text(stringResource(R.string.memory_source_kept), style = MaterialTheme.typography.bodySmall)
+                    }
                 }
                 val titleError = if (MemoryTextField.TITLE in state.textErrors)
                     stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(MemoryTextLimits.TITLE)) else null
@@ -146,7 +153,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         .semantics { titleError?.let { error(it) } }.testTag("memory_title"))
                 val noteError = if (MemoryTextField.NOTE in state.textErrors)
                     stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(MemoryTextLimits.NOTE)) else null
-                LumaOutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled, minLines = 4,
+                LumaOutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled, minLines = 5,
                     label = { Text(stringResource(if (state.direct) R.string.memory_note else R.string.memory_marker_note)) },
                     isError = noteError != null, supportingText = { noteError?.let { AccessibleFeedback(it) } },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
@@ -184,17 +191,33 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         }
                     }
                 }
-                val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
-                TextButton(onClick = { more = !more }, enabled = enabled && contextExpansionInitialized,
-                    modifier = Modifier.testTag("memory_more").semantics { stateDescription = disclosureState }) {
-                    Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
-                }
-                Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
-                if (more) {
-                    LumaSectionSurface {
-                        peopleContent()
-                        placeContent()
-                        Column(Modifier.bringIntoViewRequester(photosBringIntoViewRequester)) { photosContent() }
+                LumaSectionSurface {
+                    val disclosureState = stringResource(
+                        if (more) R.string.review_details_expanded else R.string.review_details_collapsed,
+                    )
+                    TextButton(
+                        onClick = { more = !more },
+                        enabled = enabled && contextExpansionInitialized,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .semantics { heading(); stateDescription = disclosureState }.testTag("memory_more"),
+                    ) {
+                        Text(
+                            stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
+                    if (more) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            peopleContent()
+                            placeContent()
+                            Column(Modifier.bringIntoViewRequester(photosBringIntoViewRequester)) {
+                                photosContent()
+                            }
+                        }
                     }
                 }
             }

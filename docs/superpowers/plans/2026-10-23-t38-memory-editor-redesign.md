@@ -10,7 +10,7 @@
 
 **Spec:** [T38 specification](../specs/2026-10-23-t38-memory-editor-redesign-design.md).
 
-**Status:** Planned only. No code or tests were executed by this documentation change.
+**Status (23 October 2026):** Source implementation recorded; validation pending. Per user instruction, no Gradle test or emulator was run. R38-1 through R38-5 are recorded as NOT RUN in the [T38 implementation record](../../luma-redesign/evidence/2026-10-23/t38/acceptance.md).
 
 ## Global constraints
 
@@ -44,22 +44,22 @@ Consumes: current screen state, callbacks and shared components named in the spe
 
 **Interfaces:** Use the existing screen signature listed below and the spec's exact field semantics; retain all callback types and route inputs.
 
-- [ ] Record direct-create/edit/promote states and the `MemoryEditorScreen` signature, including all three content slots and nullable importance callback.
-- [ ] Restyle the header, timestamp usage, direct title and description/marker-note fields; keep source preview, locked promotion timestamp and exact text limits.
-- [ ] Restyle current importance disclosure/summary/choices and context disclosure/slots with rounded surfaces. Keep initialization, retap-to-clear and photo-error auto-expansion.
-- [ ] Restyle Save/remove/discard and error surfaces; retain direct-delete versus promoted-unmark behavior. Omit sample names, Draft/High value badges and writing helpers.
-- [ ] Verify R38-1 through R38-4 using existing memory/photo/context suites; extend only for missing semantic or recovery regressions.
-- [ ] Inspect R38-5 including an imported photo failure, promotion source preview and long linked names; record light/dark evidence.
+- [x] Record direct-create/edit/promote states and the `MemoryEditorScreen` signature, including all three content slots and nullable importance callback.
+- [x] Restyle the header, timestamp usage, direct title and description/marker-note fields; keep source preview, locked promotion timestamp and exact text limits.
+- [x] Restyle current importance disclosure/summary/choices and context disclosure/slots with rounded surfaces. Keep initialization, retap-to-clear and photo-error auto-expansion.
+- [x] Restyle Save/remove/discard and error surfaces; retain direct-delete versus promoted-unmark behavior. Omit sample names, Draft/High value badges and writing helpers.
+- [ ] Verify R38-1 through R38-4 using existing memory/photo/context suites; extend only for missing semantic or recovery regressions. **NOT RUN per user instruction.**
+- [ ] Inspect R38-5 including an imported photo failure, promotion source preview and long linked names; record light/dark evidence. **NOT RUN per user instruction.**
 
 ### Task 2: Record acceptance and integrate
 
 **Files:** Update `docs/luma-redesign/route-coverage.md`, `docs/UI_REDESIGN_TASKS.md` and the T33 acceptance ledger; create `docs/luma-redesign/evidence/<actual-run-date>/t38/acceptance.md`.
 
-- [ ] Run the focused unit and device commands below after implementation. Confirm all selected tests ran and passed; unavailable device/build checks are NOT RUN.
-- [ ] Cover each Review Focus item with the corresponding acceptance scenario; extend its existing owner if automation does not yet cover the semantic risk, and use rendered/TalkBack checks for geometry, contrast and focus.
-- [ ] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences.
-- [ ] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
-- [ ] Commit the scoped implementation and evidence with `feat(ui): refine T38 memory editor`.
+- [ ] Run the focused unit and device commands below after implementation. Confirm all selected tests ran and passed; unavailable device/build checks are NOT RUN. **NOT RUN per user instruction.**
+- [ ] Cover each Review Focus item with the corresponding acceptance scenario; extend its existing owner if automation does not yet cover the semantic risk, and use rendered/TalkBack checks for geometry, contrast and focus. **NOT RUN per user instruction.**
+- [x] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences. See the [T38 implementation record](../../luma-redesign/evidence/2026-10-23/t38/acceptance.md).
+- [x] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
+- [ ] Commit the scoped implementation and evidence. User requested a suggested commit message, not a commit; suggestion: `feat(ui): refine memory editor layout`.
 
 ## Planned verification commands
 
@@ -70,4 +70,3 @@ Consumes: current screen state, callbacks and shared components named in the spe
 ```
 
 Expected: BUILD SUCCESSFUL, selected tests executed with zero failures, zero lint errors, plus passing recorded visual/accessibility scenarios. Run on an isolated test install/AVD without user data; connected-test teardown may uninstall the package. Do not repeat passing checks without a new change or unresolved failure. These are future implementation checks, not results of this planning pass.
-
