@@ -10,7 +10,7 @@
 
 **Spec:** [T37 specification](../specs/2026-10-23-t37-task-editor-redesign-design.md).
 
-**Status:** Planned only. No code or tests were executed by this documentation change.
+**Status:** Implemented (validation pending), 23 October 2026. No Gradle test or emulator was run per user instruction; see the [T37 implementation record](../../luma-redesign/evidence/2026-10-23/t37/acceptance.md).
 
 ## Global constraints
 
@@ -44,10 +44,10 @@ Consumes: current screen state, callbacks and shared components named in the spe
 
 **Interfaces:** Use the existing screen signature listed below and the spec's exact field semantics; retain all callback types and route inputs.
 
-- [ ] Record existing new/edit/no-date/conflict states and the current `TodoEditorScreen` callbacks; preserve all tags and the route result contract.
-- [ ] Restyle the title and note fields plus supporting hints; retain focus requesters, keyboard actions and error bring-into-view.
-- [ ] Group the existing due value, Change and conditional Remove actions into a rounded responsive card; retain the nullable date callback and existing picker.
-- [ ] Restyle the footer, edit-only completion/delete and recovery dialogs; omit tags and evening-review copy. Keep `TodoEditorViewModel` and domain/storage unchanged.
+- [x] Record existing new/edit/no-date/conflict states and the current `TodoEditorScreen` callbacks; preserve all tags and the route result contract.
+- [x] Restyle the title and note fields plus supporting hints; retain focus requesters, keyboard actions and error bring-into-view.
+- [x] Group the existing due value, Change and conditional Remove actions into a rounded responsive card; retain the nullable date callback and existing picker.
+- [x] Restyle the footer, edit-only completion/delete and recovery dialogs; omit tags and evening-review copy. Keep `TodoEditorViewModel` and domain/storage unchanged.
 - [ ] Verify T37-1 through T37-4 using existing task suites; add only missing regression assertions for code-point boundaries, confirmation or pending controls.
 - [ ] Inspect T37-5 with a long date, note error and IME, then record light/dark evidence.
 
@@ -57,9 +57,11 @@ Consumes: current screen state, callbacks and shared components named in the spe
 
 - [ ] Run the focused unit and device commands below after implementation. Confirm all selected tests ran and passed; unavailable device/build checks are NOT RUN.
 - [ ] Cover each Review Focus item with the corresponding acceptance scenario; extend its existing owner if automation does not yet cover the semantic risk, and use rendered/TalkBack checks for geometry, contrast and focus.
-- [ ] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences.
-- [ ] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
+- [x] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences.
+- [x] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
 - [ ] Commit the scoped implementation and evidence with `feat(ui): refine T37 task editor`.
+
+Commit message prepared: `feat(ui): refine T37 task editor`.
 
 ## Planned verification commands
 
@@ -70,4 +72,3 @@ Consumes: current screen state, callbacks and shared components named in the spe
 ```
 
 Expected: BUILD SUCCESSFUL, selected tests executed with zero failures, zero lint errors, plus passing recorded visual/accessibility scenarios. Run on an isolated test install/AVD without user data; connected-test teardown may uninstall the package. Do not repeat passing checks without a new change or unresolved failure. These are future implementation checks, not results of this planning pass.
-

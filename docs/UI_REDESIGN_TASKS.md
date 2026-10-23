@@ -4,7 +4,7 @@ Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-red
 
 Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A through T34-D source work is implemented (validation pending). The focused API 36 offscreen renderer matrix and picker-preview check passed; unit tests, debug packaging and lint passed. Real launcher acceptance remains NOT RUN, API 28/31 images are unavailable, and the connected-test teardown removed the preexisting Luma package from the API 36 AVD. See the [T34 acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md) for the device/data incident and remaining checks.
 
-Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35 and T36 source implementations are complete; validation is pending. T37–T38 remain pending.** These tasks own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** No Gradle test or emulator run is claimed for T35 or T36; H35 and M36 acceptance remain NOT RUN.
+Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35–T37 source implementations are complete; validation is pending. T38 remains pending.** These tasks own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** No Gradle test or emulator run is claimed for T35–T37; H35, M36 and T37 acceptance remain NOT RUN.
 
 ## Scope and reference decisions
 
@@ -35,7 +35,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T34 | Tasks and Habits launcher widgets | T30 design baseline; existing widget contracts | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) |
 | T35 | Habit editor reference refinement | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t35-habit-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t35-habit-editor-redesign.md) |
 | T36 | Mood check-in and shared timestamp pill | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t36-mood-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t36-mood-editor-redesign.md) |
-| T37 | Task editor reference refinement | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t37-task-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t37-task-editor-redesign.md) |
+| T37 | Task editor reference refinement | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t37-task-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t37-task-editor-redesign.md) |
 | T38 | Memory editor reference refinement | T30 baseline; T32-D components; T36 timestamp | pending | [Spec](superpowers/specs/2026-10-23-t38-memory-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t38-memory-editor-redesign.md) |
 
 ### T30 — Shared visual system and app shell
@@ -157,7 +157,7 @@ T34-D status: the offscreen exporter covered both kinds, both app-theme override
 
 ### T37 — Task editor reference refinement
 
-**Status: pending.** Sources: [PNG](luma-redesign/new-task-light.png), [HTML](luma-redesign/new-task-light.html).
+**Status: implemented (validation pending).** Sources: [PNG](luma-redesign/new-task-light.png), [HTML](luma-redesign/new-task-light.html). See the [T37 implementation record](luma-redesign/evidence/2026-10-23/t37/acceptance.md); T37-1 through T37-5 remain NOT RUN.
 
 **Scope:** Editorial header, focused title and optional note fields with existing Unicode code-point hints, rounded due-date card with Change/Remove and terracotta Save footer. Keep no-date creation defaults, autofocus/error focus, complete/reopen/delete, revision conflicts/reload confirmation, missing/error/retry and dirty-close behavior. Correct the clipped title label and overlapping due-date actions seen in the PNG.
 

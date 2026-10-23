@@ -79,3 +79,7 @@ No T32-A or T32-B case failed in the full run. The focused run provides more spe
 No screenshots or release acceptance are claimed. Reconsider T33 after remaining connected failures are isolated and resolved or shown to be stale, and the required visual/accessibility evidence is recorded.
 
 Suggested commit message: `fix(ui): fit timeline cards and guard Review routes`
+
+## Editor acceptance extension — 2026-10-23
+
+T35–T37 now have source implementations recorded; their editor acceptance remains pending. T37 refines the title/note layout, responsive due-date card and Save footer while preserving the existing task data and recovery flows. Per user instruction, no Gradle task, test, emulator, capture or TalkBack check was run for T37. T37-1 through T37-5 are **NOT RUN** in the [T37 implementation record](../2026-10-23/t37/acceptance.md). T38 remains pending. These updates do not resolve the existing T32-D blockers or change the T33 release decision: **NOT ACCEPTED**.

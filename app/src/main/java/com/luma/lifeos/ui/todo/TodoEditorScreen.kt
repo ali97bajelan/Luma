@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.todo
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -26,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -42,6 +46,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -126,7 +131,7 @@ fun TodoEditorScreen(
         bottomBar = {
             LumaReadingPane(Modifier.fillMaxWidth()) {
                 Column(
-                    Modifier.fillMaxWidth().imePadding().padding(12.dp),
+                    Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     state.error?.let { error ->
@@ -159,7 +164,8 @@ fun TodoEditorScreen(
                             Button(
                                 onClick = onSave,
                                 enabled = canEdit,
-                                modifier = actionModifier.testTag("todo_editor_save"),
+                                modifier = actionModifier.heightIn(min = 56.dp).testTag("todo_editor_save"),
+                                shape = CircleShape,
                             ) {
                                 Text(
                                     when {
@@ -179,9 +185,9 @@ fun TodoEditorScreen(
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
                 if (state.loading) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularProgressIndicator()
@@ -207,8 +213,9 @@ fun TodoEditorScreen(
                     onValueChange = onTitle,
                     enabled = state.ready && !state.busy,
                     readOnly = readOnly,
+                    singleLine = true,
                     minLines = 1,
-                    maxLines = 3,
+                    maxLines = 1,
                     isError = titleError != null,
                     supportingText = {
                         Column {
@@ -247,33 +254,62 @@ fun TodoEditorScreen(
                 val dueDateError = if (state.fieldErrors[TodoField.DUE_DATE] == TodoValidationReason.OUT_OF_RANGE) {
                     stringResource(R.string.todo_date_out_of_range)
                 } else null
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(R.string.todo_due_date_label), style = MaterialTheme.typography.labelLarge)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        val dueText = state.draft.dueDate?.let { date ->
-                            val formatted = date.format(localizedDate(FormatStyle.LONG))
-                            if (date == LocalDate.now()) stringResource(R.string.todo_due_today, formatted) else formatted
-                        } ?: stringResource(R.string.todo_no_date)
-                        Text(
-                            dueText,
-                            modifier = Modifier.weight(1f).padding(vertical = 12.dp)
-                                .semantics { dueDateError?.let { error(it) } }.testTag("todo_editor_due_date_value"),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        TextButton(
-                            onClick = {
-                                pickerStartDate = (state.draft.dueDate ?: LocalDate.now()).toString()
-                                pickingDate = true
-                            },
-                            enabled = canEdit,
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_change_due_date"),
-                        ) { Text(stringResource(R.string.todo_change_date)) }
-                        if (state.draft.dueDate != null) {
-                            TextButton(
-                                onClick = { onDueDate(null) },
-                                enabled = canEdit,
-                                modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_clear_due_date"),
-                            ) { Text(stringResource(R.string.todo_remove_date)) }
+                val dueText = state.draft.dueDate?.let { date ->
+                    val formatted = date.format(localizedDate(FormatStyle.LONG))
+                    if (date == LocalDate.now()) stringResource(R.string.todo_due_today, formatted) else formatted
+                } ?: stringResource(R.string.todo_no_date)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().testTag("todo_editor_due_date_card"),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        border = BorderStroke(
+                            1.dp,
+                            if (dueDateError == null) MaterialTheme.colorScheme.outlineVariant
+                            else MaterialTheme.colorScheme.error,
+                        ),
+                        tonalElevation = 0.dp,
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.todo_due_date_label),
+                                modifier = Modifier.semantics { heading() },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                dueText,
+                                modifier = Modifier.fillMaxWidth()
+                                    .semantics { dueDateError?.let { error(it) } }
+                                    .testTag("todo_editor_due_date_value"),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                            ) {
+                                TextButton(
+                                    onClick = {
+                                        pickerStartDate = (state.draft.dueDate ?: LocalDate.now()).toString()
+                                        pickingDate = true
+                                    },
+                                    enabled = canEdit,
+                                    modifier = Modifier.heightIn(min = 48.dp)
+                                        .testTag("todo_editor_change_due_date"),
+                                ) { Text(stringResource(R.string.todo_change_date)) }
+                                if (state.draft.dueDate != null) {
+                                    TextButton(
+                                        onClick = { onDueDate(null) },
+                                        enabled = canEdit,
+                                        modifier = Modifier.heightIn(min = 48.dp)
+                                            .testTag("todo_editor_clear_due_date"),
+                                    ) { Text(stringResource(R.string.todo_remove_date)) }
+                                }
+                            }
                         }
                     }
                     dueDateError?.let { AccessibleFeedback(it) }
