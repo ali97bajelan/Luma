@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
 import android.os.LocaleList
+import android.text.format.DateFormat
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
@@ -27,8 +28,10 @@ import com.luma.lifeos.domain.widget.WidgetOutcome
 import com.luma.lifeos.domain.widget.WidgetRow
 import com.luma.lifeos.domain.widget.WidgetSnapshot
 import com.luma.lifeos.language.AppLanguages
+import com.luma.lifeos.language.localizedTime
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneOffset
 import java.util.Locale
 import java.util.UUID
@@ -375,7 +378,7 @@ class WidgetRendererAcceptanceTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val taskTitle = "A long task title with enough detail to be visually shortened in the row"
         val task = WidgetRow.Task(UUID.randomUUID(), taskTitle,
-            LocalDate.parse("2026-10-19"), UUID.randomUUID())
+            LocalDate.parse("2026-10-19"), UUID.randomUUID(), LocalTime.of(9, 5))
         val snapshot = sampleSnapshot().copy(total = 1, rows = listOf(task))
         val row = WidgetRenderer.collectionRow(context, snapshot, task, 250).apply(context, null)
         val density = context.resources.displayMetrics.density
@@ -391,6 +394,10 @@ class WidgetRendererAcceptanceTest {
             context.getString(R.string.widget_task_complete_description, taskTitle)))
         org.junit.Assert.assertTrue(action.contentDescription.toString().contains("Overdue"))
         org.junit.Assert.assertTrue(action.contentDescription.toString().contains("2026"))
+        val expectedTime = localizedTime(DateFormat.is24HourFormat(context), AppLanguages.current(context).locale)
+            .format(LocalTime.of(9, 5))
+        org.junit.Assert.assertTrue(navigation.contentDescription.toString().contains(expectedTime))
+        org.junit.Assert.assertTrue(action.contentDescription.toString().contains(expectedTime))
         org.junit.Assert.assertNotSame(navigation, action)
         org.junit.Assert.assertTrue(action.height >= 48 * density - 1)
     }

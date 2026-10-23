@@ -1,5 +1,6 @@
 package com.luma.lifeos.todo
 
+import android.text.format.DateFormat
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
@@ -8,7 +9,9 @@ import com.luma.lifeos.MainActivity
 import com.luma.lifeos.R
 import com.luma.lifeos.language.AppLanguage
 import com.luma.lifeos.language.AppLanguages
+import com.luma.lifeos.language.localizedTime
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.DecimalStyle
@@ -39,6 +42,12 @@ class TodoLanguageFlowTest {
         compose.onNodeWithTag("todo_editor_note").performTextInput(note)
         compose.onNodeWithTag("todo_editor_change_due_date").performClick()
         compose.onNodeWithTag("todo_editor_select_date").performClick()
+        compose.onNodeWithTag("todo_editor_add_due_time").performClick()
+        compose.onNodeWithTag("todo_editor_select_time").performClick()
+        var use24Hour = false
+        compose.activityRule.scenario.onActivity { use24Hour = DateFormat.is24HourFormat(it) }
+        val expectedTime = localizedTime(use24Hour, Locale.ENGLISH).format(LocalTime.of(9, 0))
+        compose.onNodeWithTag("todo_editor_due_time_value").assertTextContains(expectedTime)
 
         for (language in listOf(AppLanguage.PERSIAN, AppLanguage.FRENCH, AppLanguage.ENGLISH)) {
             selectLanguage(language)
@@ -49,6 +58,8 @@ class TodoLanguageFlowTest {
                 .format(dueDate)
             awaitRestoredDraft(title, note, localizedDueDate)
             compose.onNodeWithTag("todo_editor_due_date_value").assertTextContains(localizedDueDate, substring = true)
+            val formattedTime = localizedTime(use24Hour, language.locale).format(LocalTime.of(9, 0))
+            compose.onNodeWithTag("todo_editor_due_time_value").assertTextContains(formattedTime)
             compose.onNodeWithTag("todo_editor_save").assertTextContains(activityString(R.string.save))
 
             compose.onNodeWithTag("todo_editor_title").performTextClearance()

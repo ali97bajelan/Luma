@@ -12,6 +12,7 @@ import com.luma.lifeos.domain.todo.normalizeTodoInput
 import com.luma.lifeos.domain.todo.openTodoTaskComparator
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
@@ -103,6 +104,7 @@ internal class TodoRepositoryFixture(initial: List<TodoTask> = emptyList()) : To
             title = normalized.title,
             note = normalized.note,
             dueDate = normalized.dueDate,
+            dueTime = normalized.dueTime,
             completedAt = null,
             createdAt = Instant.parse("2026-01-01T00:00:00Z"),
             updatedAt = Instant.parse("2026-01-01T00:00:00Z"),
@@ -130,6 +132,7 @@ internal class TodoRepositoryFixture(initial: List<TodoTask> = emptyList()) : To
             title = normalized.title,
             note = normalized.note,
             dueDate = normalized.dueDate,
+            dueTime = normalized.dueTime,
             updatedAt = current.updatedAt.plusSeconds(1),
             revision = nextRevision,
         )
@@ -194,13 +197,14 @@ internal class TodoRepositoryFixture(initial: List<TodoTask> = emptyList()) : To
     data class ListRequest(val completed: Boolean, val limit: Int)
     data class TodayRequest(val date: LocalDate, val limit: Int)
 
-    private fun TodoTask.input() = TodoInput(title, note, dueDate)
+    private fun TodoTask.input() = TodoInput(title, note, dueDate, dueTime)
 }
 
 internal fun todoFixtureTask(
     title: String,
     id: UUID = UUID.randomUUID(),
     dueDate: LocalDate? = LocalDate.parse("2026-10-20"),
+    dueTime: LocalTime? = null,
     completedAt: Instant? = null,
     createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
     revision: UUID = UUID.randomUUID(),
@@ -213,4 +217,5 @@ internal fun todoFixtureTask(
     createdAt = createdAt,
     updatedAt = createdAt,
     revision = revision,
+    dueTime = dueTime,
 )

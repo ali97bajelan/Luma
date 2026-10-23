@@ -23,7 +23,18 @@ class BackupCodecTest {
         assertEquals(original + usage, backupTables(2))
         assertEquals(original + usage + habits, backupTables(3))
         assertEquals(original + usage + habits + "todo_task", backupTables(4))
-        assertEquals(4, CURRENT_BACKUP_SCHEMA_VERSION)
+        assertEquals(backupTables(4), backupTables(5))
+        assertEquals(5, CURRENT_BACKUP_SCHEMA_VERSION)
+    }
+
+    @Test fun schemaFourTodoImportKeepsItsExactLegacyHeader() {
+        val current = listOf(
+            "id", "title", "note", "due_date", "completed_at", "created_at", "updated_at",
+            "revision_token", "due_time_minutes",
+        )
+        assertEquals(current.dropLast(1), backupImportColumns("todo_task", 4, current))
+        assertEquals(current, backupImportColumns("todo_task", 5, current))
+        assertEquals(current, backupImportColumns("journal_entry", 4, current))
     }
 
     @Test fun duplicateArchiveEntryNamesAreRejected() {

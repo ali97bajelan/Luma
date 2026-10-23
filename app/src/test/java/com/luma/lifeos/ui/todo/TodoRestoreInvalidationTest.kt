@@ -7,6 +7,7 @@ import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -42,10 +43,12 @@ class TodoRestoreInvalidationTest {
         advanceUntilIdle()
 
         editor.setTitle("Unsaved draft")
+        editor.setDueTime(LocalTime.of(9, 5))
         assertTrue(editor.state.value.dirty)
         editor.invalidateAfterRestore()
         assertTrue(editor.state.value.finished)
         assertEquals("Unsaved draft", editor.state.value.draft.title)
+        assertEquals("09:05", saved.get<String>("todo_draft_due_time"))
 
         repository.current = task("Restored data", id = original.id)
         val loadsAfterRestore = repository.loads
@@ -57,6 +60,35 @@ class TodoRestoreInvalidationTest {
         assertEquals(loadsAfterRestore, repository.loads)
         assertEquals(0, repository.updates)
         assertEquals(0, repository.creates)
+    }
+
+    @Test fun pendingTimeSaveCannotReplayAfterRestoreInvalidation() = runTest(dispatcher) {
+        val original = todoFixtureTask("Before restore", dueTime = LocalTime.of(9, 5))
+        val repository = TodoRepositoryFixture(listOf(original)).apply {
+            failNextUpdateBeforeCommit = IllegalStateException("write interrupted")
+        }
+        val saved = SavedStateHandle()
+        val editor = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+        editor.setDueTime(LocalTime.of(10, 15))
+        editor.save()
+        advanceUntilIdle()
+        assertEquals(TodoEditorError.SAVE, editor.state.value.error)
+        assertEquals("10:15", saved.get<String>("todo_pending_input.due_time"))
+
+        editor.invalidateAfterRestore()
+        repository.replace(original.copy(
+            dueTime = LocalTime.of(23, 59),
+            revision = UUID.randomUUID(),
+            updatedAt = original.updatedAt.plusSeconds(2),
+        ))
+        val updateCallsBeforeRecreation = repository.updateCalls.size
+        val recreated = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+
+        assertTrue(recreated.state.value.finished)
+        assertEquals(updateCallsBeforeRecreation, repository.updateCalls.size)
+        assertEquals(LocalTime.of(23, 59), repository.tasks.single().dueTime)
     }
 
     private fun task(title: String, id: UUID = UUID.randomUUID()) = TodoTask(

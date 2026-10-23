@@ -903,6 +903,13 @@
     <string name="todo_due_date_label">مهلت انجام</string>
     <string name="todo_no_date">بدون تاریخ</string>
     <string name="todo_due_today">امروز · %1$s</string>
+    <string name="todo_due_time_label">زمان مهلت</string>
+    <string name="todo_no_time">بدون زمان</string>
+    <string name="todo_add_time">افزودن زمان</string>
+    <string name="todo_change_time">تغییر زمان</string>
+    <string name="todo_remove_time">حذف زمان</string>
+    <string name="todo_time_out_of_range">ساعت و دقیقهٔ معتبری انتخاب کنید.</string>
+    <string name="todo_due_date_time">%1$s، %2$s</string>
     <string name="todo_change_date">تغییر</string>
     <string name="todo_remove_date">حذف</string>
     <string name="todo_title_required">عنوانی وارد کنید.</string>

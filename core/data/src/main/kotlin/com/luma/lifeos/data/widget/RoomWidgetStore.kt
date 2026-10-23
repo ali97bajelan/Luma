@@ -240,6 +240,7 @@ class RoomWidgetStore(
                                 title = row.title,
                                 dueDate = LocalDate.parse(requireNotNull(row.dueDate)),
                                 actionToken = token,
+                                dueTime = row.dueTimeMinutes?.let { java.time.LocalTime.of(it / 60, it % 60) },
                             )
                         }
                     } else {

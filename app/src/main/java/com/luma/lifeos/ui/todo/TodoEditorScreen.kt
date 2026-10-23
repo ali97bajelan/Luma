@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,14 +33,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -54,7 +59,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.todo.TodoField
 import com.luma.lifeos.domain.todo.TodoTextLimits
 import com.luma.lifeos.domain.todo.TodoValidationReason
-import com.luma.lifeos.language.localizedDate
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.EditorActionRow
@@ -62,7 +67,9 @@ import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.text.NumberFormat
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.FormatStyle
+import java.util.UUID
 import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
@@ -83,14 +90,20 @@ fun TodoEditorScreen(
     onRequestDelete: () -> Unit,
     onConfirmDelete: () -> Unit,
     onCancelDelete: () -> Unit,
+    onDueTime: (LocalTime?) -> Unit = {},
 ) {
     var discarding by rememberSaveable { mutableStateOf(false) }
     var reloadConfirmation by rememberSaveable { mutableStateOf(false) }
     var pickingDate by rememberSaveable { mutableStateOf(false) }
+    var pickingTime by remember { mutableStateOf(false) }
+    var timePickerSession by remember { mutableStateOf(UUID.randomUUID().toString()) }
     var pickerStartDate by rememberSaveable { mutableStateOf("") }
     val titleFocus = remember { FocusRequester() }
     val noteFocus = remember { FocusRequester() }
     val noteBringIntoView = remember { BringIntoViewRequester() }
+    val timeFocus = remember { FocusRequester() }
+    val timeBringIntoView = remember { BringIntoViewRequester() }
+    val displayTime = rememberDisplayTimePolicy()
     val canEdit = state.ready && !state.busy && !state.finished && !state.conflict && !state.missing &&
         state.pendingAction != "complete" && state.pendingAction != "reopen" && state.pendingAction != "delete"
     val readOnly = !canEdit
@@ -110,12 +123,20 @@ fun TodoEditorScreen(
                 noteFocus.requestFocus()
                 noteBringIntoView.bringIntoView()
             }
+            TodoField.DUE_TIME in state.fieldErrors -> {
+                timeFocus.requestFocus()
+                timeBringIntoView.bringIntoView()
+            }
         }
+    }
+    LaunchedEffect(canEdit, state.draft.dueDate) {
+        if (!canEdit || state.draft.dueDate == null) pickingTime = false
     }
 
     // The picker gets first chance at Back; the editor consumes Back while a write is pending.
     BackHandler { if (!state.busy) close() }
     BackHandler(enabled = pickingDate) { pickingDate = false }
+    BackHandler(enabled = pickingTime) { pickingTime = false }
 
     Scaffold(
         modifier = Modifier.testTag("screen_todo_editor"),
@@ -255,7 +276,7 @@ fun TodoEditorScreen(
                     stringResource(R.string.todo_date_out_of_range)
                 } else null
                 val dueText = state.draft.dueDate?.let { date ->
-                    val formatted = date.format(localizedDate(FormatStyle.LONG))
+                    val formatted = date.format(displayTime.date(FormatStyle.LONG))
                     if (date == LocalDate.now()) stringResource(R.string.todo_due_today, formatted) else formatted
                 } ?: stringResource(R.string.todo_no_date)
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -313,6 +334,61 @@ fun TodoEditorScreen(
                         }
                     }
                     dueDateError?.let { AccessibleFeedback(it) }
+                }
+
+                val dueTimeError = if (state.fieldErrors[TodoField.DUE_TIME] == TodoValidationReason.OUT_OF_RANGE) {
+                    stringResource(R.string.todo_time_out_of_range)
+                } else null
+                if (state.draft.dueDate != null) {
+                    Column(
+                        Modifier.fillMaxWidth().testTag("todo_editor_due_time_row"),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.todo_due_time_label),
+                            modifier = Modifier.semantics { heading() },
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val dueTimeText = state.draft.dueTime?.let { displayTime.time().format(it) }
+                            ?: stringResource(R.string.todo_no_time)
+                        Text(
+                            dueTimeText,
+                            modifier = Modifier.fillMaxWidth()
+                                .semantics { dueTimeError?.let { error(it) } }
+                                .focusRequester(timeFocus)
+                                .focusable()
+                                .bringIntoViewRequester(timeBringIntoView)
+                                .testTag("todo_editor_due_time_value"),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Column(
+                            Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    timePickerSession = UUID.randomUUID().toString()
+                                    pickingTime = true
+                                },
+                                enabled = canEdit,
+                                modifier = Modifier.heightIn(min = 48.dp).testTag(
+                                    if (state.draft.dueTime == null) "todo_editor_add_due_time" else "todo_editor_change_due_time",
+                                ),
+                            ) {
+                                Text(stringResource(if (state.draft.dueTime == null) R.string.todo_add_time else R.string.todo_change_time))
+                            }
+                            if (state.draft.dueTime != null) {
+                                TextButton(
+                                    onClick = { onDueTime(null) },
+                                    enabled = canEdit,
+                                    modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_clear_due_time"),
+                                ) { Text(stringResource(R.string.todo_remove_time)) }
+                            }
+                        }
+                        dueTimeError?.let { AccessibleFeedback(it, Modifier.testTag("todo_due_time_feedback")) }
+                    }
                 }
 
                 if (state.editing) {
@@ -424,6 +500,38 @@ fun TodoEditorScreen(
                 TextButton(onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) }
             },
         ) { DatePicker(state = picker) }
+    }
+    if (pickingTime && state.draft.dueDate != null) {
+        key(timePickerSession) {
+            val committedTime = state.draft.dueTime ?: LocalTime.of(9, 0)
+            val picker = rememberTimePickerState(
+                initialHour = committedTime.hour,
+                initialMinute = committedTime.minute,
+                is24Hour = displayTime.use24Hour,
+            )
+            val validTime = picker.hour in 0..23 && picker.minute in 0..59
+            LumaAlertDialog(
+                onDismissRequest = { pickingTime = false },
+                modifier = Modifier.testTag("todo_editor_time_dialog"),
+                title = { Text(stringResource(R.string.todo_due_time_label)) },
+                text = { TimeInput(state = picker, modifier = Modifier.testTag("todo_editor_time_input")) },
+                confirmButton = {
+                    TextButton(
+                        enabled = validTime && canEdit,
+                        onClick = {
+                            if (validTime && canEdit) {
+                                onDueTime(LocalTime.of(picker.hour, picker.minute))
+                                pickingTime = false
+                            }
+                        },
+                        modifier = Modifier.testTag("todo_editor_select_time"),
+                    ) { Text(stringResource(R.string.select_time)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pickingTime = false }) { Text(stringResource(R.string.cancel)) }
+                },
+            )
+        }
     }
 }
 

@@ -1,12 +1,14 @@
 package com.luma.lifeos.domain.todo
 
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.Comparator
 
 enum class TodoField {
     TITLE,
     NOTE,
     DUE_DATE,
+    DUE_TIME,
 }
 
 enum class TodoValidationReason {
@@ -44,7 +46,15 @@ fun normalizeTodoInput(input: TodoInput): TodoInput {
         throw TodoValidationException(TodoField.DUE_DATE, TodoValidationReason.OUT_OF_RANGE)
     }
 
-    return TodoInput(title = title, note = note, dueDate = dueDate)
+    val dueTime = input.dueTime
+    if (dueTime != null && dueDate == null) {
+        throw TodoValidationException(TodoField.DUE_DATE, TodoValidationReason.REQUIRED)
+    }
+    if (dueTime != null && (dueTime.second != 0 || dueTime.nano != 0)) {
+        throw TodoValidationException(TodoField.DUE_TIME, TodoValidationReason.OUT_OF_RANGE)
+    }
+
+    return TodoInput(title = title, note = note, dueDate = dueDate, dueTime = dueTime)
 }
 
 fun todoBucket(task: TodoTask, today: LocalDate): TodoBucket = when {
@@ -60,6 +70,7 @@ fun isTodoTodayEligible(task: TodoTask, today: LocalDate): Boolean =
 val openTodoTaskComparator: Comparator<TodoTask> = Comparator { first, second ->
     compareDueDates(first.dueDate, second.dueDate)
         .takeIf { it != 0 }
+        ?: compareDueTimes(first.dueTime, second.dueTime).takeIf { it != 0 }
         ?: first.createdAt.compareTo(second.createdAt).takeIf { it != 0 }
         ?: first.id.toString().compareTo(second.id.toString())
 }
@@ -71,6 +82,13 @@ val completedTodoTaskComparator: Comparator<TodoTask> = Comparator { first, seco
 }
 
 private fun compareDueDates(first: LocalDate?, second: LocalDate?): Int = when {
+    first == null && second == null -> 0
+    first == null -> 1
+    second == null -> -1
+    else -> first.compareTo(second)
+}
+
+private fun compareDueTimes(first: LocalTime?, second: LocalTime?): Int = when {
     first == null && second == null -> 0
     first == null -> 1
     second == null -> -1

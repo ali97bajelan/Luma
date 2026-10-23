@@ -1,6 +1,6 @@
 # Tasks feature planning handoff
 
-Prepared: 19 October 2026. Status: TD01–TD06 complete; TD07 in progress (focused app/data acceptance, builds, native export/restore/reset, CRUD isolation and 10,000-task performance pass; the full app suite has 14 failures outside Todo, the full data suite has two Timeline failures, and native TalkBack speech/focus traversal remains unverified).
+Prepared: 19 October 2026. Status: TD01–TD06 complete; TD07 in progress (focused app/data acceptance, builds, native export/restore/reset, CRUD isolation and 10,000-task performance pass; the full app suite has 14 failures outside Todo, the full data suite has two Timeline failures, and native TalkBack speech/focus traversal remains unverified). The 23 October due-time extension is implemented in source; its Gradle test and emulator checks were not run at the user's request.
 
 The user requested investigation by a senior product manager and a senior UI/UX
 designer, with direct discussion to produce specifications, plans and tasks. They
@@ -12,6 +12,7 @@ Detailed feature and engineering choices remain proposed for review.
 1. [Product specification](superpowers/specs/2026-10-19-todo-product-spec.md): scope alternatives, recommended MVP, lifecycle/date/data rules and `TODO-AC-01`–`13`.
 2. [UI/UX specification](superpowers/specs/2026-10-19-todo-ux-spec.md): navigation, textual wireframes, list/editor interaction, feedback, RTL, accessibility and `UX-TODO-01`–`15`.
 3. [Implementation plan](superpowers/plans/2026-10-19-todo-list.md): concrete files/contracts, ordered checkbox steps and verification commands.
+4. [Due-time specification](superpowers/specs/2026-10-23-task-due-time-design.md) and [implementation plan](superpowers/plans/2026-10-23-task-due-time.md): optional hour/minute time, persistence, picker and archive changes.
 
 The specs own behavior; the plan owns engineering interfaces and verification.
 This file owns the proposed feature task status. `TD` identifiers are local to this
@@ -19,12 +20,12 @@ feature and do not replace or renumber existing T01–T29 or UX work.
 
 ## Recommended MVP
 
-- One-time tasks with a required title, optional notes and optional civil due date.
+- One-time tasks with a required title, optional notes, optional civil due date and optional minute-precision due time (which requires a date).
 - Open/Completed lists, deterministic date groups, 50-row initial loading and Load more.
 - Complete, reopen, revision-safe completion Undo, editing and confirmed permanent deletion.
 - More → Tasks, the shared editor through Quick Capture, and at most three due/overdue tasks on Today.
 - Today tasks appear only when browsing the actual current device date. Task in existing Quick Capture starts with No date; Today Add visibly starts due today. Existing Quick Capture locations remain Timeline/Review.
-- One standalone Room table with schema-4 migration, archive compatibility, restore preview counts and reset coverage.
+- One standalone Room table with Room 6 migration, archive schema-5 compatibility, restore preview counts and reset coverage.
 - Offline EN/FA/FR, Persian RTL, accessible controls and retained drafts/errors.
 
 Projects, subtasks, priorities, recurrence, reminders, attachments, cloud sync,
@@ -126,6 +127,26 @@ unverified. Native SAF export/restore, app-data reset, CRUD isolation and the
 10,000-task benchmark passed. TD07 stays in progress until the suite failures and
 TalkBack gap are fixed or explicitly accepted. Only disposable `emulator-5562`
 was used; the user's existing emulator and saved Luma data were not touched.
+
+## Due-time extension (23 October 2026)
+
+Status: implementation and regression-test source are in the working tree. Room
+schema generation, production compilation, debug APK assembly, Android test-source
+compilation and lint passed. Gradle tests and emulator/device acceptance were not run
+for this extension at the user's request; runtime acceptance remains pending. Some
+planned localization/display assertions remain unauthored. See the [validation record](validation/2026-10-23-task-due-time.md).
+
+Tasks can keep a date without a time or a date with a local hour and minute. The
+time is stored as minutes since midnight, so midnight is distinct from no time.
+Changing the device time zone keeps the civil date and minute unchanged. Sorting
+places timed tasks before date-only tasks for the same date; Today and Overdue
+remain calendar-day based. Due times do not schedule reminders or alarms.
+
+Room schema 6 migrates old tasks with null due time. Portable backup schema 5 adds
+`due_time_minutes`; schema 4 retains its exact old task header and imports with null
+time. The editor stores confirmed time in saved drafts and pending writes. Its
+Material time input starts at 09:00 when no time is selected and only updates the
+draft on confirmation.
 
 ## TD07 follow-up checks
 

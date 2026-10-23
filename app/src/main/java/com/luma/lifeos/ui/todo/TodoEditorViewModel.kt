@@ -13,6 +13,7 @@ import com.luma.lifeos.domain.todo.TodoValidationException
 import com.luma.lifeos.domain.todo.TodoValidationReason
 import com.luma.lifeos.domain.todo.normalizeTodoInput
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -72,7 +73,14 @@ class TodoEditorViewModel(
 
     fun setNote(value: String) = change(TodoField.NOTE) { it.copy(note = value) }
 
-    fun setDueDate(value: LocalDate?) = change(TodoField.DUE_DATE) { it.copy(dueDate = value) }
+    fun setDueDate(value: LocalDate?) = change(TodoField.DUE_DATE) {
+        it.copy(dueDate = value, dueTime = if (value == null) null else it.dueTime)
+    }
+
+    fun setDueTime(value: LocalTime?) {
+        if (value != null && state.value.draft.dueDate == null) return
+        change(TodoField.DUE_TIME) { it.copy(dueTime = value) }
+    }
 
     /** Closes this editor without replaying a draft or mutation after archive replacement. */
     fun invalidateAfterRestore() {
@@ -214,7 +222,7 @@ class TodoEditorViewModel(
                 if (creating) {
                     if (task == null) {
                         val baseline = baselineInput ?: TodoInput("", null, initialDue)
-                        val draft = saved.readDraft() ?: TodoDraft(baseline.title, baseline.note.orEmpty(), baseline.dueDate)
+                        val draft = saved.readDraft() ?: TodoDraft(baseline.title, baseline.note.orEmpty(), baseline.dueDate, baseline.dueTime)
                         persistDraft(draft, baseline)
                         mutableState.value = state.value.copy(
                             draft = draft,
@@ -276,7 +284,7 @@ class TodoEditorViewModel(
                             baselineCompleted = task.isCompleted
                             persistBaseline(baselineInput!!, baselineRevision, baselineCompleted)
                         }
-                        val draft = saved.readDraft() ?: TodoDraft(task.title, task.note.orEmpty(), task.dueDate)
+                        val draft = saved.readDraft() ?: TodoDraft(task.title, task.note.orEmpty(), task.dueDate, task.dueTime)
                         persistDraft(draft, baselineInput ?: task.toInput())
                         val pendingConflicts = pending != null && pending.expectedRevision != task.revision
                         mutableState.value = state.value.copy(
@@ -467,7 +475,7 @@ class TodoEditorViewModel(
         baselineRevision = task.revision
         baselineCompleted = task.isCompleted
         persistBaseline(baselineInput!!, baselineRevision, baselineCompleted)
-        val draft = TodoDraft(task.title, task.note.orEmpty(), task.dueDate)
+        val draft = TodoDraft(task.title, task.note.orEmpty(), task.dueDate, task.dueTime)
         persistDraft(draft, baselineInput!!)
         mutableState.value = state.value.copy(
             draft = draft,
@@ -542,6 +550,7 @@ class TodoEditorViewModel(
         saved[KEY_TITLE] = draft.title
         saved[KEY_NOTE] = draft.note
         saved[KEY_DUE_DATE] = draft.dueDate?.toString().orEmpty()
+        saved[KEY_DUE_TIME] = draft.dueTime?.toString().orEmpty()
         val dirty = !equivalent(draft.toInput(), baseline)
         saved[KEY_DIRTY] = dirty
     }
@@ -569,6 +578,7 @@ class TodoEditorViewModel(
             "$KEY_PENDING_INPUT.title",
             "$KEY_PENDING_INPUT.note",
             "$KEY_PENDING_INPUT.due_date",
+            "$KEY_PENDING_INPUT.due_time",
         ).forEach { saved.remove<Any>(it) }
     }
 
@@ -596,10 +606,10 @@ class TodoEditorViewModel(
     private fun comparable(input: TodoInput): TodoInput {
         val title = if (input.title.contains('\n') || input.title.contains('\r')) input.title else input.title.trim()
         val note = input.note?.trim()?.takeUnless(String::isEmpty)
-        return TodoInput(title = title, note = note, dueDate = input.dueDate)
+        return TodoInput(title = title, note = note, dueDate = input.dueDate, dueTime = input.dueTime)
     }
 
-    private fun TodoTask.toInput() = TodoInput(title = title, note = note, dueDate = dueDate)
+    private fun TodoTask.toInput() = TodoInput(title = title, note = note, dueDate = dueDate, dueTime = dueTime)
 
     private fun resultFrom(saved: SavedStateHandle): TodoEditorResult? {
         val id = saved.uuid(KEY_RESULT_TASK_ID) ?: return null
@@ -614,10 +624,12 @@ class TodoEditorViewModel(
 
     private fun SavedStateHandle.readInput(prefix: String): TodoInput? {
         if (prefix == KEY_BASELINE && get<Boolean>(KEY_BASELINE_SET) != true) return null
+        val dueDate = get<String>("$prefix.due_date").toLocalDateOrNull()
         return TodoInput(
             title = get<String>("$prefix.title") ?: return null,
             note = get<String>("$prefix.note").orEmpty().ifEmpty { null },
-            dueDate = get<String>("$prefix.due_date").toLocalDateOrNull(),
+            dueDate = dueDate,
+            dueTime = get<String>("$prefix.due_time").toLocalTimeOrNull().takeIf { dueDate != null },
         )
     }
 
@@ -625,14 +637,17 @@ class TodoEditorViewModel(
         this["$prefix.title"] = input.title
         this["$prefix.note"] = input.note.orEmpty()
         this["$prefix.due_date"] = input.dueDate?.toString().orEmpty()
+        this["$prefix.due_time"] = input.dueTime?.toString().orEmpty()
     }
 
     private fun SavedStateHandle.readDraft(): TodoDraft? {
         if (get<Boolean>(KEY_HAS_DRAFT) != true) return null
+        val dueDate = get<String>(KEY_DUE_DATE).toLocalDateOrNull()
         return TodoDraft(
             title = get<String>(KEY_TITLE).orEmpty(),
             note = get<String>(KEY_NOTE).orEmpty(),
-            dueDate = get<String>(KEY_DUE_DATE).toLocalDateOrNull(),
+            dueDate = dueDate,
+            dueTime = get<String>(KEY_DUE_TIME).toLocalTimeOrNull().takeIf { dueDate != null },
         )
     }
 
@@ -650,6 +665,11 @@ class TodoEditorViewModel(
 
     private fun String?.toLocalDateOrNull(): LocalDate? =
         this?.takeIf(String::isNotEmpty)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+
+    private fun String?.toLocalTimeOrNull(): LocalTime? =
+        this?.takeIf(String::isNotEmpty)?.let {
+            runCatching { LocalTime.parse(it) }.getOrNull()?.takeIf { time -> time.second == 0 && time.nano == 0 }
+        }
 
     private data class PendingOperation(
         val type: PendingType,
@@ -674,6 +694,7 @@ class TodoEditorViewModel(
         const val KEY_TITLE = "todo_draft_title"
         const val KEY_NOTE = "todo_draft_note"
         const val KEY_DUE_DATE = "todo_draft_due_date"
+        const val KEY_DUE_TIME = "todo_draft_due_time"
         const val KEY_HAS_DRAFT = "todo_has_draft"
         const val KEY_DIRTY = "todo_dirty"
         const val KEY_FIELD_ERRORS = "todo_field_errors"

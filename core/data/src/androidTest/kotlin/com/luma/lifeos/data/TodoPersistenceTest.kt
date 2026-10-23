@@ -14,6 +14,7 @@ import com.luma.lifeos.domain.todo.openTodoTaskComparator
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
@@ -214,6 +215,75 @@ class TodoPersistenceTest {
         val completedPage = todos.observeList(completed = true, limit = 50).first()
         assertEquals(completedTasks.sortedWith(completedTodoTaskComparator), completedPage.items)
         assertEquals(4, completedPage.total)
+    }
+
+    @Test fun dueTimesPersistAndParticipateInRetryConflictAndPagedOrdering() = runBlocking {
+        openPersistentDatabase("due-time-${UUID.randomUUID()}.db")
+        val date = LocalDate.parse("2026-10-20")
+        val values = listOf(LocalTime.MIDNIGHT, LocalTime.of(9, 5), LocalTime.of(23, 59))
+        val tasks = values.mapIndexed { index, time ->
+            todos.create(
+                UUID.nameUUIDFromBytes("due-time-$index".toByteArray()),
+                UUID.randomUUID(),
+                TodoInput("Timed task $index", dueDate = date, dueTime = time),
+            )
+        }
+        assertEquals(values, todos.observeList(false, 10).first().items.map { it.dueTime })
+
+        database.close()
+        reopenPersistentDatabase()
+        tasks.forEachIndexed { index, task -> assertEquals(values[index], todos.get(task.id)?.dueTime) }
+
+        val selected = requireNotNull(todos.get(tasks[1].id))
+        val nextRevision = UUID.randomUUID()
+        val changedInput = TodoInput("Updated minute", dueDate = date, dueTime = LocalTime.of(10, 15))
+        val changed = todos.update(selected.id, selected.revision, nextRevision, changedInput)
+        assertEquals(changed, todos.update(selected.id, selected.revision, nextRevision, changedInput))
+        assertEquals(LocalTime.of(10, 15), changed.dueTime)
+        assertTrue(
+            runCatching {
+                todos.update(selected.id, selected.revision, nextRevision, changedInput.copy(dueTime = LocalTime.of(10, 16)))
+            }.exceptionOrNull() is TodoConflictException,
+        )
+        assertTrue(
+            runCatching {
+                todos.update(selected.id, selected.revision, UUID.randomUUID(), changedInput.copy(dueTime = LocalTime.of(10, 17)))
+            }.exceptionOrNull() is TodoConflictException,
+        )
+
+        val cleared = todos.update(changed.id, changed.revision, UUID.randomUUID(), changedInput.copy(dueTime = null))
+        assertNull(cleared.dueTime)
+        val noDate = todos.update(cleared.id, cleared.revision, UUID.randomUUID(), changedInput.copy(dueDate = null, dueTime = null))
+        assertNull(noDate.dueDate)
+        assertNull(noDate.dueTime)
+        database.close()
+        reopenPersistentDatabase()
+        assertNull(todos.get(noDate.id)?.dueDate)
+        assertNull(todos.get(noDate.id)?.dueTime)
+
+        assertEquals(LocalTime.MIDNIGHT, todos.get(tasks[0].id)?.dueTime)
+        assertEquals(LocalTime.of(23, 59), todos.get(tasks[2].id)?.dueTime)
+        tasks.forEach { task -> todos.get(task.id)?.let { todos.delete(it.id, it.revision) } }
+        val many = (0 until 65).map { index ->
+            todos.create(
+                UUID.nameUUIDFromBytes("ordered-due-time-$index".toByteArray()),
+                UUID.randomUUID(),
+                TodoInput(
+                    "Ordered $index",
+                    dueDate = date,
+                    dueTime = when (index % 4) {
+                        0 -> null
+                        1 -> LocalTime.MIDNIGHT
+                        2 -> LocalTime.of(9, 5)
+                        else -> LocalTime.of(23, 59)
+                    },
+                ),
+            )
+        }
+        val expected = many.sortedWith(openTodoTaskComparator)
+        assertEquals(expected.take(50), todos.observeList(false, 50).first().items)
+        assertEquals(expected, todos.observeList(false, 100).first().items)
+        assertEquals(expected.size, expected.map { it.id }.toSet().size)
     }
 
     @Test fun clockRollbackKeepsUpdatedAtMonotonicAndCompletionUsesActualClock() = runBlocking {

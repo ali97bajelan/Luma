@@ -15,7 +15,7 @@ a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timel
 browsing, mood check-ins, offline journals with reusable tags, direct/reversible
 memories, people with linked event histories, reusable manual places, private
 photo attachments on journals/memories, offline one-time tasks with optional due
-dates, optional on-device app-usage imports, optional Health Connect step imports,
+dates and optional hour/minute due times, optional on-device app-usage imports, optional Health Connect step imports,
 saved daily summaries, simple local lookup, and deterministic weekly reviews.
 Remaining reliability and release work follows [TASKS.md](TASKS.md).
 
@@ -98,6 +98,7 @@ and may retain cached views, including after a widget is removed or Luma is rese
 - [TASKS.md](TASKS.md): original T01–T21 and approved extension T22–T29, with acceptance criteria and status.
 - [Habits handoff](docs/HABITS_TASKS.md): counted habits, per-completion Timeline records, and the five-destination navigation with a More hub are implemented; optional reminders and full release acceptance remain open.
 - [Tasks handoff](docs/TODO_TASKS.md): one-time tasks with optional civil due dates, Open/Completed lists, Today and Quick Capture entry points; integrated release acceptance remains in progress.
+- [Task due-time design](docs/superpowers/specs/2026-10-23-task-due-time-design.md) and [implementation plan](docs/superpowers/plans/2026-10-23-task-due-time.md): optional minute-precision floating due times, with validation status in [the acceptance record](docs/validation/2026-10-23-task-due-time.md).
 - [Tasks acceptance evidence](docs/TODO_ACCEPTANCE_2026-10-19.md): automated and emulator results plus checks still pending.
 - Original `.docx` files: product specification and implementation task source.
 - `docs/`: readable source extracts and validation evidence.

@@ -4,6 +4,7 @@ import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoTask
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 internal fun TodoEntity.toDomain(): TodoTask = TodoTask(
@@ -11,6 +12,7 @@ internal fun TodoEntity.toDomain(): TodoTask = TodoTask(
     title = title,
     note = note,
     dueDate = dueDate?.let { LocalDate.parse(it) },
+    dueTime = dueTimeMinutes?.let { LocalTime.of(it / 60, it % 60) },
     completedAt = completedAt?.let(Instant::ofEpochMilli),
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
@@ -30,4 +32,5 @@ internal fun TodoInput.toEntity(
     createdAt = now.toEpochMilli(),
     updatedAt = now.toEpochMilli(),
     revisionToken = revision.toString(),
+    dueTimeMinutes = dueTime?.let { it.hour * 60 + it.minute },
 )

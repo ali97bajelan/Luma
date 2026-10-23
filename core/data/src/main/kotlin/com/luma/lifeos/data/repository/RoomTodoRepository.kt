@@ -88,6 +88,7 @@ class RoomTodoRepository(
                 title = normalized.title,
                 note = normalized.note,
                 dueDate = normalized.dueDate?.toString(),
+                dueTimeMinutes = normalized.dueTime?.let { it.hour * 60 + it.minute },
                 updatedAt = updatedAt,
             ) == 1) { "Task changed while its update was being applied" }
             requireNotNull(dao.find(key)).toDomain()
@@ -131,5 +132,6 @@ class RoomTodoRepository(
     }
 
     private fun TodoTask.matches(input: TodoInput): Boolean =
-        title == input.title && note == input.note && dueDate == input.dueDate
+        title == input.title && note == input.note && dueDate == input.dueDate &&
+            dueTime == input.dueTime
 }

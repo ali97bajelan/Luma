@@ -23,7 +23,7 @@ class TodoMigrationTest {
         fileNames.forEach(instrumentation.targetContext::deleteDatabase)
     }
 
-    @Test fun populatedSchemasOneThroughThreeUpgradeToFourWithoutLosingData() {
+    @Test fun populatedSchemasOneThroughThreeUpgradeToLatestWithoutLosingData() {
         for (version in 1..3) {
             val fileName = "todo-migration-v$version.db"
             fileNames += fileName
@@ -43,7 +43,7 @@ class TodoMigrationTest {
 
             val migrated = helper.runMigrationsAndValidate(
                 fileName,
-                4,
+                6,
                 true,
                 *LumaDatabase.MIGRATIONS.toTypedArray(),
             )
@@ -77,7 +77,7 @@ class TodoMigrationTest {
                 migrated.close()
             }
 
-            // Opening through the app builder validates the exported schema identity at version 4.
+            // Opening through the app builder validates the exported schema identity at version 6.
             val database = LumaDatabase.open(instrumentation.targetContext, fileName)
             try {
                 database.openHelper.readableDatabase.query("SELECT COUNT(*) FROM todo_task").use {
@@ -90,11 +90,66 @@ class TodoMigrationTest {
         }
     }
 
+    @Test fun populatedVersionFiveTasksMigrateWithNullTimeAndStableIndexes() {
+        val fileName = "todo-migration-v5-${System.nanoTime()}.db"
+        fileNames += fileName
+        helper.createDatabase(fileName, 5).apply {
+            execSQL("INSERT INTO todo_task (id, title, note, due_date, completed_at, created_at, updated_at, revision_token) VALUES ('$OPEN_TASK_ID', 'Open task', 'Keep note', '2026-10-20', NULL, 1000, 2000, '$OPEN_REVISION')")
+            execSQL("INSERT INTO todo_task (id, title, note, due_date, completed_at, created_at, updated_at, revision_token) VALUES ('$COMPLETED_TASK_ID', 'Done task', NULL, NULL, 3000, 1000, 3000, '$COMPLETED_REVISION')")
+        }.close()
+
+        val migrated = helper.runMigrationsAndValidate(
+            fileName,
+            6,
+            true,
+            *LumaDatabase.MIGRATIONS.toTypedArray(),
+        )
+        try {
+            migrated.query("SELECT id, title, note, due_date, completed_at, created_at, updated_at, revision_token, due_time_minutes FROM todo_task ORDER BY id").use { cursor ->
+                assertEquals(2, cursor.count)
+                assertTrue(cursor.moveToFirst())
+                assertEquals(COMPLETED_TASK_ID, cursor.getString(0))
+                assertEquals("Done task", cursor.getString(1))
+                assertTrue(cursor.isNull(2))
+                assertTrue(cursor.isNull(3))
+                assertEquals(3000, cursor.getLong(4))
+                assertEquals(1000, cursor.getLong(5))
+                assertEquals(3000, cursor.getLong(6))
+                assertEquals(COMPLETED_REVISION, cursor.getString(7))
+                assertTrue(cursor.isNull(8))
+                assertTrue(cursor.moveToNext())
+                assertEquals(OPEN_TASK_ID, cursor.getString(0))
+                assertEquals("Open task", cursor.getString(1))
+                assertEquals("Keep note", cursor.getString(2))
+                assertEquals("2026-10-20", cursor.getString(3))
+                assertTrue(cursor.isNull(4))
+                assertEquals(1000, cursor.getLong(5))
+                assertEquals(2000, cursor.getLong(6))
+                assertEquals(OPEN_REVISION, cursor.getString(7))
+                assertTrue(cursor.isNull(8))
+            }
+            val indexes = buildSet {
+                migrated.query("PRAGMA index_list('todo_task')").use { cursor ->
+                    while (cursor.moveToNext()) add(cursor.getString(1))
+                }
+            }
+            assertTrue("index_todo_task_completed_at_due_date_due_time_minutes_created_at_id" in indexes)
+            assertTrue("index_todo_task_completed_at_id" in indexes)
+            assertTrue("index_todo_task_completed_at_due_date_created_at_id" !in indexes)
+        } finally {
+            migrated.close()
+        }
+    }
+
     private companion object {
         const val EVENT_ID = "00000000-0000-0000-0000-000000000001"
         const val JOURNAL_ID = "00000000-0000-0000-0000-000000000002"
         const val PHOTO_ID = "00000000-0000-0000-0000-000000000003"
         const val HABIT_ID = "00000000-0000-0000-0000-000000000004"
         const val SCHEDULE_ID = "00000000-0000-0000-0000-000000000005"
+        const val OPEN_TASK_ID = "00000000-0000-0000-0000-000000000006"
+        const val COMPLETED_TASK_ID = "00000000-0000-0000-0000-000000000007"
+        const val OPEN_REVISION = "10000000-0000-0000-0000-000000000006"
+        const val COMPLETED_REVISION = "10000000-0000-0000-0000-000000000007"
     }
 }

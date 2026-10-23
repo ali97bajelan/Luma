@@ -99,6 +99,7 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
             createdAt = l("created_at"),
             updatedAt = l("updated_at"),
             revisionToken = s("revision_token"),
+            dueTimeMinutes = optionalInt("due_time_minutes"),
         ).toDomain()
     }
 }

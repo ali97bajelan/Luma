@@ -100,7 +100,7 @@ Use role-paired text rather than a decorative accent as arbitrary foreground. Di
 | Review sparklines | Daily usage evidence, aggregate activity and per-habit week slots | Keep supported metrics/slots and sources; no fake chart | O05 |
 | “100% streak”, active days and consistency coaching | Repetition/scheduled-day summaries; no defined new streak contract | Keep current summaries; omit new claims | O06 |
 | Reflect chip and cadence quotation | Mood/Journal/Memory capture | Keep three choices and omit synthetic insight footer | O07 |
-| Water/Stretch shortcuts in capture sheet | No habit entry in current Quick Capture sheet | Retain current choices; no hard-coded sample habits | O08 |
+| Water/Stretch shortcuts in capture sheet | A habit shortcut is outside the base capture contract | Retain current choices; no hard-coded sample habits | O08 |
 | View options → Compact script | Real View options disclosure exists | Preserve actual disclosure; no label-only toggle or implied compact-mode feature | T32-A |
 | Calendar dropdown glyph | Existing day navigation | Preserve existing date actions; omit unmapped picker affordance | T32-A |
 | People/Places search and switching | Already implemented with separate saved queries | Restyle and preserve; no optional feature needed | T32-C |

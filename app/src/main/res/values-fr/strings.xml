@@ -917,6 +917,13 @@
     <string name="todo_due_date_label">Échéance</string>
     <string name="todo_no_date">Aucune date</string>
     <string name="todo_due_today">Aujourd’hui · %1$s</string>
+    <string name="todo_due_time_label">Heure d’échéance</string>
+    <string name="todo_no_time">Aucune heure</string>
+    <string name="todo_add_time">Ajouter une heure</string>
+    <string name="todo_change_time">Modifier l’heure</string>
+    <string name="todo_remove_time">Supprimer l’heure</string>
+    <string name="todo_time_out_of_range">Choisissez une heure et des minutes valides.</string>
+    <string name="todo_due_date_time">%1$s à %2$s</string>
     <string name="todo_change_date">Modifier</string>
     <string name="todo_remove_date">Retirer</string>
     <string name="todo_title_required">Saisissez un titre.</string>

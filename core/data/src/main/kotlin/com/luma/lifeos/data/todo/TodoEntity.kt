@@ -12,7 +12,7 @@ import java.util.UUID
 @Entity(
     tableName = "todo_task",
     indices = [
-        Index(value = ["completed_at", "due_date", "created_at", "id"]),
+        Index(value = ["completed_at", "due_date", "due_time_minutes", "created_at", "id"]),
         Index(value = ["completed_at", "id"]),
     ],
 )
@@ -25,6 +25,7 @@ data class TodoEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     @ColumnInfo(name = "revision_token") val revisionToken: String,
+    @ColumnInfo(name = "due_time_minutes") val dueTimeMinutes: Int? = null,
 ) {
     init {
         require(id == canonicalUuid(id))
@@ -32,7 +33,9 @@ data class TodoEntity(
         val parsedDueDate = dueDate?.let { value ->
             LocalDate.parse(value).also { parsed -> require(parsed.toString() == value) }
         }
-        val normalized = normalizeTodoInput(TodoInput(title, note, parsedDueDate))
+        require(dueTimeMinutes == null || dueTimeMinutes in 0..1439) { "Task due time minutes must be between 0 and 1439" }
+        val dueTime = dueTimeMinutes?.let { java.time.LocalTime.of(it / 60, it % 60) }
+        val normalized = normalizeTodoInput(TodoInput(title, note, parsedDueDate, dueTime))
         require(normalized.title == title && normalized.note == note)
         require(updatedAt >= createdAt)
     }

@@ -12,6 +12,7 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
@@ -52,17 +53,17 @@ class TodoBackupTest {
 
     private suspend fun export(): ByteArray = ByteArrayOutputStream().also { backup.export(it) }.toByteArray()
 
-    @Test fun schemaFourRoundTripPreservesTaskDataAndRotatesRevisionTokens() = runBlocking {
+    @Test fun schemaFiveRoundTripPreservesTaskDataAndRotatesRevisionTokens() = runBlocking {
         val open = todos.create(
             UUID.randomUUID(),
             UUID.randomUUID(),
-            TodoInput("Open task", "Persian فارسی", LocalDate.parse("2026-10-20")),
+            TodoInput("Open task", "Persian فارسی", LocalDate.parse("2026-10-20"), LocalTime.of(9, 5)),
         )
         val undated = todos.create(UUID.randomUUID(), UUID.randomUUID(), TodoInput("Undated task"))
         val createdCompleted = todos.create(
             UUID.randomUUID(),
             UUID.randomUUID(),
-            TodoInput("Completed task", dueDate = LocalDate.parse("2026-10-18")),
+            TodoInput("Completed task", dueDate = LocalDate.parse("2026-10-18"), dueTime = LocalTime.of(23, 59)),
         )
         val completed = todos.setCompleted(
             createdCompleted.id,
@@ -82,6 +83,7 @@ class TodoBackupTest {
         assertEquals(open.title, restoredOpen.title)
         assertEquals(open.note, restoredOpen.note)
         assertEquals(open.dueDate, restoredOpen.dueDate)
+        assertEquals(open.dueTime, restoredOpen.dueTime)
         assertEquals(open.createdAt, restoredOpen.createdAt)
         assertEquals(open.updatedAt, restoredOpen.updatedAt)
         assertNull(restoredOpen.completedAt)
@@ -94,11 +96,99 @@ class TodoBackupTest {
         val restoredCompleted = requireNotNull(todos.get(completed.id))
         assertEquals(completed.title, restoredCompleted.title)
         assertEquals(completed.dueDate, restoredCompleted.dueDate)
+        assertEquals(completed.dueTime, restoredCompleted.dueTime)
         assertEquals(completed.completedAt, restoredCompleted.completedAt)
         assertEquals(completed.createdAt, restoredCompleted.createdAt)
         assertEquals(completed.updatedAt, restoredCompleted.updatedAt)
         assertNotEquals(completed.revision, restoredCompleted.revision)
         assertNull(todos.get(replaced.id))
+    }
+
+    @Test fun schemaFiveRoundTripsNullMidnightAndMinuteBoundaries() = runBlocking {
+        val date = LocalDate.parse("2026-10-20")
+        val expected = listOf(null, LocalTime.MIDNIGHT, LocalTime.of(9, 5), LocalTime.of(23, 59)).mapIndexed { index, time ->
+            todos.create(
+                UUID.nameUUIDFromBytes("archive-time-$index".toByteArray()),
+                UUID.randomUUID(),
+                TodoInput("Time $index", dueDate = date, dueTime = time),
+            )
+        }
+        val archive = export()
+        expected.forEach { todos.delete(it.id, it.revision) }
+
+        backup.prepare(ByteArrayInputStream(archive)).use { it.restore() }
+
+        assertEquals(expected.map { it.dueTime }, expected.map { requireNotNull(todos.get(it.id)).dueTime })
+    }
+
+    @Test fun schemaFourExactLegacyTaskHeaderImportsWithNullDueTime() = runBlocking {
+        val original = todos.create(
+            UUID.randomUUID(), UUID.randomUUID(),
+            TodoInput("Legacy time is dropped", dueDate = LocalDate.parse("2026-10-20"), dueTime = LocalTime.of(9, 5)),
+        )
+        val legacy = rewriteTaskArchive(export(), schemaVersion = 4) { columns, rows ->
+            val timeIndex = columns.indexOf("due_time_minutes")
+            val legacyColumns = columns.filterIndexed { index, _ -> index != timeIndex }
+            legacyColumns to rows.map { row -> row.filterIndexed { index, _ -> index != timeIndex } }
+        }
+        todos.delete(original.id, original.revision)
+
+        backup.prepare(ByteArrayInputStream(legacy)).use { it.restore() }
+
+        assertNull(requireNotNull(todos.get(original.id)).dueTime)
+        val payload = File(root, "schema-four-payload")
+        val manifest = BackupArchive.read(ByteArrayInputStream(legacy), payload)
+        val header = File(payload, "tables/todo_task.tsv").readLines().first()
+        assertEquals(
+            "id\ttitle\tnote\tdue_date\tcompleted_at\tcreated_at\tupdated_at\trevision_token",
+            header,
+        )
+        assertEquals(4, manifest.schemaVersion)
+    }
+
+    @Test fun incompatibleHeadersAndInvalidMinutesFailBeforeReplacingLiveTask() = runBlocking {
+        val live = todos.create(UUID.randomUUID(), UUID.randomUUID(), TodoInput("Keep live task"))
+        todos.create(
+            UUID.randomUUID(), UUID.randomUUID(),
+            TodoInput("Archive validation source", dueDate = LocalDate.parse("2026-10-20"), dueTime = LocalTime.of(9, 5)),
+        )
+        val valid = export()
+        val malformed = listOf(
+            rewriteTaskArchive(valid, 5) { columns, rows ->
+                val index = columns.indexOf("due_time_minutes")
+                columns.filterIndexed { i, _ -> i != index } to rows.map { row -> row.filterIndexed { i, _ -> i != index } }
+            },
+            rewriteTaskArchive(valid, 4) { columns, rows -> columns to rows },
+            rewriteTaskArchive(valid, 5) { columns, rows ->
+                val index = columns.indexOf("due_time_minutes")
+                columns to rows.map { row -> row.toMutableList().apply {
+                    if (get(columns.indexOf("title")) == "Archive validation source") set(index, -1L)
+                } }
+            },
+            rewriteTaskArchive(valid, 5) { columns, rows ->
+                val index = columns.indexOf("due_time_minutes")
+                columns to rows.map { row -> row.toMutableList().apply {
+                    if (get(columns.indexOf("title")) == "Archive validation source") set(index, 1440L)
+                } }
+            },
+            rewriteTaskArchive(valid, 5) { columns, rows ->
+                val index = columns.indexOf("due_time_minutes")
+                columns to rows.map { row -> row.toMutableList().apply {
+                    if (get(columns.indexOf("title")) == "Archive validation source") set(index, "545")
+                } }
+            },
+            rewriteTaskArchive(valid, 5) { columns, rows ->
+                val dateIndex = columns.indexOf("due_date")
+                columns to rows.map { row -> row.toMutableList().apply {
+                    if (get(columns.indexOf("title")) == "Archive validation source") set(dateIndex, null)
+                } }
+            },
+        )
+
+        malformed.forEach { archive ->
+            assertTrue(runCatching { runBlocking { backup.prepare(ByteArrayInputStream(archive)) } }.isFailure)
+            assertEquals(live, todos.get(live.id))
+        }
     }
 
     @Test fun schemaOneThroughThreeReplacementsReportZeroTasksAndClearExistingTasks() = runBlocking {
@@ -137,10 +227,33 @@ class TodoBackupTest {
         val invalidRow = rows.single().toMutableList().apply { set(columns.indexOf("title"), " ") }
         taskFile.outputStream().use { BackupRows.write(it, columns, sequenceOf(invalidRow)) }
         val corruptArchive = ByteArrayOutputStream().also {
-            BackupArchive.write(it, manifest.names.associateWith { name -> File(payload, name) }, 4, manifest.createdAt)
+            BackupArchive.write(it, manifest.names.associateWith { name -> File(payload, name) }, CURRENT_BACKUP_SCHEMA_VERSION, manifest.createdAt)
         }.toByteArray()
 
         assertTrue(runCatching { backup.prepare(ByteArrayInputStream(corruptArchive)) }.isFailure)
         assertEquals(live, todos.get(live.id))
+    }
+
+    private fun rewriteTaskArchive(
+        archive: ByteArray,
+        schemaVersion: Int,
+        transform: (List<String>, List<List<Any?>>) -> Pair<List<String>, List<List<Any?>>>,
+    ): ByteArray {
+        val payload = File(root, "rewrite-${UUID.randomUUID()}")
+        val manifest = BackupArchive.read(ByteArrayInputStream(archive), payload)
+        val taskFile = File(payload, "tables/todo_task.tsv")
+        val columns = taskFile.readLines().first().split('\t')
+        val rows = mutableListOf<List<Any?>>()
+        BackupRows.read(taskFile, columns) { rows += it }
+        val (newColumns, newRows) = transform(columns, rows)
+        taskFile.outputStream().use { BackupRows.write(it, newColumns, newRows.asSequence()) }
+        return ByteArrayOutputStream().also { output ->
+            BackupArchive.write(
+                output,
+                manifest.names.associateWith { name -> File(payload, name) },
+                schemaVersion,
+                manifest.createdAt,
+            )
+        }.toByteArray()
     }
 }

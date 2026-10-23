@@ -56,6 +56,7 @@ fun TodoEditorRoute(
         onTitle = editor::setTitle,
         onNote = editor::setNote,
         onDueDate = editor::setDueDate,
+        onDueTime = editor::setDueTime,
         onSetCompleted = editor::setCompleted,
         onRequestDelete = editor::requestDelete,
         onConfirmDelete = editor::confirmDelete,

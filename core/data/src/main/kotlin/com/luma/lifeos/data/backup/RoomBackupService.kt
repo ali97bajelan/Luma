@@ -66,13 +66,18 @@ class RoomBackupService(private val context: Context, private val database: Luma
                 val sql = stage.openHelper.writableDatabase
                 for (table in backupTables(manifest.schemaVersion)) {
                     currentCoroutineContext().ensureActive()
-                    val columns = columns(sql, table)
-                    val names = columns.map { it.name }
+                    val currentColumns = columns(sql, table)
+                    val names = backupImportColumns(table, manifest.schemaVersion, currentColumns.map { it.name })
+                    val importColumns = currentColumns.filter { it.name in names }
                     val statement = sql.compileStatement(BackupSql.insert(table, names))
                     statement.use {
                         BackupRows.read(File(work, "payload/tables/$table.tsv"), names) { row ->
-                            validateTypes(columns, row)
-                            validateBackupRow(table, names.zip(row).toMap())
+                            validateTypes(importColumns, row)
+                            val validationRow = names.zip(row).toMap().toMutableMap()
+                            if (table == "todo_task" && manifest.schemaVersion == 4) {
+                                validationRow["due_time_minutes"] = null
+                            }
+                            validateBackupRow(table, validationRow)
                             bind(statement, row); statement.executeInsert()
                         }
                     }

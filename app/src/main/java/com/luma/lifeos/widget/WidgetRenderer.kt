@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.graphics.Paint
 import android.text.BidiFormatter
+import android.text.format.DateFormat
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -21,6 +22,7 @@ import com.luma.lifeos.domain.widget.WidgetRow
 import com.luma.lifeos.domain.widget.WidgetSnapshot
 import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.language.AppLanguages
+import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.ui.theme.THEME_KEY
 import java.time.LocalDate
 import java.time.Instant
@@ -820,10 +822,22 @@ object WidgetRenderer {
     }
 
     private fun taskDueLabel(context: Context, row: WidgetRow.Task, date: LocalDate): String {
-        if (row.dueDate == date) return context.getString(R.string.widget_task_due_today)
         val locale = AppLanguages.current(context).locale
-        val dueDate = bidiWrapped(context,
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(row.dueDate))
+        val dateText = if (row.dueDate == date) {
+            context.getString(R.string.widget_task_due_today)
+        } else {
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(row.dueDate)
+        }
+        val deadline = row.dueTime?.let { time ->
+            context.getString(
+                R.string.todo_due_date_time,
+                dateText,
+                localizedTime(DateFormat.is24HourFormat(context), locale).format(time),
+            )
+        } ?: dateText
+        if (row.dueDate == date && row.dueTime == null) return dateText
+        if (row.dueDate == date) return bidiWrapped(context, deadline)
+        val dueDate = bidiWrapped(context, deadline)
         return if (row.dueDate.isBefore(date)) {
             context.getString(R.string.widget_task_overdue, dueDate)
         } else {

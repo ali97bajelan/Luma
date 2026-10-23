@@ -29,7 +29,7 @@ import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.todoBucket
-import com.luma.lifeos.language.localizedDate
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.time.ZoneId
 import java.time.format.FormatStyle
 
@@ -50,6 +50,7 @@ internal fun TodoRow(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
 ) {
+    val displayTime = rememberDisplayTimePolicy()
     val statusDescription = stringResource(if (task.isCompleted) R.string.todo_status_completed else R.string.todo_status_open)
     val checkboxDescription = stringResource(
         if (task.isCompleted) R.string.todo_reopen else R.string.todo_mark_complete,
@@ -57,10 +58,13 @@ internal fun TodoRow(
     val secondary = task.completedAt?.let { completed ->
         stringResource(
             R.string.todo_completed_on,
-            completed.atZone(ZoneId.systemDefault()).toLocalDate().format(localizedDate(FormatStyle.MEDIUM)),
+            completed.atZone(ZoneId.systemDefault()).toLocalDate().format(displayTime.date(FormatStyle.MEDIUM)),
         )
     } ?: task.dueDate?.let { due ->
-        val formatted = due.format(localizedDate(FormatStyle.MEDIUM))
+        val formattedDate = due.format(displayTime.date(FormatStyle.MEDIUM))
+        val formatted = task.dueTime?.let { time ->
+            stringResource(R.string.todo_due_date_time, formattedDate, displayTime.time().format(time))
+        } ?: formattedDate
         stringResource(
             when (todoBucket(task, today)) {
                 TodoBucket.OVERDUE -> R.string.todo_due_overdue
@@ -73,7 +77,11 @@ internal fun TodoRow(
     } ?: if (completedList) null else stringResource(R.string.todo_no_date)
     val originalDueDate = task.dueDate
     val originalDue = if (task.isCompleted && originalDueDate != null) {
-        stringResource(R.string.todo_due_original, originalDueDate.format(localizedDate(FormatStyle.MEDIUM)))
+        val formattedDate = originalDueDate.format(displayTime.date(FormatStyle.MEDIUM))
+        val deadline = task.dueTime?.let { time ->
+            stringResource(R.string.todo_due_date_time, formattedDate, displayTime.time().format(time))
+        } ?: formattedDate
+        stringResource(R.string.todo_due_original, deadline)
     } else null
     val accessDescription = listOfNotNull(task.title, secondary, originalDue, statusDescription).joinToString(". ")
 

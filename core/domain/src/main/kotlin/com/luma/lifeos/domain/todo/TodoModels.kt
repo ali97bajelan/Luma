@@ -2,6 +2,7 @@ package com.luma.lifeos.domain.todo
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 const val TODO_DEFAULT_PAGE_SIZE = 50
@@ -16,6 +17,7 @@ data class TodoTask(
     val createdAt: Instant,
     val updatedAt: Instant,
     val revision: UUID,
+    val dueTime: LocalTime? = null,
 ) {
     init {
         require(title == title.trim() && title.isNotEmpty()) { "Task title must be non-blank and trimmed" }
@@ -30,6 +32,10 @@ data class TodoTask(
         require(dueDate == null || dueDate.year in TodoTextLimits.MIN_YEAR..TodoTextLimits.MAX_YEAR) {
             "Task due date must be in years ${TodoTextLimits.MIN_YEAR}–${TodoTextLimits.MAX_YEAR}"
         }
+        require(dueTime == null || dueDate != null) { "Task due time requires a due date" }
+        require(dueTime == null || (dueTime.second == 0 && dueTime.nano == 0)) {
+            "Task due time must have minute precision"
+        }
         require(updatedAt >= createdAt) { "Task updated-at cannot precede created-at" }
     }
 
@@ -41,6 +47,7 @@ data class TodoInput(
     val title: String,
     val note: String? = null,
     val dueDate: LocalDate? = null,
+    val dueTime: LocalTime? = null,
 )
 
 data class TodoPage(val items: List<TodoTask>, val total: Int) {

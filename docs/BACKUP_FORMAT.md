@@ -18,7 +18,7 @@ referenced photos abort export rather than silently omitting them.
 ## Archive layout
 
 - `manifest.properties`: Java Properties syntax. Required `format=luma-backup`,
-  `format_version=1`, `schema_version=1`, `2`, `3` or `4`, `created_at` (UTC epoch
+  `format_version=1`, `schema_version=1`, `2`, `3`, `4` or `5`, `created_at` (UTC epoch
   milliseconds),
   and `file_count`. Every payload has `size.<path>` and `sha256.<path>` entries.
 - `tables/<table>.tsv`: one file per application table. Header is the exact column
@@ -45,19 +45,28 @@ Schema 1 contains the original 17 application tables. Schema 2 adds
 `usage_session` and `usage_session_window`, for 19 tables total. Schema 3 adds
 `habit_settings`, `habit`, `habit_schedule`, `habit_log`, `habit_day_choice`,
 `habit_reminder` and `habit_reminder_runtime`, for 26 tables total. Schema 4 appends
-`todo_task`, for 27 tables total. Import uses the generated current Room schema, so
-older archives leave newer tables empty while retaining their legacy data. Schema
+`todo_task`, for 27 tables total. Schema 5 keeps the same 27-table inventory and
+adds nullable `due_time_minutes` to task rows in generated Room column order. A
+non-null value is minutes since midnight from 0 through 1439; null means the task
+has no selected time. A time requires a due date. Schema-4 task files retain their
+exact eight-column legacy header and import with null time; schema 5 strictly
+requires the new column, including when every row is null. Import uses generated
+current Room columns with a version-aware legacy adapter, so older archives leave
+newer tables empty while retaining their legacy data. Schema
 1–3 archives contain no tasks; restoring one replaces the current task table with
 zero rows and the preview warns that current tasks will be removed. Schema 3
 preserves habit history and configuration, but restored reminders are disabled with
 rotated revisions and fresh runtime marked for reconciliation. Schema 1/2
 replacement clears any current habits.
 Unknown format/schema versions fail safely; future versions require an explicit
-reader. Task rows are validated for canonical UUIDs and civil dates, title/note
-limits, and update/creation chronology. Schema 4 restores preserve task identities,
-content and timestamps while rotating revision tokens, so pre-restore writes cannot
-change the replacement data. The Room database schema version is 5; widget runtime
-tables are device-local and never part of the version-4 portable archive.
+reader. Task rows are validated for canonical UUIDs and civil dates, minute range,
+the date/time pairing, title/note limits, and update/creation chronology. Schema 4
+restores preserve task identities, content and timestamps while assigning null due
+time and rotating revision tokens. Schema 5 preserves due minutes as well; both
+versions rotate revision tokens so pre-restore writes cannot change replacement
+data. Room schema 6 adds `due_time_minutes`; its 5→6 migration keeps every existing
+task and gives it null time. Widget runtime tables are device-local and never part
+of the portable archive.
 
 ## Validation and replacement
 
@@ -87,8 +96,8 @@ rolls back records and removes new files. Unreferenced old files are cleaned aft
 commit while preserving protected draft leases. Abandoned private staging from a
 previous process is removed on the next backup operation.
 
-Restore retains event/content identities, task titles and notes, civil due dates,
-completion state and timestamps, links, source metadata, usage history and referenced
+Restore retains event/content identities, task titles and notes, civil due dates and
+schema-5 due minutes, completion state and timestamps, links, source metadata, usage history and referenced
 photo bytes. Photo paths change intentionally. Derived summaries become stale for
 recalculation. Imports are disabled, usage device cursors
 and clock anchors reset, and the saved Health Connect timezone is retained with an
@@ -100,24 +109,27 @@ Unsaved editor drafts are not backup payloads.
 Schema 3 restores retain habit definitions, schedules, logs, choices and reminder
 preferences. Reminder preferences are forced off, revisions rotate, and transient
 reminder runtime is discarded so restore cannot replay an old notification action.
-Schema 4 restores also retain open and completed tasks; their revision tokens rotate
-during publication. Older schema 1–3 restores clear the live task table. Room schema
-5 adds device-local widget instances and command tokens; these tables are excluded
+Schema 4 restores retain open and completed tasks with no due time. Schema 5 also
+retains optional due minutes. Task revision tokens rotate during publication.
+Older schema 1–3 restores clear the live task table. Room schema 5 added device-local
+widget instances and command tokens; Room schema 6 adds task due minutes. These tables are excluded
 from every archive inventory. A successful replacement restore revokes all widget
 commands, hides per-instance details and clears widget feedback in the same
 transaction as the content replacement. A failed or cancelled restore leaves widget
-runtime state untouched. The portable archive schema remains version 4.
+runtime state untouched. The portable archive schema is version 5. Task due times
+are floating civil values: changing time zone does not convert the saved date or
+minute. Buckets remain based on the local calendar date, and due times do not
+trigger reminders or minute-based refreshes.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss
 checks remain pending device validation; see [VALIDATION.md](VALIDATION.md).
 
 TD02/TD03 task-specific backup/persistence checks pass: task CRUD/migration tests
 and backup persistence tests ran on disposable API 36 emulator `emulator-5562`.
-Coverage includes schema 1–3 migrations, schema-4 open/completed/undated task
-round-trip and preview count, revision rotation, schema 1–3 replacement clearing
-current tasks, and malformed/cancelled task restore retaining live data. Backup
-settings tests cover the task count, legacy replacement warning and success-only
-restore callback. The
+Due-time implementation adds source tests for the 5→6 migration, minute persistence,
+schema-5 round-trips, exact schema-4 task-header compatibility, and invalid minute
+values. Those new tests and device checks were not run in this implementation pass
+at the user's request. The earlier
 complete `core:data` instrumentation suite still has two Timeline ordering/page
 failures; detailed results and remaining acceptance are in
 [`TODO_ACCEPTANCE_2026-10-19.md`](TODO_ACCEPTANCE_2026-10-19.md).

@@ -2,6 +2,7 @@ package com.luma.lifeos.domain.todo
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -87,6 +88,36 @@ class TodoRulesTest {
     }
 
     @Test
+    fun minutePrecisionDueTimeAcceptsBoundaries() {
+        listOf(null, LocalTime.MIDNIGHT, LocalTime.of(9, 5), LocalTime.of(23, 59)).forEach { time ->
+            assertEquals(time, normalizeTodoInput(input(dueDate = today, dueTime = time)).dueTime)
+            assertEquals(time, task(20, dueDate = today, dueTime = time).dueTime)
+        }
+    }
+
+    @Test
+    fun timeRequiresDate() {
+        val error = assertThrows(TodoValidationException::class.java) {
+            normalizeTodoInput(input(dueTime = LocalTime.of(9, 5)))
+        }
+        assertEquals(TodoField.DUE_DATE, error.field)
+        assertEquals(TodoValidationReason.REQUIRED, error.reason)
+        assertThrows(IllegalArgumentException::class.java) { task(21, dueTime = LocalTime.of(9, 5)) }
+    }
+
+    @Test
+    fun subMinuteDueTimeIsRejected() {
+        listOf(LocalTime.of(9, 5, 1), LocalTime.of(9, 5, 0, 1)).forEach { time ->
+            val error = assertThrows(TodoValidationException::class.java) {
+                normalizeTodoInput(input(dueDate = today, dueTime = time))
+            }
+            assertEquals(TodoField.DUE_TIME, error.field)
+            assertEquals(TodoValidationReason.OUT_OF_RANGE, error.reason)
+            assertThrows(IllegalArgumentException::class.java) { task(22, dueDate = today, dueTime = time) }
+        }
+    }
+
+    @Test
     fun bucketsUseCivilDatesAndTodayEligibilityExcludesUndatedAndCompletedTasks() {
         val overdue = task(1, dueDate = today.minusDays(1))
         val dueToday = task(2, dueDate = today)
@@ -119,6 +150,28 @@ class TodoRulesTest {
             listOf(undatedOldest, laterDue, sameDateLaterCreated, earlierDue, sameDateUuid2, sameDateUuid1)
                 .sortedWith(openTodoTaskComparator),
         )
+    }
+
+    @Test
+    fun mixedDueValuesHaveStableOrder() {
+        val yesterday = task(40, dueDate = today.minusDays(1))
+        val midnight = task(41, dueDate = today, dueTime = LocalTime.MIDNIGHT)
+        val nineOhFive = task(42, dueDate = today, dueTime = LocalTime.of(9, 5))
+        val sameTimeLaterCreated = task(43, dueDate = today, dueTime = LocalTime.of(9, 5), createdAt = createdAt.plusSeconds(1))
+        val sameTimeSameCreatedHigherId = task(44, dueDate = today, dueTime = LocalTime.of(9, 5))
+        val late = task(45, dueDate = today, dueTime = LocalTime.of(23, 59))
+        val dateOnly = task(46, dueDate = today)
+        val tomorrow = task(47, dueDate = today.plusDays(1))
+        val undated = task(48)
+
+        assertEquals(
+            listOf(yesterday, midnight, nineOhFive, sameTimeSameCreatedHigherId, sameTimeLaterCreated, late, dateOnly, tomorrow, undated),
+            listOf(undated, tomorrow, dateOnly, late, sameTimeLaterCreated, sameTimeSameCreatedHigherId, nineOhFive, midnight, yesterday)
+                .sortedWith(openTodoTaskComparator),
+        )
+        val dueTodayAtNine = task(49, dueDate = today, dueTime = LocalTime.of(9, 0))
+        assertEquals(TodoBucket.TODAY, todoBucket(dueTodayAtNine, today))
+        assertTrue(isTodoTodayEligible(dueTodayAtNine, today))
     }
 
     @Test
@@ -168,11 +221,13 @@ class TodoRulesTest {
         title: String = "Read a book",
         note: String? = null,
         dueDate: LocalDate? = null,
-    ) = TodoInput(title = title, note = note, dueDate = dueDate)
+        dueTime: LocalTime? = null,
+    ) = TodoInput(title = title, note = note, dueDate = dueDate, dueTime = dueTime)
 
     private fun task(
         id: Long,
         dueDate: LocalDate? = null,
+        dueTime: LocalTime? = null,
         createdAt: Instant = this.createdAt,
         completedAt: Instant? = null,
         updatedAt: Instant = maxOf(this.updatedAt, createdAt),
@@ -185,5 +240,6 @@ class TodoRulesTest {
         createdAt = createdAt,
         updatedAt = updatedAt,
         revision = UUID.fromString("10000000-0000-0000-0000-${id.toString().padStart(12, '0')}"),
+        dueTime = dueTime,
     )
 }

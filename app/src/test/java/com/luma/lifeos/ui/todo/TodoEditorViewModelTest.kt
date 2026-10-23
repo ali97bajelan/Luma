@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.domain.todo.TodoInput
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -58,6 +59,128 @@ class TodoEditorViewModelTest {
         assertEquals(TodoInput("Persian note \u06a9\u0627\u0631", "Optional note", LocalDate.parse("2026-10-21")), repository.tasks.single().let {
             TodoInput(it.title, it.note, it.dueDate)
         })
+    }
+
+    @Test fun timeOnlyEditIsDirtyAndCanRevert() = runTest(dispatcher) {
+        val original = todoFixtureTask("Timed", dueTime = LocalTime.of(9, 5))
+        val editor = TodoEditorViewModel(TodoRepositoryFixture(listOf(original)), original.id, null, SavedStateHandle())
+        advanceUntilIdle()
+
+        editor.setDueTime(LocalTime.of(10, 0))
+        assertTrue(editor.state.value.dirty)
+        editor.setDueTime(original.dueTime)
+
+        assertFalse(editor.state.value.dirty)
+        assertEquals(original.dueTime, editor.state.value.draft.dueTime)
+    }
+
+    @Test fun removeDateClearsTimeAndChangingDateRetainsTime() = runTest(dispatcher) {
+        val original = todoFixtureTask("Timed", dueTime = LocalTime.of(9, 5))
+        val editor = TodoEditorViewModel(TodoRepositoryFixture(listOf(original)), original.id, null, SavedStateHandle())
+        advanceUntilIdle()
+        val nextDate = original.dueDate!!.plusDays(1)
+
+        editor.setDueDate(nextDate)
+        assertEquals(LocalTime.of(9, 5), editor.state.value.draft.dueTime)
+        editor.setDueDate(null)
+
+        assertNull(editor.state.value.draft.dueDate)
+        assertNull(editor.state.value.draft.dueTime)
+    }
+
+    @Test fun oldSavedStateHasNoTime() = runTest(dispatcher) {
+        val saved = SavedStateHandle().apply {
+            set("todo_has_draft", true)
+            set("todo_draft_title", "Old draft")
+            set("todo_draft_note", "")
+            set("todo_draft_due_date", "2026-10-21")
+        }
+        val editor = TodoEditorViewModel(TodoRepositoryFixture(), null, null, saved)
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.parse("2026-10-21"), editor.state.value.draft.dueDate)
+        assertNull(editor.state.value.draft.dueTime)
+    }
+
+    @Test fun confirmedMinuteSurvivesRecreationAndMidnightIsNotNull() = runTest(dispatcher) {
+        val original = todoFixtureTask("Timed", dueTime = null)
+        val repository = TodoRepositoryFixture(listOf(original))
+        val saved = SavedStateHandle()
+        val editor = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+        editor.setDueTime(LocalTime.MIDNIGHT)
+
+        assertEquals("00:00", saved.get<String>("todo_draft_due_time"))
+        val recreated = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+
+        assertEquals(LocalTime.MIDNIGHT, recreated.state.value.draft.dueTime)
+        assertTrue(recreated.state.value.dirty)
+    }
+
+    @Test fun pendingSaveReplaysExactMinute() = runTest(dispatcher) {
+        val original = todoFixtureTask("Timed", dueTime = LocalTime.of(9, 5))
+        val repository = TodoRepositoryFixture(listOf(original)).apply {
+            failNextUpdateBeforeCommit = IllegalStateException("offline")
+        }
+        val saved = SavedStateHandle()
+        val editor = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+        val selected = LocalTime.of(9, 6)
+        editor.setDueTime(selected)
+        editor.save()
+        advanceUntilIdle()
+        assertEquals(TodoEditorError.SAVE, editor.state.value.error)
+
+        val recreated = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+        assertEquals(selected, recreated.state.value.draft.dueTime)
+        recreated.retry()
+        advanceUntilIdle()
+
+        assertTrue(recreated.state.value.finished)
+        assertEquals(selected, repository.tasks.single().dueTime)
+    }
+
+    @Test fun reloadUsesLatestTime() = runTest(dispatcher) {
+        val original = todoFixtureTask("Timed", dueTime = LocalTime.of(9, 5))
+        val repository = TodoRepositoryFixture(listOf(original))
+        val editor = TodoEditorViewModel(repository, original.id, null, SavedStateHandle())
+        advanceUntilIdle()
+        editor.setDueTime(LocalTime.of(10, 0))
+        repository.replace(original.copy(
+            dueTime = LocalTime.of(11, 30),
+            revision = UUID.randomUUID(),
+            updatedAt = original.updatedAt.plusSeconds(2),
+        ))
+        editor.save()
+        advanceUntilIdle()
+        assertTrue(editor.state.value.conflict)
+
+        editor.reload()
+        advanceUntilIdle()
+
+        assertEquals(LocalTime.of(11, 30), editor.state.value.draft.dueTime)
+        assertFalse(editor.state.value.dirty)
+    }
+
+    @Test fun blockedEditorCannotChangeDueTime() = runTest(dispatcher) {
+        val original = todoFixtureTask("Timed", dueTime = LocalTime.of(9, 5))
+        val repository = TodoRepositoryFixture(listOf(original))
+        val editor = TodoEditorViewModel(repository, original.id, null, SavedStateHandle())
+        advanceUntilIdle()
+        editor.setTitle("Unsaved local edit")
+        repository.replace(original.copy(
+            revision = UUID.randomUUID(),
+            updatedAt = original.updatedAt.plusSeconds(2),
+        ))
+        editor.save()
+        advanceUntilIdle()
+        assertTrue(editor.state.value.conflict)
+
+        editor.setDueTime(LocalTime.of(10, 0))
+
+        assertEquals(LocalTime.of(9, 5), editor.state.value.draft.dueTime)
     }
 
     @Test fun repeatedSaveWhileCreateIsBusySubmitsOnlyOnce() = runTest(dispatcher) {

@@ -902,6 +902,13 @@
     <string name="todo_due_date_label">Due date</string>
     <string name="todo_no_date">No date</string>
     <string name="todo_due_today">Today · %1$s</string>
+    <string name="todo_due_time_label">Due time</string>
+    <string name="todo_no_time">No time</string>
+    <string name="todo_add_time">Add time</string>
+    <string name="todo_change_time">Change time</string>
+    <string name="todo_remove_time">Remove time</string>
+    <string name="todo_time_out_of_range">Choose a valid time in hours and minutes.</string>
+    <string name="todo_due_date_time">%1$s · %2$s</string>
     <string name="todo_change_date">Change</string>
     <string name="todo_remove_date">Remove</string>
     <string name="todo_title_required">Enter a title.</string>

@@ -58,7 +58,7 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun widgets(): WidgetDao
 
     companion object {
-        const val VERSION = 5
+        const val VERSION = 6
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
@@ -171,6 +171,13 @@ abstract class LumaDatabase : RoomDatabase() {
                     )""")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_widget_command_widget_id_status_fingerprint ON widget_command(widget_id, status, fingerprint)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_widget_command_created_at ON widget_command(created_at)")
+                }
+            },
+            object : Migration(5, 6) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE todo_task ADD COLUMN due_time_minutes INTEGER")
+                    db.execSQL("DROP INDEX IF EXISTS index_todo_task_completed_at_due_date_created_at_id")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_completed_at_due_date_due_time_minutes_created_at_id ON todo_task(completed_at, due_date, due_time_minutes, created_at, id)")
                 }
             },
         )

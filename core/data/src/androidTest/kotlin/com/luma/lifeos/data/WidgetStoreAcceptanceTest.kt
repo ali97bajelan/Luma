@@ -17,6 +17,7 @@ import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
@@ -57,11 +58,12 @@ class WidgetStoreAcceptanceTest {
         val created = todos.create(
             taskId,
             UUID.randomUUID(),
-            TodoInput("Widget task", dueDate = today),
+            TodoInput("Widget task", dueDate = today, dueTime = LocalTime.of(9, 5)),
         )
         widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS))
 
         val before = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 3))
+        assertEquals(LocalTime.of(9, 5), (before.rows.single() as WidgetRow.Task).dueTime)
         val completeToken = requireNotNull((before.rows.single() as WidgetRow.Task).actionToken)
         val saved = widgets.execute(widgetId, completeToken, now, ZoneOffset.UTC)
         assertEquals(WidgetOutcome.SAVED, saved.outcome)
@@ -72,7 +74,9 @@ class WidgetStoreAcceptanceTest {
         val undoToken = requireNotNull(afterComplete.feedback?.undoToken)
         assertEquals(WidgetOutcome.UNDONE, widgets.execute(widgetId, undoToken, now, ZoneOffset.UTC).outcome)
         assertEquals(false, todos.get(taskId)?.isCompleted)
-        assertEquals(created.id, (requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, 3)).rows.single() as WidgetRow.Task).id)
+        val afterUndo = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, 3)).rows.single() as WidgetRow.Task
+        assertEquals(created.id, afterUndo.id)
+        assertEquals(LocalTime.of(9, 5), afterUndo.dueTime)
     }
 
     @Test fun legacySummaryHabitShowsProgressAndKeepsUndoCommandUsableAfterSnapshot() = runBlocking {

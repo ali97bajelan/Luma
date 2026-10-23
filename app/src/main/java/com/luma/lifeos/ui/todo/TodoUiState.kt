@@ -4,14 +4,16 @@ import com.luma.lifeos.domain.todo.TodoField
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoValidationReason
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 data class TodoDraft(
     val title: String = "",
     val note: String = "",
     val dueDate: LocalDate? = null,
+    val dueTime: LocalTime? = null,
 ) {
-    fun toInput(): TodoInput = TodoInput(title = title, note = note, dueDate = dueDate)
+    fun toInput(): TodoInput = TodoInput(title = title, note = note, dueDate = dueDate, dueTime = dueTime)
 }
 
 enum class TodoEditorError { LOAD, SAVE, STATUS, DELETE }

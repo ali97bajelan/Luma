@@ -33,6 +33,10 @@ class BackupValidationTest {
         )
         validateBackupRow("todo_task", row)
 
+        listOf(0, 545, 1439).forEach { minute ->
+            validateBackupRow("todo_task", row + ("due_time_minutes" to minute.toLong()))
+        }
+
         val invalidRows = listOf(
             row + ("id" to row.getValue("id").toString().uppercase()),
             row + ("revision_token" to "not-a-uuid"),
@@ -41,6 +45,10 @@ class BackupValidationTest {
             row + ("note" to "x".repeat(4001)),
             row + ("due_date" to "2026-2-03"),
             row + ("updated_at" to 0L),
+            row + ("due_time_minutes" to -1L),
+            row + ("due_time_minutes" to 1440L),
+            row + ("due_time_minutes" to "545"),
+            row + ("due_date" to null) + ("due_time_minutes" to 545L),
         )
         invalidRows.forEach { invalid ->
             assertThrows(Exception::class.java) { validateBackupRow("todo_task", invalid) }
