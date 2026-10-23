@@ -1,7 +1,7 @@
 # O08 — Optional — habit shortcut in Quick Capture specification
 
 Date: 2026-10-22  
-Status: Optional / deferred; not selected for implementation.  
+Status: Selected and implemented on 2026-10-23; verification NOT RUN at the user's request.
 Depends on: T32-D and T32-A
 
 ## Intent and sources
@@ -19,7 +19,7 @@ Read the [shared reference brief](../../luma-redesign/README.md) and [task index
 - Use actual saved data; never ship reference people, dates, percentages, measurements, quotes or charts as user records.
 - Minimum interactive target 48 dp; normal text contrast at least 4.5:1, large text and essential non-text indicators at least 3:1.
 - Validate at 320 dp/font scale 2.0, 411 × 891 dp/font scale 1.0 and 840 dp width; support RTL and system animation scale.
-- Optional tasks default to deferred and are not required for redesign acceptance. No optional feature is authorized for implementation by this planning document.
+- Optional tasks default to deferred and are not required for redesign acceptance. O08 was explicitly selected for implementation on 2026-10-23. This status update does not claim runtime or visual acceptance.
 
 ## Behavior and interface contract
 
@@ -45,6 +45,6 @@ Read the [shared reference brief](../../luma-redesign/README.md) and [task index
 
 ## Verification
 
-Extend existing CaptureAccessibilityTest, DayNavigationTest and HabitsNavigationTest with callback/date/no-write assertions; inspect sheet overflow, focus and dismissal in both themes. Record evidence through T33. No implementation or device acceptance is claimed by this spec.
+CaptureAccessibilityTest, DayNavigationTest and HabitsNavigationTest now contain callback/date/no-write assertions. These tests were not run, and sheet overflow, focus, dismissal and theme/device acceptance were not inspected, per the user's instruction not to run Gradle tests or an emulator. Runtime and device acceptance remain unverified.
 
 [Implementation plan](../plans/2026-10-22-o08-optional-capture-habit-shortcut.md)

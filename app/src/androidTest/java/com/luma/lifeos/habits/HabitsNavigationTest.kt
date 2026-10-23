@@ -19,12 +19,17 @@ import com.luma.lifeos.data.repository.RoomPersonRepository
 import com.luma.lifeos.data.repository.RoomPhotoRepository
 import com.luma.lifeos.data.repository.RoomPlaceRepository
 import com.luma.lifeos.data.repository.RoomTimelineRepository
+import com.luma.lifeos.domain.habit.HabitSaveInput
+import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.ui.LifeOsApp
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import java.io.File
 import java.time.Clock
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.FormatStyle
 import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -99,5 +104,71 @@ class HabitsNavigationTest {
         compose.onNodeWithTag("screen_habit_detail").assertIsDisplayed()
         compose.onNodeWithTag("habit_manage").performScrollTo().performClick()
         compose.onNodeWithTag("habit_manage_edit").assertIsDisplayed()
+    }
+
+    @Test fun quickCaptureHabitShortcutUsesTrackingTodayAndPreservesHistoricalDateWithoutLogging() {
+        val deviceDate = LocalDate.now(zone)
+        val trackingZone = ZoneId.of("Pacific/Kiritimati")
+        val trackingDate = deviceDate.minusDays(1)
+        val fixedInstant = trackingDate.atTime(1, 0).toInstant(ZoneOffset.UTC)
+        habits = RoomHabitRepository(database, Clock.fixed(fixedInstant, trackingZone))
+        val habitId = UUID.randomUUID()
+        runBlocking {
+            habits.create(
+                habitId,
+                HabitSaveInput(
+                    name = "Capture shortcut habit",
+                    unitLabel = null,
+                    start = trackingDate.minusDays(30),
+                    target = 1,
+                    weekdays = DayOfWeek.values().toSet(),
+                    zone = trackingZone,
+                ),
+            )
+        }
+        val photos = RoomPhotoRepository(database, ManagedPhotoFiles(photoDirectory)) {
+            error("No photo picker is used by this test")
+        }
+        compose.setContent {
+            LifeOsTheme {
+                LifeOsApp(
+                    repository = RoomLifeEventRepository(database),
+                    moods = RoomMoodRepository(database),
+                    journals = RoomJournalRepository(database),
+                    memories = RoomMemoryRepository(database),
+                    people = RoomPersonRepository(database),
+                    places = RoomPlaceRepository(database),
+                    photos = photos,
+                    timeline = RoomTimelineRepository(database),
+                    habits = habits,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("nav_timeline").performClick()
+        compose.onNodeWithTag("quick_capture").performClick()
+        compose.onNodeWithTag("capture_habit").performScrollTo().performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("habits_scheduled_heading").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("habits_scheduled_heading").assertIsDisplayed()
+        compose.onNodeWithTag("day_selected")
+            .assertTextEquals(trackingDate.format(localizedDate(FormatStyle.MEDIUM)))
+        assertEquals(0, runBlocking { habits.history(habitId, null, 0).total })
+
+        compose.onNodeWithTag("nav_timeline").performClick()
+        compose.onNodeWithTag("day_previous").performClick()
+        compose.onNodeWithTag("day_previous").performClick()
+        val historicalDate = deviceDate.minusDays(2)
+        compose.onNodeWithTag("quick_capture").performClick()
+        compose.onNodeWithTag("capture_on_browsed_date").performScrollTo().performClick()
+        compose.onNodeWithTag("capture_habit").performScrollTo().performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("habits_scheduled_heading").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("habits_scheduled_heading").assertIsDisplayed()
+        compose.onNodeWithTag("day_selected")
+            .assertTextEquals(historicalDate.format(localizedDate(FormatStyle.MEDIUM)))
+        assertEquals(0, runBlocking { habits.history(habitId, null, 0).total })
     }
 }

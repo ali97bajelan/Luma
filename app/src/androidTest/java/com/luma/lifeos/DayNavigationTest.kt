@@ -11,17 +11,38 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.unit.LayoutDirection
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.ui.timeline.DayNavigation
 import java.time.LocalDate
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
 class DayNavigationTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun dateNavigationForwardsTheSelectedCivilDate() {
+        val selected = mutableStateOf<LocalDate?>(null)
+        val historicalDate = LocalDate.parse("2026-10-12")
+        compose.setContent {
+            LifeOsTheme {
+                DayNavigation(
+                    date = historicalDate,
+                    onSelect = { selected.value = it },
+                    onToday = { selected.value = null },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("day_previous").performClick()
+        compose.runOnIdle { assertEquals(historicalDate.minusDays(1), selected.value) }
+        compose.onNodeWithTag("day_today").performClick()
+        compose.runOnIdle { assertEquals(null, selected.value) }
+    }
 
     @Test fun previousAndNextArrowsPointInOppositeDirectionsInLtrAndRtl() {
         val layoutDirection = mutableStateOf(LayoutDirection.Ltr)

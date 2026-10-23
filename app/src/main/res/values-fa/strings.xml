@@ -161,6 +161,7 @@
     <string name="capture_mood">ثبت حال‌وهوا</string>
     <string name="capture_journal">یادداشت روزانه</string>
     <string name="capture_memory">خاطره</string>
+    <string name="capture_habit">ثبت یک عادت</string>
     <string name="close">بستن</string>
     <string name="save">ذخیره</string>
     <string name="entry_saved_feedback">ورودی ذخیره شد</string>

@@ -161,6 +161,7 @@
     <string name="capture_mood">Mood check-in</string>
     <string name="capture_journal">Journal entry</string>
     <string name="capture_memory">Memory</string>
+    <string name="capture_habit">Log a habit</string>
     <string name="close">Close</string>
     <string name="save">Save</string>
     <string name="entry_saved_feedback">Entry saved</string>

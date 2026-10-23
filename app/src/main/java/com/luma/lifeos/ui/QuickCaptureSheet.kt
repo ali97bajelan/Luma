@@ -39,7 +39,7 @@ import java.time.format.FormatStyle
 @Composable
 fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
     onMood: (LocalDate?) -> Unit, onJournal: (LocalDate?) -> Unit, onMemory: (LocalDate?) -> Unit,
-    onTask: (() -> Unit)? = null) {
+    onTask: (() -> Unit)? = null, onHabit: ((LocalDate?) -> Unit)? = null) {
     var useBrowsedDate by rememberSaveable(browsedDate) { mutableStateOf(false) }
     val captureDate = browsedDate.takeIf { useBrowsedDate }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -124,6 +124,19 @@ fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
                     modifier = Modifier.testTag("capture_memory"),
                     showChevron = false,
                 )
+            }
+
+            onHabit?.let { action ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.titleSmall)
+                    LumaChoiceRow(
+                        title = stringResource(R.string.capture_habit),
+                        icon = R.drawable.ic_nav_habits,
+                        onClick = { action(captureDate) },
+                        modifier = Modifier.testTag("capture_habit"),
+                        showChevron = false,
+                    )
+                }
             }
 
             onTask?.let { action ->

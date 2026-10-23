@@ -234,8 +234,8 @@ fun LifeOsApp(
     fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null) {
         navController.navigate("task_editor?taskId=${taskId?.toString().orEmpty()}&dueDate=${dueDate?.toString().orEmpty()}")
     }
-    fun openHabitsDate(date: LocalDate) {
-        selectedDate = date.toString()
+    fun openHabitsDate(date: LocalDate?) {
+        selectedDate = date?.toString()
         navController.navigate(AppRoutes.HABITS) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
@@ -715,7 +715,11 @@ fun LifeOsApp(
         capturing = false
         widgetQuickCapture = false
         openTodoEditor()
-    }) else null)
+    }) else null, onHabit = { date ->
+        capturing = false
+        widgetQuickCapture = false
+        openHabitsDate(date)
+    })
 }
 
 private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {

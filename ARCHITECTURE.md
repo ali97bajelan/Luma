@@ -185,7 +185,10 @@ source, with counts derived directly from available events. These are record
 counts, not T14 mood/usage/activity metrics. T05 extended this feed with typed mood
 details for the initial daily Timeline; T11 replaces that reuse with a dedicated
 bounded Timeline route described below. Quick Capture opens a scrollable sheet from every primary tab, with
-mood, journal, memory and task capture enabled.
+mood, journal and memory capture enabled plus the optional task shortcut when task
+storage is available. The habit shortcut opens the existing Habits destination
+without logging; a selected date is carried through, while Now lets Habits resolve
+today in its stored tracking zone.
 
 ## Tasks (TD01–TD07)
 

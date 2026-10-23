@@ -18,11 +18,13 @@ import com.luma.lifeos.ui.mood.MoodDraft
 import com.luma.lifeos.ui.mood.MoodEditorScreen
 import com.luma.lifeos.ui.mood.MoodEditorState
 import com.luma.lifeos.ui.mood.MoodTimeControls
+import com.luma.lifeos.ui.QuickCaptureSheet
 import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.ui.photos.PhotoEditor
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
@@ -31,6 +33,59 @@ import org.junit.Test
 
 class CaptureAccessibilityTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun quickCaptureOmitsHabitChoiceWhenCallbackIsAbsent() {
+        compose.setContent {
+            LifeOsTheme {
+                QuickCaptureSheet(
+                    onDismiss = {}, onMood = {}, onJournal = {}, onMemory = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag("capture_mood").assertExists()
+        compose.onNodeWithTag("capture_journal").assertExists()
+        compose.onNodeWithTag("capture_memory").assertExists()
+        compose.onNodeWithTag("capture_habit").assertDoesNotExist()
+    }
+
+    @Test fun quickCaptureHabitCallbackUsesNowOrSelectedDateAndKeepsOtherActions() {
+        val browsedDate = LocalDate.parse("2026-10-12")
+        val habitDates = mutableListOf<LocalDate?>()
+        val moodDates = mutableListOf<LocalDate?>()
+        val journalDates = mutableListOf<LocalDate?>()
+        val memoryDates = mutableListOf<LocalDate?>()
+        var taskCalls = 0
+        compose.setContent {
+            LifeOsTheme {
+                QuickCaptureSheet(
+                    browsedDate = browsedDate,
+                    onDismiss = {},
+                    onMood = { moodDates += it },
+                    onJournal = { journalDates += it },
+                    onMemory = { memoryDates += it },
+                    onTask = { taskCalls += 1 },
+                    onHabit = { habitDates += it },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("capture_mood").performScrollTo().performClick()
+        compose.onNodeWithTag("capture_journal").performScrollTo().performClick()
+        compose.onNodeWithTag("capture_memory").performScrollTo().performClick()
+        compose.onNodeWithTag("capture_task").performScrollTo().performClick()
+        compose.onNodeWithTag("capture_habit").performScrollTo().performClick()
+        compose.onNodeWithTag("capture_on_browsed_date").performScrollTo().performClick()
+        compose.onNodeWithTag("capture_habit").performScrollTo().performClick()
+
+        compose.runOnIdle {
+            assertEquals(listOf(null, browsedDate), habitDates)
+            assertEquals(listOf(null), moodDates)
+            assertEquals(listOf(null), journalDates)
+            assertEquals(listOf(null), memoryDates)
+            assertEquals(1, taskCalls)
+        }
+    }
 
     @Test fun editorSectionsAreHeadings() {
         compose.setContent {

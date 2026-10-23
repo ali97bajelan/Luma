@@ -133,18 +133,18 @@ T34-D status: the offscreen exporter covered both kinds, both app-theme override
 
 ## Optional features and behavior changes
 
-All optional tasks are **deferred / not selected**. Each has a reviewable spec and plan, but documenting it does not authorize implementation. Choose only the additions wanted; the base UI uses existing behavior when an option is omitted.
+Optional tasks default to deferred unless selected. O08 was selected and implemented on 23 October 2026; its Gradle and emulator verification remains NOT RUN at the user's request. O01–O07 remain deferred / not selected.
 
-| ID | Optional change | Why it is optional | Depends on | Specification | Implementation plan |
+| ID | Optional change | Why it is optional | Depends on | Specification | Implementation plan | Status |
 | --- | --- | --- | --- | --- | --- |
-| O01 | four-tab navigation | Removes the existing primary Habits destination and changes back-stack/selection behavior. | T30 and T32-C | [Spec](superpowers/specs/2026-10-22-o01-optional-four-tab-navigation-design.md) | [Plan](superpowers/plans/2026-10-22-o01-optional-four-tab-navigation.md) |
-| O02 | Timeline event-type filters | Adds a new query/count/paging state, not merely chip styling. | T32-A | [Spec](superpowers/specs/2026-10-22-o02-optional-timeline-filters-design.md) | [Plan](superpowers/plans/2026-10-22-o02-optional-timeline-filters.md) |
-| O03 | expanded Today task panel | Changes Today eligibility, completion browsing, counts and paging. | T31 | [Spec](superpowers/specs/2026-10-22-o03-optional-today-task-panel-design.md) | [Plan](superpowers/plans/2026-10-22-o03-optional-today-task-panel.md) |
-| O04 | Timeline photo previews | Adds image decoding, loading and privacy/performance behavior to the feed. | T32-A | [Spec](superpowers/specs/2026-10-22-o04-optional-feed-photo-previews-design.md) | [Plan](superpowers/plans/2026-10-22-o04-optional-feed-photo-previews.md) |
-| O05 | saved-data Review charts | Requires real daily projections, especially for currently aggregate-only activity. | T32-B | [Spec](superpowers/specs/2026-10-22-o05-optional-review-charts-design.md) | [Plan](superpowers/plans/2026-10-22-o05-optional-review-charts.md) |
-| O06 | defined cadence and active-day metrics | Adds new calculations and definitions; source “streak” wording cannot be copied as-is. | T32-B | [Spec](superpowers/specs/2026-10-22-o06-optional-review-cadence-design.md) | [Plan](superpowers/plans/2026-10-22-o06-optional-review-cadence.md) |
-| O07 | reflection shortcut and editorial quotes | Adds an alternate capture entry point and new editorial content. | T31 and T32-A | [Spec](superpowers/specs/2026-10-22-o07-optional-reflection-quotes-design.md) | [Plan](superpowers/plans/2026-10-22-o07-optional-reflection-quotes.md) |
-| O08 | habit shortcut in Quick Capture | Adds a date-aware habit entry point absent from the current capture sheet. | T32-D and T32-A | [Spec](superpowers/specs/2026-10-22-o08-optional-capture-habit-shortcut-design.md) | [Plan](superpowers/plans/2026-10-22-o08-optional-capture-habit-shortcut.md) |
+| O01 | four-tab navigation | Removes the existing primary Habits destination and changes back-stack/selection behavior. | T30 and T32-C | [Spec](superpowers/specs/2026-10-22-o01-optional-four-tab-navigation-design.md) | [Plan](superpowers/plans/2026-10-22-o01-optional-four-tab-navigation.md) | Deferred |
+| O02 | Timeline event-type filters | Adds a new query/count/paging state, not merely chip styling. | T32-A | [Spec](superpowers/specs/2026-10-22-o02-optional-timeline-filters-design.md) | [Plan](superpowers/plans/2026-10-22-o02-optional-timeline-filters.md) | Deferred |
+| O03 | expanded Today task panel | Changes Today eligibility, completion browsing, counts and paging. | T31 | [Spec](superpowers/specs/2026-10-22-o03-optional-today-task-panel-design.md) | [Plan](superpowers/plans/2026-10-22-o03-optional-today-task-panel.md) | Deferred |
+| O04 | Timeline photo previews | Adds image decoding, loading and privacy/performance behavior to the feed. | T32-A | [Spec](superpowers/specs/2026-10-22-o04-optional-feed-photo-previews-design.md) | [Plan](superpowers/plans/2026-10-22-o04-optional-feed-photo-previews.md) | Deferred |
+| O05 | saved-data Review charts | Requires real daily projections, especially for currently aggregate-only activity. | T32-B | [Spec](superpowers/specs/2026-10-22-o05-optional-review-charts-design.md) | [Plan](superpowers/plans/2026-10-22-o05-optional-review-charts.md) | Deferred |
+| O06 | defined cadence and active-day metrics | Adds new calculations and definitions; source “streak” wording cannot be copied as-is. | T32-B | [Spec](superpowers/specs/2026-10-22-o06-optional-review-cadence-design.md) | [Plan](superpowers/plans/2026-10-22-o06-optional-review-cadence.md) | Deferred |
+| O07 | reflection shortcut and editorial quotes | Adds an alternate capture entry point and new editorial content. | T31 and T32-A | [Spec](superpowers/specs/2026-10-22-o07-optional-reflection-quotes-design.md) | [Plan](superpowers/plans/2026-10-22-o07-optional-reflection-quotes.md) | Deferred |
+| O08 | habit shortcut in Quick Capture | Adds a date-aware habit entry point absent from the current capture sheet. | T32-D and T32-A | [Spec](superpowers/specs/2026-10-22-o08-optional-capture-habit-shortcut-design.md) | [Plan](superpowers/plans/2026-10-22-o08-optional-capture-habit-shortcut.md) | Implemented (validation pending) |
 
 ### O01 — four-tab navigation
 
@@ -203,6 +203,8 @@ Reflect opens the existing Journal editor using the same now/selected-date confi
 **Acceptance if selected:** Shortcut respects selected-date capture rules and cancellation/draft restoration; it makes no silent write. Quote/prompt works offline in all locales, is explicitly editorial and never claims a saved reflection or calculated cadence insight.
 
 ### O08 — habit shortcut in Quick Capture
+
+**Status (23 October 2026): implemented.** Gradle and emulator verification were not run at the user's request. T32-D/T32-A acceptance dependencies and visual accessibility checks remain outstanding.
 
 **Proposed change:** Add an optional “Log a habit” choice, inspired by Water/Stretch in the corrected Timeline HTML’s hidden sheet. Open the existing Habits screen for the chosen date; users select an actual saved habit and explicitly log there. Keep Mood/Journal/Memory/Task and their date policies. Do not hard-code Water/Stretch, add silent writes or claim automatic encryption.
 
