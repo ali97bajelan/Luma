@@ -822,6 +822,8 @@
     <string name="habit_count_explanation">هر بار لمس، یکی اضافه می‌کند.</string>
     <string name="habit_unit_limit">برچسب واحد حداکثر ۳۰ نویسه است.</string>
     <string name="habit_target">هدف روزانه</string>
+    <string name="habit_target_unit_generic_per_day">بار در روز</string>
+    <string name="habit_target_unit_per_day">%1$s در روز</string>
     <string name="habit_start_date">تاریخ شروع</string>
     <string name="habit_weekdays">روزهای برنامه‌ریزی‌شده</string>
     <string name="habit_schedule_presets">برنامه</string>

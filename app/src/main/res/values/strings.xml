@@ -821,6 +821,8 @@
     <string name="habit_count_explanation">Each tap adds one.</string>
     <string name="habit_unit_limit">Unit labels are limited to 30 characters.</string>
     <string name="habit_target">Daily target</string>
+    <string name="habit_target_unit_generic_per_day">Times per day</string>
+    <string name="habit_target_unit_per_day">%1$s per day</string>
     <string name="habit_start_date">Start date</string>
     <string name="habit_weekdays">Scheduled weekdays</string>
     <string name="habit_schedule_presets">Schedule</string>

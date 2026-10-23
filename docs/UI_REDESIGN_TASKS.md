@@ -4,7 +4,7 @@ Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-red
 
 Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A through T34-D source work is implemented (validation pending). The focused API 36 offscreen renderer matrix and picker-preview check passed; unit tests, debug packaging and lint passed. Real launcher acceptance remains NOT RUN, API 28/31 images are unavailable, and the connected-test teardown removed the preexisting Luma package from the API 36 AVD. See the [T34 acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md) for the device/data incident and remaining checks.
 
-Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35–T38 are pending** and each has a new specification and implementation plan. They own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** This update is documentation only; no implementation, Gradle run, emulator run or acceptance is claimed.
+Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35 source implementation is complete; validation is pending. T36–T38 remain pending.** These tasks own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** No Gradle task, test or emulator run is claimed for T35; H35 acceptance remains NOT RUN.
 
 ## Scope and reference decisions
 
@@ -33,7 +33,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T32-D | Editors, details, sheets and dialogs | T30; consume T32-A EventCard treatment | blocked | [Spec](superpowers/specs/2026-10-22-t32-d-editors-details-modals-design.md) | [Plan](superpowers/plans/2026-10-22-t32-d-editors-details-modals.md) |
 | T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children); T35–T38 for expanded acceptance | blocked (acceptance pending) | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
 | T34 | Tasks and Habits launcher widgets | T30 design baseline; existing widget contracts | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) |
-| T35 | Habit editor reference refinement | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t35-habit-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t35-habit-editor-redesign.md) |
+| T35 | Habit editor reference refinement | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t35-habit-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t35-habit-editor-redesign.md) |
 | T36 | Mood check-in and shared timestamp pill | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t36-mood-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t36-mood-editor-redesign.md) |
 | T37 | Task editor reference refinement | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t37-task-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t37-task-editor-redesign.md) |
 | T38 | Memory editor reference refinement | T30 baseline; T32-D components; T36 timestamp | pending | [Spec](superpowers/specs/2026-10-23-t38-memory-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t38-memory-editor-redesign.md) |
@@ -139,7 +139,7 @@ T34-D status: the offscreen exporter covered both kinds, both app-theme override
 
 ### T35 — Habit editor reference refinement
 
-**Status: pending.** Sources: [PNG](luma-redesign/new-habit-light.png), [HTML](luma-redesign/new-habit-light.html).
+**Status: implemented (validation pending).** Sources: [PNG](luma-redesign/new-habit-light.png), [HTML](luma-redesign/new-habit-light.html). Source implementation is recorded in [T35 evidence](luma-redesign/evidence/2026-10-23/t35/acceptance.md); all H35 acceptance scenarios remain NOT RUN.
 
 **Scope:** Editorial Close/title header, actual tracking-zone context, rounded name/unit/target fields, start-date pill, sage schedule presets and weekday choices, terracotta Save footer. All pictured fields and Daily/Weekdays/Custom controls already exist. Keep zone mismatch/effective-date explanations, immutable edit start date, validation, saved drafts, discard confirmation and pending/retry states. All seven weekdays must scroll clear of Save; screenshot clipping is not a target.
 

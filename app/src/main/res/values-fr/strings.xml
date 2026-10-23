@@ -836,6 +836,8 @@
     <string name="habit_count_explanation">Chaque appui ajoute une unité.</string>
     <string name="habit_unit_limit">Les unités sont limitées à 30 caractères.</string>
     <string name="habit_target">Objectif quotidien</string>
+    <string name="habit_target_unit_generic_per_day">Fois par jour</string>
+    <string name="habit_target_unit_per_day">%1$s par jour</string>
     <string name="habit_start_date">Date de début</string>
     <string name="habit_weekdays">Jours prévus</string>
     <string name="habit_schedule_presets">Programme</string>

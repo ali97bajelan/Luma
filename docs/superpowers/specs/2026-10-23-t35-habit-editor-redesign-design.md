@@ -1,7 +1,7 @@
 # T35 — Habit editor redesign specification
 
 Date: 2026-10-23  
-Status: Proposed / pending; documentation only, no implementation or acceptance claimed.  
+Status: Implemented (validation pending); source implementation only, with no Gradle task, test, emulator run or rendered acceptance claimed.
 Depends on: T30 visual baseline and existing T32-D editor components.
 
 ## Intent and reference ownership
@@ -61,4 +61,3 @@ The reference's fields and schedule controls already exist; no new habit feature
 Run the focused existing suites only during implementation/acceptance; add meaningful tests for uncovered state/semantics risks rather than assertions mirroring colors or padding. Record PASS/FAIL/NOT RUN, build SHA, actual date/device, locale/theme/window/font/IME configuration and captures under `docs/luma-redesign/evidence/<actual-run-date>/t35/`. Add the result to T33 and the route ledger. Existing blockers retain their status. No runtime checks were run by this documentation task.
 
 [Implementation plan](../plans/2026-10-23-t35-habit-editor-redesign.md)
-

@@ -10,7 +10,7 @@
 
 **Spec:** [T35 specification](../specs/2026-10-23-t35-habit-editor-redesign-design.md).
 
-**Status:** Planned only. No code or tests were executed by this documentation change.
+**Status:** Implemented (validation pending). Source changes and status/evidence updates are complete. No Gradle task, test or emulator run was performed per request.
 
 ## Global constraints
 
@@ -43,21 +43,23 @@ Consumes: current screen state, callbacks and shared components named in the spe
 
 **Interfaces:** Use the existing screen signature listed below and the spec's exact field semantics; retain all callback types and route inputs.
 
-- [ ] Capture the existing new/edit states and confirm the `HabitEditorScreen(state, deviceZone, onBack, onRetry, onName, onUnit, onTarget, onStart, onWeekdays, onSave)` callback contract.
-- [ ] Restyle the header, tracking context, inputs/target, date pill and Save footer in `HabitEditorRoute.kt`; keep loading, errors, edit restrictions and discard confirmation.
-- [ ] Restyle preset and weekday choices using the current `schedulePreset`/`schedulePresetDays` helpers; keep seven independent actions and selected semantics. Use adaptive wrapping instead of fixed screenshot dimensions.
-- [ ] Verify H35-1 through H35-4 using the existing habit suites; extend a suite only for an uncovered semantic regression, including selected-state restoration or duplicate submission.
-- [ ] Inspect H35-5 with long localized labels, tracking-zone mismatch, target validation and IME; record light/dark captures including the final weekday row.
+- [x] Capture the existing new/edit states and confirm the `HabitEditorScreen(state, deviceZone, onBack, onRetry, onName, onUnit, onTarget, onStart, onWeekdays, onSave)` callback contract.
+- [x] Restyle the header, tracking context, inputs/target, date pill and Save footer in `HabitEditorRoute.kt`; keep loading, errors, edit restrictions and discard confirmation.
+- [x] Restyle preset and weekday choices using the current `schedulePreset`/`schedulePresetDays` helpers; keep seven independent actions and selected semantics. Use adaptive wrapping instead of fixed screenshot dimensions.
+- [ ] Verify H35-1 through H35-4 using the existing habit suites; NOT RUN by request.
+- [ ] Inspect H35-5 with long localized labels, tracking-zone mismatch, target validation and IME; rendered captures NOT RUN by request.
 
 ### Task 2: Record acceptance and integrate
 
 **Files:** Update `docs/luma-redesign/route-coverage.md`, `docs/UI_REDESIGN_TASKS.md` and the T33 acceptance ledger; create `docs/luma-redesign/evidence/<actual-run-date>/t35/acceptance.md`.
 
-- [ ] Run the focused unit and device commands below after implementation. Confirm all selected tests ran and passed; unavailable device/build checks are NOT RUN.
-- [ ] Cover each Review Focus item with the corresponding acceptance scenario; extend its existing owner if automation does not yet cover the semantic risk, and use rendered/TalkBack checks for geometry, contrast and focus.
-- [ ] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences.
-- [ ] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
-- [ ] Commit the scoped implementation and evidence with `feat(ui): refine T35 habit editor`.
+- [ ] Run the focused unit and device commands below after implementation. NOT RUN by request; no Gradle task or emulator was started.
+- [ ] Cover each Review Focus item with the corresponding acceptance scenario; rendered/TalkBack checks NOT RUN by request.
+- [x] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences.
+- [x] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
+- [ ] Commit the scoped implementation and evidence. Commit message prepared below; no commit was created.
+
+Suggested commit message: `feat(ui): refine T35 habit editor`
 
 ## Planned verification commands
 
@@ -68,4 +70,3 @@ Consumes: current screen state, callbacks and shared components named in the spe
 ```
 
 Expected: BUILD SUCCESSFUL, selected tests executed with zero failures, zero lint errors, plus passing recorded visual/accessibility scenarios. Run on an isolated test install/AVD without user data; connected-test teardown may uninstall the package. Do not repeat passing checks without a new change or unresolved failure. These are future implementation checks, not results of this planning pass.
-
