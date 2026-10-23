@@ -4,13 +4,15 @@ Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-red
 
 Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A through T34-D source work is implemented (validation pending). The focused API 36 offscreen renderer matrix and picker-preview check passed; unit tests, debug packaging and lint passed. Real launcher acceptance remains NOT RUN, API 28/31 images are unavailable, and the connected-test teardown removed the preexisting Luma package from the API 36 AVD. See the [T34 acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md) for the device/data incident and remaining checks.
 
+Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35–T38 are pending** and each has a new specification and implementation plan. They own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** This update is documentation only; no implementation, Gradle run, emulator run or acceptance is claimed.
+
 ## Scope and reference decisions
 
 - Required tasks update both themes while retaining product behavior, route IDs, dates, drafts, counts, permissions and privacy guarantees.
 - Every task below has a specification and implementation plan. T32 remains the parent rollout task and is split into T32-A/B/C/D for reviewable implementation.
 - New features and behavior changes implied by the mockups are optional, deferred by default and described explicitly below. They do not block the base redesign.
 - The corrected `timeline-light.html` is a valid Timeline reference alongside its PNG. Use its date/count ribbon, rail, cards and capture-sheet styling with the shared tokens; preserve existing behavior unless an optional task explicitly changes it. Source assets remain unchanged by the documentation update.
-- Today, Timeline and Review have direct references. The corrected Timeline HTML also contains a hidden Quick Capture sheet; use its styling within the existing capture contract. There are no supplied More/Settings/editor screen mockups.
+- Today, Timeline and Review have direct references. The corrected Timeline HTML also contains a hidden Quick Capture sheet; use its styling within the existing capture contract. New Habit/Mood/Task/Memory editors now have direct light references, owned by T35–T38; derive their dark appearance from T30. More/Settings, Journal, person/place editors and detail screens still extrapolate shared styles.
 - Tasks and Habits launcher widgets now have direct light/dark references. T34 owns their RemoteViews; T32-C continues to own in-app widget settings/configuration. Widget-specific palette roles are defined in T34 rather than replacing the app-wide T30 palette.
 - Keep factual local-data wording; never copy the unsupported “Encrypted on-device” claim, fabricated metrics, sample records or stock photos into production.
 
@@ -29,8 +31,12 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T32-B | Weekly Review modules and comparisons | T30 | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t32-b-review-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t32-b-review-redesign.md) |
 | T32-C | More, catalogs, search, lists and settings | T30 | blocked | [Spec](superpowers/specs/2026-10-22-t32-c-supporting-screens-design.md) | [Plan](superpowers/plans/2026-10-22-t32-c-supporting-screens.md) |
 | T32-D | Editors, details, sheets and dialogs | T30; consume T32-A EventCard treatment | blocked | [Spec](superpowers/specs/2026-10-22-t32-d-editors-details-modals-design.md) | [Plan](superpowers/plans/2026-10-22-t32-d-editors-details-modals.md) |
-| T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children) | blocked (acceptance pending) | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
+| T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children); T35–T38 for expanded acceptance | blocked (acceptance pending) | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
 | T34 | Tasks and Habits launcher widgets | T30 design baseline; existing widget contracts | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) |
+| T35 | Habit editor reference refinement | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t35-habit-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t35-habit-editor-redesign.md) |
+| T36 | Mood check-in and shared timestamp pill | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t36-mood-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t36-mood-editor-redesign.md) |
+| T37 | Task editor reference refinement | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t37-task-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t37-task-editor-redesign.md) |
+| T38 | Memory editor reference refinement | T30 baseline; T32-D components; T36 timestamp | pending | [Spec](superpowers/specs/2026-10-23-t38-memory-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t38-memory-editor-redesign.md) |
 
 ### T30 — Shared visual system and app shell
 
@@ -98,7 +104,7 @@ Carry the new visual language to supporting browse and settings screens without 
 
 Make capture/edit/detail surfaces and modal UI consistent while retaining drafts, validation, editing and recovery.
 
-**Scope:** Use shared editor headers, text-field roles, rounded optional sections and consistent Save/Cancel/Back actions. Adapt the hidden Quick Capture sheet in corrected timeline-light.html while retaining current choices/date rules and omitting its encryption claim; habit entry is optional O08. Keep required fields, limits, validation timing and disabled/pending behavior.
+**Scope:** T32-D retains shared infrastructure and modal/detail baseline; T35–T38 now own reference-specific Habit/Mood/Task/Memory refinement, with T36 owning compatible shared timestamp pill refinement. Use shared editor headers, text-field roles, rounded optional sections and consistent Save/Cancel/Back actions. Adapt the hidden Quick Capture sheet in corrected timeline-light.html while retaining current choices/date rules and omitting its encryption claim; habit entry is optional O08. Keep required fields, limits, validation timing and disabled/pending behavior.
 
 **Acceptance:** Mood/journal/memory/task/habit/person/place create and edit preserve saved values, validation and drafts through recreation and Back/Cancel. Imported/read-only/missing/deleted details retain correct actions and return paths; deleting a detail does not leave a stale screen. Long text, IME, Persian RTL and 2.0 fonts keep Save/Cancel, photo retry, picker results and dialog confirmation reachable. Quick Capture retains date selection across rotation and emits no record on dismissal; successful saves retain single existing feedback.
 
@@ -131,9 +137,47 @@ Produce auditable acceptance evidence for the required redesign and separately r
 
 T34-D status: the offscreen exporter covered both kinds, both app-theme overrides, opposite system appearances, the nine requested counts, baseline/stress bounds, French/Persian large text, collection-row progress fixtures and feedback reapply. The picker preview check passed in day/night configurations. Offscreen captures do not establish launcher actions or scrolling, and the generated files were removed when connected-test teardown uninstalled the app. See the [acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md). Do not mark T34 complete.
 
+### T35 — Habit editor reference refinement
+
+**Status: pending.** Sources: [PNG](luma-redesign/new-habit-light.png), [HTML](luma-redesign/new-habit-light.html).
+
+**Scope:** Editorial Close/title header, actual tracking-zone context, rounded name/unit/target fields, start-date pill, sage schedule presets and weekday choices, terracotta Save footer. All pictured fields and Daily/Weekdays/Custom controls already exist. Keep zone mismatch/effective-date explanations, immutable edit start date, validation, saved drafts, discard confirmation and pending/retry states. All seven weekdays must scroll clear of Save; screenshot clipping is not a target.
+
+**Acceptance:** H35-1 through H35-5 in the spec: correct real defaults/zone, exact schedule restoration, current field/date validation and edit rules, single save/recovery, plus both-theme en/fr/fa/RTL/IME/large-text acceptance. No new habit behavior is required.
+
+### T36 — Mood check-in and shared timestamp pill
+
+**Status: pending.** Sources: [PNG](luma-redesign/new-mood-light.png), [HTML](luma-redesign/new-mood-light.html).
+
+**Scope:** Editorial header, rounded timestamp pill, accessible 1–5 scale, repository-backed wrapping emotion chips and restyled existing More details/context/Save surfaces. T36 owns compatible shared `CaptureTimestampRow` refinement, including Journal/Memory regression checks. Preserve note/energy/stress/people/place disclosures, durable-draft Save gating, recovery previews, delete reconciliation and date/time behavior. Calm/Grateful colors are illustrative, not new emotion categories.
+
+**Optional difference:** O10 moves the existing note outside More details. Base T36 preserves disclosure behavior and omits the unsupported “Reflective Journal entry” affordance; mood Save creates no journal entry.
+
+**Acceptance:** M36-1 through M36-5: exact score/emotion/time values, retained optional data, draft/error recovery and single save, plus accessible controls and compatible timestamp consumers across the shared matrix.
+
+### T37 — Task editor reference refinement
+
+**Status: pending.** Sources: [PNG](luma-redesign/new-task-light.png), [HTML](luma-redesign/new-task-light.html).
+
+**Scope:** Editorial header, focused title and optional note fields with existing Unicode code-point hints, rounded due-date card with Change/Remove and terracotta Save footer. Keep no-date creation defaults, autofocus/error focus, complete/reopen/delete, revision conflicts/reload confirmation, missing/error/retry and dirty-close behavior. Correct the clipped title label and overlapping due-date actions seen in the PNG.
+
+**Optional difference:** Tags & Context requires O09 persistence, migration and backup work. Base T37 omits sample tag chips and “Scheduled for evening review”; the app has no such scheduling contract. Reminders, recurrence, time-of-day and task People/Place links are outside this redesign.
+
+**Acceptance:** T37-1 through T37-5: date/null restoration, exact 200/4,000-code-point boundaries, edit/revision/recovery behavior, single delivery and accessible title/date/footer under the shared matrix.
+
+### T38 — Memory editor reference refinement
+
+**Status: pending.** Sources: [PNG](luma-redesign/new-memory-light.png), [HTML](luma-redesign/new-memory-light.html).
+
+**Scope:** Editorial header, shared timestamp pill, optional direct title, description/marker-note field, rounded importance/context groups and Save footer. Preserve current disclosures, clearable nullable importance, actual people/place/photo slots, photo retry/bring-into-view, direct-delete versus promoted-unmark behavior, source preview and locked promotion timestamp. Keep the existing text-length policy and no sample names/photos/default rating.
+
+**Optional difference:** O11 changes initial disclosure expansion; O12 adds a static prompt and derived word count. Base T38 omits Draft/High value badges and writing helpers. A durable-draft claim, subjective importance classification or camera capture is not authorized by the screenshot.
+
+**Acceptance:** R38-1 through R38-5: exact direct-memory values, nullable rating/disclosure restoration, source-preserving promotion/unmark, text/photo/error recovery and reachable controls across the shared matrix.
+
 ## Optional features and behavior changes
 
-Optional tasks default to deferred unless selected. O08 was selected and implemented on 23 October 2026; its Gradle and emulator verification remains NOT RUN at the user's request. O01–O07 remain deferred / not selected.
+Optional tasks default to deferred unless selected. O08 was selected and implemented on 23 October 2026; its Gradle and emulator verification remains NOT RUN at the user's request. O01–O07 and new O09–O12 remain deferred / not selected. Planning a feature does not select it for implementation.
 
 | ID | Optional change | Why it is optional | Depends on | Specification | Implementation plan | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -145,6 +189,10 @@ Optional tasks default to deferred unless selected. O08 was selected and impleme
 | O06 | defined cadence and active-day metrics | Adds new calculations and definitions; source “streak” wording cannot be copied as-is. | T32-B | [Spec](superpowers/specs/2026-10-22-o06-optional-review-cadence-design.md) | [Plan](superpowers/plans/2026-10-22-o06-optional-review-cadence.md) | Deferred |
 | O07 | reflection shortcut and editorial quotes | Adds an alternate capture entry point and new editorial content. | T31 and T32-A | [Spec](superpowers/specs/2026-10-22-o07-optional-reflection-quotes-design.md) | [Plan](superpowers/plans/2026-10-22-o07-optional-reflection-quotes.md) | Deferred |
 | O08 | habit shortcut in Quick Capture | Adds a date-aware habit entry point absent from the current capture sheet. | T32-D and T32-A | [Spec](superpowers/specs/2026-10-22-o08-optional-capture-habit-shortcut-design.md) | [Plan](superpowers/plans/2026-10-22-o08-optional-capture-habit-shortcut.md) | Implemented (validation pending) |
+| O09 | persistent task tags | Adds task-tag data, revision-aware editing, Room migration and backup support. | T37 | [Spec](superpowers/specs/2026-10-23-o09-optional-task-tags-design.md) | [Plan](superpowers/plans/2026-10-23-o09-optional-task-tags.md) | Deferred / not selected |
+| O10 | visible mood note | Moves an existing field outside More details, changing disclosure behavior. | T36 | [Spec](superpowers/specs/2026-10-23-o10-optional-visible-mood-note-design.md) | [Plan](superpowers/plans/2026-10-23-o10-optional-visible-mood-note.md) | Deferred / not selected |
+| O11 | expanded memory panels | Changes initial importance/context expansion on new editor sessions. | T38 | [Spec](superpowers/specs/2026-10-23-o11-optional-expanded-memory-panels-design.md) | [Plan](superpowers/plans/2026-10-23-o11-optional-expanded-memory-panels.md) | Deferred / not selected |
+| O12 | memory writing helpers | Adds a static prompt and locale-aware derived word count. | T38; independent of O11 | [Spec](superpowers/specs/2026-10-23-o12-optional-memory-writing-helpers-design.md) | [Plan](superpowers/plans/2026-10-23-o12-optional-memory-writing-helpers.md) | Deferred / not selected |
 
 ### O01 — four-tab navigation
 
@@ -210,6 +258,30 @@ Reflect opens the existing Journal editor using the same now/selected-date confi
 
 **Acceptance if selected:** Missing callback omits the choice; selected date/Now follows the actual habit tracking zone; opening/dismissing creates no log; empty/error and RTL/large-text capture flows remain usable. The paired spec defines the callback and recovery rules.
 
+### O09 — persistent task tags
+
+**Proposed change:** Implement actual user-authored task tags behind the Tags & Context chips. Reuse the shared tag catalog with a separate `todo_tag` association; carry tags through revision-checked writes, drafts/pending operations, migration and versioned backup/restore. Add/remove edits remain draft-only until Save. No seeded Focus/Personal/Work, synthetic life events, task filtering or People/Place links.
+
+**Acceptance if selected:** Normalized duplicates collapse; tags survive edit/recreation/complete/reopen; stale/replayed writes remain atomic; deletion preserves other records' tags; old databases/archives remain readable and malformed tag graphs cannot replace live data. The spec pins bounds and versioning.
+
+### O10 — visible mood note
+
+**Proposed change:** Show the existing note immediately beneath emotions, exactly once. More details retains energy/stress/people/place; note and structured values keep current validation, persistence and recovery. No new journal record or shortcut.
+
+**Acceptance if selected:** New forms expose one note without expansion; toggle/recreation/save retain exact values; draft failure and IME/large-text/RTL keep errors and actions usable.
+
+### O11 — expanded memory panels
+
+**Proposed change:** Initialize importance and people/place/photos panels expanded on a fresh editor session. Retain manual collapse and restored disclosure choices, null importance and the photo-error recovery override. No stored preference or preselected values.
+
+**Acceptance if selected:** First-ready panels are expanded once; manual collapse survives recreation and late updates; a photo error still reveals Retry; direct/edit/promote source and save semantics remain intact.
+
+### O12 — memory writing helpers
+
+**Proposed change:** Add a localized static writing prompt and a derived word count for direct-memory descriptions. Count locale-specific BreakIterator segments containing letters/digits; keep emoji/punctuation-only count at zero. It is a display aid, separate from current character validation and persisted content. Omit helper UI on promoted marker notes, plus Draft/High value badges in all modes.
+
+**Acceptance if selected:** Counter updates from exact note/locale, known empty/Latin/French cases reconcile, Persian segmentation is recorded, prompt is never stored as user text and TalkBack typing is not interrupted.
+
 ## Excluded or unsupported mockup elements
 
 Do not add an account/profile, claim encryption, enable Markdown export, create a pinned-memory subsystem, infer hydration volume/first-glass status or turn a saved daily aggregate into a fabricated midnight activity. Review +Link/+Tag controls require a specific target record and flow; use existing editor linking instead of shipping placeholder actions. People/Places search and catalog switching already exist and belong to required preservation, not an optional feature proposal.
@@ -221,5 +293,7 @@ Do not add an account/profile, claim encryption, enable Markdown export, create 
 3. Run T33 against the required base. Record intentional differences for all unselected options.
 4. If any O-task is selected, implement its plan after its dependencies and rerun its affected acceptance scenarios plus the T33 checks for changed surfaces.
 5. Implement T34-A/B/C and run T34-D for the newly supplied launcher references. Record its acceptance separately from the original T33 app-route gate; both are required for overall redesign release acceptance.
+6. Refine editors with T35, T36 and T37 against the current T30/T32-D baseline, then T38 after T36's shared timestamp work. Their acceptance remains pending independently of older implementation status; do not mark prior blockers resolved by adding these plans.
+7. Extend T33/route acceptance to include H35-1–5, M36-1–5, T37-1–5 and R38-1–5. The expanded redesign release gate requires T35–T38 as well as the existing base/widget gates. O09–O12 run only if explicitly selected, followed by affected editor and T33 regression checks.
 
 This index records implementation and validation status separately; documentation alone does not count as passing evidence. Plans use focused regression and visual evidence, avoiding tests that only mirror spacing/color assignments.

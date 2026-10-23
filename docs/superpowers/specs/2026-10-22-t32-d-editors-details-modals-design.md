@@ -4,11 +4,15 @@ Date: 2026-10-22
 Status: Proposed / pending implementation. This document is a planning artifact, not release acceptance.  
 Depends on: T30; consume T32-A EventCard treatment
 
+## Editor-reference scope addendum — 23 October 2026
+
+New light editor pairs supersede the original no-editor-reference assumption for Habit/Mood/Task/Memory. T35, T36, T37 and T38 respectively own their reference-specific refinements; read their specs/plans through the [task index](../../UI_REDESIGN_TASKS.md). T36 owns the shared timestamp pill refinement, with Memory/Journal compatibility checks. T32-D retains shared infrastructure, Journal/person/place editors, details, Quick Capture and modal baseline. Existing implementation evidence and blockers are unchanged; reference-specific work is pending. O09–O12 remain optional/deferred.
+
 ## Intent and sources
 
 Make capture/edit/detail surfaces and modal UI consistent while retaining drafts, validation, editing and recovery.
 
-References: Corrected timeline-light.html contains a hidden Quick Capture modal; editor/detail screens extrapolate shared T30 tokens and editorial saved-content treatment. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+References: Corrected timeline-light.html contains a hidden Quick Capture modal; other editor/detail screens extrapolate shared T30 tokens and editorial saved-content treatment. Habit/Mood/Task/Memory now use the addendum above. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
 
 ## Global constraints
 

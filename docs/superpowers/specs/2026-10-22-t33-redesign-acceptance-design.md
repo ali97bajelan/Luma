@@ -8,7 +8,11 @@ Depends on: T31 and T32 (all four children)
 
 Produce auditable acceptance evidence for the required redesign and separately record any opted-in feature results.
 
-References: All six reference PNGs; reference-resolution brief. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+References: Original six app-screen PNGs plus four new editor light PNG/HTML pairs; T34 separately owns launcher widget acceptance; reference-resolution brief. Read the [shared reference brief](../../luma-redesign/README.md) and [task index](../../UI_REDESIGN_TASKS.md) with this specification. The brief resolves inconsistencies and provides common tokens; it is normative for every task.
+
+## Editor-reference acceptance extension — 23 October 2026
+
+T33 final acceptance now also depends on T35–T38. Add H35-1–5, M36-1–5, T37-1–5 and R38-1–5 from their specs to the acceptance ledger, with both-theme en/fr/fa/RTL/window/font/IME and TalkBack evidence for each affected editor. T36 shared timestamp changes also require Journal/Memory compatibility checks. Record new evidence under `docs/luma-redesign/evidence/<actual-run-date>/t35/` through `t38/` and link the route ledger. Unselected O09–O12 are intentional differences; selected options require their own regression results. Existing T33 and T34 blockers and gates remain unchanged; no new acceptance was run by this documentation pass.
 
 ## Global constraints
 

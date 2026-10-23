@@ -10,6 +10,10 @@
 
 **Spec:** [Corresponding specification](../specs/2026-10-22-t33-redesign-acceptance-design.md).
 
+## Editor-reference acceptance extension — 23 October 2026
+
+T33 final acceptance now also depends on T35–T38. Add H35-1–5, M36-1–5, T37-1–5 and R38-1–5 from their specs to the acceptance ledger, with both-theme en/fr/fa/RTL/window/font/IME and TalkBack evidence for each affected editor. T36 shared timestamp changes also require Journal/Memory compatibility checks. Record new evidence under `docs/luma-redesign/evidence/<actual-run-date>/t35/` through `t38/` and link the route ledger. Unselected O09–O12 are intentional differences; selected options require their own regression results. Existing T33 and T34 blockers and gates remain unchanged; no new acceptance was run by this documentation pass.
+
 ## Global constraints
 
 - Native Android, Kotlin, Compose Material 3 and Navigation Compose; keep minSdk 28, compileSdk 35, targetSdk 35 and JDK 17.

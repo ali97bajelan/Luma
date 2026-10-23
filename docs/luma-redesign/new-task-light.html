@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>New Task - Luma Journal</title>
+<!-- Tailwind CSS CDN with forms and container-queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Newsreader (Editorial Serif) & Plus Jakarta Sans / Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Custom Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Newsreader', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            journal: {
+              surface: '#fff8f4',
+              surfaceDim: '#e0d9d4',
+              surfaceLow: '#faf2ed',
+              surfaceContainer: '#f3eae4',
+              ink: '#241c18',
+              inkMuted: '#6e5f58',
+              outline: '#e5d7cf',
+              primary: '#ba4d28',
+              primaryHover: '#a33e1b',
+              primaryContainer: '#ffdcd1',
+              primaryTextOnDark: '#ffffff',
+              sage: '#526350',
+              sageLight: '#eef2ed',
+            }
+          },
+          boxShadow: {
+            'subtle': '0 2px 10px rgba(186, 77, 40, 0.05)',
+            'floating': '0 12px 30px rgba(62, 51, 46, 0.08)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Micro-Styles -->
+<style data-purpose="cursor-animation">
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .custom-cursor {
+      animation: blink 1.05s infinite;
+    }
+  </style>
+<style data-purpose="base-resets">
+    /* Remove tap highlight & standard mobile scroll smoothing */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #f0ebe6;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+  </style>
+<!-- END: Custom Micro-Styles -->
+</head>
+<body class="flex justify-center items-center min-h-screen text-journal-ink p-0 sm:p-4 antialiased selection:bg-journal-primaryContainer selection:text-journal-primary">
+<!-- BEGIN: MobileDeviceFrame -->
+<div class="w-full max-w-[430px] min-h-screen sm:min-h-[900px] bg-journal-surface flex flex-col justify-between relative shadow-floating overflow-hidden sm:rounded-[44px] sm:border-[8px] sm:border-[#e8ded6]" data-purpose="mobile-viewport">
+<!-- Top Section Container (Status Bar + Header + Inputs) -->
+<div class="flex-1 flex flex-col">
+<!-- BEGIN: StatusBar -->
+<header class="w-full pt-3 px-7 pb-2 flex justify-between items-center text-journal-ink text-[13px] font-semibold tracking-tight select-none z-10" data-purpose="status-bar">
+<!-- Time display matching reference -->
+<span class="tracking-normal font-medium text-[14px]">17:21</span>
+<!-- Status Icons: Network, Wifi, Battery -->
+<div class="flex items-center space-x-2">
+<!-- Data indicator -->
+<div class="flex items-center text-[10px] font-mono text-journal-inkMuted pr-1">
+<span>7.82</span><span class="text-[8px] ml-0.5">KB/s</span>
+</div>
+<!-- Signal Icon -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3"></path>
+<path d="M12 6c-3.31 0-6 2.69-6 6 0 1.43.5 2.74 1.34 3.77L12 18.5l4.66-2.73C17.5 14.74 18 13.43 18 12c0-3.31-2.69-6-6-6z"></path>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0012 4zm0 4c3.34 0 6.39 1.25 8.7 3.32L12 19.3 3.3 11.32A12.92 12.92 0 0112 8z"></path>
+</svg>
+<!-- Battery Pill with Level -->
+<div class="flex items-center space-x-1 pl-0.5">
+<div class="w-6 h-3 rounded-[4px] border-[1.5px] border-journal-ink flex items-center p-[1px] relative">
+<div class="bg-journal-ink h-full w-[66%] rounded-[1.5px]"></div>
+<div class="absolute -right-1 top-1/2 -translate-y-1/2 w-[1.5px] h-1.5 bg-journal-ink rounded-r-[1px]"></div>
+</div>
+<span class="text-[10px] font-bold">66</span>
+</div>
+</div>
+</header>
+<!-- END: StatusBar -->
+<!-- BEGIN: NavigationBar -->
+<nav class="px-6 pt-2 pb-5 flex items-center space-x-5" data-purpose="modal-header">
+<!-- Dismiss / Close Action -->
+<button aria-label="Close new task modal" class="p-1 -ml-1 text-journal-ink hover:text-journal-primary transition-colors focus:outline-none focus:ring-2 focus:ring-journal-primary/30 rounded-full">
+<svg class="w-6 h-6 stroke-current stroke-2 fill-none" viewbox="0 0 24 24">
+<line stroke-linecap="round" x1="6" x2="18" y1="6" y2="18"></line>
+<line stroke-linecap="round" x1="6" x2="18" y1="18" y2="6"></line>
+</svg>
+</button>
+<!-- Modal Heading with Editorial Serif Typography -->
+<h1 class="font-serif text-[32px] tracking-tight leading-none text-journal-ink font-normal">
+          New task
+        </h1>
+</nav>
+<!-- END: NavigationBar -->
+<!-- BEGIN: FormMainContent -->
+<main class="flex-1 px-6 space-y-6 overflow-y-auto pb-4">
+<!-- Input Group: Task Title -->
+<section class="space-y-1.5" data-purpose="field-title">
+<!-- Label floating / resting frame -->
+<div class="relative bg-white border-2 border-journal-primary rounded-[22px] px-4 pt-3.5 pb-3 shadow-subtle transition-all">
+<!-- Emulated Field Label Badge positioned cleanly along top border edge -->
+<label class="absolute -top-3 left-4 px-2 bg-journal-surface text-journal-primary text-xs font-medium tracking-wide" for="task-title-input">
+              Title <span class="text-journal-primary font-bold">*</span>
+</label>
+<!-- Input area with active cursor emulation matching provided dark mode screenshot -->
+<div class="flex items-center min-h-[34px]">
+<span class="text-journal-ink text-base tracking-normal"></span>
+<!-- Flashing blinking cursor line in warm primary terracotta -->
+<span class="w-[2px] h-5 bg-journal-primary custom-cursor ml-0.5 inline-block"></span>
+<input aria-label="Title" autofocus="" class="sr-only" id="task-title-input" type="text"/>
+</div>
+</div>
+<!-- Helper Guidance Text -->
+<p class="text-[12px] text-journal-inkMuted pl-3.5 tracking-normal font-medium">
+            Required · 1–200 Unicode code points
+          </p>
+</section>
+<!-- Input Group: Task Notes (Optional) -->
+<section class="space-y-1.5" data-purpose="field-notes">
+<div class="relative bg-journal-surfaceLow hover:bg-white focus-within:bg-white border border-journal-outline focus-within:border-journal-primary/60 rounded-[22px] p-4 min-h-[140px] transition-colors shadow-sm">
+<label class="block text-journal-inkMuted text-[15px] select-none font-normal" for="task-notes-input">
+              Notes (optional)
+            </label>
+<textarea class="w-full bg-transparent border-none p-0 text-journal-ink text-[15px] focus:ring-0 resize-none font-normal mt-1 placeholder-journal-inkMuted/60" id="task-notes-input" placeholder="" rows="3"></textarea>
+</div>
+<p class="text-[12px] text-journal-inkMuted pl-3.5 tracking-normal font-medium">
+            Up to 4,000 Unicode code points
+          </p>
+</section>
+<!-- Input Group: Due Date Card -->
+<section class="pt-1" data-purpose="field-due-date">
+<div class="bg-journal-surfaceContainer/50 rounded-[22px] p-4.5 border border-journal-outline/60 flex flex-col space-y-2">
+<span class="text-xs font-semibold uppercase tracking-wider text-journal-inkMuted">Due date</span>
+<div class="flex items-center justify-between pt-0.5">
+<!-- Selected Date Info -->
+<div class="space-y-0.5">
+<span class="text-[16px] font-medium text-journal-ink block">
+                  Today · October 23, 2026
+                </span>
+<span class="text-xs text-journal-sage font-medium inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-journal-sage"></span>
+                  Scheduled for evening review
+                </span>
+</div>
+<!-- Contextual Actions in warm terracotta -->
+<div class="flex items-center space-x-3 text-sm font-semibold">
+<button class="text-journal-primary hover:text-journal-primaryHover active:opacity-75 transition-colors focus:outline-none" type="button">
+                  Change
+                </button>
+<button class="text-journal-primary hover:text-journal-primaryHover active:opacity-75 transition-colors focus:outline-none" type="button">
+                  Remove
+                </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Input Group: Tags & Context Chips -->
+<section class="pt-1" data-purpose="field-tags">
+<span class="text-xs font-semibold uppercase tracking-wider text-journal-inkMuted block mb-2 pl-1">Tags &amp; Context</span>
+<div class="flex flex-wrap gap-2 items-center">
+<!-- Active Selected Tag -->
+<button class="inline-flex items-center px-3.5 py-1.5 rounded-full bg-journal-primaryContainer text-journal-primary font-medium text-xs tracking-tight shadow-sm border border-journal-primary/20 hover:bg-journal-primaryContainer/80 transition-colors" type="button">
+<span class="mr-1">#</span> Focus
+            </button>
+<!-- Secondary Tag 1 -->
+<button class="inline-flex items-center px-3.5 py-1.5 rounded-full bg-journal-sageLight text-journal-sage font-medium text-xs tracking-tight border border-journal-sage/20 hover:bg-journal-sageLight/70 transition-colors" type="button">
+              Personal
+            </button>
+<!-- Secondary Tag 2 -->
+<button class="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white text-journal-inkMuted font-medium text-xs tracking-tight border border-journal-outline hover:border-journal-primary/40 transition-colors" type="button">
+              Work
+            </button>
+<!-- Add Tag Button -->
+<button class="inline-flex items-center px-3 py-1.5 rounded-full bg-journal-surfaceLow hover:bg-journal-surfaceContainer text-journal-ink font-medium text-xs tracking-tight border border-dashed border-journal-outline hover:border-journal-primary transition-all" type="button">
+<svg class="w-3.5 h-3.5 mr-1 stroke-current stroke-2" fill="none" viewbox="0 0 24 24">
+<line x1="12" x2="12" y1="5" y2="19"></line>
+<line x1="5" x2="19" y1="12" y2="12"></line>
+</svg>
+              Add tag
+            </button>
+</div>
+</section>
+</main>
+<!-- END: FormMainContent -->
+</div>
+<!-- BEGIN: StickyFooterActions -->
+<footer class="px-6 pt-3 pb-2 bg-journal-surface/90 backdrop-blur-md sticky bottom-0 z-20 flex flex-col items-center" data-purpose="footer-actions">
+<!-- Full-width Primary Save CTA -->
+<button class="w-full h-14 bg-journal-primary hover:bg-journal-primaryHover active:scale-[0.99] text-journal-primaryTextOnDark font-semibold text-[16px] rounded-full shadow-lg shadow-journal-primary/20 flex items-center justify-center transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-journal-primaryContainer" type="button">
+        Save
+      </button>
+<!-- Android / Modern Mobile Navigation Bar Cue -->
+<div class="w-full flex justify-center items-center pt-5 pb-2">
+<div class="flex items-center justify-around w-48 text-journal-inkMuted opacity-70">
+<!-- Recents Icon -->
+<div class="w-3.5 h-3.5 border-2 border-journal-ink rounded-[2px]"></div>
+<!-- Home Circle Icon -->
+<div class="w-4 h-4 border-2 border-journal-ink rounded-full"></div>
+<!-- Back Chevron Icon -->
+<svg class="w-3.5 h-3.5 fill-journal-ink" viewbox="0 0 24 24">
+<path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
+</svg>
+</div>
+</div>
+</footer>
+<!-- END: StickyFooterActions -->
+</div>
+<!-- END: MobileDeviceFrame -->
+</body></html>

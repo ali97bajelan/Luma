@@ -4,6 +4,8 @@ Prepared 22 October 2026 from the six local PNGs and six local HTML files. This 
 
 ## Intent and scope
 
+**Editor-reference addendum (23 October 2026):** The inventory now includes twelve PNGs and twelve HTML files. New Habit/Mood/Task/Memory light pairs were inspected alongside current editor source. T35–T38 provide required reference-specific refinement; O09–O12 describe optional feature/interaction changes and remain deferred. Every new task has a paired spec and plan in the [task index](../UI_REDESIGN_TASKS.md). This pass changes documentation only and preserves existing implementation/acceptance statuses.
+
 **Widget-reference addendum (22 October 2026):** The reference set now contains eight PNGs and eight HTML files, including newly supplied Tasks/Habits launcher widget light/dark pairs. Their [T34 task](../UI_REDESIGN_TASKS.md#t34--tasks-and-habits-launcher-widgets), [specification](../superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) and [plan](../superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) extend the original six-screen brief below. T34-A/B/C source implementation is present with validation pending; no Gradle tests or emulator checks have been run. T34-D and existing task blockers retain their status.
 
 Regenerate the redesign backlog from the supplied Today, Timeline and Review designs, then provide a specification and implementation plan for every required and optional task. Required work changes presentation while preserving the current product. New features or existing-feature behavior changes are separate optional tasks, deferred by default. The planning pass did not begin app implementation; subsequent T30 and T31 work is recorded in the task index and its evidence.
@@ -13,9 +15,9 @@ A single all-app task would hide navigation/query changes; copying each mockup l
 ## Source resolution and precedence
 
 1. Existing product/data/privacy contracts govern what can be claimed or mutated; optional task specs explicitly identify any proposed changes.
-2. For visual composition, use the matching PNG; use corresponding valid HTML to extract roles, typography and spacing. Shared role decisions below resolve differences between the six valid screen HTML documents.
+2. For visual composition, use the matching PNG; use corresponding valid HTML to extract roles, typography and spacing. Shared role decisions below resolve differences between the screen HTML documents, including the new editor references.
 3. The corrected `timeline-light.html` is a distinct, valid Timeline reference. Use it with `timeline-light.png` for the grouped date/count ribbon, type chips, rail/node geometry, editorial card metadata, photo placement and capture styling. The hidden capture sheet is also a reference; its open/close script is illustrative. The View options script only renames the control “Compact” and does not implement a compact layout. Preserve the app’s working disclosure. Keep source assets unchanged by documentation edits.
-4. There are no More, Settings, in-app Habits list, editor or detail screen mockups in this folder. Their required treatment extrapolates the shared system. Quick Capture is the exception among modal flows: corrected timeline-light.html contains a hidden reference sheet, whose styling informs T32-D while habit shortcuts remain optional O08. Tasks/Habits launcher widgets now have direct references and belong to T34; in-app widget settings/configuration remain T32-C.
+4. More, Settings, in-app Habits list, Journal/person/place editors and detail screens still extrapolate the shared system. Habit/Mood/Task/Memory editors now have direct light references owned by T35–T38; their dark treatment derives from T30 without inventing dark source assets. Quick Capture is the exception among modal flows: corrected timeline-light.html contains a hidden reference sheet, whose styling informs T32-D while habit shortcuts remain optional O08. Tasks/Habits launcher widgets now have direct references and belong to T34; in-app widget settings/configuration remain T32-C.
 5. Source text, people, Persian task names, dates, step counts, chart shapes, hydration volumes, progress and quoted prose are illustrative. Fixtures may reproduce representative states in a dedicated test install; production renders actual saved data.
 6. For launcher widgets only, T34's explicit opaque cream/charcoal/sage roles and RemoteViews typography/geometry override the main-screen palette and type rules below. Its matching PNG governs composition; static HTML supplies roles. The HTML's theme-toggle scripts, static scrollbar and 4% fill for zero progress are prototype artifacts. Preserve actual app themes, real collection scrolling and saved progress. Wallpaper, dock, status bars and the theme pill are launcher context, not Luma UI.
 
@@ -31,6 +33,25 @@ A single all-app task would hide navigation/query changes; copying each mockup l
 PNG dimensions are Today 380/381 × 1600, Timeline 466/430 × 1600 and Review 272/342 × 1600 (light/dark). These are tall reference captures, not dp or fixed target viewport specifications. Their small text/controls and clipping are not accessibility requirements.
 
 Widget PNG dimensions are 564 × 1280 light and 706 × 1600 dark. They show two independent launcher widgets, not a new combined app screen. Retain actual responsive bounds rather than fixed screenshot dimensions or a mandatory three-row capacity.
+
+## Editor reference decisions (23 October 2026)
+
+Use each new PNG for composition and its HTML for field/group intent; preserve existing model and interaction contracts unless the corresponding optional task is selected. Existing T30 palette pairs, contrast and native accessibility constraints resolve the new HTML files' slightly different espresso/sage/border values. No separate editor theme or web dependency is introduced.
+
+| Reference pair | Required owner and composition | Existing behavior retained | Optional difference |
+| --- | --- | --- | --- |
+| [Habit PNG](new-habit-light.png) / [HTML](new-habit-light.html) | T35: tracking zone, name/unit/large target, date pill, sage presets/weekdays, Save | All fields/presets already exist; preserve edit start lock, effective dates and zone mismatch guidance | No new habit feature needed |
+| [Mood PNG](new-mood-light.png) / [HTML](new-mood-light.html) | T36: timestamp pill, five numeric choices, multi-select chips, context, Save | Real emotion IDs, structured energy/stress/links, current disclosure and durable-draft recovery | O10: visible note outside disclosure |
+| [Task PNG](new-task-light.png) / [HTML](new-task-light.html) | T37: title/note hints, due-date card and Save | Undated default, Unicode code-point limits, edit status/delete and revision recovery | O09: persistent task tags |
+| [Memory PNG](new-memory-light.png) / [HTML](new-memory-light.html) | T38: timestamp, optional direct title, description, importance/context groups, Save | Direct/promoted distinction, existing disclosures, nullable importance and real picker/photo slots | O11: expanded panels; O12: prompt/word count |
+
+No new record receives the pictured score 4, importance 4, people, tags, dates or attachments automatically. The task title label must be fully visible; long due-date actions stack. All seven habit weekdays must scroll above Save. Clock/status/battery/gesture/three-button navigation artwork belongs to Android and is not app content. Fixed HTML viewport heights, disabled browser zoom, CDN fonts/scripts and short button dimensions are prototype details.
+
+Keep the shared 600 dp reading width, 20 dp gutters and semantic type roles; use 16 dp fields, 24 dp groups, 8 dp related gaps, 24 dp section gaps, at least 48 dp actions and a minimum 56 dp primary Save. At narrow/large-text sizes wrap chips and stack actions; do not copy screenshot cropping. Use bundled sans text for editing and Persian shaping; reserve editorial serif for headings/read-only content.
+
+Omit “Scheduled for evening review”, “Reflective Journal entry”, Draft/High value badges and fake camera behavior. They do not correspond to current task scheduling, journal creation, durable-memory autosave, defined importance classification or camera capture. Existing local photo import stays available. New functionality beyond O09–O12 needs a separate optional proposal.
+
+T36 owns the compatible shared timestamp pill refinement; T38 consumes it and Journal is a regression consumer. T32-D retains shared infrastructure, other editors/details and modal baseline. The four new editor routes have one reference-refinement owner each in the route ledger; previous blockers remain open. Expanded T33 acceptance must include all twenty H35/M36/T37/R38 scenarios before the overall redesign is complete.
 
 ## Shared design decisions
 
@@ -108,7 +129,7 @@ All specs/plans created in the original documentation pass are proposed artifact
 
 ## Source inventory
 
-The final four entries were added with the T34 documentation pass. All source assets remain unchanged.
+The widget entries were added with T34; the eight new editor entries were added on 23 October 2026. All source assets remain unchanged.
 
 | File | SHA-256 |
 | --- | --- |
@@ -128,3 +149,11 @@ The final four entries were added with the T34 documentation pass. All source as
 | [widgets-dark.png](widgets-dark.png) | 08510ddefaa23e38eeb23bbab4f730dafb6e4eec610e449ca7f9f255d4b14fc2 |
 | [widgets-light.html](widgets-light.html) | fc8ea9f78315b7f9ea3ed95bbebfc9550958de67f211ceff58e92b262c0aa47a |
 | [widgets-light.png](widgets-light.png) | f1c8ff881558dc11e167b4b2feacfe58b1e08aee38d372b622fdc0a3650c5fc5 |
+| [new-habit-light.html](new-habit-light.html) | 56391c705aac8ccfd7a1a227411cf5c3f757becf39ad5252649f02dbbb272cca |
+| [new-habit-light.png](new-habit-light.png) | 15394c654b541c80a19f4e58c83c6163eb37aed57edbb647735f4f931326aa28 |
+| [new-memory-light.html](new-memory-light.html) | 17212d8b2a71ab91582d3219e08c2e045f833d1d99ee289cd371a3a2cfe8663d |
+| [new-memory-light.png](new-memory-light.png) | fd4f64427721a8727460715779ad6c1411b7ce4946b4da4b1f6df896c3553bb9 |
+| [new-mood-light.html](new-mood-light.html) | 5266dea6a26f174b9ae7d72a7cd134fabc669175a20158f520ae6be65c2cb427 |
+| [new-mood-light.png](new-mood-light.png) | 2f53bd3dbb798387a95a2e14405681539f892d94bbcc906615ff522fc6938194 |
+| [new-task-light.html](new-task-light.html) | d8a0d3aaad536c6d26ce58ca8c2808f42384f8a6a24ebfece95436d6da4fb611 |
+| [new-task-light.png](new-task-light.png) | d487e29348acf4acbe14dfb2c4c6d31779663643acabda25a3e40c1e971ea3a7 |

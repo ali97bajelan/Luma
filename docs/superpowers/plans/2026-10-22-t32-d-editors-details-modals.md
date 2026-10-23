@@ -12,6 +12,10 @@
 
 **Spec:** [Corresponding specification](../specs/2026-10-22-t32-d-editors-details-modals-design.md).
 
+## Editor-reference handoff — 23 October 2026
+
+T35–T38 now own Habit/Mood/Task/Memory reference-specific refinement; T36 owns compatible shared timestamp pill styling and checks Journal/Memory consumers. Use their paired specs/plans from the [task index](../../UI_REDESIGN_TASKS.md). T32-D still owns shared baseline infrastructure, other editors/details and modal recovery. Its previous checkboxes/evidence are historical status, not completion of the new work; all existing blockers remain.
+
 ## Global constraints
 
 - Native Android, Kotlin, Compose Material 3 and Navigation Compose; keep minSdk 28, compileSdk 35, targetSdk 35 and JDK 17.
