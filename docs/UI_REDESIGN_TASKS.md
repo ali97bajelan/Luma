@@ -4,7 +4,7 @@ Regenerated 22 October 2026 from the images and HTML in [luma-redesign](luma-red
 
 Widget-reference addendum, 22 October 2026: the new Tasks/Habits light/dark PNG and HTML pairs are reviewed in [T34's spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md). T34-A through T34-D source work is implemented (validation pending). The focused API 36 offscreen renderer matrix and picker-preview check passed; unit tests, debug packaging and lint passed. Real launcher acceptance remains NOT RUN, API 28/31 images are unavailable, and the connected-test teardown removed the preexisting Luma package from the API 36 AVD. See the [T34 acceptance record](luma-redesign/evidence/2026-10-22/t34/acceptance.md) for the device/data incident and remaining checks.
 
-Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35 source implementation is complete; validation is pending. T36–T38 remain pending.** These tasks own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** No Gradle task, test or emulator run is claimed for T35; H35 acceptance remains NOT RUN.
+Editor-reference addendum, 23 October 2026: reviewed the four new Habit/Mood/Task/Memory light PNG and HTML pairs against the current editors. **T35 and T36 source implementations are complete; validation is pending. T37–T38 remain pending.** These tasks own reference-specific editor refinement; T32-D retains shared editor/detail/modal infrastructure and all existing blockers. **O09–O12 are optional, deferred and not selected.** No Gradle test or emulator run is claimed for T35 or T36; H35 and M36 acceptance remain NOT RUN.
 
 ## Scope and reference decisions
 
@@ -34,7 +34,7 @@ Status vocabulary: **pending**, **in progress**, **implemented (validation pendi
 | T33 | Accessibility, regression and visual acceptance | T31 and T32 (all four children); T35–T38 for expanded acceptance | blocked (acceptance pending) | [Spec](superpowers/specs/2026-10-22-t33-redesign-acceptance-design.md) | [Plan](superpowers/plans/2026-10-22-t33-redesign-acceptance.md) |
 | T34 | Tasks and Habits launcher widgets | T30 design baseline; existing widget contracts | implemented (validation pending) | [Spec](superpowers/specs/2026-10-22-t34-launcher-widgets-redesign-design.md) | [Plan](superpowers/plans/2026-10-22-t34-launcher-widgets-redesign.md) |
 | T35 | Habit editor reference refinement | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t35-habit-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t35-habit-editor-redesign.md) |
-| T36 | Mood check-in and shared timestamp pill | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t36-mood-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t36-mood-editor-redesign.md) |
+| T36 | Mood check-in and shared timestamp pill | T30 baseline; T32-D components | implemented (validation pending) | [Spec](superpowers/specs/2026-10-23-t36-mood-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t36-mood-editor-redesign.md) |
 | T37 | Task editor reference refinement | T30 baseline; T32-D components | pending | [Spec](superpowers/specs/2026-10-23-t37-task-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t37-task-editor-redesign.md) |
 | T38 | Memory editor reference refinement | T30 baseline; T32-D components; T36 timestamp | pending | [Spec](superpowers/specs/2026-10-23-t38-memory-editor-redesign-design.md) | [Plan](superpowers/plans/2026-10-23-t38-memory-editor-redesign.md) |
 
@@ -147,7 +147,7 @@ T34-D status: the offscreen exporter covered both kinds, both app-theme override
 
 ### T36 — Mood check-in and shared timestamp pill
 
-**Status: pending.** Sources: [PNG](luma-redesign/new-mood-light.png), [HTML](luma-redesign/new-mood-light.html).
+**Status: implemented (validation pending).** Sources: [PNG](luma-redesign/new-mood-light.png), [HTML](luma-redesign/new-mood-light.html). See the [T36 implementation record](luma-redesign/evidence/2026-10-23/t36/acceptance.md).
 
 **Scope:** Editorial header, rounded timestamp pill, accessible 1–5 scale, repository-backed wrapping emotion chips and restyled existing More details/context/Save surfaces. T36 owns compatible shared `CaptureTimestampRow` refinement, including Journal/Memory regression checks. Preserve note/energy/stress/people/place disclosures, durable-draft Save gating, recovery previews, delete reconciliation and date/time behavior. Calm/Grateful colors are illustrative, not new emotion categories.
 

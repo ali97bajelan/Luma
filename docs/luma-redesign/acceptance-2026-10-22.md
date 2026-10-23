@@ -22,6 +22,7 @@ Planning baseline and run date: 2026-10-22. Tested source baseline revision: `38
 | T32-C | BLOCKED | Search recovery, habit management/navigation and task recovery assertions fail in the full run; investigate before assigning production causes. |
 | T32-D | BLOCKED | Nine connected failures remain in Quick Capture navigation, Journal, Memory, Mood, People and Place flows; isolate before assigning production causes. |
 | T35 Habit editor source refinement | IMPLEMENTED (VALIDATION PENDING) | Source-only implementation recorded in [T35 evidence](evidence/2026-10-23/t35/acceptance.md). H35-1–5, visual/accessibility matrix and runtime behavior remain NOT RUN; no Gradle task or emulator was run by request. T32-D remains blocked. |
+| T36 Mood editor and shared timestamp source refinement | IMPLEMENTED (VALIDATION PENDING) | Source-only implementation recorded in [T36 evidence](evidence/2026-10-23/t36/acceptance.md). M36-1–5, visual/accessibility matrix, timestamp dialogs and Journal/Memory compatibility remain NOT RUN; no Gradle test or emulator was run by request. T32-D remains blocked. |
 | Optional O01–O08 | Deferred / not selected | No optional behavior was implemented or accepted. |
 
 No task is marked complete. Reconsider T33 after the remaining connected failures are isolated and resolved or shown to be stale, and after the required visual/accessibility evidence is recorded.

@@ -2,6 +2,8 @@ package com.luma.lifeos.ui.mood
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -12,14 +14,23 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,12 +40,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -118,7 +133,8 @@ fun MoodEditorScreen(
                         } else null,
                         primaryAction = { actionModifier ->
                             Button(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting,
-                                onClick = onSave, modifier = actionModifier.testTag("mood_save")) {
+                                onClick = onSave, modifier = actionModifier.heightIn(min = 56.dp).testTag("mood_save"),
+                                shape = CircleShape) {
                                 Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                             }
                         },
@@ -201,55 +217,132 @@ fun MoodEditorScreen(
                         modifier = Modifier.fillMaxWidth().testTag("mood_note_recovery_preview"))
                 }
                 if (state.ready) {
-                    CaptureTimestampRow(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
-                    Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() }.testTag("mood_question"))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(stringResource(R.string.mood_very_low), style = MaterialTheme.typography.bodySmall)
-                        Text(stringResource(R.string.mood_great), style = MaterialTheme.typography.bodySmall)
-                    }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        (1..5).forEach { score ->
-                            val description = stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score)))
-                            FilterChip(selected = state.draft.score == score, enabled = enabled,
-                                onClick = { onScore(score) },
-                                modifier = Modifier.weight(1f).testTag("mood_score_$score")
-                                    .semantics { contentDescription = description },
-                                label = { Text(NumberFormat.getIntegerInstance().format(score)) })
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        CaptureTimestampRow(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.semantics { heading() }.testTag("mood_question"))
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.mood_very_low), style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.mood_great), style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.weight(1f))
+                            }
+                            Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                val colors = MaterialTheme.colorScheme
+                                (1..5).forEach { score ->
+                                    val description = stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score)))
+                                    val selected = state.draft.score == score
+                                    Surface(
+                                        modifier = Modifier.weight(1f).widthIn(min = 48.dp).heightIn(min = 48.dp)
+                                            .selectable(
+                                                selected = selected,
+                                                enabled = enabled,
+                                                role = Role.RadioButton,
+                                                onClick = { onScore(score) },
+                                            )
+                                            .semantics { contentDescription = description }
+                                            .testTag("mood_score_$score"),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = when {
+                                            selected -> colors.primary
+                                            enabled -> colors.surfaceContainerLowest
+                                            else -> colors.surfaceContainerLow
+                                        },
+                                        contentColor = when {
+                                            selected -> colors.onPrimary
+                                            enabled -> colors.onSurface
+                                            else -> colors.onSurfaceVariant
+                                        },
+                                        border = BorderStroke(1.dp,
+                                            if (selected) colors.primary else colors.outlineVariant),
+                                        tonalElevation = 0.dp,
+                                        shadowElevation = 0.dp,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Text(NumberFormat.getIntegerInstance().format(score),
+                                                style = MaterialTheme.typography.titleMedium)
+                                        }
+                                    }
+                                }
+                            }
+                            state.draft.score?.let { score ->
+                                Text(stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score))),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.testTag("mood_score_description"))
+                            }
                         }
-                    }
-                    state.draft.score?.let { score ->
-                        Text(stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score))),
-                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("mood_score_description"))
-                    }
-                    Text(stringResource(R.string.mood_emotions), style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() }.testTag("mood_emotions"))
-                    Text(stringResource(R.string.mood_emotions_hint), style = MaterialTheme.typography.bodySmall)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        state.emotions.forEach { emotion ->
-                            FilterChip(selected = emotion.id in state.draft.emotionIds, enabled = enabled,
-                                onClick = { onEmotion(emotion.id) }, modifier = Modifier.testTag("mood_emotion_${emotion.name}"),
-                                label = { Text(emotionDisplayName(emotion)) })
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.mood_emotions), style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.semantics { heading() }.testTag("mood_emotions"))
+                            Text(stringResource(R.string.mood_emotions_hint), style = MaterialTheme.typography.bodySmall)
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                state.emotions.forEach { emotion ->
+                                    val selected = emotion.id in state.draft.emotionIds
+                                    val colors = MaterialTheme.colorScheme
+                                    FilterChip(selected = selected, enabled = enabled,
+                                        onClick = { onEmotion(emotion.id) },
+                                        modifier = Modifier.heightIn(min = 48.dp).testTag("mood_emotion_${emotion.name}"),
+                                        shape = CircleShape,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            containerColor = colors.surfaceContainerLowest,
+                                            labelColor = colors.onSurface,
+                                            selectedContainerColor = colors.secondaryContainer,
+                                            selectedLabelColor = colors.onSecondaryContainer,
+                                            selectedTrailingIconColor = colors.onSecondaryContainer,
+                                        ),
+                                        trailingIcon = if (selected) {
+                                            { Icon(
+                                                painter = painterResource(R.drawable.ic_check),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                            ) }
+                                        } else null,
+                                        label = { Text(emotionDisplayName(emotion)) })
+                                }
+                            }
                         }
-                    }
-                    val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
-                    TextButton(onClick = { more = !more }, enabled = !state.busy,
-                        modifier = Modifier.testTag("mood_more").semantics { stateDescription = disclosureState }) {
-                        Text(stringResource(if (more) R.string.mood_fewer_details else R.string.mood_more_details))
-                    }
-                    Text(stringResource(R.string.mood_context_help), style = MaterialTheme.typography.bodySmall)
-                    if (more) {
+
                         LumaSectionSurface {
-                            OptionalScale(stringResource(R.string.mood_energy), "energy", state.draft.energy, enabled, onEnergy)
-                            OptionalScale(stringResource(R.string.mood_stress), "stress", state.draft.stress, enabled, onStress)
-                            LumaOutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled,
-                                label = { Text(stringResource(R.string.mood_note)) }, minLines = 3,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                                modifier = Modifier.fillMaxWidth().testTag("mood_note"))
-                            if (state.noteLimitError) AccessibleFeedback(
-                                stringResource(R.string.mood_note_limit_error), Modifier.testTag("mood_note_limit_error"))
-                            peopleContent()
-                            placeContent()
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                val disclosureState = stringResource(
+                                    if (more) R.string.review_details_expanded else R.string.review_details_collapsed,
+                                )
+                                TextButton(onClick = { more = !more }, enabled = !state.busy,
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("mood_more")
+                                        .semantics { heading(); stateDescription = disclosureState }) {
+                                    Text(
+                                        stringResource(if (more) R.string.mood_fewer_details else R.string.mood_more_details),
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                                Text(stringResource(R.string.mood_context_help), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (more) {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    OptionalScale(stringResource(R.string.mood_energy), "energy", state.draft.energy, enabled, onEnergy)
+                                    OptionalScale(stringResource(R.string.mood_stress), "stress", state.draft.stress, enabled, onStress)
+                                    LumaOutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled,
+                                        label = { Text(stringResource(R.string.mood_note)) }, minLines = 3,
+                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                                        modifier = Modifier.fillMaxWidth().testTag("mood_note"))
+                                    if (state.noteLimitError) AccessibleFeedback(
+                                        stringResource(R.string.mood_note_limit_error), Modifier.testTag("mood_note_limit_error"))
+                                    peopleContent()
+                                    placeContent()
+                                }
+                            }
                         }
                     }
                 }
@@ -320,11 +413,17 @@ private fun MoodRecoveryContent(state: MoodEditorState) {
 private fun OptionalScale(label: String, tag: String, value: Int?, enabled: Boolean, onValue: (Int?) -> Unit) {
     Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
     Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         (1..5).forEach { score ->
             val description = stringResource(R.string.mood_scale_description, label, score)
             FilterChip(selected = value == score, enabled = enabled, onClick = { onValue(if (score == value) null else score) },
-                modifier = Modifier.weight(1f).testTag("mood_${tag}_$score").semantics { contentDescription = description },
+                modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
+                    .testTag("mood_${tag}_$score").semantics { contentDescription = description },
+                shape = RoundedCornerShape(16.dp),
                 label = { Text(NumberFormat.getIntegerInstance().format(score)) })
         }
     }

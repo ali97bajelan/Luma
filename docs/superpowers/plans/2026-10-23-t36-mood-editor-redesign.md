@@ -10,7 +10,7 @@
 
 **Spec:** [T36 specification](../specs/2026-10-23-t36-mood-editor-redesign-design.md).
 
-**Status:** Planned only. No code or tests were executed by this documentation change.
+**Status:** Source implementation complete; validation pending. Per the implementation request, no Gradle test or emulator was run. See the [T36 implementation record](../../luma-redesign/evidence/2026-10-23/t36/acceptance.md).
 
 ## Global constraints
 
@@ -44,10 +44,10 @@ Consumes: current screen state, callbacks and shared components named in the spe
 
 **Interfaces:** Use the existing screen signature listed below and the spec's exact field semantics; retain all callback types and route inputs.
 
-- [ ] Record the existing create/edit/recovery states and `MoodEditorScreen` signature, including its people/place content slots and `onRetryDraft`.
-- [ ] Refine `CaptureTimestampRow(milliseconds, enabled, timeError, onTime, modifier)` presentation with unchanged signature, tags and dialogs; review Memory/Journal consumers in the same change.
-- [ ] Restyle mood header, five score controls and repository-backed emotion chips. Keep existing score callbacks, UUID selection, accessibility descriptions and durability-gated Save.
-- [ ] Restyle the current disclosure and expanded optional scales/note/context; keep its initialization and recovery branches. O10 must remain unselected unless explicitly requested.
+- [x] Record the existing create/edit/recovery states and `MoodEditorScreen` signature, including its people/place content slots and `onRetryDraft`.
+- [x] Refine `CaptureTimestampRow(milliseconds, enabled, timeError, onTime, modifier)` presentation with unchanged signature, tags and dialogs; review Memory/Journal consumers in the same change.
+- [x] Restyle mood header, five score controls and repository-backed emotion chips. Keep existing score callbacks, UUID selection, accessibility descriptions and durability-gated Save.
+- [x] Restyle the current disclosure and expanded optional scales/note/context; keep its initialization and recovery branches. O10 must remain unselected unless explicitly requested.
 - [ ] Verify M36-1 through M36-4 with the existing mood regression owners; extend coverage only for missing selected semantics, recovery reachability or timestamp regressions.
 - [ ] Inspect M36-5, including error/recovery states and shared Journal/Memory timestamp dialogs, then record light/dark evidence.
 
@@ -57,8 +57,8 @@ Consumes: current screen state, callbacks and shared components named in the spe
 
 - [ ] Run the focused unit and device commands below after implementation. Confirm all selected tests ran and passed; unavailable device/build checks are NOT RUN.
 - [ ] Cover each Review Focus item with the corresponding acceptance scenario; extend its existing owner if automation does not yet cover the semantic risk, and use rendered/TalkBack checks for geometry, contrast and focus.
-- [ ] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences.
-- [ ] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
+- [x] Record every spec acceptance ID with PASS/FAIL/NOT RUN and evidence; document omitted optional features as intentional differences.
+- [x] Review the implementation diff for shared-component consumers, changed callbacks and unrelated edits; update task status without closing older blockers.
 - [ ] Commit the scoped implementation and evidence with `feat(ui): refine T36 mood editor`.
 
 ## Planned verification commands
@@ -70,4 +70,3 @@ Consumes: current screen state, callbacks and shared components named in the spe
 ```
 
 Expected: BUILD SUCCESSFUL, selected tests executed with zero failures, zero lint errors, plus passing recorded visual/accessibility scenarios. Run on an isolated test install/AVD without user data; connected-test teardown may uninstall the package. Do not repeat passing checks without a new change or unresolved failure. These are future implementation checks, not results of this planning pass.
-
