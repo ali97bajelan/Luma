@@ -1,7 +1,7 @@
 # Calendar & Agenda task backlog
 
 Prepared: 2026-10-25  
-Status: Revised CAL-I01–I06 source complete. Focused host tests, debug/test APK assembly and lint pass; complete Room/device/manual QA remains pending.
+Status: CAL-I01–I06 source complete. CAL-Q01 complete: 456 host tests pass, APK assembly and lint pass. CAL-Q02 tests are authored/compiled, with connected execution blocked by an unbooted isolated AVD. CAL-Q03 manual acceptance is blocked; release acceptance remains pending.
 
 [Specification](superpowers/specs/2026-10-25-calendar-agenda-design.md) · [Engineering plan](superpowers/plans/2026-10-25-calendar-agenda.md) · [QA scenarios](CALENDAR_QA.md)
 
@@ -31,9 +31,9 @@ IDs are local to Calendar and do not renumber T01–T38, TD or optional-feature 
 
 | ID | Priority | Status | Deliverable | Depends on | Completion evidence |
 | --- | --- | --- | --- | --- | --- |
-| CAL-Q01 | P0 | Partial: 443 host tests pass; APK assembly/lint pass; remaining scenario tests pending | Author domain/ViewModel tests; run host tests, build, test APK assembly and lint | All I tasks source complete | Commands, environment, test counts and logs |
-| CAL-Q02 | P0 | Focused Room tests authored/compiled; device execution blocked by ADB startup | Author/run Room and Compose scenarios; execute existing regression suites | Q01 passes | Current-build instrumentation results; no unexplained skips |
-| CAL-Q03 | P0 | Not started | Execute manual light/dark, EN/FR/FA, RTL, accessibility, lifecycle/window matrix; fix/retest defects and record acceptance | Q01/Q02 and available QA build | CQA-01–32 evidence, screenshots, defects and final gate |
+| CAL-Q01 | P0 | Complete: 456 host tests pass; debug/test APK assembly, instrumentation compilation and lint pass | Author domain/ViewModel tests; run host tests, build, test APK assembly and lint | All I tasks source complete | Fresh Gradle run, test counts and logs in the execution record |
+| CAL-Q02 | P0 | Partial: Room and Compose scenarios authored and compiled; connected runs blocked before test execution because Android PackageManager never started in the isolated AVD | Author/run Room and Compose scenarios; execute existing regression suites | Q01 passes | Current-build connected results; no unexplained skips |
+| CAL-Q03 | P0 | Blocked: manual visual, accessibility and lifecycle matrix not run because the isolated AVD did not complete boot | Execute manual light/dark, EN/FR/FA, RTL, accessibility, lifecycle/window matrix; fix/retest defects and record acceptance | Q01/Q02 and available QA build | CQA-01–32 evidence, screenshots, defects and final gate |
 
 ## Handoff and acceptance
 

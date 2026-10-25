@@ -10,19 +10,27 @@ import com.luma.lifeos.data.repository.RoomCalendarRepository
 import com.luma.lifeos.data.repository.RoomJournalRepository
 import com.luma.lifeos.data.repository.RoomMemoryRepository
 import com.luma.lifeos.data.repository.RoomMoodRepository
+import com.luma.lifeos.data.repository.RoomTodoRepository
 import com.luma.lifeos.domain.calendar.CalendarRange
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.JournalInput
 import com.luma.lifeos.domain.model.MemoryInput
 import com.luma.lifeos.domain.model.MemoryMarkerInput
 import com.luma.lifeos.domain.model.MoodInput
+import com.luma.lifeos.domain.todo.TodoInput
 import java.time.Instant
+import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -32,6 +40,7 @@ class CalendarProjectionTest {
     private lateinit var database: LumaDatabase
     private lateinit var calendar: RoomCalendarRepository
     private lateinit var memories: RoomMemoryRepository
+    private lateinit var todos: RoomTodoRepository
     private val date = LocalDate.parse("2026-10-22")
     private val now = Instant.parse("2026-10-22T10:00:00Z")
 
@@ -41,6 +50,7 @@ class CalendarProjectionTest {
         ).build()
         calendar = RoomCalendarRepository(database)
         memories = RoomMemoryRepository(database)
+        todos = RoomTodoRepository(database, Clock.fixed(now, ZoneOffset.UTC))
     }
     @After fun tearDown() = database.close()
 
@@ -108,6 +118,77 @@ class CalendarProjectionTest {
             memories.create(EventId.new(), MemoryInput("Next day", end))
             assertEquals(2, calendar.observeMemories(day, zone).first().total)
             assertEquals(mapOf(day to 2), calendar.observeMemoryMarkers(CalendarRange(day, day), zone).first())
+        }
+    }
+
+    @Test fun taskProjectionUsesCarryInExactDateGlobalOverdueAndCanonicalOrdering() = runBlocking {
+        val ids = (1..7).map { index -> UUID.fromString("20000000-0000-0000-0000-${index.toString().padStart(12, '0')}") }
+        val a = todos.create(ids[0], UUID.randomUUID(), TodoInput("A overdue", dueDate = date.minusDays(3)))
+        val b = todos.create(ids[1], UUID.randomUUID(), TodoInput(
+            "B overdue", dueDate = date.minusDays(1), dueTime = java.time.LocalTime.of(9, 5),
+        ))
+        val c = todos.create(ids[2], UUID.randomUUID(), TodoInput(
+            "C today timed", dueDate = date, dueTime = java.time.LocalTime.of(17, 0),
+        ))
+        val d = todos.create(ids[3], UUID.randomUUID(), TodoInput("D today anytime", dueDate = date))
+        val e = todos.create(ids[4], UUID.randomUUID(), TodoInput(
+            "E midnight", dueDate = date.plusDays(1), dueTime = java.time.LocalTime.MIDNIGHT,
+        ))
+        todos.create(ids[5], UUID.randomUUID(), TodoInput("F undated"))
+        val completed = todos.create(ids[6], UUID.randomUUID(), TodoInput(
+            "G completed", dueDate = date, dueTime = java.time.LocalTime.of(8, 0),
+        ))
+        todos.setCompleted(completed.id, completed.revision, UUID.randomUUID(), true)
+
+        val todayPage = calendar.observeTasks(date, date, overdueOnly = false, limit = 50).first()
+        assertEquals(4, todayPage.total)
+        assertEquals(listOf(a.id, b.id, c.id, d.id), todayPage.items.map { it.id })
+        assertNull(todayPage.items[0].dueTime)
+        assertEquals(java.time.LocalTime.of(9, 5), todayPage.items[1].dueTime)
+        assertEquals(java.time.LocalTime.of(17, 0), todayPage.items[2].dueTime)
+        assertNull(todayPage.items[3].dueTime)
+
+        val historical = calendar.observeTasks(date.minusDays(1), date, overdueOnly = false, limit = 50).first()
+        assertEquals(1, historical.total)
+        assertEquals(listOf(b.id), historical.items.map { it.id })
+        val overdue = calendar.observeTasks(date.plusDays(1), date, overdueOnly = true, limit = 50).first()
+        assertEquals(2, overdue.total)
+        assertEquals(listOf(a.id, b.id), overdue.items.map { it.id })
+        val future = calendar.observeTasks(date.plusDays(1), date, overdueOnly = false, limit = 50).first()
+        assertEquals(1, future.total)
+        assertEquals(listOf(e.id), future.items.map { it.id })
+
+        assertEquals(2, calendar.observeOverdueCount(date).first())
+        assertEquals(
+            mapOf(
+                date.minusDays(3) to com.luma.lifeos.domain.calendar.CalendarTaskMarker(1, true),
+                date.minusDays(1) to com.luma.lifeos.domain.calendar.CalendarTaskMarker(1, true),
+                date to com.luma.lifeos.domain.calendar.CalendarTaskMarker(2, false),
+                date.plusDays(1) to com.luma.lifeos.domain.calendar.CalendarTaskMarker(1, false),
+            ),
+            calendar.observeTaskMarkers(CalendarRange(date.minusDays(3), date.plusDays(1)), date).first(),
+        )
+    }
+
+    @Test fun taskMarkersReemitAfterCreateAndCompletion() = runBlocking {
+        val emissions = Channel<Map<LocalDate, com.luma.lifeos.domain.calendar.CalendarTaskMarker>>(Channel.UNLIMITED)
+        val collection = launch {
+            calendar.observeTaskMarkers(CalendarRange(date, date), date).collect { emissions.send(it) }
+        }
+        try {
+            assertTrue(withTimeout(5_000) { emissions.receive() }.isEmpty())
+            val created = todos.create(
+                UUID.randomUUID(), UUID.randomUUID(), TodoInput("Observed Calendar task", dueDate = date),
+            )
+            assertEquals(
+                mapOf(date to com.luma.lifeos.domain.calendar.CalendarTaskMarker(1, false)),
+                withTimeout(5_000) { emissions.receive() },
+            )
+            todos.setCompleted(created.id, created.revision, UUID.randomUUID(), true)
+            assertTrue(withTimeout(5_000) { emissions.receive() }.isEmpty())
+        } finally {
+            collection.cancelAndJoin()
+            emissions.close()
         }
     }
 }

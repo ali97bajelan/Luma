@@ -3,7 +3,7 @@
 Package date: 2026-10-25
 Scope revision source review: 2026-10-25T14:49:24+03:30 (Asia/Tehran)
 
-Status: **Tasks-and-memories implementation source complete; focused host/build/lint checks PASS; runtime acceptance pending.**
+Status: **CAL-Q01 PASS (456 host tests; APK assembly, instrumentation compilation and lint). CAL-Q02 connected Room/app tests BLOCKED before test execution; CAL-Q03 manual matrix BLOCKED. Full scenario acceptance PENDING.**
 
 [Tasks](../CALENDAR_TASKS.md) · [Spec](../superpowers/specs/2026-10-25-calendar-agenda-design.md) · [Plan](../superpowers/plans/2026-10-25-calendar-agenda.md) · [QA](../CALENDAR_QA.md)
 
@@ -102,3 +102,21 @@ The complete pre-existing Calendar QA package remains open; focused revision che
 All required locale/theme/window/font/API/accessibility/IME/offline matrix cells remain NOT RUN until evidence is recorded. Use an isolated synthetic QA install for connected tests; no existing personal app data may be replaced. Evidence directory: `docs/luma-redesign/evidence/<actual-run-date>/calendar/`.
 
 **Release acceptance: PENDING.** Static review and source completion are not runtime evidence.
+
+## 2026-10-25 QA follow-up
+
+Observed through `2026-10-25T11:52:54Z` (`15:22:54` Asia/Tehran). Base revision: `ffc444627dfe43b2a208442f0ecb5a3d38e039e7`; uncommitted QA-test patch fingerprint: `fafdad6376959850686813722f0417fbabc04810addce0e0bd30ffe055e14553`. The production Calendar patch is unchanged from the scope-revision run above. Preserved release metadata/APK edits remain outside this QA patch. Host: Linux, OpenJDK 17.0.20.1, Gradle 9.1.0 offline; debug variant uses the existing working-tree app version 1.2.2 (5).
+
+| Check | Result | Evidence / limits |
+| --- | --- | --- |
+| Fresh host tests | PASS | `bash gradlew --offline --rerun-tasks :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest`: **138 domain + 289 app + 29 data = 456 tests**, zero failures/errors/skips. Full log: [qa-update-host-tests.log](../luma-redesign/evidence/2026-10-25/calendar/qa-update-host-tests.log). |
+| CAL-Q01 rule and ViewModel coverage | PASS | Added 8 `CalendarRulesTest` cases for month/week ranges, leap years, supported-year edges, locale week starts, date-based membership, overdue scope, ordering and due-time/null ordering. Expanded ViewModel coverage to 10 cases for stale task responses, rollover, restore paging, source-isolated retry, saved-state defaults, counts and paging. |
+| CAL-Q02 test authoring/compilation | PASS | Added task projection/order/invalidation Room cases and four Calendar flow plus one semantics case; updated primary-navigation, Habits-under-More and existing task regressions. `:app:compileDebugAndroidTestKotlin :core:data:compileDebugAndroidTestKotlin` passed. Compilation does not execute instrumentation. |
+| Debug/test APK assembly and lint | PASS | `:app:assembleDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug` succeeded. App lint has 0 errors/fatals, 143 warnings and 8 informational entries; data lint has no issues. Log: [qa-update-build-lint.log](../luma-redesign/evidence/2026-10-25/calendar/qa-update-build-lint.log). |
+| Focused Room connected suite | BLOCKED; 0 tests ran | The fresh `Luma_QA` AVD registered with ADB but Android boot did not complete; `service package` returned `not found`. APK install failed with `cmd: Can't find service: package`. Log: [qa-update-room-connected.log](../luma-redesign/evidence/2026-10-25/calendar/qa-update-room-connected.log). |
+| Calendar app connected suite | BLOCKED; 0 tests ran | Gradle could not read device properties and skipped the AVD as `Unknown API Level`; no compatible device. Log: [qa-update-app-connected.log](../luma-redesign/evidence/2026-10-25/calendar/qa-update-app-connected.log). |
+| CAL-Q03 manual checks | BLOCKED / NOT RUN | No app install, fixture seeding, screenshots, TalkBack, keyboard, IME, locale/theme/window or lifecycle checks occurred because PackageManager was unavailable. The existing `Medium_Phone` AVD and its data were not touched; the failed attempt used a fresh `/tmp/luma-qa-avds/Luma_QA` profile. |
+
+Host coverage is limited to domain/ViewModel behavior; it does not certify complete CQA scenarios. The CQA-01–32 scenario table and required matrix cells remain **NOT RUN** until full runtime/manual behavior is exercised. Release acceptance remains **PENDING**.
+
+No new production defect was reproduced in this follow-up. Three initial `CalendarRulesTest` assertions failed because the test expected a leap-month grid to end on February 29, assumed a Saturday first day for the JVM's Persian `WeekFields`, and omitted adjacent valid dates at year 1. The assertion output showed the correct civil-calendar results; the test expectations were corrected, and the fresh suite above passed. These were test-authoring corrections, not product bugs. Existing French plural and imported whitespace-only memory-preview fixes remain documented in the prior QA execution above; no new defect ID was opened.

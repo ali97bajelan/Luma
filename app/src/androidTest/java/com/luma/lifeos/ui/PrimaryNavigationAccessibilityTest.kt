@@ -49,18 +49,18 @@ class PrimaryNavigationAccessibilityTest {
         val languages = listOf(
             LanguageCase(
                 tag = "en",
-                visible = listOf("Today", "Timeline", "Habits", "Review", "More"),
-                full = visibleLabels("Today", "Timeline", "Habits", "Review", "More"),
+                visible = listOf("Today", "Timeline", "Calendar", "Review", "More"),
+                full = visibleLabels("Today", "Timeline", "Calendar", "Review", "More"),
             ),
             LanguageCase(
                 tag = "fr",
-                visible = listOf("Jour", "Parcours", "Hab.", "Bilan", "Plus"),
-                full = visibleLabels("Aujourd’hui", "Chronologie", "Habitudes", "Bilan", "Plus"),
+                visible = listOf("Jour", "Parcours", "Calendrier", "Bilan", "Plus"),
+                full = visibleLabels("Aujourd’hui", "Chronologie", "Calendrier", "Bilan", "Plus"),
             ),
             LanguageCase(
                 tag = "fa",
-                visible = listOf("امروز", "خط زمانی", "عادت‌ها", "مرور", "بیشتر"),
-                full = visibleLabels("امروز", "خط زمانی", "عادت‌ها", "مرور", "بیشتر"),
+                visible = listOf("امروز", "خط زمانی", "تقویم", "مرور", "بیشتر"),
+                full = visibleLabels("امروز", "خط زمانی", "تقویم", "مرور", "بیشتر"),
                 direction = LayoutDirection.Rtl,
             ),
         )
@@ -71,7 +71,7 @@ class PrimaryNavigationAccessibilityTest {
                 }
             }
         }
-        val routes = listOf("today", "timeline", "habits", "review", "more")
+        val routes = listOf("today", "timeline", "calendar", "review", "more")
 
         val activeCase = mutableStateOf(cases.first())
         val navigated = mutableListOf<String>()

@@ -27,13 +27,17 @@ class AppNavigationTest {
 
     @Test fun launchesOnTodayAndNavigatesToEveryPrimaryRoute() {
         compose.onNodeWithTag("screen_today").assertIsDisplayed()
-        listOf("timeline", "habits", "review", "more", "today").forEach { route ->
+        listOf("today", "timeline", "calendar", "review", "more").forEach { route ->
             compose.onNodeWithTag("nav_$route").performClick()
             compose.onNodeWithTag("screen_$route").assertIsDisplayed()
         }
-        compose.onNodeWithTag("nav_habits").performClick()
+        compose.onNodeWithTag("nav_habits").assertDoesNotExist()
+        compose.onNodeWithTag("nav_calendar").assertExists()
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_habits").performClick()
         compose.onNodeWithTag("screen_habits").assertIsDisplayed()
-        compose.onNodeWithTag("habits_back").assertDoesNotExist()
+        compose.onNodeWithTag("habits_back").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("screen_more").assertIsDisplayed()
         compose.onNodeWithTag("nav_people").assertDoesNotExist()
         compose.onNodeWithTag("nav_settings").assertDoesNotExist()
     }
@@ -112,7 +116,7 @@ class AppNavigationTest {
     }
 
     @Test fun captureFabAppearsOnlyOnTimelineAndReview() {
-        listOf("today", "habits", "more").forEach { route ->
+        listOf("today", "calendar", "more").forEach { route ->
             compose.onNodeWithTag("nav_$route").performClick()
             compose.onNodeWithTag("primary_navigation").assertIsDisplayed()
             compose.onNodeWithTag("quick_capture").assertDoesNotExist()
@@ -196,9 +200,10 @@ class AppNavigationTest {
         val yesterday = LocalDate.now().minusDays(1)
             .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
         compose.onNodeWithTag("day_previous").performClick()
-        compose.onNodeWithTag("nav_habits").performClick()
-        compose.onNodeWithTag("day_selected", useUnmergedTree = true).assertTextEquals(yesterday)
         compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_habits").performClick()
+        compose.onNodeWithTag("screen_habits").assertIsDisplayed()
+        compose.onNodeWithTag("habits_back").performClick()
         compose.onNodeWithTag("more_settings").performClick()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("settings_hub_back").performClick()

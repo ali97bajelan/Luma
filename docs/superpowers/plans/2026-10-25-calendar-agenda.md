@@ -181,8 +181,8 @@ No test files, test runs, Gradle invocations, app installation or emulator work 
 
 **Existing infrastructure:** Existing JUnit/coroutines fixtures; no new dependencies.
 
-- [ ] Author domain tests for CQA-04–16: exact arrays/ranges for leap/overflow/week locales/year bounds, membership sets, deterministic sorting, null versus midnight and date-based overdue.
-- [ ] Author ViewModel tests for CQA-22–26/29 using controllable flows: late A-after-B ignored, source retry isolated, unknown totals not zero, paging reset, rollover preserves selection, restore invalidation and saved-state defaults.
+- [x] Author domain tests for CQA-04–16: exact arrays/ranges for leap/overflow/week locales/year bounds, membership sets, deterministic sorting, null versus midnight and date-based overdue.
+- [x] Author ViewModel tests for CQA-22–26/29 using controllable flows: late A-after-B ignored, source retry isolated, unknown totals not zero, paging reset, rollover preserves selection, restore invalidation and saved-state defaults.
 - [x] Run host/build/lint commands below; capture complete logs and test counts. Fix failures within Calendar scope, then rerun affected checks in QA.
 
 ```sh
@@ -201,9 +201,9 @@ Expected: each command exits 0, tests have no failures, app/test APKs assemble a
 - `app/src/androidTest/java/com/luma/lifeos/calendar/CalendarFlowTest.kt`
 - `app/src/androidTest/java/com/luma/lifeos/calendar/CalendarSemanticsTest.kt`
 
-- [ ] Author Room tests with the shared fixture for CQA-09–16/26–29: exact IDs/totals/order, observed invalidation, marked mood/journal counted once, habit exclusion, memory pagination and note fallback, DST boundaries, >50 rows and snapshot consistency.
-- [ ] Author flow/semantics tests for CQA-01–08/17–25/30–32: Calendar tab placement/reselection/Back, More → Habits/legacy links, entry/return, period/filter controls, dated editor/capture and existing undated paths, completion/Undo/conflict/retry/restore, localized semantics and bounded viewport.
-- [ ] Use an isolated QA install/AVD and recorded API/device; run the focused suites and existing TodayTasks, Todo, QuickCapture, Habits, navigation, language and restore regressions. Then run full app/data connected checks if focused checks pass.
+- [x] Author focused Room tests for task carry-in/exact-date/global-overdue ordering and marker invalidation, memory membership/order/paging/previews, habit exclusion and DST day boundaries. Remaining CQA-13/26/29 database cases still need coverage.
+- [x] Author focused flow/semantics tests for primary-tab placement, More → Habits/Back, Calendar tab state, dated Schedule versus undated Quick Capture, original task/memory entry, full-date accessibility and target bounds. Remaining navigation, mutation/recovery, locale/theme/window and lifecycle cases still need coverage.
+- [ ] BLOCKED — Run the focused suites and existing TodayTasks, Todo, QuickCapture, Habits, navigation, language and restore regressions. The fresh API 36.1 AVD did not start PackageManager; both connected attempts stopped before any tests ran. Logs are linked in the validation record.
 
 ```sh
 bash gradlew :core:data:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.data.CalendarProjectionTest

@@ -56,7 +56,7 @@ class TodoNavigationTest {
 
         assertEquals(expectedTimelineDate, selectedDateText())
         compose.onNodeWithTag("nav_timeline").assertIsSelected()
-        listOf("nav_today", "nav_timeline", "nav_habits", "nav_review", "nav_more").forEach {
+        listOf("nav_today", "nav_timeline", "nav_calendar", "nav_review", "nav_more").forEach {
             compose.onNodeWithTag(it).assertExists()
         }
 

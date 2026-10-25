@@ -59,7 +59,7 @@ class HabitsNavigationTest {
         photoDirectory.deleteRecursively()
     }
 
-    @Test fun primaryHabitsDestinationCanCreateAndLogOneRepetition() {
+    @Test fun moreHabitsDestinationCanCreateAndLogOneRepetition() {
         val name = "Navigation habit ${System.nanoTime()}"
         val photos = RoomPhotoRepository(database, ManagedPhotoFiles(photoDirectory)) {
             error("No photo picker is used by this test")
@@ -80,8 +80,10 @@ class HabitsNavigationTest {
             }
         }
 
-        compose.onNodeWithTag("nav_habits").performClick()
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_habits").performClick()
         compose.onNodeWithTag("screen_habits").assertIsDisplayed()
+        compose.onNodeWithTag("habits_back").assertIsDisplayed()
         compose.onNodeWithTag("quick_capture").assertDoesNotExist()
         compose.onNodeWithTag("habit_create").performClick()
         compose.onNodeWithTag("habit_name").performTextInput(name)

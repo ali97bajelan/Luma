@@ -1,7 +1,7 @@
 # Calendar & Agenda QA scenarios
 
 Prepared: 2026-10-25  
-Status: **Focused revision host/build/lint checks PASS; complete device/scenario acceptance PENDING.** See the [execution record](validation/2026-10-25-calendar-agenda.md) for exact evidence and unrun checks.
+Status: **CAL-Q01 PASS (456 host tests; build, test APK assembly, instrumentation compilation and lint). CAL-Q02 connected checks BLOCKED before tests ran; CAL-Q03 manual matrix BLOCKED. Full scenario acceptance PENDING.** See the [execution record](validation/2026-10-25-calendar-agenda.md) for evidence and unrun checks.
 
 [Specification](superpowers/specs/2026-10-25-calendar-agenda-design.md) · [Plan and commands](superpowers/plans/2026-10-25-calendar-agenda.md) · [Task status](CALENDAR_TASKS.md)
 
@@ -12,6 +12,8 @@ Start only after CAL-I01–I06 are source complete. Test authoring, Gradle/build
 Record actual date/time, source revision and dirty patch identifier, app/test version and variant, device/emulator/API, device zone, locale, 12/24-hour setting, app/system theme, window dp, orientation and font scale. Retain test logs, screenshots and accessibility/target-bound evidence at `docs/luma-redesign/evidence/<actual-run-date>/calendar/`. Link results in `docs/validation/2026-10-25-calendar-agenda.md`.
 
 Freeze `today = 2026-10-22` using injected clock/current-day fixtures for automation. Manual time-change checks use an isolated AVD or equivalent fixture controls, not the user's daily device. Gregorian date values remain unchanged across locales. If manual clock control is unavailable, shift the entire fixture by the same day offset and record exact dates/expected sets.
+
+The 2026-10-25 follow-up added and passed domain/ViewModel host coverage and authored/compiled focused Room and Compose cases. Connected tests could not install their test APKs because the isolated API 36.1 AVD never started Android's PackageManager; manual CQA cases and matrix cells remain **NOT RUN**. Host coverage is not a pass for the complete CQA scenarios. See the execution record for exact commands and failure output.
 
 ## Baseline fixture F1
 
