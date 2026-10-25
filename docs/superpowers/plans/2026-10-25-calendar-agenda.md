@@ -13,7 +13,7 @@
 **Tasks:** [Status and dependencies](../../CALENDAR_TASKS.md)  
 **QA:** [Fixture, scenarios and evidence](../../CALENDAR_QA.md)
 
-Status: Proposed, not executed. Read spec and plan together. This handoff does not authorize feature implementation or claim design approval.
+Status: CAL-I01–I04 source complete; CAL-I05–I06 pending; QA not started. I03/I04 source is ready for QA after the remaining implementation handoff; no build or behavioral acceptance is claimed.
 
 ## Global Constraints
 
@@ -116,11 +116,11 @@ No test files, test runs, Gradle invocations, app installation or emulator work 
 **Consumes:** I01 rules, I02 repository, existing foreground/day/zone updates and restore generation.  
 **Produces:** `CalendarViewModel(repository: CalendarRepository, saved: SavedStateHandle)`; `state: StateFlow<CalendarUiState>`; actions `selectDate(LocalDate)`, `setMode(CalendarMode)`, `setFilter(CalendarFilter)`, `movePeriod(Int)`, `goToToday()`, `loadMore()`, `retry(CalendarSource)`, `setEnvironment(today: LocalDate, zone: ZoneId, firstDay: DayOfWeek, restoreGeneration: Int)`.
 
-- [ ] Define `CalendarSource { TASKS, HABITS, JOURNALS }` and per-source sealed Loading/Ready/Error state. Separate task page, marker, overdue count and reflection/habit detail status so unrelated failures cannot become false zeroes.
-- [ ] Persist selection/mode/filter using stable primitive values; parse bad saved dates safely. Preserve LazyList position with Compose saveable state; restore data limit as 50 rather than saving rows.
-- [ ] Build keyed `flatMapLatest` observations using D/T/range/filter/zone/restore generation. Clear prior-date detail immediately; gate every emission by current request key. Source Retry restarts only that source. Within one source avoid a fresh full count paired with stale rows/markers as if already consistent.
-- [ ] On day/zone changes preserve selection and recompute membership/labels. Reset limit on date/filter/day/zone changes and invalidate rows/pending generations on restore.
-- [ ] Expose full totals and unknown/error status separately from list size; derive All Items and carry-in caption per CAL-03.
+- [x] Define `CalendarSource { TASKS, HABITS, JOURNALS }` and per-source sealed Loading/Ready/Error state. Separate task page, marker, overdue count and reflection/habit detail status so unrelated failures cannot become false zeroes.
+- [x] Persist selection/mode/filter using stable primitive values; parse bad saved dates safely. Preserve LazyList position with Compose saveable state; restore data limit as 50 rather than saving rows.
+- [x] Build keyed `flatMapLatest` observations using D/T/range/filter/zone/restore generation. Clear prior-date detail immediately; gate every emission by current request key. Source Retry restarts only that source. Within one source avoid a fresh full count paired with stale rows/markers as if already consistent.
+- [x] On day/zone changes preserve selection and recompute membership/labels. Reset limit on date/filter/day/zone changes and invalidate rows/pending generations on restore.
+- [x] Expose full totals and unknown/error status separately from list size; derive All Items and carry-in caption per CAL-03.
 
 **Ready for QA when:** State transitions can be traced from source, including late flow emissions, partial failures and process restoration. CQA-22–26/29 remain unexecuted.
 
@@ -131,12 +131,12 @@ No test files, test runs, Gradle invocations, app installation or emulator work 
 **Consumes:** I03 state/actions and existing `TodayTasksViewModel`, `TodoActionFeedbackHost`.  
 **Produces:** `CalendarRoute(repository: CalendarRepository, todos: TodoRepository, today: LocalDate, zone: ZoneId, restoreGeneration: Int, onTask: (UUID) -> Unit, onAddTask: (LocalDate) -> Unit, onSchedule: (LocalDate) -> Unit, onHabit: (UUID, LocalDate) -> Unit, onJournal: (EventId) -> Unit, onWriteReflection: (LocalDate) -> Unit, onTimeline: (LocalDate) -> Unit, onAllTasks: () -> Unit)`.
 
-- [ ] Compose existing primary-page scaffold without a Back arrow, Calendar & Agenda heading, Today control, adaptive month header, segmented Month/Week controls, Previous/Next and date grid. Render actual seven-column date cells and ≥336 dp horizontal viewport when needed for 48 dp targets; bring selection into view.
-- [ ] Render selected/today/overflow states, typed marker legend and accessible full-date/count labels; disable bound arrows/blanks. Use semantic theme roles and bundled typography in both themes.
-- [ ] Render exact-date ribbon, All Items/Tasks/Overdue chips, explicit overdue scope and carry-in caption. Render 50-row task page with full count/Load more, due badges, optional note preview, separate checkbox/open/menu actions, and no fake tags.
-- [ ] Connect completion, retry, conflict, missing and Undo to existing controller/feedback patterns. Recovery stays reachable when its task row disappears from the active filter. Invalidate the controller on restore as Today does; do not duplicate mutation semantics.
-- [ ] Render scheduled-habit read-only rows and tracking-zone caption; latest real reflection preview, empty Write reflection and dated View all journals. Handle each source's loading/error/empty state with Retry and healthy sources still active.
-- [ ] Render one Schedule FAB and one scroll container; reserve measured bottom clearance for FAB/snackbar/bars. Add localized strings/plurals, state descriptions and keyboard/TalkBack actions. Do not add dead mockup controls.
+- [x] Compose existing primary-page scaffold without a Back arrow, Calendar & Agenda heading, Today control, adaptive month header, segmented Month/Week controls, Previous/Next and date grid. Render actual seven-column date cells and ≥336 dp horizontal viewport when needed for 48 dp targets; bring selection into view.
+- [x] Render selected/today/overflow states, typed marker legend and accessible full-date/count labels; disable bound arrows/blanks. Use semantic theme roles and bundled typography in both themes.
+- [x] Render exact-date ribbon, All Items/Tasks/Overdue chips, explicit overdue scope and carry-in caption. Render 50-row task page with full count/Load more, due badges, optional note preview, separate checkbox/open/menu actions, and no fake tags.
+- [x] Connect completion, retry, conflict, missing and Undo to existing controller/feedback patterns. Recovery stays reachable when its task row disappears from the active filter. Invalidate the controller on restore as Today does; do not duplicate mutation semantics.
+- [x] Render scheduled-habit read-only rows and tracking-zone caption; latest real reflection preview, empty Write reflection and dated View all journals. Handle each source's loading/error/empty state with Retry and healthy sources still active.
+- [x] Render one Schedule FAB and one scroll container; reserve measured bottom clearance for FAB/snackbar/bars. Add localized strings/plurals, state descriptions and keyboard/TalkBack actions. Do not add dead mockup controls.
 
 **Ready for QA when:** All CAL-01–07 UI states/actions are represented in source in both theme roles; no visual/behavioral acceptance claim yet.
 

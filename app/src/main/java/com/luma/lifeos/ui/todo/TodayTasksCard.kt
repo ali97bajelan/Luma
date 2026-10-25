@@ -182,7 +182,7 @@ fun TodayTasksCard(
 }
 
 @Composable
-private fun TodayTaskRecoverySummary(
+internal fun TodayTaskRecoverySummary(
     taskId: UUID,
     title: String,
     completesTask: Boolean,

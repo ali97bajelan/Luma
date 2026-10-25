@@ -1063,4 +1063,73 @@
     <string name="widget_loading_habits">Chargement des habitudes…</string>
     <string name="widget_loading_tasks">Chargement des tâches…</string>
     <string name="widget_loading_short">Chargement…</string>
+    <string name="calendar_heading">Calendrier et agenda</string>
+    <string name="calendar_subtitle">Agenda de la journée, habitudes planifiées et tâches importantes</string>
+    <string name="calendar_month">Mois</string>
+    <string name="calendar_week">Semaine</string>
+    <string name="calendar_previous_month">Mois précédent</string>
+    <string name="calendar_next_month">Mois suivant</string>
+    <string name="calendar_previous_week">Semaine précédente</string>
+    <string name="calendar_next_week">Semaine suivante</string>
+    <string name="calendar_day_today_selected">Aujourd’hui, sélectionné</string>
+    <string name="calendar_day_today">Aujourd’hui</string>
+    <string name="calendar_day_selected">Sélectionné</string>
+    <string name="calendar_day_regular">Date</string>
+    <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s. %5$s.</string>
+    <string name="calendar_count_unavailable">Nombre indisponible</string>
+    <string name="calendar_legend_tasks">Tâches</string>
+    <string name="calendar_legend_habits">Habitudes</string>
+    <string name="calendar_legend_journals">Journaux</string>
+    <string name="calendar_legend_overdue">En retard</string>
+    <string name="calendar_filter_all">Tout</string>
+    <string name="calendar_filter_tasks">Tâches</string>
+    <string name="calendar_filter_overdue">En retard</string>
+    <string name="calendar_filter_with_count">%1$s (%2$s)</string>
+    <string name="calendar_overdue_as_of">En retard au %1$s</string>
+    <string name="calendar_tasks_heading">Tâches planifiées</string>
+    <string name="calendar_add_task">Ajouter une tâche</string>
+    <string name="calendar_view_all_tasks">Voir toutes les tâches</string>
+    <string name="calendar_load_more">Afficher plus</string>
+    <string name="calendar_tasks_loading">Chargement des tâches planifiées…</string>
+    <string name="calendar_tasks_loading_more">Chargement d’autres tâches…</string>
+    <string name="calendar_tasks_error">Impossible de charger les tâches planifiées.</string>
+    <string name="calendar_tasks_empty">Aucune tâche planifiée pour cette date.</string>
+    <string name="calendar_task_anytime_today">À tout moment aujourd’hui</string>
+    <string name="calendar_task_anytime_on">À tout moment le %1$s</string>
+    <string name="calendar_task_due_today_time">Pour aujourd’hui · %1$s</string>
+    <string name="calendar_task_due_on_time">%1$s · %2$s</string>
+    <string name="calendar_task_overdue">En retard · %1$s</string>
+    <string name="calendar_task_menu_description">Autres actions pour %1$s</string>
+    <string name="calendar_habits_heading">Habitudes planifiées</string>
+    <string name="calendar_habits_loading">Chargement des habitudes planifiées…</string>
+    <string name="calendar_habits_error">Impossible de charger les habitudes planifiées.</string>
+    <string name="calendar_habits_empty">Aucune habitude planifiée à cette date.</string>
+    <string name="calendar_habit_tracking_zone">Fuseau de suivi : %1$s</string>
+    <string name="calendar_reflection_heading">Réflexion du jour</string>
+    <string name="calendar_reflection_loading">Chargement de la réflexion…</string>
+    <string name="calendar_reflection_error">Impossible de charger la réflexion.</string>
+    <string name="calendar_reflection_empty">Aucune réflexion pour cette date.</string>
+    <string name="calendar_reflection_default_title">Journal</string>
+    <string name="calendar_write_reflection">Écrire une réflexion</string>
+    <string name="calendar_schedule">Planifier</string>
+    <plurals name="calendar_tasks_count">
+        <item quantity="one">%1$d tâche</item>
+        <item quantity="other">%1$d tâches</item>
+    </plurals>
+    <plurals name="calendar_habits_count">
+        <item quantity="one">%1$d habitude</item>
+        <item quantity="other">%1$d habitudes</item>
+    </plurals>
+    <plurals name="calendar_journals_count">
+        <item quantity="one">%1$d journal</item>
+        <item quantity="other">%1$d journaux</item>
+    </plurals>
+    <plurals name="calendar_overdue_included">
+        <item quantity="one">Inclut %1$d tâche en retard</item>
+        <item quantity="other">Inclut %1$d tâches en retard</item>
+    </plurals>
+    <plurals name="calendar_view_all_journals">
+        <item quantity="one">Voir tous les journaux</item>
+        <item quantity="other">Voir les %1$d journaux</item>
+    </plurals>
 </resources>

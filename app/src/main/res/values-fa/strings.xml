@@ -1046,4 +1046,73 @@
     <string name="widget_loading_habits">بارگیری عادت‌ها…</string>
     <string name="widget_loading_tasks">بارگیری کارها…</string>
     <string name="widget_loading_short">بارگیری…</string>
+    <string name="calendar_heading">تقویم و برنامه</string>
+    <string name="calendar_subtitle">برنامهٔ روز، عادت‌های زمان‌بندی‌شده و کارهای مهم</string>
+    <string name="calendar_month">ماه</string>
+    <string name="calendar_week">هفته</string>
+    <string name="calendar_previous_month">ماه قبل</string>
+    <string name="calendar_next_month">ماه بعد</string>
+    <string name="calendar_previous_week">هفتهٔ قبل</string>
+    <string name="calendar_next_week">هفتهٔ بعد</string>
+    <string name="calendar_day_today_selected">امروز، انتخاب‌شده</string>
+    <string name="calendar_day_today">امروز</string>
+    <string name="calendar_day_selected">انتخاب‌شده</string>
+    <string name="calendar_day_regular">تاریخ</string>
+    <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s. %5$s.</string>
+    <string name="calendar_count_unavailable">تعداد در دسترس نیست</string>
+    <string name="calendar_legend_tasks">کارها</string>
+    <string name="calendar_legend_habits">عادت‌ها</string>
+    <string name="calendar_legend_journals">یادداشت‌ها</string>
+    <string name="calendar_legend_overdue">عقب‌افتاده</string>
+    <string name="calendar_filter_all">همه</string>
+    <string name="calendar_filter_tasks">کارها</string>
+    <string name="calendar_filter_overdue">عقب‌افتاده</string>
+    <string name="calendar_filter_with_count">%1$s (%2$s)</string>
+    <string name="calendar_overdue_as_of">کارهای عقب‌افتاده تا %1$s</string>
+    <string name="calendar_tasks_heading">کارهای زمان‌بندی‌شده</string>
+    <string name="calendar_add_task">افزودن کار</string>
+    <string name="calendar_view_all_tasks">دیدن همهٔ کارها</string>
+    <string name="calendar_load_more">بارگیری بیشتر</string>
+    <string name="calendar_tasks_loading">بارگیری کارهای زمان‌بندی‌شده…</string>
+    <string name="calendar_tasks_loading_more">بارگیری کارهای بیشتر…</string>
+    <string name="calendar_tasks_error">بارگیری کارهای زمان‌بندی‌شده انجام نشد.</string>
+    <string name="calendar_tasks_empty">برای این تاریخ کاری زمان‌بندی نشده است.</string>
+    <string name="calendar_task_anytime_today">هر زمان امروز</string>
+    <string name="calendar_task_anytime_on">هر زمان در %1$s</string>
+    <string name="calendar_task_due_today_time">موعد امروز · %1$s</string>
+    <string name="calendar_task_due_on_time">%1$s · %2$s</string>
+    <string name="calendar_task_overdue">عقب‌افتاده · %1$s</string>
+    <string name="calendar_task_menu_description">اقدام‌های بیشتر برای %1$s</string>
+    <string name="calendar_habits_heading">عادت‌های زمان‌بندی‌شده</string>
+    <string name="calendar_habits_loading">بارگیری عادت‌های زمان‌بندی‌شده…</string>
+    <string name="calendar_habits_error">بارگیری عادت‌های زمان‌بندی‌شده انجام نشد.</string>
+    <string name="calendar_habits_empty">برای این تاریخ عادتی زمان‌بندی نشده است.</string>
+    <string name="calendar_habit_tracking_zone">منطقهٔ زمانی پیگیری: %1$s</string>
+    <string name="calendar_reflection_heading">بازتاب روزانه</string>
+    <string name="calendar_reflection_loading">بارگیری بازتاب…</string>
+    <string name="calendar_reflection_error">بارگیری بازتاب انجام نشد.</string>
+    <string name="calendar_reflection_empty">برای این تاریخ بازتابی ثبت نشده است.</string>
+    <string name="calendar_reflection_default_title">یادداشت روزانه</string>
+    <string name="calendar_write_reflection">نوشتن بازتاب</string>
+    <string name="calendar_schedule">زمان‌بندی</string>
+    <plurals name="calendar_tasks_count">
+        <item quantity="one">%1$d کار</item>
+        <item quantity="other">%1$d کار</item>
+    </plurals>
+    <plurals name="calendar_habits_count">
+        <item quantity="one">%1$d عادت</item>
+        <item quantity="other">%1$d عادت</item>
+    </plurals>
+    <plurals name="calendar_journals_count">
+        <item quantity="one">%1$d یادداشت</item>
+        <item quantity="other">%1$d یادداشت</item>
+    </plurals>
+    <plurals name="calendar_overdue_included">
+        <item quantity="one">شامل %1$d کار عقب‌افتاده</item>
+        <item quantity="other">شامل %1$d کار عقب‌افتاده</item>
+    </plurals>
+    <plurals name="calendar_view_all_journals">
+        <item quantity="one">دیدن همهٔ یادداشت‌ها</item>
+        <item quantity="other">دیدن هر %1$d یادداشت</item>
+    </plurals>
 </resources>
