@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -23,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,6 +37,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -311,9 +315,17 @@ private fun HabitOpenTarget(
     }
     val statusLabel = stringResource(stateLabel(day))
     val accessibilityLabel = listOfNotNull(openLabel, progressLabel, statusLabel).joinToString(". ")
-    TextButton(onClick = onOpen, modifier = modifier.heightIn(min = 48.dp).testTag("habit_open_${day.habit.id}")
-        .semantics { contentDescription = accessibilityLabel }) {
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.primary) {
+        Column(
+            modifier = modifier.heightIn(min = 48.dp).clickable(
+                role = Role.Button,
+                onClickLabel = openLabel,
+                onClick = onOpen,
+            ).testTag("habit_open_${day.habit.id}").semantics(mergeDescendants = true) {
+                contentDescription = accessibilityLabel
+            }.padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Text(day.habit.name, style = MaterialTheme.typography.titleMedium)
             HabitProgressContent(day)
             if (showStatus) Text(stringResource(stateLabel(day)), style = MaterialTheme.typography.bodyMedium)

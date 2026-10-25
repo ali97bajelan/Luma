@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -23,8 +24,8 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.domain.habit.HabitDay
@@ -74,6 +75,8 @@ internal fun HabitProgressContent(day: HabitDay) {
     val percentage = NumberFormat.getPercentInstance().apply { maximumFractionDigits = 0 }.format(fraction)
     val description = stringResource(R.string.habit_progress_accessibility, day.habit.name, day.count, target, unit)
 
+    val progressText = stringResource(R.string.habit_progress, count, formattedTarget)
+
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth()
@@ -83,12 +86,12 @@ internal fun HabitProgressContent(day: HabitDay) {
             }
             .testTag("habit_progress_${day.habit.id}"),
     ) {
-        Text(
-            stringResource(R.string.habit_progress, count, formattedTarget),
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(unit, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(progressText, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(percentage, style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -106,5 +109,9 @@ internal fun HabitProgressContent(day: HabitDay) {
             },
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
+        if (day.habit.unitLabel != null) {
+            Text(unit, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
