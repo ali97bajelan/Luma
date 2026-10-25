@@ -13,7 +13,7 @@
 **Tasks:** [Status and dependencies](../../CALENDAR_TASKS.md)  
 **QA:** [Fixture, scenarios and evidence](../../CALENDAR_QA.md)
 
-Status: CAL-I01–I04 source complete; CAL-I05–I06 pending; QA not started. I03/I04 source is ready for QA after the remaining implementation handoff; no build or behavioral acceptance is claimed.
+Status: CAL-I01–I05 source complete; CAL-I06 pending; QA not started. I01–I05 source is ready for the remaining implementation handoff; no build or behavioral acceptance is claimed.
 
 ## Global Constraints
 
@@ -147,13 +147,13 @@ No test files, test runs, Gradle invocations, app installation or emulator work 
 **Consumes:** I02 provider and I04 route callbacks; existing `openTodoEditor`, `openCapture`, editor results and restore generation.  
 **Produces:** `AppRoutes.CALENDAR = "calendar"`; `PrimaryDestination.CALENDAR` replacing `HABITS` in slot three; a nullable calendar provider trailing/defaulted in `LifeOsApp`; trailing/defaulted More `onHabits: (() -> Unit)? = null`; existing `AppRoutes.HABITS` retained as a secondary route; compatible dated Quick Capture additions from CAL-05.
 
-- [ ] Pass `storage.calendar` from MainActivity; add Calendar to the primary route loop in place of Habits, with a localized label/compact label and calendar icon. Ensure the shell recognizes Calendar as primary and renders exactly Today/Timeline/Calendar/Review/More; render its unavailable fallback if the provider is absent. Scope Calendar state to its back-stack entry, default to today and use existing primary-tab save/restore/Back behavior.
-- [ ] Register the retained `habits` route separately, outside the primary loop, and add More → Habits before Tasks with `more_habits` test tag. Reuse `HabitsRoute` with its existing non-null `onBack` support. Use a Habits-entry saved date (More defaults to today; explicit dated callers override it), retaining it after child navigation and keeping Today/Timeline and Calendar date state independent.
-- [ ] Replace `openHabitsDate` primary `popUpTo`/restore behavior with secondary navigation and preserve all Today/Timeline/Review/capture/widget dated habit links and restored legacy `habits` stacks. Existing Today habit previews stay present. Verify shell Back/bottom-bar behavior for primary Calendar versus secondary Habits in source; do not add a duplicate Calendar row in More.
-- [ ] Wire Add task and editor menu to `openTodoEditor` without overwriting edit dates; route confirmation deletion through the editor. Deliver existing editor save/completion result once to the right Calendar feedback host.
-- [ ] Add trailing `taskDueDate`/`onScheduledTask` sheet parameters without changing existing callers' `onTask` type. Calendar Schedule sets task default D explicitly, with a task-specific due-date caption independent of record chips; dismiss the sheet before navigation. Existing Timeline/Review Quick Capture remains undated for tasks.
-- [ ] Wire journal open, Write reflection and View all to existing dated routes and capture date validation. Wire habit detail using the selected civil date; do not convert it to device zone or enable future logging.
-- [ ] Carry restore generation into Calendar and child editors/actions; clear pending capture context on dismiss, Back and data restore.
+- [x] Pass `storage.calendar` from MainActivity; add Calendar to the primary route loop in place of Habits, with a localized label/compact label and calendar icon. Ensure the shell recognizes Calendar as primary and renders exactly Today/Timeline/Calendar/Review/More; render its unavailable fallback if the provider is absent. Scope Calendar state to its back-stack entry, default to today and use existing primary-tab save/restore/Back behavior.
+- [x] Register the retained `habits` route separately, outside the primary loop, and add More → Habits before Tasks with `more_habits` test tag. Reuse `HabitsRoute` with its existing non-null `onBack` support. Use a Habits-entry saved date (More defaults to today; explicit dated callers override it), retaining it after child navigation and keeping Today/Timeline and Calendar date state independent.
+- [x] Replace `openHabitsDate` primary `popUpTo`/restore behavior with secondary navigation and preserve all Today/Timeline/Review/capture/widget dated habit links and restored legacy `habits` stacks. Existing Today habit previews stay present. Verify shell Back/bottom-bar behavior for primary Calendar versus secondary Habits in source; do not add a duplicate Calendar row in More.
+- [x] Wire Add task and editor menu to `openTodoEditor` without overwriting edit dates; route confirmation deletion through the editor. Deliver existing editor save/completion result once to the right Calendar feedback host.
+- [x] Add trailing `taskDueDate`/`onScheduledTask` sheet parameters without changing existing callers' `onTask` type. Calendar Schedule sets task default D explicitly, with a task-specific due-date caption independent of record chips; dismiss the sheet before navigation. Existing Timeline/Review Quick Capture remains undated for tasks.
+- [x] Wire journal open, Write reflection and View all to existing dated routes and capture date validation. Wire habit detail using the selected civil date; do not convert it to device zone or enable future logging.
+- [x] Carry restore generation into Calendar and child editors/actions; clear pending capture context on dismiss, Back and data restore.
 
 **Ready for QA when:** Every visible control has a concrete route/action, with source-compatible existing QuickCapture call sites and no new writes outside existing repositories.
 

@@ -66,9 +66,11 @@ import com.luma.lifeos.ui.journal.JournalEditorRoute
 import com.luma.lifeos.ui.journal.JournalDetailRoute
 import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.habit.HabitRepository
+import com.luma.lifeos.domain.calendar.CalendarRepository
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.ui.habits.HabitsRoute
+import com.luma.lifeos.ui.calendar.CalendarRoute
 import com.luma.lifeos.ui.habits.HabitEditorRoute
 import com.luma.lifeos.ui.habits.HabitDetailRoute
 import com.luma.lifeos.ui.navigation.AppRoutes
@@ -118,6 +120,9 @@ import java.time.ZoneId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collect
 
+private const val HABITS_SELECTED_DATE_KEY = "habits_selected_date"
+private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
+
 private fun NavBackStackEntry.matchesEntryDetailFor(id: EventId): Boolean {
     val isDetailRoute = destination.route == "event_detail/{eventId}" || destination.route == "journal_detail/{eventId}"
     return isDetailRoute && arguments?.getString("eventId") == id.toString()
@@ -146,6 +151,7 @@ fun LifeOsApp(
     onWidgetLaunchConsumed: (UUID) -> Unit = {},
     widgetStore: WidgetStore? = null,
     moodDraftStore: MoodDraftStore? = null,
+    calendar: CalendarRepository? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -219,27 +225,39 @@ fun LifeOsApp(
     }
     var capturing by rememberSaveable { mutableStateOf(false) }
     var widgetQuickCapture by rememberSaveable { mutableStateOf(false) }
+    var calendarCaptureDueDate by rememberSaveable { mutableStateOf<String?>(null) }
     var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
+    var lastCaptureRestoreGeneration by rememberSaveable { mutableStateOf(todoRestoreGeneration) }
     var captureFabHeight by remember { mutableStateOf(0.dp) }
     val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(todoRestoreGeneration) {
+        if (lastCaptureRestoreGeneration != todoRestoreGeneration) {
+            lastCaptureRestoreGeneration = todoRestoreGeneration
+            capturing = false
+            widgetQuickCapture = false
+            calendarCaptureDueDate = null
+        }
+    }
     val showCaptureFab = primaryScreen &&
         (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
     val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
     fun openCapture(route: String, date: LocalDate?) {
         capturing = false
         widgetQuickCapture = false
+        calendarCaptureDueDate = null
         val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
         navController.navigate(if (target == null) route else "$route?initialTime=$target")
     }
-    fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null) {
+    fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null, requestDelete: Boolean = false) {
         navController.navigate("task_editor?taskId=${taskId?.toString().orEmpty()}&dueDate=${dueDate?.toString().orEmpty()}")
+        if (requestDelete) {
+            navController.currentBackStackEntry?.savedStateHandle?.set(TODO_EDITOR_REQUEST_DELETE_KEY, true)
+        }
     }
     fun openHabitsDate(date: LocalDate?) {
-        selectedDate = date?.toString()
-        navController.navigate(AppRoutes.HABITS) {
-            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-            launchSingleTop = true
-            restoreState = true
+        navController.navigate(AppRoutes.HABITS)
+        navController.currentBackStackEntry?.takeIf { it.destination.route == AppRoutes.HABITS }?.let { entry ->
+            entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = (date ?: currentDay.date).toString()
         }
     }
     Scaffold(
@@ -284,6 +302,53 @@ fun LifeOsApp(
             PrimaryDestination.entries.forEach { destination ->
                 composable(destination.route) { destinationEntry ->
                     when (destination) {
+                        PrimaryDestination.CALENDAR -> {
+                            if (calendar != null && todos != null) {
+                                CalendarRoute(
+                                    repository = calendar,
+                                    todos = todos,
+                                    today = currentDay.date,
+                                    zone = currentDay.zone,
+                                    restoreGeneration = todoRestoreGeneration,
+                                    onTask = { id -> openTodoEditor(taskId = id) },
+                                    onDeleteTask = { id -> openTodoEditor(taskId = id, requestDelete = true) },
+                                    onAddTask = { date -> openTodoEditor(dueDate = date) },
+                                    onSchedule = { date ->
+                                        calendarCaptureDueDate = date.toString()
+                                        widgetQuickCapture = false
+                                        capturing = true
+                                    },
+                                    onHabit = { id, date -> navController.navigate("habit_detail/$id/$date") },
+                                    onJournal = { id -> navController.navigate("journal_detail/$id") },
+                                    onWriteReflection = { date -> openCapture("journal", date) },
+                                    onTimeline = { date ->
+                                        selectedDate = date.toString()
+                                        navController.navigate(PrimaryDestination.TIMELINE.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    onAllTasks = { navController.navigate(AppRoutes.TASKS) },
+                                    onTaskActionResult = { result ->
+                                        destinationEntry.savedStateHandle.set(
+                                            TODO_ACTION_RESULT_KEY,
+                                            result.encodeActionResult(),
+                                        )
+                                    },
+                                )
+                            } else {
+                                com.luma.lifeos.ui.common.AppPageScaffold(
+                                    title = stringResource(R.string.calendar_heading),
+                                    navigation = com.luma.lifeos.ui.common.PageNavigation.NONE,
+                                ) { pagePadding ->
+                                    Text(
+                                        stringResource(R.string.calendar_unavailable),
+                                        modifier = Modifier.padding(pagePadding),
+                                    )
+                                }
+                            }
+                        }
                         PrimaryDestination.TIMELINE -> TimelineRoute(
                             timeline,
                             selectedDate?.let(LocalDate::parse) ?: currentDay.date,
@@ -316,7 +381,7 @@ fun LifeOsApp(
                             habits = habits,
                             habitsDate = selectedDate?.let(LocalDate::parse),
                             deviceDate = currentDay.date,
-                            onHabits = { navController.navigate(AppRoutes.HABITS) },
+                            onHabits = { openHabitsDate(selectedDate?.let(LocalDate::parse) ?: currentDay.date) },
                             onCreateHabit = { navController.navigate("habit_editor") },
                             onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
                             onHabitOpenDate = ::openHabitsDate,
@@ -337,17 +402,6 @@ fun LifeOsApp(
                                     result.encodeActionResult(),
                                 )
                             },
-                            snackbarHostState = snackbarHostState,
-                        )
-                        PrimaryDestination.HABITS -> HabitsRoute(
-                            habits,
-                            selectedDate?.let(LocalDate::parse),
-                            onSelectDate = { selectedDate = it.toString() },
-                            onToday = { selectedDate = null },
-                            onCreate = { navController.navigate("habit_editor") },
-                            onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
-                            deviceDate = currentDay.date,
-                            deviceZone = currentDay.zone,
                             snackbarHostState = snackbarHostState,
                         )
                         PrimaryDestination.REVIEW -> {
@@ -378,9 +432,38 @@ fun LifeOsApp(
                             onPeoplePlaces = { navController.navigate(AppRoutes.PEOPLE) },
                             onSettings = { navController.navigate(AppRoutes.SETTINGS) },
                             onTasks = if (todos != null) ({ navController.navigate(AppRoutes.TASKS) }) else null,
+                            onHabits = { openHabitsDate(currentDay.date) },
                         )
                     }
                 }
+            }
+            composable(AppRoutes.HABITS) { entry ->
+                val legacyDate = remember(selectedDate, currentDay.date) {
+                    selectedDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: currentDay.date
+                }
+                val savedDate by entry.savedStateHandle
+                    .getStateFlow(HABITS_SELECTED_DATE_KEY, legacyDate.toString())
+                    .collectAsStateWithLifecycle()
+                val habitsDate = remember(savedDate, currentDay.date) {
+                    runCatching { LocalDate.parse(savedDate) }.getOrDefault(currentDay.date)
+                }
+                LaunchedEffect(entry, savedDate) {
+                    if (entry.savedStateHandle.get<String>(HABITS_SELECTED_DATE_KEY) == null) {
+                        entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = savedDate
+                    }
+                }
+                HabitsRoute(
+                    repository = habits,
+                    date = habitsDate,
+                    onSelectDate = { entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = it.toString() },
+                    onToday = { entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = currentDay.date.toString() },
+                    onCreate = { navController.navigate("habit_editor") },
+                    onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
+                    deviceDate = currentDay.date,
+                    deviceZone = currentDay.zone,
+                    onBack = { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState,
+                )
             }
             if (todos != null) {
                 composable(AppRoutes.TASKS) {
@@ -403,6 +486,9 @@ fun LifeOsApp(
                 ) { entry ->
                     val taskId = entry.arguments?.getString("taskId")?.takeIf(String::isNotEmpty)?.let(UUID::fromString)
                     val dueDate = entry.arguments?.getString("dueDate")?.takeIf(String::isNotEmpty)?.let(LocalDate::parse)
+                    val requestDelete by entry.savedStateHandle
+                        .getStateFlow(TODO_EDITOR_REQUEST_DELETE_KEY, false)
+                        .collectAsStateWithLifecycle()
                     TodoEditorRoute(
                         repository = todos,
                         taskId = taskId,
@@ -419,6 +505,7 @@ fun LifeOsApp(
                             }
                         },
                         restoreGeneration = todoRestoreGeneration,
+                        requestDelete = requestDelete,
                     )
                 }
             }
@@ -659,6 +746,7 @@ fun LifeOsApp(
             if (request.destination != WidgetDestination.QuickCapture) {
                 capturing = false
                 widgetQuickCapture = false
+                calendarCaptureDueDate = null
             }
             when (val destination = request.destination) {
                 WidgetDestination.Today -> {
@@ -669,6 +757,7 @@ fun LifeOsApp(
                 WidgetDestination.QuickCapture -> {
                     widgetQuickCapture = true
                     capturing = true
+                    calendarCaptureDueDate = null
                 }
                 is WidgetDestination.Capture -> {
                     val route = when (destination.kind) {
@@ -685,7 +774,7 @@ fun LifeOsApp(
                         top.arguments?.getString("eventId") == null
                     if (!isSameNewEditor) navController.navigate(route)
                 }
-                WidgetDestination.Habits -> navController.navigate(AppRoutes.HABITS)
+                WidgetDestination.Habits -> openHabitsDate(null)
                 is WidgetDestination.HabitDetail -> navController.navigate(
                     "habit_detail/${destination.id}/${destination.date}",
                 )
@@ -701,25 +790,44 @@ fun LifeOsApp(
         TodoActionFeedbackHost(backStackEntry, todos, snackbarHostState, todoRestoreGeneration)
         BackupDepartureFeedbackHost(backStackEntry, snackbarHostState, BackupDepartureSession.id)
     }
-    val browsedDate = selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
-    if (capturing) QuickCaptureSheet(browsedDate = browsedDate.takeUnless { widgetQuickCapture }, onDismiss = {
-        capturing = false
-        widgetQuickCapture = false
-    }, onMood = { date ->
-        openCapture("mood", date)
-    }, onJournal = { date ->
-        openCapture("journal", date)
-    }, onMemory = { date ->
-        openCapture("memory", date)
-    }, onTask = if (todos != null) ({
-        capturing = false
-        widgetQuickCapture = false
-        openTodoEditor()
-    }) else null, onHabit = { date ->
-        capturing = false
-        widgetQuickCapture = false
-        openHabitsDate(date)
-    })
+    val captureRecordDate = if (calendarCaptureDueDate != null) {
+        LocalDate.parse(calendarCaptureDueDate).takeIf { it != currentDay.date }
+    } else {
+        selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
+    }
+    val browsedDate = captureRecordDate.takeUnless { widgetQuickCapture }
+    if (capturing) {
+        QuickCaptureSheet(
+            browsedDate = browsedDate,
+            onDismiss = {
+                capturing = false
+                widgetQuickCapture = false
+                calendarCaptureDueDate = null
+            },
+            onMood = { date -> openCapture("mood", date) },
+            onJournal = { date -> openCapture("journal", date) },
+            onMemory = { date -> openCapture("memory", date) },
+            onTask = if (todos != null && calendarCaptureDueDate == null) ({
+                capturing = false
+                widgetQuickCapture = false
+                calendarCaptureDueDate = null
+                openTodoEditor()
+            }) else null,
+            onHabit = { date ->
+                capturing = false
+                widgetQuickCapture = false
+                calendarCaptureDueDate = null
+                openHabitsDate(date)
+            },
+            taskDueDate = calendarCaptureDueDate?.let(LocalDate::parse),
+            onScheduledTask = if (todos != null && calendarCaptureDueDate != null) ({ date ->
+                capturing = false
+                widgetQuickCapture = false
+                calendarCaptureDueDate = null
+                openTodoEditor(dueDate = date)
+            }) else null,
+        )
+    }
 }
 
 private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {

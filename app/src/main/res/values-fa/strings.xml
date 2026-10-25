@@ -7,6 +7,7 @@
     <string name="more">بیشتر</string>
     <string name="nav_today_compact">امروز</string>
     <string name="nav_timeline_compact">خط زمانی</string>
+    <string name="nav_calendar_compact">تقویم</string>
     <string name="nav_people_compact">افراد</string>
     <string name="nav_habits_compact">عادت‌ها</string>
     <string name="nav_review_compact">مرور</string>
@@ -732,6 +733,7 @@
     <string name="settings_widgets_description">افزودن یا تنظیم ویجت‌های لوما و مرور محتوای آن‌ها.</string>
     <string name="more_people_places">افراد و مکان‌ها</string>
     <string name="more_people_places_description">افراد و مکان‌های پیوندخورده با زندگی‌تان را ببینید.</string>
+    <string name="more_habits_description">عادت‌های برنامه‌ریزی‌شده و فعالیتشان را مرور کنید.</string>
     <string name="more_settings">تنظیمات</string>
     <string name="more_settings_description">زبان، پوسته، پشتیبان‌گیری، حریم خصوصی و یکپارچه‌سازی‌ها.</string>
     <string name="settings_language_title">زبان</string>
@@ -945,6 +947,7 @@
     <string name="more_tasks_description">کارهای باز و تکمیل‌شده را مرور کنید.</string>
     <string name="capture_task_section">کارها</string>
     <string name="capture_task_description">بدون مهلت انجام شروع می‌شود.</string>
+    <string name="capture_task_due_date">موعد کار: %1$s</string>
     <string name="capture_task">کار</string>
     <string name="todo_list_title">کارها</string>
     <string name="todo_list_add">افزودن کار</string>
@@ -1046,6 +1049,8 @@
     <string name="widget_loading_habits">بارگیری عادت‌ها…</string>
     <string name="widget_loading_tasks">بارگیری کارها…</string>
     <string name="widget_loading_short">بارگیری…</string>
+    <string name="calendar_tab">تقویم</string>
+    <string name="calendar_unavailable">اطلاعات تقویم در حال حاضر در دسترس نیست.</string>
     <string name="calendar_heading">تقویم و برنامه</string>
     <string name="calendar_subtitle">برنامهٔ روز، عادت‌های زمان‌بندی‌شده و کارهای مهم</string>
     <string name="calendar_month">ماه</string>

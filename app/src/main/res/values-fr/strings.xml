@@ -7,6 +7,7 @@
     <string name="more">Plus</string>
     <string name="nav_today_compact">Jour</string>
     <string name="nav_timeline_compact">Par&#173;cours</string>
+    <string name="nav_calendar_compact">Calendrier</string>
     <string name="nav_people_compact">Con&#173;tacts</string>
     <string name="nav_habits_compact">Hab.</string>
     <string name="nav_review_compact">Bilan</string>
@@ -744,6 +745,7 @@
     <string name="settings_widgets_description">Ajoutez ou configurez les widgets Luma et consultez leur contenu.</string>
     <string name="more_people_places">Personnes et lieux</string>
     <string name="more_people_places_description">Parcourez les personnes et les lieux associés à votre vie.</string>
+    <string name="more_habits_description">Parcourez vos habitudes planifiées et leur activité.</string>
     <string name="more_settings">Paramètres</string>
     <string name="more_settings_description">Langue, thème, sauvegarde, confidentialité et intégrations.</string>
     <string name="settings_language_title">Langue</string>
@@ -959,6 +961,7 @@
     <string name="more_tasks_description">Consulter les tâches ouvertes et terminées.</string>
     <string name="capture_task_section">Tâches</string>
     <string name="capture_task_description">Aucune échéance n’est définie au départ.</string>
+    <string name="capture_task_due_date">Tâche à faire le %1$s</string>
     <string name="capture_task">Tâche</string>
     <string name="todo_list_title">Tâches</string>
     <string name="todo_list_add">Ajouter une tâche</string>
@@ -1063,6 +1066,8 @@
     <string name="widget_loading_habits">Chargement des habitudes…</string>
     <string name="widget_loading_tasks">Chargement des tâches…</string>
     <string name="widget_loading_short">Chargement…</string>
+    <string name="calendar_tab">Calendrier</string>
+    <string name="calendar_unavailable">Les données du calendrier sont momentanément indisponibles.</string>
     <string name="calendar_heading">Calendrier et agenda</string>
     <string name="calendar_subtitle">Agenda de la journée, habitudes planifiées et tâches importantes</string>
     <string name="calendar_month">Mois</string>

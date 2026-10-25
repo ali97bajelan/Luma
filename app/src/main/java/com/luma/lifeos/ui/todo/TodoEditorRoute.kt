@@ -23,6 +23,7 @@ fun TodoEditorRoute(
     initialDueDate: LocalDate?,
     onClose: (TodoEditorResult?) -> Unit,
     restoreGeneration: Int = 0,
+    requestDelete: Boolean = false,
 ) {
     val factory = remember(repository, taskId, initialDueDate) {
         viewModelFactory {
@@ -41,6 +42,10 @@ fun TodoEditorRoute(
             handledRestore.value = restoreGeneration
             editor.invalidateAfterRestore()
         }
+    }
+
+    LaunchedEffect(state.ready, requestDelete) {
+        if (requestDelete && state.ready) editor.requestDelete()
     }
 
     LaunchedEffect(state.finished) {

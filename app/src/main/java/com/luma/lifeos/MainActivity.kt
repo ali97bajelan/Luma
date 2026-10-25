@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
                     storage.todos,
                     widgetStore = storage.widgets,
                     moodDraftStore = luma.moodDraftStore,
+                    calendar = storage.calendar,
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,
                 )

@@ -1,7 +1,7 @@
 # Calendar & Agenda task backlog
 
 Prepared: 2026-10-25  
-Status: CAL-I01–I04 source complete; CAL-I05 and CAL-I06 not started; QA has not started.
+Status: CAL-I01–I05 source complete; CAL-I06 not started; QA has not started.
 
 [Specification](superpowers/specs/2026-10-25-calendar-agenda-design.md) · [Engineering plan](superpowers/plans/2026-10-25-calendar-agenda.md) · [QA scenarios](CALENDAR_QA.md)
 
@@ -24,7 +24,7 @@ IDs are local to Calendar and do not renumber T01–T38, TD or optional-feature 
 | CAL-I02 | P0 | Source complete; QA pending | Bounded Room task/habit/journal projections, live counts and provider wiring | I01 | Room query/repository/provider source review; Room version 6/schema/archive unchanged; no build run |
 | CAL-I03 | P0 | Source complete; QA pending | Saved date/mode/filter, paging, per-source state and stale-response/restore protection | I01, I02 contracts | State transition/source review; no tests run |
 | CAL-I04 | P0 | Source complete; QA pending | Month/week UI, agenda/filter/counts, completion recovery, habits/reflection and light/dark/localized resources | I03, existing mutation/feedback code | Reference-to-source and callback review |
-| CAL-I05 | P0 | Not started | Calendar primary tab replacing Habits, More → Habits with Back/legacy-route compatibility, existing editor integration and explicit dated Quick Capture | I02, I04 | Call-site/default compatibility review |
+| CAL-I05 | P0 | Source complete; QA pending | Calendar primary tab replacing Habits, More → Habits with Back/legacy-route compatibility, existing editor integration and explicit dated Quick Capture | I02, I04 | Call-site/default compatibility review |
 | CAL-I06 | P0 | Not started | Source coverage review and complete QA handoff with all validation marked NOT RUN | I01–I05 source complete | File/diff checks, revision/patch recorded, implementation gate signed |
 
 ## Phase 2 — QA (starts only after CAL-I06)

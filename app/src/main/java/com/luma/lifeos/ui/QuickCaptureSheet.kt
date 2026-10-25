@@ -37,9 +37,17 @@ import java.time.format.FormatStyle
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
-    onMood: (LocalDate?) -> Unit, onJournal: (LocalDate?) -> Unit, onMemory: (LocalDate?) -> Unit,
-    onTask: (() -> Unit)? = null, onHabit: ((LocalDate?) -> Unit)? = null) {
+fun QuickCaptureSheet(
+    browsedDate: LocalDate? = null,
+    onDismiss: () -> Unit,
+    onMood: (LocalDate?) -> Unit,
+    onJournal: (LocalDate?) -> Unit,
+    onMemory: (LocalDate?) -> Unit,
+    onTask: (() -> Unit)? = null,
+    onHabit: ((LocalDate?) -> Unit)? = null,
+    taskDueDate: LocalDate? = null,
+    onScheduledTask: ((LocalDate) -> Unit)? = null,
+) {
     var useBrowsedDate by rememberSaveable(browsedDate) { mutableStateOf(false) }
     val captureDate = browsedDate.takeIf { useBrowsedDate }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -139,11 +147,24 @@ fun QuickCaptureSheet(browsedDate: LocalDate? = null, onDismiss: () -> Unit,
                 }
             }
 
-            onTask?.let { action ->
+            val scheduledTaskAction: (() -> Unit)? = taskDueDate?.let { dueDate ->
+                onScheduledTask?.let { callback -> { callback(dueDate) } }
+            }
+            (scheduledTaskAction ?: onTask)?.let { action ->
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.capture_task_section), style = MaterialTheme.typography.titleSmall)
-                        Text(stringResource(R.string.capture_task_description), style = MaterialTheme.typography.bodySmall)
+                        if (scheduledTaskAction != null && taskDueDate != null) {
+                            Text(
+                                stringResource(
+                                    R.string.capture_task_due_date,
+                                    taskDueDate.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        } else {
+                            Text(stringResource(R.string.capture_task_description), style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                     LumaChoiceRow(
                         title = stringResource(R.string.capture_task),

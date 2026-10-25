@@ -7,6 +7,7 @@
     <string name="more">More</string>
     <string name="nav_today_compact">Today</string>
     <string name="nav_timeline_compact">Timeline</string>
+    <string name="nav_calendar_compact">Calendar</string>
     <string name="nav_people_compact">People</string>
     <string name="nav_habits_compact">Habits</string>
     <string name="nav_review_compact">Review</string>
@@ -732,6 +733,7 @@
     <string name="settings_widgets_description">Add or configure Luma widgets and review what they show.</string>
     <string name="more_people_places">People &amp; Places</string>
     <string name="more_people_places_description">Browse the people and places connected to your life.</string>
+    <string name="more_habits_description">Browse your scheduled habits and activity.</string>
     <string name="more_settings">Settings</string>
     <string name="more_settings_description">Language, theme, backup, privacy and integrations.</string>
     <string name="settings_language_title">Language</string>
@@ -944,6 +946,7 @@
     <string name="more_tasks_description">Review open and completed tasks.</string>
     <string name="capture_task_section">Tasks</string>
     <string name="capture_task_description">Starts without a due date.</string>
+    <string name="capture_task_due_date">Task due %1$s</string>
     <string name="capture_task">Task</string>
     <string name="todo_list_title">Tasks</string>
     <string name="todo_list_add">Add task</string>
@@ -1045,6 +1048,8 @@
     <string name="widget_loading_habits">Loading habits…</string>
     <string name="widget_loading_tasks">Loading tasks…</string>
     <string name="widget_loading_short">Loading…</string>
+    <string name="calendar_tab">Calendar</string>
+    <string name="calendar_unavailable">Calendar data is unavailable right now.</string>
     <string name="calendar_heading">Calendar &amp; Agenda</string>
     <string name="calendar_subtitle">All-day agenda, scheduled habits and meaningful tasks</string>
     <string name="calendar_month">Month</string>

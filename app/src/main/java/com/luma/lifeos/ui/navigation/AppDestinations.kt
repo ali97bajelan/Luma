@@ -7,6 +7,7 @@ import com.luma.lifeos.R
 internal object AppRoutes {
     const val TODAY = "today"
     const val TIMELINE = "timeline"
+    const val CALENDAR = "calendar"
     const val HABITS = "habits"
     const val REVIEW = "review"
     const val MORE = "more"
@@ -26,7 +27,7 @@ internal enum class PrimaryDestination(
 ) {
     TODAY(AppRoutes.TODAY, R.string.today, R.string.nav_today_compact, R.drawable.ic_nav_today),
     TIMELINE(AppRoutes.TIMELINE, R.string.timeline, R.string.nav_timeline_compact, R.drawable.ic_nav_timeline),
-    HABITS(AppRoutes.HABITS, R.string.habit_title, R.string.nav_habits_compact, R.drawable.ic_nav_habits),
+    CALENDAR(AppRoutes.CALENDAR, R.string.calendar_tab, R.string.nav_calendar_compact, R.drawable.ic_nav_calendar),
     REVIEW(AppRoutes.REVIEW, R.string.review, R.string.nav_review_compact, R.drawable.ic_nav_review),
     MORE(AppRoutes.MORE, R.string.more, R.string.nav_more_compact, R.drawable.ic_nav_more),
 }

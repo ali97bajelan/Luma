@@ -25,6 +25,7 @@ internal fun MoreRoute(
     onPeoplePlaces: () -> Unit,
     onSettings: () -> Unit,
     onTasks: (() -> Unit)? = null,
+    onHabits: (() -> Unit)? = null,
 ) {
     AppPageScaffold(title = stringResource(R.string.more), navigation = PageNavigation.NONE) { pagePadding ->
         LumaReadingPane(
@@ -34,6 +35,15 @@ internal fun MoreRoute(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                onHabits?.let { action ->
+                    MoreEntry(
+                        title = R.string.habit_title,
+                        description = R.string.more_habits_description,
+                        icon = R.drawable.ic_nav_habits,
+                        testTag = "more_habits",
+                        onClick = action,
+                    )
+                }
                 onTasks?.let { action ->
                     MoreEntry(
                         title = R.string.more_tasks,
