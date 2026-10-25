@@ -13,7 +13,7 @@
 **Tasks:** [Status and dependencies](../../CALENDAR_TASKS.md)  
 **QA:** [Fixture, scenarios and evidence](../../CALENDAR_QA.md)
 
-Status: CAL-I01–I05 source complete; CAL-I06 pending; QA not started. I01–I05 source is ready for the remaining implementation handoff; no build or behavioral acceptance is claimed.
+Status: CAL-I01–I06 source complete; QA not started. The source handoff is recorded in [validation/2026-10-25-calendar-agenda.md](../../validation/2026-10-25-calendar-agenda.md); no build or behavioral acceptance is claimed.
 
 ## Global Constraints
 
@@ -36,7 +36,7 @@ Status: CAL-I01–I05 source complete; CAL-I06 pending; QA not started. I01–I0
 
 ## File and interface map
 
-All new files below are planned, not present yet. Existing package conventions remain unchanged.
+The implementation files below are present at the source revision recorded in the QA handoff. Existing package conventions remain unchanged.
 
 | Area | Files | Responsibility |
 | --- | --- | --- |
@@ -44,8 +44,8 @@ All new files below are planned, not present yet. Existing package conventions r
 | Data | `core/data/src/main/kotlin/com/luma/lifeos/data/calendar/CalendarDao.kt`, `CalendarRows.kt`; `core/data/src/main/kotlin/com/luma/lifeos/data/repository/RoomCalendarRepository.kt` | Bounded read projections and mappings over saved data |
 | Composition | `core/data/src/main/kotlin/com/luma/lifeos/data/db/LumaDatabase.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/LumaStorage.kt`, `app/src/main/java/com/luma/lifeos/MainActivity.kt` | DAO/provider wiring, no schema or version changes |
 | State/UI | `app/src/main/java/com/luma/lifeos/ui/calendar/CalendarUiState.kt`, `CalendarViewModel.kt`, `CalendarRoute.kt`, `CalendarScreen.kt`, `CalendarGrid.kt`, `CalendarAgenda.kt` | Retained state, scoped flows, stateless layout and agenda sections |
-| Integration | `app/src/main/java/com/luma/lifeos/ui/LifeOsApp.kt`, `ui/navigation/AppDestinations.kt`, `ui/more/MoreRoute.kt`, `ui/QuickCaptureSheet.kt`; inspect `ui/navigation/PrimaryNavigationBar.kt`, `ui/habits/HabitsRoute.kt` | Calendar primary-tab integration, More → Habits/legacy entry compatibility, dated capture and restore wiring |
-| Resources | `app/src/main/res/values/strings.xml`, `values-fr/strings.xml`, `values-fa/strings.xml`; optional `res/drawable/ic_calendar.xml` | Offline localized copy/plurals and icon consistent with existing assets |
+| Integration | `app/src/main/java/com/luma/lifeos/ui/LifeOsApp.kt`, `ui/navigation/AppDestinations.kt`, `ui/more/MoreRoute.kt`, `ui/QuickCaptureSheet.kt`, `ui/todo/TodayTasksCard.kt`, `ui/todo/TodoEditorRoute.kt`; inspect `ui/navigation/PrimaryNavigationBar.kt`, `ui/habits/HabitsRoute.kt` | Calendar primary-tab integration, More → Habits/legacy entry compatibility, dated capture and restore wiring |
+| Resources | `app/src/main/res/values/strings.xml`, `values-fr/strings.xml`, `values-fa/strings.xml`; `res/drawable/ic_nav_calendar.xml`, `ic_calendar_schedule.xml`, `ic_more_vertical.xml` | Offline localized copy/plurals and navigation/calendar icons consistent with existing assets |
 | QA only | Test paths listed under CAL-Q01/Q02; `docs/validation/2026-10-25-calendar-agenda.md` | Automated regression coverage and actual-run evidence |
 
 Use these shared domain contracts (implement bodies idiomatically; private DTOs/helpers are builder choices):
@@ -164,10 +164,10 @@ No test files, test runs, Gradle invocations, app installation or emulator work 
 **Consumes:** I01–I05 source changes.  
 **Produces:** Source-complete handoff with known risks and QA entry decision.
 
-- [ ] Review spec-to-source coverage, signatures/call sites, resource-key parity, request keys, null/bounds handling and reference deviations using file reads/searches and `git diff --check` only.
-- [ ] Inspect changed-file scope: only the specified Calendar-for-Habits navigation replacement and More → Habits relocation; no task tags, unrelated navigation changes, schema/archive/permission/dependency changes or unrelated working-tree edits.
-- [ ] Record source revision plus dirty patch identifier, included implementation files, proposed design decisions and known concerns in the handoff. Mark each I-task source complete or incomplete with reasons.
-- [ ] Confirm I01–I06 all source complete before opening QA. Explicitly record “Gradle/build/tests/emulator NOT RUN during implementation.”
+- [x] Review spec-to-source coverage, signatures/call sites, resource-key parity, request keys, null/bounds handling and reference deviations using file reads/searches and `git diff --check` only.
+- [x] Inspect changed-file scope: only the specified Calendar-for-Habits navigation replacement and More → Habits relocation; no task tags, unrelated navigation changes, schema/archive/permission/dependency changes or unrelated working-tree edits.
+- [x] Record source revision plus dirty patch identifier, included implementation files, proposed design decisions and known concerns in the handoff. Mark each I-task source complete or incomplete with reasons.
+- [x] Confirm I01–I06 all source complete before opening QA. Explicitly record “Gradle/build/tests/emulator NOT RUN during implementation.”
 
 **Gate:** If any I-task is incomplete, QA cannot start. Static review is not a test pass.
 
@@ -225,4 +225,4 @@ Expected: exit 0 and zero failed tests; record skipped tests and why. Use exact 
 
 ## Plan self-review
 
-Spec CAL-01–07 maps to I01–I06 and all scenarios through the spec traceability table. Interfaces above are shared across tasks; Calendar writes retain existing mutation interfaces. The five review risks each have QA cases. No test/build/emulator step occurs in implementation. User-selected placement is Calendar in the third primary slot and Habits under More; Gregorian calendar, read-only habit previews and no new reminders/tags remain explicit design choices; no feature code was written by this planning pass.
+Spec CAL-01–07 maps to I01–I06 and all scenarios through the spec traceability table. Interfaces above are shared across tasks; Calendar writes retain existing mutation interfaces. The five review risks each have QA cases. No test/build/emulator step occurs in implementation. User-selected placement is Calendar in the third primary slot and Habits under More; Gregorian calendar, read-only habit previews and no new reminders/tags remain explicit design choices. The original planning session did not include feature code; the implementation and handoff are recorded at the revisions linked from the task ledger.
