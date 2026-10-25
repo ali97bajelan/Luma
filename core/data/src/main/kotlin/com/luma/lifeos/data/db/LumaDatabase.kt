@@ -8,6 +8,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.luma.lifeos.data.dao.CatalogDao
+import com.luma.lifeos.data.calendar.CalendarDao
 import com.luma.lifeos.data.dao.DerivedDataDao
 import com.luma.lifeos.data.dao.EventContentDao
 import com.luma.lifeos.data.dao.LifeEventDao
@@ -46,6 +47,7 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
 )
 @TypeConverters(StorageConverters::class)
 abstract class LumaDatabase : RoomDatabase() {
+    abstract fun calendar(): CalendarDao
     abstract fun search(): com.luma.lifeos.data.dao.SearchDao
     abstract fun lifeEvents(): LifeEventDao
     abstract fun content(): EventContentDao

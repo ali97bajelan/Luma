@@ -10,6 +10,7 @@ import com.luma.lifeos.domain.repository.PhotoRepository
 import android.content.Context
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.repository.RoomCatalogRepository
+import com.luma.lifeos.data.repository.RoomCalendarRepository
 import com.luma.lifeos.data.repository.RoomDerivedDataRepository
 import com.luma.lifeos.data.repository.RoomEventStore
 import com.luma.lifeos.data.repository.RoomLifeEventRepository
@@ -25,6 +26,7 @@ import com.luma.lifeos.data.repository.RoomJournalRepository
 import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.todo.TodoRepository
+import com.luma.lifeos.domain.calendar.CalendarRepository
 import com.luma.lifeos.data.repository.RoomTodoRepository
 import com.luma.lifeos.data.widget.RoomWidgetStore
 import com.luma.lifeos.domain.widget.WidgetStore
@@ -52,6 +54,7 @@ class LumaStorage(context: Context) {
     val journals: JournalRepository = RoomJournalRepository(database)
     val memories: MemoryRepository = RoomMemoryRepository(database)
     val habits: HabitRepository = RoomHabitRepository(database)
+    val calendar: CalendarRepository = RoomCalendarRepository(database, habits)
     val todos: TodoRepository = RoomTodoRepository(database)
     val widgets: WidgetStore = RoomWidgetStore(database)
     val places: PlaceRepository = RoomPlaceRepository(database)

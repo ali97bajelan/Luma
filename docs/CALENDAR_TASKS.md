@@ -1,7 +1,7 @@
 # Calendar & Agenda task backlog
 
 Prepared: 2026-10-25  
-Status: Proposed documentation package. No Calendar implementation or QA has started.
+Status: CAL-I01 and CAL-I02 source complete; CAL-I03–I06 not started; QA has not started.
 
 [Specification](superpowers/specs/2026-10-25-calendar-agenda-design.md) · [Engineering plan](superpowers/plans/2026-10-25-calendar-agenda.md) · [QA scenarios](CALENDAR_QA.md)
 
@@ -21,7 +21,7 @@ IDs are local to Calendar and do not renumber T01–T38, TD or optional-feature 
 | ID | Priority | Status | Deliverable | Depends on | Completion evidence |
 | --- | --- | --- | --- | --- | --- |
 | CAL-I01 | P0 | Source complete; QA pending | Pure civil-date/period rules, marker/read models and CalendarRepository contract | Existing task/habit models | Source and interface review against CAL-02–04 |
-| CAL-I02 | P0 | Not started | Bounded Room task/habit/journal projections, live counts and provider wiring | I01 | SQL/source review; no schema/archive change; no build run |
+| CAL-I02 | P0 | Source complete; QA pending | Bounded Room task/habit/journal projections, live counts and provider wiring | I01 | Room query/repository/provider source review; Room version 6/schema/archive unchanged; no build run |
 | CAL-I03 | P0 | Not started | Saved date/mode/filter, paging, per-source state and stale-response/restore protection | I01, I02 contracts | State transition/source review; no tests run |
 | CAL-I04 | P0 | Not started | Month/week UI, agenda/filter/counts, completion recovery, habits/reflection and light/dark/localized resources | I03, existing mutation/feedback code | Reference-to-source and callback review |
 | CAL-I05 | P0 | Not started | Calendar primary tab replacing Habits, More → Habits with Back/legacy-route compatibility, existing editor integration and explicit dated Quick Capture | I02, I04 | Call-site/default compatibility review |
