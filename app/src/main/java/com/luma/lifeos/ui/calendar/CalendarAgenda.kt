@@ -43,8 +43,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.calendar.CalendarFilter
-import com.luma.lifeos.domain.habit.HabitDay
-import com.luma.lifeos.domain.habit.HabitDayState
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.language.DisplayTimePolicy
 import com.luma.lifeos.ui.common.LumaSectionHeader
@@ -69,14 +67,13 @@ internal fun CalendarAgenda(
     onAddTask: (LocalDate) -> Unit,
     onAllTasks: () -> Unit,
     onLoadMore: () -> Unit,
+    onLoadMoreMemories: () -> Unit,
     onSetCompleted: (TodoTask, Boolean) -> Unit,
     onRetry: (CalendarSource) -> Unit,
     onRetryTask: (UUID) -> Unit,
     onDismissTaskError: (UUID) -> Unit,
-    onHabit: (UUID, LocalDate) -> Unit,
-    onJournal: (com.luma.lifeos.domain.model.EventId) -> Unit,
-    onWriteReflection: (LocalDate) -> Unit,
-    onTimeline: (LocalDate) -> Unit,
+    onMemory: (com.luma.lifeos.domain.model.EventId) -> Unit,
+    onAddMemory: (LocalDate) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         CalendarDateRibbon(state, displayTime)
@@ -129,8 +126,7 @@ internal fun CalendarAgenda(
             onDismissTaskError = onDismissTaskError,
         )
         if (state.filter == CalendarFilter.ALL) {
-            CalendarHabitsSection(state, displayTime, onHabit, onRetry)
-            CalendarReflectionSection(state, onJournal, onWriteReflection, onTimeline, onRetry)
+            CalendarMemoriesSection(state, onMemory, onAddMemory, onLoadMoreMemories, onRetry)
         }
     }
 }
@@ -151,15 +147,9 @@ private fun CalendarDateRibbon(state: CalendarUiState, displayTime: DisplayTimeP
                 modifier = Modifier.weight(1f),
             )
             CalendarCountPill(
-                count = state.selectedHabitCount,
-                plurals = R.plurals.calendar_habits_count,
-                label = R.string.calendar_legend_habits,
-                modifier = Modifier.weight(1f),
-            )
-            CalendarCountPill(
-                count = state.selectedJournalCount,
-                plurals = R.plurals.calendar_journals_count,
-                label = R.string.calendar_legend_journals,
+                count = state.selectedMemoryCount,
+                plurals = R.plurals.calendar_memories_count,
+                label = R.string.calendar_legend_memories,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -508,122 +498,70 @@ private fun taskDateBadge(task: TodoTask, today: LocalDate, displayTime: Display
 }
 
 @Composable
-private fun CalendarHabitsSection(
+private fun CalendarMemoriesSection(
     state: CalendarUiState,
-    displayTime: DisplayTimePolicy,
-    onHabit: (UUID, LocalDate) -> Unit,
+    onMemory: (com.luma.lifeos.domain.model.EventId) -> Unit,
+    onAddMemory: (LocalDate) -> Unit,
+    onLoadMore: () -> Unit,
     onRetry: (CalendarSource) -> Unit,
 ) {
-    LumaSectionSurface(modifier = Modifier.testTag("calendar_habits_section")) {
-        LumaSectionHeader(title = stringResource(R.string.calendar_habits_heading))
-        when (val habits = state.habits) {
-            CalendarDataState.Loading -> CalendarSourceLoading(R.string.calendar_habits_loading, "calendar_habits_loading")
+    LumaSectionSurface(modifier = Modifier.testTag("calendar_memories_section")) {
+        LumaSectionHeader(
+            title = stringResource(R.string.calendar_memories_heading),
+            actionLabel = stringResource(R.string.calendar_add_memory),
+            onAction = { onAddMemory(state.selectedDate) },
+            actionModifier = Modifier.heightIn(min = 48.dp).testTag("calendar_add_memory"),
+        )
+        when (val memories = state.memoryPage) {
+            CalendarDataState.Loading -> CalendarSourceLoading(R.string.calendar_memories_loading, "calendar_memories_loading")
             CalendarDataState.Error -> CalendarSourceError(
-                R.string.calendar_habits_error,
-                { onRetry(CalendarSource.HABITS) },
-                "calendar_habits_error",
+                R.string.calendar_memories_error,
+                { onRetry(CalendarSource.MEMORIES) },
+                "calendar_memories_error",
             )
             is CalendarDataState.Ready -> {
-                if (habits.value.isEmpty()) {
-                    Text(stringResource(R.string.calendar_habits_empty), modifier = Modifier.testTag("calendar_habits_empty"))
+                if (memories.value.items.isEmpty()) {
+                    Text(stringResource(R.string.calendar_memories_empty), modifier = Modifier.testTag("calendar_memories_empty"))
                 } else {
-                    val zones = habits.value.map { it.zone }.distinct().filter { it != state.zone }
-                    zones.forEach { zone ->
-                        Text(
-                            stringResource(R.string.calendar_habit_tracking_zone, zone.id),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        habits.value.forEach { day ->
-                            key(day.habit.id) {
-                                CalendarHabitRow(day, displayTime.locale) { onHabit(day.habit.id, state.selectedDate) }
+                        memories.value.items.forEach { memory ->
+                            key(memory.id) {
+                                Surface(
+                                    onClick = { onMemory(memory.id) },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("calendar_memory_${memory.id}"),
+                                    color = MaterialTheme.colorScheme.surfaceContainer,
+                                    shape = MaterialTheme.shapes.medium,
+                                ) {
+                                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(
+                                            memory.title?.takeIf(String::isNotBlank) ?: stringResource(R.string.calendar_memory_default_title),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        if (memory.preview.isNotBlank()) {
+                                            Text(memory.preview, style = MaterialTheme.typography.bodyMedium,
+                                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CalendarHabitRow(day: HabitDay, locale: Locale, onClick: () -> Unit) {
-    val target = day.schedule?.target
-    val count = java.text.NumberFormat.getIntegerInstance(locale).format(day.count)
-    val targetCount = target?.let { java.text.NumberFormat.getIntegerInstance(locale).format(it) }
-    val statusRes = when {
-        day.skipRemaining -> R.string.habit_state_skipped
-        day.state == HabitDayState.TARGET_REACHED -> R.string.habit_state_reached
-        day.state == HabitDayState.PARTIAL -> R.string.habit_state_partial
-        else -> R.string.habit_state_no_records
-    }
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("calendar_habit_${day.habit.id}"),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(day.habit.name, style = MaterialTheme.typography.bodyLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (targetCount != null) {
-                    Text(stringResource(R.string.habit_progress, count, targetCount), style = MaterialTheme.typography.labelLarge)
-                }
-                Text(stringResource(statusRes), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-@Composable
-private fun CalendarReflectionSection(
-    state: CalendarUiState,
-    onJournal: (com.luma.lifeos.domain.model.EventId) -> Unit,
-    onWriteReflection: (LocalDate) -> Unit,
-    onTimeline: (LocalDate) -> Unit,
-    onRetry: (CalendarSource) -> Unit,
-) {
-    LumaSectionSurface(modifier = Modifier.testTag("calendar_reflection_section")) {
-        LumaSectionHeader(title = stringResource(R.string.calendar_reflection_heading))
-        when (val reflections = state.reflections) {
-            CalendarDataState.Loading -> CalendarSourceLoading(R.string.calendar_reflection_loading, "calendar_reflection_loading")
-            CalendarDataState.Error -> CalendarSourceError(
-                R.string.calendar_reflection_error,
-                { onRetry(CalendarSource.JOURNALS) },
-                "calendar_reflection_error",
-            )
-            is CalendarDataState.Ready -> {
-                val latest = reflections.value.latest
-                if (latest == null) {
-                    Text(stringResource(R.string.calendar_reflection_empty), modifier = Modifier.testTag("calendar_reflection_empty"))
-                    TextButton(
-                        onClick = { onWriteReflection(state.selectedDate) },
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_write_reflection"),
-                    ) { Text(stringResource(R.string.calendar_write_reflection)) }
-                } else {
-                    val title = latest.title?.takeIf(String::isNotBlank) ?: stringResource(R.string.calendar_reflection_default_title)
-                    Surface(
-                        onClick = { onJournal(latest.id) },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("calendar_latest_reflection"),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        shape = MaterialTheme.shapes.medium,
-                    ) {
-                        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(title, style = MaterialTheme.typography.titleSmall)
-                            Text(latest.preview, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                    if (reflections.value.total > 1) {
-                        TextButton(
-                            onClick = { onTimeline(state.selectedDate) },
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_view_all_journals"),
-                        ) {
-                            Text(pluralStringResource(R.plurals.calendar_view_all_journals, reflections.value.total, reflections.value.total))
-                        }
-                    }
+                when {
+                    state.loadingMoreMemories -> CalendarSourceLoading(
+                        R.string.calendar_memories_loading, "calendar_memories_loading_more",
+                    )
+                    state.loadMoreMemoriesError -> CalendarSourceError(
+                        R.string.calendar_memories_error,
+                        { onRetry(CalendarSource.MEMORIES) },
+                        "calendar_memories_more_error",
+                    )
+                    memories.value.items.size < memories.value.total -> TextButton(
+                        onClick = onLoadMore,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("calendar_memories_load_more"),
+                    ) { Text(stringResource(R.string.calendar_load_more)) }
                 }
             }
         }

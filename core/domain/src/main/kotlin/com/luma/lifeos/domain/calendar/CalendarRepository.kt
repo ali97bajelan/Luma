@@ -1,6 +1,5 @@
 package com.luma.lifeos.domain.calendar
 
-import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoPage
 import java.time.LocalDate
@@ -8,40 +7,21 @@ import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Read-only projection of saved task, habit-schedule and journal data for Calendar.
- * Implementations expose source failures through their flows instead of converting them to empty
- * values, so callers can distinguish unavailable data from a successfully loaded zero. Every
- * [LocalDate] input must be in years 1–9999; implementations reject invalid dates with
- * [IllegalArgumentException]. [requireCalendarDate] is the shared validation helper.
+ * Read-only Calendar projection of dated tasks and saved memories. Habits and unmarked records
+ * never contribute to Calendar. Failures propagate instead of becoming empty results.
+ * Dates must be in years 1–9999, ranges contain at most 42 days, and page limits are positive.
  */
 interface CalendarRepository {
-    /**
-     * Exact-date open task markers with no today carry-in; map keys with no open tasks are omitted.
-     * A marker is overdue when one or more tasks for that exact date are overdue as of [today].
-     */
-    fun observeTaskMarkers(
-        range: CalendarRange,
-        today: LocalDate,
-    ): Flow<Map<LocalDate, CalendarTaskMarker>>
+    /** Exact-date open task markers, without today's overdue carry-in. */
+    fun observeTaskMarkers(range: CalendarRange, today: LocalDate): Flow<Map<LocalDate, CalendarTaskMarker>>
+
+    /** Saved memory events grouped into [zone]'s civil days, each original event counted once. */
+    fun observeMemoryMarkers(range: CalendarRange, zone: ZoneId): Flow<Map<LocalDate, Int>>
 
     /**
-     * Counts distinct habits with an effective active schedule and matching weekday on each date
-     * in [range]; dates without scheduled habits are omitted.
-     */
-    fun observeHabitMarkers(range: CalendarRange): Flow<Map<LocalDate, Int>>
-
-    /**
-     * Counts complete saved manual journals by occurrence date in [zone], including promoted
-     * journals once and grouping each occurrence in its local day interval.
-     */
-    fun observeJournalMarkers(range: CalendarRange, zone: ZoneId): Flow<Map<LocalDate, Int>>
-
-    /**
-     * Open dated tasks for the selected date, or the global open overdue set when [overdueOnly].
-     * Today's regular section includes due dates through today; other dates require an exact
-     * due-date match. [TodoPage.total] is the full matching count and items use
-     * [com.luma.lifeos.domain.todo.openTodoTaskComparator] order before paging.
-     * Implementations reject non-positive [limit] values with [IllegalArgumentException].
+     * Open dated tasks: today includes overdue carry-in, other dates match exactly.
+     * [overdueOnly] selects all open tasks due strictly before [today], independent of [date].
+     * Full total and ordered rows share a query snapshot; rows use openTodoTaskComparator order.
      */
     fun observeTasks(
         date: LocalDate,
@@ -50,17 +30,17 @@ interface CalendarRepository {
         limit: Int = TODO_DEFAULT_PAGE_SIZE,
     ): Flow<TodoPage>
 
-    /** Full global count of open tasks with due date strictly before [today]. */
     fun observeOverdueCount(today: LocalDate): Flow<Int>
 
-    /** Active habits scheduled on [date], including target-reached and skipped habits. */
-    fun observeHabits(date: LocalDate): Flow<List<HabitDay>>
-
     /**
-     * Complete saved manual journals for [date] in [zone], including journals promoted to memory.
-     * The latest uses occurrence descending then event ID ascending; its saved-body preview is at
-     * most $CALENDAR_REFLECTION_PREVIEW_CODE_POINTS Unicode code points with whitespace collapsed.
-     * A successful empty result is [CalendarReflections] with total zero and no latest reflection.
+     * Events with a saved memory row on [date] in [zone], including marked moods/journals.
+     * Ordered occurrence descending, event ID ascending; full total and bounded rows share a
+     * snapshot. Preview prefers memory note, journal body, mood note, then event note; whitespace
+     * is collapsed and limited to [CALENDAR_MEMORY_PREVIEW_CODE_POINTS] Unicode code points.
      */
-    fun observeReflections(date: LocalDate, zone: ZoneId): Flow<CalendarReflections>
+    fun observeMemories(
+        date: LocalDate,
+        zone: ZoneId,
+        limit: Int = TODO_DEFAULT_PAGE_SIZE,
+    ): Flow<CalendarMemories>
 }

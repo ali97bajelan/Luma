@@ -1051,7 +1051,7 @@
     <string name="calendar_tab">Calendar</string>
     <string name="calendar_unavailable">Calendar data is unavailable right now.</string>
     <string name="calendar_heading">Calendar &amp; Agenda</string>
-    <string name="calendar_subtitle">All-day agenda, scheduled habits and meaningful tasks</string>
+    <string name="calendar_subtitle">Scheduled tasks and saved memories</string>
     <string name="calendar_month">Month</string>
     <string name="calendar_week">Week</string>
     <string name="calendar_previous_month">Previous month</string>
@@ -1062,11 +1062,9 @@
     <string name="calendar_day_today">Today</string>
     <string name="calendar_day_selected">Selected</string>
     <string name="calendar_day_regular">Date</string>
-    <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s. %5$s.</string>
+    <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s.</string>
     <string name="calendar_count_unavailable">Count unavailable</string>
     <string name="calendar_legend_tasks">Tasks</string>
-    <string name="calendar_legend_habits">Habits</string>
-    <string name="calendar_legend_journals">Journals</string>
     <string name="calendar_legend_overdue">Overdue</string>
     <string name="calendar_filter_all">All Items</string>
     <string name="calendar_filter_tasks">Tasks</string>
@@ -1087,36 +1085,24 @@
     <string name="calendar_task_due_on_time">%1$s · %2$s</string>
     <string name="calendar_task_overdue">Overdue · %1$s</string>
     <string name="calendar_task_menu_description">More actions for %1$s</string>
-    <string name="calendar_habits_heading">Scheduled habits</string>
-    <string name="calendar_habits_loading">Loading scheduled habits…</string>
-    <string name="calendar_habits_error">Scheduled habits could not be loaded.</string>
-    <string name="calendar_habits_empty">No habits are scheduled for this date.</string>
-    <string name="calendar_habit_tracking_zone">Tracking zone: %1$s</string>
-    <string name="calendar_reflection_heading">Daily reflection</string>
-    <string name="calendar_reflection_loading">Loading reflection…</string>
-    <string name="calendar_reflection_error">The reflection could not be loaded.</string>
-    <string name="calendar_reflection_empty">No reflection for this date.</string>
-    <string name="calendar_reflection_default_title">Journal</string>
-    <string name="calendar_write_reflection">Write reflection</string>
     <string name="calendar_schedule">Schedule</string>
     <plurals name="calendar_tasks_count">
         <item quantity="one">%1$d task</item>
         <item quantity="other">%1$d tasks</item>
     </plurals>
-    <plurals name="calendar_habits_count">
-        <item quantity="one">%1$d habit</item>
-        <item quantity="other">%1$d habits</item>
-    </plurals>
-    <plurals name="calendar_journals_count">
-        <item quantity="one">%1$d journal</item>
-        <item quantity="other">%1$d journals</item>
-    </plurals>
     <plurals name="calendar_overdue_included">
         <item quantity="one">Includes %1$d overdue task</item>
         <item quantity="other">Includes %1$d overdue tasks</item>
     </plurals>
-    <plurals name="calendar_view_all_journals">
-        <item quantity="one">View all journals</item>
-        <item quantity="other">View all %1$d journals</item>
+    <string name="calendar_legend_memories">Memories</string>
+    <string name="calendar_memories_heading">Memories</string>
+    <string name="calendar_memories_loading">Loading memories…</string>
+    <string name="calendar_memories_error">Memories could not be loaded.</string>
+    <string name="calendar_memories_empty">No memories for this date.</string>
+    <string name="calendar_memory_default_title">Memory</string>
+    <string name="calendar_add_memory">Add memory</string>
+    <plurals name="calendar_memories_count">
+        <item quantity="one">%1$d memory</item>
+        <item quantity="other">%1$d memories</item>
     </plurals>
 </resources>

@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.RawQuery
 import androidx.sqlite.db.SupportSQLiteQuery
-import com.luma.lifeos.data.entity.JournalEntryEntity
 import com.luma.lifeos.data.entity.LifeEventEntity
 import com.luma.lifeos.data.entity.MemoryEntity
 import com.luma.lifeos.data.todo.TodoPageRow
@@ -21,34 +20,8 @@ interface CalendarDao {
     """)
     fun observeTaskMarkers(start: String, through: String, today: String): Flow<List<CalendarTaskMarkerRow>>
 
-    @Query("""
-        WITH RECURSIVE calendar_dates(date) AS (
-            SELECT :start
-            UNION ALL
-            SELECT date(date, '+1 day') FROM calendar_dates WHERE date < :through
-        ), scheduled_habits(date, habit_id) AS (
-            SELECT calendar_dates.date, h.id
-            FROM calendar_dates
-            JOIN habit h ON h.start_date <= calendar_dates.date
-            JOIN habit_schedule schedule ON schedule.habit_id = h.id
-                AND schedule.effective_from = (
-                    SELECT MAX(previous.effective_from)
-                    FROM habit_schedule previous
-                    WHERE previous.habit_id = h.id
-                        AND previous.effective_from <= calendar_dates.date
-                )
-            WHERE schedule.state = 'ACTIVE'
-                AND (schedule.weekday_mask &
-                    (1 << ((CAST(strftime('%w', calendar_dates.date) AS INTEGER) + 6) % 7))) <> 0
-        )
-        SELECT date, COUNT(DISTINCT habit_id) AS count
-        FROM scheduled_habits
-        GROUP BY date
-    """)
-    fun observeHabitMarkers(start: String, through: String): Flow<List<CalendarDateCountRow>>
-
-    @RawQuery(observedEntities = [LifeEventEntity::class, JournalEntryEntity::class, MemoryEntity::class])
-    fun observeJournalMarkers(query: SupportSQLiteQuery): Flow<List<CalendarDateCountRow>>
+    @RawQuery(observedEntities = [LifeEventEntity::class, MemoryEntity::class])
+    fun observeMemoryMarkers(query: SupportSQLiteQuery): Flow<List<CalendarDateCountRow>>
 
     @Query("""
         SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
@@ -82,27 +55,25 @@ interface CalendarDao {
     fun observeOverdueCount(today: String): Flow<Int>
 
     @Query("""
-        SELECT totals.total_count AS total_count, latest.event_id AS latest_event_id,
-            latest.title AS latest_title, latest.body AS latest_body
-        FROM (
-            SELECT COUNT(DISTINCT event.id) AS total_count
+        WITH saved_memories AS (
+            SELECT event.id AS event_id, event.occurred_at,
+                COALESCE(NULLIF(TRIM(event.title), ''), journal.title) AS title,
+                substr(memory.note, 1, 160) AS memory_note,
+                substr(journal.body, 1, 160) AS journal_body,
+                substr(mood.note, 1, 160) AS mood_note,
+                substr(event.note, 1, 160) AS event_note
             FROM life_event AS event
-            INNER JOIN journal_entry AS journal ON journal.life_event_id = event.id
-            LEFT JOIN memory AS promoted ON promoted.life_event_id = event.id
-            WHERE event.source = 'MANUAL'
-                AND event.occurred_at >= :startMillis AND event.occurred_at < :endMillis
-        ) AS totals
-        LEFT JOIN (
-            SELECT event.id AS event_id, journal.title AS title,
-                substr(journal.body, 1, 160) AS body
-            FROM life_event AS event
-            INNER JOIN journal_entry AS journal ON journal.life_event_id = event.id
-            LEFT JOIN memory AS promoted ON promoted.life_event_id = event.id
-            WHERE event.source = 'MANUAL'
-                AND event.occurred_at >= :startMillis AND event.occurred_at < :endMillis
-            ORDER BY event.occurred_at DESC, event.id ASC
-            LIMIT 1
-        ) AS latest ON 1 = 1
+            INNER JOIN memory ON memory.life_event_id = event.id
+            LEFT JOIN journal_entry AS journal ON journal.life_event_id = event.id
+            LEFT JOIN mood_entry AS mood ON mood.life_event_id = event.id
+            WHERE event.occurred_at >= :startMillis AND event.occurred_at < :endMillis
+        )
+        SELECT totals.total_count, saved.event_id, saved.title,
+            saved.memory_note, saved.journal_body, saved.mood_note, saved.event_note
+        FROM (SELECT COUNT(*) AS total_count FROM saved_memories) AS totals
+        LEFT JOIN saved_memories AS saved ON 1 = 1
+        ORDER BY saved.occurred_at DESC, saved.event_id ASC
+        LIMIT :limit
     """)
-    fun observeReflections(startMillis: Long, endMillis: Long): Flow<CalendarReflectionsRow>
+    fun observeMemories(startMillis: Long, endMillis: Long, limit: Int): Flow<List<CalendarMemoryRow>>
 }

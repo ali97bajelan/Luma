@@ -2,19 +2,14 @@ package com.luma.lifeos.data.repository
 
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.luma.lifeos.data.calendar.CalendarDao
-import com.luma.lifeos.data.calendar.CalendarDateCountRow
-import com.luma.lifeos.data.calendar.CalendarReflectionsRow
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.todo.toDomain
 import com.luma.lifeos.domain.calendar.CalendarRange
-import com.luma.lifeos.domain.calendar.CalendarReflection
-import com.luma.lifeos.domain.calendar.CalendarReflections
+import com.luma.lifeos.domain.calendar.CalendarMemory
+import com.luma.lifeos.domain.calendar.CalendarMemories
 import com.luma.lifeos.domain.calendar.CalendarRepository
 import com.luma.lifeos.domain.calendar.CalendarTaskMarker
 import com.luma.lifeos.domain.calendar.requireCalendarDate
-import com.luma.lifeos.domain.habit.HabitDay
-import com.luma.lifeos.domain.habit.HabitLifecycle
-import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.todo.TodoPage
 import java.time.temporal.ChronoUnit
@@ -27,10 +22,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
-class RoomCalendarRepository(
-    database: LumaDatabase,
-    private val habits: HabitRepository,
-) : CalendarRepository {
+class RoomCalendarRepository(database: LumaDatabase) : CalendarRepository {
     private val dao: CalendarDao = database.calendar()
 
     override fun observeTaskMarkers(
@@ -46,13 +38,8 @@ class RoomCalendarRepository(
             }.flowOn(Dispatchers.Default)
     }
 
-    override fun observeHabitMarkers(range: CalendarRange): Flow<Map<LocalDate, Int>> =
-        dao.observeHabitMarkers(range.start.toString(), range.through.toString()).map { rows ->
-            rows.associate { row -> LocalDate.parse(row.date) to row.count }
-        }.flowOn(Dispatchers.Default)
-
-    override fun observeJournalMarkers(range: CalendarRange, zone: ZoneId): Flow<Map<LocalDate, Int>> = flow {
-        emitAll(dao.observeJournalMarkers(journalMarkerQuery(range, zone)).map { rows ->
+    override fun observeMemoryMarkers(range: CalendarRange, zone: ZoneId): Flow<Map<LocalDate, Int>> = flow {
+        emitAll(dao.observeMemoryMarkers(memoryMarkerQuery(range, zone)).map { rows ->
             rows.associate { row -> LocalDate.parse(row.date) to row.count }
         })
     }.flowOn(Dispatchers.Default)
@@ -79,21 +66,27 @@ class RoomCalendarRepository(
         return dao.observeOverdueCount(today.toString())
     }
 
-    override fun observeHabits(date: LocalDate): Flow<List<HabitDay>> {
+    override fun observeMemories(date: LocalDate, zone: ZoneId, limit: Int): Flow<CalendarMemories> {
         requireCalendarDate(date, "selected date")
-        return habits.observeDay(date).map { days -> days.filter(HabitDay::isScheduledActive) }
-            .flowOn(Dispatchers.Default)
-    }
-
-    override fun observeReflections(date: LocalDate, zone: ZoneId): Flow<CalendarReflections> {
-        requireCalendarDate(date, "selected date")
+        require(limit > 0) { "Calendar memory page size must be positive" }
         val startMillis = date.atStartOfDay(zone).toInstant().toEpochMilli()
         val endMillis = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        return dao.observeReflections(startMillis, endMillis).map(CalendarReflectionsRow::toDomain)
-            .flowOn(Dispatchers.Default)
+        return dao.observeMemories(startMillis, endMillis, limit).map { rows ->
+            CalendarMemories(
+                total = rows.firstOrNull()?.totalCount ?: 0,
+                items = rows.mapNotNull { row ->
+                    row.eventId?.let { id ->
+                        CalendarMemory(
+                            EventId.parse(id), row.title,
+                            calendarMemoryPreview(row.memoryNote, row.journalBody, row.moodNote, row.eventNote),
+                        )
+                    }
+                },
+            )
+        }.flowOn(Dispatchers.Default)
     }
 
-    private fun journalMarkerQuery(range: CalendarRange, zone: ZoneId): SimpleSQLiteQuery {
+    private fun memoryMarkerQuery(range: CalendarRange, zone: ZoneId): SimpleSQLiteQuery {
         val values = List(rangeLength(range)) { index ->
             val date = range.start.plusDays(index.toLong())
             val start = date.atStartOfDay(zone).toInstant().toEpochMilli()
@@ -108,11 +101,10 @@ class RoomCalendarRepository(
             INNER JOIN life_event AS event
                 ON event.occurred_at >= day_bounds.start_millis
                 AND event.occurred_at < day_bounds.end_millis
-            INNER JOIN journal_entry AS journal ON journal.life_event_id = event.id
-            WHERE event.source = 'MANUAL'
+            INNER JOIN memory ON memory.life_event_id = event.id
             GROUP BY day_bounds.day
         """.trimIndent()
-        val arguments = values.flatMap { (date, start, end) -> listOf(date, start, end) }.toTypedArray()
+        val arguments = values.flatMap { (date, start, end) -> listOf<Any>(date, start, end) }.toTypedArray()
         return SimpleSQLiteQuery(sql, arguments)
     }
 
@@ -120,25 +112,10 @@ class RoomCalendarRepository(
         Math.toIntExact(ChronoUnit.DAYS.between(range.start, range.through) + 1)
 }
 
-private fun CalendarReflectionsRow.toDomain(): CalendarReflections {
-    val reflection = latestEventId?.let { id ->
-        CalendarReflection(
-            id = EventId.parse(id),
-            title = latestTitle,
-            preview = latestBody.orEmpty().calendarPreview(),
-        )
-    }
-    check((totalCount == 0) == (reflection == null)) {
-        "Calendar journal count and latest entry disagree"
-    }
-    return CalendarReflections(totalCount, reflection)
-}
-
-private fun HabitDay.isScheduledActive(): Boolean {
-    val effectiveSchedule = schedule ?: return false
-    return date >= habit.start && effectiveSchedule.lifecycle == HabitLifecycle.ACTIVE &&
-        date.dayOfWeek in effectiveSchedule.weekdays
-}
+internal fun calendarMemoryPreview(vararg candidates: String?): String =
+    candidates.asSequence()
+        .mapNotNull { it?.calendarPreview()?.takeIf(String::isNotEmpty) }
+        .firstOrNull().orEmpty()
 
 private fun String.calendarPreview(): String {
     val result = StringBuilder()

@@ -35,8 +35,7 @@ class CalendarViewModel(
     private val saved: SavedStateHandle,
 ) : ViewModel() {
     private val taskRetry = kotlinx.coroutines.flow.MutableStateFlow(0)
-    private val habitRetry = kotlinx.coroutines.flow.MutableStateFlow(0)
-    private val journalRetry = kotlinx.coroutines.flow.MutableStateFlow(0)
+    private val memoryRetry = kotlinx.coroutines.flow.MutableStateFlow(0)
     private val environmentInitialized = kotlinx.coroutines.flow.MutableStateFlow(false)
     private var environmentReady = false
 
@@ -54,10 +53,8 @@ class CalendarViewModel(
         observeTaskPage()
         observeTaskMarkers()
         observeOverdueCount()
-        observeHabits()
-        observeHabitMarkers()
-        observeReflections()
-        observeJournalMarkers()
+        observeMemories()
+        observeMemoryMarkers()
     }
 
     fun selectDate(date: LocalDate) {
@@ -68,14 +65,15 @@ class CalendarViewModel(
         mutableState.value = current.copy(
             selectedDate = date,
             pageLimit = PAGE_SIZE,
+            memoryPageLimit = PAGE_SIZE,
+            loadingMoreMemories = false,
+            loadMoreMemoriesError = false,
             loadingMore = false,
             loadMoreError = false,
             taskPage = CalendarDataState.Loading,
             taskMarkers = CalendarDataState.Loading,
-            habitMarkers = CalendarDataState.Loading,
-            habits = CalendarDataState.Loading,
-            journalMarkers = CalendarDataState.Loading,
-            reflections = CalendarDataState.Loading,
+            memoryMarkers = CalendarDataState.Loading,
+            memoryPage = CalendarDataState.Loading,
         )
     }
 
@@ -86,8 +84,7 @@ class CalendarViewModel(
         mutableState.value = current.copy(
             mode = mode,
             taskMarkers = CalendarDataState.Loading,
-            habitMarkers = CalendarDataState.Loading,
-            journalMarkers = CalendarDataState.Loading,
+            memoryMarkers = CalendarDataState.Loading,
         )
     }
 
@@ -98,6 +95,9 @@ class CalendarViewModel(
         mutableState.value = current.copy(
             filter = filter,
             pageLimit = PAGE_SIZE,
+            memoryPageLimit = PAGE_SIZE,
+            loadingMoreMemories = false,
+            loadMoreMemoriesError = false,
             loadingMore = false,
             loadMoreError = false,
             taskPage = CalendarDataState.Loading,
@@ -121,6 +121,14 @@ class CalendarViewModel(
         mutableState.value = current.copy(pageLimit = nextLimit, loadingMore = true)
     }
 
+    fun loadMoreMemories() {
+        val current = mutableState.value
+        val page = (current.memoryPage as? CalendarDataState.Ready)?.value ?: return
+        if (current.loadingMoreMemories || current.loadMoreMemoriesError || page.items.size >= page.total) return
+        val nextLimit = (current.memoryPageLimit.toLong() + PAGE_SIZE).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        mutableState.value = current.copy(memoryPageLimit = nextLimit, loadingMoreMemories = true)
+    }
+
     fun retry(source: CalendarSource) {
         when (source) {
             CalendarSource.TASKS -> {
@@ -134,19 +142,14 @@ class CalendarViewModel(
                 )
                 taskRetry.update { it + 1 }
             }
-            CalendarSource.HABITS -> {
+            CalendarSource.MEMORIES -> {
                 mutableState.value = mutableState.value.copy(
-                    habitMarkers = CalendarDataState.Loading,
-                    habits = CalendarDataState.Loading,
+                    memoryMarkers = CalendarDataState.Loading,
+                    memoryPage = CalendarDataState.Loading,
+                    loadingMoreMemories = false,
+                    loadMoreMemoriesError = false,
                 )
-                habitRetry.update { it + 1 }
-            }
-            CalendarSource.JOURNALS -> {
-                mutableState.value = mutableState.value.copy(
-                    journalMarkers = CalendarDataState.Loading,
-                    reflections = CalendarDataState.Loading,
-                )
-                journalRetry.update { it + 1 }
+                memoryRetry.update { it + 1 }
             }
         }
     }
@@ -175,6 +178,9 @@ class CalendarViewModel(
             firstDay = firstDay,
             restoreGeneration = restoreGeneration,
             pageLimit = if (firstEnvironment || restoreChanged || civilEnvironmentChanged) PAGE_SIZE else current.pageLimit,
+            memoryPageLimit = if (firstEnvironment || restoreChanged || civilEnvironmentChanged) PAGE_SIZE else current.memoryPageLimit,
+            loadingMoreMemories = false,
+            loadMoreMemoriesError = false,
             loadingMore = false,
             loadMoreError = false,
             taskPage = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
@@ -186,24 +192,17 @@ class CalendarViewModel(
             overdueCount = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
                 CalendarDataState.Loading
             } else current.overdueCount,
-            habitMarkers = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || weekEnvironmentChanged || selectedDate != current.selectedDate) {
+            memoryMarkers = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || weekEnvironmentChanged || selectedDate != current.selectedDate) {
                 CalendarDataState.Loading
-            } else current.habitMarkers,
-            habits = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
+            } else current.memoryMarkers,
+            memoryPage = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
                 CalendarDataState.Loading
-            } else current.habits,
-            journalMarkers = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || weekEnvironmentChanged || selectedDate != current.selectedDate) {
-                CalendarDataState.Loading
-            } else current.journalMarkers,
-            reflections = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
-                CalendarDataState.Loading
-            } else current.reflections,
+            } else current.memoryPage,
         )
 
         if (restoreChanged) {
             taskRetry.update { it + 1 }
-            habitRetry.update { it + 1 }
-            journalRetry.update { it + 1 }
+            memoryRetry.update { it + 1 }
         }
         environmentInitialized.value = true
     }
@@ -280,76 +279,50 @@ class CalendarViewModel(
             }
     }
 
-    private fun observeHabits() = viewModelScope.launch {
+    private fun observeMemories() = viewModelScope.launch {
         combine(
-            mutableState.map { it.habitRequestKey() }.distinctUntilChanged(),
-            habitRetry,
+            mutableState.map { it.memoryPageRequestKey() }.distinctUntilChanged(),
+            memoryRetry,
             environmentInitialized,
         ) { key, retry, ready -> if (ready) key.copy(retry = retry) else null }
             .filterNotNull()
             .flatMapLatest { request ->
-                observeCalendarData { repository.observeHabits(request.date) }.map { request to it }
-            }
-            .collect { (request, result) ->
-                mutableState.update { current ->
-                    if (!request.isCurrentHabit(current, habitRetry.value)) current
-                    else current.copy(habits = result)
-                }
-            }
-    }
-
-    private fun observeHabitMarkers() = viewModelScope.launch {
-        combine(
-            mutableState.map { it.habitMarkerRequestKey() }.distinctUntilChanged(),
-            habitRetry,
-            environmentInitialized,
-        ) { key, retry, ready -> if (ready) key.copy(retry = retry) else null }
-            .filterNotNull()
-            .flatMapLatest { request ->
-                observeCalendarData { repository.observeHabitMarkers(request.range) }.map { request to it }
-            }
-            .collect { (request, result) ->
-                mutableState.update { current ->
-                    if (!request.isCurrentHabitMarker(current, habitRetry.value)) current
-                    else current.copy(habitMarkers = result)
-                }
-            }
-    }
-
-    private fun observeReflections() = viewModelScope.launch {
-        combine(
-            mutableState.map { it.reflectionRequestKey() }.distinctUntilChanged(),
-            journalRetry,
-            environmentInitialized,
-        ) { key, retry, ready -> if (ready) key.copy(retry = retry) else null }
-            .filterNotNull()
-            .flatMapLatest { request ->
-                observeCalendarData { repository.observeReflections(request.date, request.zone) }
+                observeCalendarData { repository.observeMemories(request.date, request.zone, request.limit) }
                     .map { request to it }
             }
             .collect { (request, result) ->
                 mutableState.update { current ->
-                    if (!request.isCurrentReflection(current, journalRetry.value)) current
-                    else current.copy(reflections = result)
+                    if (!request.isCurrentMemoryPage(current, memoryRetry.value)) current
+                    else when (result) {
+                        CalendarDataState.Loading -> if (current.loadingMoreMemories) current else current.copy(memoryPage = result)
+                        is CalendarDataState.Ready -> current.copy(
+                            memoryPage = result,
+                            loadingMoreMemories = false,
+                            loadMoreMemoriesError = false,
+                        )
+                        CalendarDataState.Error -> if (current.loadingMoreMemories && current.memoryPage is CalendarDataState.Ready) {
+                            current.copy(loadingMoreMemories = false, loadMoreMemoriesError = true)
+                        } else current.copy(memoryPage = result, loadingMoreMemories = false, loadMoreMemoriesError = false)
+                    }
                 }
             }
     }
 
-    private fun observeJournalMarkers() = viewModelScope.launch {
+    private fun observeMemoryMarkers() = viewModelScope.launch {
         combine(
-            mutableState.map { it.journalMarkerRequestKey() }.distinctUntilChanged(),
-            journalRetry,
+            mutableState.map { it.memoryMarkerRequestKey() }.distinctUntilChanged(),
+            memoryRetry,
             environmentInitialized,
         ) { key, retry, ready -> if (ready) key.copy(retry = retry) else null }
             .filterNotNull()
             .flatMapLatest { request ->
-                observeCalendarData { repository.observeJournalMarkers(request.range, request.zone) }
+                observeCalendarData { repository.observeMemoryMarkers(request.range, request.zone) }
                     .map { request to it }
             }
             .collect { (request, result) ->
                 mutableState.update { current ->
-                    if (!request.isCurrentJournalMarker(current, journalRetry.value)) current
-                    else current.copy(journalMarkers = result)
+                    if (!request.isCurrentMemoryMarker(current, memoryRetry.value)) current
+                    else current.copy(memoryMarkers = result)
                 }
             }
     }
@@ -379,29 +352,16 @@ class CalendarViewModel(
         restoreGeneration,
     )
 
-    private fun CalendarUiState.habitRequestKey() = HabitRequest(
+    private fun CalendarUiState.memoryPageRequestKey() = MemoryPageRequest(
         selectedDate,
+        filter,
+        memoryPageLimit,
         today,
         zone,
         restoreGeneration,
     )
 
-    private fun CalendarUiState.habitMarkerRequestKey() = HabitMarkerRequest(
-        selectedDate,
-        today,
-        calendarRange(selectedDate, mode, firstDay),
-        zone,
-        restoreGeneration,
-    )
-
-    private fun CalendarUiState.reflectionRequestKey() = ReflectionRequest(
-        selectedDate,
-        today,
-        zone,
-        restoreGeneration,
-    )
-
-    private fun CalendarUiState.journalMarkerRequestKey() = JournalMarkerRequest(
+    private fun CalendarUiState.memoryMarkerRequestKey() = MemoryMarkerRequest(
         selectedDate,
         today,
         calendarRange(selectedDate, mode, firstDay),
@@ -418,17 +378,11 @@ class CalendarViewModel(
     private fun OverdueRequest.isCurrentOverdue(current: CalendarUiState, retry: Int) =
         this.retry == retry && copy(retry = retry) == current.overdueRequestKey().copy(retry = retry)
 
-    private fun HabitRequest.isCurrentHabit(current: CalendarUiState, retry: Int) =
-        this.retry == retry && copy(retry = retry) == current.habitRequestKey().copy(retry = retry)
+    private fun MemoryPageRequest.isCurrentMemoryPage(current: CalendarUiState, retry: Int) =
+        this.retry == retry && copy(retry = retry) == current.memoryPageRequestKey().copy(retry = retry)
 
-    private fun HabitMarkerRequest.isCurrentHabitMarker(current: CalendarUiState, retry: Int) =
-        this.retry == retry && copy(retry = retry) == current.habitMarkerRequestKey().copy(retry = retry)
-
-    private fun ReflectionRequest.isCurrentReflection(current: CalendarUiState, retry: Int) =
-        this.retry == retry && copy(retry = retry) == current.reflectionRequestKey().copy(retry = retry)
-
-    private fun JournalMarkerRequest.isCurrentJournalMarker(current: CalendarUiState, retry: Int) =
-        this.retry == retry && copy(retry = retry) == current.journalMarkerRequestKey().copy(retry = retry)
+    private fun MemoryMarkerRequest.isCurrentMemoryMarker(current: CalendarUiState, retry: Int) =
+        this.retry == retry && copy(retry = retry) == current.memoryMarkerRequestKey().copy(retry = retry)
 
     private data class TaskPageRequest(
         val date: LocalDate,
@@ -458,32 +412,17 @@ class CalendarViewModel(
         val retry: Int = 0,
     )
 
-    private data class HabitRequest(
+    private data class MemoryPageRequest(
         val date: LocalDate,
+        val filter: CalendarFilter,
+        val limit: Int,
         val today: LocalDate,
         val zone: ZoneId,
         val restoreGeneration: Int,
         val retry: Int = 0,
     )
 
-    private data class HabitMarkerRequest(
-        val selectedDate: LocalDate,
-        val today: LocalDate,
-        val range: com.luma.lifeos.domain.calendar.CalendarRange,
-        val zone: ZoneId,
-        val restoreGeneration: Int,
-        val retry: Int = 0,
-    )
-
-    private data class ReflectionRequest(
-        val date: LocalDate,
-        val today: LocalDate,
-        val zone: ZoneId,
-        val restoreGeneration: Int,
-        val retry: Int = 0,
-    )
-
-    private data class JournalMarkerRequest(
+    private data class MemoryMarkerRequest(
         val selectedDate: LocalDate,
         val today: LocalDate,
         val range: com.luma.lifeos.domain.calendar.CalendarRange,

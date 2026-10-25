@@ -156,10 +156,8 @@ internal fun CalendarGrid(
         CalendarMarkerLegend()
         CalendarMarkerSourceStatus(state.taskMarkers, R.string.calendar_tasks_loading, R.string.calendar_tasks_error,
             "calendar_task_markers", onRetry = { onRetry(CalendarSource.TASKS) })
-        CalendarMarkerSourceStatus(state.habitMarkers, R.string.calendar_habits_loading, R.string.calendar_habits_error,
-            "calendar_habit_markers", onRetry = { onRetry(CalendarSource.HABITS) })
-        CalendarMarkerSourceStatus(state.journalMarkers, R.string.calendar_reflection_loading, R.string.calendar_reflection_error,
-            "calendar_journal_markers", onRetry = { onRetry(CalendarSource.JOURNALS) })
+        CalendarMarkerSourceStatus(state.memoryMarkers, R.string.calendar_memories_loading, R.string.calendar_memories_error,
+            "calendar_memory_markers", onRetry = { onRetry(CalendarSource.MEMORIES) })
     }
 }
 
@@ -335,15 +333,9 @@ private fun CalendarDateCell(
         )
         else -> stringResource(R.string.calendar_count_unavailable)
     }
-    val habitCount = when (val source = markerState.habitMarkers) {
+    val memoryCount = when (val source = markerState.memoryMarkers) {
         is CalendarDataState.Ready -> pluralStringResource(
-            R.plurals.calendar_habits_count, source.value[date] ?: 0, source.value[date] ?: 0,
-        )
-        else -> stringResource(R.string.calendar_count_unavailable)
-    }
-    val journalCount = when (val source = markerState.journalMarkers) {
-        is CalendarDataState.Ready -> pluralStringResource(
-            R.plurals.calendar_journals_count, source.value[date] ?: 0, source.value[date] ?: 0,
+            R.plurals.calendar_memories_count, source.value[date] ?: 0, source.value[date] ?: 0,
         )
         else -> stringResource(R.string.calendar_count_unavailable)
     }
@@ -352,8 +344,7 @@ private fun CalendarDateCell(
         dateLabel,
         status,
         taskCount,
-        habitCount,
-        journalCount,
+        memoryCount,
     )
     val locale = displayTime.locale
     val number = remember(date.dayOfMonth, locale) { java.text.NumberFormat.getIntegerInstance(locale).format(date.dayOfMonth) }
@@ -390,8 +381,7 @@ private fun CalendarDateCell(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (markers.tasks > 0) MarkerDot(if (markers.overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-                if (markers.habits > 0) MarkerDot(MaterialTheme.colorScheme.tertiary)
-                if (markers.journals > 0) MarkerDot(MaterialTheme.colorScheme.secondary)
+                if (markers.memories > 0) MarkerDot(MaterialTheme.colorScheme.secondary)
             }
         }
     }
@@ -410,8 +400,7 @@ private fun CalendarMarkerLegend() {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LegendItem(MaterialTheme.colorScheme.primary, R.string.calendar_legend_tasks)
-        LegendItem(MaterialTheme.colorScheme.tertiary, R.string.calendar_legend_habits)
-        LegendItem(MaterialTheme.colorScheme.secondary, R.string.calendar_legend_journals)
+        LegendItem(MaterialTheme.colorScheme.secondary, R.string.calendar_legend_memories)
         LegendItem(MaterialTheme.colorScheme.error, R.string.calendar_legend_overdue)
     }
 }
@@ -424,13 +413,12 @@ private fun LegendItem(color: androidx.compose.ui.graphics.Color, label: Int) {
     }
 }
 
-private data class DayMarkers(val tasks: Int, val overdue: Boolean, val habits: Int, val journals: Int)
+private data class DayMarkers(val tasks: Int, val overdue: Boolean, val memories: Int)
 
 private fun markerCounts(state: CalendarUiState, date: LocalDate): DayMarkers = DayMarkers(
     tasks = (state.taskMarkers as? CalendarDataState.Ready)?.value?.get(date)?.count ?: 0,
     overdue = (state.taskMarkers as? CalendarDataState.Ready)?.value?.get(date)?.overdue == true,
-    habits = (state.habitMarkers as? CalendarDataState.Ready)?.value?.get(date) ?: 0,
-    journals = (state.journalMarkers as? CalendarDataState.Ready)?.value?.get(date) ?: 0,
+    memories = (state.memoryMarkers as? CalendarDataState.Ready)?.value?.get(date) ?: 0,
 )
 
 private fun calendarGridDates(selected: LocalDate, mode: CalendarMode, firstDay: DayOfWeek): List<LocalDate?> {

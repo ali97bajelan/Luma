@@ -36,10 +36,8 @@ fun CalendarRoute(
     onDeleteTask: (UUID) -> Unit,
     onAddTask: (LocalDate) -> Unit,
     onSchedule: (LocalDate) -> Unit,
-    onHabit: (UUID, LocalDate) -> Unit,
-    onJournal: (EventId) -> Unit,
-    onWriteReflection: (LocalDate) -> Unit,
-    onTimeline: (LocalDate) -> Unit,
+    onMemory: (EventId) -> Unit,
+    onAddMemory: (LocalDate) -> Unit,
     onAllTasks: () -> Unit,
     onTaskActionResult: (TodoActionResult) -> Unit,
 ) {
@@ -86,6 +84,7 @@ fun CalendarRoute(
         onFilter = calendarViewModel::setFilter,
         onRetry = calendarViewModel::retry,
         onLoadMore = calendarViewModel::loadMore,
+        onLoadMoreMemories = calendarViewModel::loadMoreMemories,
         onTask = onTask,
         onDeleteTask = onDeleteTask,
         onAddTask = onAddTask,
@@ -93,10 +92,8 @@ fun CalendarRoute(
         onSetCompleted = taskViewModel::setCompleted,
         onRetryTask = taskViewModel::retry,
         onDismissTaskError = taskViewModel::dismissRowError,
-        onHabit = onHabit,
-        onJournal = onJournal,
-        onWriteReflection = onWriteReflection,
-        onTimeline = onTimeline,
+        onMemory = onMemory,
+        onAddMemory = onAddMemory,
         onAllTasks = onAllTasks,
     )
 }

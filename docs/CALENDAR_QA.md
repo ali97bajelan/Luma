@@ -1,7 +1,7 @@
 # Calendar & Agenda QA scenarios
 
 Prepared: 2026-10-25  
-Status: **NOT RUN — QA follows completion of all implementation tasks.**
+Status: **Focused revision host/build/lint checks PASS; complete device/scenario acceptance PENDING.** See the [execution record](validation/2026-10-25-calendar-agenda.md) for exact evidence and unrun checks.
 
 [Specification](superpowers/specs/2026-10-25-calendar-agenda-design.md) · [Plan and commands](superpowers/plans/2026-10-25-calendar-agenda.md) · [Task status](CALENDAR_TASKS.md)
 
@@ -9,7 +9,7 @@ Status: **NOT RUN — QA follows completion of all implementation tasks.**
 
 Start only after CAL-I01–I06 are source complete. Test authoring, Gradle/build/lint and emulator/device checks occur only in QA. No result below is pre-certified by source inspection. Use an isolated QA install/AVD and synthetic records; preserve existing personal app data. Connected tests can reinstall/uninstall their target app, so confirm the isolated target before running them.
 
-Record actual date/time, source revision and dirty patch identifier, app/test version and variant, device/emulator/API, device zone, habit zone, locale, 12/24-hour setting, app/system theme, window dp, orientation and font scale. Retain test logs, screenshots and accessibility/target-bound evidence at `docs/luma-redesign/evidence/<actual-run-date>/calendar/`. Link results in `docs/validation/2026-10-25-calendar-agenda.md`.
+Record actual date/time, source revision and dirty patch identifier, app/test version and variant, device/emulator/API, device zone, locale, 12/24-hour setting, app/system theme, window dp, orientation and font scale. Retain test logs, screenshots and accessibility/target-bound evidence at `docs/luma-redesign/evidence/<actual-run-date>/calendar/`. Link results in `docs/validation/2026-10-25-calendar-agenda.md`.
 
 Freeze `today = 2026-10-22` using injected clock/current-day fixtures for automation. Manual time-change checks use an isolated AVD or equivalent fixture controls, not the user's daily device. Gregorian date values remain unchanged across locales. If manual clock control is unavailable, shift the entire fixture by the same day offset and record exact dates/expected sets.
 
@@ -28,16 +28,17 @@ Use stable distinct IDs/creation timestamps so ordering can be asserted. All tas
 | G | Task “Completed” | Oct 22 at 08:00 | Completed; excluded from Calendar |
 | H1 | Habit “Water”, target 8, all weekdays, active from Oct 1 | Saved tracking zone Asia/Tehran | Oct 22 count 2/8 |
 | H2 | Habit “Stretch”, target 5, Thursday only, active from Oct 1 | Same tracking zone | Oct 22 count 1/5 |
-| J1 | Journal “Autumn reflection” with saved body | Oct 22 at 10:00 in device zone | Complete manual journal |
+| J1 | Journal “Autumn reflection” with saved body | Oct 22 at 10:00 in device zone | Unmarked journal; excluded |
+| M1 | Memory “Autumn walk” with saved note | Oct 22 at 11:00 in device zone | Saved standalone memory |
 
 Default device zone Asia/Tehran, Month, All Items, selected Oct 22. Expected baseline:
 
 - Task rows in order A, B, C, D; Tasks = 4; Overdue = 2; “Includes 2 overdue”.
-- Exact-date ribbon: 2 tasks, 2 habits, 1 journal. All Items = **7** (4 task memberships + 2 habits + 1 journal), intentionally correcting inconsistent mockup sample badges.
+- Exact-date ribbon: 2 tasks and 1 memory. All Items = **5** (4 task memberships + 1 memory), intentionally correcting inconsistent mockup sample badges.
 - Oct 22 task marker count = 2; Oct 19 and Oct 21 markers each count 1 and overdue; Oct 23 marker count 1 and not overdue. Completed G and undated F contribute no task marker.
-- Habits display 2/8 and 1/5; reflection preview comes from J1; no task hashtag chips or sample quote.
+- H1/H2 and J1 contribute no Calendar rows, counts, dots, legend or accessible count text. Memory M1 shows its saved note; no task hashtag chips or sample quote.
 
-Reset F1 between independent cases. Additional fixtures: F2 = 123 open tasks on one date with varied/tied times and stable IDs; F3 = multiple journals, promoted journals, generic memories/moods and boundary instants; F4 = versioned habit schedules/paused/archived/not-started/skip/target-reached states. Each case specifies its extensions.
+Reset F1 between independent cases. Additional fixtures: F2 = 123 open tasks on one date with varied/tied times and stable IDs; F3 = standalone memories, memory-marked journals/moods, unmarked records, tied timestamps, >50 memories and boundary instants; F4 = habits with schedule versions, paused/archived/not-started/skip/target-reached states used to prove complete Calendar exclusion. Each case specifies its extensions.
 
 ## Scenarios
 
@@ -49,11 +50,11 @@ Expect exactly five tabs in order Today, Timeline, Calendar, Review, More, with 
 
 ### CQA-02 — More → Habits, legacy links and fallback state (P0; CAL-01)
 
-Open More: expect a visible Habits row before Tasks and no duplicate Calendar row. Open Habits: expect the full existing section at device today, with working Create/log/history/management actions and a Back affordance; toolbar/system Back returns to More. Browse a date, open a habit detail/editor and return: retain habit date/scroll. Reopen from More: start today. Exercise dated Today/Timeline/Review/Calendar/widget links and a restored legacy `habits` back stack: expect correct target/date and caller return, not primary-tab stack clearing. Habits browsing must not change Today/Timeline or Calendar dates. With malformed/out-of-range restored Calendar date expect today fallback. Missing calendar provider shows unavailable state within its primary tab; other tabs remain usable. Existing More Tasks/Settings/catalog entries still work.
+Open More: expect a visible Habits row before Tasks and no duplicate Calendar row. Open Habits: expect the full existing section at device today, with working Create/log/history/management actions and a Back affordance; toolbar/system Back returns to More. Browse a date, open a habit detail/editor and return: retain habit date/scroll. Reopen from More: start today. Exercise dated Today/Timeline/Review/widget links and a restored legacy `habits` back stack: expect correct target/date and caller return, not primary-tab stack clearing. Habits browsing must not change Today/Timeline or Calendar dates. With malformed/out-of-range restored Calendar date expect today fallback. Missing calendar provider shows unavailable state within its primary tab; other tabs remain usable. Existing More Tasks/Settings/catalog entries still work.
 
 ### CQA-03 — Navigation to existing records (P0; CAL-01/05/06)
 
-From Calendar open task C, habit H1, reflection J1 and View all tasks; Back after each. Expect original IDs, correct dated habit context and retained Calendar selection/filter/scroll. View all journals opens Timeline on the selected date. The five new primary destinations and existing habit/widget entry targets continue resolving; Today’s existing habit previews still open their dated targets.
+From Calendar open task C, memory M1 and View all tasks; Back after each. Expect original IDs and retained Calendar selection/filter/scroll. Open memory-marked journal/mood rows: expect the existing memory route and its original-record actions. Add memory uses the selected date and existing capture validation. The five new primary destinations and existing habit/widget entry targets continue resolving; Today’s existing habit previews still open their dated targets.
 
 ### CQA-04 — Month/week behavior (P0; CAL-02)
 
@@ -77,7 +78,7 @@ Switch EN, FR and FA with the same selected civil date. Compare headers and week
 
 ### CQA-09 — Today carry-in and exact-date counts (P0; CAL-03)
 
-Load F1 on T. Assert exact ordered task IDs A/B/C/D, Tasks 4, All 7, Overdue 2, ribbon 2/2/1 and carry-in caption 2. Switch Tasks: only task rows remain; grid markers unchanged. Switch All: H1/H2 and J1 return. Counts are not copied from PNG values.
+Load F1 on T. Assert exact ordered task IDs A/B/C/D, Tasks 4, All 5, Overdue 2, ribbon 2 tasks/1 memory and carry-in caption 2. Switch Tasks: only task rows remain; grid markers unchanged. Switch All: M1 returns; H1/H2 and unmarked J1 remain absent. Counts are not copied from PNG values.
 
 ### CQA-10 — Historical/future and global Overdue scope (P0; CAL-03/04)
 
@@ -89,7 +90,7 @@ Verify F and G absent from Calendar task rows/counts/dots. Open View all tasks a
 
 ### CQA-12 — Markers and accessible date descriptions (P1; CAL-03/06)
 
-With F1 inspect Oct 19/21/22/23 and empty dates. Expect one dot per present type, max three; task dot on overdue dates uses error role. Accessible label includes full date, selected/today state, type counts and overdue meaning. Legend supplies text; no pulsation. Completing a task updates only its original due-date marker, not a carried-in date.
+With F1 inspect Oct 19/21/22/23 and empty dates. Expect one dot per present type (task/memory), max two; task dot on overdue dates uses error role. Accessible label includes full date, selected/today state, type counts and overdue meaning. Legend supplies text; no pulsation. Completing a task updates only its original due-date marker, not a carried-in date.
 
 ### CQA-13 — Ordering and >50-row paging (P0; CAL-03)
 
@@ -103,9 +104,9 @@ At 10:00 set an open task due today 09:00. Expect Due today, not Overdue. Test a
 
 Keep Oct 22 selected and advance T to Oct 23, including background/resume path. Expect selected date unchanged, exact-day C/D membership (carry-in removed), global Overdue A/B/C/D = 4, E due today on its date, and Today action targets Oct 23. No old-day label under fresh totals. Reset pagination appropriately.
 
-### CQA-16 — Journal DST and habit tracking zone (P0; CAL-04/06)
+### CQA-16 — Memory DST and device-zone grouping (P0; CAL-04/06)
 
-Use device America/New_York on Mar 8 and Nov 1, 2026. Insert F3 journals immediately before/at next local midnight and through DST gap/overlap. Expect [start, next start) grouping, each actual record once, no assumed 24-hour boundary. Keep habits in Asia/Tehran: dated schedules/counts stay on their tracking-zone civil date and UI shows that zone when different. Civil task times in a gap/overlap remain entered minutes.
+Use device America/New_York on Mar 8 and Nov 1, 2026. Insert F3 memories immediately before/at next local midnight and through DST gap/overlap. Expect [start, next start) grouping, each actual record once, no assumed 24-hour boundary. Keep habits in Asia/Tehran: they remain completely absent, without a habit-zone caption. Compare memory markers, ribbon and rows after changing device zone; each uses the same local interval. Civil task times in a gap/overlap remain entered minutes.
 
 ### CQA-17 — Add task defaults and save/cancel (P0; CAL-05)
 
@@ -117,7 +118,7 @@ On Calendar Oct 23 tap Schedule: see task-specific “Task due [Oct 23]”. Togg
 
 ### CQA-19 — Completion, repeated tap and Undo (P0; CAL-05)
 
-Complete C and repeat tap while pending. Expect one revision-safe write; after success task rows A/B/D, Tasks 3, ribbon task count 1, All 6. Undo restores C with the same original date/time and new revision; all baseline counts return. Filter/date navigation while pending does not duplicate acknowledgement or lose the recovery action.
+Complete C and repeat tap while pending. Expect one revision-safe write; after success task rows A/B/D, Tasks 3, ribbon task count 1, All 4. Undo restores C with the same original date/time and new revision; all baseline counts return. Filter/date navigation while pending does not duplicate acknowledgement or lose the recovery action.
 
 ### CQA-20 — Retry, stale revision and missing task (P0; CAL-05)
 
@@ -141,27 +142,29 @@ Start a pending completion and open a task draft; simulate/archive-restore repla
 
 ### CQA-25 — Rapid switching and late responses (P0; CAL-07)
 
-With controllable slow/failing flows select A-date → B-date, then switch filter/zone while A's response arrives late. Expect old content cleared immediately and only current request key rendered. No old-date habit/task/reflection under new header. Repeat during Load more and restore; cancellation does not become a user-visible data error.
+With controllable slow/failing flows select A-date → B-date, then switch filter/zone while A's response arrives late. Expect old content cleared immediately and only current request key rendered. No old-date task/memory under new header. Repeat during Load more and restore; cancellation does not become a user-visible data error.
 
 ### CQA-26 — Room observation and cross-surface consistency (P0; CAL-03/07)
 
-Edit/complete/reopen tasks externally via existing Tasks/widget path; change habit schedule; save/delete/promote journal; return to Calendar. Expect live counts, markers and sections converge to stored data, using full query counts and stable IDs without manual refresh. In-memory assumptions cannot mask incorrect SQL results. Check no new schema tables, version or archive changes.
+Edit/complete/reopen tasks externally via existing Tasks/widget path; create/edit/delete/move memories; mark/unmark moods/journals; change habit schedules/logs; return to Calendar. Expect task/memory counts, markers and rows converge to saved data, with no Calendar change from habit mutations, using full query counts and stable IDs without manual refresh. In-memory assumptions cannot mask incorrect SQL results. Check no new schema tables, version or archive changes.
 
-### CQA-27 — Effective habit schedules and real state (P0; CAL-06)
+### CQA-27 — Complete habit exclusion (P0; CAL-03/06)
 
-Extend F4 with mid-month schedule version change, weekday exclusions, paused/archived interval, future start, skipped H1 and target-reached H2. Expect latest effective schedule on each date; only active scheduled habits count, skip/reached still count once with real state. No habit dot from unscheduled log presence alone. Calendar has no +1; existing detail prevents future-date logging.
+Start with a habit-only day and F4 schedule versions, weekday exclusions, paused/archived intervals, future starts, skipped and target-reached states. Expect zero task/memory totals, no habit section, rows, progress, dot, legend, zone caption or habit count in TalkBack date descriptions. Create/log/skip/pause/reschedule/archive habits and return: Calendar totals/markers do not change. Inspect repository/provider/state wiring: no Calendar habit subscriptions or queries remain. More → Habits, Today habit previews and existing non-Calendar dated links still work.
 
-### CQA-28 — Reflection saved-data fidelity (P0; CAL-06)
+### CQA-28 — Memory membership, content and paging (P0; CAL-06)
 
-Extend F3 with two same-time journals, a newer journal, a journal promoted to memory, generic memory and mood, and a partial/missing-content event. Expect count of complete manual journals only, promoted journal once, deterministic latest/tie selection by occurrence/ID and preview from saved body (≤160 code points). Open exact source ID. With zero journals expect empty text and dated Write reflection; future-date validation remains explicit. No sample prose appears.
+Extend F3 with standalone memories, marked journals/moods, unmarked journals/moods, imported saved memories, tied timestamps and 123 memories on one date. Expect one count per event with a memory row; unmarked records are excluded. Order occurrence descending/ID ascending, pages 50 → 100 → 123 unique IDs with full total 123 throughout. Task and memory Load more controls are independent. Date/filter/day/zone changes reset both limits to 50; restoration does not serialize old rows.
+
+Assert title from the saved event/journal (fallback Memory) and preview preferring nonblank memory note, then journal body, mood note and event note; whitespace collapsed and ≤160 Unicode code points, including emoji. Open exact event ID through the existing memory route. Mark/unmark a journal or mood: its count changes once and source content remains intact. Move/delete memory: old/new date rows, ribbon and markers converge. Zero memories shows the honest empty state and Add memory opens selected-date capture; cancel adds nothing, save adds once, and future-date validation remains explicit. No sample prose appears.
 
 ### CQA-29 — Empty, partial failure and Retry (P0; CAL-07)
 
-Use no records, then inject independent failures for tasks, marker reads, habits and journals. Expect honest empty states only on successful empty reads; unavailable totals show dash/explanation, not zero. Healthy sections stay useful; Retry targets failed source and recovers without resetting date/mode/filter. All/Tasks/Overdue with zero matches retain usable navigation and Add task. Journal failure does not show “No reflection”.
+Use no records, then inject independent failures for tasks, task marker reads, memories and memory marker reads. Expect honest empty states only on successful empty reads; unavailable totals show dash/explanation, not zero. Healthy sections stay useful; Retry targets failed source and recovers without resetting date/mode/filter. All/Tasks/Overdue with zero matches retain usable navigation and Add task. Memory failure does not show “No memories”. Failed Load more preserves the loaded rows and offers Retry; the full count never becomes the page length.
 
 ### CQA-30 — Light/dark visual parity (P1; CAL-07)
 
-Capture F1 light and dark at identical date/window. Compare matching PNG plus HTML roles: editorial title, rounded calendar/task cards, warm/obsidian canvas, selected date, error/sage accents, count ribbon, chips, note preview, reflection and Schedule. Values derive from F1, not sample counts. Task tags/profile/dead filters/four-tab mockup shell absent deliberately; the main bar shows Today/Timeline/Calendar/Review/More in both themes and Habits is under More. Measure text ≥4.5:1 and large text/essential indicators ≥3:1. System mode follows system appearance; explicit theme persists on recreation.
+Capture F1 light and dark at identical date/window. Compare matching PNG plus HTML roles: editorial title, rounded calendar/task cards, warm/obsidian canvas, selected date, error/memory accents, count ribbon, chips, note preview, memory rows and Schedule. Values derive from F1, not sample counts. Habit/reflection blocks and their counts/dots are superseded by tasks and memories; task tags/profile/dead filters/four-tab mockup shell are absent deliberately; the main bar shows Today/Timeline/Calendar/Review/More in both themes and Habits is under More. Measure text ≥4.5:1 and large text/essential indicators ≥3:1. System mode follows system appearance; explicit theme persists on recreation.
 
 ### CQA-31 — Narrow/large text/RTL/landscape/expanded (P1; CAL-07)
 
@@ -169,7 +172,7 @@ Run the matrix below, including long Persian/French/mixed-direction task names, 
 
 ### CQA-32 — TalkBack, keyboard and regression gate (P1; CAL-01/07)
 
-Traverse grid, toggles, date arrows, chips, task title/checkbox/menu, habit/reflection links, Retry and Schedule with TalkBack and keyboard. Expect separate named actions, selected/checked/disabled/pending states, meaningful full-date/count announcements, Calendar tab selection and More → Habits entry/Back semantics, logical traversal and no focus jump after data refresh. Execute existing task due-time, Today, Timeline/Review Quick Capture, habits, navigation/language, restore and widget regressions; name any pre-existing failures and retain unresolved acceptance status.
+Traverse grid, toggles, date arrows, chips, task title/checkbox/menu, memory links and Add memory, Retry and Schedule with TalkBack and keyboard. Expect separate named actions, selected/checked/disabled/pending states, meaningful full-date/count announcements, Calendar tab selection and More → Habits entry/Back semantics, logical traversal and no focus jump after data refresh. Execute existing task due-time, Today, Timeline/Review Quick Capture, habits, navigation/language, restore and widget regressions; name any pre-existing failures and retain unresolved acceptance status.
 
 ## Required QA matrix
 
@@ -184,7 +187,7 @@ Use the representative fixture consistently. Pairwise coverage is acceptable for
 | 840 dp width × EN and FA × both themes | Reading-width cap, seven columns and usable keyboard navigation |
 | Android 12/24-hour preference × EN/FR/FA | Null/00:00/09:05/23:59 labels and editor return fidelity |
 | API 28 and API 36 | Core navigation, Room reads, create/edit/complete/Undo and locale/theme smoke on both; full automated suite on primary QA API |
-| Device/habit zones equal and different; DST gap/overlap | Civil tasks unchanged, journal grouping and habit zone context |
+| Device-zone changes; DST gap/overlap; different habit tracking zone | Civil tasks unchanged, consistent memory day grouping; habits remain absent |
 | TalkBack and hardware keyboard | Named/selected states, focus order and all actions reachable |
 | Offline airplane-mode smoke | Calendar/capture reads and writes work with no new permission/network prompt |
 

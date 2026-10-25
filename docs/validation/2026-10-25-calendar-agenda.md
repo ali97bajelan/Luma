@@ -1,62 +1,68 @@
-# Calendar & Agenda implementation handoff
+# Calendar & Agenda implementation and QA record
 
 Package date: 2026-10-25
+Scope revision source review: 2026-10-25T14:49:24+03:30 (Asia/Tehran)
 
-Handoff review: 2026-10-25T14:32:20+03:30 (Asia/Tehran)
+Status: **Tasks-and-memories implementation source complete; focused host/build/lint checks PASS; runtime acceptance pending.**
 
-Status: **Implementation source complete; QA not started; acceptance pending.**
+[Tasks](../CALENDAR_TASKS.md) · [Spec](../superpowers/specs/2026-10-25-calendar-agenda-design.md) · [Plan](../superpowers/plans/2026-10-25-calendar-agenda.md) · [QA](../CALENDAR_QA.md)
 
-This record closes CAL-I06 and opens the QA phase described in [CALENDAR_TASKS.md](../CALENDAR_TASKS.md), [the implementation plan](../superpowers/plans/2026-10-25-calendar-agenda.md), and [CALENDAR_QA.md](../CALENDAR_QA.md). “Source complete” means ready for QA. It is not evidence of compilation or runtime behavior.
+## Current scope and source identity
 
-## Revision and patch identity
+The latest user instruction replaces the original scheduled-habit/journal-reflection Calendar with scheduled tasks and saved memories only. This record supersedes the original `bf97528` source handoff and its static findings for those sections. No earlier validation result certifies this scope revision.
 
-| Item | Value |
-| --- | --- |
-| Calendar source revision reviewed | `bf97528eb74f2d6c120745b36863e29d72c50df1` |
-| Implementation base revision | `df58ff4` |
-| SHA-256 of `git diff --binary df58ff4..bf97528` at handoff | `a5078b285e8ea582487678ed3c4710908359e2aef150ac1369ba06a6befe5832` |
-| Pre-existing dirty patch SHA-256 | `e5c6fd7269885f1fbea92184efbdf84033fc64944fb5ecc96f4df84e63f634ee` |
-| Dirty patch scope | `app/build.gradle.kts`, `app/release/app-release.apk`, `app/release/output-metadata.json`; present before CAL-I06 documentation edits and excluded from this handoff |
+- Base HEAD: `29a0a8df6b8386cecb6b359f5a1a4b03fa371895`; the revised source is an uncommitted working-tree patch.
+- Pre-existing changes in `app/build.gradle.kts`, `app/release/app-release.apk` and `app/release/output-metadata.json` are preserved and excluded from this work.
+- Calendar reads tasks and memory-marked events; standalone memories and marked journals/moods count once, ordinary journals/moods and every habit are excluded.
+- Main navigation remains Today → Timeline → Calendar → Review → More. More → Habits and non-Calendar habit entry points retain existing behavior.
+- All writes use existing task/editor/memory capture routes; no schema/version/archive/permission/dependency changes.
 
-The dirty patch changes release version metadata and the release APK. It was preserved and is not part of Calendar source evidence. QA must identify the exact source patch and built APK it exercises. The Calendar source diff check `git diff --check df58ff4..bf97528` completed with no whitespace errors.
+## Implementation coverage and static review
 
-## Implementation source coverage
-
-| Task | Source status | Static review coverage |
+| Task | Source status | Review |
 | --- | --- | --- |
-| CAL-I01 | Source complete; QA pending | Civil-date bounds, month/week range rules, date membership, ordering, marker/read models and repository contracts reviewed. |
-| CAL-I02 | Source complete; QA pending | Room projections, repository mappings, task counts/paging, habit schedule projection and journal day boundaries reviewed. Database version remains 6; only Calendar DAO registration was added, with no entity, migration, schema or archive change. |
-| CAL-I03 | Source complete; QA pending | Saved date/mode/filter defaults and invalid-date fallback reviewed. Per-source request keys include applicable date/today/range/filter/zone/restore generation; `flatMapLatest` and current-key checks guard stale responses. Initial task page is 50 rows. |
-| CAL-I04 | Source complete; QA pending | Month/week grid, marker types, filters/counts, loading/error/retry states, task recovery wiring, habit/reflection sections and accessible labels reviewed. Visual and interaction behavior remains unverified. |
-| CAL-I05 | Source complete; QA pending | Five primary destinations retain the specified order; Calendar replaces Habits in slot three. More opens the retained Habits route with Back support. Existing task editor and Quick Capture call paths retain nullable/defaulted compatibility; Calendar supplies an explicit task due date. |
-| CAL-I06 | Source complete | This source review, handoff, route-ownership update and signed implementation gate. |
+| CAL-I01 | Source complete; QA pending | CalendarMemory/CalendarMemories replace reflection models; repository has only task/memory reads. Civil task/date rules retained. |
+| CAL-I02 | Source complete; QA pending | Habit queries/dependency removed. Memory marker and day-page joins use memory-row membership and device-zone boundaries; page totals/rows share a query snapshot. |
+| CAL-I03 | Source complete; QA pending | TASKS/MEMORIES sources only, independent 50-row paging, current-request protection, partial errors, reset/restore and retry wiring. |
+| CAL-I04 | Source complete; QA pending | Habit/reflection UI removed. Task/memory ribbon, All total, up to two type dots, legends, accessible counts, saved memory rows, Add memory and Load more. |
+| CAL-I05 | Source complete; QA pending | Memory rows open original IDs through existing memory route; Add memory uses existing dated capture. Habit callbacks removed from Calendar. |
+| CAL-I06 | Source complete | Scope docs revised, static file/callback/resource review and QA handoff recorded before any build/test invocation. |
 
-Reviewed source files:
+Changed production areas: `core/domain/.../calendar/CalendarModels.kt`, `CalendarRepository.kt`; `core/data/.../calendar/CalendarDao.kt`, `CalendarRows.kt`, `repository/RoomCalendarRepository.kt`, `LumaStorage.kt`; all six `ui/calendar` files; `ui/LifeOsApp.kt`; EN/FR/FA string catalogs. The plan contains the full paths.
 
-- Domain: `core/domain/src/main/kotlin/com/luma/lifeos/domain/calendar/CalendarModels.kt`, `CalendarRepository.kt`, `CalendarRules.kt`.
-- Data: `core/data/src/main/kotlin/com/luma/lifeos/data/calendar/CalendarDao.kt`, `CalendarRows.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/repository/RoomCalendarRepository.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/LumaStorage.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/db/LumaDatabase.kt`.
-- Calendar UI: `app/src/main/java/com/luma/lifeos/ui/calendar/CalendarUiState.kt`, `CalendarViewModel.kt`, `CalendarRoute.kt`, `CalendarScreen.kt`, `CalendarGrid.kt`, `CalendarAgenda.kt`.
-- Integration: `app/src/main/java/com/luma/lifeos/MainActivity.kt`, `app/src/main/java/com/luma/lifeos/ui/LifeOsApp.kt`, `app/src/main/java/com/luma/lifeos/ui/QuickCaptureSheet.kt`, `app/src/main/java/com/luma/lifeos/ui/more/MoreRoute.kt`, `app/src/main/java/com/luma/lifeos/ui/navigation/AppDestinations.kt`, `app/src/main/java/com/luma/lifeos/ui/todo/TodayTasksCard.kt`, `app/src/main/java/com/luma/lifeos/ui/todo/TodoEditorRoute.kt`.
-- Resources: `app/src/main/res/drawable/ic_calendar_schedule.xml`, `ic_more_vertical.xml`, `ic_nav_calendar.xml`, and `app/src/main/res/values/strings.xml`, `values-fr/strings.xml`, `values-fa/strings.xml`.
+Static checks: `git diff --check` passes; XML parses and all **48** `calendar_` keys match across EN/FR/FA. Searches found no old habit/journal-only Calendar interfaces, resources or callbacks. Calendar DAO/repository/state have no habit dependency. Room query compilation passed in subsequent QA; runtime observations, navigation and rendering remain pending.
 
-Static review confirmed the 56 `calendar_` resource names and the integration keys `nav_calendar_compact`, `more_habits_description` and `capture_task_due_date` have matching English, French and Persian entries. The feature scope adds no task tags, event CRUD, reminders, runtime permissions, dependencies, database entities, schema version, migration or archive format. Reference sample counts and sample journal prose are not used as application data.
+**Implementation exit gate: source complete. Gradle/build/tests/emulator NOT RUN during implementation. QA may begin after this record.**
 
-Known validation limits: no runtime, compiler, layout, accessibility, navigation, Room execution or visual result was established in this phase. No source defect was confirmed by the static review; this is not a substitute for the listed QA scenarios. Route ownership is recorded in [route-coverage.md](../luma-redesign/route-coverage.md). Existing release blockers remain separate from this Calendar gate.
+## Scope revision QA execution
 
-## Static implementation checks
+Final QA command completed 2026-10-25T14:57:17+03:30 (Asia/Tehran). Environment: Linux host, OpenJDK 17.0.20.1, Gradle 9.1.0, offline dependency resolution, debug app version 1.2.2 (5) from the pre-existing working-tree metadata. No device was installed or modified.
 
-| Check | Result | Evidence |
+Production source patch SHA-256 (`git diff --binary -- app/src/main core/domain/src/main core/data/src/main`): `fff25ca8c2d156a3678cd1aa34280e7bb0946761b7c8eb4e715345749ac7ffb3`. This excludes the preserved release metadata/APK changes and documentation/test additions.
+
+```sh
+bash gradlew --offline :core:domain:test :app:testDebugUnitTest :core:data:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug
+```
+
+Result: **BUILD SUCCESSFUL**, exit 0, 43 seconds. [Complete log](../luma-redesign/evidence/2026-10-25/calendar/host-build-lint.log).
+
+| Check | Result | Evidence / limits |
 | --- | --- | --- |
-| Spec-to-source and changed-file review | PASS | CAL-01–07 traced to I01–I06 source and the plan's file/interface map. |
-| Public signatures and existing call-site compatibility | PASS | Nullable/defaulted provider and More callback, existing task editor routes, and trailing nullable Quick Capture scheduling parameters reviewed in source. |
-| Saved state, request keys, null handling and date bounds | PASS | `CalendarViewModel`, domain guards/rules and grid date construction reviewed. |
-| Locale resource key parity | PASS | Static XML name comparison: 56 `calendar_` keys plus three Calendar integration keys in each of `values`, `values-fr` and `values-fa`; no missing or extra names. |
-| Schema, archive, permission and dependency scope | PASS | Implementation diff review; database version remains 6 and no new schema/archive/permission/dependency change was found. |
-| Calendar implementation whitespace check | PASS | `git diff --check df58ff4..bf97528` exited 0. |
+| Host suites | PASS | 130 domain + 284 app + 29 data = **443 tests**, zero failures/errors/skips. |
+| Calendar state regressions | PASS | Five tests: task/memory All total vs exact ribbon; independent 50→100→123 memory paging; failed Load more and Retry; unavailable counts; immediate clear/date reset. [JUnit XML](../luma-redesign/evidence/2026-10-25/calendar/calendar-state-tests.xml). |
+| Memory preview regressions | PASS | Three tests: Unicode-whitespace marker fallback, source preference/normalization and emoji-safe limit. Two failed under the old selection rule, then all passed after correction. [Failing run](../luma-redesign/evidence/2026-10-25/calendar/preview-regression-red.log), [passing XML](../luma-redesign/evidence/2026-10-25/calendar/memory-preview-tests.xml). |
+| Production/Room query compilation | PASS | Current app/data Kotlin and Room KSP compile; no database schema/version change. |
+| App and test APK assembly | PASS | `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, `:core:data:assembleDebugAndroidTest`. This does not execute instrumentation. |
+| Lint | PASS with warnings | App: 0 errors/fatals, 143 warnings and 8 information entries. Data: 0 errors/fatals/warnings. Reports: `app/build/reports/lint-results-debug.html`, `core/data/build/reports/lint-results-debug.html`. No blanket warning waiver or clean-baseline comparison claimed. |
+| Focused CalendarProjectionTest | COMPILED; NOT RUN | Four Room scenarios: marked/unmarked membership and preview, habit-only exclusion, memory paging/ties/emoji and DST boundaries. |
+| Device discovery / connected execution | BLOCKED | Sandbox ADB daemon startup failed: `could not install *smartsocket* listener: Operation not permitted`. No confirmed isolated target; no install/reinstall or connected tests attempted. |
+| Full scenarios / visual/accessibility matrix | NOT RUN | No runtime, TalkBack, screenshots, IME or locale/theme/window acceptance is inferred from host tests. |
 
-## QA checks — all NOT RUN
+QA corrections: the first app suite exposed missing French `many` forms in Calendar plurals; all three current Calendar plurals now provide them and TranslationCatalogTest passes. Independent code review found whitespace-only imported/restored memory marker notes masking valid journal/mood text; bounded source previews now choose the first Unicode-normalized nonempty candidate in Kotlin, with the red→green host regression above. The review found no other substantive correctness issue. Delayed/stale-flow, zone/day/restore paging, real task SQL carry-in/order and imported-record device fixtures remain scenario coverage obligations.
 
-Implementation-phase rule: **Gradle/build/tests/emulator NOT RUN during implementation.** No test files were authored or executed, and no app was installed. Every Calendar QA scenario and required matrix cell remains NOT RUN; Calendar acceptance remains PENDING.
+The complete pre-existing Calendar QA package remains open; focused revision checks do not certify all scenarios. Each scenario below stays NOT RUN until its complete expected behavior is exercised.
+
+## Scenario results
 
 | Scenario | Result |
 | --- | --- |
@@ -75,7 +81,7 @@ Implementation-phase rule: **Gradle/build/tests/emulator NOT RUN during implemen
 | CQA-13 — Ordering and >50-row paging | NOT RUN |
 | CQA-14 — Civil due times and date-based overdue | NOT RUN |
 | CQA-15 — Midnight/foreground refresh | NOT RUN |
-| CQA-16 — Journal DST and habit tracking zone | NOT RUN |
+| CQA-16 — Memory DST and device-zone grouping | NOT RUN |
 | CQA-17 — Add task defaults and save/cancel | NOT RUN |
 | CQA-18 — Dated Schedule versus existing Quick Capture | NOT RUN |
 | CQA-19 — Completion, repeated tap and Undo | NOT RUN |
@@ -86,52 +92,13 @@ Implementation-phase rule: **Gradle/build/tests/emulator NOT RUN during implemen
 | CQA-24 — Restore invalidation | NOT RUN |
 | CQA-25 — Rapid switching and late responses | NOT RUN |
 | CQA-26 — Room observation and cross-surface consistency | NOT RUN |
-| CQA-27 — Effective habit schedules and real state | NOT RUN |
-| CQA-28 — Reflection saved-data fidelity | NOT RUN |
+| CQA-27 — Complete habit exclusion | NOT RUN |
+| CQA-28 — Memory membership, content and paging | NOT RUN |
 | CQA-29 — Empty, partial failure and Retry | NOT RUN |
 | CQA-30 — Light/dark visual parity | NOT RUN |
 | CQA-31 — Narrow/large text/RTL/landscape/expanded | NOT RUN |
 | CQA-32 — TalkBack, keyboard and regression gate | NOT RUN |
 
-| Required QA matrix cell | Result |
-| --- | --- |
-| EN/FR/FA × Light/Dark at 411 × 891 dp, font scale 1.0 | NOT RUN |
-| System theme and light→dark→recreate | NOT RUN |
-| 320 dp × font scale 2.0 × EN/FR/FA × Light/Dark | NOT RUN |
-| 411 dp landscape × font scale 2.0 × Persian RTL × Light/Dark | NOT RUN |
-| 840 dp width × EN and FA × Light/Dark | NOT RUN |
-| Android 12/24-hour preference × EN/FR/FA | NOT RUN |
-| API 28 and API 36 | NOT RUN |
-| Matching and different device/habit zones; DST gap/overlap | NOT RUN |
-| TalkBack and hardware keyboard | NOT RUN |
-| Offline airplane-mode smoke | NOT RUN |
-| Host tests, production compile, APK assembly, Android test source compile and lint | NOT RUN |
-| Room and Compose/instrumentation suites and existing regressions | NOT RUN |
-| Manual screenshots, contrast and target-bound measurements | NOT RUN |
+All required locale/theme/window/font/API/accessibility/IME/offline matrix cells remain NOT RUN until evidence is recorded. Use an isolated synthetic QA install for connected tests; no existing personal app data may be replaced. Evidence directory: `docs/luma-redesign/evidence/<actual-run-date>/calendar/`.
 
-### QA run fields
-
-Fill these fields for each actual run; the values below are pending, not inferred from this handoff.
-
-| Field | Value |
-| --- | --- |
-| QA execution timestamp | NOT RUN |
-| Tested source revision and dirty patch | Record per run |
-| Build variant, APK path and APK SHA-256 | NOT RUN |
-| Device/emulator, API, Android version and install state | NOT RUN |
-| Locale, app/system theme, width, orientation, font scale and IME | NOT RUN per matrix cell |
-| Device zone, habit tracking zone and 12/24-hour preference | NOT RUN per matrix cell |
-| Fixture/date/record IDs and executed steps | NOT RUN per scenario |
-| Expected result, actual result and defect ID | NOT RUN per scenario |
-| Command/test counts/logs and screenshot/accessibility evidence | NOT RUN |
-| Planned visual evidence directory | `docs/luma-redesign/evidence/<actual-run-date>/calendar/` |
-
-## Design decisions and QA entry gate
-
-- Calendar uses the user's selected five-tab order and replaces Habits in the third slot. The existing Habits destination remains under More and preserves old route callers.
-- Stored task due dates/times remain floating civil values. Calendar is a read-only projection for tasks, scheduled habits and saved manual journals; all writes use existing task/editor/capture paths.
-- The UI uses real saved counts and reflection text. It omits mockup-only task tags, sample values, sample quotes, external events, recurrence and reminders.
-- Database version 6, task and journal storage formats, archive format and permissions remain unchanged by Calendar source work.
-- QA should use the isolated environment defined in [CALENDAR_QA.md](../CALENDAR_QA.md), record actual execution timestamps and exact build/source patch, and leave unavailable checks NOT RUN or BLOCKED.
-
-**Implementation gate: SIGNED — CAL-I01–I06 source complete; QA may start. Calendar runtime and release acceptance remain PENDING.**
+**Release acceptance: PENDING.** Static review and source completion are not runtime evidence.

@@ -54,7 +54,7 @@ class LumaStorage(context: Context) {
     val journals: JournalRepository = RoomJournalRepository(database)
     val memories: MemoryRepository = RoomMemoryRepository(database)
     val habits: HabitRepository = RoomHabitRepository(database)
-    val calendar: CalendarRepository = RoomCalendarRepository(database, habits)
+    val calendar: CalendarRepository = RoomCalendarRepository(database)
     val todos: TodoRepository = RoomTodoRepository(database)
     val widgets: WidgetStore = RoomWidgetStore(database)
     val places: PlaceRepository = RoomPlaceRepository(database)

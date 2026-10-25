@@ -51,6 +51,7 @@ internal fun CalendarScreen(
     onFilter: (CalendarFilter) -> Unit,
     onRetry: (CalendarSource) -> Unit,
     onLoadMore: () -> Unit,
+    onLoadMoreMemories: () -> Unit,
     onTask: (UUID) -> Unit,
     onDeleteTask: (UUID) -> Unit,
     onAddTask: (LocalDate) -> Unit,
@@ -58,10 +59,8 @@ internal fun CalendarScreen(
     onSetCompleted: (TodoTask, Boolean) -> Unit,
     onRetryTask: (UUID) -> Unit,
     onDismissTaskError: (UUID) -> Unit,
-    onHabit: (UUID, LocalDate) -> Unit,
-    onJournal: (EventId) -> Unit,
-    onWriteReflection: (LocalDate) -> Unit,
-    onTimeline: (LocalDate) -> Unit,
+    onMemory: (EventId) -> Unit,
+    onAddMemory: (LocalDate) -> Unit,
     onAllTasks: () -> Unit,
 ) {
     var fabHeight by remember { mutableStateOf(0.dp) }
@@ -110,14 +109,13 @@ internal fun CalendarScreen(
                             onAddTask = onAddTask,
                             onAllTasks = onAllTasks,
                             onLoadMore = onLoadMore,
+                            onLoadMoreMemories = onLoadMoreMemories,
                             onSetCompleted = onSetCompleted,
                             onRetry = onRetry,
                             onRetryTask = onRetryTask,
                             onDismissTaskError = onDismissTaskError,
-                            onHabit = onHabit,
-                            onJournal = onJournal,
-                            onWriteReflection = onWriteReflection,
-                            onTimeline = onTimeline,
+                            onMemory = onMemory,
+                            onAddMemory = onAddMemory,
                         )
                     }
                 }

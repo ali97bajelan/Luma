@@ -6,7 +6,7 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 const val CALENDAR_MAX_RANGE_DAYS = 42
-const val CALENDAR_REFLECTION_PREVIEW_CODE_POINTS = 160
+const val CALENDAR_MEMORY_PREVIEW_CODE_POINTS = 160
 
 enum class CalendarMode {
     MONTH,
@@ -38,19 +38,19 @@ data class CalendarTaskMarker(val count: Int, val overdue: Boolean) {
     }
 }
 
-data class CalendarReflection(val id: EventId, val title: String?, val preview: String) {
+data class CalendarMemory(val id: EventId, val title: String?, val preview: String) {
     init {
-        require(preview.codePointCount(0, preview.length) <= CALENDAR_REFLECTION_PREVIEW_CODE_POINTS) {
-            "Calendar reflection preview cannot exceed $CALENDAR_REFLECTION_PREVIEW_CODE_POINTS code points"
+        require(preview.codePointCount(0, preview.length) <= CALENDAR_MEMORY_PREVIEW_CODE_POINTS) {
+            "Calendar memory preview cannot exceed $CALENDAR_MEMORY_PREVIEW_CODE_POINTS code points"
         }
     }
 }
 
-data class CalendarReflections(val total: Int, val latest: CalendarReflection?) {
+data class CalendarMemories(val total: Int, val items: List<CalendarMemory>) {
     init {
-        require(total >= 0) { "Calendar reflection total cannot be negative" }
-        require((total == 0) == (latest == null)) {
-            "An empty calendar reflection result must have no latest reflection"
+        require(total >= items.size) { "Calendar memory total cannot be smaller than its page" }
+        require((total == 0) == items.isEmpty()) {
+            "Only an empty calendar memory result may have no rows"
         }
     }
 }

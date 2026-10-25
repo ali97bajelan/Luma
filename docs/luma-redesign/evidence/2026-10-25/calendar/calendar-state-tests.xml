@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.luma.lifeos.ui.calendar.CalendarViewModelTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-25T11:26:28.157Z" hostname="bajelan-ThinkBook-16-G6-IRL" time="0.138">
+  <properties/>
+  <testcase name="memoryPagesKeepFullTotalsAndDoNotExpandTaskPages" classname="com.luma.lifeos.ui.calendar.CalendarViewModelTest" time="0.095"/>
+  <testcase name="allItemsCountsScheduledTasksAndMemoriesWhileRibbonUsesExactDateTasks" classname="com.luma.lifeos.ui.calendar.CalendarViewModelTest" time="0.015"/>
+  <testcase name="failedMemoryLoadMoreRetainsRowsAndRetryRecoversWithoutChangingSelection" classname="com.luma.lifeos.ui.calendar.CalendarViewModelTest" time="0.014"/>
+  <testcase name="unavailableMemoryMarkersNeverBecomeZeroOrAFalseAllItemsTotal" classname="com.luma.lifeos.ui.calendar.CalendarViewModelTest" time="0.008"/>
+  <testcase name="dateSwitchClearsOldMemoryRowsImmediatelyAndResetsIndependentPaging" classname="com.luma.lifeos.ui.calendar.CalendarViewModelTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

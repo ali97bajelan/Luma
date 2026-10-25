@@ -318,17 +318,8 @@ fun LifeOsApp(
                                         widgetQuickCapture = false
                                         capturing = true
                                     },
-                                    onHabit = { id, date -> navController.navigate("habit_detail/$id/$date") },
-                                    onJournal = { id -> navController.navigate("journal_detail/$id") },
-                                    onWriteReflection = { date -> openCapture("journal", date) },
-                                    onTimeline = { date ->
-                                        selectedDate = date.toString()
-                                        navController.navigate(PrimaryDestination.TIMELINE.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
+                                    onMemory = { id -> navController.navigate("memory?eventId=$id") },
+                                    onAddMemory = { date -> openCapture("memory", date) },
                                     onAllTasks = { navController.navigate(AppRoutes.TASKS) },
                                     onTaskActionResult = { result ->
                                         destinationEntry.savedStateHandle.set(

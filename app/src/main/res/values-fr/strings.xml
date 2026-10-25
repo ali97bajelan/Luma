@@ -1069,7 +1069,7 @@
     <string name="calendar_tab">Calendrier</string>
     <string name="calendar_unavailable">Les données du calendrier sont momentanément indisponibles.</string>
     <string name="calendar_heading">Calendrier et agenda</string>
-    <string name="calendar_subtitle">Agenda de la journée, habitudes planifiées et tâches importantes</string>
+    <string name="calendar_subtitle">Tâches planifiées et souvenirs enregistrés</string>
     <string name="calendar_month">Mois</string>
     <string name="calendar_week">Semaine</string>
     <string name="calendar_previous_month">Mois précédent</string>
@@ -1080,11 +1080,9 @@
     <string name="calendar_day_today">Aujourd’hui</string>
     <string name="calendar_day_selected">Sélectionné</string>
     <string name="calendar_day_regular">Date</string>
-    <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s. %5$s.</string>
+    <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s.</string>
     <string name="calendar_count_unavailable">Nombre indisponible</string>
     <string name="calendar_legend_tasks">Tâches</string>
-    <string name="calendar_legend_habits">Habitudes</string>
-    <string name="calendar_legend_journals">Journaux</string>
     <string name="calendar_legend_overdue">En retard</string>
     <string name="calendar_filter_all">Tout</string>
     <string name="calendar_filter_tasks">Tâches</string>
@@ -1105,36 +1103,27 @@
     <string name="calendar_task_due_on_time">%1$s · %2$s</string>
     <string name="calendar_task_overdue">En retard · %1$s</string>
     <string name="calendar_task_menu_description">Autres actions pour %1$s</string>
-    <string name="calendar_habits_heading">Habitudes planifiées</string>
-    <string name="calendar_habits_loading">Chargement des habitudes planifiées…</string>
-    <string name="calendar_habits_error">Impossible de charger les habitudes planifiées.</string>
-    <string name="calendar_habits_empty">Aucune habitude planifiée à cette date.</string>
-    <string name="calendar_habit_tracking_zone">Fuseau de suivi : %1$s</string>
-    <string name="calendar_reflection_heading">Réflexion du jour</string>
-    <string name="calendar_reflection_loading">Chargement de la réflexion…</string>
-    <string name="calendar_reflection_error">Impossible de charger la réflexion.</string>
-    <string name="calendar_reflection_empty">Aucune réflexion pour cette date.</string>
-    <string name="calendar_reflection_default_title">Journal</string>
-    <string name="calendar_write_reflection">Écrire une réflexion</string>
     <string name="calendar_schedule">Planifier</string>
     <plurals name="calendar_tasks_count">
         <item quantity="one">%1$d tâche</item>
+        <item quantity="many">%1$d tâches</item>
         <item quantity="other">%1$d tâches</item>
-    </plurals>
-    <plurals name="calendar_habits_count">
-        <item quantity="one">%1$d habitude</item>
-        <item quantity="other">%1$d habitudes</item>
-    </plurals>
-    <plurals name="calendar_journals_count">
-        <item quantity="one">%1$d journal</item>
-        <item quantity="other">%1$d journaux</item>
     </plurals>
     <plurals name="calendar_overdue_included">
         <item quantity="one">Inclut %1$d tâche en retard</item>
+        <item quantity="many">Inclut %1$d tâches en retard</item>
         <item quantity="other">Inclut %1$d tâches en retard</item>
     </plurals>
-    <plurals name="calendar_view_all_journals">
-        <item quantity="one">Voir tous les journaux</item>
-        <item quantity="other">Voir les %1$d journaux</item>
+    <string name="calendar_legend_memories">Souvenirs</string>
+    <string name="calendar_memories_heading">Souvenirs</string>
+    <string name="calendar_memories_loading">Chargement des souvenirs…</string>
+    <string name="calendar_memories_error">Impossible de charger les souvenirs.</string>
+    <string name="calendar_memories_empty">Aucun souvenir pour cette date.</string>
+    <string name="calendar_memory_default_title">Souvenir</string>
+    <string name="calendar_add_memory">Ajouter un souvenir</string>
+    <plurals name="calendar_memories_count">
+        <item quantity="one">%1$d souvenir</item>
+        <item quantity="many">%1$d souvenirs</item>
+        <item quantity="other">%1$d souvenirs</item>
     </plurals>
 </resources>
