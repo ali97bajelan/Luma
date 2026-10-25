@@ -20,7 +20,7 @@ IDs are local to Calendar and do not renumber T01–T38, TD or optional-feature 
 
 | ID | Priority | Status | Deliverable | Depends on | Completion evidence |
 | --- | --- | --- | --- | --- | --- |
-| CAL-I01 | P0 | Not started | Pure civil-date/period rules, marker/read models and CalendarRepository contract | Existing task/habit models | Source and interface review against CAL-02–04 |
+| CAL-I01 | P0 | Source complete; QA pending | Pure civil-date/period rules, marker/read models and CalendarRepository contract | Existing task/habit models | Source and interface review against CAL-02–04 |
 | CAL-I02 | P0 | Not started | Bounded Room task/habit/journal projections, live counts and provider wiring | I01 | SQL/source review; no schema/archive change; no build run |
 | CAL-I03 | P0 | Not started | Saved date/mode/filter, paging, per-source state and stale-response/restore protection | I01, I02 contracts | State transition/source review; no tests run |
 | CAL-I04 | P0 | Not started | Month/week UI, agenda/filter/counts, completion recovery, habits/reflection and light/dark/localized resources | I03, existing mutation/feedback code | Reference-to-source and callback review |
