@@ -12,8 +12,8 @@ android {
         applicationId = "com.luma.lifeos"
         minSdk = 28
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 5
+        versionName = "1.2.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
