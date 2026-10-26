@@ -1,5 +1,7 @@
 # Calendar & Agenda QA scenarios
 
+F07 adds cross-screen accessibility changes and its required matrix in [F07 QA scenarios](feature-roadmap/07-accessibility-qa.md), with source findings in [the F07 handoff ledger](validation/roadmap-07-accessibility-findings.md). Those F07 scenarios remain **NOT RUN**; this document does not certify the changed source.
+
 Prepared: 2026-10-25  
 Status: **CAL-Q01 PASS (456 host tests; build, test APK assembly, instrumentation compilation and lint). CAL-Q02 connected checks BLOCKED before tests ran; CAL-Q03 manual matrix BLOCKED. Full scenario acceptance PENDING.** See the [execution record](validation/2026-10-25-calendar-agenda.md) for evidence and unrun checks.
 

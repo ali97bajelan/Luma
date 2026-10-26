@@ -2,7 +2,7 @@
 
 Date: 26 October 2026 · Source: [prioritized proposal](FEATURE_IMPROVEMENT_PROPOSAL_2026-10-26.md)
 
-This package contains **14 specifications, 14 implementation plans and 14 QA scenario documents**, ordered by the proposal’s importance ranking. The task table records current status: F04's source phase has since completed, while its QA and all other listed tasks remain pending. No F04 Gradle/emulator/device validation has been performed.
+This package contains **14 specifications, 14 implementation plans and 14 QA scenario documents**, ordered by the proposal’s importance ranking. The task table records current status: F04 and F07 source phases are complete; QA remains pending for both and all other listed tasks. No F04 or F07 Gradle/emulator/device validation has been performed.
 
 ## Required two-phase workflow
 
@@ -25,7 +25,7 @@ New defaults in the specs are proposed choices for later review, not prior user 
 | F04 | P1 | Optional habit and task reminders | [Spec](superpowers/specs/2026-10-26-roadmap-04-reminders.md) | [Plan](superpowers/plans/2026-10-26-roadmap-04-reminders.md) | [QA scenarios](feature-roadmap/04-reminders-qa.md) | SOURCE COMPLETE — QA PENDING | NOT RUN |
 | F05 | P1 | Password-protected portable backups | [Spec](superpowers/specs/2026-10-26-roadmap-05-encrypted-backups.md) | [Plan](superpowers/plans/2026-10-26-roadmap-05-encrypted-backups.md) | [QA scenarios](feature-roadmap/05-encrypted-backups-qa.md) | PENDING | NOT RUN |
 | F06 | P1 | Optional app lock and private previews | [Spec](superpowers/specs/2026-10-26-roadmap-06-app-lock.md) | [Plan](superpowers/plans/2026-10-26-roadmap-06-app-lock.md) | [QA scenarios](feature-roadmap/06-app-lock-qa.md) | PENDING | NOT RUN |
-| F07 | P1 | Accessibility and adaptive layout gaps | [Spec](superpowers/specs/2026-10-26-roadmap-07-accessibility.md) | [Plan](superpowers/plans/2026-10-26-roadmap-07-accessibility.md) | [QA scenarios](feature-roadmap/07-accessibility-qa.md) | PENDING | NOT RUN |
+| F07 | P1 | Accessibility and adaptive layout gaps | [Spec](superpowers/specs/2026-10-26-roadmap-07-accessibility.md) | [Plan](superpowers/plans/2026-10-26-roadmap-07-accessibility.md) | [QA scenarios](feature-roadmap/07-accessibility-qa.md) | SOURCE COMPLETE — QA PENDING | NOT RUN |
 | F08 | P2 | Recurring tasks | [Spec](superpowers/specs/2026-10-26-roadmap-08-recurring-tasks.md) | [Plan](superpowers/plans/2026-10-26-roadmap-08-recurring-tasks.md) | [QA scenarios](feature-roadmap/08-recurring-tasks-qa.md) | PENDING | NOT RUN |
 | F09 | P2 | Backup freshness and in-app nudges | [Spec](superpowers/specs/2026-10-26-roadmap-09-backup-freshness.md) | [Plan](superpowers/plans/2026-10-26-roadmap-09-backup-freshness.md) | [QA scenarios](feature-roadmap/09-backup-freshness-qa.md) | PENDING | NOT RUN |
 | F10 | P2 | Monthly reflection and review notes | [Spec](superpowers/specs/2026-10-26-roadmap-10-monthly-review.md) | [Plan](superpowers/plans/2026-10-26-roadmap-10-monthly-review.md) | [QA scenarios](feature-roadmap/10-monthly-review-qa.md) | PENDING | NOT RUN |

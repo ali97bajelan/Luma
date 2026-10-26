@@ -314,7 +314,8 @@ private fun HabitOpenTarget(
         stringResource(R.string.habit_progress_accessibility, day.habit.name, day.count, it, unit)
     }
     val statusLabel = stringResource(stateLabel(day))
-    val accessibilityLabel = listOfNotNull(openLabel, progressLabel, statusLabel).joinToString(". ")
+    val accessibilityLabel = listOfNotNull(progressLabel ?: openLabel, statusLabel)
+        .joinToString(stringResource(R.string.accessibility_label_separator))
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.primary) {
         Column(
             modifier = modifier.heightIn(min = 48.dp).clickable(

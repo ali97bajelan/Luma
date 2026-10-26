@@ -937,6 +937,8 @@
     <string name="todo_status_completed">Completed task</string>
     <string name="todo_mark_complete">Mark complete</string>
     <string name="todo_reopen">Reopen task</string>
+    <string name="todo_checkbox_accessibility">%1$s. %2$s</string>
+    <string name="accessibility_label_separator">" · "</string>
     <string name="todo_save_before_complete">Save changes before completing this task.</string>
     <string name="todo_save_before_reopen">Save changes before reopening this task.</string>
     <string name="todo_completing">Completing…</string>
@@ -1063,6 +1065,8 @@
     <string name="calendar_day_selected">Selected</string>
     <string name="calendar_day_regular">Date</string>
     <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s.</string>
+    <string name="calendar_day_has_overdue_tasks">Has overdue tasks</string>
+    <string name="calendar_day_no_overdue_tasks">No overdue tasks</string>
     <string name="calendar_count_unavailable">Count unavailable</string>
     <string name="calendar_legend_tasks">Tasks</string>
     <string name="calendar_legend_overdue">Overdue</string>

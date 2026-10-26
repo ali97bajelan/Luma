@@ -1,6 +1,6 @@
 # F07 — Accessibility and adaptive layout gaps specification
 
-Date: 26 October 2026 · Priority: **P1** · Status: **DRAFT — NOT IMPLEMENTED / NOT VALIDATED**
+Date: 26 October 2026 · Priority: **P1** · Status: **SOURCE COMPLETE — QA PENDING**
 
 [Roadmap](../../FEATURE_ROADMAP_2026-10-26.md) · [Spec](2026-10-26-roadmap-07-accessibility.md) · [Plan](../plans/2026-10-26-roadmap-07-accessibility.md) · [QA scenarios](../../feature-roadmap/07-accessibility-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 

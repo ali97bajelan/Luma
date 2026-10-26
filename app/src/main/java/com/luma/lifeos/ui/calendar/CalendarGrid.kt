@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.Icon
@@ -28,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -318,14 +321,6 @@ private fun CalendarDateCell(
         else -> MaterialTheme.colorScheme.onSurface
     }
     val border = if (isToday && !isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
-    val status = stringResource(
-        when {
-            isToday && isSelected -> R.string.calendar_day_today_selected
-            isToday -> R.string.calendar_day_today
-            isSelected -> R.string.calendar_day_selected
-            else -> R.string.calendar_day_regular
-        },
-    )
     val dateLabel = date.format(displayTime.date(FormatStyle.FULL))
     val taskCount = when (val source = markerState.taskMarkers) {
         is CalendarDataState.Ready -> pluralStringResource(
@@ -339,13 +334,20 @@ private fun CalendarDateCell(
         )
         else -> stringResource(R.string.calendar_count_unavailable)
     }
+    val overdueStatus = when (markerState.taskMarkers) {
+        is CalendarDataState.Ready -> stringResource(
+            if (markers.overdue) R.string.calendar_day_has_overdue_tasks else R.string.calendar_day_no_overdue_tasks,
+        )
+        else -> stringResource(R.string.calendar_count_unavailable)
+    }
     val description = stringResource(
         R.string.calendar_day_accessibility,
         dateLabel,
-        status,
         taskCount,
         memoryCount,
+        overdueStatus,
     )
+    val todayStatus = stringResource(R.string.calendar_day_today)
     val locale = displayTime.locale
     val number = remember(date.dayOfMonth, locale) { java.text.NumberFormat.getIntegerInstance(locale).format(date.dayOfMonth) }
     val bringIntoViewRequester = remember(date) { BringIntoViewRequester() }
@@ -359,7 +361,7 @@ private fun CalendarDateCell(
             .clip(CircleShape)
             .semantics {
                 contentDescription = description
-                stateDescription = status
+                if (isToday) stateDescription = todayStatus
                 selected = isSelected
             }
             .testTag("calendar_day_${date}"),
@@ -380,16 +382,28 @@ private fun CalendarDateCell(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (markers.tasks > 0) MarkerDot(if (markers.overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-                if (markers.memories > 0) MarkerDot(MaterialTheme.colorScheme.secondary)
+                if (markers.tasks > 0) MarkerDot(
+                    kind = if (markers.overdue) CalendarMarkerKind.OVERDUE else CalendarMarkerKind.TASK,
+                    color = if (markers.overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                )
+                if (markers.memories > 0) MarkerDot(CalendarMarkerKind.MEMORY, MaterialTheme.colorScheme.secondary)
             }
         }
     }
 }
 
+private enum class CalendarMarkerKind { TASK, MEMORY, OVERDUE }
+
+private fun calendarMarkerShape(kind: CalendarMarkerKind): Shape = when (kind) {
+    CalendarMarkerKind.TASK -> RoundedCornerShape(1.dp)
+    CalendarMarkerKind.MEMORY -> CircleShape
+    CalendarMarkerKind.OVERDUE -> CutCornerShape(percent = 50)
+}
+
 @Composable
-private fun MarkerDot(color: androidx.compose.ui.graphics.Color) {
-    Surface(Modifier.size(5.dp), shape = CircleShape, color = color, content = {})
+private fun MarkerDot(kind: CalendarMarkerKind, color: androidx.compose.ui.graphics.Color) {
+    val size = if (kind == CalendarMarkerKind.OVERDUE) 7.dp else 5.dp
+    Surface(Modifier.size(size), shape = calendarMarkerShape(kind), color = color, content = {})
 }
 
 @Composable
@@ -399,16 +413,16 @@ private fun CalendarMarkerLegend() {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LegendItem(MaterialTheme.colorScheme.primary, R.string.calendar_legend_tasks)
-        LegendItem(MaterialTheme.colorScheme.secondary, R.string.calendar_legend_memories)
-        LegendItem(MaterialTheme.colorScheme.error, R.string.calendar_legend_overdue)
+        LegendItem(CalendarMarkerKind.TASK, MaterialTheme.colorScheme.primary, R.string.calendar_legend_tasks)
+        LegendItem(CalendarMarkerKind.MEMORY, MaterialTheme.colorScheme.secondary, R.string.calendar_legend_memories)
+        LegendItem(CalendarMarkerKind.OVERDUE, MaterialTheme.colorScheme.error, R.string.calendar_legend_overdue)
     }
 }
 
 @Composable
-private fun LegendItem(color: androidx.compose.ui.graphics.Color, label: Int) {
+private fun LegendItem(kind: CalendarMarkerKind, color: androidx.compose.ui.graphics.Color, label: Int) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Surface(Modifier.size(8.dp), shape = CircleShape, color = color, content = {})
+        Surface(Modifier.size(9.dp), shape = calendarMarkerShape(kind), color = color, content = {})
         Text(stringResource(label), style = MaterialTheme.typography.labelSmall, maxLines = 1)
     }
 }

@@ -38,7 +38,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -165,6 +164,7 @@ private fun CalendarCountPill(
 ) {
     val labelText = stringResource(label)
     val valueText = count?.let { pluralStringResource(plurals, it, it) } ?: stringResource(R.string.calendar_count_unavailable)
+    val separator = stringResource(R.string.accessibility_label_separator)
     Surface(
         modifier = modifier.heightIn(min = 48.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -172,7 +172,9 @@ private fun CalendarCountPill(
     ) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)
-                .semantics { contentDescription = "$labelText. $valueText" },
+                .semantics {
+                    contentDescription = "$labelText$separator$valueText"
+                },
             verticalArrangement = Arrangement.Center,
         ) {
             Text(labelText, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -375,8 +377,9 @@ private fun CalendarTaskRow(
     val rowError = actions.rowErrors[task.id]
     val blocked = rowError == TodoListRowError.CONFLICT || rowError == TodoListRowError.MISSING
     val completionLabel = stringResource(if (task.isCompleted) R.string.todo_reopen else R.string.todo_mark_complete)
-    val stateLabel = stringResource(if (task.isCompleted) R.string.todo_status_completed else R.string.todo_status_open)
+    val completionDescription = stringResource(R.string.todo_checkbox_accessibility, task.title, completionLabel)
     val menuDescription = stringResource(R.string.calendar_task_menu_description, task.title)
+    val separator = stringResource(R.string.accessibility_label_separator)
     val dateBadge = taskDateBadge(task, today, displayTime)
     val dueDate = requireNotNull(task.dueDate)
     val taskFocus = remember(task.id) { FocusRequester() }
@@ -392,8 +395,7 @@ private fun CalendarTaskRow(
                 onCheckedChange = onSetCompleted,
                 enabled = !pending && !hasPendingIntent && !blocked && !task.isCompleted,
                 modifier = Modifier.size(48.dp).semantics {
-                    contentDescription = "${task.title}. $completionLabel"
-                    stateDescription = stateLabel
+                    contentDescription = completionDescription
                 }.testTag("calendar_task_complete_${task.id}"),
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -402,7 +404,8 @@ private fun CalendarTaskRow(
                     enabled = rowError != TodoListRowError.MISSING,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).focusRequester(taskFocus)
                         .semantics {
-                            contentDescription = listOfNotNull(task.title, dateBadge, task.note).joinToString(". ")
+                            contentDescription = listOfNotNull(task.title, dateBadge, task.note)
+                                .joinToString(separator)
                         }.testTag("calendar_task_open_${task.id}"),
                 ) {
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.Start) {

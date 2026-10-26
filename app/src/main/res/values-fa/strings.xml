@@ -938,6 +938,8 @@
     <string name="todo_status_completed">کار تکمیل‌شده</string>
     <string name="todo_mark_complete">تکمیل کار</string>
     <string name="todo_reopen">بازگشایی کار</string>
+    <string name="todo_checkbox_accessibility">%1$s؛ %2$s</string>
+    <string name="accessibility_label_separator">"، "</string>
     <string name="todo_save_before_complete">پیش از تکمیل این کار، تغییرات را ذخیره کنید.</string>
     <string name="todo_save_before_reopen">پیش از بازگشایی این کار، تغییرات را ذخیره کنید.</string>
     <string name="todo_completing">در حال تکمیل…</string>
@@ -1063,7 +1065,9 @@
     <string name="calendar_day_today">امروز</string>
     <string name="calendar_day_selected">انتخاب‌شده</string>
     <string name="calendar_day_regular">تاریخ</string>
-    <string name="calendar_day_accessibility">%1$s. %2$s. %3$s. %4$s.</string>
+    <string name="calendar_day_accessibility">%1$s، %2$s، %3$s، %4$s.</string>
+    <string name="calendar_day_has_overdue_tasks">دارای کارهای عقب‌افتاده</string>
+    <string name="calendar_day_no_overdue_tasks">بدون کار عقب‌افتاده</string>
     <string name="calendar_count_unavailable">تعداد در دسترس نیست</string>
     <string name="calendar_legend_tasks">کارها</string>
     <string name="calendar_legend_overdue">عقب‌افتاده</string>

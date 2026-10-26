@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -63,7 +64,7 @@ internal fun EditorActionRow(
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val availableWidth = maxWidth
-        if (maxWidth < 360.dp) {
+        if (maxWidth < 360.dp || LocalDensity.current.fontScale >= 1.5f) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 secondaryAction?.invoke(Modifier.fillMaxWidth().heightIn(min = 48.dp))
                 primaryAction(Modifier.fillMaxWidth().heightIn(min = 48.dp))

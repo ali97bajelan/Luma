@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaSectionSurface
@@ -55,6 +54,11 @@ internal fun TodoRow(
     val checkboxDescription = stringResource(
         if (task.isCompleted) R.string.todo_reopen else R.string.todo_mark_complete,
     )
+    val checkboxAccessDescription = stringResource(
+        R.string.todo_checkbox_accessibility,
+        task.title,
+        checkboxDescription,
+    )
     val secondary = task.completedAt?.let { completed ->
         stringResource(
             R.string.todo_completed_on,
@@ -83,7 +87,8 @@ internal fun TodoRow(
         } ?: formattedDate
         stringResource(R.string.todo_due_original, deadline)
     } else null
-    val accessDescription = listOfNotNull(task.title, secondary, originalDue, statusDescription).joinToString(". ")
+    val accessDescription = listOfNotNull(task.title, secondary, originalDue, statusDescription)
+        .joinToString(stringResource(R.string.accessibility_label_separator))
 
     val rowContent: @Composable ColumnScope.() -> Unit = {
         Row(
@@ -96,8 +101,7 @@ internal fun TodoRow(
                 onCheckedChange = { onSetCompleted(it) },
                 enabled = canMutate && !pending,
                 modifier = Modifier.heightIn(min = 48.dp).semantics {
-                    contentDescription = "${task.title}. $checkboxDescription"
-                    stateDescription = statusDescription
+                    contentDescription = checkboxAccessDescription
                 }.testTag("todo_status_${task.id}"),
             )
             TextButton(

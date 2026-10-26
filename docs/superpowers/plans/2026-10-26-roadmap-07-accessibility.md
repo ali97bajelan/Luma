@@ -45,6 +45,8 @@ Existing paths are source anchors, not a request to edit every file regardless o
 - Modify/review: [docs/CALENDAR_QA.md](../../CALENDAR_QA.md)
 - Create if required by selected implementation: `docs/validation/roadmap-07-accessibility-findings.md`
 
+Phase 1 source findings and QA handoff: [Accessibility findings ledger](../../validation/roadmap-07-accessibility-findings.md).
+
 Interfaces consumed/produced:
 
 - Keep existing editor callbacks and navigation contracts; improvements must not change saved record values.
@@ -59,37 +61,37 @@ QA-owned tests (create only in phase 2; extend existing equivalent suites instea
 
 ## Phase 1 — Implementation
 
-Initial status: **PENDING**.
+Status: **SOURCE COMPLETE — QA PENDING**.
 
 ### F07-I01 — Map findings from source
 
-- [ ] Create A11Y finding ledger using current acceptance gaps and shared component inspection; mark suspected runtime issues unverified and map each to a QA case/matrix cell.
-- [ ] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Create A11Y finding ledger using current acceptance gaps and shared component inspection; mark suspected runtime issues unverified and map each to a QA case/matrix cell.
+- [x] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 
 ### F07-I02 — Fix shared layout primitives
 
-- [ ] Adjust scaffold/reading pane, editor header/footer/IME padding, wrapping action rows and error feedback. Preserve callbacks and existing draft/validation state.
-- [ ] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Adjust scaffold/reading pane, editor header/footer/IME padding, wrapping action rows and error feedback. Preserve callbacks and existing draft/validation state.
+- [x] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 
 ### F07-I03 — Refine feature-specific semantics
 
-- [ ] Update Calendar date descriptions, task/habit actions, result rows and modal focus without duplicating spoken labels. Replace color-only state with visible text/shape cues.
-- [ ] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Update Calendar date descriptions, task/habit actions, result rows and modal focus without duplicating spoken labels. Replace color-only state with visible text/shape cues.
+- [x] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 
 ### F07-I04 — Document matrix and regression scope
 
-- [ ] List shared-component consumers and required screenshot/TalkBack/keyboard checks; update finding source references and initialize results NOT RUN.
-- [ ] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] List shared-component consumers and required screenshot/TalkBack/keyboard checks; update finding source references and initialize results NOT RUN.
+- [x] Source-review the changed declarations/callers against F07-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 ### F07-I05 — Source handoff
 
-- [ ] Review all changed files, call sites, permission/manifest declarations, EN/FR/FA resources and persistence/archive contracts for the actual selected scope.
-- [ ] Run source-only checks such as `git diff --check`, file/link checks and XML parsing where relevant. A successful static check is not a test/build pass.
-- [ ] Record Git/patch identity, implementation decisions, source-to-requirement mapping and known uncertainty. Generated schemas and all runtime verification remain pending QA.
-- [ ] Mark phase 1 **SOURCE COMPLETE — QA PENDING** only after I01–I04 and this handoff are complete. Do not mark the task complete or run a Gradle/emulator command here.
+- [x] Review all changed files, call sites, permission/manifest declarations, EN/FR/FA resources and persistence/archive contracts for the actual selected scope.
+- [x] Run source-only checks such as `git diff --check`, file/link checks and XML parsing where relevant. A successful static check is not a test/build pass.
+- [x] Record Git/patch identity, implementation decisions, source-to-requirement mapping and known uncertainty. Generated schemas and all runtime verification remain pending QA.
+- [x] Mark phase 1 **SOURCE COMPLETE — QA PENDING** only after I01–I04 and this handoff are complete. Do not mark the task complete or run a Gradle/emulator command here.
 
 ## Phase 2 — QA
 
