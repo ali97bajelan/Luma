@@ -25,6 +25,8 @@ import com.luma.lifeos.data.habit.HabitScheduleEntity
 import com.luma.lifeos.data.habit.HabitSettingsEntity
 import com.luma.lifeos.data.todo.TodoDao
 import com.luma.lifeos.data.todo.TodoEntity
+import com.luma.lifeos.data.todo.TaskReminderEntity
+import com.luma.lifeos.data.todo.TaskReminderDao
 import com.luma.lifeos.data.widget.WidgetCommandEntity
 import com.luma.lifeos.data.widget.WidgetDao
 import com.luma.lifeos.data.widget.WidgetInstanceEntity
@@ -40,6 +42,7 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         HabitSettingsEntity::class, HabitEntity::class, HabitScheduleEntity::class, HabitLogEntity::class,
         HabitDayChoiceEntity::class, HabitReminderEntity::class, HabitReminderRuntimeEntity::class,
         TodoEntity::class,
+        TaskReminderEntity::class,
         WidgetInstanceEntity::class, WidgetCommandEntity::class,
     ],
     version = LumaDatabase.VERSION,
@@ -57,10 +60,11 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun habits(): HabitDao
     abstract fun habitTimeline(): HabitTimelineSql
     abstract fun todos(): TodoDao
+    abstract fun taskReminders(): TaskReminderDao
     abstract fun widgets(): WidgetDao
 
     companion object {
-        const val VERSION = 6
+        const val VERSION = 7
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
@@ -180,6 +184,23 @@ abstract class LumaDatabase : RoomDatabase() {
                     db.execSQL("ALTER TABLE todo_task ADD COLUMN due_time_minutes INTEGER")
                     db.execSQL("DROP INDEX IF EXISTS index_todo_task_completed_at_due_date_created_at_id")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_completed_at_due_date_due_time_minutes_created_at_id ON todo_task(completed_at, due_date, due_time_minutes, created_at, id)")
+                }
+            },
+            object : Migration(6, 7) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS task_reminder (
+                        task_id TEXT NOT NULL PRIMARY KEY,
+                        enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
+                        task_revision TEXT NOT NULL,
+                        revision_token TEXT NOT NULL,
+                        consumed_action_token TEXT,
+                        last_delivered_slot TEXT,
+                        snooze_slot TEXT,
+                        snooze_until INTEGER,
+                        needs_reconcile INTEGER NOT NULL CHECK (needs_reconcile IN (0, 1)),
+                        CHECK ((snooze_slot IS NULL) = (snooze_until IS NULL)),
+                        FOREIGN KEY(task_id) REFERENCES todo_task(id) ON DELETE CASCADE
+                    )""")
                 }
             },
         )

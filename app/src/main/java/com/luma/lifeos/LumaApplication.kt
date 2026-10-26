@@ -11,6 +11,7 @@ import com.luma.lifeos.integration.usage.UsageWorkScheduler
 import com.luma.lifeos.usage.UsageWorker
 import com.luma.lifeos.ui.theme.THEME_KEY
 import com.luma.lifeos.widget.WidgetRefreshCoordinator
+import com.luma.lifeos.reminders.enqueueReminderReconciliation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -44,7 +45,9 @@ class LumaApplication : Application() {
         applicationScope.launch {
             storage.widgets.observeInvalidations().collect {
                 WidgetRefreshCoordinator.request(this@LumaApplication)
+                enqueueReminderReconciliation(this@LumaApplication)
             }
         }
+        enqueueReminderReconciliation(this)
     }
 }

@@ -91,7 +91,6 @@ class RoomHabitRepository(
             state = HabitLifecycle.ACTIVE.name,
         ))
         val revision = UUID.randomUUID().toString()
-        // Reminders remain disabled until their planner and Android integration ship.
         dao.insertReminder(HabitReminderEntity(key, false, "TIMES", "[540]", null, null, null, revision))
         dao.insertReminderRuntime(HabitReminderRuntimeEntity(key, revision, null, null, null, null, false))
         habit.toDomain()
@@ -103,6 +102,8 @@ class RoomHabitRepository(
         HabitDefinition(id, name.trim(), unitLabel?.trim()?.takeUnless(String::isEmpty),
             LocalDate.parse(existing.startDate), Instant.ofEpochMilli(existing.createdAt), Instant.ofEpochMilli(now))
         check(dao.rename(id.toString(), name.trim(), unitLabel?.trim()?.takeUnless(String::isEmpty), now) == 1)
+        dao.markReminderDirty(id.toString())
+        Unit
     }
 
     override suspend fun schedule(id: UUID, input: HabitScheduleInput): HabitSchedule = database.withTransaction {
@@ -122,6 +123,7 @@ class RoomHabitRepository(
             weekdayMask = weekdaysToMask(replacement.weekdays),
             state = replacement.lifecycle.name,
         ))
+        dao.markReminderDirty(id.toString())
         updated.single { it.effectiveFrom == replacement.effectiveFrom }
     }
 
@@ -134,6 +136,7 @@ class RoomHabitRepository(
         val current = dao.schedules(id.toString()).map { it.toDomain() }
         cancelPendingSchedule(current, effective, today)
         check(dao.deleteSchedule(id.toString(), effective.toString()) == 1)
+        dao.markReminderDirty(id.toString())
         check(habit.start <= today) { "Future-start configuration is edited in place" }
     }
 
@@ -152,6 +155,7 @@ class RoomHabitRepository(
             recordedAt = now.toEpochMilli(), updatedAt = now.toEpochMilli(),
         )
         dao.insertLog(log)
+        dao.markReminderDirty(input.habitId.toString())
         log.toDomain()
     }
 
@@ -163,10 +167,15 @@ class RoomHabitRepository(
         val updatedAt = maxOf(clock.millis(), previous.recordedAt, previous.updatedAt)
         check(dao.updateLog(id.toString(), input.date.toString(), input.zone.id,
             input.occurredAt?.toEpochMilli(), updatedAt) == 1)
+        dao.markReminderDirty(previous.habitId)
         requireNotNull(dao.log(id.toString())).toDomain()
     }
 
-    override suspend fun deleteLog(id: UUID) { dao.deleteLog(id.toString()) }
+    override suspend fun deleteLog(id: UUID) = database.withTransaction {
+        val previous = dao.log(id.toString()) ?: return@withTransaction
+        dao.deleteLog(id.toString())
+        dao.markReminderDirty(previous.habitId)
+    }
 
     override suspend fun setSkipRemaining(id: UUID, date: LocalDate, skip: Boolean) = database.withTransaction {
         val habit = requireNotNull(dao.habit(id.toString())) { "Habit does not exist" }.toDomain()
@@ -184,6 +193,7 @@ class RoomHabitRepository(
         } else {
             dao.deleteChoice(id.toString(), date.toString())
         }
+        dao.markReminderDirty(id.toString())
         Unit
     }
 

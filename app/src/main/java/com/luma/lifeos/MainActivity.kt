@@ -11,9 +11,17 @@ import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.widget.WidgetIntents
 import com.luma.lifeos.widget.WidgetLaunchViewModel
 import com.luma.lifeos.widget.WidgetRefreshCoordinator
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.luma.lifeos.reminders.ReminderOpenRequest
+import com.luma.lifeos.reminders.ReminderPreferences
+import com.luma.lifeos.reminders.reminderOpenRequest
+import com.luma.lifeos.reminders.enqueueReminderReconciliation
 
 class MainActivity : ComponentActivity() {
     private lateinit var widgetLaunches: WidgetLaunchViewModel
+    private var reminderLaunch by mutableStateOf<ReminderOpenRequest?>(null)
 
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(com.luma.lifeos.language.AppLanguages.wrap(newBase))
@@ -23,6 +31,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         widgetLaunches = ViewModelProvider(this)[WidgetLaunchViewModel::class.java]
         if (savedInstanceState == null) enqueueWidgetLaunch(intent)
+        if (savedInstanceState == null) reminderLaunch = reminderOpenRequest(intent)
         enableEdgeToEdge()
         val luma = application as LumaApplication
         val storage = luma.storage
@@ -50,8 +59,13 @@ class MainActivity : ComponentActivity() {
                     widgetStore = storage.widgets,
                     moodDraftStore = luma.moodDraftStore,
                     calendar = storage.calendar,
+                    habitReminders = storage.habitReminders,
+                    taskReminders = storage.taskReminders,
+                    reminderPreferences = ReminderPreferences(this@MainActivity),
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,
+                    reminderLaunch = reminderLaunch,
+                    onReminderLaunchConsumed = { reminderLaunch = null },
                 )
             }
         }
@@ -61,12 +75,14 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         enqueueWidgetLaunch(intent)
+        reminderLaunch = reminderOpenRequest(intent)
     }
 
     override fun onStart() {
         super.onStart()
         WidgetRefreshCoordinator.request(this)
         WidgetRefreshCoordinator.refreshQuickCapture(this)
+        enqueueReminderReconciliation(this)
     }
 
     private fun enqueueWidgetLaunch(intent: android.content.Intent) {

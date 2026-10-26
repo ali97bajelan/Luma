@@ -114,6 +114,12 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityRefresh
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityViewModel
+import com.luma.lifeos.domain.habit.HabitReminderRepository
+import com.luma.lifeos.domain.todo.TaskReminderRepository
+import com.luma.lifeos.reminders.ReminderOpenRequest
+import com.luma.lifeos.reminders.ReminderPreferences
+import com.luma.lifeos.reminders.enqueueReminderReconciliation
+import com.luma.lifeos.ui.settings.ReminderSettingsRoute
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -152,6 +158,11 @@ fun LifeOsApp(
     widgetStore: WidgetStore? = null,
     moodDraftStore: MoodDraftStore? = null,
     calendar: CalendarRepository? = null,
+    habitReminders: HabitReminderRepository? = null,
+    taskReminders: TaskReminderRepository? = null,
+    reminderPreferences: ReminderPreferences? = null,
+    reminderLaunch: ReminderOpenRequest? = null,
+    onReminderLaunchConsumed: () -> Unit = {},
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -482,6 +493,7 @@ fun LifeOsApp(
                         .collectAsStateWithLifecycle()
                     TodoEditorRoute(
                         repository = todos,
+                        reminderRepository = taskReminders,
                         taskId = taskId,
                         initialDueDate = dueDate,
                         onClose = { result ->
@@ -523,7 +535,12 @@ fun LifeOsApp(
                     onBack = { navController.popBackStack() },
                     widgetsAvailable = widgetStore != null,
                     onWidgets = { navController.navigate("settings_widgets") },
+                    remindersAvailable = reminderPreferences != null,
+                    onReminders = { navController.navigate("settings_reminders") },
                 )
+            }
+            if (reminderPreferences != null) composable("settings_reminders") {
+                ReminderSettingsRoute(reminderPreferences, onBack = { navController.popBackStack() })
             }
             if (widgetStore != null) composable("settings_widgets") {
                 com.luma.lifeos.ui.widgets.WidgetSettingsRoute(
@@ -562,6 +579,7 @@ fun LifeOsApp(
                     service = backup,
                     onRestored = {
                         todoRestoreGeneration += 1
+                        enqueueReminderReconciliation(applicationContext)
                         snackbarHostState.currentSnackbarData?.dismiss()
                     },
                     onBack = { departure ->
@@ -608,7 +626,7 @@ fun LifeOsApp(
                 val habitId = UUID.fromString(requireNotNull(entry.arguments?.getString("habitId")))
                 val habitDate = LocalDate.parse(requireNotNull(entry.arguments?.getString("date")))
                 val logId = entry.arguments?.getString("logId")?.let(UUID::fromString)
-                HabitDetailRoute(habits, habitId, habitDate, logId,
+                HabitDetailRoute(habits, habitId, habitDate, logId, reminderRepository = habitReminders,
                     snackbarHostState = snackbarHostState,
                     onEdit = { id -> navController.navigate("habit_editor?habitId=$id") },
                     onBack = { navController.popBackStack() }, onOpenDate = ::openHabitsDate, deviceZone = currentDay.zone)
@@ -777,6 +795,15 @@ fun LifeOsApp(
                 }
             }
             onWidgetLaunchConsumed(request.id)
+        }
+        LaunchedEffect(reminderLaunch?.token, navController) {
+            val request = reminderLaunch ?: return@LaunchedEffect
+            navController.currentBackStackEntryFlow.first()
+            when (request.kind) {
+                "habit" -> navController.navigate("habit_detail/${request.id}/${request.date}")
+                "task" -> if (todos != null) openTodoEditor(request.id)
+            }
+            onReminderLaunchConsumed()
         }
         TodoActionFeedbackHost(backStackEntry, todos, snackbarHostState, todoRestoreGeneration)
         BackupDepartureFeedbackHost(backStackEntry, snackbarHostState, BackupDepartureSession.id)

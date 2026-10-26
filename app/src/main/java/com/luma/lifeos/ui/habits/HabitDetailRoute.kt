@@ -42,6 +42,14 @@ import com.luma.lifeos.ui.common.DetailTopBar
 import com.luma.lifeos.domain.habit.HabitDayState
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitRepository
+import com.luma.lifeos.domain.habit.HabitReminderRepository
+import com.luma.lifeos.domain.habit.ReminderSchedule
+import com.luma.lifeos.reminders.ReminderPermissionSwitch
+import com.luma.lifeos.reminders.enqueueReminderReconciliation
+import com.luma.lifeos.reminders.ReminderStatusStore
+import com.luma.lifeos.reminders.ReminderDeliveryStatus
+import com.luma.lifeos.reminders.reminderStatusText
+import com.luma.lifeos.reminders.notificationPermissionGranted
 import com.luma.lifeos.domain.habit.scheduleFor
 import java.time.LocalDate
 import java.time.LocalTime
@@ -50,6 +58,11 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.UUID
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import android.app.TimePickerDialog
+import android.text.format.DateFormat
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
@@ -66,12 +79,54 @@ fun HabitDetailRoute(
     onBack: () -> Unit,
     deviceZone: ZoneId = ZoneId.systemDefault(),
     onOpenDate: (LocalDate) -> Unit = {},
+    reminderRepository: HabitReminderRepository? = null,
 ) {
     val factory = androidx.compose.runtime.remember(repository, habitId) {
         viewModelFactory { initializer { HabitsViewModel(repository, createSavedStateHandle()) } }
     }
     val habits: HabitsViewModel = viewModel(factory = factory)
     val state by habits.state.collectAsStateWithLifecycle()
+    var reminderEnabled by rememberSaveable(habitId.toString()) { mutableStateOf(false) }
+    var reminderMinute by rememberSaveable(habitId.toString()) { mutableStateOf(9 * 60) }
+    var pickingReminderTime by rememberSaveable(habitId.toString()) { mutableStateOf(false) }
+    var reminderStatus by rememberSaveable(habitId.toString()) { mutableStateOf(R.string.reminder_status_configured) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    LaunchedEffect(reminderRepository, habitId) {
+        val config = reminderRepository?.configuration(habitId)
+        reminderEnabled = config?.enabled == true
+        reminderMinute = when (val schedule = config?.schedule) {
+            is ReminderSchedule.Times -> schedule.minutes.first()
+            is ReminderSchedule.Interval -> schedule.startMinute
+            null -> 9 * 60
+        }
+        if (reminderEnabled) reminderStatus = reminderStatusText(ReminderStatusStore(context).get("habit", habitId.toString()))
+    }
+    LaunchedEffect(pickingReminderTime) {
+        if (pickingReminderTime) {
+            TimePickerDialog(context, { _, hour, minute ->
+                val selected = hour * 60 + minute
+                scope.launch {
+                    runCatching { reminderRepository?.save(habitId, reminderEnabled, ReminderSchedule.Times(listOf(selected))) }
+                        .onSuccess {
+                            reminderMinute = selected
+                            val deliveryStatus = when {
+                                !reminderEnabled -> ReminderDeliveryStatus.OFF
+                                !notificationPermissionGranted(context) -> ReminderDeliveryStatus.BLOCKED
+                                else -> ReminderDeliveryStatus.PENDING
+                            }
+                            reminderStatus = reminderStatusText(deliveryStatus)
+                            ReminderStatusStore(context).set("habit", habitId.toString(), deliveryStatus)
+                            enqueueReminderReconciliation(context)
+                        }
+                        .onFailure { reminderStatus = R.string.reminder_save_failed }
+                }
+                pickingReminderTime = false
+            }, reminderMinute / 60, reminderMinute % 60, DateFormat.is24HourFormat(context)).apply {
+                setOnDismissListener { pickingReminderTime = false }
+            }.show()
+        }
+    }
     LaunchedEffect(habitId, date, deviceZone, logId) { habits.openDetail(habitId, date, deviceZone, logId) }
     LaunchedEffect(state.detail?.deleted) { if (state.detail?.deleted == true) onBack() }
     val renderedState = state
@@ -83,6 +138,33 @@ fun HabitDetailRoute(
         onRetry = habits::undoLog,
     )
     HabitDetailScreen(renderedState, habitId, date, logId, onBack,
+        reminderEnabled = reminderEnabled,
+        reminderStatus = reminderStatus,
+        reminderMinute = reminderMinute,
+        onReminderTimeClick = { pickingReminderTime = true },
+        onReminderEnabled = { enabled ->
+            if (reminderRepository != null) {
+                reminderEnabled = enabled
+                scope.launch {
+                    val schedule = reminderRepository.configuration(habitId)?.schedule ?: ReminderSchedule.Times(listOf(9 * 60))
+                    runCatching { reminderRepository.save(habitId, enabled, schedule) }
+                        .onSuccess {
+                            val deliveryStatus = when {
+                                !enabled -> ReminderDeliveryStatus.OFF
+                                !notificationPermissionGranted(context) -> ReminderDeliveryStatus.BLOCKED
+                                else -> ReminderDeliveryStatus.PENDING
+                            }
+                            reminderStatus = reminderStatusText(deliveryStatus)
+                            ReminderStatusStore(context).set("habit", habitId.toString(), deliveryStatus)
+                            enqueueReminderReconciliation(context)
+                        }
+                        .onFailure {
+                            reminderEnabled = !enabled
+                            reminderStatus = R.string.reminder_save_failed
+                        }
+                }
+            }
+        },
         onEdit = { onEdit(habitId) }, onLog = {
             renderedState.rowsFor(date).firstOrNull { it.day.habit.id == habitId }?.let(habits::log)
         },
@@ -127,6 +209,11 @@ fun HabitDetailScreen(
     onRetrySelectedLog: () -> Unit = {},
     onAnnounceSelectedLog: () -> Boolean = { false },
     onOpenDate: (LocalDate) -> Unit = {},
+    reminderEnabled: Boolean = false,
+    reminderStatus: Int = R.string.reminder_status_configured,
+    reminderMinute: Int = 9 * 60,
+    onReminderTimeClick: () -> Unit = {},
+    onReminderEnabled: (Boolean) -> Unit = {},
 ) {
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     var confirmingDiscard by rememberSaveable { mutableStateOf(false) }
@@ -222,6 +309,24 @@ fun HabitDetailScreen(
                                     modifier = Modifier.testTag("habit_detail_pending_${action.id}"),
                                     retryTag = "habit_detail_retry_${action.id}")
                             }
+                        }
+                    }
+                    item {
+                        ReminderPermissionSwitch(
+                            checked = reminderEnabled,
+                            enabled = canEditHabit,
+                            onCheckedChange = onReminderEnabled,
+                            description = stringResource(R.string.reminder_habit_description),
+                            modifier = Modifier.testTag("habit_detail_reminder"),
+                        )
+                        TextButton(onClick = onReminderTimeClick, enabled = canEditHabit,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_detail_reminder_time")) {
+                            val timeText = LocalTime.of(reminderMinute / 60, reminderMinute % 60)
+                                .format(java.time.format.DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+                            Text("${stringResource(R.string.reminder_habit_time)} · $timeText")
+                        }
+                        if (reminderEnabled || reminderStatus == R.string.reminder_save_failed) {
+                            Text(stringResource(reminderStatus), modifier = Modifier.padding(horizontal = 16.dp))
                         }
                     }
                     item(key = "habit_detail_undo_feedback") {

@@ -20,7 +20,8 @@ import com.luma.lifeos.ui.common.PageNavigation
 @Composable
 fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrationsAvailable: Boolean,
     onLanguage: () -> Unit, onBackup: () -> Unit, onPrivacy: () -> Unit, onIntegrations: () -> Unit,
-    onBack: (() -> Unit)? = null, widgetsAvailable: Boolean = false, onWidgets: () -> Unit = {}) {
+    onBack: (() -> Unit)? = null, widgetsAvailable: Boolean = false, onWidgets: () -> Unit = {},
+    remindersAvailable: Boolean = false, onReminders: () -> Unit = {}) {
     BackHandler(enabled = onBack != null) { onBack?.invoke() }
     AppPageScaffold(
         title = stringResource(R.string.settings),
@@ -39,6 +40,8 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
                 "settings_widgets",
                 onWidgets,
             )
+            if (remindersAvailable) SettingsRow(R.string.reminder_settings_title, R.string.reminder_settings_description,
+                "settings_reminders", onReminders)
             SettingsRow(R.string.settings_language_title, R.string.settings_language_description, "settings_language", onLanguage)
             com.luma.lifeos.ui.theme.ThemeSettingsCard()
             if (backupAvailable) SettingsRow(R.string.settings_backup_title, R.string.settings_backup_description, "settings_backup", onBackup)

@@ -18,7 +18,7 @@ referenced photos abort export rather than silently omitting them.
 ## Archive layout
 
 - `manifest.properties`: Java Properties syntax. Required `format=luma-backup`,
-  `format_version=1`, `schema_version=1`, `2`, `3`, `4` or `5`, `created_at` (UTC epoch
+  `format_version=1`, `schema_version=1`, `2`, `3`, `4`, `5` or `6`, `created_at` (UTC epoch
   milliseconds),
   and `file_count`. Every payload has `size.<path>` and `sha256.<path>` entries.
 - `tables/<table>.tsv`: one file per application table. Header is the exact column
@@ -58,6 +58,10 @@ zero rows and the preview warns that current tasks will be removed. Schema 3
 preserves habit history and configuration, but restored reminders are disabled with
 rotated revisions and fresh runtime marked for reconciliation. Schema 1/2
 replacement clears any current habits.
+Schema 6 appends `task_reminder`, for 28 tables total. It stores optional task
+reminder configuration and short-lived action runtime. Restore disables task
+reminders, rotates task and reminder revisions, and clears delivered-action and
+snooze state. Schema 1–5 archives contain no task reminder rows.
 Unknown format/schema versions fail safely; future versions require an explicit
 reader. Task rows are validated for canonical UUIDs and civil dates, minute range,
 the date/time pairing, title/note limits, and update/creation chronology. Schema 4
@@ -65,8 +69,12 @@ restores preserve task identities, content and timestamps while assigning null d
 time and rotating revision tokens. Schema 5 preserves due minutes as well; both
 versions rotate revision tokens so pre-restore writes cannot change replacement
 data. Room schema 6 adds `due_time_minutes`; its 5→6 migration keeps every existing
-task and gives it null time. Widget runtime tables are device-local and never part
-of the portable archive.
+task and gives it null time. Room schema 7 adds `task_reminder`; its 6→7 migration
+creates no enabled reminder rows. Widget runtime tables are device-local and never part
+of the portable archive. Task due times are floating civil values: changing time
+zone does not convert the saved date or minute. Buckets remain based on the local
+calendar date. A task reminder is created only after the user enables it and the
+task has both a due date and time.
 
 ## Validation and replacement
 
@@ -110,16 +118,15 @@ Schema 3 restores retain habit definitions, schedules, logs, choices and reminde
 preferences. Reminder preferences are forced off, revisions rotate, and transient
 reminder runtime is discarded so restore cannot replay an old notification action.
 Schema 4 restores retain open and completed tasks with no due time. Schema 5 also
-retains optional due minutes. Task revision tokens rotate during publication.
+retains optional due minutes. Schema 6 includes task reminder rows but always
+restores them disabled with fresh revisions and empty runtime. Task revision tokens rotate during publication.
 Older schema 1–3 restores clear the live task table. Room schema 5 added device-local
 widget instances and command tokens; Room schema 6 adds task due minutes. These tables are excluded
 from every archive inventory. A successful replacement restore revokes all widget
 commands, hides per-instance details and clears widget feedback in the same
 transaction as the content replacement. A failed or cancelled restore leaves widget
-runtime state untouched. The portable archive schema is version 5. Task due times
-are floating civil values: changing time zone does not convert the saved date or
-minute. Buckets remain based on the local calendar date, and due times do not
-trigger reminders or minute-based refreshes.
+runtime state untouched. The portable archive schema is version 6. Device-only quiet
+hours and lock-screen preview privacy are not included in backups.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss
 checks remain pending device validation; see [VALIDATION.md](VALIDATION.md).

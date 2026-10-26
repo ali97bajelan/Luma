@@ -1105,4 +1105,33 @@
         <item quantity="one">%1$d memory</item>
         <item quantity="other">%1$d memories</item>
     </plurals>
+    <string name="reminder_settings_title">Reminders</string>
+    <string name="reminder_settings_description">Choose quiet hours and lock-screen preview privacy.</string>
+    <string name="reminder_settings_intro">Local reminders are optional and approximate. They are turned off for new tasks and habits.</string>
+    <string name="reminder_enable">Reminder</string>
+    <string name="reminder_enable_description">Send an approximate notification at the planned time.</string>
+    <string name="reminder_habit_description">Repeats on active habit days at 9:00 AM.</string>
+    <string name="reminder_habit_time">Reminder time</string>
+    <string name="reminder_task_needs_time">Add a due date and time to schedule a task reminder.</string>
+    <string name="reminder_status_configured">Reminder saved; scheduling is pending.</string>
+    <string name="reminder_status_pending">Reminder is configured and waiting for an eligible time.</string>
+    <string name="reminder_status_scheduled">Reminder scheduled.</string>
+    <string name="reminder_status_blocked">Notifications are blocked in system settings.</string>
+    <string name="reminder_status_quiet">This reminder time is inside quiet hours and was skipped.</string>
+    <string name="reminder_quiet_hours">Quiet hours</string>
+    <string name="reminder_quiet_start">Starts</string>
+    <string name="reminder_quiet_end">Ends</string>
+    <string name="reminder_quiet_hint">Times inside quiet hours are skipped. Matching start and end times turn quiet hours off.</string>
+    <string name="reminder_private_previews">Show task and habit names on the lock screen</string>
+    <string name="reminder_channel_name">Reminders</string>
+    <string name="reminder_channel_description">Optional task and habit reminders</string>
+    <string name="reminder_notification_generic">You have a reminder.</string>
+    <string name="reminder_task_notification">A task is due.</string>
+    <string name="reminder_habit_notification">A habit is ready.</string>
+    <string name="reminder_complete">Complete</string>
+    <string name="reminder_log_one">Log one</string>
+    <string name="reminder_snooze">Snooze 10 minutes</string>
+    <string name="reminder_open">Open</string>
+    <string name="reminder_action_expired">This reminder is no longer current.</string>
+    <string name="reminder_save_failed">Reminder could not be saved. Try again.</string>
 </resources>

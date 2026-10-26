@@ -10,6 +10,7 @@ import com.luma.lifeos.domain.usage.UsageBucket
 import com.luma.lifeos.domain.usage.UsageSession
 import com.luma.lifeos.data.habit.*
 import com.luma.lifeos.data.todo.TodoEntity
+import com.luma.lifeos.data.todo.TaskReminderEntity
 import com.luma.lifeos.data.todo.toDomain
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitLog
@@ -101,6 +102,16 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
             revisionToken = s("revision_token"),
             dueTimeMinutes = optionalInt("due_time_minutes"),
         ).toDomain()
+        "task_reminder" -> {
+            require(l("enabled") in 0..1 && l("needs_reconcile") in 0..1)
+            text("last_delivered_slot")?.let { require(it.isNotBlank()) }
+            TaskReminderEntity(
+                taskId = s("task_id"), enabled = l("enabled") == 1L, taskRevision = s("task_revision"),
+                revisionToken = s("revision_token"), consumedActionToken = text("consumed_action_token"),
+                lastDeliveredSlot = text("last_delivered_slot"), snoozeSlot = text("snooze_slot"),
+                snoozeUntil = long("snooze_until"), needsReconcile = l("needs_reconcile") == 1L,
+            )
+        }
     }
 }
 

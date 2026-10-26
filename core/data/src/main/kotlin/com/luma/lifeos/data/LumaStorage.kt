@@ -28,6 +28,8 @@ import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.calendar.CalendarRepository
 import com.luma.lifeos.data.repository.RoomTodoRepository
+import com.luma.lifeos.data.habit.RoomHabitReminderRepository
+import com.luma.lifeos.data.todo.RoomTaskReminderRepository
 import com.luma.lifeos.data.widget.RoomWidgetStore
 import com.luma.lifeos.domain.widget.WidgetStore
 
@@ -56,6 +58,8 @@ class LumaStorage(context: Context) {
     val habits: HabitRepository = RoomHabitRepository(database)
     val calendar: CalendarRepository = RoomCalendarRepository(database)
     val todos: TodoRepository = RoomTodoRepository(database)
+    val habitReminders: com.luma.lifeos.domain.habit.HabitReminderRepository = RoomHabitReminderRepository(database)
+    val taskReminders: com.luma.lifeos.domain.todo.TaskReminderRepository = RoomTaskReminderRepository(database)
     val widgets: WidgetStore = RoomWidgetStore(database)
     val places: PlaceRepository = RoomPlaceRepository(database)
     val people: PersonRepository = RoomPersonRepository(database)

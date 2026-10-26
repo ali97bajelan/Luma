@@ -60,37 +60,50 @@ QA-owned tests (create only in phase 2; extend existing equivalent suites instea
 
 ## Phase 1 — Implementation
 
-Initial status: **PENDING**.
+Status: **SOURCE COMPLETE — QA PENDING**.
 
 ### F04-I01 — Implement habit planning first
 
-- [ ] Use the existing T27 domain types, persisted reminder rows and revision/consumed-token transactions. Carry source implementation steps into this phase; relocate every old test/Gradle step to phase 2.
-- [ ] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Use the existing T27 domain types, persisted reminder rows and revision/consumed-token transactions. Carry source implementation steps into this phase; relocate every old test/Gradle step to phase 2.
+- [x] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 
 ### F04-I02 — Add task configuration and planner
 
-- [ ] Create TaskReminderPlanner/Store with due-date/time eligibility, gap/overlap/quiet-hour policy and 10-minute snooze. Add explicit versioned persistence and archive adapters; retain existing due-time and overdue semantics.
-- [ ] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Create TaskReminderPlanner/Store with due-date/time eligibility, gap/overlap/quiet-hour policy and 10-minute snooze. Add explicit versioned persistence and archive adapters; retain existing due-time and overdue semantics.
+- [x] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 
 ### F04-I03 — Connect Android adapters
 
-- [ ] Implement bounded inexact scheduling, immutable explicit PendingIntents, notification channels, receiver/worker reconciliation and atomic command handling. Reuse habit adapters rather than separate schedulers with conflicting ownership.
-- [ ] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Implement bounded inexact scheduling, immutable explicit PendingIntents, notification channels, receiver/worker reconciliation and atomic command handling. Reuse habit adapters rather than separate schedulers with conflicting ownership.
+- [x] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 
 ### F04-I04 — Expose settings and lifecycle behavior
 
-- [ ] Add localized controls/status, context permission request, generic/private preview choice, cancellation and failure recovery. Wire reboot/time/zone/foreground/restore invalidation and document no catch-up behavior.
-- [ ] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Add localized controls/status, context permission request, generic/private preview choice, cancellation and failure recovery. Wire reboot/time/zone/foreground/restore invalidation and document no catch-up behavior.
+- [x] Source-review the changed declarations/callers against F04-R01–R05 and record paths/decisions. Do not run compilation or tests.
 
 ### F04-I05 — Source handoff
 
-- [ ] Review all changed files, call sites, permission/manifest declarations, EN/FR/FA resources and persistence/archive contracts for the actual selected scope.
-- [ ] Run source-only checks such as `git diff --check`, file/link checks and XML parsing where relevant. A successful static check is not a test/build pass.
-- [ ] Record Git/patch identity, implementation decisions, source-to-requirement mapping and known uncertainty. Generated schemas and all runtime verification remain pending QA.
-- [ ] Mark phase 1 **SOURCE COMPLETE — QA PENDING** only after I01–I04 and this handoff are complete. Do not mark the task complete or run a Gradle/emulator command here.
+- [x] Review all changed files, call sites, permission/manifest declarations, EN/FR/FA resources and persistence/archive contracts for the actual selected scope.
+- [x] Run source-only checks such as `git diff --check`, file/link checks and XML parsing where relevant. A successful static check is not a test/build pass.
+- [x] Record Git/patch identity, implementation decisions, source-to-requirement mapping and known uncertainty. Generated schemas and all runtime verification remain pending QA.
+- [x] Mark phase 1 **SOURCE COMPLETE — QA PENDING** only after I01–I04 and this handoff are complete. Do not mark the task complete or run a Gradle/emulator command here.
+
+### Phase 1 source handoff — 2026-10-26
+
+- Baseline: `5a35b507635eaf0e52d2122d5ac6fefb5e10b3d5` (`main`). Worktree creation was unavailable because `.git` is read-only in this sandbox; F04 changes were made in the existing checkout without staging or committing. The pre-existing release APK edit and calendar evidence logs were preserved.
+- Source patch SHA-256: `dcf885714a6feeb2e9968f41fdd51314bbc44222b0574bb2d792a197e5d92350` (path-prefixed binary diffs for F04 source/resource/backup/roadmap/spec changes, excluding this plan file to avoid a self-referential handoff hash and excluding the pre-existing APK/calendar-log edits).
+- Changed paths: habit/task reminder domain planners and contracts; Room repositories, DAOs, schema migration and archive/restore adapters; Android AlarmManager/notification/worker/receiver integration, settings and task/habit controls, lifecycle routing and EN/FR/FA resources; backup-format and roadmap/spec/plan documentation.
+- F04-R01: reminders are opt-in, use inexact `setAndAllowWhileIdle`, request notification permission from the enabling control, report delivery state and keep notification previews generic unless explicitly opted into private names.
+- F04-R02: task reminders require due date and time; resolve civil times by zone rules, skip quiet times and past-due enabling, and validate task/config revisions and local-day expiry transactionally.
+- F04-R03: habit slots use the saved tracking zone, schedule lifecycle/weekdays, target/skip state, one-use action tokens and a ten-minute same-window snooze; logs keep the attributed habit date.
+- F04-R04: quiet hours default to 22:00–08:00, are editable/disableable, and skip affected slots. Locked-route authentication is a future F06 integration; no lock gate is claimed by this handoff.
+- F04-R05: task completion delegates to `TodoRepository` revision rules without creating a life event; task reminder archive schema 6 stores config/runtime, restore disables rows and rotates revisions, and Room migration 6→7 creates no enabled rows.
+- Source-only verification: `git diff --check`; XML parsing of manifest and three string resources; equality of all 29 reminder resource keys across EN/FR/FA; active-manifest check for absence of exact-alarm, full-screen and foreground-service permissions; F04 spec/plan/QA/workflow file existence. All passed. No Gradle, tests, schema generation, build, lint, emulator or device checks were run.
+- QA uncertainty: source inspection does not establish compilation, Room schema correctness/migration behavior, notification timing, OS permission/channel behavior, reboot recovery, or private-preview/authentication behavior. F04-QA01–QA08 and schema export remain **NOT RUN**.
 
 ## Phase 2 — QA
 

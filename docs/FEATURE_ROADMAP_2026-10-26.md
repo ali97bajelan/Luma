@@ -2,7 +2,7 @@
 
 Date: 26 October 2026 · Source: [prioritized proposal](FEATURE_IMPROVEMENT_PROPOSAL_2026-10-26.md)
 
-This package contains **14 specifications, 14 implementation plans and 14 QA scenario documents**, ordered by the proposal’s importance ranking. All statuses describe planned work; no product implementation or Gradle/emulator/device validation has been performed by generating this package.
+This package contains **14 specifications, 14 implementation plans and 14 QA scenario documents**, ordered by the proposal’s importance ranking. The task table records current status: F04's source phase has since completed, while its QA and all other listed tasks remain pending. No F04 Gradle/emulator/device validation has been performed.
 
 ## Required two-phase workflow
 
@@ -13,7 +13,7 @@ Each task has exactly two phases:
 
 Run these phases per task; this does not require all 14 implementations before any QA. [Shared workflow](feature-roadmap/WORKFLOW.md) defines isolation, matrix, evidence, commands, schema-version coordination and status rules. Existing plans that put tests in implementation are superseded only for execution of these roadmap tasks. Current accepted product behaviors remain authoritative.
 
-New defaults in the specs are proposed choices for later review, not prior user decisions. The current request creates execution documents; it does not begin product implementation or authorize a release.
+New defaults in the specs are proposed choices for later review, not prior user decisions. This package generation did not begin product implementation or authorize a release. F04's later source handoff is recorded in its implementation plan; QA remains pending.
 
 ## Task packages
 
@@ -22,7 +22,7 @@ New defaults in the specs are proposed choices for later review, not prior user 
 | F01 | P0 | Backup and restore resilience | [Spec](superpowers/specs/2026-10-26-roadmap-01-backup-resilience.md) | [Plan](superpowers/plans/2026-10-26-roadmap-01-backup-resilience.md) | [QA scenarios](feature-roadmap/01-backup-resilience-qa.md) | PENDING | NOT RUN |
 | F02 | P0 | Current release and Calendar acceptance | [Spec](superpowers/specs/2026-10-26-roadmap-02-release-acceptance.md) | [Plan](superpowers/plans/2026-10-26-roadmap-02-release-acceptance.md) | [QA scenarios](feature-roadmap/02-release-acceptance-qa.md) | PENDING | NOT RUN |
 | F03 | P1 | Fast search across entry content | [Spec](superpowers/specs/2026-10-26-roadmap-03-search.md) | [Plan](superpowers/plans/2026-10-26-roadmap-03-search.md) | [QA scenarios](feature-roadmap/03-search-qa.md) | PENDING | NOT RUN |
-| F04 | P1 | Optional habit and task reminders | [Spec](superpowers/specs/2026-10-26-roadmap-04-reminders.md) | [Plan](superpowers/plans/2026-10-26-roadmap-04-reminders.md) | [QA scenarios](feature-roadmap/04-reminders-qa.md) | PENDING | NOT RUN |
+| F04 | P1 | Optional habit and task reminders | [Spec](superpowers/specs/2026-10-26-roadmap-04-reminders.md) | [Plan](superpowers/plans/2026-10-26-roadmap-04-reminders.md) | [QA scenarios](feature-roadmap/04-reminders-qa.md) | SOURCE COMPLETE — QA PENDING | NOT RUN |
 | F05 | P1 | Password-protected portable backups | [Spec](superpowers/specs/2026-10-26-roadmap-05-encrypted-backups.md) | [Plan](superpowers/plans/2026-10-26-roadmap-05-encrypted-backups.md) | [QA scenarios](feature-roadmap/05-encrypted-backups-qa.md) | PENDING | NOT RUN |
 | F06 | P1 | Optional app lock and private previews | [Spec](superpowers/specs/2026-10-26-roadmap-06-app-lock.md) | [Plan](superpowers/plans/2026-10-26-roadmap-06-app-lock.md) | [QA scenarios](feature-roadmap/06-app-lock-qa.md) | PENDING | NOT RUN |
 | F07 | P1 | Accessibility and adaptive layout gaps | [Spec](superpowers/specs/2026-10-26-roadmap-07-accessibility.md) | [Plan](superpowers/plans/2026-10-26-roadmap-07-accessibility.md) | [QA scenarios](feature-roadmap/07-accessibility-qa.md) | PENDING | NOT RUN |

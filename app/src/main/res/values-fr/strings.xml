@@ -1126,4 +1126,33 @@
         <item quantity="many">%1$d souvenirs</item>
         <item quantity="other">%1$d souvenirs</item>
     </plurals>
+    <string name="reminder_settings_title">Rappels</string>
+    <string name="reminder_settings_description">Choisissez les heures calmes et la confidentialité des aperçus sur l’écran verrouillé.</string>
+    <string name="reminder_settings_intro">Les rappels locaux sont facultatifs et approximatifs. Ils sont désactivés pour les nouvelles tâches et habitudes.</string>
+    <string name="reminder_enable">Rappel</string>
+    <string name="reminder_enable_description">Envoyer une notification approximative à l’heure prévue.</string>
+    <string name="reminder_habit_description">Répéter les jours actifs de l’habitude à 9 h.</string>
+    <string name="reminder_habit_time">Heure du rappel</string>
+    <string name="reminder_task_needs_time">Ajoutez une date et une heure d’échéance pour programmer un rappel de tâche.</string>
+    <string name="reminder_status_configured">Rappel enregistré ; programmation en attente.</string>
+    <string name="reminder_status_pending">Le rappel est configuré et attend une heure admissible.</string>
+    <string name="reminder_status_scheduled">Rappel programmé.</string>
+    <string name="reminder_status_blocked">Les notifications sont bloquées dans les paramètres système.</string>
+    <string name="reminder_status_quiet">Cette heure se trouve dans la plage calme et a été ignorée.</string>
+    <string name="reminder_quiet_hours">Heures calmes</string>
+    <string name="reminder_quiet_start">Début</string>
+    <string name="reminder_quiet_end">Fin</string>
+    <string name="reminder_quiet_hint">Les heures comprises dans la plage calme sont ignorées. Des heures de début et de fin identiques désactivent la plage.</string>
+    <string name="reminder_private_previews">Afficher les noms des tâches et habitudes sur l’écran verrouillé</string>
+    <string name="reminder_channel_name">Rappels</string>
+    <string name="reminder_channel_description">Rappels facultatifs de tâches et d’habitudes</string>
+    <string name="reminder_notification_generic">Vous avez un rappel.</string>
+    <string name="reminder_task_notification">Une tâche est due.</string>
+    <string name="reminder_habit_notification">Une habitude est prête.</string>
+    <string name="reminder_complete">Terminer</string>
+    <string name="reminder_log_one">Ajouter une occurrence</string>
+    <string name="reminder_snooze">Répéter dans 10 minutes</string>
+    <string name="reminder_open">Ouvrir</string>
+    <string name="reminder_action_expired">Ce rappel n’est plus à jour.</string>
+    <string name="reminder_save_failed">Le rappel n’a pas pu être enregistré. Réessayez.</string>
 </resources>

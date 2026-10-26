@@ -1,6 +1,6 @@
 # F04 — Optional habit and task reminders specification
 
-Date: 26 October 2026 · Priority: **P1** · Status: **DRAFT — NOT IMPLEMENTED / NOT VALIDATED**
+Date: 26 October 2026 · Priority: **P1** · Status: **SOURCE COMPLETE — QA PENDING / NOT VALIDATED**
 
 [Roadmap](../../FEATURE_ROADMAP_2026-10-26.md) · [Spec](2026-10-26-roadmap-04-reminders.md) · [Plan](../plans/2026-10-26-roadmap-04-reminders.md) · [QA scenarios](../../feature-roadmap/04-reminders-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 

@@ -84,14 +84,35 @@ interface HabitDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertReminder(reminder: HabitReminderEntity)
 
+    @Upsert
+    suspend fun upsertReminder(reminder: HabitReminderEntity)
+
+    @Query("DELETE FROM habit_reminder WHERE habit_id = :habitId")
+    suspend fun deleteReminder(habitId: String): Int
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertReminderRuntime(runtime: HabitReminderRuntimeEntity)
+
+    @Upsert
+    suspend fun upsertReminderRuntime(runtime: HabitReminderRuntimeEntity)
 
     @Query("SELECT * FROM habit_reminder WHERE habit_id = :habitId")
     suspend fun reminder(habitId: String): HabitReminderEntity?
 
+    @Query("SELECT * FROM habit_reminder ORDER BY habit_id")
+    suspend fun reminders(): List<HabitReminderEntity>
+
     @Query("SELECT * FROM habit_reminder_runtime WHERE habit_id = :habitId")
     suspend fun reminderRuntime(habitId: String): HabitReminderRuntimeEntity?
+
+    @Query("SELECT COUNT(*) FROM habit_log WHERE habit_id = :habitId AND habit_date = :date")
+    suspend fun reminderLogCount(habitId: String, date: String): Int
+
+    @Query("SELECT skip_remaining FROM habit_day_choice WHERE habit_id = :habitId AND habit_date = :date")
+    suspend fun reminderSkip(habitId: String, date: String): Boolean?
+
+    @Query("UPDATE habit_reminder_runtime SET needs_reconcile = 1 WHERE habit_id = :habitId")
+    suspend fun markReminderDirty(habitId: String): Int
 
     @Query("""
         SELECT h.id AS habit_id, h.name AS habit_name, h.unit_label AS unit_label,

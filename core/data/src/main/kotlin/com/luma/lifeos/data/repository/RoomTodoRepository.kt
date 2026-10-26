@@ -91,6 +91,7 @@ class RoomTodoRepository(
                 dueTimeMinutes = normalized.dueTime?.let { it.hour * 60 + it.minute },
                 updatedAt = updatedAt,
             ) == 1) { "Task changed while its update was being applied" }
+            database.taskReminders().onTaskRevisionChanged(key, nextRevision.toString(), UUID.randomUUID().toString())
             requireNotNull(dao.find(key)).toDomain()
         }
     }
@@ -119,6 +120,7 @@ class RoomTodoRepository(
             completedAt = completedAt,
             updatedAt = updatedAt,
         ) == 1) { "Task changed while its completion was being applied" }
+        database.taskReminders().onTaskRevisionChanged(key, nextRevision.toString(), UUID.randomUUID().toString())
         requireNotNull(dao.find(key)).toDomain()
     }
 

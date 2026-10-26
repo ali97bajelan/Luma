@@ -153,6 +153,23 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                                 if (table == "todo_task") {
                                                     row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
                                                 }
+                                                if (table == "task_reminder") {
+                                                    val taskId = row[names.indexOf("task_id")] as String
+                                                    val restoredTaskRevision = target.query(
+                                                        "SELECT revision_token FROM todo_task WHERE id = ?", arrayOf(taskId),
+                                                    ).use { cursor ->
+                                                        check(cursor.moveToFirst()) { "Restored reminder task is missing" }
+                                                        cursor.getString(0)
+                                                    }
+                                                    row[names.indexOf("enabled")] = 0L
+                                                    row[names.indexOf("task_revision")] = restoredTaskRevision
+                                                    row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
+                                                    row[names.indexOf("consumed_action_token")] = null
+                                                    row[names.indexOf("last_delivered_slot")] = null
+                                                    row[names.indexOf("snooze_slot")] = null
+                                                    row[names.indexOf("snooze_until")] = null
+                                                    row[names.indexOf("needs_reconcile")] = 1L
+                                                }
                                                 bind(statement, row); statement.executeInsert()
                                             }
                                         }
