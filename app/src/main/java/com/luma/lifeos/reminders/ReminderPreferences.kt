@@ -30,11 +30,18 @@ class ReminderPreferences(context: Context) {
         preferences.edit().putBoolean(KEY_PRIVATE_PREVIEWS, enabled).apply()
     }
 
+    internal fun notificationPermissionRequested(): Boolean = preferences.getBoolean(KEY_PERMISSION_REQUESTED, false)
+
+    internal fun markNotificationPermissionRequested() {
+        preferences.edit().putBoolean(KEY_PERMISSION_REQUESTED, true).apply()
+    }
+
     companion object {
         private const val KEY_QUIET_ENABLED = "quiet_enabled"
         private const val KEY_QUIET_START = "quiet_start"
         private const val KEY_QUIET_END = "quiet_end"
         private const val KEY_PRIVATE_PREVIEWS = "private_previews"
+        private const val KEY_PERMISSION_REQUESTED = "notification_permission_requested"
     }
 }
 

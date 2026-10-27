@@ -47,10 +47,10 @@ internal data class ReminderEvent(
         .putInt(EXTRA_MINUTE, minute).putString(EXTRA_TOKEN, token.toString()).build()
 
     fun toIntent(context: Context): Intent = Intent(context, ReminderActionReceiver::class.java).apply {
-        action = "com.luma.lifeos.reminders.$action"
+        action = "com.luma.lifeos.reminders.${this@ReminderEvent.action}"
         data = identityUri(kind, id, "deliver")
         putExtra(EXTRA_KIND, kind)
-        putExtra(EXTRA_ACTION, action)
+        putExtra(EXTRA_ACTION, this@ReminderEvent.action)
         putExtra(EXTRA_ID, id.toString())
         putExtra(EXTRA_REVISION, revision.toString())
         sourceRevision?.let { putExtra(EXTRA_SOURCE_REVISION, it.toString()) }

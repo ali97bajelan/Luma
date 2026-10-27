@@ -1131,8 +1131,13 @@
         <item quantity="other">%1$d souvenirs</item>
     </plurals>
     <string name="reminder_settings_title">Rappels</string>
-    <string name="reminder_settings_description">Choisissez les heures calmes et la confidentialité des aperçus sur l’écran verrouillé.</string>
+    <string name="reminder_settings_description">Gérez l’accès aux notifications, les heures calmes et la confidentialité des aperçus sur l’écran verrouillé.</string>
     <string name="reminder_settings_intro">Les rappels locaux sont facultatifs et approximatifs. Ils sont désactivés pour les nouvelles tâches et habitudes.</string>
+    <string name="reminder_notification_access">Accès aux notifications</string>
+    <string name="reminder_notification_access_hint">Autorisez les notifications pour recevoir les rappels de tâches et d’habitudes activés. Si l’accès est bloqué, activez les notifications de Luma et sa catégorie Rappels dans les paramètres système.</string>
+    <string name="reminder_notifications_allowed">Les notifications de rappel sont autorisées.</string>
+    <string name="reminder_allow_notifications">Autoriser les notifications</string>
+    <string name="reminder_notification_settings">Paramètres des notifications</string>
     <string name="reminder_enable">Rappel</string>
     <string name="reminder_enable_description">Envoyer une notification approximative à l’heure prévue.</string>
     <string name="reminder_habit_description">Répéter les jours actifs de l’habitude à 9 h.</string>

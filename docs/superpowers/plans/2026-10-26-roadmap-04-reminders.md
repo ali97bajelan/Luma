@@ -105,6 +105,19 @@ Status: **SOURCE COMPLETE — QA PENDING**.
 - Source-only verification: `git diff --check`; XML parsing of manifest and three string resources; equality of all 29 reminder resource keys across EN/FR/FA; active-manifest check for absence of exact-alarm, full-screen and foreground-service permissions; F04 spec/plan/QA/workflow file existence. All passed. No Gradle, tests, schema generation, build, lint, emulator or device checks were run.
 - QA uncertainty: source inspection does not establish compilation, Room schema correctness/migration behavior, notification timing, OS permission/channel behavior, reboot recovery, or private-preview/authentication behavior. F04-QA01–QA08 and schema export remain **NOT RUN**.
 
+### Phase 1 source follow-up — 2026-10-27
+
+Status: **SOURCE COMPLETE — QA PENDING / NOT VALIDATED**.
+
+- Baseline: `be7669c3e9212a2bb3939f6a8925e7cdef86e483`. Changes stay in the current checkout; the pre-existing release APK modification and calendar evidence logs are preserved. No staging, commit or release was performed.
+- [x] F04-R01/I04: add current notification access and an explicit Allow notifications control to `ReminderSettingsRoute.kt`. Share the permission/rationale/settings flow in new `ReminderNotificationAccess.kt` with `ReminderPermissionSwitch.kt`; distinguish first request from prior requests using a device-local request-history flag in `ReminderPreferences.kt`, while checking current Android permission/app/channel state dynamically. Refresh displayed access on resume and reconcile eligible reminders after access changes. Global access leaves individual reminders off.
+- [x] F04-R01/R05/I03: fix `ReminderEvent.toIntent` in `ReminderIntents.kt`. Inside `Intent.apply`, unqualified `action` resolved to the Intent action, so the serialized event extra held a qualified broadcast action that `reminderEventFrom` rejected. Explicitly use `this@ReminderEvent.action` for the short event action; retain qualified broadcast actions and immutable explicit PendingIntents.
+- [x] Expose existing channel creation to the access flow in `ReminderPlatform.kt`; app blocking opens app notification settings and channel management opens the existing reminder channel. Retain approximate scheduling and existing permissions.
+- [x] Update EN/FR/FA strings, F04-R01 specification, roadmap summary and F04-QA01/QA06 scenario coverage. Source-review permission callbacks, permanent denial, channel blocking, lifecycle refresh and broadcast decoding/callers.
+- Source patch SHA-256: `8ac92d862fb05e485c2538dfbbac251ac580250c8d48dcf15f79f4f1e9baf00d`. Input: sorted paths for the four changed existing reminder Kotlin files, new `ReminderNotificationAccess.kt`, `ReminderSettingsRoute.kt`, three string resources, roadmap, F04 QA and F04 spec. Each path is followed by NUL, its `git diff --binary HEAD` (new-file content for the new helper), then NUL. This plan and unrelated edits are excluded.
+- Source-only checks passed: `git diff --check`; XML parsing of manifest and EN/FR/FA strings; 34 unique, matching reminder resource keys per locale; POST_NOTIFICATIONS declaration and absence of exact-alarm/full-screen permissions. No tests were authored or executed; no Gradle, build, lint, dependency resolution, emulator or device operations were performed.
+- QA remains **NOT RUN**, including compilation and actual OS prompt/denial/channel/resume behavior, alarm delivery, completion/log/snooze action delivery and all existing F04 acceptance scenarios. Source review does not establish runtime behavior.
+
 ## Phase 2 — QA
 
 Initial status: **NOT RUN**. Entry requires I01–I05 handoff and isolated target verification. This phase owns test authoring, Gradle, schemas, emulator/device use and defect retesting.

@@ -144,7 +144,7 @@ internal class ReminderPlatform(private val context: Context) {
         }
     }
 
-    private fun ensureChannel() {
+    internal fun ensureChannel() {
         if (Build.VERSION.SDK_INT >= 26 && manager.getNotificationChannel(CHANNEL_ID) == null) {
             manager.createNotificationChannel(NotificationChannel(CHANNEL_ID,
                 context.getString(R.string.reminder_channel_name), NotificationManager.IMPORTANCE_DEFAULT).apply {

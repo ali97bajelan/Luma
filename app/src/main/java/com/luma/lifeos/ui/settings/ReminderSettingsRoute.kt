@@ -3,11 +3,13 @@ package com.luma.lifeos.ui.settings
 import android.app.TimePickerDialog
 import android.content.Context
 import android.text.format.DateFormat
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,12 +20,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
-import com.luma.lifeos.domain.habit.ReminderQuietHours
 import com.luma.lifeos.reminders.ReminderPreferences
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
+import com.luma.lifeos.reminders.rememberReminderNotificationAccess
 import java.time.LocalTime
 
 @Composable
@@ -31,8 +34,20 @@ fun ReminderSettingsRoute(preferences: ReminderPreferences, onBack: () -> Unit) 
     val context = LocalContext.current
     var quiet by remember { mutableStateOf(preferences.quietHours()) }
     var privatePreviews by remember { mutableStateOf(preferences.privatePreviews()) }
+    val notificationAccess = rememberReminderNotificationAccess()
     SettingsSectionPage(R.string.reminder_settings_title, onBack, screenTag = "screen_settings_reminders") {
         Text(stringResource(R.string.reminder_settings_intro))
+        Column(Modifier.fillMaxWidth().testTag("reminder_notification_access"),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.reminder_notification_access), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(if (notificationAccess.granted) R.string.reminder_notifications_allowed
+                else R.string.reminder_status_blocked), Modifier.testTag("reminder_notification_access_status"))
+            Text(stringResource(R.string.reminder_notification_access_hint), style = MaterialTheme.typography.bodySmall)
+            Button(onClick = notificationAccess.request, modifier = Modifier.testTag("reminder_notification_access_request")) {
+                Text(stringResource(if (notificationAccess.granted) R.string.reminder_notification_settings
+                    else R.string.reminder_allow_notifications))
+            }
+        }
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.reminder_quiet_hours), Modifier.weight(1f))
             Switch(checked = quiet.enabled, onCheckedChange = { enabled ->

@@ -41,7 +41,7 @@ Names below are proposed interfaces to create or adapt, not claims that these de
 
 ### F04-R01 — Delivery promise
 
-Ordinary approximate notifications, off by default; use no exact-alarm, full-screen or foreground-service permission. Request POST_NOTIFICATIONS only from explicit enable on API 33+. Distinguish configured, pending, blocked and scheduled; never claim delivery from scheduling alone.
+Ordinary approximate notifications, off by default; use no exact-alarm, full-screen or foreground-service permission. Request POST_NOTIFICATIONS only from explicit enable on API 33+, including the Allow notifications button on the Reminders settings page. That page shows current app/channel access, supports recovery through system notification settings after permanent denial or channel blocking, and refreshes access/reconciles future eligible reminders on return. Granting notification access does not enable individual task/habit reminders. Distinguish configured, pending, blocked and scheduled; never claim delivery from scheduling alone.
 
 ### F04-R02 — Task schedule
 

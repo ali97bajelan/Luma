@@ -15,6 +15,8 @@ Run these phases per task; this does not require all 14 implementations before a
 
 New defaults in the specs are proposed choices for later review, not prior user decisions. This package generation did not begin product implementation or authorize a release. F04's later source handoff is recorded in its implementation plan; QA remains pending.
 
+F04 source follow-up on 27 October adds notification access and recovery controls to Reminders settings and corrects the alarm/action broadcast payload. Its source handoff is recorded in the F04 plan; native permission, channel and alarm delivery QA remains NOT RUN.
+
 ## Task packages
 
 | Task | Priority | Scope | Specification | Implementation plan | QA | Implementation | QA status |

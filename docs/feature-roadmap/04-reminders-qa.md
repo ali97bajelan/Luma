@@ -34,9 +34,9 @@ The mapping below identifies the scenarios responsible for each requirement; cas
 
 **Precondition:** isolated task fixture reset to its declared baseline; prerequisites and selected implementation branch recorded.
 
-**Actions:** Fresh install, open editors without enabling; then enable a timed task alert and deny/grant permission.
+**Actions:** Fresh install, open editors and Reminders settings without enabling; use Allow notifications in Reminders settings on API 33+, deny once, retry with rationale, then exercise permanent denial and return from system settings after granting. Separately block just the Reminders channel, recover through the same settings control, and revoke app access while the page is backgrounded. Repeat task/habit enable controls and cover API 28–32 app/channel settings. Check EN/FR/FA and RTL.
 
-**Expected:** No unsolicited prompt; off default; explicit permission flow only; denial leaves tracking usable and shows blocked status.
+**Expected:** No unsolicited prompt; off default; explicit permission flow only; denial leaves tracking usable and shows blocked status. Reminders settings displays current app/channel access after permission callbacks and on resume. Rationale is dismissible; permanent denial opens system settings on a subsequent explicit tap. App-level blocking opens app notification settings; otherwise the control opens the Reminders channel. Granting global access leaves individual reminders off; already enabled future reminders reconcile without past-time catch-up. Task/habit controls retain opt-in after denial.
 
 **Evidence:** exact fixture/build identity, action/command log and independently inspected values; add screenshots/native observations when behavior is visual or platform-owned. Initial result: **NOT RUN**.
 
@@ -84,9 +84,9 @@ The mapping below identifies the scenarios responsible for each requirement; cas
 
 **Precondition:** isolated task fixture reset to its declared baseline; prerequisites and selected implementation branch recorded.
 
-**Actions:** Fail scheduler publication, restart process, reboot isolated AVD, alter clock and revoke channel/access.
+**Actions:** Fail scheduler publication, restart process, reboot isolated AVD, alter clock and revoke channel/access. Round-trip DELIVER, COMPLETE, LOG_ONE and SNOOZE events through broadcast PendingIntents and the receiver/worker; check the event action extra separately from the qualified Intent action.
 
-**Expected:** Dirty persisted state reconciles future eligible work; no duplicate notifications or false delivered claim.
+**Expected:** Dirty persisted state reconciles future eligible work; no duplicate notifications or false delivered claim. Alarm/action broadcasts preserve the short event action accepted by the decoder; scheduled alarms reach the delivery handler, and notification actions reach their intended command handler.
 
 **Evidence:** exact fixture/build identity, action/command log and independently inspected values; add screenshots/native observations when behavior is visual or platform-owned. Initial result: **NOT RUN**.
 

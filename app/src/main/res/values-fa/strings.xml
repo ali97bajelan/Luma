@@ -1111,8 +1111,13 @@
         <item quantity="other">%1$d خاطره</item>
     </plurals>
     <string name="reminder_settings_title">یادآورها</string>
-    <string name="reminder_settings_description">ساعت‌های سکوت و حریم خصوصی پیش‌نمایش صفحهٔ قفل را انتخاب کنید.</string>
+    <string name="reminder_settings_description">دسترسی اعلان‌ها، ساعت‌های سکوت و حریم خصوصی پیش‌نمایش صفحهٔ قفل را مدیریت کنید.</string>
     <string name="reminder_settings_intro">یادآورهای محلی اختیاری و تقریبی هستند. برای کارها و عادت‌های تازه خاموش‌اند.</string>
+    <string name="reminder_notification_access">دسترسی اعلان‌ها</string>
+    <string name="reminder_notification_access_hint">برای نمایش یادآورهای فعال کارها و عادت‌ها، اجازهٔ ارسال اعلان بدهید. اگر دسترسی مسدود است، اعلان‌های لوما و دستهٔ یادآورها را در تنظیمات سیستم فعال کنید.</string>
+    <string name="reminder_notifications_allowed">ارسال اعلان یادآورها مجاز است.</string>
+    <string name="reminder_allow_notifications">اجازهٔ ارسال اعلان</string>
+    <string name="reminder_notification_settings">تنظیمات اعلان‌ها</string>
     <string name="reminder_enable">یادآور</string>
     <string name="reminder_enable_description">در زمان برنامه‌ریزی‌شده اعلان تقریبی بفرست.</string>
     <string name="reminder_habit_description">در روزهای فعال عادت، ساعت ۹ صبح تکرار شود.</string>

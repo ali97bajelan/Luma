@@ -1110,8 +1110,13 @@
         <item quantity="other">%1$d memories</item>
     </plurals>
     <string name="reminder_settings_title">Reminders</string>
-    <string name="reminder_settings_description">Choose quiet hours and lock-screen preview privacy.</string>
+    <string name="reminder_settings_description">Manage notification access, quiet hours and lock-screen preview privacy.</string>
     <string name="reminder_settings_intro">Local reminders are optional and approximate. They are turned off for new tasks and habits.</string>
+    <string name="reminder_notification_access">Notification access</string>
+    <string name="reminder_notification_access_hint">Allow notifications so enabled task and habit reminders can appear. If access is blocked, enable notifications for Luma and its Reminders category in system settings.</string>
+    <string name="reminder_notifications_allowed">Reminder notifications are allowed.</string>
+    <string name="reminder_allow_notifications">Allow notifications</string>
+    <string name="reminder_notification_settings">Notification settings</string>
     <string name="reminder_enable">Reminder</string>
     <string name="reminder_enable_description">Send an approximate notification at the planned time.</string>
     <string name="reminder_habit_description">Repeats on active habit days at 9:00 AM.</string>
