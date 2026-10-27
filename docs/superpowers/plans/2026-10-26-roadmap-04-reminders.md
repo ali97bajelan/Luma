@@ -120,10 +120,11 @@ Status: **SOURCE COMPLETE — QA PENDING / NOT VALIDATED**.
 
 ## Phase 2 — QA
 
-Initial status: **NOT RUN**. Entry requires I01–I05 handoff and isolated target verification. This phase owns test authoring, Gradle, schemas, emulator/device use and defect retesting.
+Initial status: **NOT RUN**. Focused notification/alarm QA ran on 27 October using the existing `Medium_Phone_API_36.1` emulator and isolated `.qa` package. Focused checks passed, while full F04 acceptance remains incomplete. See the [QA ledger](../../feature-roadmap/04-reminders-qa.md) and its linked evidence. This phase owns test authoring, Gradle, schemas, emulator/device use and defect retesting.
 
 ### F04-Q01 — Fixtures and automated coverage
 
+- [x] Focused alarm/notification cases: author and run `ReminderEventIntentTest.eventActionsRoundTripSeparatelyFromQualifiedBroadcastActions`, `ReminderEventIntentTest.qualifiedIntentActionInEventExtraIsRejected`, and `ReminderNotificationAccessTest.settingsShowsCurrentAccessWithoutRequestingItOnOpen`. All three passed on `Medium_Phone_API_36.1`.
 - [ ] Read the full [QA scenarios](../../feature-roadmap/04-reminders-qa.md), prepare its synthetic fixture, and create the QA-owned tests above. Give tests descriptive scenario-matching names; assert expected IDs/values and failure atomicity independently of implementation helpers.
 - [ ] Cover every requirement and review-focus condition. Prefer small deterministic domain/state tests, real Room migration/transaction tests for persistence and Compose/native flows for platform behavior. Existing test passes cannot replace missing native or manual coverage.
 - [ ] If a QA defect needs production correction, retain a failing regression and capture failure before correction where feasible; fix and rerun here without rewriting expected behavior to match a defect.
@@ -139,7 +140,9 @@ bash gradlew :core:data:testDebugUnitTest :app:testDebugUnitTest
 bash gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :core:data:assembleDebugAndroidTest :core:data:lintDebug
 ```
 
-- [ ] Record actual commands, exit codes and JUnit/lint outcomes. Expected automated gate: exit 0; required tests actually executed with no failures/errors; skipped tests explained; no lint errors/fatals and new warnings classified.
+- [x] Record actual domain, app and data host test commands and outcomes. Domain: 138 tests passed. App/data host tasks passed after correcting a stale schema-version assertion from 5 to 6. Focused reminder instrumentation: 3 tests passed; `:app:assembleDebug` succeeded.
+- [x] Run `:app:lintDebug :core:data:lintDebug`; both passed with no lint errors. The app report has a guarded notification `InlinedApi` warning, two widget `InlinedApi` warnings and an `OldTargetApi` warning for target SDK 35; core/data has no issues.
+- [ ] Run Room schema/migration gates and populated-upgrade/archive compatibility cases.
 - [ ] Where schema changed, generate/export current Room schema through QA build/KSP, inspect against hand-written migration, preserve old JSON and execute populated-upgrade plus archive compatibility cases. Commit schema evidence with the validated task, not as an unverified phase-1 claim.
 - [ ] Run affected instrumented suites only on a confirmed isolated package/AVD using the shared QA catalogue; do not assume current debug package is isolated. Test-class filters and variant commands must match authored test packages and target identity.
 
@@ -149,5 +152,14 @@ bash gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :co
 - [ ] Record actual result, requirement mapping and artifact links in the scenario ledger. Source/compile/host passes cannot certify native/manual cases.
 - [ ] Resolve defects, rerun owning and affected regression cases, and identify invalidated evidence. Leave blocked/unrun cases visible with precise prerequisites.
 - [ ] Mark complete only for the exact validated scope when required cases pass. Assessment/deferred branch closure must explicitly state that feature runtime acceptance has not occurred. Record release blockers/authorized exceptions without silently self-waiving.
+
+### Focused QA update — 2026-10-27
+
+Status: **PARTIAL FOCUSED QA PASS; FULL F04 ACCEPTANCE INCOMPLETE**. The emulator ADB recheck found `emulator-5554` (API 36, AVD `Medium_Phone_API_36.1`) after the first inventory had incorrectly returned no connected device. QA used the `.qa` application ID, and the pre-existing `com.luma.lifeos` 1.2.2 package was preserved.
+
+- Host: `:core:domain:test` passed (138 tests). `:core:data:testDebugUnitTest :app:testDebugUnitTest` passed after the test inventory was updated to assert the schema 6 `task_reminder` table. The initial stale expectation and final pass logs are linked from the [QA summary](../../feature-roadmap/evidence/2026-10-27/F04/summary.md).
+- Connected: all 3 reminder instrumentation tests passed. One wider 242-test app run had an unrelated `AppNavigationTest` Activity lifecycle failure and was stopped after 17 tests; this does not replace the passing focused rerun.
+- Manual: the Reminders page showed blocked access without prompting on open; explicit tap opened Android's notification prompt, grant refreshed the state, and the settings button opened the Reminders channel. A due task triggered a real notification and the Complete action persisted after app relaunch.
+- Scenario ledger: QA01, QA03, QA05 and QA06 are **PARTIAL**; QA02, QA04, QA07 and QA08 are **NOT RUN**. Room migration instrumentation, broader permission denial/recovery, quiet-hour/snooze, habit, replay/restore, reboot, physical-device and remaining UI matrix obligations are outstanding.
 
 Suggested future commit grouping: one source handoff followed by QA tests, generated schemas and evidence; do not commit unrelated user changes. Creating these documents does not authorize implementation, release or commit actions now.

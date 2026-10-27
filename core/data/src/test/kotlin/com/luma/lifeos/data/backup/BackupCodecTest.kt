@@ -24,7 +24,8 @@ class BackupCodecTest {
         assertEquals(original + usage + habits, backupTables(3))
         assertEquals(original + usage + habits + "todo_task", backupTables(4))
         assertEquals(backupTables(4), backupTables(5))
-        assertEquals(5, CURRENT_BACKUP_SCHEMA_VERSION)
+        assertEquals(backupTables(5) + "task_reminder", backupTables(6))
+        assertEquals(6, CURRENT_BACKUP_SCHEMA_VERSION)
     }
 
     @Test fun schemaFourTodoImportKeepsItsExactLegacyHeader() {

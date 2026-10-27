@@ -1,6 +1,6 @@
 # F04 — Optional habit and task reminders QA scenarios
 
-Date: 26 October 2026 · Status: **NOT RUN** · Priority inherited from task: **P1**
+Date: 27 October 2026 · Status: **FOCUSED QA PARTIAL; ACCEPTANCE INCOMPLETE** · Priority inherited from task: **P1**
 
 [Roadmap](../FEATURE_ROADMAP_2026-10-26.md) · [Spec](../superpowers/specs/2026-10-26-roadmap-04-reminders.md) · [Plan](../superpowers/plans/2026-10-26-roadmap-04-reminders.md) · [QA scenarios](04-reminders-qa.md) · [Shared workflow](WORKFLOW.md)
 
@@ -20,13 +20,13 @@ Freeze clocks through injection for automation; use dedicated AVDs for manual ti
 
 The mapping below identifies the scenarios responsible for each requirement; cases may cover several requirements. During QA add assertion-level mappings and authored test names without dropping any requirement or shared matrix obligation.
 
-| Requirement | Scenario coverage set | Initial result |
+| Requirement | Scenario coverage set | Current result |
 | --- | --- | --- |
-| F04-R01 — Delivery promise | F04-QA01, F04-QA06, F04-QA08 | NOT RUN |
-| F04-R02 — Task schedule | F04-QA03, F04-QA06 | NOT RUN |
+| F04-R01 — Delivery promise | F04-QA01, F04-QA06, F04-QA08 | PARTIAL — permission grant and task delivery/action paths exercised |
+| F04-R02 — Task schedule | F04-QA03, F04-QA06 | PARTIAL — one due-time task delivered; civil-time/DST cases unrun |
 | F04-R03 — Habit eligibility | F04-QA02, F04-QA04, F04-QA05 | NOT RUN |
-| F04-R04 — Quiet hours and privacy | F04-QA04, F04-QA07 | NOT RUN |
-| F04-R05 — Safe actions and restore | F04-QA05, F04-QA06, F04-QA08 | NOT RUN |
+| F04-R04 — Quiet hours and privacy | F04-QA04, F04-QA07 | PARTIAL — channel settings observed; quiet-hour/privacy cases unrun |
+| F04-R05 — Safe actions and restore | F04-QA05, F04-QA06, F04-QA08 | PARTIAL — one Complete action and intent round-trips passed; replay/restore unrun |
 
 ## Scenarios
 
@@ -124,14 +124,27 @@ Evidence directory during execution: `docs/feature-roadmap/evidence/<actual-run-
 
 | Case | Result | Actual observation | Evidence | Defect/retest |
 | --- | --- | --- | --- | --- |
-| F04-QA01 | NOT RUN | — | — | — |
+| F04-QA01 | PARTIAL | Focused Compose test passed. On `Medium_Phone_API_36.1`, opening Reminders showed blocked state without prompting; explicit tap opened Android's notification prompt; granting refreshed the page, and Notification settings opened the Reminders channel with Show notifications enabled. | [Focused results](evidence/2026-10-27/F04/summary.md); [manual checks](evidence/2026-10-27/F04/manual-emulator-checks.md); [device inventory](evidence/2026-10-27/F04/device-inventory.log) | Denial/rationale, permanent denial, app-level blocking, older APIs and locale/RTL cells remain. |
 | F04-QA02 | NOT RUN | — | — | — |
-| F04-QA03 | NOT RUN | — | — | — |
+| F04-QA03 | PARTIAL | A QA-only task due at 17:17 Asia/Tehran produced a notification. Zone changes, Paris DST, date-only and past-due cases were not tested. | [Manual checks](evidence/2026-10-27/F04/manual-emulator-checks.md) | Complete remaining civil-time cases. |
 | F04-QA04 | NOT RUN | — | — | — |
-| F04-QA05 | NOT RUN | — | — | — |
-| F04-QA06 | NOT RUN | — | — | — |
+| F04-QA05 | PARTIAL | One notification Complete action completed the task; action replay/races and stale source revisions were not exercised. | [Manual checks](evidence/2026-10-27/F04/manual-emulator-checks.md); [host tests](evidence/2026-10-27/F04/android-host-tests.log) | Cover duplicate actions, undo, source edit/delete, restore and day rollover. |
+| F04-QA06 | PARTIAL | Both ReminderEventIntentTest cases passed. A scheduled task alarm produced a notification and Complete reached the task handler. Reboot, worker failure, clock changes and receiver replay remain untested. | [Connected tests](evidence/2026-10-27/F04/reminder-connected-tests.log); [manual checks](evidence/2026-10-27/F04/manual-emulator-checks.md) | Cover recovery and replay cases. |
 | F04-QA07 | NOT RUN | — | — | — |
 | F04-QA08 | NOT RUN | — | — | — |
+
+### Focused execution — 27 October 2026
+
+Candidate commit: `2b6c850da5968adf542cebb4d8ee3cff309f4a4c`. The current ADB recheck found the running `Medium_Phone_API_36.1` emulator after the initial device scan had returned empty. An isolated `.qa` package was used; the existing production package was preserved.
+
+- `:core:domain:test`: **PASS**, 138 tests; zero failures, errors or skips. See [domain output](evidence/2026-10-27/F04/domain-tests.log) and [toolchain](evidence/2026-10-27/F04/toolchain.log).
+- `:core:data:testDebugUnitTest :app:testDebugUnitTest`: **PASS** after updating the stale backup inventory assertion to schema 6. The first run found that the test still expected schema 5; the corrected run passed. See [initial failure](evidence/2026-10-27/F04/android-host-tests-initial-failure.log) and [final output](evidence/2026-10-27/F04/android-host-tests.log).
+- `:app:lintDebug :core:data:lintDebug`: **PASS** with no lint errors. The app report contains a guarded `POST_NOTIFICATIONS` `InlinedApi` warning, two widget `InlinedApi` warnings, and an `OldTargetApi` warning for target SDK 35; core/data reports no issues. See [lint output](evidence/2026-10-27/F04/android-lint.log).
+- Focused connected instrumentation: **PASS**, all 3 reminder tests on API 36.1. See [connected output](evidence/2026-10-27/F04/reminder-connected-tests.log).
+- Manual native checks: **PASS** for the first-request permission grant, permission-state refresh, notification-channel settings handoff, task alarm delivery and Complete action. See [manual observations](evidence/2026-10-27/F04/manual-emulator-checks.md) and [post-action screenshot](evidence/2026-10-27/F04/task-completed-after-action.png).
+- The full app connected suite was not completed. One unrelated `AppNavigationTest` failed because an Activity remained PAUSED rather than reaching DESTROYED; the run was stopped at 17/242. The isolated reminder tests passed on rerun.
+
+F04 acceptance remains incomplete. QA01, QA03, QA05 and QA06 are **PARTIAL**; QA02, QA04, QA07 and QA08 are **NOT RUN**. Room schema/migration instrumentation and the remaining native/manual and matrix obligations are outstanding.
 
 ## Exit gate
 

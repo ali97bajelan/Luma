@@ -2,7 +2,7 @@
 
 Date: 26 October 2026 · Source: [prioritized proposal](FEATURE_IMPROVEMENT_PROPOSAL_2026-10-26.md)
 
-This package contains **14 specifications, 14 implementation plans and 14 QA scenario documents**, ordered by the proposal’s importance ranking. The task table records current status: F04 and F07 source phases are complete; QA remains pending for both and all other listed tasks. No F04 or F07 Gradle/emulator/device validation has been performed.
+This package contains **14 specifications, 14 implementation plans and 14 QA scenario documents**, ordered by the proposal’s importance ranking. F04 and F07 source phases are complete. On 27 October, F04 passed the domain and app/data host suites, all three focused reminder instrumentation tests on `Medium_Phone_API_36.1`, and manual notification permission/channel, scheduled task delivery and Complete-action checks. Full F04 acceptance remains incomplete; one unrelated activity lifecycle test failed in the wider connected suite, and several F04 scenarios remain unrun. F07 and the remaining tasks have not entered QA.
 
 ## Required two-phase workflow
 
@@ -13,9 +13,9 @@ Each task has exactly two phases:
 
 Run these phases per task; this does not require all 14 implementations before any QA. [Shared workflow](feature-roadmap/WORKFLOW.md) defines isolation, matrix, evidence, commands, schema-version coordination and status rules. Existing plans that put tests in implementation are superseded only for execution of these roadmap tasks. Current accepted product behaviors remain authoritative.
 
-New defaults in the specs are proposed choices for later review, not prior user decisions. This package generation did not begin product implementation or authorize a release. F04's later source handoff is recorded in its implementation plan; QA remains pending.
+New defaults in the specs are proposed choices for later review, not prior user decisions. This package generation did not begin product implementation or authorize a release. F04's source handoff and focused QA results are recorded in its implementation plan and QA ledger; full acceptance remains incomplete.
 
-F04 source follow-up on 27 October adds notification access and recovery controls to Reminders settings and corrects the alarm/action broadcast payload. Its source handoff is recorded in the F04 plan; native permission, channel and alarm delivery QA remains NOT RUN.
+F04 source follow-up on 27 October adds notification access and recovery controls to Reminders settings and corrects the alarm/action broadcast payload. Its source handoff is recorded in the F04 plan; focused Android and manual checks are recorded in the F04 QA ledger, with remaining acceptance gaps listed there.
 
 ## Task packages
 
@@ -24,7 +24,7 @@ F04 source follow-up on 27 October adds notification access and recovery control
 | F01 | P0 | Backup and restore resilience | [Spec](superpowers/specs/2026-10-26-roadmap-01-backup-resilience.md) | [Plan](superpowers/plans/2026-10-26-roadmap-01-backup-resilience.md) | [QA scenarios](feature-roadmap/01-backup-resilience-qa.md) | PENDING | NOT RUN |
 | F02 | P0 | Current release and Calendar acceptance | [Spec](superpowers/specs/2026-10-26-roadmap-02-release-acceptance.md) | [Plan](superpowers/plans/2026-10-26-roadmap-02-release-acceptance.md) | [QA scenarios](feature-roadmap/02-release-acceptance-qa.md) | PENDING | NOT RUN |
 | F03 | P1 | Fast search across entry content | [Spec](superpowers/specs/2026-10-26-roadmap-03-search.md) | [Plan](superpowers/plans/2026-10-26-roadmap-03-search.md) | [QA scenarios](feature-roadmap/03-search-qa.md) | PENDING | NOT RUN |
-| F04 | P1 | Optional habit and task reminders | [Spec](superpowers/specs/2026-10-26-roadmap-04-reminders.md) | [Plan](superpowers/plans/2026-10-26-roadmap-04-reminders.md) | [QA scenarios](feature-roadmap/04-reminders-qa.md) | SOURCE COMPLETE — QA PENDING | NOT RUN |
+| F04 | P1 | Optional habit and task reminders | [Spec](superpowers/specs/2026-10-26-roadmap-04-reminders.md) | [Plan](superpowers/plans/2026-10-26-roadmap-04-reminders.md) | [QA scenarios](feature-roadmap/04-reminders-qa.md) | SOURCE COMPLETE — QA PENDING | PARTIAL: QA01/QA03/QA05/QA06 partial; QA02/QA04/QA07/QA08 NOT RUN |
 | F05 | P1 | Password-protected portable backups | [Spec](superpowers/specs/2026-10-26-roadmap-05-encrypted-backups.md) | [Plan](superpowers/plans/2026-10-26-roadmap-05-encrypted-backups.md) | [QA scenarios](feature-roadmap/05-encrypted-backups-qa.md) | PENDING | NOT RUN |
 | F06 | P1 | Optional app lock and private previews | [Spec](superpowers/specs/2026-10-26-roadmap-06-app-lock.md) | [Plan](superpowers/plans/2026-10-26-roadmap-06-app-lock.md) | [QA scenarios](feature-roadmap/06-app-lock-qa.md) | PENDING | NOT RUN |
 | F07 | P1 | Accessibility and adaptive layout gaps | [Spec](superpowers/specs/2026-10-26-roadmap-07-accessibility.md) | [Plan](superpowers/plans/2026-10-26-roadmap-07-accessibility.md) | [QA scenarios](feature-roadmap/07-accessibility-qa.md) | SOURCE COMPLETE — QA PENDING | NOT RUN |
