@@ -116,17 +116,6 @@ fun HabitsScreen(
                             modifier = Modifier.testTag("habits_undo_feedback"),
                         )
                     }
-                    state.trackingZone?.let { zone ->
-                        item { Text(stringResource(R.string.habit_tracking_zone, zone.id), style = MaterialTheme.typography.labelLarge) }
-                        item { Text(stringResource(R.string.habit_tracking_zone_note), style = MaterialTheme.typography.bodySmall) }
-                        if (state.trackingZone != deviceZone || (state.deviceDate != null && state.deviceDate != LocalDate.now(zone))) {
-                            item {
-                                Text(stringResource(R.string.habit_tracking_elsewhere,
-                                    LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), zone.id),
-                                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_tracking_day_difference"))
-                            }
-                        }
-                    }
                     if (state.loading || (state.date != date && state.error == null)) item {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             CircularProgressIndicator(Modifier.testTag("habits_loading"))

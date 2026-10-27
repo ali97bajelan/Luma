@@ -817,7 +817,7 @@
     <string name="habit_log_disabled_archived">Cette habitude était archivée à cette date.</string>
     <string name="habit_log_saving">Enregistrement de la répétition…</string>
     <string name="habit_log_failed">Cette répétition est conservée pour une nouvelle tentative.</string>
-    <string name="habit_pending_context">Concerne le %1$s · fuseau de suivi %2$s</string>
+    <string name="habit_pending_context">Concerne le %1$s</string>
     <string name="habit_pending_open_date">Ouvrir la date</string>
     <string name="habit_retained_actions">Actions d’habitude en attente</string>
     <string name="habit_unavailable">Habitude indisponible</string>

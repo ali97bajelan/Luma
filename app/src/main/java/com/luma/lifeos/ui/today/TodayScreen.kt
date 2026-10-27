@@ -5,13 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
@@ -109,27 +106,13 @@ fun TodayScreen(
                     AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.headlineMedium)
                     DayNavigation(date, onSelectDate, onToday)
                     if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
-                    habitsState?.trackingZone?.let { trackingZone ->
-                        Surface(
-                            modifier = Modifier.fillMaxWidth().testTag("today_habit_tracking_zone"),
-                            shape = MaterialTheme.shapes.large,
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        ) {
-                            Text(
-                                stringResource(R.string.habit_tracking_zone, trackingZone.id),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
                 }
             }
             item(key = "capture") {
                 TodayCaptureActions(onDateCapture = { requestCapture(it, date) })
             }
             habitsState?.let { item(key = "habits") {
-                TodayHabitsCard(it, date, zone, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
+                TodayHabitsCard(it, date, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
                     onOpenDate = onHabitOpenDate)
             } }
             todayTasks?.let { taskState -> item(key = "today_tasks") {

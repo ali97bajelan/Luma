@@ -73,7 +73,6 @@ import java.util.UUID
 import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
-import com.luma.lifeos.ui.common.LumaSectionSurface
 
 @Composable
 fun HabitEditorRoute(
@@ -113,7 +112,6 @@ fun HabitEditorScreen(
 ) {
     var choosingStart by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
-    var trackingDetailsExpanded by rememberSaveable { mutableStateOf(false) }
     val enabled = state.ready && !state.busy && !state.completed
     val colors = MaterialTheme.colorScheme
     val locale = LocalConfiguration.current.locales[0]
@@ -167,28 +165,6 @@ fun HabitEditorScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 if (state.loading) androidx.compose.material3.CircularProgressIndicator()
-                state.trackingZone?.let { zone ->
-                    LumaSectionSurface {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                stringResource(R.string.habit_tracking_zone, zone.id),
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            if (zone != deviceZone) {
-                                Text(
-                                    stringResource(
-                                        R.string.habit_tracking_zone_mismatch,
-                                        LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
-                                        zone.id,
-                                        LocalDate.now(deviceZone).format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
-                                    ),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.testTag("habit_tracking_day_difference"),
-                                )
-                            }
-                        }
-                    }
-                }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val nameError = state.fieldError?.takeIf {
                         it == HabitEditorFieldError.NAME_REQUIRED || it == HabitEditorFieldError.NAME_TOO_LONG
@@ -374,19 +350,6 @@ fun HabitEditorScreen(
                         val message = if (state.editing && !futureStart) R.string.habit_effective_tomorrow else R.string.habit_effective_start
                         Text(stringResource(message, effective.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
                             style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_effective_date"))
-                    }
-                    if (state.trackingZone != null) {
-                        TextButton(onClick = { trackingDetailsExpanded = !trackingDetailsExpanded },
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_tracking_zone_disclosure")) {
-                            Text(stringResource(R.string.habit_tracking_zone_details), modifier = Modifier.weight(1f))
-                            Text(stringResource(if (trackingDetailsExpanded) R.string.habit_other_hide else R.string.habit_other_show))
-                        }
-                        if (trackingDetailsExpanded) {
-                            LumaSectionSurface {
-                                Text(stringResource(R.string.habit_tracking_zone_note),
-                                    style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("habit_tracking_zone_explanation"))
-                            }
-                        }
                     }
                 }
             }

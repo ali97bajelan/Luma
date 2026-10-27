@@ -30,7 +30,7 @@ internal fun PendingHabitFeedback(
         Text(pending.habitName.takeIf(String::isNotBlank) ?: stringResource(R.string.habit_unavailable),
             style = MaterialTheme.typography.bodyMedium)
         Text(stringResource(R.string.habit_pending_context,
-            pending.input.date.format(localizedDate(FormatStyle.FULL)), pending.input.zone.id),
+            pending.input.date.format(localizedDate(FormatStyle.FULL))),
             style = MaterialTheme.typography.bodySmall)
         Text(stringResource(if (pending.error == null) R.string.habit_log_saving else R.string.habit_log_failed),
             style = MaterialTheme.typography.bodySmall)

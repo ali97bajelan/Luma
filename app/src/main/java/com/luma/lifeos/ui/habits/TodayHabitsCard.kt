@@ -22,7 +22,6 @@ import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.language.localizedDate
 import java.text.NumberFormat
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.util.UUID
 
@@ -32,7 +31,6 @@ internal const val TODAY_HABIT_PREVIEW_LIMIT = 2
 fun TodayHabitsCard(
     state: HabitsUiState,
     fallbackDate: LocalDate,
-    deviceZone: ZoneId,
     onViewAll: () -> Unit,
     onCreate: () -> Unit,
     onHabit: (UUID, LocalDate) -> Unit,
@@ -70,16 +68,6 @@ fun TodayHabitsCard(
                 viewAllDescription?.let { contentDescription = it }
             },
         )
-        state.trackingZone?.let { zone ->
-            val currentDeviceDate = state.deviceDate ?: LocalDate.now(deviceZone)
-            if (shownDate == currentDeviceDate && currentDeviceDate != LocalDate.now(zone)) {
-                Text(stringResource(R.string.habit_tracking_zone_mismatch,
-                    LocalDate.now(zone).format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), zone.id,
-                    currentDeviceDate.format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL))),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.testTag("today_habit_tracking_day_difference"))
-            }
-        }
         if (state.loading) {
             CircularProgressIndicator(Modifier.testTag("today_habits_loading"))
             Text(stringResource(R.string.habit_loading))
@@ -97,9 +85,6 @@ fun TodayHabitsCard(
         )
         if (!state.loading && state.loadedDate == shownDate && rows.isEmpty() && state.error == null) {
             Text(stringResource(R.string.habit_empty_body))
-            Button(onClick = onCreate, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.habit_add))
-            }
         }
         if (rows.isNotEmpty()) {
             if (visible.isEmpty()) Text(stringResource(R.string.habit_no_scheduled),
@@ -127,6 +112,12 @@ fun TodayHabitsCard(
                 PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onOpenDate,
                     modifier = Modifier.testTag("today_habit_retained_${action.id}"))
             }
+        }
+        Button(
+            onClick = onCreate,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_habits_add"),
+        ) {
+            Text(stringResource(R.string.habit_add))
         }
     }
 }

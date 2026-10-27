@@ -357,7 +357,6 @@ fun HabitDetailScreen(
                     item(key = "schedule-${habit.id}") {
                         LumaSectionSurface(modifier = Modifier.testTag("habit_schedule_details")) {
                             Text(stringResource(R.string.habit_schedule_details), style = MaterialTheme.typography.titleMedium)
-                            Text(stringResource(R.string.habit_tracking_zone, trackingZone.id), style = MaterialTheme.typography.bodySmall)
                             trackingSchedule?.let { schedule ->
                                 Text(stringResource(R.string.habit_schedule_target, schedule.target))
                                 val days = schedule.weekdays.sortedBy { it.value }.joinToString { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
