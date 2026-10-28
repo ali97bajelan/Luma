@@ -309,9 +309,12 @@ class RoomWidgetStore(
         }
     }
 
-    override suspend fun dismissFeedback(widgetId: Int) = database.withTransaction {
+    override suspend fun dismissFeedback(widgetId: Int, expectedUndoToken: UUID?) = database.withTransaction {
         val dao = database.widgets()
         val feedback = dao.instance(widgetId)?.feedbackJson?.let(::decodeWidgetActionResult)
+        if (expectedUndoToken != null &&
+            (feedback?.outcome != WidgetOutcome.SAVED || feedback.undoToken != expectedUndoToken)
+        ) return@withTransaction
         listOfNotNull(feedback?.retryToken, feedback?.undoToken).distinct().forEach { token ->
             dao.finishReadyCommand(
                 token.toString(), WidgetCommandExecutor.REJECTED,

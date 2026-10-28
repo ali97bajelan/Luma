@@ -41,7 +41,7 @@ interface WidgetStore {
         date: LocalDate,
     ): Boolean
     suspend fun execute(widgetId: Int, token: UUID, now: Instant, deviceZone: ZoneId): WidgetActionResult
-    suspend fun dismissFeedback(widgetId: Int)
+    suspend fun dismissFeedback(widgetId: Int, expectedUndoToken: UUID? = null)
     suspend fun remove(widgetId: Int)
     suspend fun remap(oldIds: List<Int>, newInstances: List<WidgetInstance>)
     fun observeInvalidations(): Flow<Unit>
