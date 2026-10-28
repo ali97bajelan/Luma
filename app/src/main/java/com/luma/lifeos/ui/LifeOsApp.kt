@@ -675,10 +675,24 @@ fun LifeOsApp(
                     onEdit = { navController.navigate("person?personId=$id") }, onEvent = ::openEvent)
 
             }
+            composable("entry_share/{eventId}/{kind}", arguments = listOf(
+                navArgument("eventId") { type = NavType.StringType },
+                navArgument("kind") { type = NavType.StringType },
+            )) { entry ->
+                val request = remember(entry) { runCatching {
+                    com.luma.lifeos.sharing.EntryShareRequest(
+                        EventId.parse(requireNotNull(entry.arguments?.getString("eventId"))),
+                        com.luma.lifeos.sharing.EntryShareKind.valueOf(requireNotNull(entry.arguments?.getString("kind")))
+                    )
+                }.getOrNull() }
+                if (request != null) com.luma.lifeos.sharing.EntryShareRoute(timeline, request, currentDay.zone) { navController.popBackStack() }
+                else androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(com.luma.lifeos.R.string.share_unavailable))
+            }
             composable("event_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
                 val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
                 EventDetailRoute(timeline, photos, id, currentDay.zone, onBack = { navController.popBackStack() },
-                    onEdit = ::editEvent, onMemory = { navController.navigate("memory?eventId=$id") })
+                    onEdit = ::editEvent, onMemory = { navController.navigate("memory?eventId=$id") },
+                    onShare = { kind -> navController.navigate("entry_share/$id/${kind.name}") })
             }
             composable("memory?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
                 navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
@@ -697,13 +711,15 @@ fun LifeOsApp(
                         places = places, onCreatePlace = {
                             entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PLACE)
                             navController.navigate("place")
-                        }, photos = photos, catalogResultHandle = entry.savedStateHandle)
+                        }, photos = photos, catalogResultHandle = entry.savedStateHandle,
+                        onShare = entry.arguments?.getString("eventId")?.let { id -> { navController.navigate("entry_share/$id/MEMORY") } })
             }
             composable("journal_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
                 val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
                 JournalDetailRoute(journals, id, onBack = { navController.popBackStack() },
                     onEdit = { navController.navigate("journal?eventId=$id") },
-                    onMemory = { navController.navigate("memory?eventId=$id") }, photos = photos)
+                    onMemory = { navController.navigate("memory?eventId=$id") }, photos = photos,
+                    onShare = { navController.navigate("entry_share/$id/MEMORY") })
             }
             composable("journal?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
                 navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
@@ -741,7 +757,8 @@ fun LifeOsApp(
                         places = places, onCreatePlace = {
                             entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PLACE)
                             navController.navigate("place")
-                        }, draftStore = resolvedMoodDraftStore, catalogResultHandle = entry.savedStateHandle)
+                        }, draftStore = resolvedMoodDraftStore, catalogResultHandle = entry.savedStateHandle,
+                        onShare = entry.arguments?.getString("eventId")?.let { id -> { navController.navigate("entry_share/$id/MOOD") } })
             }
         }
         LaunchedEffect(widgetLaunch?.id, navController) {

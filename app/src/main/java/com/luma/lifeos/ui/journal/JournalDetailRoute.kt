@@ -30,7 +30,7 @@ import kotlinx.coroutines.CancellationException
 import com.luma.lifeos.ui.common.LumaReadingPane
 
 @Composable
-fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: () -> Unit, onEdit: () -> Unit, onMemory: () -> Unit, photos: PhotoRepository) {
+fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: () -> Unit, onEdit: () -> Unit, onMemory: () -> Unit, photos: PhotoRepository, onShare: () -> Unit = {}) {
     val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     var record by remember(repository, eventId) { mutableStateOf<LifeEventRecord?>(null) }
     var loading by remember { mutableStateOf(true) }
@@ -76,6 +76,7 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
                 }
                 if (!loading) record?.let { entry ->
                     val journal = requireNotNull(entry.journal)
+                    if (entry.memory != null) TextButton(onClick = onShare) { Text(stringResource(R.string.share_action)) }
                     Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
                     Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM)))
                     if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })

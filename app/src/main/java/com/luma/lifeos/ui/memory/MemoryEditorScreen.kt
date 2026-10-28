@@ -43,7 +43,7 @@ import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 @Composable
 fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: () -> Unit, onRemove: () -> Unit,
     onRetry: () -> Unit, onTitle: (String) -> Unit, onNote: (String) -> Unit, onImportance: (Int?) -> Unit,
-    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {}) {
+    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {}, onShare: (() -> Unit)? = null, shareEnabled: Boolean = false) {
     var removing by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
     var more by rememberSaveable { mutableStateOf(false) }
@@ -92,6 +92,10 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     else -> null
                 }
                 actionError?.let { AccessibleFeedback(it, Modifier.testTag("memory_action_error")) }
+                if (onShare != null && state.editing) {
+                    TextButton(onClick = onShare, enabled = shareEnabled) { Text(stringResource(R.string.share_action)) }
+                    if (!shareEnabled) AccessibleFeedback(stringResource(R.string.share_save_first), isError = false)
+                }
                 EditorActionRow(
                     secondaryAction = if (state.editing) { actionModifier ->
                         TextButton(enabled = enabled, onClick = { removing = true }, modifier = actionModifier.testTag("memory_remove")) {

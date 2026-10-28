@@ -90,6 +90,8 @@ fun MoodEditorScreen(
     peopleContent: @Composable () -> Unit = {},
     placeContent: @Composable () -> Unit = {},
     onRetryDraft: () -> Unit = {},
+    onShare: (() -> Unit)? = null,
+    shareEnabled: Boolean = false,
 ) {
     var more by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
@@ -123,6 +125,10 @@ fun MoodEditorScreen(
                         else -> null
                     }
                     actionError?.let { AccessibleFeedback(it, Modifier.testTag("mood_error")) }
+                    if (onShare != null && state.editing) {
+                        TextButton(onClick = onShare, enabled = shareEnabled) { Text(stringResource(R.string.share_action)) }
+                        if (!shareEnabled) AccessibleFeedback(stringResource(R.string.share_save_first), isError = false)
+                    }
                     EditorActionRow(
                         secondaryAction = if (editing) { actionModifier ->
                             TextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,

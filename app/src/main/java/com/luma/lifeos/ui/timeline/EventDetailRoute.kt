@@ -28,7 +28,7 @@ import com.luma.lifeos.ui.common.LumaReadingPane
 
 @Composable
 fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id: EventId, zone: ZoneId,
-    onBack: () -> Unit, onEdit: (LifeEventRecord) -> Unit, onMemory: () -> Unit) {
+    onBack: () -> Unit, onEdit: (LifeEventRecord) -> Unit, onMemory: () -> Unit, onShare: (com.luma.lifeos.sharing.EntryShareKind) -> Unit = {}) {
     var retry by remember { mutableIntStateOf(0) }
     val flow = remember(repository, id, retry) { observeEventDetail(repository, id) }
     val state by flow.collectAsStateWithLifecycle(initialValue = EventDetailState.Loading)
@@ -71,6 +71,12 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                     }
                     is EventDetailState.Data -> {
                         val record = current.record
+                        val shareKind = when {
+                            record.event.type == EventType.MOOD && record.mood != null -> com.luma.lifeos.sharing.EntryShareKind.MOOD
+                            record.event.type == EventType.MEMORY && record.memory != null -> com.luma.lifeos.sharing.EntryShareKind.MEMORY
+                            else -> null
+                        }
+                        if (shareKind != null) TextButton(onClick = { onShare(shareKind) }) { Text(stringResource(R.string.share_action)) }
                         LumaSectionSurface(modifier = Modifier.testTag("event_detail_record")) {
                             val groupedUsageDetails = record.appUsage != null
                             if (!groupedUsageDetails) {

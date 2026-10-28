@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel: () -> Unit,
     onFinished: (EntryEditorResult) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
     places: PlaceRepository, onCreatePlace: () -> Unit, photos: PhotoRepository, initialTimeMillis: Long? = null,
-    catalogResultHandle: SavedStateHandle? = null) {
+    catalogResultHandle: SavedStateHandle? = null, onShare: (() -> Unit)? = null) {
     val factory = remember(repository, eventId, photos, initialTimeMillis) {
         viewModelFactory { initializer {
             MemoryEditorViewModel(repository, eventId, createSavedStateHandle(), photoRepository = photos,
@@ -123,5 +123,6 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
         photosContent = { PhotoEditor(photos, state.draft.photos, state.ready && !state.busy && !state.completed,
             editor::importPhoto, editor::removePhoto, editor::retryPhoto,
             importFailed = state.error == MemoryEditorError.PHOTO && editor.hasPendingPhotoImport(),
-            operationFailed = state.error == MemoryEditorError.PHOTO && !editor.hasPendingPhotoImport()) })
+            operationFailed = state.error == MemoryEditorError.PHOTO && !editor.hasPendingPhotoImport()) },
+        onShare = onShare, shareEnabled = eventId != null && state.ready && !state.busy && !state.completed && !state.hasChanges && !editor.hasPendingPhotoImport())
 }

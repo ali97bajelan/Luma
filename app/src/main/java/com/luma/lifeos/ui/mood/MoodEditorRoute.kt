@@ -39,7 +39,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () -> Unit,
     onFinished: (EntryEditorResult) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
     places: PlaceRepository, onCreatePlace: () -> Unit, initialTimeMillis: Long? = null,
-    draftStore: MoodDraftStore? = null, catalogResultHandle: SavedStateHandle? = null) {
+    draftStore: MoodDraftStore? = null, catalogResultHandle: SavedStateHandle? = null, onShare: (() -> Unit)? = null) {
     val factory = remember(repository, eventId, initialTimeMillis, draftStore) {
         viewModelFactory { initializer {
             val savedState = createSavedStateHandle()
@@ -168,5 +168,5 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
         placeContent = {
             PlacePicker(places, state.draft.placeId, state.ready && !state.busy && !state.completed,
                 editor::setPlace, { placeFeedback = null; onCreatePlace() }, placeFeedbackText, placeFeedback?.isError == true)
-        })
+        }, onShare = onShare, shareEnabled = eventId != null && state.ready && !state.busy && !state.completed && !state.hasChanges && !state.draftPersisting && state.draftDurable)
 }
