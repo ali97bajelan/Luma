@@ -28,6 +28,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.habit.HabitLog
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import java.util.UUID
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun HabitLogSnackbarFeedback(
@@ -52,12 +53,12 @@ fun HabitLogSnackbarFeedback(
         val host = snackbarHostState ?: return@LaunchedEffect
         when {
             savedLog != null && savedMessage != null -> {
-                val result = host.showSnackbar(
+                val result = withTimeoutOrNull(3_000) { host.showSnackbar(
                     message = savedMessage,
                     actionLabel = undoLabel,
                     withDismissAction = true,
                     duration = SnackbarDuration.Indefinite,
-                )
+                ) }
                 if (result == SnackbarResult.ActionPerformed) onUndo(savedLog.id)
                 else onAcknowledge(savedLog.id)
             }

@@ -32,6 +32,8 @@ import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoRepository
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 const val TODO_ACTION_RESULT_KEY = "todo_action_result"
 
@@ -48,12 +50,12 @@ fun TodoActionFeedback(
     val undoStale = stringResource(R.string.todo_undo_stale)
     LaunchedEffect(result) {
         val committed = result ?: return@LaunchedEffect
-        val outcome = snackbarHostState.showSnackbar(
+        val outcome = withTimeoutOrNull(3_000) { snackbarHostState.showSnackbar(
             message = message,
             actionLabel = undoLabel.takeIf { committed.completed },
             withDismissAction = true,
             duration = SnackbarDuration.Indefinite,
-        )
+        ) }
         if (outcome == SnackbarResult.ActionPerformed && committed.completed) {
             var outcome = onUndo(committed)
             while (outcome == TodoUndoOutcome.RETRYABLE_FAILURE) {
@@ -157,6 +159,12 @@ fun TodoActionFeedbackCard(
     onUndo: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    LaunchedEffect(result, busy, failed, terminal) {
+        if (!busy && !failed && !terminal) {
+            delay(3_000)
+            onDismiss()
+        }
+    }
     Card(Modifier.fillMaxWidth().testTag("todo_completion_feedback")) {
         Column(
             Modifier.fillMaxWidth().padding(12.dp).semantics { liveRegion = LiveRegionMode.Polite },
