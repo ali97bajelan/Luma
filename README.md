@@ -98,6 +98,7 @@ and may retain cached views, including after a widget is removed or Luma is rese
 - [TASKS.md](TASKS.md): original T01–T21 and approved extension T22–T29, with acceptance criteria and status.
 - [Habits handoff](docs/HABITS_TASKS.md): counted habits, per-completion Timeline records, and the five-destination navigation with a More hub are implemented; habit reminders remain optional and full release acceptance remains open.
 - [Tasks handoff](docs/TODO_TASKS.md): one-time tasks with optional civil due dates, automatic approximate reminders for open tasks with due dates and times, Open/Completed lists, Today and Quick Capture entry points; integrated release acceptance remains in progress.
+- [Focus mode proposal](docs/FOCUS_MODE_TASKS.md): draft tasks, specification, implementation plan and QA scenarios for focus sessions, Today totals, weekly comparisons and focus settings. Not implemented; strict device-wide app restriction remains a separate scope decision.
 - [Task due-time design](docs/superpowers/specs/2026-10-23-task-due-time-design.md) and [implementation plan](docs/superpowers/plans/2026-10-23-task-due-time.md): optional minute-precision floating due times, with validation status in [the acceptance record](docs/validation/2026-10-23-task-due-time.md).
 - [Tasks acceptance evidence](docs/TODO_ACCEPTANCE_2026-10-19.md): automated and emulator results plus checks still pending.
 - Original `.docx` files: product specification and implementation task source.

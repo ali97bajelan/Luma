@@ -2,7 +2,7 @@
 
 Date: 26 October 2026 · Source: [prioritized proposal](FEATURE_IMPROVEMENT_PROPOSAL_2026-10-26.md)
 
-This package contains **15 specifications, 15 implementation plans and 15 QA scenario documents**. F01–F14 follow the proposal’s importance ranking; F15 was added on 28 October for the requested memory/mood sharing feature, with proposed priority P2. F04 and F07 source phases are complete. On 27 October, F04 passed the domain and app/data host suites, all three focused reminder instrumentation tests on `Medium_Phone_API_36.1`, and manual notification permission/channel, scheduled task delivery and Complete-action checks. Full F04 acceptance remains incomplete; one unrelated activity lifecycle test failed in the wider connected suite, and several F04 scenarios remain unrun. F07 and the remaining tasks have not entered QA.
+This package contains **16 specifications, 16 implementation plans and 16 QA scenario documents**. F01–F14 follow the proposal’s importance ranking; F15 and F16 were added on 28 October for requested memory/mood sharing and focus mode. F16 has proposed priority P1. F04 and F07 source phases are complete. On 27 October, F04 passed the domain and app/data host suites, all three focused reminder instrumentation tests on `Medium_Phone_API_36.1`, and manual notification permission/channel, scheduled task delivery and Complete-action checks. Full F04 acceptance remains incomplete; one unrelated activity lifecycle test failed in the wider connected suite, and several F04 scenarios remain unrun. F07 and the remaining tasks have not entered QA.
 
 ## Required two-phase workflow
 
@@ -18,6 +18,8 @@ New defaults in the specs are proposed choices for later review, not prior user 
 F04 source follow-up on 27 October adds notification access and recovery controls to Reminders settings and corrects the alarm/action broadcast payload. Its source handoff is recorded in the F04 plan; focused Android and manual checks are recorded in the F04 QA ledger, with remaining acceptance gaps listed there.
 
 F15 documentation added on 28 October proposes single saved memory/mood sharing as editable plain text through Android's system share sheet. Image cards and photo sharing are deferred. This addition leaves F12's journal/memory file-export scope unchanged; source implementation is complete; all eight F15 QA scenarios are NOT RUN.
+
+F16 documentation added on 28 October defines focus-session storage, Today totals, weekly comparisons, focus settings and guarded Luma navigation with selected-app shortcuts. Its [task backlog](FOCUS_MODE_TASKS.md) explicitly tracks strict device-wide enforcement as a separate unresolved decision: ordinary personal-phone navigation guards do not enforce an Android-wide app allowlist. F16 is documentation only; implementation is pending and all 15 QA scenarios are NOT RUN.
 
 ## Task packages
 
@@ -38,6 +40,7 @@ F15 documentation added on 28 October proposes single saved memory/mood sharing 
 | F13 | P3 | Optional sleep and workout imports | [Spec](superpowers/specs/2026-10-26-roadmap-13-health-imports.md) | [Plan](superpowers/plans/2026-10-26-roadmap-13-health-imports.md) | [QA scenarios](feature-roadmap/13-health-imports-qa.md) | PENDING | NOT RUN |
 | F14 | P3 | Build and dependency modernization assessment | [Spec](superpowers/specs/2026-10-26-roadmap-14-build-modernization.md) | [Plan](superpowers/plans/2026-10-26-roadmap-14-build-modernization.md) | [QA scenarios](feature-roadmap/14-build-modernization-qa.md) | PENDING | NOT RUN |
 | F15 | P2 (proposed) | Memory and mood text sharing | [Spec](superpowers/specs/2026-10-28-roadmap-15-memory-mood-sharing.md) | [Plan](superpowers/plans/2026-10-28-roadmap-15-memory-mood-sharing.md) | [QA scenarios](feature-roadmap/15-memory-mood-sharing-qa.md) | SOURCE COMPLETE — QA PENDING | NOT RUN |
+| F16 | P1 (proposed) | Focus sessions, totals and focus navigation | [Spec](superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) | [Plan](superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) | [QA scenarios](feature-roadmap/16-focus-mode-qa.md) | PENDING — DRAFT | NOT RUN |
 
 ## Dependencies and sequencing
 
@@ -46,11 +49,12 @@ F15 documentation added on 28 October proposes single saved memory/mood sharing 
 - **Extensions:** F08 follows reminder/date contracts; F09 can follow F01 independently as a small in-app-only improvement; F10–F12 add new user content and must coordinate schema/archive versions.
 - **Investigation:** F13 first proves demand/provider capability; F14 first documents justified compatibility choices. A documented deferred/no-change recommendation closes assessment scope only, never certifies an unimplemented feature.
 - **Single-entry sharing:** F15 reuses saved-entry reads independently of F12; coordinate F06's privacy gate if present. Text-only v1 needs no file-export, backup or schema dependency. Its appended task number preserves existing IDs rather than changing priority order.
+- **Focus:** F16 follows its FM01–FM08 backlog; coordinate schema/archive changes with F01/F05, entry privacy with F06 if present and current ISO Review periods. Resolve FM08 before claiming strict device-wide blocking. Appended F16 preserves all existing IDs.
 
 Assign next Room/archive versions at actual execution baseline, not from these parallel documents. Preserve old schema JSON and supported adapters; generate/validate new schemas only in QA. All code changes sharing schema/archive inventory need serialized integration.
 
 ## Document review and actual execution
 
-Each spec defines goals, source anchors, proposed interfaces, five requirement IDs, defaults and exclusions. Each plan has five implementation checklist items followed by three QA checklist groups. Each QA document has eight fixture/action/expected-result scenarios and an execution ledger: **120 scenarios** overall, plus the shared matrix and linked full Calendar acceptance package. New cases start NOT RUN; actual execution results belong in their owning ledgers.
+Each spec defines goals, source anchors, proposed interfaces, five requirement IDs, defaults and exclusions. F01–F15 retain their existing plan structures and eight QA scenarios per feature; F16 adds eight delivery/assessment tasks and 15 QA scenarios: **135 scenarios** overall, plus the shared matrix and linked full Calendar acceptance package. New cases start NOT RUN; actual execution results belong in their owning ledgers.
 
 Read a selected task’s spec, plan, QA and shared workflow together. Before future implementation, reconcile defaults and file paths with then-current source. During QA put actual artifacts under `docs/feature-roadmap/evidence/<actual-run-date>/Fnn/` and update outcomes honestly; do not copy historical pass counts into fresh acceptance records.
