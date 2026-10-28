@@ -60,7 +60,6 @@ class MainActivity : ComponentActivity() {
                     moodDraftStore = luma.moodDraftStore,
                     calendar = storage.calendar,
                     habitReminders = storage.habitReminders,
-                    taskReminders = storage.taskReminders,
                     reminderPreferences = ReminderPreferences(this@MainActivity),
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,

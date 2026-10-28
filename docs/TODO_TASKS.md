@@ -28,7 +28,7 @@ feature and do not replace or renumber existing T01–T29 or UX work.
 - One standalone Room table with Room 6 migration, archive schema-5 compatibility, restore preview counts and reset coverage.
 - Offline EN/FA/FR, Persian RTL, accessible controls and retained drafts/errors.
 
-Projects, subtasks, priorities, recurrence, reminders, attachments, cloud sync,
+Projects, subtasks, priorities, recurrence, advanced reminders, attachments, cloud sync,
 search indexing, Timeline records and Review task metrics are deferred. Tasks
 and counted habits remain distinct.
 
@@ -50,8 +50,8 @@ UI is introduced.
 | TD07 | In progress (focused checks pass; aggregate exceptions remain) | P0 | Integrated language/accessibility/device acceptance and documentation | TD01–06 | All product/UX criteria; especially TODO-AC-11/13, UX-TODO-13/14/15 | Required automated/native checks have evidence; unresolved exceptions are explicitly accepted |
 
 Dependency order: **TD01 → TD02 → TD03 → TD04 → TD05 → TD06 → TD07**.
-Existing habits reminders/release work stays independently open; this proposal
-does not depend on implementing reminders or declare that work complete.
+Habit reminders and their release work remain separate; task due-time reminders
+are scheduled automatically as described below.
 
 ## Product-manager and designer discussion
 
@@ -140,7 +140,8 @@ Tasks can keep a date without a time or a date with a local hour and minute. The
 time is stored as minutes since midnight, so midnight is distinct from no time.
 Changing the device time zone keeps the civil date and minute unchanged. Sorting
 places timed tasks before date-only tasks for the same date; Today and Overdue
-remain calendar-day based. Due times do not schedule reminders or alarms.
+remain calendar-day based. Open tasks with a due date and time automatically
+schedule approximate notifications outside quiet hours; date-only tasks do not.
 
 Room schema 6 migrates old tasks with null due time. Portable backup schema 5 adds
 `due_time_minutes`; schema 4 retains its exact old task header and imports with null

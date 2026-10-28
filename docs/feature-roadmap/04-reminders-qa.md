@@ -1,4 +1,4 @@
-# F04 — Optional habit and task reminders QA scenarios
+# F04 — Automatic task and optional habit reminders QA scenarios
 
 Date: 27 October 2026 · Status: **FOCUSED QA PARTIAL; ACCEPTANCE INCOMPLETE** · Priority inherited from task: **P1**
 
@@ -34,9 +34,9 @@ The mapping below identifies the scenarios responsible for each requirement; cas
 
 **Precondition:** isolated task fixture reset to its declared baseline; prerequisites and selected implementation branch recorded.
 
-**Actions:** Fresh install, open editors and Reminders settings without enabling; use Allow notifications in Reminders settings on API 33+, deny once, retry with rationale, then exercise permanent denial and return from system settings after granting. Separately block just the Reminders channel, recover through the same settings control, and revoke app access while the page is backgrounded. Repeat task/habit enable controls and cover API 28–32 app/channel settings. Check EN/FR/FA and RTL.
+**Actions:** Fresh install, open editors and Reminders settings without enabling habit reminders; use Allow notifications in Reminders settings on API 33+, deny once, retry with rationale, then exercise permanent denial and return from system settings after granting. Separately block just the Reminders channel, recover through the same settings control, and revoke app access while the page is backgrounded. Verify task reminders require no per-task switch, and habit controls remain opt-in. Cover API 28–32 app/channel settings. Check EN/FR/FA and RTL.
 
-**Expected:** No unsolicited prompt; off default; explicit permission flow only; denial leaves tracking usable and shows blocked status. Reminders settings displays current app/channel access after permission callbacks and on resume. Rationale is dismissible; permanent denial opens system settings on a subsequent explicit tap. App-level blocking opens app notification settings; otherwise the control opens the Reminders channel. Granting global access leaves individual reminders off; already enabled future reminders reconcile without past-time catch-up. Task/habit controls retain opt-in after denial.
+**Expected:** No unsolicited permission prompt; task reminders are scheduled automatically for open tasks with a future due date and time, while habit reminders stay off by default. Denial leaves tracking usable and shows blocked status. Reminders settings displays current app/channel access after permission callbacks and on resume. Rationale is dismissible; permanent denial opens system settings on a subsequent explicit tap. App-level blocking opens app notification settings; otherwise the control opens the Reminders channel. Granting global access reconciles future eligible task reminders without past-time catch-up and does not enable habit reminders.
 
 **Evidence:** exact fixture/build identity, action/command log and independently inspected values; add screenshots/native observations when behavior is visual or platform-owned. Initial result: **NOT RUN**.
 
@@ -54,7 +54,7 @@ The mapping below identifies the scenarios responsible for each requirement; cas
 
 **Precondition:** isolated task fixture reset to its declared baseline; prerequisites and selected implementation branch recorded.
 
-**Actions:** Change zone before a future alert; exercise Paris DST gap/overlap, no-time task and enabling after due time.
+**Actions:** Save a timed open task without enabling a per-task reminder; change zone before its future alert; exercise Paris DST gap/overlap, a date-only task and a past-due task.
 
 **Expected:** One resolved slot by specified policy; task saved civil values remain unchanged; no date-only or catch-up alert.
 
@@ -106,7 +106,7 @@ The mapping below identifies the scenarios responsible for each requirement; cas
 
 **Actions:** Round-trip configurations and observe inexact notifications on physical API 33+ hardware with battery restrictions.
 
-**Expected:** Restored reminders stay off; explicit re-enable works; observed delays are recorded as approximate delivery, not exact timing compliance.
+**Expected:** Reconciliation automatically enables restored open tasks that still have a future due date/time; restored habit reminders remain off until enabled. Observed delays are recorded as approximate delivery, not exact timing compliance.
 
 **Evidence:** exact fixture/build identity, action/command log and independently inspected values; add screenshots/native observations when behavior is visual or platform-owned. Initial result: **NOT RUN**.
 

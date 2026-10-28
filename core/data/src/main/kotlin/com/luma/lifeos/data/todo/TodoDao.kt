@@ -34,6 +34,11 @@ data class TodoPageRow(
     }
 }
 
+data class TodoReminderCandidate(
+    @ColumnInfo(name = "task_id") val taskId: String,
+    @ColumnInfo(name = "task_revision") val taskRevision: String,
+)
+
 data class WidgetTodoRow(
     @ColumnInfo(name = "task_id") val taskId: String,
     val title: String,
@@ -51,6 +56,13 @@ data class WidgetTodoSummary(
 interface TodoDao {
     @Query("SELECT * FROM todo_task WHERE id = :id")
     suspend fun find(id: String): TodoEntity?
+
+    @Query("""
+        SELECT id AS task_id, revision_token AS task_revision FROM todo_task
+        WHERE completed_at IS NULL AND due_date IS NOT NULL AND due_time_minutes IS NOT NULL
+        ORDER BY id
+    """)
+    suspend fun reminderCandidates(): List<TodoReminderCandidate>
 
     @Query("""
         SELECT COUNT(*) AS total, EXISTS(SELECT 1 FROM todo_task) AS hasAnyItems

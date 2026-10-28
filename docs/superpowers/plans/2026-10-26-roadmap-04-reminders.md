@@ -1,14 +1,14 @@
-# F04 — Optional habit and task reminders Implementation Plan
+# F04 — Automatic task and optional habit reminders Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use delegation only if separately authorized. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver private, optional approximate local reminders with safe completion and snooze actions.
+**Goal:** Deliver private, approximate local reminders automatically for timed open tasks and optionally for habits, with safe completion and snooze actions.
 
 **Architecture:** Implement existing habit planner/repository contracts first. Share Android scheduling/notification adapters with a separate task planner; validate revision, date, expiry and consumed action token inside each mutation transaction.
 
 **Tech Stack:** Existing Kotlin, pure domain contracts, Room, Compose, Java 17 and native Android adapters as appropriate; candidate dependency changes must be documented before integration.
 
-**Spec:** [Optional habit and task reminders specification](../specs/2026-10-26-roadmap-04-reminders.md)
+**Spec:** [Automatic task and optional habit reminders specification](../specs/2026-10-26-roadmap-04-reminders.md)
 
 [Roadmap](../../FEATURE_ROADMAP_2026-10-26.md) · [Spec](../specs/2026-10-26-roadmap-04-reminders.md) · [Plan](2026-10-26-roadmap-04-reminders.md) · [QA scenarios](../../feature-roadmap/04-reminders-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -118,6 +118,8 @@ Status: **SOURCE COMPLETE — QA PENDING / NOT VALIDATED**.
 - Source-only checks passed: `git diff --check`; XML parsing of manifest and EN/FR/FA strings; 34 unique, matching reminder resource keys per locale; POST_NOTIFICATIONS declaration and absence of exact-alarm/full-screen permissions. No tests were authored or executed; no Gradle, build, lint, dependency resolution, emulator or device operations were performed.
 - QA remains **NOT RUN**, including compilation and actual OS prompt/denial/channel/resume behavior, alarm delivery, completion/log/snooze action delivery and all existing F04 acceptance scenarios. Source review does not establish runtime behavior.
 
+The 2026-10-27 handoff above records the then-current individually enabled task behavior. The user-requested 2026-10-28 update below supersedes task opt-in and restore behavior: eligible timed open tasks are enabled automatically during reconciliation, while habits remain optional.
+
 ## Phase 2 — QA
 
 Initial status: **NOT RUN**. Focused notification/alarm QA ran on 27 October using the existing `Medium_Phone_API_36.1` emulator and isolated `.qa` package. Focused checks passed, while full F04 acceptance remains incomplete. See the [QA ledger](../../feature-roadmap/04-reminders-qa.md) and its linked evidence. This phase owns test authoring, Gradle, schemas, emulator/device use and defect retesting.
@@ -162,4 +164,11 @@ Status: **PARTIAL FOCUSED QA PASS; FULL F04 ACCEPTANCE INCOMPLETE**. The emulato
 - Manual: the Reminders page showed blocked access without prompting on open; explicit tap opened Android's notification prompt, grant refreshed the state, and the settings button opened the Reminders channel. A due task triggered a real notification and the Complete action persisted after app relaunch.
 - Scenario ledger: QA01, QA03, QA05 and QA06 are **PARTIAL**; QA02, QA04, QA07 and QA08 are **NOT RUN**. Room migration instrumentation, broader permission denial/recovery, quiet-hour/snooze, habit, replay/restore, reboot, physical-device and remaining UI matrix obligations are outstanding.
 
-Suggested future commit grouping: one source handoff followed by QA tests, generated schemas and evidence; do not commit unrelated user changes. Creating these documents does not authorize implementation, release or commit actions now.
+### User-requested behavior update — 2026-10-28
+
+- Task reminders no longer have a per-task opt-in. Reconciliation creates or re-enables runtime reminder rows for every open task with a due date and time; date-only, completed, past-due, quiet-hour and notification-blocked cases retain their existing eligibility rules.
+- Task create/edit completion now enqueues reconciliation, and the task editor explains the automatic reminder. Habit reminder controls remain optional and unchanged.
+- Existing and restored timed tasks are picked up by the next reconciliation; no database schema change is needed. The generated alarms remain approximate.
+- Implementation stayed source-only under the roadmap workflow. No tests, Gradle build, emulator or device verification were run for this update.
+
+Suggested future commit grouping: one source handoff followed by QA tests, generated schemas and evidence; do not commit unrelated user changes. The original source-phase handoff did not authorize release or commit; the 2026-10-28 behavior update was explicitly requested and remains source-only.

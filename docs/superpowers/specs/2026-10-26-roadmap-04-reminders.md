@@ -1,4 +1,4 @@
-# F04 — Optional habit and task reminders specification
+# F04 — Automatic task and optional habit reminders specification
 
 Date: 26 October 2026 · Priority: **P1** · Status: **SOURCE COMPLETE — QA PENDING / NOT VALIDATED**
 
@@ -6,7 +6,7 @@ Date: 26 October 2026 · Priority: **P1** · Status: **SOURCE COMPLETE — QA PE
 
 ## Intent and dependencies
 
-Deliver private, optional approximate local reminders with safe completion and snooze actions.
+Deliver private, approximate local task reminders automatically for timed open tasks, alongside optional habit reminders, with safe completion and snooze actions.
 
 Dependencies: Task 02; reuse the existing T27/T28 habit reminder specification and planner contracts.
 
@@ -41,7 +41,7 @@ Names below are proposed interfaces to create or adapt, not claims that these de
 
 ### F04-R01 — Delivery promise
 
-Ordinary approximate notifications, off by default; use no exact-alarm, full-screen or foreground-service permission. Request POST_NOTIFICATIONS only from explicit enable on API 33+, including the Allow notifications button on the Reminders settings page. That page shows current app/channel access, supports recovery through system notification settings after permanent denial or channel blocking, and refreshes access/reconciles future eligible reminders on return. Granting notification access does not enable individual task/habit reminders. Distinguish configured, pending, blocked and scheduled; never claim delivery from scheduling alone.
+Task reminders are automatic for open tasks with both a due date and due time; reminders inside quiet hours and past-due tasks are skipped. Habit reminders remain optional and off by default. Delivery is approximate; use no exact-alarm, full-screen or foreground-service permission. Request POST_NOTIFICATIONS from an explicit reminder action, including the Allow notifications button on the Reminders settings page. That page shows current app/channel access, supports recovery through system notification settings after permanent denial or channel blocking, and refreshes access/reconciles future eligible reminders on return. Global notification access is still required for task notifications and does not enable individual habit reminders. Distinguish configured, pending, blocked and scheduled; never claim delivery from scheduling alone.
 
 ### F04-R02 — Task schedule
 

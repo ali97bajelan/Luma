@@ -1112,9 +1112,9 @@
     </plurals>
     <string name="reminder_settings_title">یادآورها</string>
     <string name="reminder_settings_description">دسترسی اعلان‌ها، ساعت‌های سکوت و حریم خصوصی پیش‌نمایش صفحهٔ قفل را مدیریت کنید.</string>
-    <string name="reminder_settings_intro">یادآورهای محلی اختیاری و تقریبی هستند. برای کارها و عادت‌های تازه خاموش‌اند.</string>
+    <string name="reminder_settings_intro">برای کارهای باز با تاریخ و ساعت سررسید در آینده، یادآور تقریبی به‌طور خودکار تنظیم می‌شود. زمان‌های گذشته و زمان‌های داخل ساعت سکوت رد می‌شوند. یادآور عادت‌ها همچنان اختیاری است.</string>
     <string name="reminder_notification_access">دسترسی اعلان‌ها</string>
-    <string name="reminder_notification_access_hint">برای نمایش یادآورهای فعال کارها و عادت‌ها، اجازهٔ ارسال اعلان بدهید. اگر دسترسی مسدود است، اعلان‌های لوما و دستهٔ یادآورها را در تنظیمات سیستم فعال کنید.</string>
+    <string name="reminder_notification_access_hint">برای نمایش یادآورهای خودکار کارها و یادآورهای فعال عادت‌ها، اجازهٔ ارسال اعلان بدهید. اگر دسترسی مسدود است، اعلان‌های لوما و دستهٔ یادآورها را در تنظیمات سیستم فعال کنید.</string>
     <string name="reminder_notifications_allowed">ارسال اعلان یادآورها مجاز است.</string>
     <string name="reminder_allow_notifications">اجازهٔ ارسال اعلان</string>
     <string name="reminder_notification_settings">تنظیمات اعلان‌ها</string>
@@ -1123,6 +1123,7 @@
     <string name="reminder_habit_description">در روزهای فعال عادت، ساعت ۹ صبح تکرار شود.</string>
     <string name="reminder_habit_time">زمان یادآور</string>
     <string name="reminder_task_needs_time">برای برنامه‌ریزی یادآور کار، تاریخ و ساعت سررسید را وارد کنید.</string>
+    <string name="reminder_task_automatic_description">برای زمان سررسید آینده، لوما پس از ذخیرهٔ کار به‌طور خودکار یادآور تقریبی تنظیم می‌کند. زمان‌های گذشته و زمان‌های داخل ساعت سکوت رد می‌شوند. اعلان‌ها را از تنظیمات ← یادآورها فعال کنید.</string>
     <string name="reminder_status_configured">یادآور ذخیره شد؛ برنامه‌ریزی در انتظار است.</string>
     <string name="reminder_status_pending">یادآور پیکربندی شده و منتظر زمان مناسب است.</string>
     <string name="reminder_status_scheduled">یادآور برنامه‌ریزی شد.</string>
@@ -1134,7 +1135,7 @@
     <string name="reminder_quiet_hint">زمان‌های داخل ساعت سکوت رد می‌شوند. برابر بودن زمان شروع و پایان، ساعت سکوت را خاموش می‌کند.</string>
     <string name="reminder_private_previews">نمایش نام کارها و عادت‌ها در صفحهٔ قفل</string>
     <string name="reminder_channel_name">یادآورها</string>
-    <string name="reminder_channel_description">یادآورهای اختیاری کار و عادت</string>
+    <string name="reminder_channel_description">یادآور کارها و یادآورهای اختیاری عادت‌ها</string>
     <string name="reminder_notification_generic">یک یادآور دارید.</string>
     <string name="reminder_task_notification">زمان یک کار رسیده است.</string>
     <string name="reminder_habit_notification">زمان انجام یک عادت است.</string>

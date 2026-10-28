@@ -1132,9 +1132,9 @@
     </plurals>
     <string name="reminder_settings_title">Rappels</string>
     <string name="reminder_settings_description">Gérez l’accès aux notifications, les heures calmes et la confidentialité des aperçus sur l’écran verrouillé.</string>
-    <string name="reminder_settings_intro">Les rappels locaux sont facultatifs et approximatifs. Ils sont désactivés pour les nouvelles tâches et habitudes.</string>
+    <string name="reminder_settings_intro">Les tâches ouvertes avec une échéance future, date et heure, reçoivent automatiquement un rappel approximatif. Les échéances passées et celles pendant les heures calmes sont ignorées. Les rappels d’habitudes restent facultatifs.</string>
     <string name="reminder_notification_access">Accès aux notifications</string>
-    <string name="reminder_notification_access_hint">Autorisez les notifications pour recevoir les rappels de tâches et d’habitudes activés. Si l’accès est bloqué, activez les notifications de Luma et sa catégorie Rappels dans les paramètres système.</string>
+    <string name="reminder_notification_access_hint">Autorisez les notifications pour recevoir les rappels automatiques des tâches et ceux des habitudes activés. Si l’accès est bloqué, activez les notifications de Luma et sa catégorie Rappels dans les paramètres système.</string>
     <string name="reminder_notifications_allowed">Les notifications de rappel sont autorisées.</string>
     <string name="reminder_allow_notifications">Autoriser les notifications</string>
     <string name="reminder_notification_settings">Paramètres des notifications</string>
@@ -1143,6 +1143,7 @@
     <string name="reminder_habit_description">Répéter les jours actifs de l’habitude à 9 h.</string>
     <string name="reminder_habit_time">Heure du rappel</string>
     <string name="reminder_task_needs_time">Ajoutez une date et une heure d’échéance pour programmer un rappel de tâche.</string>
+    <string name="reminder_task_automatic_description">Pour une échéance future, Luma programme automatiquement un rappel approximatif après l’enregistrement. Les heures calmes et les échéances passées sont ignorées. Autorisez les notifications dans Paramètres → Rappels.</string>
     <string name="reminder_status_configured">Rappel enregistré ; programmation en attente.</string>
     <string name="reminder_status_pending">Le rappel est configuré et attend une heure admissible.</string>
     <string name="reminder_status_scheduled">Rappel programmé.</string>
@@ -1154,7 +1155,7 @@
     <string name="reminder_quiet_hint">Les heures comprises dans la plage calme sont ignorées. Des heures de début et de fin identiques désactivent la plage.</string>
     <string name="reminder_private_previews">Afficher les noms des tâches et habitudes sur l’écran verrouillé</string>
     <string name="reminder_channel_name">Rappels</string>
-    <string name="reminder_channel_description">Rappels facultatifs de tâches et d’habitudes</string>
+    <string name="reminder_channel_description">Rappels de tâches et rappels facultatifs d’habitudes</string>
     <string name="reminder_notification_generic">Vous avez un rappel.</string>
     <string name="reminder_task_notification">Une tâche est due.</string>
     <string name="reminder_habit_notification">Une habitude est prête.</string>

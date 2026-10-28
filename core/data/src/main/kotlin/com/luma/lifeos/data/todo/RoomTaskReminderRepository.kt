@@ -27,7 +27,28 @@ class RoomTaskReminderRepository(
 
     override suspend fun configuration(taskId: UUID): TaskReminderConfig? = reminders.reminder(taskId.toString())?.toDomain()
 
-    override suspend fun configurations(): List<TaskReminderConfig> = reminders.reminders().map(TaskReminderEntity::toDomain)
+    override suspend fun configurations(): List<TaskReminderConfig> = database.withTransaction {
+        val stored = reminders.reminders().associateBy(TaskReminderEntity::taskId)
+        tasks.reminderCandidates().forEach { candidate ->
+            val row = stored[candidate.taskId]
+            when {
+                row == null -> reminders.upsert(automaticReminder(candidate.taskId, candidate.taskRevision))
+                !row.enabled || row.taskRevision != candidate.taskRevision -> reminders.upsert(
+                    row.copy(
+                        enabled = true,
+                        taskRevision = candidate.taskRevision,
+                        revisionToken = UUID.randomUUID().toString(),
+                        consumedActionToken = null,
+                        lastDeliveredSlot = null,
+                        snoozeSlot = null,
+                        snoozeUntil = null,
+                        needsReconcile = true,
+                    ),
+                )
+            }
+        }
+        reminders.reminders().map(TaskReminderEntity::toDomain)
+    }
 
     override suspend fun save(taskId: UUID, enabled: Boolean): TaskReminderConfig = database.withTransaction {
         val task = requireNotNull(tasks.find(taskId.toString())) { "Task does not exist" }
@@ -130,4 +151,16 @@ class RoomTaskReminderRepository(
 private fun TaskReminderEntity.toDomain() = TaskReminderConfig(
     taskId = UUID.fromString(taskId), enabled = enabled, revision = UUID.fromString(revisionToken),
     taskRevision = UUID.fromString(taskRevision),
+)
+
+private fun automaticReminder(taskId: String, taskRevision: String) = TaskReminderEntity(
+    taskId = taskId,
+    enabled = true,
+    taskRevision = taskRevision,
+    revisionToken = UUID.randomUUID().toString(),
+    consumedActionToken = null,
+    lastDeliveredSlot = null,
+    snoozeSlot = null,
+    snoozeUntil = null,
+    needsReconcile = true,
 )

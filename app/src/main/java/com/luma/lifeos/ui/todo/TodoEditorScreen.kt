@@ -71,7 +71,6 @@ import java.time.LocalTime
 import java.time.format.FormatStyle
 import java.util.UUID
 import com.luma.lifeos.ui.common.LumaOutlinedTextField
-import com.luma.lifeos.reminders.ReminderPermissionSwitch
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaDestructiveTextButton
@@ -92,10 +91,6 @@ fun TodoEditorScreen(
     onConfirmDelete: () -> Unit,
     onCancelDelete: () -> Unit,
     onDueTime: (LocalTime?) -> Unit = {},
-    reminderEnabled: Boolean = false,
-    reminderStatus: Int = R.string.reminder_status_configured,
-    reminderAvailable: Boolean = false,
-    onReminderEnabled: (Boolean) -> Unit = {},
 ) {
     var discarding by rememberSaveable { mutableStateOf(false) }
     var reloadConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -396,20 +391,16 @@ fun TodoEditorScreen(
                     }
                 }
 
+                if (!state.taskCompleted && state.draft.dueDate != null && state.draft.dueTime != null) {
+                    Text(
+                        stringResource(R.string.reminder_task_automatic_description),
+                        modifier = Modifier.testTag("todo_editor_reminder_status"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
                 if (state.editing) {
-                    if (reminderAvailable) {
-                        ReminderPermissionSwitch(
-                            checked = reminderEnabled,
-                            enabled = state.ready && !state.busy,
-                            onCheckedChange = onReminderEnabled,
-                            description = stringResource(if (state.draft.dueDate == null || state.draft.dueTime == null)
-                                R.string.reminder_task_needs_time else R.string.reminder_enable_description),
-                            modifier = Modifier.testTag("todo_editor_reminder"),
-                        )
-                        if (reminderEnabled || reminderStatus == R.string.reminder_save_failed) {
-                            Text(stringResource(reminderStatus), modifier = Modifier.testTag("todo_editor_reminder_status"))
-                        }
-                    }
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             stringResource(if (state.taskCompleted) R.string.todo_status_completed else R.string.todo_status_open),

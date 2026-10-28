@@ -115,7 +115,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityRefresh
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityViewModel
 import com.luma.lifeos.domain.habit.HabitReminderRepository
-import com.luma.lifeos.domain.todo.TaskReminderRepository
 import com.luma.lifeos.reminders.ReminderOpenRequest
 import com.luma.lifeos.reminders.ReminderPreferences
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
@@ -159,7 +158,6 @@ fun LifeOsApp(
     moodDraftStore: MoodDraftStore? = null,
     calendar: CalendarRepository? = null,
     habitReminders: HabitReminderRepository? = null,
-    taskReminders: TaskReminderRepository? = null,
     reminderPreferences: ReminderPreferences? = null,
     reminderLaunch: ReminderOpenRequest? = null,
     onReminderLaunchConsumed: () -> Unit = {},
@@ -493,7 +491,6 @@ fun LifeOsApp(
                         .collectAsStateWithLifecycle()
                     TodoEditorRoute(
                         repository = todos,
-                        reminderRepository = taskReminders,
                         taskId = taskId,
                         initialDueDate = dueDate,
                         onClose = { result ->
