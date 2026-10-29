@@ -1,6 +1,6 @@
 # F16 — Focus mode specification
 
-Date: 28 October 2026 · Priority: **P1 (proposed)** · Status: **DRAFT — DOCUMENTATION ONLY**
+Date: 28 October 2026 · Priority: **P1 (proposed)** · Status: **DRAFT — FM01 SOURCE COMPLETE; QA PENDING**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [Plan](../plans/2026-10-28-roadmap-16-focus-mode.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Roadmap](../../FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -8,7 +8,7 @@ Date: 28 October 2026 · Priority: **P1 (proposed)** · Status: **DRAFT — DOCU
 
 Help a user concentrate, retain each focus session, and compare recorded focus time across days and weeks. The requested behavior is: save each session; show a total on Today and comparisons in Weekly Review; let the user select allowed apps in focus settings; keep the user on the focus screen until Pause or Stop, except for selected apps.
 
-This package defines a **proposed personal-phone v1**, plus a separate enforcement investigation. The user requested tasks, a specification, a plan and QA scenarios; this package does not implement the feature or claim that proposed defaults were approved. In particular, the requested device-wide app restriction is **not fulfilled by the personal-phone navigation guard**. It remains a tracked scope decision in FM08, rather than silently weakening that requirement.
+This specification defines a **proposed personal-phone v1**, plus a separate enforcement investigation. FM01 now implements pure session, timing, transition and statistics contracts; its QA is pending, as is FM02–FM08 implementation. This source handoff does not claim that proposed defaults were approved or that the feature is complete. In particular, the requested device-wide app restriction is **not fulfilled by the personal-phone navigation guard**. It remains a tracked scope decision in FM08, rather than silently weakening that requirement.
 
 Proposed defaults: count-up stopwatch; no target or automatic finish; empty allowed-app selection; navigation guard always enabled while RUNNING; only explicitly ended/interrupted sessions contribute to saved reports; stopped sessions retain all positive active time; pause time is excluded. A stopwatch avoids introducing unrequested Pomodoro cycles, scheduled starts and alarm delivery. These can be separate extensions later.
 

@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 28 October 2026 · Status: **DRAFT — NOT IMPLEMENTED**
+Date: 29 October 2026 · Status: **FM01 SOURCE COMPLETE — QA PENDING; FM02–FM08 NOT STARTED**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -63,14 +63,29 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ### Phase 1 — Implementation
 
-- [ ] Define immutable session/run snapshots, state, stable commands and typed results in `FocusSession.kt`; define positive range-contribution and page values. Pin legal transitions, terminal idempotency, expected revisions and zero-time retention.
-- [ ] Implement pure sample continuity and credited-time calculation in `FocusTiming.kt`: monotonic delta within a known boot, canonical projection, last-checkpoint fallback, 2-second threshold and paused-reboot behavior. Use checked arithmetic.
-- [ ] Implement `focusStatistics(sessions, range): FocusStatistics` in `FocusStatistics.kt` for terminal snapshots; overlapping runs clipped to range, distinct contributing IDs, interrupted contributors and integer-millisecond totals. Deduplicate identical run IDs; reject conflicting snapshots. Define comparison output for zero denominator and one-decimal percentages.
-- [ ] Record exact final signatures, invariants and source handoff; map to QA02–04/QA06–09/QA11. No tests or Gradle during this phase.
+- [x] Define immutable session/run snapshots, state, stable commands and typed results in `FocusSession.kt`; define range-contribution and page values. Pin legal transitions, terminal idempotency, expected revisions and zero-time retention.
+- [x] Implement pure sample continuity and credited-time calculation in `FocusTiming.kt`: monotonic delta within a known boot, canonical projection, last-checkpoint fallback, 2-second threshold and paused-reboot behavior. Use checked arithmetic.
+- [x] Implement `focusStatistics(sessions, range): FocusStatistics` in `FocusStatistics.kt` for terminal snapshots; overlapping runs clipped to range, distinct contributing IDs, interrupted contributors and integer-millisecond totals. Deduplicate identical run IDs; reject conflicting snapshots. Define comparison output for zero denominator and one-decimal percentages.
+- [x] Record exact final signatures, invariants and source handoff; map to QA02–04/QA06–09/QA11. No tests or Gradle during this phase.
+
+### FM01 source handoff — 29 October 2026
+
+**Status:** SOURCE COMPLETE — QA PENDING. This closes only the FM01 implementation phase; it does not verify runtime behavior or complete F16.
+
+- **Files:** `core/domain/src/main/kotlin/com/luma/lifeos/domain/focus/FocusSession.kt`, `FocusTiming.kt`, `FocusStatistics.kt`, and `FocusRepository.kt`.
+- **Final repository contract:** `FocusRepository.currentGeneration(): UUID`; `observeOpen(): Flow<FocusSession?>`; `start(commandId, sessionId, sample, context)`; `apply(command)`; `reconcile(sample, context)`; `resolveRecovery(sessionId, expectedRevision, choice, sample, context)`; `checkpoint(sessionId, expectedRevision, sample, context)`; `observeStatistics(range)`; `history(range, offset, limit = 50)`; and `delete(sessionId, expectedRevision, context)`. Mutations return `FocusWriteResult` with Applied, AlreadyApplied, Conflict, Invalid, Unavailable, or RecoveryRequired outcomes.
+- **Transition and snapshot invariants:** RUNNING has one open run; PAUSED has no open run; terminal states have no open run and retain a terminal reason. Revisions and durations are nonnegative; run identity/ordinal are stable; a closed canonical end equals its canonical start plus credited milliseconds. Stop is terminally idempotent; pause time is absent from runs; zero-duration runs remain valid.
+- **Timing signatures:** `focusSampleContinuity(previous, current)` requires known matching boot IDs, nondecreasing elapsed realtime, and wall/monotonic drift no greater than 2,000 ms. `calculateFocusTiming(run, checkpoint, sample)` projects only checked monotonic deltas; discontinuities preserve the checkpoint and carry a typed interruption reason. `assessFocusRecovery(...)` leaves paused sessions untouched and requires an explicit choice after a valid new-process RUNNING recovery.
+- **Statistics signatures:** `focusStatistics(sessions, range)` and `focusRangeContributionMillis(session, range)` include terminal sessions only, clip runs to the half-open `TimeRange`, deduplicate equal identities, reject conflicting snapshots, and use checked integer-millisecond totals. `compareFocusStatistics(current, previous)` reports the absolute delta; it omits percentage only for a zero previous baseline (or zero against zero), and rounds nonzero-baseline percentages to one decimal using `HALF_UP`.
+- **Implementation choice:** equal positive periods have `NO_CHANGE` with `0.0%`; zero against zero has `NO_CHANGE` with no percentage, consistent with the comparison formula and zero-period rule.
+- **QA mapping:** QA02–04 (transitions, monotonic continuity and recovery), QA06–08 (half-open date/week overlap, empty baselines and rounding), and QA11 (generation-aware callers) remain NOT RUN. The QA phase owns test authoring, Gradle and behavior verification.
+- **Review:** A fresh read-only review found transition/recovery results that did not use the deduplicated run view used by statistics. The implementation now deduplicates before open-run selection and normalizes runs in changed, already-applied and conflict snapshots; QA should retain a regression case for repeated identical run rows.
+- **Source identity:** base commit `7beffaf`; source patch SHA-256 `84de2cabaaaca3e105efb059ae229f0ac162fcf8a6f2b569e736f5a9d89eed50`. Tracked and new-source `git diff --check` passed. No Gradle, test, schema or device command is part of this implementation handoff.
+- **Suggested commit message:** `feat(focus): add pure session timing and statistics contracts`.
 
 ### Phase 2 — QA
 
-- [ ] Author `core/domain/src/test/kotlin/com/luma/lifeos/domain/focus/FocusTimingTest.kt`, `FocusTransitionsTest.kt`, `FocusStatisticsTest.kt`; pin QA fixture values including 20 active + 10 paused + 5 active = 25 minutes, midnight 10/20, zero and 90/60 comparison.
+- [ ] Author `core/domain/src/test/kotlin/com/luma/lifeos/domain/focus/FocusTimingTest.kt`, `FocusTransitionsTest.kt`, `FocusStatisticsTest.kt`; pin QA fixture values including 20 active + 10 paused + 5 active = 25 minutes, midnight 10/20, zero and 90/60 comparison, repeated identical run rows, and normalized conflict snapshots.
 - [ ] Verify unknown boot, 1,999/2,000/2,001-ms drift, overflow/conflicting snapshots, paused reboot, full/partial weeks and DST. Run `bash gradlew -PdomainOnly=true :core:domain:test`; exit 0 with required assertions executed is the automated gate.
 - [ ] Record outcomes/defects/retests and actual scope before FM02.
 
@@ -188,4 +203,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-Documentation only. No FM production work, test authoring, Gradle, schema export, emulator/device operation, app installation or release has occurred for F16. Every implementation checkbox remains open and every QA scenario begins NOT RUN.
+FM01 production source is implemented and handed off with QA pending. FM02–FM08 source work has not started. No FM01 tests were authored or run, no Gradle/schema/device work was performed, and every QA scenario remains NOT RUN.

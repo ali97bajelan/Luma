@@ -1,10 +1,10 @@
 # Focus mode — tasks and delivery status
 
-Date: 28 October 2026 · Feature: **F16** · Priority: **P1 (proposed)** · Status: **DRAFT — NOT IMPLEMENTED**
+Date: 29 October 2026 · Feature: **F16** · Priority: **P1 (proposed)** · Status: **FM01 SOURCE COMPLETE — QA PENDING; FM02–FM08 NOT STARTED**
 
 [Specification](superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) · [Implementation plan](superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) · [QA scenarios](feature-roadmap/16-focus-mode-qa.md) · [Roadmap](FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](feature-roadmap/WORKFLOW.md)
 
-The user asked for focus-session storage, Today totals, weekly comparisons, allowed apps and a focus screen that cannot be left until Pause/Stop. This is the requested documentation package. All implementation and QA work is pending. The personal-phone proposal guards Luma navigation; **device-wide restriction remains unresolved in FM08**. Do not close the original restriction request by calling app shortcuts an enforced allowlist.
+The user asked for focus-session storage, Today totals, weekly comparisons, allowed apps and a focus screen that cannot be left until Pause/Stop. FM01's pure domain source handoff is complete; its QA and FM02–FM08 implementation remain pending. All 15 QA scenarios remain NOT RUN. The personal-phone proposal guards Luma navigation; **device-wide restriction remains unresolved in FM08**. Do not close the original restriction request by calling app shortcuts an enforced allowlist.
 
 ## Proposed defaults to carry into execution
 
@@ -21,7 +21,7 @@ Each FM task follows exactly two phases: implementation/source handoff, then QA.
 
 | ID | Deliverable | Dependencies | Acceptance / QA | Implementation | QA |
 | --- | --- | --- | --- | --- | --- |
-| FM01 | Pure session state machine, timing and statistics contracts | None | Explicit transitions; pause exclusion; monotonic recovery; positive overlap totals; QA01–04, QA06–09, QA11 | PENDING | NOT RUN |
+| FM01 | Pure session state machine, timing and statistics contracts | None | Explicit transitions; pause exclusion; monotonic recovery; positive overlap totals; QA01–04, QA06–09, QA11 | SOURCE COMPLETE — QA PENDING | NOT RUN |
 | FM02 | Room sessions/runs/runtime, singleton and command receipts | FM01 | Atomic durable/revision-safe writes; no duplicate credit; next available migration; QA02–04, QA09–11 | PENDING | NOT RUN |
 | FM03 | Android clock/lifecycle coordinator and guarded focus screen | FM01–02 | Start/Pause/Resume/Stop, recreation, all Luma entry paths and emergency exit; QA01–04, QA12–13 | PENDING | NOT RUN |
 | FM04 | Focus settings and selected-app shortcuts | FM03 | Empty default, narrow package discovery, stable selections, safe failed launch; QA05, QA12–13 | PENDING | NOT RUN |
@@ -48,4 +48,4 @@ Source milestones do not equal feature acceptance. FM01/FM02 can complete their 
 
 | Date | Task | Source handoff / SHA and patch hash | QA evidence | Result |
 | --- | --- | --- | --- | --- |
-| — | FM01–08 | Not started | None | NOT RUN |
+| 29 Oct 2026 | FM01 | Base `7beffaf`; source patch SHA-256 `84de2cabaaaca3e105efb059ae229f0ac162fcf8a6f2b569e736f5a9d89eed50` | None — QA phase not run | SOURCE COMPLETE — QA PENDING |
