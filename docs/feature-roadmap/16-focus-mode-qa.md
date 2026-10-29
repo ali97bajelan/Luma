@@ -1,6 +1,6 @@
 # F16 — Focus mode QA scenarios
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; FM02 ROOM/REPOSITORY SUBSET PASS; INTEGRATED CASES BLOCKED/PENDING** · Priority: **P1 (proposed)**
+Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; FM02 ROOM/REPOSITORY SUBSET PASS; FM03 SCOPED API36 SUBSET PASS; FULL MATRIX/INTEGRATED CASES PENDING** · Priority: **P1 (proposed)**
 
 [Tasks](../FOCUS_MODE_TASKS.md) · [Spec](../superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) · [Plan](../superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) · [Roadmap](../FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](WORKFLOW.md)
 
@@ -9,6 +9,8 @@ Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; FM02 ROOM/REPOSITORY
 Read the full specification and shared workflow. Test/fixture authoring, Gradle/schema export/build/lint, native/manual checks and defect corrections are phase 2 work, entered only after the owning FM task's source handoff. All cases were **NOT RUN** at initial handoff; see the execution ledger for current partial results. These are instructions and expected results, not execution evidence.
 
 Use an isolated application/test package, disposable database/photos and dedicated emulator/device. Verify actual package isolation before any install/connected runner, reboot, clock change, reset, restore or force-stop. Do not touch personal Luma data or grant permissions on the user's installation. Record actual SHA/dirty patch hash, APK hash/variant/package, command/exit code, device/API, locale/zone/theme, window/font scale and fixture seed/hash. Store real evidence under `evidence/<actual-run-date>/F16/`, created when QA runs.
+
+FM03 has a scoped API 36.1 run recorded in [its execution evidence](evidence/2026-10-30/F16/fm03-qa.md). That run covers selected lifecycle, navigation and runtime-recovery assertions only. It does not change the full-case `NOT RUN` status for untested OS lifecycle, fault-injection, API28, accessibility, localization or layout matrix steps below.
 
 For every case capture fixture identity, exact steps and independently inspected expected values plus test logs or screenshots/native observations as appropriate. Statuses: NOT RUN/PASS/FAIL/BLOCKED/N/A. A subset or simulated capability never certifies an unexecuted native case. Deferred strict enforcement is an unresolved scope item, not a PASS for blocking. Defect fixes invalidate affected earlier evidence and require retest.
 
@@ -186,7 +188,7 @@ For every case capture fixture identity, exact steps and independently inspected
 
 ## FM01 domain QA run — 30 October 2026
 
-The FM01 pure-domain subset passed. The exact command, environment, source/test patch identity, defects and evidence files are recorded in [the run report](evidence/2026-10-30/F16/fm01-domain-qa.md). The focused suite covers transitions, pause exclusion, monotonic continuity/recovery, half-open day/week overlap, DST-sized ranges, deduplication, interrupted/zero-time contribution, and comparison rounding/baselines.
+The FM01 pure-domain subset passed. The exact command, environment, source/test patch identity, defects and evidence files are recorded in [the run report](evidence/2026-10-30/F16/fm01-domain-qa.md). The focused suite covers transitions, pause exclusion, monotonic continuity/recovery, half-open day/week overlap, DST-sized ranges, deduplication, interrupted/zero-time contribution, and comparison rounding/baselines. At that time the integrated cases were still waiting on FM03; the later FM03 scoped run is recorded below.
 
 Full scenario results remain separate from this component pass. QA01–04, QA06–09 and QA11 are **BLOCKED** pending FM02/FM03/FM05/FM06 as appropriate; see the ledger. QA05, QA10 and QA12–15 remain **NOT RUN**. No connected test, emulator scenario, app build, Room schema/migration, native lifecycle, UI matrix, or performance result is claimed. The API 36.1 emulator was not needed for the pure `core:domain` target.
 
@@ -194,16 +196,22 @@ Full scenario results remain separate from this component pass. QA01–04, QA06�
 
 The FM02 Room schema and repository subset passed. The v7→v8 migration retained populated journal, photo-reference and task rows; the existing v1→v8 migration test passed. Nine focused focus persistence/migration instrumentation tests passed on the isolated API 36.1 AVD, and all 29 data host tests passed. The complete data-module connected run executed 172 tests: 170 passed and two non-FM02 Todo migration/backup tests failed. Exact commands, candidate identity, package isolation, schema correction and scope limits are recorded in the [FM02 run evidence](evidence/2026-10-30/F16/fm02-room-qa.md).
 
-This component result does not pass the complete integrated scenarios. FM03 lifecycle and UI, FM05 report surfaces, and FM06 restore/reset races remain pending their implementation handoffs.
+This FM02 component result does not pass the complete integrated scenarios. FM03 lifecycle/UI now has a scoped API36.1 result; FM05 report surfaces and FM06 restore/reset races remain pending their implementation handoffs.
+
+## FM03 lifecycle/navigation QA run — 30 October 2026
+
+The focused app suite passed 293/293 host tests and 6/6 connected tests on the isolated API 36.1 AVD; `focusQaDebug` lint exited 0 with no warnings in changed FM03 production files. The connected suite covers Today/More entry, widget new-intent queueing, recreation, system Back, Pause/Resume/Stop, explicit changed-process recovery and emergency-marker recovery. It simulates a changed runtime owner identity rather than killing the OS process. See the [FM03 execution evidence](evidence/2026-10-30/F16/fm03-qa.md) for candidate/APK hashes, exact package, test reports, corrected defects and unrun cases.
+
+This is a scoped component pass. Actual process death/force-stop, reboot, sleep, storage-fault injection, API28, predictive Back/keyboard/TalkBack and EN/FR/FA theme/window/font/orientation checks remain unrun.
 
 ## Execution ledger
 
 | Case | Initial result | Current result | Actual run / evidence / blocker |
 | --- | --- | --- | --- |
-| F16-QA01 | NOT RUN | BLOCKED | Requires FM03 navigation guard and app routes; no UI exists yet. |
-| F16-QA02 | NOT RUN | BLOCKED | FM01 transition assertions and FM02 exact timing, command replay, stale checkpoint and two-client transaction tests pass. Integrated pause/stop/checkpoint races and ambiguous-ack fault injection remain with FM03; see [FM02 evidence](evidence/2026-10-30/F16/fm02-room-qa.md). |
-| F16-QA03 | NOT RUN | BLOCKED | FM01 recovery and FM02 persisted checkpoint/Continue/End-at-checkpoint repository tests pass. Actual process death, force-stop, sleep and lifecycle recovery require FM03. |
-| F16-QA04 | NOT RUN | BLOCKED | FM01 drift/recovery assertions and FM02 changed-boot checkpoint interruption pass. Wall-clock/native reboot, injected write failures and emergency-marker behavior require FM03. |
+| F16-QA01 | NOT RUN | PARTIAL | FM03 connected checks cover Today/More, system Back, widget intent queue and explicit post-pause open. Other Luma paths, gestures, system interruptions, drafts and the full guard matrix remain unrun; see [FM03 evidence](evidence/2026-10-30/F16/fm03-qa.md). |
+| F16-QA02 | NOT RUN | PARTIAL | FM01 transition tests, FM02 exact timing/command replay/stale checkpoint/two-client tests, and FM03 coordinator sample/action host tests pass. Integrated write races and ambiguous-ack fault injection remain unrun; see [FM02](evidence/2026-10-30/F16/fm02-room-qa.md) and [FM03](evidence/2026-10-30/F16/fm03-qa.md). |
+| F16-QA03 | NOT RUN | PARTIAL | FM01/FM02 recovery checks and FM03 recreation plus changed-process-identity simulation pass. Actual process death, force-stop, sleep and OS lifecycle recovery remain unrun. |
+| F16-QA04 | NOT RUN | PARTIAL | FM01 drift/recovery assertions, FM02 changed-boot checkpoint handling and FM03 emergency-marker checkpoint recovery pass. Native clock/reboot conditions and injected database/preference failures remain unrun. |
 | F16-QA05 | NOT RUN | NOT RUN | FM04 app selection/launchability not implemented. |
 | F16-QA06 | NOT RUN | BLOCKED | FM01 half-open overlap, midnight, and DST assertions pass; Room/report/UI verification requires FM02/FM05. |
 | F16-QA07 | NOT RUN | BLOCKED | FM01 cross-week overlap assertions pass; Review ranges and source drill-down require FM05. |
@@ -211,8 +219,8 @@ This component result does not pass the complete integrated scenarios. FM03 life
 | F16-QA09 | NOT RUN | BLOCKED | FM02 stable 50-row paging, range clipping, zero-duration exclusion, cascade deletion and tombstone replay protection pass. Report UI, confirmation and concurrent report invalidation require FM05. |
 | F16-QA10 | NOT RUN | NOT RUN | Backup/legacy restore integration requires FM06. |
 | F16-QA11 | NOT RUN | BLOCKED | FM02 stale-generation rejection, receipt eviction and tombstone replay protection pass. Restore/reset orchestration and stale-write races require FM06. |
-| F16-QA12 | NOT RUN | NOT RUN | Integrated loading/navigation/regression work requires FM03–FM06. |
-| F16-QA13 | NOT RUN | NOT RUN | Native UI/platform matrix requires FM03–FM05. |
+| F16-QA12 | NOT RUN | PARTIAL | FM03 checks cover selected app loading/navigation flows; host suite and lint pass. Existing-feature connected regressions, all entry paths, drafts and restore races remain unrun. |
+| F16-QA13 | NOT RUN | PARTIAL | Selected Compose UI assertions pass on API36.1. API28, TalkBack/keyboard/predictive Back, locales, theme/window/font/orientation matrix remains unrun. |
 | F16-QA14 | NOT RUN | NOT RUN | Room/query and representative-device performance work requires FM02/FM05. |
 | F16-QA15 | NOT RUN | NOT RUN | FM08 scope/capability assessment has not run. |
 

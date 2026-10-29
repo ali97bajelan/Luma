@@ -204,7 +204,7 @@ class HabitCaptureFlowTest {
         var viewAllOpened = false
         compose.setContent {
             LifeOsTheme {
-                TodayHabitsCard(HabitsUiState(date = today, loadedDate = today, days = rows, loading = false), today, zone,
+                TodayHabitsCard(HabitsUiState(date = today, loadedDate = today, days = rows, loading = false), today,
                     onViewAll = { viewAllOpened = true }, onCreate = {}, onHabit = { _, _ -> }, onLog = {}, onRetryLog = {},
                     onUndo = {}, onRetry = {})
             }
@@ -657,7 +657,7 @@ class HabitCaptureFlowTest {
             CompositionLocalProvider(LocalDensity provides Density(deviceDensity.density, fontScale = 2f)) {
                 LifeOsTheme {
                     Box(Modifier.width(320.dp)) {
-                        TodayHabitsCard(HabitsUiState(date = today, loadedDate = today, days = listOf(row), loading = false), today, zone,
+                        TodayHabitsCard(HabitsUiState(date = today, loadedDate = today, days = listOf(row), loading = false), today,
                             onViewAll = {}, onCreate = {}, onHabit = { _, _ -> }, onLog = {}, onRetryLog = {},
                             onUndo = {}, onRetry = {})
                     }

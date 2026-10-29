@@ -15,6 +15,8 @@ import com.luma.lifeos.ui.usage.UsageForegroundRefresh
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -124,6 +127,15 @@ import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collect
+import com.luma.lifeos.focus.AllowedFocusApps
+import com.luma.lifeos.focus.FocusNavigationGuard
+import com.luma.lifeos.focus.FocusPendingDestination
+import com.luma.lifeos.focus.FocusPreferences
+import com.luma.lifeos.focus.FocusRuntime
+import com.luma.lifeos.focus.FocusRuntimeState
+import com.luma.lifeos.focus.FocusScreenState
+import com.luma.lifeos.focus.FocusViewModel
+import com.luma.lifeos.ui.focus.FocusRoute
 
 private const val HABITS_SELECTED_DATE_KEY = "habits_selected_date"
 private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
@@ -161,6 +173,9 @@ fun LifeOsApp(
     reminderPreferences: ReminderPreferences? = null,
     reminderLaunch: ReminderOpenRequest? = null,
     onReminderLaunchConsumed: () -> Unit = {},
+    focusRuntime: FocusRuntime? = null,
+    focusPreferences: FocusPreferences? = null,
+    allowedFocusApps: AllowedFocusApps? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -182,6 +197,17 @@ fun LifeOsApp(
         moodDraftStore ?: FileMoodDraftStore(applicationContext)
     }
     val navController = rememberNavController()
+    val focusViewModel = if (focusRuntime == null) null else {
+        val focusFactory = remember(focusRuntime) {
+            viewModelFactory { initializer { FocusViewModel(focusRuntime) } }
+        }
+        viewModel<FocusViewModel>(factory = focusFactory)
+    }
+    val focusStateHolder = focusViewModel?.state?.collectAsStateWithLifecycle()
+        ?: remember { mutableStateOf(FocusScreenState(FocusRuntimeState(initialized = true, loading = false))) }
+    val focusState by focusStateHolder
+    var focusNavigationGuard by rememberSaveable { mutableStateOf(FocusNavigationGuard()) }
+    fun isFocusGuarded(): Boolean = focusNavigationGuard.isGuarded(focusState.runtime)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val entrySavedMessage = stringResource(R.string.entry_saved_feedback)
@@ -239,6 +265,26 @@ fun LifeOsApp(
     var lastCaptureRestoreGeneration by rememberSaveable { mutableStateOf(todoRestoreGeneration) }
     var captureFabHeight by remember { mutableStateOf(0.dp) }
     val currentRoute = backStackEntry?.destination?.route
+    val focusGateVisible = focusRuntime != null && currentRoute != AppRoutes.FOCUS && (
+        (focusState.runtime.loading && !focusState.runtime.emergencyExitConfirmed) ||
+            (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed) ||
+            focusState.runtime.recoveryRequired || focusState.runtime.navigationGuarded
+        )
+    LaunchedEffect(focusRuntime, focusState.runtime.navigationGuarded, focusState.runtime.initialized) {
+        if (focusRuntime != null && focusState.runtime.navigationGuarded) {
+            navController.currentBackStackEntryFlow.first()
+            if (navController.currentDestination?.route != AppRoutes.FOCUS) {
+                navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
+            }
+        }
+    }
+    LaunchedEffect(focusState.runtime.emergencyExitConfirmed, currentRoute) {
+        if (focusState.runtime.emergencyExitConfirmed && currentRoute == AppRoutes.FOCUS) {
+            if (!navController.popBackStack()) navController.navigate(PrimaryDestination.TODAY.route) {
+                launchSingleTop = true
+            }
+        }
+    }
     LaunchedEffect(todoRestoreGeneration) {
         if (lastCaptureRestoreGeneration != todoRestoreGeneration) {
             lastCaptureRestoreGeneration = todoRestoreGeneration
@@ -247,7 +293,7 @@ fun LifeOsApp(
             calendarCaptureDueDate = null
         }
     }
-    val showCaptureFab = primaryScreen &&
+    val showCaptureFab = primaryScreen && !isFocusGuarded() &&
         (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
     val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
     fun openCapture(route: String, date: LocalDate?) {
@@ -269,17 +315,81 @@ fun LifeOsApp(
             entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = (date ?: currentDay.date).toString()
         }
     }
+    fun routeWidgetDestination(destination: WidgetDestination) {
+        val top = navController.currentBackStackEntry
+        if (destination != WidgetDestination.QuickCapture) {
+            capturing = false
+            widgetQuickCapture = false
+            calendarCaptureDueDate = null
+        }
+        when (destination) {
+            WidgetDestination.Today -> if (top?.destination?.route != PrimaryDestination.TODAY.route) {
+                navController.navigate(PrimaryDestination.TODAY.route)
+            }
+            WidgetDestination.QuickCapture -> {
+                widgetQuickCapture = true
+                capturing = true
+                calendarCaptureDueDate = null
+            }
+            is WidgetDestination.Capture -> {
+                val route = when (destination.kind) {
+                    CaptureKind.MOOD -> "mood"
+                    CaptureKind.MEMORY -> "memory"
+                    CaptureKind.JOURNAL -> "journal"
+                }
+                val pattern = when (destination.kind) {
+                    CaptureKind.MOOD -> "mood?eventId={eventId}&initialTime={initialTime}"
+                    CaptureKind.MEMORY -> "memory?eventId={eventId}&initialTime={initialTime}"
+                    CaptureKind.JOURNAL -> "journal?eventId={eventId}&initialTime={initialTime}"
+                }
+                val isSameNewEditor = top?.destination?.route == pattern && top.arguments?.getString("eventId") == null
+                if (!isSameNewEditor) navController.navigate(route)
+            }
+            WidgetDestination.Habits -> openHabitsDate(null)
+            is WidgetDestination.HabitDetail -> navController.navigate("habit_detail/${destination.id}/${destination.date}")
+            WidgetDestination.Tasks -> if (todos != null) navController.navigate(AppRoutes.TASKS)
+            is WidgetDestination.Task -> if (todos != null) openTodoEditor(taskId = destination.id)
+            WidgetDestination.NewHabit -> navController.navigate("habit_editor")
+            WidgetDestination.NewTask -> if (todos != null) {
+                openTodoEditor(dueDate = LocalDate.now(ZoneId.systemDefault()))
+            }
+        }
+    }
+    fun openPendingFocusDestination() {
+        val (pending, nextGuard) = focusNavigationGuard.consumePending()
+        focusNavigationGuard = nextGuard
+        when (pending) {
+            is FocusPendingDestination.Widget -> routeWidgetDestination(pending.destination)
+            is FocusPendingDestination.Reminder -> when (pending.kind) {
+                "habit" -> navController.navigate("habit_detail/${pending.id}/${pending.date}")
+                "task" -> if (todos != null) openTodoEditor(UUID.fromString(pending.id))
+            }
+            is FocusPendingDestination.Route -> navController.navigate(pending.route) {
+                launchSingleTop = true
+                restoreState = true
+            }
+            null -> Unit
+        }
+    }
+    Box(Modifier.fillMaxSize()) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            if (primaryScreen) {
+            if (primaryScreen && !isFocusGuarded()) {
                 PrimaryNavigationBar(
                     selectedRoute = currentRoute,
                     onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                        if (isFocusGuarded()) {
+                            focusNavigationGuard = focusNavigationGuard.intercept(
+                                focusState.runtime,
+                                FocusPendingDestination.Route(route),
+                            )
+                        } else {
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     },
                 )
@@ -403,6 +513,10 @@ fun LifeOsApp(
                                 )
                             },
                             snackbarHostState = snackbarHostState,
+                            onFocus = if (focusRuntime != null) ({
+                                navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
+                            }) else null,
+                            focusPaused = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.PAUSED,
                         )
                         PrimaryDestination.REVIEW -> {
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
@@ -433,8 +547,28 @@ fun LifeOsApp(
                             onSettings = { navController.navigate(AppRoutes.SETTINGS) },
                             onTasks = if (todos != null) ({ navController.navigate(AppRoutes.TASKS) }) else null,
                             onHabits = { openHabitsDate(currentDay.date) },
+                            onFocus = if (focusRuntime != null) ({
+                                navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
+                            }) else null,
+                            focusPaused = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.PAUSED,
                         )
                     }
+                }
+            }
+            composable(AppRoutes.FOCUS) {
+                if (focusViewModel != null) {
+                    FocusRoute(
+                        viewModel = focusViewModel,
+                        preferences = focusPreferences,
+                        allowedFocusApps = allowedFocusApps,
+                        hasPendingDestination = focusNavigationGuard.pendingDestination != null,
+                        onBack = {
+                            if (!navController.popBackStack()) {
+                                navController.navigate(PrimaryDestination.TODAY.route) { launchSingleTop = true }
+                            }
+                        },
+                        onOpenPendingDestination = ::openPendingFocusDestination,
+                    )
                 }
             }
             composable(AppRoutes.HABITS) { entry ->
@@ -761,58 +895,38 @@ fun LifeOsApp(
                         onShare = entry.arguments?.getString("eventId")?.let { id -> { navController.navigate("entry_share/$id/MOOD") } })
             }
         }
-        LaunchedEffect(widgetLaunch?.id, navController) {
+        LaunchedEffect(widgetLaunch?.id, navController, focusState.runtime.loading,
+            focusState.runtime.loadFailed, focusState.runtime.navigationGuarded) {
             val request = widgetLaunch ?: return@LaunchedEffect
+            if (focusRuntime != null && (focusState.runtime.loading ||
+                    (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed))) return@LaunchedEffect
             // The cold-start request waits here until NavHost has installed its graph.
             navController.currentBackStackEntryFlow.first()
-            val top = navController.currentBackStackEntry
-            if (request.destination != WidgetDestination.QuickCapture) {
-                capturing = false
-                widgetQuickCapture = false
-                calendarCaptureDueDate = null
+            val pending = FocusPendingDestination.Widget(request.destination)
+            val nextGuard = focusNavigationGuard.intercept(focusState.runtime, pending)
+            if (nextGuard != focusNavigationGuard) {
+                focusNavigationGuard = nextGuard
+                onWidgetLaunchConsumed(request.id)
+                return@LaunchedEffect
             }
-            when (val destination = request.destination) {
-                WidgetDestination.Today -> {
-                    if (top?.destination?.route != PrimaryDestination.TODAY.route) {
-                        navController.navigate(PrimaryDestination.TODAY.route)
-                    }
-                }
-                WidgetDestination.QuickCapture -> {
-                    widgetQuickCapture = true
-                    capturing = true
-                    calendarCaptureDueDate = null
-                }
-                is WidgetDestination.Capture -> {
-                    val route = when (destination.kind) {
-                        CaptureKind.MOOD -> "mood"
-                        CaptureKind.MEMORY -> "memory"
-                        CaptureKind.JOURNAL -> "journal"
-                    }
-                    val pattern = when (destination.kind) {
-                        CaptureKind.MOOD -> "mood?eventId={eventId}&initialTime={initialTime}"
-                        CaptureKind.MEMORY -> "memory?eventId={eventId}&initialTime={initialTime}"
-                        CaptureKind.JOURNAL -> "journal?eventId={eventId}&initialTime={initialTime}"
-                    }
-                    val isSameNewEditor = top?.destination?.route == pattern &&
-                        top.arguments?.getString("eventId") == null
-                    if (!isSameNewEditor) navController.navigate(route)
-                }
-                WidgetDestination.Habits -> openHabitsDate(null)
-                is WidgetDestination.HabitDetail -> navController.navigate(
-                    "habit_detail/${destination.id}/${destination.date}",
-                )
-                WidgetDestination.Tasks -> if (todos != null) navController.navigate(AppRoutes.TASKS)
-                is WidgetDestination.Task -> if (todos != null) openTodoEditor(taskId = destination.id)
-                WidgetDestination.NewHabit -> navController.navigate("habit_editor")
-                WidgetDestination.NewTask -> if (todos != null) {
-                    openTodoEditor(dueDate = LocalDate.now(ZoneId.systemDefault()))
-                }
-            }
+            routeWidgetDestination(request.destination)
             onWidgetLaunchConsumed(request.id)
         }
-        LaunchedEffect(reminderLaunch?.token, navController) {
+        LaunchedEffect(reminderLaunch?.token, navController, focusState.runtime.loading,
+            focusState.runtime.loadFailed, focusState.runtime.navigationGuarded) {
             val request = reminderLaunch ?: return@LaunchedEffect
+            if (focusRuntime != null && (focusState.runtime.loading ||
+                    (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed))) return@LaunchedEffect
             navController.currentBackStackEntryFlow.first()
+            val nextGuard = focusNavigationGuard.intercept(
+                focusState.runtime,
+                FocusPendingDestination.Reminder(request.kind, request.id.toString(), request.date.toString()),
+            )
+            if (nextGuard != focusNavigationGuard) {
+                focusNavigationGuard = nextGuard
+                onReminderLaunchConsumed()
+                return@LaunchedEffect
+            }
             when (request.kind) {
                 "habit" -> navController.navigate("habit_detail/${request.id}/${request.date}")
                 "task" -> if (todos != null) openTodoEditor(request.id)
@@ -828,7 +942,7 @@ fun LifeOsApp(
         selectedDate?.let(LocalDate::parse)?.takeIf { it != currentDay.date }
     }
     val browsedDate = captureRecordDate.takeUnless { widgetQuickCapture }
-    if (capturing) {
+    if (capturing && !focusGateVisible) {
         QuickCaptureSheet(
             browsedDate = browsedDate,
             onDismiss = {
@@ -859,6 +973,22 @@ fun LifeOsApp(
                 openTodoEditor(dueDate = date)
             }) else null,
         )
+    }
+    if (focusGateVisible && focusViewModel != null) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+        ) {
+            FocusRoute(
+                viewModel = focusViewModel,
+                preferences = focusPreferences,
+                allowedFocusApps = allowedFocusApps,
+                hasPendingDestination = focusNavigationGuard.pendingDestination != null,
+                onBack = {},
+                onOpenPendingDestination = ::openPendingFocusDestination,
+            )
+        }
+    }
     }
 }
 

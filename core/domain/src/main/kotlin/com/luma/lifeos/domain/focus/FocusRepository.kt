@@ -33,6 +33,7 @@ interface FocusRepository {
         choice: FocusRecoveryChoice,
         sample: FocusTimeSample,
         context: FocusWriteContext,
+        terminalReason: FocusTerminalReason = FocusTerminalReason.PROCESS_RESTART_GAP,
     ): FocusWriteResult
 
     /** A checkpoint updates durable elapsed progress without advancing the user-action revision. */

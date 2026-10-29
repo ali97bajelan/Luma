@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 SOURCE COMPLETE — QA PENDING; INTEGRATED QA BLOCKED; FM03 IN PROGRESS; FM04–FM08 NOT STARTED**
+Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03 SOURCE COMPLETE + SCOPED API36 QA PASS; FM04–FM05 IN PROGRESS; FM06–FM08 NOT STARTED; FULL MATRIX/INTEGRATED QA PENDING**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -128,17 +128,32 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ### Phase 1 — Implementation
 
-- [ ] Implement `FocusClock.sample(): FocusTimeSample` using raw wall instant, elapsed realtime and a platform boot identifier; failed boot read is unknown, never a made-up stable boot. Inject clock/dispatcher for later QA. Use Android `Settings.Global.BOOT_COUNT` where supported/available; no privileged settings write.
-- [ ] Implement coordinator reconciliation before route restoration, a per-process UUID, visible 5-second checkpoints, background checkpoint, and command retry/reconciliation. New-process RUNNING recovery requires Continue elapsed / End at checkpoint; emergency markers finalize at checkpoint. Attempt emergency marker in independent preferences before releasing guard and warn if both persistence stores fail. App scope prevents duplicate activity timers; stopped/reset generations cancel stale work. No service, wake lock, background poll or dependence on exact UI ticks.
-- [ ] Build ViewModel/route/screen for load/error/ready/action-busy/write-error/emergency-exit states. Use authoritative durable results to release guard. Preserve screen ID across rotation/language changes; no automatic replay of Stop or Start.
-- [ ] Wire guard in `LifeOsApp.kt` plus activity external entry handling. Guard primary/secondary/capture/new intent/widget/restored routes; retain at most one pending destination with no auto-mutation. Paused navigation provides Resume banner. Keep Pause/Stop accessible with keyboard/TalkBack and small windows.
-- [ ] Add More/Today entry wiring behind availability and localized copy. Preserve existing draft state. Source-review all launch/action paths and record handoff.
+- [x] Implement `FocusClock.sample(): FocusTimeSample` using raw wall instant, elapsed realtime and a platform boot identifier; failed boot read is unknown, never a made-up stable boot. Inject clock/dispatcher for later QA. Use Android `Settings.Global.BOOT_COUNT` where supported/available; no privileged settings write.
+- [x] Implement coordinator reconciliation before route restoration, a per-process UUID, visible 5-second checkpoints, background checkpoint, and command retry/reconciliation. New-process RUNNING recovery requires Continue elapsed / End at checkpoint; emergency markers finalize at checkpoint. Attempt emergency marker in independent preferences before releasing guard and warn if both persistence stores fail. App scope prevents duplicate activity timers; repository generation checks reject stale writes and open-state observation clears removed sessions. No service, wake lock, background poll or dependence on exact UI ticks.
+- [x] Build ViewModel/route/screen for load/error/ready/action-busy/write-error/emergency-exit states. Use authoritative durable results to release guard. Preserve screen ID across rotation/language changes; no automatic replay of Stop or Start.
+- [x] Wire guard in `LifeOsApp.kt` plus activity external entry handling. Guard primary/secondary/capture/new intent/widget/restored routes; retain at most one pending destination with no auto-mutation. Paused navigation provides Resume banner. Keep Pause/Stop accessible with keyboard/TalkBack and small windows.
+- [x] Add More/Today entry wiring behind availability and localized copy. Preserve existing draft state. Source-review all launch/action paths and record handoff.
+
+### FM03 source handoff — 30 October 2026
+
+**Status:** SOURCE COMPLETE — QA PENDING. The user requested FM03 QA directly after this task's handoff; this does not close the remaining FM04–FM06 source work or integrated F16 QA.
+
+- **Lifecycle:** `LumaApplication` owns one `FocusRuntime`/`FocusCoordinator` for the process. Reconcile and read the open session before the shell leaves its loading gate. The application scope runs one 1-second visible timer projection, persists checkpoints every 5 seconds, and checkpoints when the last Luma activity pauses. No service, wake lock or background polling is added.
+- **Recovery/actions:** repository results remain authoritative; start and action retries retain their command IDs. New-process RUNNING state requires Continue elapsed or End at checkpoint. A matching emergency marker finalizes at the durable checkpoint as INTERRUPTED with `EMERGENCY_EXIT`; emergency confirmation attempts a synchronous preference marker before releasing the route guard and presents the marker-write result. If the user confirms while startup is still loading, the same-process guard releases after reconciliation while ordinary elapsed/checkpoint accounting continues.
+- **Navigation/UI:** Today and More route into the Focus screen. A RUNNING session covers other shell routes and redirects to Focus; app tab routes, widget launches and reminder launches are intercepted into one saveable pending destination. It is offered as an explicit action after pause/stop and is never auto-replayed. Back offers Pause/Stop. The screen covers loading, load failure/retry, recovery, running, paused, terminal, write/checkpoint failure and emergency exit. Existing drafts stay in their underlying back stack. New Focus copy is present in EN/FR/FA.
+- **Scope:** selected-app preferences/discovery are only available when packages were already selected; the settings UI, complete allowed-app handoff/settings workflow, reports, backup/restore/reset integration and device-wide restrictions remain FM04–FM08 work. The API36 emulator run below cannot establish API28 or the full locale/theme/window/TalkBack matrix.
+- **Source checks:** `git diff --check` passed; Python `xml.etree.ElementTree` parsed all three affected string resource files. No Gradle, test, schema or device action occurred before this handoff.
+- **Source identity:** base commit `4472f5f89d4586795b3759ac8454d021d44c5ff4`; production patch SHA-256 `8a3f2f1538663fc27facb1a7581eebbf273009dd79b2cb85a3a7c2860e2c1f9e` (21 FM03 production/resource paths; unrelated worktree changes excluded).
+- **QA at handoff:** QA01–04 and QA12–13 NOT RUN. See the F16 QA evidence ledger for the scoped FM03 results and unexecuted matrix cases.
 
 ### Phase 2 — QA
 
-- [ ] Author `app/src/test/java/com/luma/lifeos/focus/FocusCoordinatorTest.kt`, `ui/focus/FocusViewModelTest.kt`; verify exact sample/retry/ownership behavior against QA01–04/QA11–12.
-- [ ] Author `app/src/androidTest/java/com/luma/lifeos/ui/focus/FocusNavigationTest.kt`, `FocusLifecycleTest.kt`; execute system Back, new intents/widgets, recreation, process death/force-stop, reboot, screen off and paused entry on isolated API28/API36 devices.
-- [ ] Exercise injected storage failures and emergency exit; record what remained durable. Run affected host/build/lint/device gates and QA12/QA13 matrix before claiming the guard works.
+- [x] Author/run `FocusCoordinatorTest.kt` and `FocusNavigationGuardTest.kt` (4 host tests) for injected clock samples, stable process identity, emergency terminal reason and one explicit queued destination. Dedicated ViewModel retry tests and write-fault injection remain open.
+- [x] Run connected `FocusRuntimeRecoveryTest`, `FocusLifecycleTest` and `FocusScreenTest` on the isolated API36.1 QA flavor (6/6 pass): More/Today, widget new intent, system Back, recreation, Pause/Resume/Stop, explicit recovery after a changed process identity and emergency-marker recovery.
+- [ ] Execute the remaining native matrix: actual OS process death/force-stop, reboot, screen-off/sleep, API28, injected storage failures, TalkBack/keyboard, EN/FR/FA × theme/window/font/orientation. API36 subset does not certify these cases.
+- [x] Run full app host unit suite (293/293) and `lintFocusQaDebug` (exit 0; no warnings in changed FM03 production sources). Record exact variant, artifact identity, findings and limits in [FM03 QA evidence](../../feature-roadmap/evidence/2026-10-30/F16/fm03-qa.md).
+
+**FM03 QA disposition (30 October 2026):** Scoped API36.1 QA PASS; platform matrix and full F16 integration remain pending. QA used the dedicated `focusQaDebug` package and did not clear or mutate the installed production/QA app data. See [execution evidence](../../feature-roadmap/evidence/2026-10-30/F16/fm03-qa.md).
 
 ## FM04 — Focus settings and selected-app handoff
 
@@ -219,4 +234,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 has a clock and an unwired coordinator operation wrapper; lifecycle ownership, guard, UI and remaining FM03 implementation and FM04–FM08 source work are pending. Integrated QA remains blocked pending FM03/FM05/FM06 integration. No complete F16 UI or archive integration is claimed.
+FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 lifecycle ownership, guarded UI and coordinator integration are source-complete, and its focused API36.1 host/instrumentation/lint subset passes; native lifecycle, fault-injection and accessibility/platform matrix checks remain open. FM04–FM08 source work and integrated QA remain pending. No complete F16 UI or archive integration is claimed.

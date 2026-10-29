@@ -26,6 +26,8 @@ internal fun MoreRoute(
     onSettings: () -> Unit,
     onTasks: (() -> Unit)? = null,
     onHabits: (() -> Unit)? = null,
+    onFocus: (() -> Unit)? = null,
+    focusPaused: Boolean = false,
 ) {
     AppPageScaffold(title = stringResource(R.string.more), navigation = PageNavigation.NONE) { pagePadding ->
         LumaReadingPane(
@@ -35,6 +37,15 @@ internal fun MoreRoute(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                onFocus?.let { action ->
+                    MoreEntry(
+                        title = if (focusPaused) R.string.focus_resume else R.string.focus_title,
+                        description = if (focusPaused) R.string.more_focus_paused_description else R.string.more_focus_description,
+                        icon = R.drawable.ic_nav_timeline,
+                        testTag = "more_focus",
+                        onClick = action,
+                    )
+                }
                 onHabits?.let { action ->
                     MoreEntry(
                         title = R.string.habit_title,

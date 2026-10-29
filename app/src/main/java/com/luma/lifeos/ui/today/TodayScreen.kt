@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
@@ -84,6 +87,8 @@ fun TodayScreen(
     onDismissTaskError: (UUID) -> Unit = {},
     onHabitOpenDate: (LocalDate) -> Unit = {},
     deviceDate: LocalDate,
+    onFocus: (() -> Unit)? = null,
+    focusPaused: Boolean = false,
 ) {
     var choosingDateFor by rememberSaveable(date) { mutableStateOf<EventType?>(null) }
     var choosingCaptureDate by rememberSaveable(date) { mutableStateOf<String?>(null) }
@@ -94,6 +99,7 @@ fun TodayScreen(
             choosingCaptureDate = captureDate.toString()
         }
     }
+    val focusAction = onFocus
 
     LumaReadingPane(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -110,6 +116,13 @@ fun TodayScreen(
             }
             item(key = "capture") {
                 TodayCaptureActions(onDateCapture = { requestCapture(it, date) })
+            }
+            if (focusAction != null) item(key = "focus") {
+                OutlinedButton(
+                    onClick = focusAction,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("today_focus"),
+                ) { Text(stringResource(R.string.today_focus_action)) }
+                if (focusPaused) Text(stringResource(R.string.today_focus_paused))
             }
             habitsState?.let { item(key = "habits") {
                 TodayHabitsCard(it, date, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,

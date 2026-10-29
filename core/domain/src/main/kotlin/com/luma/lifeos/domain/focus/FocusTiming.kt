@@ -259,6 +259,7 @@ fun resolveFocusRecovery(
     checkpoint: FocusTimingCheckpoint,
     sample: FocusTimeSample,
     choice: FocusRecoveryChoice,
+    terminalReason: FocusTerminalReason = FocusTerminalReason.PROCESS_RESTART_GAP,
 ): FocusTransitionResult {
     if (session.state != FocusState.RUNNING) return invalidTransition()
     if (expectedRevision != session.revision) {
@@ -304,7 +305,8 @@ fun resolveFocusRecovery(
                     revision = revision,
                     endedAt = checkpoint.sample.wall,
                     updatedAt = checkpoint.sample.wall,
-                    terminalReason = FocusTerminalReason.PROCESS_RESTART_GAP,
+                    terminalReason = terminalReason.takeUnless { choice == FocusRecoveryChoice.CONTINUE_ELAPSED }
+                        ?: FocusTerminalReason.PROCESS_RESTART_GAP,
                     recoveredOrUncertain = true,
                     runs = replaceRun(session, closed),
                 ),

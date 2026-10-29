@@ -8,6 +8,15 @@ android {
     namespace = "com.luma.lifeos"
     compileSdk = 35
 
+    flavorDimensions += "qa"
+    productFlavors {
+        create("focusQa") {
+            dimension = "qa"
+            applicationIdSuffix = ".focusqa"
+            versionNameSuffix = "-focusqa"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.luma.lifeos"
         minSdk = 28

@@ -201,6 +201,7 @@ class RoomFocusRepository(
         choice: FocusRecoveryChoice,
         sample: FocusTimeSample,
         context: FocusWriteContext,
+        terminalReason: FocusTerminalReason,
     ): FocusWriteResult = storageWrite {
         database.withTransaction {
             val generation = ensureGeneration().generationId
@@ -236,6 +237,7 @@ class RoomFocusRepository(
                     checkpoint = checkpoint,
                     sample = sample,
                     choice = choice,
+                    terminalReason = terminalReason,
                 )
             ) {
                 is FocusTransitionResult.Changed -> persistTransition(

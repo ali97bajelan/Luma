@@ -75,6 +75,8 @@ fun TodayRoute(
     onTaskActionResult: (TodoActionResult) -> Unit = {},
     snackbarHostState: SnackbarHostState? = null,
     onHabitOpenDate: (LocalDate) -> Unit = {},
+    onFocus: (() -> Unit)? = null,
+    focusPaused: Boolean = false,
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
@@ -128,7 +130,7 @@ fun TodayRoute(
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
-                deviceDate = deviceDate)
+                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused)
         } else {
             val habitFactory = remember(habits) {
                 viewModelFactory { initializer { HabitsViewModel(habits, createSavedStateHandle()) } }
@@ -173,7 +175,7 @@ fun TodayRoute(
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
-                deviceDate = deviceDate)
+                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused)
         }
     }
 }

@@ -3,6 +3,11 @@ package com.luma.lifeos
 import android.app.Application
 import android.content.SharedPreferences
 import com.luma.lifeos.data.LumaStorage
+import com.luma.lifeos.focus.AllowedFocusApps
+import com.luma.lifeos.focus.AndroidFocusClock
+import com.luma.lifeos.focus.FocusCoordinator
+import com.luma.lifeos.focus.FocusPreferences
+import com.luma.lifeos.focus.FocusRuntime
 import com.luma.lifeos.ui.mood.FileMoodDraftStore
 import com.luma.lifeos.domain.usage.UsageIntegration
 import com.luma.lifeos.domain.usage.UsageSyncer
@@ -30,6 +35,16 @@ class LumaApplication : Application() {
     // Construction is lazy; the database opens off the main thread on the first suspend/Flow query.
     val appDataReset: com.luma.lifeos.ui.privacy.AppDataReset by lazy { com.luma.lifeos.ui.privacy.AndroidAppDataReset(this) }
     val storage: LumaStorage by lazy { LumaStorage(this) }
+    val focusPreferences: FocusPreferences by lazy { FocusPreferences(this) }
+    val allowedFocusApps: AllowedFocusApps by lazy { AllowedFocusApps(this) }
+    val focusRuntime: FocusRuntime by lazy {
+        FocusRuntime(
+            coordinator = FocusCoordinator(storage.focus, AndroidFocusClock(this)),
+            preferences = focusPreferences,
+            allowedApps = allowedFocusApps,
+            scope = applicationScope,
+        )
+    }
     val moodDraftStore: FileMoodDraftStore by lazy { FileMoodDraftStore(this) }
     val usage: UsageIntegration by lazy {
         UsageSyncer(AndroidUsageSource(this), storage.usage, UsageWorkScheduler(this, UsageWorker::class.java))
@@ -40,6 +55,16 @@ class LumaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        focusRuntime.initialize()
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityResumed(activity: android.app.Activity) = focusRuntime.onActivityResumed(activity)
+            override fun onActivityPaused(activity: android.app.Activity) = focusRuntime.onActivityPaused(activity)
+            override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) = Unit
+            override fun onActivityStarted(activity: android.app.Activity) = Unit
+            override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) = Unit
+            override fun onActivityStopped(activity: android.app.Activity) = Unit
+            override fun onActivityDestroyed(activity: android.app.Activity) = Unit
+        })
         getSharedPreferences("app_theme", MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(themePreferenceListener)
         applicationScope.launch {

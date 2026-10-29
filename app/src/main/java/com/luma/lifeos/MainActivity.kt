@@ -61,6 +61,9 @@ class MainActivity : ComponentActivity() {
                     calendar = storage.calendar,
                     habitReminders = storage.habitReminders,
                     reminderPreferences = ReminderPreferences(this@MainActivity),
+                    focusRuntime = luma.focusRuntime,
+                    focusPreferences = luma.focusPreferences,
+                    allowedFocusApps = luma.allowedFocusApps,
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,
                     reminderLaunch = reminderLaunch,
@@ -70,7 +73,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: android.content.Intent) {
+    public override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         enqueueWidgetLaunch(intent)
