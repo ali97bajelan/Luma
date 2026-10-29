@@ -391,7 +391,17 @@ private fun FailureContent(
                 Text(stringResource(R.string.focus_emergency_exit))
             }
         }
-        state.shortcutUnavailable || state.runtime.shortcutFailed ->
-            Text(stringResource(R.string.focus_app_unavailable), color = MaterialTheme.colorScheme.error)
+        state.shortcutUnavailable || state.runtime.shortcutFailed -> {
+            Text(
+                stringResource(R.string.focus_app_unavailable),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.testTag("focus_app_unavailable"),
+            )
+            TextButton(
+                onClick = onRetry,
+                enabled = !state.busy,
+                modifier = Modifier.testTag("focus_retry_shortcut"),
+            ) { Text(stringResource(R.string.retry)) }
+        }
     }
 }

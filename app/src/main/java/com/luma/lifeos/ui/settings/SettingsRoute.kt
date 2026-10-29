@@ -21,7 +21,8 @@ import com.luma.lifeos.ui.common.PageNavigation
 fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrationsAvailable: Boolean,
     onLanguage: () -> Unit, onBackup: () -> Unit, onPrivacy: () -> Unit, onIntegrations: () -> Unit,
     onBack: (() -> Unit)? = null, widgetsAvailable: Boolean = false, onWidgets: () -> Unit = {},
-    remindersAvailable: Boolean = false, onReminders: () -> Unit = {}) {
+    remindersAvailable: Boolean = false, onReminders: () -> Unit = {},
+    focusAvailable: Boolean = false, onFocus: () -> Unit = {}) {
     BackHandler(enabled = onBack != null) { onBack?.invoke() }
     AppPageScaffold(
         title = stringResource(R.string.settings),
@@ -39,6 +40,12 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
                 R.string.settings_widgets_description,
                 "settings_widgets",
                 onWidgets,
+            )
+            if (focusAvailable) SettingsRow(
+                R.string.focus_settings_title,
+                R.string.focus_settings_description,
+                "settings_focus",
+                onFocus,
             )
             if (remindersAvailable) SettingsRow(R.string.reminder_settings_title, R.string.reminder_settings_description,
                 "settings_reminders", onReminders)

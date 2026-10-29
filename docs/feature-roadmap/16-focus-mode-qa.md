@@ -204,6 +204,12 @@ The focused app suite passed 293/293 host tests and 6/6 connected tests on the i
 
 This is a scoped component pass. Actual process death/force-stop, reboot, sleep, storage-fault injection, API28, predictive Back/keyboard/TalkBack and EN/FR/FA theme/window/font/orientation checks remain unrun.
 
+## FM04 settings and selected-app handoff QA run — 30 October 2026
+
+FM04 passed its scoped host, API 36.1 connected and `focusQaDebug` lint checks. The host suite passed 297/297 tests; 20/20 focused connected tests passed on the requested `Medium_Phone_API_36.1` emulator. Coverage includes empty-default and durable preference behavior, cross-instance changes, package discovery invariants, settings search/selection/stale removal, checkpoint-before-launch, revalidation after a selection change, launch failure/retry, the nonselected-package guard and running-state edit lock. See [FM04 execution evidence](evidence/2026-10-30/F16/fm04-qa.md) for commands and exact limits.
+
+QA05 remains **PARTIAL**: no disposable installed external app was used, so actual external launch/return continuity, disabled target behavior, multiple real activities and work-profile separation were not exercised. QA12/13 remain **PARTIAL**: only scoped Compose/regression assertions ran; API28, accessibility, keyboard/predictive Back and EN/FR/FA theme/window/font/orientation coverage are open. No private package inventory, Usage access or notification permission was collected or granted. The focus shortcuts document their personal-phone scope and do not claim device-wide blocking.
+
 ## Execution ledger
 
 | Case | Initial result | Current result | Actual run / evidence / blocker |
@@ -212,15 +218,15 @@ This is a scoped component pass. Actual process death/force-stop, reboot, sleep,
 | F16-QA02 | NOT RUN | PARTIAL | FM01 transition tests, FM02 exact timing/command replay/stale checkpoint/two-client tests, and FM03 coordinator sample/action host tests pass. Integrated write races and ambiguous-ack fault injection remain unrun; see [FM02](evidence/2026-10-30/F16/fm02-room-qa.md) and [FM03](evidence/2026-10-30/F16/fm03-qa.md). |
 | F16-QA03 | NOT RUN | PARTIAL | FM01/FM02 recovery checks and FM03 recreation plus changed-process-identity simulation pass. Actual process death, force-stop, sleep and OS lifecycle recovery remain unrun. |
 | F16-QA04 | NOT RUN | PARTIAL | FM01 drift/recovery assertions, FM02 changed-boot checkpoint handling and FM03 emergency-marker checkpoint recovery pass. Native clock/reboot conditions and injected database/preference failures remain unrun. |
-| F16-QA05 | NOT RUN | NOT RUN | FM04 app selection/launchability not implemented. |
+| F16-QA05 | NOT RUN | PARTIAL | FM04 host/API36.1 checks pass for preference persistence, duplicate-label identity, stale removal, current-selection/launchability recheck, checkpoint-before-launch, retry after injected failure and nonselected rejection. Real installed fixture launch/return, disabled/uninstalled target, multiple actual activities and work-profile boundary remain unrun; see [FM04 evidence](evidence/2026-10-30/F16/fm04-qa.md). |
 | F16-QA06 | NOT RUN | BLOCKED | FM01 half-open overlap, midnight, and DST assertions pass; Room/report/UI verification requires FM02/FM05. |
 | F16-QA07 | NOT RUN | BLOCKED | FM01 cross-week overlap assertions pass; Review ranges and source drill-down require FM05. |
 | F16-QA08 | NOT RUN | BLOCKED | FM01 comparison baseline/rounding assertions pass; Today/Review empty states and report sources require FM05. |
 | F16-QA09 | NOT RUN | BLOCKED | FM02 stable 50-row paging, range clipping, zero-duration exclusion, cascade deletion and tombstone replay protection pass. Report UI, confirmation and concurrent report invalidation require FM05. |
 | F16-QA10 | NOT RUN | NOT RUN | Backup/legacy restore integration requires FM06. |
 | F16-QA11 | NOT RUN | BLOCKED | FM02 stale-generation rejection, receipt eviction and tombstone replay protection pass. Restore/reset orchestration and stale-write races require FM06. |
-| F16-QA12 | NOT RUN | PARTIAL | FM03 checks cover selected app loading/navigation flows; host suite and lint pass. Existing-feature connected regressions, all entry paths, drafts and restore races remain unrun. |
-| F16-QA13 | NOT RUN | PARTIAL | Selected Compose UI assertions pass on API36.1. API28, TalkBack/keyboard/predictive Back, locales, theme/window/font/orientation matrix remains unrun. |
+| F16-QA12 | NOT RUN | PARTIAL | FM03 navigation/lifecycle checks and FM04 host + connected settings/retry assertions pass; FM04 lint exits 0. Existing-feature connected regressions, all entry paths, drafts and restore races remain unrun. See [FM03](evidence/2026-10-30/F16/fm03-qa.md) and [FM04](evidence/2026-10-30/F16/fm04-qa.md). |
+| F16-QA13 | NOT RUN | PARTIAL | FM04 settings Compose assertions pass on API36.1 and changed FM04 production files have no lint warnings. API28, TalkBack/keyboard/predictive Back, EN/FR/FA, theme/window/font/orientation matrix remains unrun. |
 | F16-QA14 | NOT RUN | NOT RUN | Room/query and representative-device performance work requires FM02/FM05. |
 | F16-QA15 | NOT RUN | NOT RUN | FM08 scope/capability assessment has not run. |
 

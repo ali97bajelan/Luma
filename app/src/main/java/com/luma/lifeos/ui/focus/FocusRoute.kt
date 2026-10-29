@@ -1,13 +1,18 @@
 package com.luma.lifeos.ui.focus
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusPreferences
 import com.luma.lifeos.focus.FocusViewModel
@@ -27,6 +32,7 @@ internal fun FocusRoute(
     onOpenPendingDestination: () -> Unit,
 ) {
     val context = LocalContext.current.applicationContext
+    val lifecycleOwner = LocalLifecycleOwner.current
     val resolvedPreferences = remember(context, preferences) { preferences ?: FocusPreferences(context) }
     val resolvedAllowedFocusApps = remember(context, allowedFocusApps) {
         allowedFocusApps ?: AllowedFocusApps(context)
@@ -36,8 +42,17 @@ internal fun FocusRoute(
         initialValue = resolvedPreferences.selectedPackages(),
     )
     var discoveredApps by remember { mutableStateOf(emptyList<AllowedFocusApps.App>()) }
+    var refreshKey by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(resolvedAllowedFocusApps) {
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshKey += 1
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(resolvedAllowedFocusApps, refreshKey) {
         discoveredApps = try {
             withContext(Dispatchers.IO) { resolvedAllowedFocusApps.discover() }
         } catch (failure: Exception) {

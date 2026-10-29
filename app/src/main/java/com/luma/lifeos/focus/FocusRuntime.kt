@@ -326,6 +326,7 @@ class FocusRuntime(
                 recoveryRequired = false,
                 writeFailed = false,
                 checkpointFailed = false,
+                shortcutFailed = false,
                 displayedMillis = session.creditedMillis,
                 emergencyExitSessionId = releasedSessionId,
                 emergencyMarkerSaved = if (canKeepEmergencyRelease) it.emergencyMarkerSaved else null,
@@ -372,7 +373,10 @@ class FocusRuntime(
         }
         if (durable?.state != FocusState.RUNNING) return@withLock FocusShortcutResult.CHECKPOINT_FAILED
         when (allowedApps.launch(packageName, preferences.selectedPackages())) {
-            AllowedFocusApps.LaunchResult.LAUNCHED -> FocusShortcutResult.LAUNCHED
+            AllowedFocusApps.LaunchResult.LAUNCHED -> {
+                mutableState.update { it.copy(shortcutFailed = false) }
+                FocusShortcutResult.LAUNCHED
+            }
             AllowedFocusApps.LaunchResult.NOT_SELECTED -> FocusShortcutResult.NOT_SELECTED
             AllowedFocusApps.LaunchResult.UNAVAILABLE -> {
                 mutableState.update { it.copy(shortcutFailed = true) }

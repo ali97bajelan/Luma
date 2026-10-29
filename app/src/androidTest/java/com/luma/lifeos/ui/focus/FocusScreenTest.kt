@@ -99,4 +99,43 @@ class FocusScreenTest {
         compose.onNodeWithTag("focus_emergency_exit").assertIsDisplayed().performClick()
         compose.runOnIdle { assertTrue(requested) }
     }
+
+    @Test fun unavailableShortcutOffersRetryWithoutLeavingTheRunningScreen() {
+        var retried = false
+        val session = createFocusSession(
+            sessionId = UUID.fromString("20000000-0000-0000-0000-000000000005"),
+            commandId = UUID.fromString("20000000-0000-0000-0000-000000000006"),
+            sample = FocusTimeSample(Instant.parse("2026-10-30T12:00:00Z"), 10_000, "boot-a"),
+        )
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusScreen(
+                    state = FocusScreenState(
+                        runtime = FocusRuntimeState(initialized = true, loading = false, session = session),
+                        shortcutUnavailable = true,
+                    ),
+                    allowedApps = emptyList(),
+                    hasPendingDestination = false,
+                    onBack = {},
+                    onShowBackPrompt = {},
+                    onDismissBackPrompt = {},
+                    onStart = {},
+                    onAction = {},
+                    onLeaveAfterAction = {},
+                    onResolveRecovery = {},
+                    onRetry = { retried = true },
+                    onRetryInitialization = {},
+                    onEmergencyExit = {},
+                    onDismissEmergencyExit = {},
+                    onConfirmEmergencyExit = {},
+                    onLaunchApp = {},
+                    onOpenPendingDestination = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag("focus_retry_shortcut").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertTrue(retried) }
+    }
 }

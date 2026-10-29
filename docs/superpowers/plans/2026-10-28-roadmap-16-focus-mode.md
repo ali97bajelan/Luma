@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03 SOURCE COMPLETE + SCOPED API36 QA PASS; FM04–FM05 IN PROGRESS; FM06–FM08 NOT STARTED; FULL MATRIX/INTEGRATED QA PENDING**
+Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03 SOURCE COMPLETE + SCOPED API36 QA PASS; FM04 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM05 IN PROGRESS; FM06–FM08 NOT STARTED; FULL MATRIX/INTEGRATED QA PENDING**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -161,16 +161,19 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ### Phase 1 — Implementation
 
-- [ ] Persist device-local package set with empty default; build Settings → Focus mode search/list with labels/icons and collision-disambiguating package names. Running settings are unavailable; paused edits apply at Resume.
-- [ ] Query MAIN/LAUNCHER activities using matching narrow manifest queries, deduplicate packages and omit own/unlaunchable/other-profile apps. Keep stale packages visible as unavailable/removable without logging the list.
-- [ ] On shortcut tap checkpoint and recheck current selection/launchability before explicit launch. An unsuccessful checkpoint/launch reports retry and retains session state. Catch expected platform failures; selected app handoff never implicitly pauses the timer.
-- [ ] Add scope guidance explaining system controls and lack of device-wide enforcement. Review manifest/dependency/permission diff and record handoff.
+- [x] Persist device-local package set with empty default; build Settings → Focus mode search/list with labels/icons and collision-disambiguating package names. Running settings are unavailable; paused edits apply at Resume.
+- [x] Query MAIN/LAUNCHER activities, deduplicate packages and omit own/unlaunchable packages. Keep stale saved packages visible as unavailable/removable without logging the list. The manifest retains only its narrow package query; other-profile exclusion is not verified by emulator fixtures.
+- [x] On shortcut tap checkpoint and recheck current selection/launchability before explicit launch. Failed handoff reports a retry and retains session state. Catch expected platform failures; the handoff does not pause the timer.
+- [x] Add scope guidance explaining system controls and lack of device-wide enforcement. Review manifest/dependency/permission diff and record handoff.
 
 ### Phase 2 — QA
 
-- [ ] Author `app/src/test/java/com/luma/lifeos/focus/AllowedFocusAppsTest.kt`, `FocusPreferencesTest.kt` and `app/src/androidTest/java/com/luma/lifeos/ui/focus/FocusAllowedAppsTest.kt`. Use disposable installed fixture apps, no private app inventory capture.
-- [ ] Run QA05 for selection persistence, duplicate labels/activities, disabled/uninstalled target, launch exception, preference change from another window, work-profile boundary and return continuity.
-- [ ] Run QA12/QA13 for settings and shortcut controls. Denied notification/Usage access must not disable ordinary timer/shortcuts. Verify no new broad permissions.
+- [x] Add host and Android tests for discovery, device-local preferences, settings selection/stale removal, retry handoff and running-state edit restrictions. Tests use synthetic labels and injected package platforms; no app inventory was captured or saved.
+- [x] Run the scoped QA05 cases: empty default, persistence, duplicate labels, stale removal, cross-instance preference change, checkpoint-before-launch, launch failure/retry and nonselected rejection. Run scoped QA12/13 Compose assertions and verify no new broad permission/notification/Usage access dependency. All host tests and 20 focused API 36.1 connected tests pass; variant lint exits 0.
+- [ ] Complete QA05 using disposable installed fixtures for actual launch/return, disabled/uninstalled targets, multiple activities and work-profile boundary.
+- [ ] Complete QA12/QA13 entry/regression and EN/FR/FA × theme/window/font/orientation, API28, TalkBack, keyboard and predictive Back matrix; record denied notification/Usage permission behavior.
+
+**FM04 QA disposition (30 October 2026):** Scoped QA PASS. Exact commands, test counts, lint findings and unrun fixture/platform cases are in [FM04 execution evidence](../../feature-roadmap/evidence/2026-10-30/F16/fm04-qa.md). This does not pass the full F16 matrix.
 
 ## FM05 — Today totals, weekly comparisons and history
 
@@ -234,4 +237,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 lifecycle ownership, guarded UI and coordinator integration are source-complete, and its focused API36.1 host/instrumentation/lint subset passes; native lifecycle, fault-injection and accessibility/platform matrix checks remain open. FM04–FM08 source work and integrated QA remain pending. No complete F16 UI or archive integration is claimed.
+FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 lifecycle ownership, guarded UI and coordinator integration are source-complete, and its focused API36.1 host/instrumentation/lint subset passes; native lifecycle, fault-injection and accessibility/platform matrix checks remain open. FM04 settings and safe selected-app handoff are source-complete with scoped API 36.1 host/instrumentation/lint QA pass; actual app fixtures and the full matrix remain open. FM05 remains in progress and FM06–FM08 source work and integrated QA remain pending. No complete F16 UI, archive integration or device-wide enforcement is claimed.

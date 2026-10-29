@@ -668,6 +668,22 @@ fun LifeOsApp(
                     onWidgets = { navController.navigate("settings_widgets") },
                     remindersAvailable = reminderPreferences != null,
                     onReminders = { navController.navigate("settings_reminders") },
+                    focusAvailable = focusRuntime != null,
+                    onFocus = { navController.navigate("settings_focus") },
+                )
+            }
+            if (focusRuntime != null) composable("settings_focus") {
+                val settingsPreferences = remember(applicationContext, focusPreferences) {
+                    focusPreferences ?: FocusPreferences(applicationContext)
+                }
+                val settingsAllowedApps = remember(applicationContext, allowedFocusApps) {
+                    allowedFocusApps ?: AllowedFocusApps(applicationContext)
+                }
+                com.luma.lifeos.ui.focus.FocusSettingsRoute(
+                    preferences = settingsPreferences,
+                    allowedFocusApps = settingsAllowedApps,
+                    isRunning = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.RUNNING,
+                    onBack = { navController.popBackStack() },
                 )
             }
             if (reminderPreferences != null) composable("settings_reminders") {

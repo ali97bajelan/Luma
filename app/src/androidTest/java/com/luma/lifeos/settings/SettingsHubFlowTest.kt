@@ -40,6 +40,29 @@ class SettingsHubFlowTest {
     }
     @After fun close() { db.close(); photoDirectory.deleteRecursively() }
 
+    @Test fun focusSettingsRowAppearsWhenFocusIsAvailable() {
+        var focusAvailable by mutableStateOf(false)
+        var opened = false
+        compose.setContent { LifeOsTheme {
+            SettingsRoute(
+                backupAvailable = false,
+                privacyAvailable = false,
+                integrationsAvailable = false,
+                onLanguage = {},
+                onBackup = {},
+                onPrivacy = {},
+                onIntegrations = {},
+                focusAvailable = focusAvailable,
+                onFocus = { opened = true },
+            )
+        } }
+
+        compose.onNodeWithTag("settings_focus").assertDoesNotExist()
+        compose.runOnIdle { focusAvailable = true }
+        compose.onNodeWithTag("settings_focus").performScrollTo().assertHasClickAction().performClick()
+        compose.runOnIdle { assertTrue(opened) }
+    }
+
     @Test fun hubShowsOnlyAvailableSections() {
         var flags by mutableStateOf(Triple(false, false, false))
         var clicked: String? = null

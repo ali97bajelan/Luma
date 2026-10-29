@@ -44,6 +44,7 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
 
     private val local = MutableStateFlow(LocalState())
     private var pendingOperation: PendingOperation? = null
+    private var pendingShortcutPackage: String? = null
 
     val state: StateFlow<FocusScreenState> = combine(runtime.state, local) { runtimeState, localState ->
         FocusScreenState(
@@ -80,6 +81,16 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
             submit(pending)
             return
         }
+        val shortcutPackage = pendingShortcutPackage
+        if (shortcutPackage != null) {
+            if (runtime.state.value.session?.state == com.luma.lifeos.domain.focus.FocusState.RUNNING) {
+                launchSelectedApp(shortcutPackage)
+            } else {
+                pendingShortcutPackage = null
+                local.update { it.copy(shortcutUnavailable = false) }
+            }
+            return
+        }
         viewModelScope.launch {
             local.update { it.copy(busy = true, operationFailed = false) }
             try {
@@ -110,7 +121,18 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
                     is FocusWriteResult.Conflict,
                     is FocusWriteResult.RecoveryRequired -> {
                         pendingOperation = null
-                        local.update { it.copy(busy = false, operationFailed = false) }
+                        local.update {
+                            it.copy(
+                                busy = false,
+                                operationFailed = false,
+                                shortcutUnavailable = if (operation is PendingOperation.Action &&
+                                    operation.action in setOf(FocusAction.PAUSE, FocusAction.STOP)
+                                ) false else it.shortcutUnavailable,
+                            )
+                        }
+                        if (operation is PendingOperation.Action &&
+                            operation.action in setOf(FocusAction.PAUSE, FocusAction.STOP)
+                        ) pendingShortcutPackage = null
                         if (result is FocusWriteResult.Applied || result is FocusWriteResult.AlreadyApplied) {
                             onSuccess?.invoke()
                         }
@@ -160,11 +182,15 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
     }
 
     fun launchSelectedApp(packageName: String) {
+        pendingShortcutPackage = packageName
         viewModelScope.launch {
             local.update { it.copy(busy = true, shortcutUnavailable = false) }
             try {
                 when (runtime.launchSelectedApp(packageName)) {
-                    FocusShortcutResult.LAUNCHED -> Unit
+                    FocusShortcutResult.LAUNCHED -> {
+                        pendingShortcutPackage = null
+                        local.update { it.copy(shortcutUnavailable = false) }
+                    }
                     FocusShortcutResult.NOT_SELECTED,
                     FocusShortcutResult.UNAVAILABLE,
                     FocusShortcutResult.CHECKPOINT_FAILED -> local.update { it.copy(shortcutUnavailable = true) }
