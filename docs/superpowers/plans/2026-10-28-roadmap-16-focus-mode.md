@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS — INTEGRATED QA BLOCKED; FM02–FM08 NOT STARTED**
+Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 SOURCE COMPLETE — QA PENDING; INTEGRATED QA BLOCKED; FM03–FM08 NOT STARTED**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -95,10 +95,25 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ### Phase 1 — Implementation
 
-- [ ] Add focus entities/DAO and next unused migration in `LumaDatabase.kt`. Add FK/index/uniqueness constraints, runtime singleton with process ownership/recovery-required state, independent latest-100 command receipts, deleted-session tombstones and durable database generation metadata. Preserve old schemas/destructive-fallback prohibition.
-- [ ] Implement `currentGeneration/start/apply/reconcile/resolveRecovery/checkpoint/delete` with serialized Room transactions; action UUID payload reconciliation, stale generation/revision conflicts, monotonic checkpoint ordering, singleton across windows and no checkpoint revision churn. Receipts survive Stop/deletion; tombstones prevent evicted Start replay. Older action samples than committed checkpoints conflict and resample. Recovery-required state survives another process death.
-- [ ] Implement observed open state/statistics and stable 50-row history with overlap filtering and distinct counts; no all-history Compose reads. Keep lifecycle/coroutines out of database timing policy and preserve cancellation.
-- [ ] Add explicit injection, identify required archive inventory changes for FM06, and record source-only handoff with schema generation pending.
+- [x] Add focus entities/DAO and next unused migration in `LumaDatabase.kt`. Add FK/index/uniqueness constraints, runtime singleton with process ownership/recovery-required state, independent latest-100 command receipts, deleted-session tombstones and durable database generation metadata. Preserve old schemas/destructive-fallback prohibition.
+- [x] Implement `currentGeneration/start/apply/reconcile/resolveRecovery/checkpoint/delete` with serialized Room transactions; action UUID payload reconciliation, stale generation/revision conflicts, monotonic checkpoint ordering, singleton across windows and no checkpoint revision churn. Receipts survive Stop/deletion; tombstones prevent evicted Start replay. Older action samples than committed checkpoints conflict and resample. Recovery-required state survives another process death.
+- [x] Implement observed open state/statistics and stable 50-row history with overlap filtering and distinct counts; no all-history Compose reads. Keep lifecycle/coroutines out of database timing policy and preserve cancellation.
+- [x] Add explicit injection, identify required archive inventory changes for FM06, and record source-only handoff with schema generation pending.
+
+### FM02 source handoff — 30 October 2026
+
+**Status:** SOURCE COMPLETE — QA PENDING. The migration, exported Room schema, old-database upgrade and repository race behavior remain unverified until Phase 2.
+
+- **Files:** Added `data/focus/FocusEntities.kt`, `FocusDao.kt`, and `RoomFocusRepository.kt`; modified `data/db/LumaDatabase.kt` and `data/LumaStorage.kt`.
+- **Schema decision:** Current Room version was 7; FM02 adds version 8 via explicit `Migration(7, 8)`. Instants use epoch seconds plus nanoseconds so canonical and raw timestamps preserve sub-millisecond precision. Nullable unique slots enforce one nonterminal session globally and at most one open run per session. The runtime row is device-local and references its session/run. The database generation is independent of runtime; command receipts use a sequence and retain the newest 100 per local database; deletion tombstones block replay of an evicted Start in the same generation.
+- **Repository behavior:** Start/actions, generation checks, result receipts, singleton/runtime changes and terminal deletion serialize in Room transactions. Checkpoints advance credited milliseconds and runtime anchors without changing the action revision. Recovery-required state is durable; same-boot older action/checkpoint samples conflict. Statistics query only overlapping terminal runs. History uses stable started-descending/id-descending pages capped at 50, with range contribution and full duration.
+- **FM06 handoff:** The current archive is version 6. Update `BackupArchive.kt`'s versioned table inventory, `BackupSql.kt` replacement list, `RoomBackupService.kt` export/staged restore, `BackupValidation.kt`, and `docs/BACKUP_FORMAT.md`; portable history should include only terminal `focus_session` and `focus_run` rows. Exclude `focus_runtime`, `focus_command_receipt`, `focus_deleted_session`, and `focus_storage_state`. Replacement/reset must rotate `generation_id` and clear tombstones atomically. These archive changes remain out of FM02.
+- **QA mapping:** QA02–04, QA09, QA11 and QA14 are NOT RUN. Source-only implementation includes no test authoring, Gradle command, Room schema export, build, lint, instrumentation or device use. Schema and migration validation are pending.
+- **Source review:** A read-only review found older same-boot samples could be mistaken for a genuine elapsed-clock regression and end a session. Same-boot samples whose wall and elapsed deltas align within the 2-second continuity tolerance now return Conflict for resampling; actual elapsed regression continues through the interruption path. Runtime verification is pending QA.
+- **Syntax correction:** The user-reported parser/exhaustiveness errors came from trailing commas after the expressions used as `when` subjects. Removed that malformed punctuation from the recovery assessment, recovery resolution, checkpoint, and action-transition `when` expressions. The focused `:core:data:compileDebugKotlin` check did not reach the compiler: the wrapper could not write its Gradle lock under read-only `/home/bajelan/.gradle`, and the extracted Gradle binary could not start its file-lock service because the environment could not determine a wildcard IP. Compile verification remains blocked; FM02 QA scenarios remain NOT RUN.
+- **Nullability correction:** Kotlin cannot smart-cast `openRun` based on the separate `next.state` check. The RUNNING branch now binds a checked `nextOpenRun` before accessing its ID or persisting runtime.
+- **Source identity:** base commit `bf95757de351a309a12a96d35494a5fcefa75ee1`; production-source patch SHA-256 `a9d5f63b479b8dae184f696b850d843778d037aab8470ddcb0009f6d2b0c1871` (FM02 production files only; documentation and pre-existing worktree changes excluded).
+- **Suggested commit message:** `feat(focus): add revision-safe Room session storage`.
 
 ### Phase 2 — QA
 
@@ -203,4 +218,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is handed off and its pure-domain QA subset passes. QA found and corrected a Kotlin syntax error in recovery transition code; all 157 domain tests now pass. Full QA01–04/QA06–09/QA11 scenarios remain blocked by unimplemented FM02/FM03/FM05/FM06 layers; other scenarios remain not run. FM02–FM08 source work has not started. No app build, schema generation, connected test, or device scenario was run.
+FM01 production source is handed off and its pure-domain QA subset passes. FM02 production source is handed off with QA pending; FM03–FM08 source work has not started. Integrated QA remains blocked pending the owning FM02/FM03/FM05/FM06 QA phases. No F16 UI, archive integration, app build, schema export, connected test or device scenario is claimed.

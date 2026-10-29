@@ -2,7 +2,7 @@
 
 Date: 26 October 2026 · Source: [prioritized proposal](FEATURE_IMPROVEMENT_PROPOSAL_2026-10-26.md)
 
-This package contains **16 specifications, 16 implementation plans and 16 QA scenario documents**. F01–F14 follow the proposal’s importance ranking; F15 and F16 were added on 28 October for requested memory/mood sharing and focus mode. F16 has proposed priority P1; FM01 source is complete with QA pending, while FM02–FM08 are not started. F04, F07 and F16/FM01 source phases are complete. On 27 October, F04 passed the domain and app/data host suites, all three focused reminder instrumentation tests on `Medium_Phone_API_36.1`, and manual notification permission/channel, scheduled task delivery and Complete-action checks. Full F04 acceptance remains incomplete; one unrelated activity lifecycle test failed in the wider connected suite, and several F04 scenarios remain unrun. F07 and the remaining tasks have not entered QA.
+This package contains **16 specifications, 16 implementation plans and 16 QA scenario documents**. F01–F14 follow the proposal’s importance ranking; F15 and F16 were added on 28 October for requested memory/mood sharing and focus mode. F16 has proposed priority P1; FM01 source and its domain QA subset are complete, and FM02 source is complete with QA pending. FM03–FM08 are not started. F04, F07, and F16/FM01–02 source phases are complete. On 27 October, F04 passed the domain and app/data host suites, all three focused reminder instrumentation tests on `Medium_Phone_API_36.1`, and manual notification permission/channel, scheduled task delivery and Complete-action checks. Full F04 acceptance remains incomplete; one unrelated activity lifecycle test failed in the wider connected suite, and several F04 scenarios remain unrun. F07 and the remaining tasks have not entered QA.
 
 ## Required two-phase workflow
 
@@ -19,7 +19,7 @@ F04 source follow-up on 27 October adds notification access and recovery control
 
 F15 documentation added on 28 October proposes single saved memory/mood sharing as editable plain text through Android's system share sheet. Image cards and photo sharing are deferred. This addition leaves F12's journal/memory file-export scope unchanged; source implementation is complete; all eight F15 QA scenarios are NOT RUN.
 
-F16 documentation added on 28 October defines focus-session storage, Today totals, weekly comparisons, focus settings and guarded Luma navigation with selected-app shortcuts. FM01 now supplies the pure session/timing/statistics domain source; QA is pending, FM02–FM08 implementation has not started, and all 15 QA scenarios are NOT RUN. Its [task backlog](FOCUS_MODE_TASKS.md) explicitly tracks strict device-wide enforcement as a separate unresolved decision: ordinary personal-phone navigation guards do not enforce an Android-wide app allowlist.
+F16 documentation added on 28 October defines focus-session storage, Today totals, weekly comparisons, focus settings and guarded Luma navigation with selected-app shortcuts. FM01 now supplies the pure session/timing/statistics domain source and its domain QA subset passes; FM02 Room source is complete with migration/schema/repository QA pending. FM03–FM08 implementation has not started, and all 15 QA scenarios are NOT RUN. Its [task backlog](FOCUS_MODE_TASKS.md) explicitly tracks strict device-wide enforcement as a separate unresolved decision: ordinary personal-phone navigation guards do not enforce an Android-wide app allowlist.
 
 ## Task packages
 
@@ -40,7 +40,7 @@ F16 documentation added on 28 October defines focus-session storage, Today total
 | F13 | P3 | Optional sleep and workout imports | [Spec](superpowers/specs/2026-10-26-roadmap-13-health-imports.md) | [Plan](superpowers/plans/2026-10-26-roadmap-13-health-imports.md) | [QA scenarios](feature-roadmap/13-health-imports-qa.md) | PENDING | NOT RUN |
 | F14 | P3 | Build and dependency modernization assessment | [Spec](superpowers/specs/2026-10-26-roadmap-14-build-modernization.md) | [Plan](superpowers/plans/2026-10-26-roadmap-14-build-modernization.md) | [QA scenarios](feature-roadmap/14-build-modernization-qa.md) | PENDING | NOT RUN |
 | F15 | P2 (proposed) | Memory and mood text sharing | [Spec](superpowers/specs/2026-10-28-roadmap-15-memory-mood-sharing.md) | [Plan](superpowers/plans/2026-10-28-roadmap-15-memory-mood-sharing.md) | [QA scenarios](feature-roadmap/15-memory-mood-sharing-qa.md) | SOURCE COMPLETE — QA PENDING | NOT RUN |
-| F16 | P1 (proposed) | Focus sessions, totals and focus navigation | [Spec](superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) | [Plan](superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) | [QA scenarios](feature-roadmap/16-focus-mode-qa.md) | FM01 SOURCE COMPLETE — QA PENDING | NOT RUN |
+| F16 | P1 (proposed) | Focus sessions, totals and focus navigation | [Spec](superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) | [Plan](superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) | [QA scenarios](feature-roadmap/16-focus-mode-qa.md) | FM01 SOURCE + DOMAIN QA SUBSET COMPLETE; FM02 SOURCE COMPLETE — QA PENDING | NOT RUN |
 
 ## Dependencies and sequencing
 

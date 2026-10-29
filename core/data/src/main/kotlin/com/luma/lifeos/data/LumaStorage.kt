@@ -9,6 +9,7 @@ import com.luma.lifeos.data.repository.RoomPhotoRepository
 import com.luma.lifeos.domain.repository.PhotoRepository
 import android.content.Context
 import com.luma.lifeos.data.db.LumaDatabase
+import com.luma.lifeos.data.focus.RoomFocusRepository
 import com.luma.lifeos.data.repository.RoomCatalogRepository
 import com.luma.lifeos.data.repository.RoomCalendarRepository
 import com.luma.lifeos.data.repository.RoomDerivedDataRepository
@@ -32,6 +33,7 @@ import com.luma.lifeos.data.habit.RoomHabitReminderRepository
 import com.luma.lifeos.data.todo.RoomTaskReminderRepository
 import com.luma.lifeos.data.widget.RoomWidgetStore
 import com.luma.lifeos.domain.widget.WidgetStore
+import com.luma.lifeos.domain.focus.FocusRepository
 
 /** One database per process, owned by the application composition root. */
 class LumaStorage(context: Context) {
@@ -61,6 +63,7 @@ class LumaStorage(context: Context) {
     val habitReminders: com.luma.lifeos.domain.habit.HabitReminderRepository = RoomHabitReminderRepository(database)
     val taskReminders: com.luma.lifeos.domain.todo.TaskReminderRepository = RoomTaskReminderRepository(database)
     val widgets: WidgetStore = RoomWidgetStore(database)
+    val focus: FocusRepository = RoomFocusRepository(database)
     val places: PlaceRepository = RoomPlaceRepository(database)
     val people: PersonRepository = RoomPersonRepository(database)
     val events = RoomEventStore(database)

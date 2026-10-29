@@ -9,6 +9,13 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.luma.lifeos.data.dao.CatalogDao
 import com.luma.lifeos.data.calendar.CalendarDao
+import com.luma.lifeos.data.focus.FocusCommandReceiptEntity
+import com.luma.lifeos.data.focus.FocusDao
+import com.luma.lifeos.data.focus.FocusDeletedSessionEntity
+import com.luma.lifeos.data.focus.FocusRunEntity
+import com.luma.lifeos.data.focus.FocusRuntimeEntity
+import com.luma.lifeos.data.focus.FocusSessionEntity
+import com.luma.lifeos.data.focus.FocusStorageStateEntity
 import com.luma.lifeos.data.dao.DerivedDataDao
 import com.luma.lifeos.data.dao.EventContentDao
 import com.luma.lifeos.data.dao.LifeEventDao
@@ -44,6 +51,8 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         TodoEntity::class,
         TaskReminderEntity::class,
         WidgetInstanceEntity::class, WidgetCommandEntity::class,
+        FocusSessionEntity::class, FocusRunEntity::class, FocusRuntimeEntity::class,
+        FocusCommandReceiptEntity::class, FocusDeletedSessionEntity::class, FocusStorageStateEntity::class,
     ],
     version = LumaDatabase.VERSION,
     exportSchema = true,
@@ -62,9 +71,10 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun todos(): TodoDao
     abstract fun taskReminders(): TaskReminderDao
     abstract fun widgets(): WidgetDao
+    abstract fun focus(): FocusDao
 
     companion object {
-        const val VERSION = 7
+        const val VERSION = 8
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
@@ -201,6 +211,92 @@ abstract class LumaDatabase : RoomDatabase() {
                         CHECK ((snooze_slot IS NULL) = (snooze_until IS NULL)),
                         FOREIGN KEY(task_id) REFERENCES todo_task(id) ON DELETE CASCADE
                     )""")
+                }
+            },
+            object : Migration(7, 8) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_session (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        state TEXT NOT NULL,
+                        revision INTEGER NOT NULL,
+                        started_at_seconds INTEGER NOT NULL,
+                        started_at_nanos INTEGER NOT NULL,
+                        ended_at_seconds INTEGER,
+                        ended_at_nanos INTEGER,
+                        created_at_seconds INTEGER NOT NULL,
+                        created_at_nanos INTEGER NOT NULL,
+                        updated_at_seconds INTEGER NOT NULL,
+                        updated_at_nanos INTEGER NOT NULL,
+                        terminal_reason TEXT,
+                        recovered_or_uncertain INTEGER NOT NULL,
+                        open_slot INTEGER
+                    )""")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_run (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        session_id TEXT NOT NULL,
+                        ordinal INTEGER NOT NULL,
+                        started_at_seconds INTEGER NOT NULL,
+                        started_at_nanos INTEGER NOT NULL,
+                        ended_at_seconds INTEGER,
+                        ended_at_nanos INTEGER,
+                        credited_millis INTEGER NOT NULL,
+                        raw_started_at_seconds INTEGER NOT NULL,
+                        raw_started_at_nanos INTEGER NOT NULL,
+                        raw_ended_at_seconds INTEGER,
+                        raw_ended_at_nanos INTEGER,
+                        open_session_id TEXT,
+                        FOREIGN KEY(session_id) REFERENCES focus_session(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )""")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_runtime (
+                        slot_id INTEGER NOT NULL PRIMARY KEY,
+                        session_id TEXT NOT NULL,
+                        run_id TEXT NOT NULL,
+                        run_started_elapsed_millis INTEGER NOT NULL,
+                        checkpoint_elapsed_millis INTEGER NOT NULL,
+                        checkpoint_wall_seconds INTEGER NOT NULL,
+                        checkpoint_wall_nanos INTEGER NOT NULL,
+                        boot_id TEXT,
+                        process_instance_id TEXT NOT NULL,
+                        recovery_required INTEGER NOT NULL,
+                        revision INTEGER NOT NULL,
+                        FOREIGN KEY(session_id) REFERENCES focus_session(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(run_id, session_id) REFERENCES focus_run(id, session_id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )""")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_command_receipt (
+                        sequence INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        command_id TEXT NOT NULL,
+                        database_generation TEXT NOT NULL,
+                        payload TEXT NOT NULL,
+                        result_type TEXT NOT NULL,
+                        result_session_id TEXT,
+                        result_invalid_reason TEXT,
+                        created_at_seconds INTEGER NOT NULL,
+                        created_at_nanos INTEGER NOT NULL
+                    )""")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_deleted_session (
+                        session_id TEXT NOT NULL PRIMARY KEY,
+                        database_generation TEXT NOT NULL
+                    )""")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_storage_state (
+                        singleton_id INTEGER NOT NULL PRIMARY KEY,
+                        generation_id TEXT NOT NULL
+                    )""")
+
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_session_open_slot ON focus_session(open_slot)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_session_state_started_at_seconds_started_at_nanos ON focus_session(state, started_at_seconds, started_at_nanos)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_run_session_id_ordinal ON focus_run(session_id, ordinal)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_run_id_session_id ON focus_run(id, session_id)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_run_open_session_id ON focus_run(open_session_id)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_run_started_at_seconds_started_at_nanos ON focus_run(started_at_seconds, started_at_nanos)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_run_ended_at_seconds_ended_at_nanos ON focus_run(ended_at_seconds, ended_at_nanos)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_runtime_session_id ON focus_runtime(session_id)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_runtime_run_id ON focus_runtime(run_id)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_command_receipt_database_generation_command_id ON focus_command_receipt(database_generation, command_id)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_deleted_session_database_generation ON focus_deleted_session(database_generation)")
+                    db.execSQL(
+                        "INSERT OR IGNORE INTO focus_storage_state(singleton_id, generation_id) VALUES (1, ?)",
+                        arrayOf(java.util.UUID.randomUUID().toString()),
+                    )
                 }
             },
         )
