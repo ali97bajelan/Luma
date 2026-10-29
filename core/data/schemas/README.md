@@ -4,9 +4,10 @@
 plugin. Commit the compiler-generated JSON snapshots for each released version;
 do not hand-author identity hashes or edit an exported historical version.
 
-Versions 1, 2 and 3 have compiler-generated JSON snapshots. Version 4 is pending
-Room compiler export and must be added before TD02 is marked complete. The Room Gradle
-plugin makes the schema directory available to instrumentation tests after export.
+Versions 1 through 8 have compiler-generated JSON snapshots. The version 8 export
+was generated during FM02 QA from the Room compiler output and is validated against
+the registered migration below. The Room Gradle plugin makes the schema directory
+available to instrumentation tests after export.
 
 When changing an existing table, increment `LumaDatabase.VERSION`, register a
 data-preserving `Migration` in `LumaDatabase.MIGRATIONS`, and retain every older
@@ -31,3 +32,13 @@ disabled until the user enables them. `HabitMigrationTest` checks both 1→3 and
 
 Version 4 adds the standalone `todo_task` table and its open/completed ordering indexes.
 The 3→4 migration is additive; existing events, habits and private files remain intact.
+
+Version 5 adds widget configuration and idempotent widget-action receipts. Version 6
+adds task due-time precision; version 7 adds task-reminder configuration/runtime.
+Their migrations are additive and retain existing records.
+
+Version 8 adds device-local focus sessions, credited runs, runtime anchors, command
+receipts, deletion tombstones and the database generation. The 7→8 migration is
+additive and initializes a generation without importing active state. FM02 QA validates
+the populated v7 upgrade, focus foreign keys and uniqueness indexes, repository
+transactions, recovery, history paging and deletion replay protection.

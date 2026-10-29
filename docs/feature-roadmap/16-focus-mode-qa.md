@@ -1,12 +1,12 @@
 # F16 — Focus mode QA scenarios
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; INTEGRATED CASES BLOCKED/PENDING** · Priority: **P1 (proposed)**
+Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; FM02 ROOM/REPOSITORY SUBSET PASS; INTEGRATED CASES BLOCKED/PENDING** · Priority: **P1 (proposed)**
 
 [Tasks](../FOCUS_MODE_TASKS.md) · [Spec](../superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) · [Plan](../superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) · [Roadmap](../FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](WORKFLOW.md)
 
 ## Entry gate and result policy
 
-Read the full specification and shared workflow. Test/fixture authoring, Gradle/schema export/build/lint, native/manual checks and defect corrections are phase 2 work, entered only after the owning FM task's source handoff. All cases below begin **NOT RUN**. These are instructions and expected results, not execution evidence.
+Read the full specification and shared workflow. Test/fixture authoring, Gradle/schema export/build/lint, native/manual checks and defect corrections are phase 2 work, entered only after the owning FM task's source handoff. All cases were **NOT RUN** at initial handoff; see the execution ledger for current partial results. These are instructions and expected results, not execution evidence.
 
 Use an isolated application/test package, disposable database/photos and dedicated emulator/device. Verify actual package isolation before any install/connected runner, reboot, clock change, reset, restore or force-stop. Do not touch personal Luma data or grant permissions on the user's installation. Record actual SHA/dirty patch hash, APK hash/variant/package, command/exit code, device/API, locale/zone/theme, window/font scale and fixture seed/hash. Store real evidence under `evidence/<actual-run-date>/F16/`, created when QA runs.
 
@@ -190,21 +190,27 @@ The FM01 pure-domain subset passed. The exact command, environment, source/test 
 
 Full scenario results remain separate from this component pass. QA01–04, QA06–09 and QA11 are **BLOCKED** pending FM02/FM03/FM05/FM06 as appropriate; see the ledger. QA05, QA10 and QA12–15 remain **NOT RUN**. No connected test, emulator scenario, app build, Room schema/migration, native lifecycle, UI matrix, or performance result is claimed. The API 36.1 emulator was not needed for the pure `core:domain` target.
 
+## FM02 Room/repository QA run — 30 October 2026
+
+The FM02 Room schema and repository subset passed. The v7→v8 migration retained populated journal, photo-reference and task rows; the existing v1→v8 migration test passed. Nine focused focus persistence/migration instrumentation tests passed on the isolated API 36.1 AVD, and all 29 data host tests passed. The complete data-module connected run executed 172 tests: 170 passed and two non-FM02 Todo migration/backup tests failed. Exact commands, candidate identity, package isolation, schema correction and scope limits are recorded in the [FM02 run evidence](evidence/2026-10-30/F16/fm02-room-qa.md).
+
+This component result does not pass the complete integrated scenarios. FM03 lifecycle and UI, FM05 report surfaces, and FM06 restore/reset races remain pending their implementation handoffs.
+
 ## Execution ledger
 
 | Case | Initial result | Current result | Actual run / evidence / blocker |
 | --- | --- | --- | --- |
 | F16-QA01 | NOT RUN | BLOCKED | Requires FM03 navigation guard and app routes; no UI exists yet. |
-| F16-QA02 | NOT RUN | BLOCKED | FM01 transition assertions pass in host suite; repository receipts, transactions and concurrency require FM02/FM03. |
-| F16-QA03 | NOT RUN | BLOCKED | FM01 monotonic/recovery assertions pass; persisted lifecycle and process-death checks require FM02/FM03. |
-| F16-QA04 | NOT RUN | BLOCKED | FM01 boot/drift/recovery assertions pass; storage-failure, emergency-marker, reboot and clock-change checks require FM02/FM03. |
+| F16-QA02 | NOT RUN | BLOCKED | FM01 transition assertions and FM02 exact timing, command replay, stale checkpoint and two-client transaction tests pass. Integrated pause/stop/checkpoint races and ambiguous-ack fault injection remain with FM03; see [FM02 evidence](evidence/2026-10-30/F16/fm02-room-qa.md). |
+| F16-QA03 | NOT RUN | BLOCKED | FM01 recovery and FM02 persisted checkpoint/Continue/End-at-checkpoint repository tests pass. Actual process death, force-stop, sleep and lifecycle recovery require FM03. |
+| F16-QA04 | NOT RUN | BLOCKED | FM01 drift/recovery assertions and FM02 changed-boot checkpoint interruption pass. Wall-clock/native reboot, injected write failures and emergency-marker behavior require FM03. |
 | F16-QA05 | NOT RUN | NOT RUN | FM04 app selection/launchability not implemented. |
 | F16-QA06 | NOT RUN | BLOCKED | FM01 half-open overlap, midnight, and DST assertions pass; Room/report/UI verification requires FM02/FM05. |
 | F16-QA07 | NOT RUN | BLOCKED | FM01 cross-week overlap assertions pass; Review ranges and source drill-down require FM05. |
 | F16-QA08 | NOT RUN | BLOCKED | FM01 comparison baseline/rounding assertions pass; Today/Review empty states and report sources require FM05. |
-| F16-QA09 | NOT RUN | BLOCKED | History paging, stable ordering, deletion and report invalidation require FM02/FM05. |
+| F16-QA09 | NOT RUN | BLOCKED | FM02 stable 50-row paging, range clipping, zero-duration exclusion, cascade deletion and tombstone replay protection pass. Report UI, confirmation and concurrent report invalidation require FM05. |
 | F16-QA10 | NOT RUN | NOT RUN | Backup/legacy restore integration requires FM06. |
-| F16-QA11 | NOT RUN | BLOCKED | Generation races, receipts, reset and replacement require FM02/FM06. |
+| F16-QA11 | NOT RUN | BLOCKED | FM02 stale-generation rejection, receipt eviction and tombstone replay protection pass. Restore/reset orchestration and stale-write races require FM06. |
 | F16-QA12 | NOT RUN | NOT RUN | Integrated loading/navigation/regression work requires FM03–FM06. |
 | F16-QA13 | NOT RUN | NOT RUN | Native UI/platform matrix requires FM03–FM05. |
 | F16-QA14 | NOT RUN | NOT RUN | Room/query and representative-device performance work requires FM02/FM05. |

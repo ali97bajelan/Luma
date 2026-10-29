@@ -291,6 +291,7 @@ abstract class LumaDatabase : RoomDatabase() {
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_run_ended_at_seconds_ended_at_nanos ON focus_run(ended_at_seconds, ended_at_nanos)")
                     db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_runtime_session_id ON focus_runtime(session_id)")
                     db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_runtime_run_id ON focus_runtime(run_id)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_runtime_run_id_session_id ON focus_runtime(run_id, session_id)")
                     db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_command_receipt_database_generation_command_id ON focus_command_receipt(database_generation, command_id)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_deleted_session_database_generation ON focus_deleted_session(database_generation)")
                     db.execSQL(

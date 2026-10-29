@@ -118,6 +118,7 @@ data class FocusRunEntity(
     indices = [
         Index(value = ["session_id"], unique = true),
         Index(value = ["run_id"], unique = true),
+        Index(value = ["run_id", "session_id"]),
     ],
 )
 data class FocusRuntimeEntity(
