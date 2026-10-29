@@ -218,4 +218,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is handed off and its pure-domain QA subset passes. FM02 production source is handed off with QA pending; FM03 has a clock source only; its remaining implementation and FM04–FM08 source work are pending. Integrated QA remains blocked pending the owning FM02/FM03/FM05/FM06 QA phases. No F16 UI, archive integration, app build, schema export, connected test or device scenario is claimed.
+FM01 production source is handed off and its pure-domain QA subset passes. FM02 production source is handed off with QA pending; FM03 has a clock and an unwired coordinator operation wrapper; lifecycle ownership, guard, UI and remaining FM03 implementation and FM04–FM08 source work are pending. Integrated QA remains blocked pending the owning FM02/FM03/FM05/FM06 QA phases. No F16 UI, archive integration, app build, schema export, connected test or device scenario is claimed.
