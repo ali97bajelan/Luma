@@ -1,10 +1,10 @@
 # Focus mode — tasks and delivery status
 
-Date: 29 October 2026 · Feature: **F16** · Priority: **P1 (proposed)** · Status: **FM01 SOURCE COMPLETE — QA PENDING; FM02–FM08 NOT STARTED**
+Date: 30 October 2026 · Feature: **F16** · Priority: **P1 (proposed)** · Status: **FM01 DOMAIN QA PASS — INTEGRATED QA BLOCKED; FM02–FM08 NOT STARTED**
 
 [Specification](superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) · [Implementation plan](superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) · [QA scenarios](feature-roadmap/16-focus-mode-qa.md) · [Roadmap](FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](feature-roadmap/WORKFLOW.md)
 
-The user asked for focus-session storage, Today totals, weekly comparisons, allowed apps and a focus screen that cannot be left until Pause/Stop. FM01's pure domain source handoff is complete; its QA and FM02–FM08 implementation remain pending. All 15 QA scenarios remain NOT RUN. The personal-phone proposal guards Luma navigation; **device-wide restriction remains unresolved in FM08**. Do not close the original restriction request by calling app shortcuts an enforced allowlist.
+The user asked for focus-session storage, Today totals, weekly comparisons, allowed apps and a focus screen that cannot be left until Pause/Stop. FM01's pure domain source handoff and host-domain QA are complete; its integrated scenarios remain blocked until FM02/FM03/FM05/FM06 exist. FM02–FM08 implementation remains pending. The personal-phone proposal guards Luma navigation; **device-wide restriction remains unresolved in FM08**. Do not close the original restriction request by calling app shortcuts an enforced allowlist.
 
 ## Proposed defaults to carry into execution
 
@@ -17,11 +17,11 @@ The user asked for focus-session storage, Today totals, weekly comparisons, allo
 
 ## Task backlog
 
-Each FM task follows exactly two phases: implementation/source handoff, then QA. No Gradle, tests or device use in implementation; tests and schema generation belong to QA under the shared workflow. FM08 has an assessment handoff and QA verification of its claims; it does not imply permission to provision a device.
+Each FM task has an implementation/source handoff and a QA phase. FM01 host-domain QA was explicitly requested after its source handoff; later tasks still follow their own handoff and QA. No Gradle, tests or device use in implementation; tests and schema generation belong to QA under the shared workflow. FM08 has an assessment handoff and QA verification of its claims; it does not imply permission to provision a device.
 
 | ID | Deliverable | Dependencies | Acceptance / QA | Implementation | QA |
 | --- | --- | --- | --- | --- | --- |
-| FM01 | Pure session state machine, timing and statistics contracts | None | Explicit transitions; pause exclusion; monotonic recovery; positive overlap totals; QA01–04, QA06–09, QA11 | SOURCE COMPLETE — QA PENDING | NOT RUN |
+| FM01 | Pure session state machine, timing and statistics contracts | None | Explicit transitions; pause exclusion; monotonic recovery; positive overlap totals; QA01–04, QA06–09, QA11 | SOURCE COMPLETE — QA FIX APPLIED | DOMAIN PASS; INTEGRATED QA BLOCKED |
 | FM02 | Room sessions/runs/runtime, singleton and command receipts | FM01 | Atomic durable/revision-safe writes; no duplicate credit; next available migration; QA02–04, QA09–11 | PENDING | NOT RUN |
 | FM03 | Android clock/lifecycle coordinator and guarded focus screen | FM01–02 | Start/Pause/Resume/Stop, recreation, all Luma entry paths and emergency exit; QA01–04, QA12–13 | PENDING | NOT RUN |
 | FM04 | Focus settings and selected-app shortcuts | FM03 | Empty default, narrow package discovery, stable selections, safe failed launch; QA05, QA12–13 | PENDING | NOT RUN |
@@ -48,4 +48,7 @@ Source milestones do not equal feature acceptance. FM01/FM02 can complete their 
 
 | Date | Task | Source handoff / SHA and patch hash | QA evidence | Result |
 | --- | --- | --- | --- | --- |
-| 29 Oct 2026 | FM01 | Base `7beffaf`; source patch SHA-256 `84de2cabaaaca3e105efb059ae229f0ac162fcf8a6f2b569e736f5a9d89eed50` | None — QA phase not run | SOURCE COMPLETE — QA PENDING |
+| 29 Oct 2026 | FM01 source | Base `7beffaf`; source patch SHA-256 `84de2cabaaaca3e105efb059ae229f0ac162fcf8a6f2b569e736f5a9d89eed50` | Source-only checks at handoff | SOURCE COMPLETE |
+| 30 Oct 2026 | FM01 QA | Candidate base `94490ad`; QA source/test patch recorded in [FM01 QA evidence](feature-roadmap/evidence/2026-10-30/F16/fm01-domain-qa.md) | 19 new host tests; all 157 domain tests passed, 0 failures/errors/skips | DOMAIN PASS — integrated cases remain BLOCKED |
+
+Suggested commit message: `fix(focus): verify pure domain timing and statistics`

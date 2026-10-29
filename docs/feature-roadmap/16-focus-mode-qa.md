@@ -1,6 +1,6 @@
 # F16 — Focus mode QA scenarios
 
-Date: 28 October 2026 · Status: **NOT RUN** · Priority: **P1 (proposed)**
+Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; INTEGRATED CASES BLOCKED/PENDING** · Priority: **P1 (proposed)**
 
 [Tasks](../FOCUS_MODE_TASKS.md) · [Spec](../superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) · [Plan](../superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) · [Roadmap](../FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](WORKFLOW.md)
 
@@ -184,24 +184,30 @@ For every case capture fixture identity, exact steps and independently inspected
 
 **Evidence:** Dated primary-source links, capability table, explicit scope decision; authorized spike artifacts only if actually performed. **Initial result: NOT RUN.**
 
+## FM01 domain QA run — 30 October 2026
+
+The FM01 pure-domain subset passed. The exact command, environment, source/test patch identity, defects and evidence files are recorded in [the run report](evidence/2026-10-30/F16/fm01-domain-qa.md). The focused suite covers transitions, pause exclusion, monotonic continuity/recovery, half-open day/week overlap, DST-sized ranges, deduplication, interrupted/zero-time contribution, and comparison rounding/baselines.
+
+Full scenario results remain separate from this component pass. QA01–04, QA06–09 and QA11 are **BLOCKED** pending FM02/FM03/FM05/FM06 as appropriate; see the ledger. QA05, QA10 and QA12–15 remain **NOT RUN**. No connected test, emulator scenario, app build, Room schema/migration, native lifecycle, UI matrix, or performance result is claimed. The API 36.1 emulator was not needed for the pure `core:domain` target.
+
 ## Execution ledger
 
-| Case | Initial result | Actual run / evidence / defects |
-| --- | --- | --- |
-| F16-QA01 | NOT RUN | — |
-| F16-QA02 | NOT RUN | — |
-| F16-QA03 | NOT RUN | — |
-| F16-QA04 | NOT RUN | — |
-| F16-QA05 | NOT RUN | — |
-| F16-QA06 | NOT RUN | — |
-| F16-QA07 | NOT RUN | — |
-| F16-QA08 | NOT RUN | — |
-| F16-QA09 | NOT RUN | — |
-| F16-QA10 | NOT RUN | — |
-| F16-QA11 | NOT RUN | — |
-| F16-QA12 | NOT RUN | — |
-| F16-QA13 | NOT RUN | — |
-| F16-QA14 | NOT RUN | — |
-| F16-QA15 | NOT RUN | — |
+| Case | Initial result | Current result | Actual run / evidence / blocker |
+| --- | --- | --- | --- |
+| F16-QA01 | NOT RUN | BLOCKED | Requires FM03 navigation guard and app routes; no UI exists yet. |
+| F16-QA02 | NOT RUN | BLOCKED | FM01 transition assertions pass in host suite; repository receipts, transactions and concurrency require FM02/FM03. |
+| F16-QA03 | NOT RUN | BLOCKED | FM01 monotonic/recovery assertions pass; persisted lifecycle and process-death checks require FM02/FM03. |
+| F16-QA04 | NOT RUN | BLOCKED | FM01 boot/drift/recovery assertions pass; storage-failure, emergency-marker, reboot and clock-change checks require FM02/FM03. |
+| F16-QA05 | NOT RUN | NOT RUN | FM04 app selection/launchability not implemented. |
+| F16-QA06 | NOT RUN | BLOCKED | FM01 half-open overlap, midnight, and DST assertions pass; Room/report/UI verification requires FM02/FM05. |
+| F16-QA07 | NOT RUN | BLOCKED | FM01 cross-week overlap assertions pass; Review ranges and source drill-down require FM05. |
+| F16-QA08 | NOT RUN | BLOCKED | FM01 comparison baseline/rounding assertions pass; Today/Review empty states and report sources require FM05. |
+| F16-QA09 | NOT RUN | BLOCKED | History paging, stable ordering, deletion and report invalidation require FM02/FM05. |
+| F16-QA10 | NOT RUN | NOT RUN | Backup/legacy restore integration requires FM06. |
+| F16-QA11 | NOT RUN | BLOCKED | Generation races, receipts, reset and replacement require FM02/FM06. |
+| F16-QA12 | NOT RUN | NOT RUN | Integrated loading/navigation/regression work requires FM03–FM06. |
+| F16-QA13 | NOT RUN | NOT RUN | Native UI/platform matrix requires FM03–FM05. |
+| F16-QA14 | NOT RUN | NOT RUN | Room/query and representative-device performance work requires FM02/FM05. |
+| F16-QA15 | NOT RUN | NOT RUN | FM08 scope/capability assessment has not run. |
 
-Acceptance remains pending. No tests, builds, schema generation, device operations or runtime/performance results are claimed by creating this package.
+The FM01 host-domain subset is complete. F16 acceptance remains pending because the integrated cases and remaining tasks have not passed.

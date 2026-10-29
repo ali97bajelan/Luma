@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 29 October 2026 · Status: **FM01 SOURCE COMPLETE — QA PENDING; FM02–FM08 NOT STARTED**
+Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS — INTEGRATED QA BLOCKED; FM02–FM08 NOT STARTED**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -78,16 +78,16 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 - **Timing signatures:** `focusSampleContinuity(previous, current)` requires known matching boot IDs, nondecreasing elapsed realtime, and wall/monotonic drift no greater than 2,000 ms. `calculateFocusTiming(run, checkpoint, sample)` projects only checked monotonic deltas; discontinuities preserve the checkpoint and carry a typed interruption reason. `assessFocusRecovery(...)` leaves paused sessions untouched and requires an explicit choice after a valid new-process RUNNING recovery.
 - **Statistics signatures:** `focusStatistics(sessions, range)` and `focusRangeContributionMillis(session, range)` include terminal sessions only, clip runs to the half-open `TimeRange`, deduplicate equal identities, reject conflicting snapshots, and use checked integer-millisecond totals. `compareFocusStatistics(current, previous)` reports the absolute delta; it omits percentage only for a zero previous baseline (or zero against zero), and rounds nonzero-baseline percentages to one decimal using `HALF_UP`.
 - **Implementation choice:** equal positive periods have `NO_CHANGE` with `0.0%`; zero against zero has `NO_CHANGE` with no percentage, consistent with the comparison formula and zero-period rule.
-- **QA mapping:** QA02–04 (transitions, monotonic continuity and recovery), QA06–08 (half-open date/week overlap, empty baselines and rounding), and QA11 (generation-aware callers) remain NOT RUN. The QA phase owns test authoring, Gradle and behavior verification.
+- **QA mapping at source handoff:** QA02–04, QA06–08 and QA11 were NOT RUN at the handoff. The 30 October run adds host tests for the FM01 pure transitions, continuity/recovery, overlap and comparison rules; the complete cases remain blocked by their FM02/FM03/FM05/FM06 dependencies (see the [QA ledger](../../feature-roadmap/16-focus-mode-qa.md)).
 - **Review:** A fresh read-only review found transition/recovery results that did not use the deduplicated run view used by statistics. The implementation now deduplicates before open-run selection and normalizes runs in changed, already-applied and conflict snapshots; QA should retain a regression case for repeated identical run rows.
 - **Source identity:** base commit `7beffaf`; source patch SHA-256 `84de2cabaaaca3e105efb059ae229f0ac162fcf8a6f2b569e736f5a9d89eed50`. Tracked and new-source `git diff --check` passed. No Gradle, test, schema or device command is part of this implementation handoff.
 - **Suggested commit message:** `feat(focus): add pure session timing and statistics contracts`.
 
 ### Phase 2 — QA
 
-- [ ] Author `core/domain/src/test/kotlin/com/luma/lifeos/domain/focus/FocusTimingTest.kt`, `FocusTransitionsTest.kt`, `FocusStatisticsTest.kt`; pin QA fixture values including 20 active + 10 paused + 5 active = 25 minutes, midnight 10/20, zero and 90/60 comparison, repeated identical run rows, and normalized conflict snapshots.
-- [ ] Verify unknown boot, 1,999/2,000/2,001-ms drift, overflow/conflicting snapshots, paused reboot, full/partial weeks and DST. Run `bash gradlew -PdomainOnly=true :core:domain:test`; exit 0 with required assertions executed is the automated gate.
-- [ ] Record outcomes/defects/retests and actual scope before FM02.
+- [x] Author `core/domain/src/test/kotlin/com/luma/lifeos/domain/focus/FocusTimingTest.kt` and `FocusStatisticsTest.kt`; pin pause exclusion, recovery, midnight 10/20, zero and 90/60 comparison, duplicate-run normalization, and boundary cases.
+- [x] Verify unknown boot, 1,999/2,000/2,001-ms drift, checked overflow, paused recovery, week boundaries and DST. Fresh `--rerun-tasks` host suite passed with 157 tests, 0 failures/errors/skips.
+- [x] Record outcomes/defect/retest and the actual scope in [FM01 QA evidence](../../feature-roadmap/evidence/2026-10-30/F16/fm01-domain-qa.md). Integrated QA remains blocked until owning layers are implemented.
 
 ## FM02 — Durable Room storage and command transactions
 
@@ -203,4 +203,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is implemented and handed off with QA pending. FM02–FM08 source work has not started. No FM01 tests were authored or run, no Gradle/schema/device work was performed, and every QA scenario remains NOT RUN.
+FM01 production source is handed off and its pure-domain QA subset passes. QA found and corrected a Kotlin syntax error in recovery transition code; all 157 domain tests now pass. Full QA01–04/QA06–09/QA11 scenarios remain blocked by unimplemented FM02/FM03/FM05/FM06 layers; other scenarios remain not run. FM02–FM08 source work has not started. No app build, schema generation, connected test, or device scenario was run.

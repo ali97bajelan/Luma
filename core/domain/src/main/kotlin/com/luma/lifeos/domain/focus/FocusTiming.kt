@@ -272,7 +272,7 @@ fun resolveFocusRecovery(
 
     return when (choice) {
         FocusRecoveryChoice.CONTINUE_ELAPSED -> when (
-            val timing = calculateFocusTiming(run, checkpoint, sample),
+            val timing = calculateFocusTiming(run, checkpoint, sample)
         ) {
             is FocusTimingResult.Advanced -> FocusTransitionResult.Changed(
                 snapshot = session.copy(
