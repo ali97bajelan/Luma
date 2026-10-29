@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 SOURCE COMPLETE — QA PENDING; INTEGRATED QA BLOCKED; FM03–FM08 NOT STARTED**
+Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 SOURCE COMPLETE — QA PENDING; INTEGRATED QA BLOCKED; FM03 IN PROGRESS; FM04–FM08 NOT STARTED**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -18,7 +18,7 @@ Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 SOURCE COMPLETE —
 
 - Preserve minimum API **28**, compile/target **35** and JDK **17**.
 - Keep `core:domain` Android/Room-free.
-- Exactly two phases per task: source implementation/handoff, then QA. Test authoring, Gradle/sync/build/lint/schema export and device work occur only in QA. This roadmap workflow overrides generic interleaved TDD steps.
+- Complete all FM implementation/source handoffs first, then start remaining QA. Earlier pending QA does not block later implementation; source dependencies still apply. Test authoring, Gradle/sync/build/lint/schema export and device work occur only in QA. FM01 domain QA was already performed.
 - No fixed next Room/archive version: observed baseline is Room 7/archive 6; allocate next unused versions at execution and serialize migrations/inventory changes.
 - No new network, Usage access, accessibility, device-owner, DND, foreground-service or exact-alarm requirement for personal-phone v1. No automatic stronger restriction from restored content.
 - One open session; 5-second foreground checkpoints; >2-second wall discontinuity triggers conservative interruption; never count pause time.
@@ -218,4 +218,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is handed off and its pure-domain QA subset passes. FM02 production source is handed off with QA pending; FM03–FM08 source work has not started. Integrated QA remains blocked pending the owning FM02/FM03/FM05/FM06 QA phases. No F16 UI, archive integration, app build, schema export, connected test or device scenario is claimed.
+FM01 production source is handed off and its pure-domain QA subset passes. FM02 production source is handed off with QA pending; FM03 has a clock source only; its remaining implementation and FM04–FM08 source work are pending. Integrated QA remains blocked pending the owning FM02/FM03/FM05/FM06 QA phases. No F16 UI, archive integration, app build, schema export, connected test or device scenario is claimed.
