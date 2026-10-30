@@ -16,8 +16,8 @@ class FocusLifecycleTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun recreationSystemBackPauseResumeAndStopKeepOneFocusSession() {
-        awaitTag("today_focus")
-        compose.onNodeWithTag("today_focus").performClick()
+        awaitTag("today_focus_open")
+        compose.onNodeWithTag("today_focus_open").performClick()
         startOrRestartSession()
 
         compose.activityRule.scenario.recreate()
@@ -27,15 +27,15 @@ class FocusLifecycleTest {
         }
         awaitTag("focus_back_dialog")
         compose.onNodeWithTag("focus_back_pause").performClick()
-        awaitTag("today_focus")
-        compose.onNodeWithTag("today_focus").assertIsDisplayed().performClick()
+        awaitTag("today_focus_open")
+        compose.onNodeWithTag("today_focus_open").assertIsDisplayed().performClick()
         awaitTag("focus_resume")
         compose.onNodeWithTag("focus_resume").performClick()
         awaitTag("focus_pause")
         compose.onNodeWithTag("focus_stop").performClick()
         awaitTag("focus_finished")
         compose.onNodeWithTag("focus_done").performClick()
-        awaitTag("today_focus")
+        awaitTag("today_focus_open")
     }
 
     @Test fun moreEntryAndWidgetIntentWaitForAnExplicitPostPauseChoice() {
@@ -60,10 +60,37 @@ class FocusLifecycleTest {
         compose.onNodeWithTag("focus_open_pending_destination").assertIsDisplayed().performClick()
         awaitTag("screen_today")
 
-        compose.onNodeWithTag("today_focus").performClick()
+        awaitTag("today_focus_open")
+        compose.onNodeWithTag("today_focus_open").performClick()
         awaitTag("focus_resume")
         compose.onNodeWithTag("focus_resume").performClick()
         awaitTag("focus_pause")
+        compose.onNodeWithTag("focus_stop").performClick()
+        awaitTag("focus_finished")
+        compose.onNodeWithTag("focus_done").performClick()
+    }
+
+    @Test fun repeatedQuickCaptureWidgetIntentsStayBehindTheRunningGuard() {
+        awaitTag("nav_more")
+        compose.onNodeWithTag("nav_more").performClick()
+        awaitTag("more_focus")
+        compose.onNodeWithTag("more_focus").performClick()
+        startOrRestartSession()
+
+        repeat(2) {
+            val quickCaptureIntent = Intent(compose.activity, MainActivity::class.java).apply {
+                action = WidgetIntents.ACTION_NAVIGATION
+                data = Uri.parse("luma-widget://navigate/navigation/42/quick-capture")
+            }
+            compose.activityRule.scenario.onActivity { activity ->
+                val originalIntent = activity.intent
+                activity.onNewIntent(quickCaptureIntent)
+                activity.setIntent(originalIntent)
+            }
+            awaitTag("focus_open_pending_destination")
+        }
+
+        compose.onNodeWithTag("capture_sheet").assertDoesNotExist()
         compose.onNodeWithTag("focus_stop").performClick()
         awaitTag("focus_finished")
         compose.onNodeWithTag("focus_done").performClick()

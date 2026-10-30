@@ -18,6 +18,12 @@ internal data class FocusNavigationGuard(
     fun intercept(state: FocusRuntimeState, destination: FocusPendingDestination): FocusNavigationGuard =
         if (isGuarded(state)) copy(pendingDestination = destination) else this
 
+    /** Returns non-null whenever navigation must be queued, even if the queued value is unchanged. */
+    fun interceptIfGuarded(
+        state: FocusRuntimeState,
+        destination: FocusPendingDestination,
+    ): FocusNavigationGuard? = if (isGuarded(state)) intercept(state, destination) else null
+
     fun consumePending(): Pair<FocusPendingDestination?, FocusNavigationGuard> =
         pendingDestination to copy(pendingDestination = null)
 }

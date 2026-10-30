@@ -28,6 +28,16 @@ class FocusNavigationGuardTest {
         assertNull(cleared.pendingDestination)
     }
 
+    @Test fun repeatedIdenticalExternalDestinationRemainsIntercepted() {
+        val state = runningState()
+        val destination = FocusPendingDestination.Widget(WidgetDestination.QuickCapture)
+        val first = requireNotNull(FocusNavigationGuard().interceptIfGuarded(state, destination))
+        val second = first.interceptIfGuarded(state, destination)
+
+        assertEquals(first, second)
+        assertEquals(destination, second?.pendingDestination)
+    }
+
     @Test fun pausedOrReleasedSessionDoesNotQueueAnExternalDestination() {
         val running = runningState()
         val session = running.session!!

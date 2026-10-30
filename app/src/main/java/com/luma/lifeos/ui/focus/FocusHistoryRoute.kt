@@ -18,6 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +30,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -62,6 +67,14 @@ internal fun FocusHistoryRoute(
     }
     val model = viewModel<FocusHistoryViewModel>(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, model) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) model.refresh()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     FocusHistoryScreen(state, range, zone, model::retry, model::page, model::delete, onBack)
 }
 
@@ -77,6 +90,9 @@ private fun FocusHistoryScreen(
 ) {
     var expandedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<FocusHistoryRow?>(null) }
+    LaunchedEffect(state.loading) {
+        if (state.loading) deleteTarget = null
+    }
     AppPageScaffold(
         title = stringResource(R.string.focus_history_title),
         navigation = PageNavigation.BACK,

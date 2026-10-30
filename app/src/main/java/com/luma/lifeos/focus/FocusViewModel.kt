@@ -28,9 +28,22 @@ data class FocusScreenState(
 
 class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
     private sealed interface PendingOperation {
-        data class Start(val commandId: UUID, val sessionId: UUID) : PendingOperation
-        data class Action(val commandId: UUID, val session: FocusSession, val action: FocusAction) : PendingOperation
-        data class Recovery(val session: FocusSession, val choice: FocusRecoveryChoice) : PendingOperation
+        data class Start(
+            val commandId: UUID,
+            val sessionId: UUID,
+            val attempt: FocusCoordinator.OperationAttempt,
+        ) : PendingOperation
+        data class Action(
+            val commandId: UUID,
+            val session: FocusSession,
+            val action: FocusAction,
+            val attempt: FocusCoordinator.OperationAttempt,
+        ) : PendingOperation
+        data class Recovery(
+            val session: FocusSession,
+            val choice: FocusRecoveryChoice,
+            val attempt: FocusCoordinator.OperationAttempt,
+        ) : PendingOperation
     }
 
     private data class LocalState(
@@ -63,16 +76,21 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
         FocusScreenState(runtime.state.value),
     )
 
-    fun start() = submit(PendingOperation.Start(UUID.randomUUID(), UUID.randomUUID()))
+    fun start() {
+        val attempt = runtime.captureUserOperationAttempt() ?: return reportUnavailableAttempt()
+        submit(PendingOperation.Start(UUID.randomUUID(), UUID.randomUUID(), attempt))
+    }
 
     fun act(action: FocusAction, onSuccess: (() -> Unit)? = null) {
         val session = runtime.state.value.session ?: return
-        submit(PendingOperation.Action(UUID.randomUUID(), session, action), onSuccess)
+        val attempt = runtime.captureUserOperationAttempt() ?: return reportUnavailableAttempt()
+        submit(PendingOperation.Action(UUID.randomUUID(), session, action, attempt), onSuccess)
     }
 
     fun resolveRecovery(choice: FocusRecoveryChoice) {
         val session = runtime.state.value.session ?: return
-        submit(PendingOperation.Recovery(session, choice))
+        val attempt = runtime.captureUserOperationAttempt() ?: return reportUnavailableAttempt()
+        submit(PendingOperation.Recovery(session, choice, attempt))
     }
 
     fun retry() {
@@ -111,9 +129,13 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = when (operation) {
-                    is PendingOperation.Start -> runtime.start(operation.commandId, operation.sessionId)
-                    is PendingOperation.Action -> runtime.act(operation.commandId, operation.session, operation.action)
-                    is PendingOperation.Recovery -> runtime.resolveRecovery(operation.session, operation.choice)
+                    is PendingOperation.Start -> runtime.start(operation.commandId, operation.sessionId, operation.attempt)
+                    is PendingOperation.Action -> runtime.act(
+                        operation.commandId, operation.session, operation.action, operation.attempt,
+                    )
+                    is PendingOperation.Recovery -> runtime.resolveRecovery(
+                        operation.session, operation.choice, operation.attempt,
+                    )
                 }
                 when (result) {
                     is FocusWriteResult.Applied,
@@ -137,7 +159,10 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
                             onSuccess?.invoke()
                         }
                     }
-                    is FocusWriteResult.Invalid,
+                    is FocusWriteResult.Invalid -> {
+                        pendingOperation = null
+                        local.update { it.copy(busy = false, operationFailed = true) }
+                    }
                     is FocusWriteResult.Unavailable -> local.update {
                         it.copy(busy = false, operationFailed = true)
                     }
@@ -147,6 +172,10 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
                 local.update { it.copy(busy = false, operationFailed = true) }
             }
         }
+    }
+
+    private fun reportUnavailableAttempt() {
+        local.update { it.copy(operationFailed = true) }
     }
 
     fun showBackPrompt() = local.update { it.copy(backPromptVisible = true) }

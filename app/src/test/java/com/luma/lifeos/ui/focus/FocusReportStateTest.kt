@@ -69,6 +69,30 @@ class FocusReportStateTest {
         assertEquals(BigDecimal("50.0"), ready.value.comparison.percentageChange)
     }
 
+    @Test fun weeklyReportCarriesSevenLocalDayBucketsAndLeavesFutureDaysUnavailable() = runBlocking {
+        val zone = ZoneId.of("UTC")
+        val monday = LocalDate.parse("2026-10-26")
+        val requests = (0L..6L).map { offset ->
+            val date = monday.plusDays(offset)
+            FocusWeekDayRequest(
+                date = date,
+                range = if (offset <= 2) TimeRange.forDay(date, zone) else null,
+            )
+        }
+        val aggregate = TimeRange.forDay(monday, zone)
+        val previous = TimeRange.forDay(monday.minusWeeks(1), zone)
+        val dayStats = FocusStatistics(60_000, 1, 0)
+        val repository = ReportRepository { range ->
+            flowOf(if (range == aggregate || range == previous) FocusStatistics(60_000, 1, 0) else dayStats)
+        }
+
+        val states = FocusReportSource(repository).week(aggregate, previous, requests).toList()
+        val ready = states.last() as FocusReportState.Ready<FocusWeekReport>
+
+        assertEquals((0L..6L).map(monday::plusDays), ready.value.days.map(FocusWeekDayReport::date))
+        assertEquals(listOf(dayStats, dayStats, dayStats, null, null, null, null), ready.value.days.map { it.statistics })
+    }
+
     @Test fun reportFailureIsCardLocalAndCancellationRemainsCancellation() = runBlocking {
         val range = TimeRange(Instant.EPOCH, Instant.EPOCH.plusSeconds(60))
         val failed = ReportRepository { flow { throw IllegalStateException("storage") } }

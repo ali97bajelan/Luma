@@ -21,6 +21,7 @@ data class FocusHistoryUiState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
     val page: com.luma.lifeos.domain.focus.FocusPage? = null,
+    val databaseGeneration: UUID? = null,
     val deletingSessionId: UUID? = null,
     val deletionFailed: Boolean = false,
 )
@@ -44,6 +45,8 @@ class FocusHistoryViewModel(
 
     fun retry() = load(mutableState.value.page?.offset ?: savedStateHandle[PAGE_OFFSET_KEY] ?: 0)
 
+    fun refresh() = load(mutableState.value.page?.offset ?: savedStateHandle[PAGE_OFFSET_KEY] ?: 0)
+
     fun page(offset: Int) {
         require(offset >= 0 && offset % FOCUS_HISTORY_PAGE_SIZE == 0)
         load(offset)
@@ -51,6 +54,9 @@ class FocusHistoryViewModel(
 
     fun delete(row: FocusHistoryRow) {
         if (!row.session.isTerminal || mutableState.value.deletingSessionId != null) return
+        val displayed = mutableState.value.page?.rows?.firstOrNull { it.session.id == row.session.id }?.session
+        val generation = mutableState.value.databaseGeneration ?: return
+        if (displayed?.revision != row.session.revision) return
         mutableState.value = mutableState.value.copy(
             deletingSessionId = row.session.id,
             deletionFailed = false,
@@ -58,7 +64,7 @@ class FocusHistoryViewModel(
         viewModelScope.launch {
             try {
                 val context = FocusWriteContext(
-                    databaseGeneration = repository.currentGeneration(),
+                    databaseGeneration = generation,
                     processInstanceId = processInstanceId,
                 )
                 when (repository.delete(row.session.id, row.session.revision, context)) {
@@ -93,9 +99,15 @@ class FocusHistoryViewModel(
             loading = true,
             loadFailed = false,
             page = null,
+            databaseGeneration = null,
+            deletingSessionId = null,
+            deletionFailed = false,
         )
         loadJob = viewModelScope.launch {
             try {
+                // Bind destructive actions to the generation captured before reading this page.
+                // If replacement races the query, the repository will reject the stale token.
+                val generation = repository.currentGeneration()
                 var page = repository.history(range, requestedOffset, FOCUS_HISTORY_PAGE_SIZE)
                 val lastValidOffset = if (page.total == 0) 0
                 else ((page.total - 1) / FOCUS_HISTORY_PAGE_SIZE) * FOCUS_HISTORY_PAGE_SIZE
@@ -109,6 +121,7 @@ class FocusHistoryViewModel(
                         loading = false,
                         loadFailed = false,
                         page = page,
+                        databaseGeneration = generation,
                     )
                 }
             } catch (failure: Exception) {

@@ -54,6 +54,7 @@ internal fun FocusScreen(
     onConfirmEmergencyExit: () -> Unit,
     onLaunchApp: (String) -> Unit,
     onOpenPendingDestination: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     val runtime = state.runtime
     val session = runtime.session
@@ -123,6 +124,7 @@ internal fun FocusScreen(
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
+                    onOpenHistory = onOpenHistory,
                 )
                 session?.state == FocusState.FINISHED -> TerminalContent(
                     state = state,
@@ -134,6 +136,7 @@ internal fun FocusScreen(
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
+                    onOpenHistory = onOpenHistory,
                 )
                 session?.state == FocusState.INTERRUPTED -> TerminalContent(
                     state = state,
@@ -145,8 +148,9 @@ internal fun FocusScreen(
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
+                    onOpenHistory = onOpenHistory,
                 )
-                else -> SetupContent(state, onStart, onRetry, onEmergencyExit)
+                else -> SetupContent(state, onStart, onRetry, onEmergencyExit, onOpenHistory)
             }
         }
     }
@@ -210,12 +214,21 @@ private fun SetupContent(
     onStart: () -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
     Button(onClick = onStart, enabled = !state.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start")) {
         Text(if (state.busy) stringResource(R.string.focus_saving) else stringResource(R.string.focus_start))
     }
+    OpenHistoryButton(onOpenHistory)
     FailureContent(state, onRetry, onEmergencyExit)
+}
+
+@Composable
+private fun OpenHistoryButton(onOpenHistory: () -> Unit) {
+    TextButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth().testTag("focus_history_open")) {
+        Text(stringResource(R.string.focus_open_history))
+    }
 }
 
 @Composable
@@ -282,6 +295,7 @@ private fun PausedContent(
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenPendingDestination: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     Text(stringResource(R.string.focus_paused), style = MaterialTheme.typography.titleLarge)
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall,
@@ -297,6 +311,7 @@ private fun PausedContent(
         }
     }
     Text(stringResource(R.string.focus_paused_leave_hint))
+    OpenHistoryButton(onOpenHistory)
     if (hasPendingDestination) PendingDestinationButton(onOpenPendingDestination = onOpenPendingDestination)
     FailureContent(state, onRetry, onEmergencyExit)
 }
@@ -335,6 +350,7 @@ private fun TerminalContent(
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenPendingDestination: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     Text(
         stringResource(if (interrupted) R.string.focus_interrupted else R.string.focus_finished),
@@ -350,6 +366,7 @@ private fun TerminalContent(
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_another")) {
         Text(stringResource(R.string.focus_start_another))
     }
+    OpenHistoryButton(onOpenHistory)
     if (hasPendingDestination) PendingDestinationButton(onOpenPendingDestination = onOpenPendingDestination)
     FailureContent(state, onRetry, onEmergencyExit)
 }

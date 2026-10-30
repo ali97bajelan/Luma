@@ -1244,10 +1244,13 @@
     <string name="focus_current_in_progress">در حال اجرا: %1$s · در مجموع ذخیره‌شده نیست</string>
     <string name="focus_current_paused">مکث‌شده: %1$s · در مجموع ذخیره‌شده نیست</string>
     <string name="focus_view_day_history">دیدن نشست‌های این روز</string>
+    <string name="focus_open_history">نمایش همهٔ نشست‌ها</string>
     <string name="focus_week_title">زمان تمرکز</string>
     <string name="focus_week_this_period">این هفته · %1$s</string>
     <string name="focus_week_previous_period">دورهٔ پیشین · %1$s</string>
     <string name="focus_week_duration">تمرکز: %1$s</string>
+    <string name="focus_week_day_duration">%1$s · %2$s</string>
+    <string name="focus_week_day_unavailable">هنوز نرسیده</string>
     <string name="focus_no_change">نسبت به دورهٔ پیشین تغییری ندارد.</string>
     <string name="focus_increase_from_empty">%1$s افزایش نسبت به دوره‌ای بدون زمان تمرکز ثبت‌شده.</string>
     <string name="focus_previous_period_empty">در دورهٔ پیشین زمانی ثبت نشده است؛ بنابراین درصد نمایش داده نمی‌شود.</string>

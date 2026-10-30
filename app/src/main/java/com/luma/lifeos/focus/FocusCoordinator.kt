@@ -22,6 +22,11 @@ class FocusCoordinator(
     private val clock: FocusClock,
     private val processInstanceId: UUID = UUID.randomUUID(),
 ) {
+    data class OperationAttempt(
+        val sample: FocusTimeSample,
+        val context: FocusWriteContext,
+    )
+
     fun sample(): FocusTimeSample = clock.sample()
 
     fun observeOpen(): Flow<FocusSession?> = repository.observeOpen()
@@ -31,13 +36,29 @@ class FocusCoordinator(
         processInstanceId = processInstanceId,
     )
 
+    fun operationAttempt(databaseGeneration: UUID): OperationAttempt = OperationAttempt(
+        clock.sample(),
+        FocusWriteContext(databaseGeneration, processInstanceId),
+    )
+
+    suspend fun captureOperationAttempt(): OperationAttempt = operationAttempt(repository.currentGeneration())
+
     suspend fun reconcile(): FocusWriteResult = repository.reconcile(clock.sample(), context())
+
+    suspend fun reconcile(attempt: OperationAttempt): FocusWriteResult =
+        repository.reconcile(attempt.sample, attempt.context)
 
     suspend fun start(
         commandId: UUID,
         sessionId: UUID,
         sample: FocusTimeSample = clock.sample(),
     ): FocusWriteResult = repository.start(commandId, sessionId, sample, context())
+
+    suspend fun start(
+        commandId: UUID,
+        sessionId: UUID,
+        attempt: OperationAttempt,
+    ): FocusWriteResult = repository.start(commandId, sessionId, attempt.sample, attempt.context)
 
     suspend fun act(
         commandId: UUID,
@@ -48,6 +69,15 @@ class FocusCoordinator(
         repository.apply(
             FocusCommand(commandId, session.id, session.revision, action, sample, context()),
         )
+
+    suspend fun act(
+        commandId: UUID,
+        session: FocusSession,
+        action: FocusAction,
+        attempt: OperationAttempt,
+    ): FocusWriteResult = repository.apply(
+        FocusCommand(commandId, session.id, session.revision, action, attempt.sample, attempt.context),
+    )
 
     suspend fun checkpoint(
         session: FocusSession,
@@ -65,6 +95,20 @@ class FocusCoordinator(
         choice,
         sample,
         context(),
+        terminalReason,
+    )
+
+    suspend fun resolveRecovery(
+        session: FocusSession,
+        choice: FocusRecoveryChoice,
+        attempt: OperationAttempt,
+        terminalReason: FocusTerminalReason = FocusTerminalReason.PROCESS_RESTART_GAP,
+    ): FocusWriteResult = repository.resolveRecovery(
+        session.id,
+        session.revision,
+        choice,
+        attempt.sample,
+        attempt.context,
         terminalReason,
     )
 

@@ -27,6 +27,7 @@ internal fun FocusRoute(
     viewModel: FocusViewModel,
     preferences: FocusPreferences?,
     allowedFocusApps: AllowedFocusApps?,
+    onOpenHistory: () -> Unit,
     hasPendingDestination: Boolean,
     onBack: () -> Unit,
     onOpenPendingDestination: () -> Unit,
@@ -79,5 +80,6 @@ internal fun FocusRoute(
         onConfirmEmergencyExit = viewModel::confirmEmergencyExit,
         onLaunchApp = viewModel::launchSelectedApp,
         onOpenPendingDestination = onOpenPendingDestination,
+        onOpenHistory = onOpenHistory,
     )
 }

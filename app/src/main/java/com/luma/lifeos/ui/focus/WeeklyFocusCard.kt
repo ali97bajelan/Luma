@@ -3,6 +3,8 @@ package com.luma.lifeos.ui.focus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,6 +23,8 @@ import com.luma.lifeos.domain.focus.FocusComparisonStatus
 import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.domain.review.ReviewPeriod
 import java.time.format.FormatStyle
+import java.util.Locale
+import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun WeeklyFocusCard(
@@ -71,6 +75,42 @@ internal fun WeeklyFocusCard(
                         progress = { barFraction(value.current.totalMillis, ratio) },
                         modifier = Modifier.fillMaxWidth().height(6.dp).testTag("review_focus_current_bar"),
                     )
+                    if (value.days.isNotEmpty()) {
+                        val dailyMaximum = value.days.mapNotNull { it.statistics?.totalMillis }.maxOrNull() ?: 0L
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            value.days.forEachIndexed { index, day ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    val dayLabel = day.date.format(
+                                        DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
+                                            .withLocale(Locale.getDefault()),
+                                    )
+                                    Text(dayLabel, modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodySmall)
+                                    val stats = day.statistics
+                                    if (stats == null) {
+                                        Text(
+                                            stringResource(R.string.focus_week_day_unavailable),
+                                            modifier = Modifier.weight(1f).testTag("review_focus_day_unavailable_$index"),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                    } else {
+                                        LinearProgressIndicator(
+                                            progress = { barFraction(stats.totalMillis, dailyMaximum) },
+                                            modifier = Modifier.weight(1f).height(6.dp)
+                                                .testTag("review_focus_day_bar_$index"),
+                                        )
+                                        Text(
+                                            stringResource(R.string.focus_week_day_duration, dayLabel, focusDuration(stats.totalMillis)),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                     Text(
                         focusContributorCount(value.current.contributingSessions),
                         style = MaterialTheme.typography.bodySmall,

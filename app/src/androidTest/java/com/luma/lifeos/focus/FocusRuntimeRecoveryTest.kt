@@ -5,8 +5,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
+import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import java.util.UUID
@@ -19,6 +21,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,6 +29,45 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class FocusRuntimeRecoveryTest {
+    @Test fun ambiguousActionRetryKeepsTheOriginalReceiptPayloadAndGeneration() = runBlocking {
+        val (_, _, context) = dependencies()
+        val delegate = (context.applicationContext as LumaApplication).storage.focus
+        val failing = CommitThenThrowRepository(delegate)
+        var now = FocusTimeSample(java.time.Instant.parse("2026-10-30T12:00:00Z"), 10_000, "fm07-boot")
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val runtime = FocusRuntime(
+            coordinator = FocusCoordinator(failing, FocusClock { now }, UUID.randomUUID()),
+            preferences = FocusPreferences(context, "fm07-retry-${UUID.randomUUID()}"),
+            allowedApps = AllowedFocusApps(context),
+            scope = scope,
+        )
+        try {
+            runtime.initialize()
+            awaitInitialized(runtime)
+            assertTrue(runtime.start(UUID.randomUUID(), UUID.randomUUID()) is FocusWriteResult.Applied)
+            val running = requireNotNull(delegate.observeOpen().first())
+            val commandId = UUID.randomUUID()
+            failing.throwAfterNextApply = true
+            val firstAttempt = runCatching { runtime.act(commandId, running, FocusAction.PAUSE) }
+            assertTrue(firstAttempt.exceptionOrNull() is IllegalStateException)
+            assertEquals(FocusState.PAUSED, delegate.observeOpen().first()?.state)
+
+            failing.generationOverride = UUID.randomUUID()
+            now = now.copy(wall = now.wall.plusSeconds(9), elapsedMillis = now.elapsedMillis + 9_000)
+            val retry = runtime.act(commandId, running, FocusAction.PAUSE)
+
+            assertTrue(retry is FocusWriteResult.AlreadyApplied)
+            assertEquals(FocusState.PAUSED, (retry as FocusWriteResult.AlreadyApplied).snapshot?.state)
+            assertNotNull(retry.snapshot)
+        } finally {
+            failing.generationOverride = null
+            delegate.observeOpen().first()?.let { open ->
+                runtime.prepareDatabaseReplacement(discardOpenSession = true)
+            }
+            scope.cancel()
+        }
+    }
+
     @Test fun changedProcessRequiresExplicitRecoveryAndEndsOnlyAtTheSavedCheckpoint() = runBlocking {
         val (repository, preferences, context) = dependencies()
         val firstScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -112,5 +154,23 @@ class FocusRuntimeRecoveryTest {
         val ready = runtime.state.first { !it.loading && (it.initialized || it.loadFailed) }
         assertFalse("Focus runtime initialization failed", ready.loadFailed)
         ready
+    }
+
+    private class CommitThenThrowRepository(
+        private val delegate: FocusRepository,
+    ) : FocusRepository by delegate {
+        var throwAfterNextApply = false
+        var generationOverride: UUID? = null
+
+        override suspend fun currentGeneration(): UUID = generationOverride ?: delegate.currentGeneration()
+
+        override suspend fun apply(command: com.luma.lifeos.domain.focus.FocusCommand): FocusWriteResult {
+            val committed = delegate.apply(command)
+            if (throwAfterNextApply) {
+                throwAfterNextApply = false
+                throw IllegalStateException("Simulated lost acknowledgement after commit")
+            }
+            return committed
+        }
     }
 }

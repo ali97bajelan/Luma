@@ -1243,10 +1243,13 @@
     <string name="focus_current_in_progress">In progress: %1$s · not included in saved totals</string>
     <string name="focus_current_paused">Paused: %1$s · not included in saved totals</string>
     <string name="focus_view_day_history">View sessions for this day</string>
+    <string name="focus_open_history">View all sessions</string>
     <string name="focus_week_title">Focus time</string>
     <string name="focus_week_this_period">This week · %1$s</string>
     <string name="focus_week_previous_period">Previous period · %1$s</string>
     <string name="focus_week_duration">Focus: %1$s</string>
+    <string name="focus_week_day_duration">%1$s · %2$s</string>
+    <string name="focus_week_day_unavailable">Not elapsed yet</string>
     <string name="focus_no_change">No change from the previous period.</string>
     <string name="focus_increase_from_empty">Increase of %1$s from a period with no recorded focus time.</string>
     <string name="focus_previous_period_empty">No focus time was recorded in the previous period, so no percentage is shown.</string>

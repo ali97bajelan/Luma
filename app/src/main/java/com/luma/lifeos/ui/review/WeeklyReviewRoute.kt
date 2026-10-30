@@ -31,6 +31,7 @@ import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.ui.focus.FocusReportSource
+import com.luma.lifeos.ui.focus.FocusWeekDayRequest
 import com.luma.lifeos.ui.focus.FocusReportState
 import com.luma.lifeos.ui.focus.FocusWeekReport
 import com.luma.lifeos.ui.focus.WeeklyFocusCard
@@ -79,6 +80,17 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 focusSource.week(
                     TimeRange(period.current.startInstant(period.zone), period.current.endInstant(period.zone)),
                     TimeRange(period.previous.startInstant(period.zone), period.previous.endInstant(period.zone)),
+                    (0L..6L).map { offset ->
+                        val date = period.current.start.plusDays(offset)
+                        val available = date <= period.current.through
+                        val start = date.atStartOfDay(period.zone).toInstant()
+                        val end = date.plusDays(1).atStartOfDay(period.zone).toInstant()
+                        FocusWeekDayRequest(
+                            date = date,
+                            range = if (available && start.isBefore(end)) TimeRange(start, end) else null,
+                            available = available,
+                        )
+                    },
                 )
             }
             val observed by focusObservation.collectAsStateWithLifecycle(

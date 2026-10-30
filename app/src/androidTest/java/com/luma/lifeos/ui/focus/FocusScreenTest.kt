@@ -51,6 +51,7 @@ class FocusScreenTest {
                     onConfirmEmergencyExit = {},
                     onLaunchApp = {},
                     onOpenPendingDestination = {},
+                    onOpenHistory = {},
                 )
             }
         }
@@ -90,12 +91,14 @@ class FocusScreenTest {
                     onConfirmEmergencyExit = {},
                     onLaunchApp = {},
                     onOpenPendingDestination = {},
+                    onOpenHistory = {},
                 )
             }
         }
 
         compose.onNodeWithTag("focus_pause").assertIsDisplayed()
         compose.onNodeWithTag("focus_stop").assertIsDisplayed()
+        compose.onNodeWithTag("focus_history_open").assertDoesNotExist()
         compose.onNodeWithTag("focus_emergency_exit").assertIsDisplayed().performClick()
         compose.runOnIdle { assertTrue(requested) }
     }
@@ -131,11 +134,43 @@ class FocusScreenTest {
                     onConfirmEmergencyExit = {},
                     onLaunchApp = {},
                     onOpenPendingDestination = {},
+                    onOpenHistory = {},
                 )
             }
         }
 
         compose.onNodeWithTag("focus_retry_shortcut").assertIsDisplayed().performClick()
         compose.runOnIdle { assertTrue(retried) }
+    }
+
+    @Test fun idleFocusScreenCanOpenAllSessionHistory() {
+        var requested = false
+        compose.setContent {
+            LifeOsTheme {
+                FocusScreen(
+                    state = FocusScreenState(runtime = FocusRuntimeState(initialized = true, loading = false)),
+                    allowedApps = emptyList(),
+                    hasPendingDestination = false,
+                    onBack = {},
+                    onShowBackPrompt = {},
+                    onDismissBackPrompt = {},
+                    onStart = {},
+                    onAction = {},
+                    onLeaveAfterAction = {},
+                    onResolveRecovery = {},
+                    onRetry = {},
+                    onRetryInitialization = {},
+                    onEmergencyExit = {},
+                    onDismissEmergencyExit = {},
+                    onConfirmEmergencyExit = {},
+                    onLaunchApp = {},
+                    onOpenPendingDestination = {},
+                    onOpenHistory = { requested = true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("focus_history_open").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertTrue(requested) }
     }
 }

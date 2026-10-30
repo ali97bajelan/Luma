@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03 SOURCE COMPLETE + SCOPED API36 QA PASS; FM04 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM05 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM06 SOURCE COMPLETE — QA PENDING; FM07–FM08 NOT STARTED; FULL MATRIX/INTEGRATED QA PENDING**
+Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03 SOURCE COMPLETE + SCOPED API36 QA PASS; FM04 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM05 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM06 SOURCE COMPLETE + SCOPED API36.1 QA PASS (QA10–11 PARTIAL); FM07 SOURCE REVIEW + FIVE DEFECT FIXES + SCOPED API36.1 QA PASS (FULL ACCEPTANCE PARTIAL); FM08 NOT STARTED; FULL MATRIX/INTEGRATED QA PENDING**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -218,14 +218,14 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ### Phase 1 — Implementation
 
-- [ ] Review final production/resource/documentation diff against F16-R01–R05, all entry paths, permissions, schema/archive inventory and initial defaults. Resolve execution-baseline differences in this plan.
-- [ ] Run source-only checks: `git diff --check`, Markdown link/file checks and XML parsing of affected resources. Record SHA, dirty patch hash, touched files, decisions, requirement→case mapping and uncertainty. Mark SOURCE COMPLETE — QA PENDING only for actual source work.
+- [x] Review final production/resource/documentation diff against F16-R01–R05, all entry paths, permissions, schema/archive inventory and initial defaults. Resolve execution-baseline differences in this plan. FM07 review found and fixed five defects: repeated guarded navigation, retry sample/generation drift, stale history-delete authority, missing local-day Review bars, and missing all-session history entry.
+- [x] Run source-only checks: `git diff --check`, Markdown link/file checks and XML parsing of affected resources. Record SHA, dirty patch hash, touched files, decisions, requirement→case mapping and uncertainty. Source and QA evidence are recorded in the [FM07 execution record](../../feature-roadmap/evidence/2026-10-30/F16/fm07-qa.md); FM07 scoped QA passed while full acceptance remains partial.
 
 ### Phase 2 — QA
 
-- [ ] Execute all applicable QA01–14 plus the shared locale/theme/window/API/keyboard/TalkBack matrix on an isolated package; run domain/affected host, build/lint, Room/app connected and minified release gates from the shared catalogue. Record exact commands/exit codes/skips, source/APK/fixture hashes and device state.
-- [ ] Fix defects and rerun their cases plus affected regressions. Measure QA14 with 5 warmups + 30 repetitions on named hardware; report cold separately.
-- [ ] Complete acceptance ledger with scope and remaining blockers. Never call device-wide blocking complete if only v1 navigation/shortcuts were validated. All required personal-phone cells must pass for a v1 claim; FM08 controls full original enforcement scope.
+- [ ] Execute all applicable QA01–14 plus the shared locale/theme/window/API/keyboard/TalkBack matrix on an isolated package; run domain/affected host, build/lint, Room/app connected and minified release gates from the shared catalogue. Record exact commands/exit codes/skips, source/APK/fixture hashes and device state. (Scoped suites and minified smoke are recorded; full app suite and required matrix remain incomplete.)
+- [ ] Fix defects and rerun their cases plus affected regressions. Measure QA14 with 5 warmups + 30 repetitions on named hardware; report cold separately. (The stale Focus lifecycle selector was corrected and retested; QA14 remains NOT RUN.)
+- [x] Complete the scoped acceptance record with exact outcomes and remaining blockers. Never call device-wide blocking complete if only v1 navigation/shortcuts were validated. All required personal-phone cells must pass for a v1 claim; FM08 controls full original enforcement scope.
 
 ## FM08 — Device-wide enforcement decision and feasibility
 
@@ -242,4 +242,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 lifecycle ownership, guarded UI and coordinator integration are source-complete, and its focused API36.1 host/instrumentation/lint subset passes; native lifecycle, fault-injection and accessibility/platform matrix checks remain open. FM04 settings and safe selected-app handoff are source-complete with scoped API 36.1 host/instrumentation/lint QA pass; actual app fixtures and the full matrix remain open. FM05 source and scoped QA are complete with the limits recorded above. FM06 source now covers portable terminal focus history, legacy replacement, generation-safe restore and reset integration; QA10–11 remain pending. FM07 integrated QA and FM08 enforcement scope remain open. No full F16 acceptance or device-wide enforcement is claimed.
+FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 lifecycle ownership, guarded UI and coordinator integration are source-complete, and its focused API36.1 host/instrumentation/lint subset passes; native lifecycle, fault-injection and accessibility/platform matrix checks remain open. FM04 settings and safe selected-app handoff are source-complete with scoped API 36.1 host/instrumentation/lint QA pass; actual app fixtures and the full matrix remain open. FM05 source and scoped QA are complete with the limits recorded above. FM06 source now covers portable terminal focus history, legacy replacement, generation-safe restore and reset integration; QA10–11 remain partial. FM07 records a source review, five defect fixes, 304/304 debug and release app host tests, 13/13 focused app connected tests, 29/29 data connected tests, host/build/lint results and a minified release smoke. Its full app connected suite stopped at 83/262 with ten observed failures; API28/platform/accessibility cells and QA14 remain open. See [FM07 QA evidence](../../feature-roadmap/evidence/2026-10-30/F16/fm07-qa.md). FM08 enforcement scope remains open. No full F16 acceptance or device-wide enforcement is claimed.

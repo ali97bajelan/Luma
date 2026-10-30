@@ -588,6 +588,9 @@ fun LifeOsApp(
                         viewModel = focusViewModel,
                         preferences = focusPreferences,
                         allowedFocusApps = allowedFocusApps,
+                        onOpenHistory = {
+                            navController.navigate(AppRoutes.FOCUS_HISTORY.substringBefore('?'))
+                        },
                         hasPendingDestination = focusNavigationGuard.pendingDestination != null,
                         onBack = {
                             if (!navController.popBackStack()) {
@@ -971,8 +974,8 @@ fun LifeOsApp(
             // The cold-start request waits here until NavHost has installed its graph.
             navController.currentBackStackEntryFlow.first()
             val pending = FocusPendingDestination.Widget(request.destination)
-            val nextGuard = focusNavigationGuard.intercept(focusState.runtime, pending)
-            if (nextGuard != focusNavigationGuard) {
+            val nextGuard = focusNavigationGuard.interceptIfGuarded(focusState.runtime, pending)
+            if (nextGuard != null) {
                 focusNavigationGuard = nextGuard
                 onWidgetLaunchConsumed(request.id)
                 return@LaunchedEffect
@@ -986,11 +989,11 @@ fun LifeOsApp(
             if (focusRuntime != null && (focusState.runtime.loading ||
                     (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed))) return@LaunchedEffect
             navController.currentBackStackEntryFlow.first()
-            val nextGuard = focusNavigationGuard.intercept(
+            val nextGuard = focusNavigationGuard.interceptIfGuarded(
                 focusState.runtime,
                 FocusPendingDestination.Reminder(request.kind, request.id.toString(), request.date.toString()),
             )
-            if (nextGuard != focusNavigationGuard) {
+            if (nextGuard != null) {
                 focusNavigationGuard = nextGuard
                 onReminderLaunchConsumed()
                 return@LaunchedEffect
@@ -1051,6 +1054,9 @@ fun LifeOsApp(
                 viewModel = focusViewModel,
                 preferences = focusPreferences,
                 allowedFocusApps = allowedFocusApps,
+                onOpenHistory = {
+                    navController.navigate(AppRoutes.FOCUS_HISTORY.substringBefore('?'))
+                },
                 hasPendingDestination = focusNavigationGuard.pendingDestination != null,
                 onBack = {},
                 onOpenPendingDestination = ::openPendingFocusDestination,

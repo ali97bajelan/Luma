@@ -88,6 +88,10 @@ class FocusReportsTest {
                             current = current,
                             previous = previous,
                             comparison = comparison,
+                            days = (0L..6L).map { offset ->
+                                val date = period.current.start.plusDays(offset)
+                                FocusWeekDayReport(date, if (date <= period.current.through) current else null)
+                            },
                         ),
                     ),
                     period = period,
@@ -105,6 +109,8 @@ class FocusReportsTest {
             .assertTextContains("Increase of 01:00 from a period with no recorded focus time", substring = true)
         compose.onNodeWithText("No focus time was recorded in the previous period, so no percentage is shown.")
             .assertIsDisplayed()
+        compose.onNodeWithTag("review_focus_day_bar_0").assertIsDisplayed()
+        compose.onNodeWithTag("review_focus_day_unavailable_6").assertIsDisplayed()
     }
 
     @Test fun historyShowsCreditedRunsAndOnlyDeletesAfterConfirmation() {
@@ -120,6 +126,7 @@ class FocusReportsTest {
         }
 
         compose.onNodeWithTag("focus_history_row_${row.session.id}").assertIsDisplayed()
+        repository.generation = UUID.fromString("00000000-0000-0000-0000-000000000099")
         compose.onNodeWithTag("focus_history_detail").performClick()
         compose.onNodeWithText("Pause gaps are excluded. Each run below shows only time credited to the timer.")
             .assertIsDisplayed()
@@ -134,13 +141,16 @@ class FocusReportsTest {
         compose.waitUntil(5_000) { repository.deleteCount.get() == 1 }
         compose.onNodeWithTag("focus_history_empty").assertIsDisplayed()
         assertEquals(1, repository.deleteCount.get())
+        assertEquals(GENERATION, repository.deleteContext?.databaseGeneration)
     }
 
     private class HistoryRepository(private val row: FocusHistoryRow) : FocusRepository {
         val deleteCount = AtomicInteger()
+        var generation: UUID = GENERATION
+        var deleteContext: FocusWriteContext? = null
         private var deleted = false
 
-        override suspend fun currentGeneration(): UUID = GENERATION
+        override suspend fun currentGeneration(): UUID = generation
         override fun observeOpen(): Flow<FocusSession?> = emptyFlow()
         override suspend fun start(
             commandId: UUID,
@@ -185,6 +195,7 @@ class FocusReportsTest {
             context: FocusWriteContext,
         ): FocusWriteResult {
             deleteCount.incrementAndGet()
+            deleteContext = context
             deleted = true
             return FocusWriteResult.Applied(deletedSessionId = sessionId)
         }
