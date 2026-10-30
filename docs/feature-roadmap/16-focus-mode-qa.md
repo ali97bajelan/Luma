@@ -1,6 +1,6 @@
 # F16 — Focus mode QA scenarios
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; FM02 ROOM/REPOSITORY SUBSET PASS; FM03 SCOPED API36 SUBSET PASS; FULL MATRIX/INTEGRATED CASES PENDING** · Priority: **P1 (proposed)**
+Date: 30 October 2026 · Status: **FM01 DOMAIN SUBSET PASS; FM02 ROOM/REPOSITORY SUBSET PASS; FM03 SCOPED API36 SUBSET PASS; FM04 SCOPED API36.1 SUBSET PASS; FM05 SCOPED API36.1 SUBSET PASS; FULL MATRIX/INTEGRATED CASES PENDING** · Priority: **P1 (proposed)**
 
 [Tasks](../FOCUS_MODE_TASKS.md) · [Spec](../superpowers/specs/2026-10-28-roadmap-16-focus-mode.md) · [Plan](../superpowers/plans/2026-10-28-roadmap-16-focus-mode.md) · [Roadmap](../FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](WORKFLOW.md)
 
@@ -210,6 +210,16 @@ FM04 passed its scoped host, API 36.1 connected and `focusQaDebug` lint checks. 
 
 QA05 remains **PARTIAL**: no disposable installed external app was used, so actual external launch/return continuity, disabled target behavior, multiple real activities and work-profile separation were not exercised. QA12/13 remain **PARTIAL**: only scoped Compose/regression assertions ran; API28, accessibility, keyboard/predictive Back and EN/FR/FA theme/window/font/orientation coverage are open. No private package inventory, Usage access or notification permission was collected or granted. The focus shortcuts document their personal-phone scope and do not claim device-wide blocking.
 
+## FM05 reports and history QA run — 30 October 2026
+
+FM05 passed its scoped host, API 36.1 connected and lint checks. The app host suite passed 301/301 tests and the data host suite passed 29/29. Three focused FM05 Compose tests and three focused Room persistence/history tests passed on `Medium_Phone_API_36.1`. The checks cover selected-day saved totals versus a running session, partial-week display, no percentage for an empty comparison baseline, clipped cross-midnight/cross-week totals, stable 50-row pages, full duration versus range contribution, credited run detail, cancel/confirm deletion and report invalidation. EN/FR/FA resources parse, and `git diff --check` passes.
+
+The app QA variant is isolated as `com.luma.lifeos.focusqa.qa` (instrumentation package `com.luma.lifeos.focusqa.qa.test`). Candidate base, source/test tree identity and APK SHA-256 are recorded in [FM05 execution evidence](evidence/2026-10-30/F16/fm05-qa.md). App and data lint exited 0. The app lint report contains project-wide warnings but no findings in the changed FM05 focus source files; the data lint report has no issues.
+
+Additional host-screen regression checks passed `TodayPersistenceTest` 2/2 and `WeeklyReviewFlowTest` 16/16 when run by class. `AppNavigationTest` passed 8/9; `dataWidgetCaptureUsesOneCurrentTimeChooserFromEitherProvider` failed during `ActivityScenario` teardown (the activity stayed PAUSED). The teardown failure reproduced with FM05's `focusRepository` argument temporarily omitted, so it is not caused by the report repository wiring. The combined 27-test invocation also had two failures in Today/Review that did not reproduce when those classes ran independently. Logs: [combined run](evidence/2026-10-30/F16/fm05-app-integration-regression.log), [isolated Today](evidence/2026-10-30/F16/fm05-today-integration-retest.log), [isolated Review](evidence/2026-10-30/F16/fm05-review-layout-retest.log), [isolated navigation](evidence/2026-10-30/F16/fm05-navigation-integration-retest.log), and [wiring isolation](evidence/2026-10-30/F16/fm05-navigation-wiring-isolation.log).
+
+QA06–09 now have exercised report/history subsets but remain **PARTIAL**: the emulator run did not execute the full timezone and exact-boundary fixture, all specified week/source/back-stack cases, every comparison rounding/unavailable state, interrupted/open/paused deletion rejection, or concurrent report/deletion race. QA12/13 remain **PARTIAL** because locale, visual, accessibility, API 28 and window/font/orientation matrices were not run. QA14 performance remains **NOT RUN**; the 50,000-session, 5-warm-up/30-measurement target is still open. See [FM05 execution evidence](evidence/2026-10-30/F16/fm05-qa.md) and the linked raw logs.
+
 ## Execution ledger
 
 | Case | Initial result | Current result | Actual run / evidence / blocker |
@@ -219,15 +229,15 @@ QA05 remains **PARTIAL**: no disposable installed external app was used, so actu
 | F16-QA03 | NOT RUN | PARTIAL | FM01/FM02 recovery checks and FM03 recreation plus changed-process-identity simulation pass. Actual process death, force-stop, sleep and OS lifecycle recovery remain unrun. |
 | F16-QA04 | NOT RUN | PARTIAL | FM01 drift/recovery assertions, FM02 changed-boot checkpoint handling and FM03 emergency-marker checkpoint recovery pass. Native clock/reboot conditions and injected database/preference failures remain unrun. |
 | F16-QA05 | NOT RUN | PARTIAL | FM04 host/API36.1 checks pass for preference persistence, duplicate-label identity, stale removal, current-selection/launchability recheck, checkpoint-before-launch, retry after injected failure and nonselected rejection. Real installed fixture launch/return, disabled/uninstalled target, multiple actual activities and work-profile boundary remain unrun; see [FM04 evidence](evidence/2026-10-30/F16/fm04-qa.md). |
-| F16-QA06 | NOT RUN | BLOCKED | FM01 half-open overlap, midnight, and DST assertions pass; Room/report/UI verification requires FM02/FM05. |
-| F16-QA07 | NOT RUN | BLOCKED | FM01 cross-week overlap assertions pass; Review ranges and source drill-down require FM05. |
-| F16-QA08 | NOT RUN | BLOCKED | FM01 comparison baseline/rounding assertions pass; Today/Review empty states and report sources require FM05. |
-| F16-QA09 | NOT RUN | BLOCKED | FM02 stable 50-row paging, range clipping, zero-duration exclusion, cascade deletion and tombstone replay protection pass. Report UI, confirmation and concurrent report invalidation require FM05. |
+| F16-QA06 | NOT RUN | PARTIAL | FM01 DST/day arithmetic and FM05 Room cross-midnight clipping plus Today saved/open separation pass in scoped tests. Full zone-change, exact endpoint and localized-device scenarios remain unrun; see [FM05 evidence](evidence/2026-10-30/F16/fm05-qa.md). |
+| F16-QA07 | NOT RUN | PARTIAL | FM01 cross-week overlap, FM05 clipped current/previous Room totals and partial-week/empty-baseline Review presentation pass. Full deterministic weekday fixture, both source drill-downs and back-stack preservation remain unrun; see [FM05 evidence](evidence/2026-10-30/F16/fm05-qa.md). |
+| F16-QA08 | NOT RUN | PARTIAL | FM01 comparison rounding, FM05 50.0% host comparison, and API 36.1 empty-previous UI rule pass. Remaining rounding cases and all loading/error/unavailable UI states require the full fixture matrix; see [FM05 evidence](evidence/2026-10-30/F16/fm05-qa.md). |
+| F16-QA09 | NOT RUN | PARTIAL | FM02 persistence/deletion invariants plus FM05 stable 50-row pages, clipped/full history duration, run detail, cancel/confirm and aggregate invalidation pass. Interrupted/zero/open/paused cases and concurrent report/delete race remain unrun; see [FM05 evidence](evidence/2026-10-30/F16/fm05-qa.md). |
 | F16-QA10 | NOT RUN | NOT RUN | Backup/legacy restore integration requires FM06. |
 | F16-QA11 | NOT RUN | BLOCKED | FM02 stale-generation rejection, receipt eviction and tombstone replay protection pass. Restore/reset orchestration and stale-write races require FM06. |
-| F16-QA12 | NOT RUN | PARTIAL | FM03 navigation/lifecycle checks and FM04 host + connected settings/retry assertions pass; FM04 lint exits 0. Existing-feature connected regressions, all entry paths, drafts and restore races remain unrun. See [FM03](evidence/2026-10-30/F16/fm03-qa.md) and [FM04](evidence/2026-10-30/F16/fm04-qa.md). |
-| F16-QA13 | NOT RUN | PARTIAL | FM04 settings Compose assertions pass on API36.1 and changed FM04 production files have no lint warnings. API28, TalkBack/keyboard/predictive Back, EN/FR/FA, theme/window/font/orientation matrix remains unrun. |
-| F16-QA14 | NOT RUN | NOT RUN | Room/query and representative-device performance work requires FM02/FM05. |
+| F16-QA12 | NOT RUN | PARTIAL | FM03 navigation/lifecycle, FM04 settings/retry, FM05 report/history assertions, 18/18 isolated Today/Review regressions and full app host regressions pass; app/data lint exits 0. AppNavigation is 8/9 because widget capture teardown stays PAUSED, reproduced without FM05 repository injection. Full connected regressions, all entry paths, drafts and restore races remain open; see [FM03](evidence/2026-10-30/F16/fm03-qa.md), [FM04](evidence/2026-10-30/F16/fm04-qa.md) and [FM05](evidence/2026-10-30/F16/fm05-qa.md). |
+| F16-QA13 | NOT RUN | PARTIAL | FM04 settings and FM05 reports Compose assertions pass on API36.1; changed FM05 focus source files have no lint warnings. API28, TalkBack/keyboard/predictive Back, EN/FR/FA visual, theme/window/font/orientation matrix remains unrun. |
+| F16-QA14 | NOT RUN | NOT RUN | FM05 scoped page-size checks passed; no 50,000-row fixture or representative-device performance measurements were run. |
 | F16-QA15 | NOT RUN | NOT RUN | FM08 scope/capability assessment has not run. |
 
 The FM01 host-domain subset is complete. F16 acceptance remains pending because the integrated cases and remaining tasks have not passed.

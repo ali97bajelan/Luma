@@ -14,6 +14,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.repository.DailySummaryRepository
+import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.ui.summary.DailySummaryState
 import com.luma.lifeos.ui.summary.observeDailySummary
 import com.luma.lifeos.domain.model.EventId
@@ -35,6 +38,10 @@ import com.luma.lifeos.ui.todo.TodoActionResult
 import com.luma.lifeos.ui.todo.observeTodayTasks
 import com.luma.lifeos.ui.todo.shouldShowTodayTasks
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.ui.focus.FocusDayReport
+import com.luma.lifeos.ui.focus.FocusReportSource
+import com.luma.lifeos.ui.focus.FocusReportState
+import com.luma.lifeos.ui.focus.TodayFocusCard
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -77,10 +84,15 @@ fun TodayRoute(
     onHabitOpenDate: (LocalDate) -> Unit = {},
     onFocus: (() -> Unit)? = null,
     focusPaused: Boolean = false,
+    focusRepository: FocusRepository? = null,
+    focusInProgressMillis: Long? = null,
+    focusInProgressState: FocusState? = null,
+    onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
     var todoRetry by remember { mutableIntStateOf(0) }
+    var focusRetry by remember { mutableIntStateOf(0) }
     val todayTasksViewModel = if (todos != null) {
         val tasksFactory = remember(todos) {
             viewModelFactory { initializer { TodayTasksViewModel(todos, createSavedStateHandle()) } }
@@ -108,9 +120,19 @@ fun TodayRoute(
         todayTaskActions = TodayTasksActionState()
     }
     // Recreate collection state so old-day rows cannot appear under the new date header.
-    key(repository, summaries, date, zone) {
+    key(repository, summaries, focusRepository, date, zone) {
         val observation = remember(retry) { observeToday(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(initialValue = TodayUiState.Loading)
+        val focusReport = if (focusRepository != null) {
+            val focusSource = remember(focusRepository) { FocusReportSource(focusRepository) }
+            val focusObservation = remember(focusSource, date, zone, focusRetry) {
+                focusSource.day(TimeRange.forDay(date, zone))
+            }
+            val observed by focusObservation.collectAsStateWithLifecycle(
+                initialValue = FocusReportState.Loading,
+            )
+            observed
+        } else null
         val summary = if (summaries != null) {
             val summaryFlow = remember(summaryRetry) { observeDailySummary(summaries, date, zone) }
             val summaryState by summaryFlow.collectAsStateWithLifecycle(initialValue = DailySummaryState.Loading)
@@ -130,7 +152,10 @@ fun TodayRoute(
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
-                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused)
+                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused,
+                focusReport = focusReport, focusInProgressMillis = focusInProgressMillis,
+                focusInProgressState = focusInProgressState,
+                onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory)
         } else {
             val habitFactory = remember(habits) {
                 viewModelFactory { initializer { HabitsViewModel(habits, createSavedStateHandle()) } }
@@ -175,7 +200,10 @@ fun TodayRoute(
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
-                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused)
+                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused,
+                focusReport = focusReport, focusInProgressMillis = focusInProgressMillis,
+                focusInProgressState = focusInProgressState,
+                onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory)
         }
     }
 }

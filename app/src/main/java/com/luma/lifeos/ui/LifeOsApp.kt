@@ -132,10 +132,13 @@ import com.luma.lifeos.focus.FocusNavigationGuard
 import com.luma.lifeos.focus.FocusPendingDestination
 import com.luma.lifeos.focus.FocusPreferences
 import com.luma.lifeos.focus.FocusRuntime
+import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.focus.FocusRuntimeState
 import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.focus.FocusViewModel
 import com.luma.lifeos.ui.focus.FocusRoute
+import com.luma.lifeos.ui.focus.FocusHistoryRoute
 
 private const val HABITS_SELECTED_DATE_KEY = "habits_selected_date"
 private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
@@ -176,6 +179,7 @@ fun LifeOsApp(
     focusRuntime: FocusRuntime? = null,
     focusPreferences: FocusPreferences? = null,
     allowedFocusApps: AllowedFocusApps? = null,
+    focusRepository: FocusRepository? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -308,6 +312,11 @@ fun LifeOsApp(
         if (requestDelete) {
             navController.currentBackStackEntry?.savedStateHandle?.set(TODO_EDITOR_REQUEST_DELETE_KEY, true)
         }
+    }
+    fun openFocusHistory(start: LocalDate, through: LocalDate, zone: ZoneId) {
+        navController.navigate(
+            "${AppRoutes.FOCUS_HISTORY.substringBefore('?')}?start=$start&through=$through&zone=${Uri.encode(zone.id)}",
+        )
     }
     fun openHabitsDate(date: LocalDate?) {
         navController.navigate(AppRoutes.HABITS)
@@ -517,12 +526,30 @@ fun LifeOsApp(
                                 navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
                             }) else null,
                             focusPaused = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.PAUSED,
+                            focusRepository = focusRepository,
+                            focusInProgressMillis = focusState.runtime.session?.let {
+                                focusState.runtime.displayedMillis.takeIf { _ ->
+                                    it.state in setOf(
+                                        com.luma.lifeos.domain.focus.FocusState.RUNNING,
+                                        com.luma.lifeos.domain.focus.FocusState.PAUSED,
+                                    )
+                                }
+                            },
+                            focusInProgressState = focusState.runtime.session?.state?.takeIf {
+                                it in setOf(
+                                    com.luma.lifeos.domain.focus.FocusState.RUNNING,
+                                    com.luma.lifeos.domain.focus.FocusState.PAUSED,
+                                )
+                            },
+                            onFocusHistory = ::openFocusHistory,
                         )
                         PrimaryDestination.REVIEW -> {
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
                                 integrationAvailability = integrationAvailability,
                                 onIntegrations = { navController.navigate("settings_integrations") },
                                 onCheckIn = { navController.navigate("mood") },
+                                focusRepository = focusRepository,
+                                onFocusHistory = ::openFocusHistory,
                                 onSources = { dates, metric ->
                                     val activity = metric.activity
                                     navController.navigate("review_sources/${dates.start}/${dates.through}/${metric.kind.name}" +
@@ -683,6 +710,30 @@ fun LifeOsApp(
                     preferences = settingsPreferences,
                     allowedFocusApps = settingsAllowedApps,
                     isRunning = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.RUNNING,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            if (focusRepository != null) composable(
+                AppRoutes.FOCUS_HISTORY,
+                arguments = listOf("start", "through", "zone").map { name ->
+                    navArgument(name) { type = NavType.StringType; defaultValue = "" }
+                },
+            ) { entry ->
+                val args = requireNotNull(entry.arguments)
+                val rangeStart = args.getString("start")?.takeIf(String::isNotBlank)?.let(LocalDate::parse)
+                val rangeThrough = args.getString("through")?.takeIf(String::isNotBlank)?.let(LocalDate::parse)
+                val historyZone = args.getString("zone")?.takeIf(String::isNotBlank)
+                    ?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: currentDay.zone
+                val range = if (rangeStart != null && rangeThrough != null) {
+                    TimeRange(
+                        rangeStart.atStartOfDay(historyZone).toInstant(),
+                        rangeThrough.plusDays(1).atStartOfDay(historyZone).toInstant(),
+                    )
+                } else null
+                FocusHistoryRoute(
+                    repository = focusRepository,
+                    range = range,
+                    zone = historyZone,
                     onBack = { navController.popBackStack() },
                 )
             }

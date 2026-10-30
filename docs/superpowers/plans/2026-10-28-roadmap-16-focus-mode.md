@@ -10,7 +10,7 @@
 
 **Spec:** [F16 specification](../specs/2026-10-28-roadmap-16-focus-mode.md)
 
-Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03 SOURCE COMPLETE + SCOPED API36 QA PASS; FM04 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM05 IN PROGRESS; FM06–FM08 NOT STARTED; FULL MATRIX/INTEGRATED QA PENDING**
+Date: 30 October 2026 · Status: **FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03 SOURCE COMPLETE + SCOPED API36 QA PASS; FM04 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM05 SOURCE COMPLETE + SCOPED API36.1 QA PASS; FM06–FM08 NOT STARTED; FULL MATRIX/INTEGRATED QA PENDING**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -181,16 +181,19 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ### Phase 1 — Implementation
 
-- [ ] Build Today card with selected-day saved duration, distinct contributors, historical date behavior and separate in-progress line; Start always uses now. Loading/error/retry remains independent of other Today content.
-- [ ] Build Weekly Focus card using exact current/previous `ReviewPeriod` ranges; sum clipped runs before rounding, show partial labels/date bars/delta, and suppress percent at previous zero. Keep prior metrics and ISO week behavior unchanged.
-- [ ] Build 50-row history and detail with stable sort, range contribution/full duration labels, interrupted-gap indicator and confirmed terminal deletion. Rapid date/zone changes cancel old loads and never show old data under new headers.
-- [ ] Wire drill-down/back preservation and deletion invalidation; separate focus state from daily cache/events. Add all EN/FR/FA state/accessibility copy and record handoff.
+- [x] Build Today card with selected-day saved duration, distinct contributors, historical date behavior and separate in-progress line; Start always uses now. Loading/error/retry remains independent of other Today content.
+- [x] Build Weekly Focus card using exact current/previous `ReviewPeriod` ranges; sum clipped runs before rounding, show partial labels/date bars/delta, and suppress percent at previous zero. Keep prior metrics and ISO week behavior unchanged.
+- [x] Build 50-row history and detail with stable sort, range contribution/full duration labels, interrupted-gap indicator and confirmed terminal deletion. Rapid date/zone changes cancel old loads and never show old data under new headers.
+- [x] Wire drill-down/back preservation and deletion invalidation; separate focus state from daily cache/events. Add all EN/FR/FA state/accessibility copy and record handoff.
 
 ### Phase 2 — QA
 
-- [ ] Author `app/src/test/java/com/luma/lifeos/ui/focus/FocusReportStateTest.kt`, `core/data/src/androidTest/kotlin/com/luma/lifeos/data/focus/FocusReportPersistenceTest.kt` and `app/src/androidTest/java/com/luma/lifeos/ui/focus/FocusReportsTest.kt`.
-- [ ] Execute QA06–09 using independently calculated fixtures; verify 23/25-hour days, cross-week spans, first-use zero history, partial current day, zero previous, rounding, >50 ties and exact range sources.
-- [ ] Execute QA12–14 for matrix/source isolation/query targets. Do not regress existing event counts, task/habit behavior or baseline Review performance; record raw performance data.
+- [x] Author `app/src/test/java/com/luma/lifeos/ui/focus/FocusReportStateTest.kt`, `core/data/src/androidTest/kotlin/com/luma/lifeos/data/focus/FocusReportPersistenceTest.kt` and `app/src/androidTest/java/com/luma/lifeos/ui/focus/FocusReportsTest.kt`.
+- [x] Run the scoped QA06–09 host/device checks: exact day stream/DST arithmetic, cross-midnight/week clipping, current/previous totals, zero-baseline UI, stable 50-row history, range contribution/full duration, and confirmed-deletion invalidation. App/data host, focused API 36.1 connected and lint checks pass; list exact unrun cases separately.
+- [ ] Complete QA06–09 with the full deterministic fixture set, source-route/back-stack and unavailable-state matrix, exact midnight endpoints, and interruption/open/paused deletion cases.
+- [ ] Complete QA12–14 for the locale/theme/window/accessibility/API matrix and scale/performance targets; record raw performance data on named hardware.
+
+**FM05 source handoff and scoped QA disposition (30 October 2026):** Independent Today/weekly statistics feed their own loading/error/retry states. Today separates saved selected-day totals from the active or paused timer. Review uses exact `ReviewPeriod` bounds and baseline-aware comparison output. History opens for the selected source range, loads stable 50-row pages, explains full duration versus clipped contribution, displays credited runs and interruption state, and confirms terminal deletion. Drill-down keeps the source date/week on the back stack; EN/FR/FA copy was added. Scoped API 36.1 QA passed: 301/301 app host tests, 29/29 data host tests, 3/3 FM05 UI tests, 3/3 Room tests, and 18/18 Today/Review connected regressions; app/data lint exited 0 with no findings in the new FM05 focus files. AppNavigation passed 8/9; the remaining widget capture `ActivityScenario` teardown failure also reproduces with FM05 repository injection omitted. QA06–09 remain partial, QA14 performance remains unrun, and full platform/accessibility coverage is pending. See [FM05 QA evidence](../../feature-roadmap/evidence/2026-10-30/F16/fm05-qa.md). Suggested commit message: `feat(focus): add reports and paged session history`.
 
 ## FM06 — Portable terminal history, replacement and reset
 
@@ -237,4 +240,4 @@ Retain existing `DailySummary`, `ReviewStatistics` and event-summary cache forma
 
 ## Current handoff
 
-FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 lifecycle ownership, guarded UI and coordinator integration are source-complete, and its focused API36.1 host/instrumentation/lint subset passes; native lifecycle, fault-injection and accessibility/platform matrix checks remain open. FM04 settings and safe selected-app handoff are source-complete with scoped API 36.1 host/instrumentation/lint QA pass; actual app fixtures and the full matrix remain open. FM05 remains in progress and FM06–FM08 source work and integrated QA remain pending. No complete F16 UI, archive integration or device-wide enforcement is claimed.
+FM01 production source is handed off and its pure-domain QA subset passes. FM02 Room/repository QA passes for the storage scope, with schema/migration evidence recorded above; the full data module still has two non-FM02 Todo failures. FM03 lifecycle ownership, guarded UI and coordinator integration are source-complete, and its focused API36.1 host/instrumentation/lint subset passes; native lifecycle, fault-injection and accessibility/platform matrix checks remain open. FM04 settings and safe selected-app handoff are source-complete with scoped API 36.1 host/instrumentation/lint QA pass; actual app fixtures and the full matrix remain open. FM05 source is complete and its scoped QA phase is in progress. FM06–FM08 source work and integrated QA remain pending. No complete F16 UI, archive integration or device-wide enforcement is claimed.

@@ -42,6 +42,10 @@ import java.time.ZoneId
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.TodayHabitsCard
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.ui.focus.FocusDayReport
+import com.luma.lifeos.ui.focus.FocusReportState
+import com.luma.lifeos.ui.focus.TodayFocusCard
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.ui.todo.TodayTasksActionState
 import com.luma.lifeos.ui.todo.TodayTasksCard
@@ -89,6 +93,11 @@ fun TodayScreen(
     deviceDate: LocalDate,
     onFocus: (() -> Unit)? = null,
     focusPaused: Boolean = false,
+    focusReport: FocusReportState<FocusDayReport>? = null,
+    focusInProgressMillis: Long? = null,
+    focusInProgressState: FocusState? = null,
+    onFocusReportRetry: () -> Unit = {},
+    onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
 ) {
     var choosingDateFor by rememberSaveable(date) { mutableStateOf<EventType?>(null) }
     var choosingCaptureDate by rememberSaveable(date) { mutableStateOf<String?>(null) }
@@ -117,7 +126,17 @@ fun TodayScreen(
             item(key = "capture") {
                 TodayCaptureActions(onDateCapture = { requestCapture(it, date) })
             }
-            if (focusAction != null) item(key = "focus") {
+            if (focusReport != null) item(key = "focus_report") {
+                TodayFocusCard(
+                    report = focusReport,
+                    inProgressMillis = focusInProgressMillis,
+                    inProgressState = focusInProgressState,
+                    onRetry = onFocusReportRetry,
+                    onHistory = { onFocusHistory(date, date, zone) },
+                    onFocus = focusAction,
+                )
+            }
+            if (focusAction != null && focusReport == null) item(key = "focus") {
                 OutlinedButton(
                     onClick = focusAction,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("today_focus"),

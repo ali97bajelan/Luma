@@ -28,6 +28,12 @@ import com.luma.lifeos.ui.timeline.EventCard
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
+import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.time.TimeRange
+import com.luma.lifeos.ui.focus.FocusReportSource
+import com.luma.lifeos.ui.focus.FocusReportState
+import com.luma.lifeos.ui.focus.FocusWeekReport
+import com.luma.lifeos.ui.focus.WeeklyFocusCard
 import androidx.compose.ui.unit.Dp
 import java.time.*
 import java.time.format.FormatStyle
@@ -42,10 +48,13 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     onHabit: (UUID, LocalDate) -> Unit = { _, _ -> },
     integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {},
+    focusRepository: FocusRepository? = null,
+    onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
     captureBottomClearance: Dp = 0.dp) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
+    var focusRetry by remember { mutableIntStateOf(0) }
     val period = reviewPeriod(restoredReviewDate(selected, today), today, zone)
     val weekKey = "${period.current.start}|${period.zone.id}"
     val listState = rememberLazyListState()
@@ -64,6 +73,19 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     key(period, retry) {
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
+        val focusReport = if (focusRepository != null) {
+            val focusSource = remember(focusRepository) { FocusReportSource(focusRepository) }
+            val focusObservation = remember(focusSource, period, focusRetry) {
+                focusSource.week(
+                    TimeRange(period.current.startInstant(period.zone), period.current.endInstant(period.zone)),
+                    TimeRange(period.previous.startInstant(period.zone), period.previous.endInstant(period.zone)),
+                )
+            }
+            val observed by focusObservation.collectAsStateWithLifecycle(
+                initialValue = FocusReportState.Loading,
+            )
+            observed
+        } else null
         val report = (state as? WeeklyReviewState.Data)?.report
         var habitRetry by remember { mutableIntStateOf(0) }
         val habitState = if (habits != null) {
@@ -122,6 +144,21 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         is WeeklyReviewState.Data -> {
                             val report = current.report
                             val a = report.current; val b = report.previous
+                            focusReport?.let { focusState ->
+                                item(key = "focus") {
+                                    WeeklyFocusCard(
+                                        report = focusState,
+                                        period = period,
+                                        onRetry = { focusRetry++ },
+                                        onCurrentHistory = {
+                                            onFocusHistory(period.current.start, period.current.through, period.zone)
+                                        },
+                                        onPreviousHistory = {
+                                            onFocusHistory(period.previous.start, period.previous.through, period.zone)
+                                        },
+                                    )
+                                }
+                            }
                             item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount,
                                 integrationAvailability, onIntegrations, onCheckIn, habitState,
                                 onHabits = { section = "habits"; sectionTarget = "habits" }) }

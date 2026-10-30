@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
                     habitReminders = storage.habitReminders,
                     reminderPreferences = ReminderPreferences(this@MainActivity),
                     focusRuntime = luma.focusRuntime,
+                    focusRepository = storage.focus,
                     focusPreferences = luma.focusPreferences,
                     allowedFocusApps = luma.allowedFocusApps,
                     widgetLaunch = widgetLaunch,
