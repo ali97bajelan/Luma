@@ -25,17 +25,37 @@ class RoomBackupService(private val context: Context, private val database: Luma
             runCatching { UUID.fromString(file.name).toString() == file.name }.getOrDefault(false)
     }
     private var abandonedCleaned = false
-    override suspend fun export(output: OutputStream) = withContext(Dispatchers.IO) {
+    override suspend fun export(output: OutputStream) = exportInternal(output, null)
+
+    override suspend fun export(output: OutputStream, focusChoice: BackupFocusExportChoice?) =
+        exportInternal(output, focusChoice)
+
+    private suspend fun exportInternal(output: OutputStream, focusChoice: BackupFocusExportChoice?) = withContext(Dispatchers.IO) {
         val work = newWork()
         try {
             val payloads = linkedMapOf<String, File>()
             photoMutex.withLock {
                 database.withTransaction {
                     val sqlite = database.openHelper.writableDatabase
+                    val excludedSessionId = (focusChoice as? BackupFocusExportChoice.EXCLUDE_PAUSED)
+                        ?.sessionId?.toString()
+                    sqlite.query("SELECT id, state FROM focus_session WHERE open_slot = 1 LIMIT 1").use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            check(cursor.getString(1) == "PAUSED" && cursor.getString(0) == excludedSessionId) {
+                                "Pause or stop focus before exporting its history"
+                            }
+                        }
+                    }
                     for (table in BACKUP_TABLES) {
                         currentCoroutineContext().ensureActive()
                         val file = File(work, "$table.tsv")
-                        sqlite.query("SELECT * FROM `$table`").use { cursor ->
+                        val query = exportQuery(table, excludedSessionId != null)
+                        val cursor = if (excludedSessionId != null && table in setOf("focus_session", "focus_run")) {
+                            sqlite.query(query, arrayOf(excludedSessionId))
+                        } else {
+                            sqlite.query(query)
+                        }
+                        cursor.use {
                             file.outputStream().use { out -> BackupRows.write(out, cursor.columnNames.toList(), cursorRows(cursor)) }
                         }
                         payloads["tables/$table.tsv"] = file
@@ -52,6 +72,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
             BackupArchive.write(output, payloads, CURRENT_BACKUP_SCHEMA_VERSION, System.currentTimeMillis())
         } finally { work.deleteRecursively() }
     }
+
     override suspend fun prepare(input: InputStream): PreparedBackup = withContext(Dispatchers.IO) {
         val work = newWork()
         var staged: LumaDatabase? = null
@@ -82,6 +103,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
                         }
                     }
                 }
+                validateFocusArchive(sql)
                 sql.query("PRAGMA foreign_key_check").use { require(!it.moveToFirst()) { "Backup contains broken references" } }
                 sql.query("PRAGMA integrity_check").use { require(it.moveToFirst() && it.getString(0) == "ok") }
                 BackupSql.invalidGraphQueries.forEach { query ->
@@ -95,9 +117,11 @@ class RoomBackupService(private val context: Context, private val database: Luma
             val habitCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM habit").use { it.moveToFirst(); it.getLong(0) }
             val habitLogCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM habit_log").use { it.moveToFirst(); it.getLong(0) }
             val todoCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM todo_task").use { it.moveToFirst(); it.getLong(0) }
+            val focusSessionCount = stage.openHelper.readableDatabase.query("SELECT COUNT(*) FROM focus_session").use { it.moveToFirst(); it.getLong(0) }
             val paths = referencedPhotos(stage.openHelper.readableDatabase)
             // Validate timestamp before handing ownership to the retained preview.
-            val preview = BackupPreview(count, paths.size, Instant.ofEpochMilli(manifest.createdAt), habitCount, habitLogCount, todoCount)
+            val preview = BackupPreview(count, paths.size, Instant.ofEpochMilli(manifest.createdAt),
+                habitCount, habitLogCount, todoCount, focusSessionCount)
             StagedBackup(stage, work, paths, manifest.schemaVersion, preview)
         } catch (failure: Throwable) {
             staged?.close(); work.deleteRecursively(); throw failure
@@ -130,7 +154,11 @@ class RoomBackupService(private val context: Context, private val database: Luma
                             }
                             database.withTransaction {
                                 val target = database.openHelper.writableDatabase
+                                target.query("SELECT id FROM focus_session WHERE open_slot = 1 LIMIT 1").use {
+                                    check(!it.moveToFirst()) { "Stop or discard the active focus session before restoring" }
+                                }
                                 val liveHealthRevision = healthCheckpoint(target).optLong("revision", 0).coerceAtLeast(0)
+                                prepareFocusReplacement(target)
                                 BackupSql.deleteStatements.forEach(target::execSQL)
                                 // Widget commands and feedback describe this device, not the archive.
                                 // Revoke them only inside the committed replacement transaction.
@@ -208,6 +236,27 @@ class RoomBackupService(private val context: Context, private val database: Luma
             if (!cursor.moveToFirst() || cursor.isNull(0)) org.json.JSONObject()
             else { val text = cursor.getString(0); requireSafeJsonDepth(text); org.json.JSONObject(text) }
         }
+    private fun exportQuery(table: String, excludePausedSession: Boolean): String = when (table) {
+        "focus_session" -> "SELECT * FROM focus_session WHERE state IN ('FINISHED', 'INTERRUPTED') AND open_slot IS NULL" +
+            (if (excludePausedSession) " AND id != ?" else "") + " ORDER BY id"
+        "focus_run" -> """SELECT r.* FROM focus_run AS r
+            INNER JOIN focus_session AS s ON s.id = r.session_id
+            WHERE s.state IN ('FINISHED', 'INTERRUPTED') AND s.open_slot IS NULL
+              AND r.open_session_id IS NULL${if (excludePausedSession) " AND s.id != ?" else ""}
+            ORDER BY r.session_id, r.ordinal""".trimIndent()
+        else -> "SELECT * FROM `$table`"
+    }
+
+    private fun prepareFocusReplacement(sqlite: SupportSQLiteDatabase) {
+        sqlite.execSQL("DELETE FROM focus_runtime")
+        sqlite.execSQL("DELETE FROM focus_command_receipt")
+        sqlite.execSQL("DELETE FROM focus_deleted_session")
+        sqlite.execSQL(
+            "INSERT OR REPLACE INTO focus_storage_state(singleton_id, generation_id) VALUES (1, ?)",
+            arrayOf(UUID.randomUUID().toString()),
+        )
+    }
+
     @Synchronized private fun newWork(): File {
         check(workRoot.isDirectory || workRoot.mkdirs())
         if (!abandonedCleaned) {

@@ -15,6 +15,11 @@ import com.luma.lifeos.data.todo.toDomain
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitLog
 import com.luma.lifeos.domain.habit.weekdaysFromMask
+import com.luma.lifeos.domain.focus.FocusRun
+import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusTerminalReason
+import androidx.sqlite.db.SupportSQLiteDatabase
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -112,7 +117,104 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
                 snoozeUntil = long("snooze_until"), needsReconcile = l("needs_reconcile") == 1L,
             )
         }
+        "focus_session" -> {
+            val state = FocusState.valueOf(s("state"))
+            require(state == FocusState.FINISHED || state == FocusState.INTERRUPTED) {
+                "Only terminal focus sessions can be restored"
+            }
+            require(long("open_slot") == null) { "An open focus session cannot be restored" }
+            require(l("revision") >= 0)
+            require(l("recovered_or_uncertain") in 0..1)
+            val terminalReason = text("terminal_reason")?.let(FocusTerminalReason::valueOf)
+            require(when (state) {
+                FocusState.FINISHED -> terminalReason == FocusTerminalReason.USER_STOP
+                FocusState.INTERRUPTED -> terminalReason != null && terminalReason != FocusTerminalReason.USER_STOP
+                else -> false
+            }) { "Focus terminal state and reason do not match" }
+            fun instant(prefix: String): Instant = Instant.ofEpochSecond(
+                l("${prefix}_seconds"), int("${prefix}_nanos").toLong().also { require(it in 0..999_999_999) },
+            )
+            instant("started_at")
+            instant("ended_at")
+            instant("created_at")
+            instant("updated_at")
+        }
+        "focus_run" -> {
+            fun instant(prefix: String): Instant = Instant.ofEpochSecond(
+                l("${prefix}_seconds"), int("${prefix}_nanos").toLong().also { require(it in 0..999_999_999) },
+            )
+            require(text("open_session_id") == null) { "An open focus run cannot be restored" }
+            FocusRun(
+                id = UUID.fromString(s("id")),
+                sessionId = UUID.fromString(s("session_id")),
+                ordinal = int("ordinal"),
+                startedAt = instant("started_at"),
+                endedAt = instant("ended_at"),
+                creditedMillis = l("credited_millis"),
+                rawStartedAt = instant("raw_started_at"),
+                rawEndedAt = instant("raw_ended_at"),
+            )
+        }
     }
+}
+
+/** Validates relationships and overflow after every focus row has been staged. */
+internal fun validateFocusArchive(sqlite: SupportSQLiteDatabase): Long {
+    fun instant(cursor: android.database.Cursor, seconds: String, nanos: String): Instant? {
+        val secondsIndex = cursor.getColumnIndexOrThrow(seconds)
+        val nanosIndex = cursor.getColumnIndexOrThrow(nanos)
+        if (cursor.isNull(secondsIndex) || cursor.isNull(nanosIndex)) {
+            require(cursor.isNull(secondsIndex) && cursor.isNull(nanosIndex)) { "Incomplete focus timestamp" }
+            return null
+        }
+        return Instant.ofEpochSecond(cursor.getLong(secondsIndex), cursor.getLong(nanosIndex))
+    }
+
+    val runsBySession = mutableMapOf<String, MutableList<FocusRun>>()
+    var runCount = 0L
+    sqlite.query("SELECT * FROM focus_run ORDER BY session_id, ordinal").use { cursor ->
+        while (cursor.moveToNext()) {
+            val sessionId = cursor.getString(1)
+            runsBySession.getOrPut(sessionId) { mutableListOf() } += FocusRun(
+                id = UUID.fromString(cursor.getString(0)),
+                sessionId = UUID.fromString(sessionId),
+                ordinal = cursor.getInt(2),
+                startedAt = requireNotNull(instant(cursor, "started_at_seconds", "started_at_nanos")),
+                endedAt = instant(cursor, "ended_at_seconds", "ended_at_nanos"),
+                creditedMillis = cursor.getLong(7),
+                rawStartedAt = requireNotNull(instant(cursor, "raw_started_at_seconds", "raw_started_at_nanos")),
+                rawEndedAt = instant(cursor, "raw_ended_at_seconds", "raw_ended_at_nanos"),
+            )
+            runCount = Math.addExact(runCount, 1L)
+        }
+    }
+
+    var sessionCount = 0L
+    var attachedRunCount = 0L
+    sqlite.query("SELECT * FROM focus_session ORDER BY id").use { cursor ->
+        while (cursor.moveToNext()) {
+            val id = cursor.getString(0)
+            val runs = requireNotNull(runsBySession.remove(id)) { "A focus session has no runs" }
+                .sortedBy(FocusRun::ordinal)
+            attachedRunCount = Math.addExact(attachedRunCount, runs.size.toLong())
+            val session = FocusSession(
+                id = UUID.fromString(id),
+                state = FocusState.valueOf(cursor.getString(1)),
+                revision = cursor.getLong(2),
+                startedAt = requireNotNull(instant(cursor, "started_at_seconds", "started_at_nanos")),
+                endedAt = instant(cursor, "ended_at_seconds", "ended_at_nanos"),
+                createdAt = requireNotNull(instant(cursor, "created_at_seconds", "created_at_nanos")),
+                updatedAt = requireNotNull(instant(cursor, "updated_at_seconds", "updated_at_nanos")),
+                terminalReason = if (cursor.isNull(11)) null else FocusTerminalReason.valueOf(cursor.getString(11)),
+                recoveredOrUncertain = cursor.getLong(12) == 1L,
+                runs = runs,
+            )
+            session.creditedMillis // Reject aggregate duration overflow before replacement.
+            sessionCount = Math.addExact(sessionCount, 1L)
+        }
+    }
+    require(attachedRunCount == runCount && runsBySession.isEmpty()) { "A focus run has no session" }
+    return sessionCount
 }
 
 private fun validateHabitReminder(row: Map<String, Any?>) {

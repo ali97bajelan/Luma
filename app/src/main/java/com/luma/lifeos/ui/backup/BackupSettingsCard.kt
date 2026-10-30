@@ -22,6 +22,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavBackStackEntry
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.backup.BackupService
+import com.luma.lifeos.domain.backup.BackupFocusExportChoice
+import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.focus.FocusRuntime
 import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.LumaSectionSurface
@@ -33,6 +37,7 @@ import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 const val BACKUP_DEPARTURE_FEEDBACK_KEY = "backup_departure_feedback"
@@ -41,12 +46,17 @@ internal object BackupDepartureSession { val id: String = UUID.randomUUID().toSt
 @Composable
 fun BackupSettingsCard(
     service: BackupService,
+    focusRuntime: FocusRuntime? = null,
     onRestored: () -> Unit = {},
     onBack: (BackupDeparture?) -> Unit,
 ) {
     val factory = remember(service) { viewModelFactory { initializer { BackupViewModel(service) } } }
     val vm: BackupViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
+    val focusRuntimeState = if (focusRuntime != null) {
+        focusRuntime.state.collectAsStateWithLifecycle().value
+    } else null
+    val openFocusSession = focusRuntimeState?.session?.takeIf { !it.isTerminal }
     val currentOnRestored by rememberUpdatedState(onRestored)
     val currentOnBack by rememberUpdatedState(onBack)
     val context = LocalContext.current.applicationContext
@@ -54,6 +64,10 @@ fun BackupSettingsCard(
     val scope = rememberCoroutineScope()
     var leavePromptFor by remember { mutableStateOf<BackupOperation?>(null) }
     var showRestoreInProgress by remember { mutableStateOf(false) }
+    var showPausedExportDisclosure by remember { mutableStateOf(false) }
+    var focusActionFailed by remember { mutableStateOf(false) }
+    var pendingExportChoice by remember { mutableStateOf<BackupFocusExportChoice?>(null) }
+    var restoreActionInProgress by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.operation) {
         if (state.operation != BackupOperation.RESTORING) showRestoreInProgress = false
@@ -64,6 +78,7 @@ fun BackupSettingsCard(
             vm.export(
                 open = { requireNotNull(resolver.openOutputStream(uri, "wt")) },
                 discardOutput = { discardCreatedDocument(resolver, uri) },
+                focusChoice = pendingExportChoice,
             )
         }
     }
@@ -71,8 +86,65 @@ fun BackupSettingsCard(
         if (uri != null) vm.prepare { requireNotNull(resolver.openInputStream(uri)) }
     }
 
+    val launchExportPicker: (BackupFocusExportChoice?) -> Unit = { focusChoice ->
+        try {
+            focusActionFailed = false
+            pendingExportChoice = focusChoice
+            export.launch("Luma-${LocalDate.now()}.zip")
+        } catch (_: ActivityNotFoundException) {
+            vm.pickerUnavailable()
+        }
+    }
+
+    val requestExport: () -> Unit = {
+        when (openFocusSession?.state) {
+            FocusState.PAUSED -> showPausedExportDisclosure = true
+            FocusState.RUNNING -> focusActionFailed = true
+            else -> launchExportPicker(null)
+        }
+    }
+
+    val confirmRestore: (Boolean?) -> Unit = { discardOpenSession ->
+        if (!restoreActionInProgress) {
+            restoreActionInProgress = true
+            scope.launch {
+                try {
+                    val ready = focusRuntime == null || focusRuntime.prepareDatabaseReplacement(discardOpenSession)
+                    if (!ready) {
+                        focusActionFailed = true
+                        restoreActionInProgress = false
+                        return@launch
+                    }
+                    focusActionFailed = false
+                    val started = vm.confirmRestore(
+                        onRestored = { currentOnRestored() },
+                        onFinished = {
+                            focusRuntime?.finishDatabaseReplacement()
+                            restoreActionInProgress = false
+                        },
+                    )
+                    if (!started) {
+                        focusRuntime?.finishDatabaseReplacement()
+                        restoreActionInProgress = false
+                    }
+                } catch (failure: Exception) {
+                    if (failure is CancellationException) {
+                        focusRuntime?.finishDatabaseReplacement()
+                        restoreActionInProgress = false
+                        throw failure
+                    }
+                    focusRuntime?.finishDatabaseReplacement()
+                    focusActionFailed = true
+                    restoreActionInProgress = false
+                }
+            }
+        }
+    }
+
     val requestBack: () -> Unit = {
-        when (state.operation) {
+        if (restoreActionInProgress) {
+            showRestoreInProgress = true
+        } else when (state.operation) {
             BackupOperation.EXPORTING, BackupOperation.PREPARING -> leavePromptFor = state.operation
             BackupOperation.RESTORING -> showRestoreInProgress = true
             BackupOperation.CANCELLING -> Unit
@@ -94,14 +166,11 @@ fun BackupSettingsCard(
     ) {
         BackupCardContent(
             state = state,
+            openFocusSession = openFocusSession,
+            focusActionFailed = focusActionFailed,
             showRestoreConfirmation = leavePromptFor == null && !showRestoreInProgress,
-            onExport = {
-                try {
-                    export.launch("Luma-${LocalDate.now()}.zip")
-                } catch (_: ActivityNotFoundException) {
-                    vm.pickerUnavailable()
-                }
-            },
+            restoreActionInProgress = restoreActionInProgress,
+            onExport = requestExport,
             onRestore = {
                 try {
                     restore.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed"))
@@ -109,8 +178,51 @@ fun BackupSettingsCard(
                     vm.pickerUnavailable()
                 }
             },
-            onConfirmRestore = { vm.confirmRestore { currentOnRestored() } },
+            onConfirmRestore = confirmRestore,
             onCancelRestore = vm::cancelRestore,
+        )
+    }
+
+    if (showPausedExportDisclosure) {
+        val currentSessionIsPaused = openFocusSession?.state == FocusState.PAUSED
+        AlertDialog(
+            onDismissRequest = { showPausedExportDisclosure = false },
+            title = { Text(stringResource(R.string.backup_paused_focus_title)) },
+            text = { Text(stringResource(R.string.backup_paused_focus_message)) },
+            confirmButton = {
+                Column {
+                    TextButton(
+                        onClick = {
+                            showPausedExportDisclosure = false
+                            scope.launch {
+                                val sessionId = openFocusSession?.id
+                                val stopped = currentSessionIsPaused && sessionId != null &&
+                                    focusRuntime?.stopPausedForBackup(sessionId) == true
+                                if (stopped) launchExportPicker(BackupFocusExportChoice.STOPPED_AND_INCLUDE)
+                                else focusActionFailed = true
+                            }
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("backup_stop_focus_export"),
+                    ) { Text(stringResource(R.string.backup_stop_focus_export)) }
+                    TextButton(
+                        onClick = {
+                            showPausedExportDisclosure = false
+                            scope.launch {
+                                val sessionId = openFocusSession?.id
+                                val excluded = currentSessionIsPaused && sessionId != null &&
+                                    focusRuntime?.confirmPausedExportExclusion(sessionId) == true
+                                if (excluded) launchExportPicker(BackupFocusExportChoice.EXCLUDE_PAUSED(requireNotNull(sessionId)))
+                                else focusActionFailed = true
+                            }
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("backup_exclude_paused_focus"),
+                    ) { Text(stringResource(R.string.backup_exclude_paused_focus)) }
+                    TextButton(onClick = { showPausedExportDisclosure = false },
+                        modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            },
         )
     }
 
@@ -173,9 +285,12 @@ internal fun BackupCardContent(
     state: BackupUiState,
     onExport: () -> Unit,
     onRestore: () -> Unit,
-    onConfirmRestore: () -> Unit,
+    onConfirmRestore: (Boolean?) -> Unit,
     onCancelRestore: () -> Unit,
     showRestoreConfirmation: Boolean = true,
+    openFocusSession: FocusSession? = null,
+    focusActionFailed: Boolean = false,
+    restoreActionInProgress: Boolean = false,
 ) {
     val displayTime = rememberDisplayTimePolicy()
     LumaSectionSurface(Modifier.testTag("backup_settings")) {
@@ -183,6 +298,10 @@ internal fun BackupCardContent(
             Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.backup_description))
             Text(stringResource(R.string.backup_private))
+            if (focusActionFailed) {
+                AccessibleFeedback(stringResource(R.string.backup_focus_action_failed),
+                    Modifier.testTag("backup_focus_action_failed"))
+            }
             Button(onClick = onExport, enabled = !state.busy && state.preview == null,
                 modifier = Modifier.testTag("backup_export")) {
                 Text(stringResource(R.string.backup_export))
@@ -228,20 +347,40 @@ internal fun BackupCardContent(
                             NumberFormat.getIntegerInstance().format(preview.habitCount),
                             NumberFormat.getIntegerInstance().format(preview.habitLogCount),
                             NumberFormat.getIntegerInstance().format(preview.todoCount),
+                            NumberFormat.getIntegerInstance().format(preview.focusSessionCount),
                             preview.createdAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM))))
                         Text(stringResource(R.string.backup_replace_warning))
                         if (preview.todoCount == 0L) Text(stringResource(R.string.backup_no_tasks_warning))
+                        if (preview.focusSessionCount == 0L) Text(stringResource(R.string.backup_no_focus_sessions_warning))
+                        if (openFocusSession != null) Text(stringResource(R.string.backup_active_focus_message))
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = onConfirmRestore, modifier = Modifier.heightIn(min = 48.dp)
-                    .testTag("backup_confirm")) {
-                    Text(stringResource(R.string.backup_replace))
+                if (openFocusSession != null) {
+                    Column {
+                        TextButton(onClick = { onConfirmRestore(false) },
+                            enabled = !restoreActionInProgress,
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("backup_stop_focus_replace")) {
+                            Text(stringResource(R.string.backup_stop_focus_replace))
+                        }
+                        TextButton(onClick = { onConfirmRestore(true) },
+                            enabled = !restoreActionInProgress,
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("backup_discard_focus_replace")) {
+                            Text(stringResource(R.string.backup_discard_focus_replace))
+                        }
+                    }
+                } else {
+                    TextButton(onClick = { onConfirmRestore(null) }, enabled = !restoreActionInProgress,
+                        modifier = Modifier.heightIn(min = 48.dp)
+                        .testTag("backup_confirm")) {
+                        Text(stringResource(R.string.backup_replace))
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = onCancelRestore, modifier = Modifier.heightIn(min = 48.dp)
+                TextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
+                    modifier = Modifier.heightIn(min = 48.dp)
                     .testTag("backup_cancel")) {
                     Text(stringResource(R.string.cancel))
                 }

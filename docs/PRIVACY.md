@@ -11,6 +11,16 @@ Automatic cloud backup and device-transfer extraction are disabled; manual backu
 is explicit and unencrypted. A chosen document provider controls its destination.
 This describes Luma's own behavior, not other apps or device services.
 
+Focus history is saved locally with the other Luma data. Manual backups include
+only terminal focus sessions and their credited runs. A paused session is
+excluded until the user explicitly stops it for export; continuing without it is
+also an explicit choice. Running state, boot/monotonic clock checkpoints,
+command receipts, deletion tombstones, emergency markers and selected app
+shortcuts are not portable. Restore validates the complete archive before
+replacement, imports terminal history only, and keeps device-local focus app
+choices on the device. Archives created before focus-history support restore
+with empty focus history.
+
 ## Home-screen widgets
 
 Habits and Tasks widgets show a date and summary counts by default. Each widget
@@ -67,14 +77,17 @@ if the user wants to retain content. Nothing is erased when opening the route,
 dismissing the confirmation or recreating an activity. Reset confirmation is not
 saved for automatic replay after process death.
 
-Luma uses Android's
+Luma first quiesces focus actions and checkpoints, then uses Android's
 [clearApplicationUserData API](https://developer.android.com/reference/android/app/ActivityManager#clearApplicationUserData()).
 Android resets the calling app's private storage and app-owned external storage,
 without uninstalling it. It also revokes runtime permissions, clears notifications
-and removes URI grants. This covers the database, saved tasks and their protected drafts, imported
+and removes URI grants. This covers the database, saved tasks and their protected drafts, focus history
+and its local generation, selected focus apps and emergency marker, imported
 copies/catalogs, private photos, caches, backup staging, preferences and
 WorkManager storage together. The system stops the app so an open store or pending
-writer cannot recreate only part of its data in the same running process.
+writer cannot recreate only part of its data in the same running process. When
+Android refuses to start the reset, Luma resumes focus reconciliation against
+the still-retained database.
 
 The API's true result means Android accepted the reset request, not an independently
 verified completion. The UI keeps duplicate actions disabled while waiting for

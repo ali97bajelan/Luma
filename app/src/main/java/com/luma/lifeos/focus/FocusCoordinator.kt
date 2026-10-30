@@ -67,4 +67,10 @@ class FocusCoordinator(
         context(),
         terminalReason,
     )
+
+    suspend fun discardOpen(session: FocusSession): FocusWriteResult = repository.discardOpen(
+        sessionId = session.id,
+        expectedRevision = session.revision,
+        context = context(),
+    )
 }

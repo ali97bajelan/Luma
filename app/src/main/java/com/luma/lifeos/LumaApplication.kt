@@ -33,7 +33,9 @@ class LumaApplication : Application() {
     }
 
     // Construction is lazy; the database opens off the main thread on the first suspend/Flow query.
-    val appDataReset: com.luma.lifeos.ui.privacy.AppDataReset by lazy { com.luma.lifeos.ui.privacy.AndroidAppDataReset(this) }
+    val appDataReset: com.luma.lifeos.ui.privacy.AppDataReset by lazy {
+        com.luma.lifeos.ui.privacy.AndroidAppDataReset(this, focusRuntime)
+    }
     val storage: LumaStorage by lazy { LumaStorage(this) }
     val focusPreferences: FocusPreferences by lazy { FocusPreferences(this) }
     val allowedFocusApps: AllowedFocusApps by lazy { AllowedFocusApps(this) }

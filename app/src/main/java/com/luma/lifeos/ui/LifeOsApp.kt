@@ -775,6 +775,7 @@ fun LifeOsApp(
             if (backup != null) composable("settings_backup") {
                 BackupSettingsCard(
                     service = backup,
+                    focusRuntime = focusRuntime,
                     onRestored = {
                         todoRestoreGeneration += 1
                         enqueueReminderReconciliation(applicationContext)

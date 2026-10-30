@@ -421,6 +421,32 @@ class RoomFocusRepository(
         }
     }
 
+    override suspend fun discardOpen(
+        sessionId: UUID,
+        expectedRevision: Long,
+        context: FocusWriteContext,
+    ): FocusWriteResult = storageWrite {
+        database.withTransaction {
+            val generation = ensureGeneration().generationId
+            if (generation != context.databaseGeneration.toString()) {
+                return@withTransaction FocusWriteResult.Invalid(FocusInvalidReason.STALE_DATABASE_GENERATION)
+            }
+
+            val id = sessionId.toString()
+            if (dao.tombstone(id, generation) != null) {
+                return@withTransaction FocusWriteResult.AlreadyApplied(deletedSessionId = sessionId)
+            }
+            val current = dao.sessionWithRuns(id)?.toDomain()
+                ?: return@withTransaction FocusWriteResult.Conflict(null)
+            if (current.isTerminal) return@withTransaction FocusWriteResult.Invalid(FocusInvalidReason.INVALID_TRANSITION)
+            if (current.revision != expectedRevision) return@withTransaction FocusWriteResult.Conflict(current)
+
+            dao.insertTombstone(FocusDeletedSessionEntity(sessionId = id, databaseGeneration = generation))
+            if (dao.deleteSession(id) != 1) throw FocusPersistenceException()
+            FocusWriteResult.Applied(deletedSessionId = sessionId)
+        }
+    }
+
     private suspend fun applyWithinTransaction(command: FocusCommand): FocusWriteResult {
         val current = dao.sessionWithRuns(command.sessionId.toString())?.toDomain()
             ?: return FocusWriteResult.Conflict(null)

@@ -54,16 +54,20 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
         if (!state.value.busy) mutable.value = BackupUiState(message = BackupMessage.PICKER_UNAVAILABLE)
     }
 
-    fun export(open: () -> OutputStream) = export(open, discardOutput = { false })
+    fun export(open: () -> OutputStream) = export(open, discardOutput = { false }, focusChoice = null)
 
-    fun export(open: () -> OutputStream, discardOutput: suspend () -> Boolean) {
+    fun export(
+        open: () -> OutputStream,
+        discardOutput: suspend () -> Boolean,
+        focusChoice: BackupFocusExportChoice? = null,
+    ) {
         if (state.value.busy || prepared != null) return
         this.discardOutput = discardOutput
         exportCompletedSuccessfully = false
         launchOperation(BackupOperation.EXPORTING) {
             try {
                 withContext(io) {
-                    open().use { service.export(it) }
+                    open().use { service.export(it, focusChoice) }
                     exportCompletedSuccessfully = true
                 }
                 mutable.value = BackupUiState(busy = true, message = BackupMessage.EXPORTED,
@@ -105,9 +109,9 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
         }
     }
 
-    fun confirmRestore(onRestored: () -> Unit = {}) {
-        if (state.value.busy) return
-        val candidate = prepared ?: return
+    fun confirmRestore(onRestored: () -> Unit = {}, onFinished: () -> Unit = {}): Boolean {
+        if (state.value.busy) return false
+        val candidate = prepared ?: return false
         prepared = null
         launchOperation(BackupOperation.RESTORING) {
             try {
@@ -125,8 +129,15 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
                 if (failure is CancellationException) throw failure
                 mutable.value = BackupUiState(busy = true, message = BackupMessage.RESTORE_FAILED,
                     operation = BackupOperation.RESTORING)
+            } finally {
+                withContext(Dispatchers.Main.immediate + NonCancellable) {
+                    try { onFinished() } catch (failure: Exception) {
+                        Log.e("BackupViewModel", "Restore completion callback failed", failure)
+                    }
+                }
             }
         }
+        return true
     }
 
     /** Cancels route-owned preparation/export and waits for streams and provider cleanup before leaving. */

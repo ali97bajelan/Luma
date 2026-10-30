@@ -6,6 +6,7 @@ import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTerminalReason
+import com.luma.lifeos.domain.focus.FocusUnavailableReason
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import java.util.IdentityHashMap
 import java.util.UUID
@@ -66,6 +67,8 @@ class FocusRuntime(
     private var observerJob: Job? = null
     private var checkpointJob: Job? = null
     private var lastCheckpointElapsedMillis: Long? = null
+    @Volatile private var databaseReplacementInProgress = false
+    @Volatile private var appDataResetInProgress = false
 
     fun initialize() {
         if (initializeJob?.isActive == true || mutableState.value.initialized) return
@@ -249,24 +252,28 @@ class FocusRuntime(
     }
 
     suspend fun start(commandId: UUID, sessionId: UUID): FocusWriteResult = operationMutex.withLock {
+        if (writesBlocked()) return@withLock FocusWriteResult.Unavailable(FocusUnavailableReason.STORAGE)
         val sample = coordinator.sample()
         applyResult(coordinator.start(commandId, sessionId, sample), sample)
     }
 
     suspend fun act(commandId: UUID, session: FocusSession, action: FocusAction): FocusWriteResult =
         operationMutex.withLock {
+            if (writesBlocked()) return@withLock FocusWriteResult.Unavailable(FocusUnavailableReason.STORAGE)
             val sample = coordinator.sample()
             applyResult(coordinator.act(commandId, session, action, sample), sample)
         }
 
     suspend fun resolveRecovery(session: FocusSession, choice: FocusRecoveryChoice): FocusWriteResult =
         operationMutex.withLock {
+            if (writesBlocked()) return@withLock FocusWriteResult.Unavailable(FocusUnavailableReason.STORAGE)
             val sample = coordinator.sample()
             applyResult(coordinator.resolveRecovery(session, choice, sample = sample), sample)
         }
 
     suspend fun checkpointNow(sample: com.luma.lifeos.domain.focus.FocusTimeSample? = null): FocusWriteResult? =
         operationMutex.withLock {
+            if (writesBlocked()) return@withLock null
             val current = mutableState.value
             val session = current.session ?: return@withLock null
             if (session.state != FocusState.RUNNING || current.recoveryRequired) {
@@ -336,6 +343,7 @@ class FocusRuntime(
     }
 
     suspend fun markEmergencyExit(sessionId: UUID): Boolean = operationMutex.withLock {
+        if (writesBlocked()) return@withLock false
         val saved = withContext(Dispatchers.IO) { preferences.markEmergencyExit(sessionId) }
         mutableState.update {
             it.copy(emergencyMarkerSaved = saved)
@@ -344,6 +352,7 @@ class FocusRuntime(
     }
 
     suspend fun cancelEmergencyExit(sessionId: UUID): Boolean = operationMutex.withLock {
+        if (writesBlocked()) return@withLock false
         val cleared = withContext(Dispatchers.IO) { preferences.clearEmergencyExit(sessionId) }
         if (cleared) mutableState.update { it.copy(emergencyMarkerSaved = null) }
         cleared
@@ -362,6 +371,7 @@ class FocusRuntime(
     }
 
     suspend fun launchSelectedApp(packageName: String): FocusShortcutResult = operationMutex.withLock {
+        if (writesBlocked()) return@withLock FocusShortcutResult.UNAVAILABLE
         val session = mutableState.value.session
         if (session?.state != FocusState.RUNNING) return@withLock FocusShortcutResult.UNAVAILABLE
         val sample = coordinator.sample()
@@ -385,7 +395,92 @@ class FocusRuntime(
         }
     }
 
+    /** Ends a paused run before an export that explicitly includes the current session. */
+    suspend fun stopPausedForBackup(sessionId: UUID): Boolean = operationMutex.withLock {
+        if (writesBlocked()) return@withLock false
+        val session = coordinator.observeOpen().first() ?: return@withLock false
+        if (session.id != sessionId || session.state != FocusState.PAUSED) return@withLock false
+        val sample = coordinator.sample()
+        val result = coordinator.act(UUID.randomUUID(), session, FocusAction.STOP, sample)
+        applyResult(result, sample)
+        result.terminalSnapshot() != null
+    }
+
+    /** Confirms the currently paused session is intentionally left out of an export. */
+    suspend fun confirmPausedExportExclusion(sessionId: UUID): Boolean = operationMutex.withLock {
+        val session = coordinator.observeOpen().first()
+        !writesBlocked() && session?.id == sessionId && session.state == FocusState.PAUSED
+    }
+
+    /** Stops or discards an open session, then blocks new focus writes until replacement ends. */
+    suspend fun prepareDatabaseReplacement(discardOpenSession: Boolean?): Boolean = operationMutex.withLock {
+        if (writesBlocked()) return@withLock false
+        val session = coordinator.observeOpen().first()
+        if (session != null) {
+            if (discardOpenSession == null) return@withLock false
+            val result = if (discardOpenSession) {
+                coordinator.discardOpen(session)
+            } else {
+                val sample = coordinator.sample()
+                coordinator.act(UUID.randomUUID(), session, FocusAction.STOP, sample)
+            }
+            val finished = if (discardOpenSession) {
+                (result is FocusWriteResult.Applied && result.deletedSessionId == session.id) ||
+                    (result is FocusWriteResult.AlreadyApplied && result.deletedSessionId == session.id)
+            } else {
+                result.terminalSnapshot() != null
+            }
+            if (!finished) return@withLock false
+        }
+
+        databaseReplacementInProgress = true
+        checkpointJob?.cancel()
+        checkpointJob = null
+        observerJob?.cancel()
+        observerJob = null
+        withContext(Dispatchers.IO) { preferences.clearEmergencyExitMarker() }
+        mutableState.update {
+            it.copy(initialized = false, loading = true, loadFailed = false, session = null,
+                recoveryRequired = false, writeFailed = false, checkpointFailed = false,
+                emergencyExitSessionId = null, emergencyMarkerSaved = null, emergencyExitConfirmed = false)
+        }
+        true
+    }
+
+    /** Re-reads the replacement database whether restore committed or failed. */
+    fun finishDatabaseReplacement() {
+        databaseReplacementInProgress = false
+        retryInitialization()
+    }
+
+    /** Quiesces focus actions before Android clears the entire app sandbox. */
+    suspend fun prepareForAppDataReset() = operationMutex.withLock {
+        appDataResetInProgress = true
+        checkpointJob?.cancel()
+        checkpointJob = null
+        observerJob?.cancel()
+        observerJob = null
+        mutableState.update {
+            it.copy(initialized = false, loading = true, loadFailed = false,
+                writeFailed = false, checkpointFailed = false)
+        }
+    }
+
+    /** Reconciles the retained database if Android refuses to start the full reset. */
+    fun resumeAfterAppDataResetFailure() {
+        appDataResetInProgress = false
+        retryInitialization()
+    }
+
+    private fun writesBlocked(): Boolean = databaseReplacementInProgress || appDataResetInProgress
+
     private companion object {
         const val CHECKPOINT_INTERVAL_MILLIS = 5_000L
     }
 }
+
+private fun FocusWriteResult.terminalSnapshot(): FocusSession? = when (this) {
+    is FocusWriteResult.Applied -> snapshot
+    is FocusWriteResult.AlreadyApplied -> snapshot
+    else -> null
+}?.takeIf { it.isTerminal }

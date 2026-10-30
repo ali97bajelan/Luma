@@ -57,6 +57,8 @@ class FocusPreferences private constructor(private val preferences: SharedPrefer
         return preferences.edit().remove(EMERGENCY_SESSION_KEY).commit()
     }
 
+    fun clearEmergencyExitMarker(): Boolean = preferences.edit().remove(EMERGENCY_SESSION_KEY).commit()
+
     private companion object {
         const val DEFAULT_PREFERENCES = "focus_preferences"
         const val KEY = "allowed_packages"

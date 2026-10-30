@@ -54,4 +54,11 @@ interface FocusRepository {
         expectedRevision: Long,
         context: FocusWriteContext,
     ): FocusWriteResult
+
+    /** Explicitly discards an open session as part of a confirmed database replacement. */
+    suspend fun discardOpen(
+        sessionId: UUID,
+        expectedRevision: Long,
+        context: FocusWriteContext,
+    ): FocusWriteResult = FocusWriteResult.Unavailable(FocusUnavailableReason.UNKNOWN)
 }
