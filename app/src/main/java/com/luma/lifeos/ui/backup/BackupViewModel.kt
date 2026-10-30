@@ -109,7 +109,11 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
         }
     }
 
-    fun confirmRestore(onRestored: () -> Unit = {}, onFinished: () -> Unit = {}): Boolean {
+    /** Keeps the original one-callback API: a trailing lambda runs only after a committed restore. */
+    fun confirmRestore(onRestored: () -> Unit = {}): Boolean = confirmRestore(onRestored, {})
+
+    /** [onFinished] releases replacement coordination after either restore success or failure. */
+    fun confirmRestore(onRestored: () -> Unit, onFinished: () -> Unit): Boolean {
         if (state.value.busy) return false
         val candidate = prepared ?: return false
         prepared = null

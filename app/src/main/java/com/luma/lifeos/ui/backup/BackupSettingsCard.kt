@@ -369,6 +369,10 @@ internal fun BackupCardContent(
                             modifier = Modifier.heightIn(min = 48.dp).testTag("backup_discard_focus_replace")) {
                             Text(stringResource(R.string.backup_discard_focus_replace))
                         }
+                        TextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("backup_cancel")) {
+                            Text(stringResource(R.string.cancel))
+                        }
                     }
                 } else {
                     TextButton(onClick = { onConfirmRestore(null) }, enabled = !restoreActionInProgress,
@@ -378,13 +382,15 @@ internal fun BackupCardContent(
                     }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
-                    modifier = Modifier.heightIn(min = 48.dp)
-                    .testTag("backup_cancel")) {
-                    Text(stringResource(R.string.cancel))
+            dismissButton = if (openFocusSession == null) {
+                {
+                    TextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
+                        modifier = Modifier.heightIn(min = 48.dp)
+                            .testTag("backup_cancel")) {
+                        Text(stringResource(R.string.cancel))
+                    }
                 }
-            },
+            } else null,
         )
     }
 }

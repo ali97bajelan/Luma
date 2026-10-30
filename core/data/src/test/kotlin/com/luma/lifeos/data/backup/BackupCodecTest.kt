@@ -25,7 +25,12 @@ class BackupCodecTest {
         assertEquals(original + usage + habits + "todo_task", backupTables(4))
         assertEquals(backupTables(4), backupTables(5))
         assertEquals(backupTables(5) + "task_reminder", backupTables(6))
-        assertEquals(6, CURRENT_BACKUP_SCHEMA_VERSION)
+        assertEquals(backupTables(6) + listOf("focus_session", "focus_run"), backupTables(7))
+        (1..6).forEach { version ->
+            assertFalse("focus_session must remain device-local in schema $version", "focus_session" in backupTables(version))
+            assertFalse("focus_run must remain device-local in schema $version", "focus_run" in backupTables(version))
+        }
+        assertEquals(7, CURRENT_BACKUP_SCHEMA_VERSION)
     }
 
     @Test fun schemaFourTodoImportKeepsItsExactLegacyHeader() {

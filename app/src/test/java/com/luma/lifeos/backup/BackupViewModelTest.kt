@@ -39,6 +39,29 @@ class BackupViewModelTest {
         assertEquals(1, service.restores); assertEquals(BackupMessage.RESTORE_FAILED, vm.state.value.message)
         assertFalse(vm.state.value.busy); assertNull(vm.state.value.preview)
     }
+    @Test fun restoreCompletionCallbackRunsAfterSuccessAndFailure() = runTest(dispatcher) {
+        val successfulService = Fake()
+        val successfulVm = BackupViewModel(successfulService, dispatcher)
+        var successes = 0
+        var completions = 0
+        successfulVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }; advanceUntilIdle()
+        successfulVm.confirmRestore(onRestored = { successes++ }, onFinished = { completions++ })
+        advanceUntilIdle()
+        assertEquals(1, successes)
+        assertEquals(1, completions)
+
+        val failedService = Fake()
+        val failedVm = BackupViewModel(failedService, dispatcher)
+        var failedSuccesses = 0
+        failedVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }; advanceUntilIdle()
+        failedService.fail = true
+        failedVm.confirmRestore(onRestored = { failedSuccesses++ }, onFinished = { completions++ })
+        advanceUntilIdle()
+        assertEquals(0, failedSuccesses)
+        assertEquals(2, completions)
+        assertEquals(BackupMessage.RESTORE_FAILED, failedVm.state.value.message)
+    }
+
     @Test fun restoreSuccessCallbackRunsOnceAfterCommitAndNeverOnFailure() = runTest(dispatcher) {
         val successfulService = Fake()
         val successfulVm = BackupViewModel(successfulService, dispatcher)

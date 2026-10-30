@@ -4,10 +4,21 @@ import android.graphics.Bitmap
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.data.db.LumaDatabase
+import com.luma.lifeos.data.focus.FocusCommandReceiptEntity
+import com.luma.lifeos.data.focus.FocusDeletedSessionEntity
+import com.luma.lifeos.data.focus.FocusRunEntity
+import com.luma.lifeos.data.focus.FocusSessionEntity
+import com.luma.lifeos.data.focus.RoomFocusRepository
 import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.todo.TodoInput
+import com.luma.lifeos.domain.backup.BackupFocusExportChoice
+import com.luma.lifeos.domain.focus.FocusInvalidReason
+import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusTimeSample
+import com.luma.lifeos.domain.focus.FocusWriteContext
+import com.luma.lifeos.domain.focus.FocusWriteResult
 import java.io.*
 import java.time.Clock
 import java.time.Instant
@@ -43,6 +54,162 @@ class BackupPersistenceTest {
     }
     @After fun teardown() { db.close(); root.deleteRecursively() }
     private suspend fun export(): ByteArray = ByteArrayOutputStream().also { backup.export(it) }.toByteArray()
+
+    private suspend fun insertFocusSession(
+        id: UUID,
+        state: FocusState,
+        start: Instant,
+        creditedMillis: Long,
+        terminalReason: String?,
+        openSlot: Int?,
+    ) {
+        val end = start.plusMillis(creditedMillis)
+        val terminal = state == FocusState.FINISHED || state == FocusState.INTERRUPTED
+        db.focus().insertSession(
+            FocusSessionEntity(
+                id = id.toString(), state = state.name, revision = 2,
+                startedAtSeconds = start.epochSecond, startedAtNanos = start.nano,
+                endedAtSeconds = if (terminal) end.epochSecond else null,
+                endedAtNanos = if (terminal) end.nano else null,
+                createdAtSeconds = start.epochSecond, createdAtNanos = start.nano,
+                updatedAtSeconds = end.epochSecond, updatedAtNanos = end.nano,
+                terminalReason = terminalReason, recoveredOrUncertain = false, openSlot = openSlot,
+            ),
+        )
+        db.focus().insertRun(
+            FocusRunEntity(
+                id = UUID.randomUUID().toString(), sessionId = id.toString(), ordinal = 1,
+                startedAtSeconds = start.epochSecond, startedAtNanos = start.nano,
+                endedAtSeconds = end.epochSecond, endedAtNanos = end.nano,
+                creditedMillis = creditedMillis,
+                rawStartedAtSeconds = start.epochSecond, rawStartedAtNanos = start.nano,
+                rawEndedAtSeconds = end.epochSecond, rawEndedAtNanos = end.nano,
+                openSessionId = null,
+            ),
+        )
+    }
+
+    @Test fun schemaSevenRoundTripIncludesTerminalHistoryAndInvalidatesOldFocusWork() = runBlocking {
+        val focus = RoomFocusRepository(db)
+        val oldGeneration = focus.currentGeneration()
+        val terminalId = UUID.randomUUID()
+        val pausedId = UUID.randomUUID()
+        insertFocusSession(terminalId, FocusState.FINISHED, now.minusSeconds(1200), 600_000, "USER_STOP", null)
+        insertFocusSession(pausedId, FocusState.PAUSED, now.minusSeconds(300), 60_000, null, 1)
+        db.focus().insertReceipt(
+            FocusCommandReceiptEntity(
+                commandId = UUID.randomUUID().toString(), databaseGeneration = oldGeneration.toString(),
+                payload = "test", resultType = "APPLIED", resultSessionId = terminalId.toString(),
+                resultInvalidReason = null, createdAtSeconds = now.epochSecond, createdAtNanos = now.nano,
+            ),
+        )
+        val deletedId = UUID.randomUUID()
+        db.focus().insertTombstone(FocusDeletedSessionEntity(deletedId.toString(), oldGeneration.toString()))
+
+        val bytes = ByteArrayOutputStream().also {
+            backup.export(it, BackupFocusExportChoice.EXCLUDE_PAUSED(pausedId))
+        }.toByteArray()
+        val extracted = File(root, "schema-seven-inspection")
+        val manifest = BackupArchive.read(ByteArrayInputStream(bytes), extracted)
+        assertEquals(7, manifest.schemaVersion)
+        assertEquals(backupTables(7).map { "tables/$it.tsv" }.toSet(), manifest.names)
+        val sessionFile = File(extracted, "tables/focus_session.tsv")
+        val sessionColumns = sessionFile.readLines().first().split('\t')
+        val exportedSessionIds = mutableListOf<String>()
+        BackupRows.read(sessionFile, sessionColumns) { exportedSessionIds += it[sessionColumns.indexOf("id")] as String }
+        assertEquals(listOf(terminalId.toString()), exportedSessionIds)
+        val runFile = File(extracted, "tables/focus_run.tsv")
+        val runColumns = runFile.readLines().first().split('\t')
+        val exportedRunSessionIds = mutableListOf<String>()
+        BackupRows.read(runFile, runColumns) { exportedRunSessionIds += it[runColumns.indexOf("session_id")] as String }
+        assertEquals(listOf(terminalId.toString()), exportedRunSessionIds)
+        val deviceLocalFocusTables = setOf(
+            "tables/focus_runtime.tsv", "tables/focus_command_receipt.tsv",
+            "tables/focus_deleted_session.tsv", "tables/focus_storage_state.tsv",
+        )
+        assertTrue(manifest.names.intersect(deviceLocalFocusTables).isEmpty())
+
+        backup.prepare(ByteArrayInputStream(bytes)).use { prepared ->
+            assertEquals(1L, prepared.preview.focusSessionCount)
+        }
+        assertNotNull(db.focus().session(pausedId.toString()))
+        assertEquals(oldGeneration, focus.currentGeneration())
+
+        val failedAttempt = backup.prepare(ByteArrayInputStream(bytes))
+        assertTrue(runCatching { failedAttempt.restore() }.isFailure)
+        assertNotNull(db.focus().session(pausedId.toString()))
+        assertEquals(oldGeneration, focus.currentGeneration())
+
+        val paused = requireNotNull(db.focus().sessionWithRuns(pausedId.toString()))
+        assertTrue(
+            focus.discardOpen(
+                pausedId,
+                paused.session.revision,
+                FocusWriteContext(oldGeneration, UUID.randomUUID()),
+            ) is FocusWriteResult.Applied,
+        )
+        backup.prepare(ByteArrayInputStream(bytes)).use { it.restore() }
+
+        assertEquals(terminalId.toString(), db.focus().session(terminalId.toString())?.id)
+        assertNull(db.focus().session(pausedId.toString()))
+        assertNotEquals(oldGeneration, focus.currentGeneration())
+        val sqlite = db.openHelper.readableDatabase
+        listOf("focus_runtime", "focus_command_receipt", "focus_deleted_session").forEach { table ->
+            assertEquals(0, sqlite.query("SELECT * FROM `$table`").use { it.count })
+        }
+        val stale = focus.start(
+            UUID.randomUUID(), UUID.randomUUID(),
+            FocusTimeSample(now, 0, "boot-test"),
+            FocusWriteContext(oldGeneration, UUID.randomUUID()),
+        )
+        assertEquals(FocusInvalidReason.STALE_DATABASE_GENERATION, (stale as FocusWriteResult.Invalid).reason)
+    }
+
+    @Test fun schemaSixReplacementDoesNotRestoreFocusHistory() = runBlocking {
+        val focus = RoomFocusRepository(db)
+        val oldGeneration = focus.currentGeneration()
+        val terminalId = UUID.randomUUID()
+        insertFocusSession(terminalId, FocusState.FINISHED, now.minusSeconds(1200), 600_000, "USER_STOP", null)
+        val v7Directory = File(root, "schema-six-source")
+        BackupArchive.read(ByteArrayInputStream(export()), v7Directory)
+        val v6Files = backupTables(6).associate { table ->
+            val name = "tables/$table.tsv"
+            name to File(v7Directory, name)
+        }
+        val v6Bytes = ByteArrayOutputStream().also { BackupArchive.write(it, v6Files, 6, 1234) }.toByteArray()
+
+        backup.prepare(ByteArrayInputStream(v6Bytes)).use { it.restore() }
+
+        assertNull(db.focus().session(terminalId.toString()))
+        assertEquals(0, db.openHelper.readableDatabase.query("SELECT * FROM focus_run").use { it.count })
+        assertNotEquals(oldGeneration, focus.currentGeneration())
+    }
+
+    @Test fun invalidFocusArchiveIsRejectedBeforeLiveReplacement() = runBlocking {
+        val focus = RoomFocusRepository(db)
+        val generation = focus.currentGeneration()
+        val terminalId = UUID.randomUUID()
+        insertFocusSession(terminalId, FocusState.FINISHED, now.minusSeconds(1200), 600_000, "USER_STOP", null)
+        val journalId = EventId.new()
+        RoomJournalRepository(db).create(journalId, JournalInput("Keep before invalid restore", now))
+        val validBytes = export()
+        val payload = File(root, "invalid-focus-payload")
+        val manifest = BackupArchive.read(ByteArrayInputStream(validBytes), payload)
+        val runsFile = File(payload, "tables/focus_run.tsv")
+        val columns = runsFile.readLines().first().split('\t')
+        val rows = mutableListOf<List<Any?>>()
+        BackupRows.read(runsFile, columns) { rows += it }
+        val corrupted = rows.single().toMutableList().apply { this[columns.indexOf("credited_millis")] = -1L }
+        runsFile.outputStream().use { BackupRows.write(it, columns, sequenceOf(corrupted)) }
+        val invalidBytes = ByteArrayOutputStream().also { output ->
+            BackupArchive.write(output, manifest.names.associateWith { File(payload, it) }, 7, 1234)
+        }.toByteArray()
+
+        assertTrue(runCatching { backup.prepare(ByteArrayInputStream(invalidBytes)) }.isFailure)
+        assertEquals("Keep before invalid restore", RoomJournalRepository(db).get(journalId)!!.journal!!.body)
+        assertNotNull(db.focus().session(terminalId.toString()))
+        assertEquals(generation, focus.currentGeneration())
+    }
 
     @Test fun roundTripPreservesRelationsMetadataPhotosAndStableIds() = runBlocking {
         val person = RoomPersonRepository(db).create(UUID.randomUUID(), PersonInput("فارسی", "private"))

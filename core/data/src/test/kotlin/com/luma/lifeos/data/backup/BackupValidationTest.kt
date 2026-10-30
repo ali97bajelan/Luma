@@ -5,6 +5,50 @@ import org.junit.Assert.assertThrows
 import java.util.UUID
 
 class BackupValidationTest {
+    @Test fun focusArchiveAcceptsOnlyCanonicalTerminalSessionsAndClosedRuns() {
+        val sessionId = UUID.randomUUID().toString()
+        val session = mapOf<String, Any?>(
+            "id" to sessionId,
+            "state" to "FINISHED",
+            "revision" to 2L,
+            "started_at_seconds" to 100L,
+            "started_at_nanos" to 0L,
+            "ended_at_seconds" to 110L,
+            "ended_at_nanos" to 0L,
+            "created_at_seconds" to 99L,
+            "created_at_nanos" to 0L,
+            "updated_at_seconds" to 110L,
+            "updated_at_nanos" to 0L,
+            "terminal_reason" to "USER_STOP",
+            "recovered_or_uncertain" to 0L,
+            "open_slot" to null,
+        )
+        validateBackupRow("focus_session", session)
+        assertThrows(Exception::class.java) { validateBackupRow("focus_session", session + ("state" to "RUNNING")) }
+        assertThrows(Exception::class.java) { validateBackupRow("focus_session", session + ("open_slot" to 1L)) }
+        assertThrows(Exception::class.java) { validateBackupRow("focus_session", session + ("terminal_reason" to "PROCESS_RESTART_GAP")) }
+
+        val run = mapOf<String, Any?>(
+            "id" to UUID.randomUUID().toString(),
+            "session_id" to sessionId,
+            "ordinal" to 1L,
+            "started_at_seconds" to 100L,
+            "started_at_nanos" to 0L,
+            "ended_at_seconds" to 110L,
+            "ended_at_nanos" to 0L,
+            "credited_millis" to 10_000L,
+            "raw_started_at_seconds" to 100L,
+            "raw_started_at_nanos" to 0L,
+            "raw_ended_at_seconds" to 110L,
+            "raw_ended_at_nanos" to 0L,
+            "open_session_id" to null,
+        )
+        validateBackupRow("focus_run", run)
+        assertThrows(Exception::class.java) { validateBackupRow("focus_run", run + ("credited_millis" to -1L)) }
+        assertThrows(Exception::class.java) { validateBackupRow("focus_run", run + ("ended_at_seconds" to 111L)) }
+        assertThrows(Exception::class.java) { validateBackupRow("focus_run", run + ("open_session_id" to sessionId)) }
+    }
+
     @Test fun deepJsonIsRejectedWhileBracketsInQuotedTextDoNotCount() {
         assertThrows(Exception::class.java) { requireSafeJsonDepth("{\"x\":" + "[".repeat(1000) + "0" + "]".repeat(1000) + "}") }
         requireSafeJsonDepth("{\"text\":\"" + "[".repeat(1000) + "\"}")
