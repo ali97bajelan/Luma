@@ -247,10 +247,18 @@ class TodoBackupTest {
         BackupRows.read(taskFile, columns) { rows += it }
         val (newColumns, newRows) = transform(columns, rows)
         taskFile.outputStream().use { BackupRows.write(it, newColumns, newRows.asSequence()) }
+        val tablesAddedAfterSchemaFive = setOf(
+            "tables/task_reminder.tsv",
+            "tables/focus_session.tsv",
+            "tables/focus_run.tsv",
+        )
+        val members = manifest.names
+            .filterNot { schemaVersion <= 5 && it in tablesAddedAfterSchemaFive }
+            .associateWith { name -> File(payload, name) }
         return ByteArrayOutputStream().also { output ->
             BackupArchive.write(
                 output,
-                manifest.names.associateWith { name -> File(payload, name) },
+                members,
                 schemaVersion,
                 manifest.createdAt,
             )

@@ -1,6 +1,6 @@
 # App lock v2 — QA scenarios and execution ledger
 
-Date: 31 October 2026 · Status: **ALL SCENARIOS NOT RUN**
+Date: 31 October 2026 · Status: **T01/T02 partial QA executed; Q01–Q08, Q13–Q15 and Q22 BLOCKED pending full scenario/matrix coverage; other cases NOT RUN**
 
 [Spec](../superpowers/specs/2026-10-31-app-lock.md) · [Plan](../superpowers/plans/2026-10-31-app-lock.md) · [Board](../APP_LOCK_TASKS.md) · [Test data](app-lock-test-data.md) · [Fixture](fixtures/app-lock-v1.json) · [Shared workflow](WORKFLOW.md)
 
@@ -217,7 +217,7 @@ Unless stated otherwise, precondition for each case is the freshly seeded baseli
 
 **Oracle:** Unknown/Error never becomes Disabled by default. Private content stays gated; capture enabled only when its isolation is reliable. Retry/recovery safe; no user data lost. Required existing behaviors survive, no new minification-only bypass. Record security review and complete matrix before feature acceptance.
 
-## Traceability and initial execution ledger
+## Traceability and execution ledger
 
 Product AL-nn maps directly to AL-Qnn. Each row expands during QA into test/matrix/result/artifact rows; no applicable requirement can disappear because one shared case passed on a single device. Owner task details/test paths are in the plan.
 
@@ -238,28 +238,28 @@ Product AL-nn maps directly to AL-Qnn. Each row expands during QA into test/matr
 
 | Case | Result | Actual observation | Evidence | Defect/retest |
 | --- | --- | --- | --- | --- |
-| AL-Q01 | NOT RUN | — | — | — |
-| AL-Q02 | NOT RUN | — | — | — |
-| AL-Q03 | NOT RUN | — | — | — |
-| AL-Q04 | NOT RUN | — | — | — |
-| AL-Q05 | NOT RUN | — | — | — |
-| AL-Q06 | NOT RUN | — | — | — |
-| AL-Q07 | NOT RUN | — | — | — |
-| AL-Q08 | NOT RUN | — | — | — |
+| AL-Q01 | BLOCKED | T02 service tests passed the 7/129 and 8/128 boundaries, exact input, cancellation and atomic-write failure. Manually backed out of fresh setup and reopened to the setup form with no partial enable. UI validation feedback and successful setup/recovery acknowledgement were not observed. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c4-applock-connected-retest2.log` | Initial C4 test-clock/recovery-handle issues corrected and retested; no remaining test failure. |
+| AL-Q02 | BLOCKED | Offline credential-service verification passed. No actual locked-app cold relaunch/restart UI flow was completed. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c4-applock-connected-retest2.log` | API 28 and device-level restart remain open. |
+| AL-Q03 | BLOCKED | Domain classifier tests matched fixture record section sets and People-field classification. Actual Today/Timeline/Calendar/Search/Review/detail/media projections were not exercised. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); C1 log | T04 projection integration remains untested. |
+| AL-Q04 | BLOCKED | Domain policy tests covered fixture and single-section profiles; proof tests bound browse authority to the exact section request. Mixed-list UI chooser and actual protected projections were not exercised. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c1-domain-tests.log`; `c2-host-tests-retest.log` | T03/T04 integration remains open. |
+| AL-Q05 | BLOCKED | No locked cold-launch, widget/notification/deep-route, restored-stack or first-frame observation was run. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md) | T03/T04/T07 and capture-boundary integration remain open. |
+| AL-Q06 | BLOCKED | Domain navigation tests checked grant retention/revocation rules; actual app navigation, backgrounding and re-entry flows were not run. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c1-domain-tests.log` | T03 integration and shared matrix remain open. |
+| AL-Q07 | BLOCKED | Domain timing tests passed exact T−1/T/T+1 boundaries and conservative invalid samples. Wall-clock change, process death, device lock/reboot and multi-window behavior were not exercised. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c1-domain-tests.log` | API 28 and real lifecycle checks remain open. |
+| AL-Q08 | BLOCKED | Capture was not exercised against actual grants, expiry, restricted capture or lifecycle transitions. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md) | T03/T05 integration remains open. |
 | AL-Q09 | NOT RUN | — | — | — |
 | AL-Q10 | NOT RUN | — | — | — |
 | AL-Q11 | NOT RUN | — | — | — |
 | AL-Q12 | NOT RUN | — | — | — |
-| AL-Q13 | NOT RUN | — | — | — |
-| AL-Q14 | NOT RUN | — | — | — |
-| AL-Q15 | NOT RUN | — | — | — |
+| AL-Q13 | BLOCKED | Retry-policy/service tests passed the fixture cooldown schedule, in-cooldown behavior, service recreation and an injected boot-marker change. A physical reboot, protected capture and actual UI retry sequence were not exercised. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c2-host-tests-retest.log`; `c4-applock-connected-retest2.log` | Device reboot and capture checks remain open. |
+| AL-Q14 | BLOCKED | Host/native tests passed purpose-bound, one-use proofs, exact browse-request binding and policy-generation invalidation. Settings UI cancellation/failure paths and full credential/policy matrix were not run. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c2-host-tests-retest.log`; `c4-applock-connected-retest2.log` | Manual settings and API 28 coverage remain open. |
+| AL-Q15 | BLOCKED | Native service test passed wrong-code, interrupted replacement and successful recovery replacement behavior. Recovery-code display/acknowledgement UI and secret-screen handling were not completed. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); `c4-applock-connected-retest2.log` | Manual recovery UI and API 28 coverage remain open. |
 | AL-Q16 | NOT RUN | — | — | — |
 | AL-Q17 | NOT RUN | — | — | — |
 | AL-Q18 | NOT RUN | — | — | — |
 | AL-Q19 | NOT RUN | — | — | — |
 | AL-Q20 | NOT RUN | — | — | — |
 | AL-Q21 | NOT RUN | — | — | — |
-| AL-Q22 | NOT RUN | — | — | — |
+| AL-Q22 | BLOCKED | Corrupt/missing-store fail-closed cases passed; C1–C5 builds/gates and the 178-test core:data connected regression suite passed. Broader integrated App Lock/navigation/capture suites, API 28, full matrix, security review and minified runtime smoke remain open. | [F06-v2 summary](evidence/2026-10-31/F06-v2/summary.md); C1–C5 logs; `core-data-api36-connected.xml` | No unexplained final test failure; full feature acceptance is not established. |
 
 ## Exit gate
 

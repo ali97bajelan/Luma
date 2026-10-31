@@ -26,14 +26,14 @@ class BackupViewModelTest {
     }
     @Test fun previewRequiresConfirmationAndCancelReleasesWithoutReplacement() = runTest(dispatcher) {
         val service = Fake(); val vm = BackupViewModel(service, dispatcher)
-        vm.prepare { ByteArrayInputStream(byteArrayOf(1)) }; advanceUntilIdle()
+        vm.prepare(open = { ByteArrayInputStream(byteArrayOf(1)) }); advanceUntilIdle()
         assertEquals(5L, vm.state.value.preview!!.eventCount); assertEquals(0, service.restores)
         vm.cancelRestore(); advanceUntilIdle()
         assertNull(vm.state.value.preview); assertEquals(1, service.closes); assertEquals(0, service.restores)
     }
     @Test fun confirmationRunsOnceAndFailureExposesRetryWithoutRetainingPreview() = runTest(dispatcher) {
         val service = Fake(); val vm = BackupViewModel(service, dispatcher)
-        vm.prepare { ByteArrayInputStream(byteArrayOf(1)) }; advanceUntilIdle()
+        vm.prepare(open = { ByteArrayInputStream(byteArrayOf(1)) }); advanceUntilIdle()
         service.fail = true
         vm.confirmRestore(); vm.confirmRestore(); advanceUntilIdle()
         assertEquals(1, service.restores); assertEquals(BackupMessage.RESTORE_FAILED, vm.state.value.message)
@@ -44,7 +44,7 @@ class BackupViewModelTest {
         val successfulVm = BackupViewModel(successfulService, dispatcher)
         var successes = 0
         var completions = 0
-        successfulVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }; advanceUntilIdle()
+        successfulVm.prepare(open = { ByteArrayInputStream(byteArrayOf(1)) }); advanceUntilIdle()
         successfulVm.confirmRestore(onRestored = { successes++ }, onFinished = { completions++ })
         advanceUntilIdle()
         assertEquals(1, successes)
@@ -53,7 +53,7 @@ class BackupViewModelTest {
         val failedService = Fake()
         val failedVm = BackupViewModel(failedService, dispatcher)
         var failedSuccesses = 0
-        failedVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }; advanceUntilIdle()
+        failedVm.prepare(open = { ByteArrayInputStream(byteArrayOf(1)) }); advanceUntilIdle()
         failedService.fail = true
         failedVm.confirmRestore(onRestored = { failedSuccesses++ }, onFinished = { completions++ })
         advanceUntilIdle()
@@ -66,7 +66,7 @@ class BackupViewModelTest {
         val successfulService = Fake()
         val successfulVm = BackupViewModel(successfulService, dispatcher)
         var successes = 0
-        successfulVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }
+        successfulVm.prepare(open = { ByteArrayInputStream(byteArrayOf(1)) })
         advanceUntilIdle()
         assertEquals(0L, successfulVm.state.value.preview?.todoCount)
         successfulVm.confirmRestore { successes++ }
@@ -78,7 +78,7 @@ class BackupViewModelTest {
         val failedService = Fake()
         val failedVm = BackupViewModel(failedService, dispatcher)
         var failures = 0
-        failedVm.prepare { ByteArrayInputStream(byteArrayOf(1)) }
+        failedVm.prepare(open = { ByteArrayInputStream(byteArrayOf(1)) })
         advanceUntilIdle()
         failedService.fail = true
         failedVm.confirmRestore { failures++ }
@@ -102,7 +102,7 @@ class BackupViewModelTest {
     }
     @Test fun invalidArchiveReportsErrorAndDoesNotRestore() = runTest(dispatcher) {
         val service = Fake().apply { fail = true }; val vm = BackupViewModel(service, dispatcher)
-        vm.prepare { ByteArrayInputStream(byteArrayOf(1)) }; advanceUntilIdle()
+        vm.prepare(open = { ByteArrayInputStream(byteArrayOf(1)) }); advanceUntilIdle()
         assertEquals(BackupMessage.INVALID_BACKUP, vm.state.value.message)
         assertNull(vm.state.value.preview); assertEquals(0, service.restores)
     }
