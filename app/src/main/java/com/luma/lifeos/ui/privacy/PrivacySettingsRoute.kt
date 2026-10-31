@@ -26,14 +26,26 @@ import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.PageNavigation
 
 @Composable
-fun PrivacySettingsRoute(reset: AppDataReset, onBack: () -> Unit) {
+fun PrivacySettingsRoute(
+    reset: AppDataReset,
+    onBack: () -> Unit,
+    appLockAvailable: Boolean = false,
+    appLockEnabled: Boolean = false,
+    onAppLock: () -> Unit = {},
+) {
     val factory = remember(reset) { viewModelFactory { initializer { PrivacyViewModel(reset) } } }
     val vm: PrivacyViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
-    PrivacySettingsContent(state, onBack, vm::requestDelete, vm::confirmDelete, vm::cancelDelete,
-        onAppSettings = { settingsMissing = !openLumaAppSettings(context) }, settingsMissing)
+    PrivacySettingsContent(
+        state, onBack, vm::requestDelete, vm::confirmDelete, vm::cancelDelete,
+        onAppSettings = { settingsMissing = !openLumaAppSettings(context) },
+        settingsMissing = settingsMissing,
+        appLockAvailable = appLockAvailable,
+        appLockEnabled = appLockEnabled,
+        onAppLock = onAppLock,
+    )
 }
 
 /** Shared with the native Health Connect rationale; contains no actions or database access. */
@@ -64,7 +76,8 @@ private fun PrivacySection(@StringRes heading: Int, @StringRes description: Int,
 @Composable
 internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
     onDelete: () -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit,
-    onAppSettings: () -> Unit, settingsMissing: Boolean = false) {
+    onAppSettings: () -> Unit, settingsMissing: Boolean = false,
+    appLockAvailable: Boolean = false, appLockEnabled: Boolean = false, onAppLock: () -> Unit = {}) {
     AppPageScaffold(
         title = stringResource(R.string.privacy_title),
         navigation = PageNavigation.BACK,
@@ -83,16 +96,34 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
             }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.privacy_settings_missing), Modifier.testTag("privacy_settings_missing"))
         }
+        if (appLockAvailable) {
+            LumaSectionSurface {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.app_lock_settings_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.semantics { heading() })
+                    Text(stringResource(R.string.app_lock_privacy_description))
+                    TextButton(onClick = onAppLock, enabled = !state.busy,
+                        modifier = Modifier.testTag("privacy_app_lock")) {
+                        Text(stringResource(R.string.app_lock_privacy_action))
+                    }
+                }
+            }
+        }
         LumaSectionSurface {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.privacy_delete_section), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { heading() })
                 Text(stringResource(R.string.privacy_delete_description))
-                Button(onClick = onDelete, enabled = !state.busy && !state.requestAccepted,
+                Button(onClick = onDelete, enabled = !state.busy && !state.requestAccepted && !appLockEnabled,
                     modifier = Modifier.testTag("privacy_delete"),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError)) {
                     Text(stringResource(R.string.privacy_delete))
+                }
+                if (appLockEnabled) {
+                    AccessibleFeedback(stringResource(R.string.app_lock_reset_requires_auth),
+                        Modifier.testTag("privacy_reset_locked"))
                 }
                 if (state.busy) CircularProgressIndicator(Modifier.testTag("privacy_busy"))
                 if (state.requestAccepted) AccessibleFeedback(stringResource(R.string.privacy_reset_requested),

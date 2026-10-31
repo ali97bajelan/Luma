@@ -67,6 +67,8 @@ class MainActivity : ComponentActivity() {
                     allowedFocusApps = luma.allowedFocusApps,
                     appLockCoordinator = luma.appLockCoordinator,
                     protectedContentGateway = luma.protectedContentGateway,
+                    restrictedCaptureService = luma.restrictedCaptureService,
+                    lockCredentialService = luma.lockCredentialService,
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,
                     reminderLaunch = reminderLaunch,

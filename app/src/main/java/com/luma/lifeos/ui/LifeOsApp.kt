@@ -146,9 +146,16 @@ import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
 import com.luma.lifeos.lock.AppLockCoordinator
+import com.luma.lifeos.lock.RestrictedCaptureService
+import com.luma.lifeos.lock.LockCredentialService
+import com.luma.lifeos.lock.OperationProof
 import com.luma.lifeos.lock.EventEditorKind
 import com.luma.lifeos.lock.LockPendingDestination
 import com.luma.lifeos.ui.privacy.AppLockGate
+import com.luma.lifeos.ui.privacy.RestrictedCaptureRoute
+import com.luma.lifeos.ui.privacy.AppLockSettingsRoute
+import com.luma.lifeos.ui.privacy.AppLockRecoveryRoute
+import com.luma.lifeos.ui.privacy.AppLockUnlockDialog
 
 private const val HABITS_SELECTED_DATE_KEY = "habits_selected_date"
 private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
@@ -192,6 +199,9 @@ fun LifeOsApp(
     focusRepository: FocusRepository? = null,
     appLockCoordinator: AppLockCoordinator? = null,
     protectedContentGateway: com.luma.lifeos.lock.ProtectedContentGateway? = null,
+    restrictedCaptureService: RestrictedCaptureService? = null,
+    lockCredentialService: LockCredentialService? = null,
+    onForgottenLockResetConfirmed: (() -> Unit)? = null,
     onLockUnlockRequested: () -> Unit = {},
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
@@ -297,6 +307,12 @@ fun LifeOsApp(
     val lockSnapshotHolder = appLockCoordinator?.snapshot?.collectAsStateWithLifecycle()
         ?: remember { mutableStateOf(com.luma.lifeos.domain.lock.LockSnapshot()) }
     val lockSnapshot by lockSnapshotHolder
+    var appLockUnlockVisible by remember { mutableStateOf(false) }
+    var pendingCaptureResume by remember { mutableStateOf<((OperationProof) -> Unit)?>(null) }
+    fun showAppLockUnlock() {
+        appLockUnlockVisible = true
+        onLockUnlockRequested()
+    }
     val protectedSummaryReadable = appLockCoordinator == null || lockSnapshot.decide(
         LockRequest(
             operation = LockOperation.READ,
@@ -354,6 +370,8 @@ fun LifeOsApp(
     }
     val safeLockHelp = currentRoute == AppRoutes.APP_LOCK_HELP || lockHelpRequested
     val appLockGateVisible = appLockCoordinator != null && !safeLockHelp && when {
+        currentRoute in setOf(AppRoutes.RESTRICTED_CAPTURE, AppRoutes.APP_LOCK_SETTINGS, AppRoutes.APP_LOCK_RECOVERY) -> false
+        currentRoute == "privacy" && lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY -> false
         lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY -> true
         lockSnapshot.policy?.enabled != true -> false
         lockSnapshot.activeBrowseContext != lockContext -> true
@@ -369,7 +387,7 @@ fun LifeOsApp(
             ?: return@LaunchedEffect
         val decision = coordinator.requestBrowse(pending.first, pending.second)
         if (decision is AccessDecision.NeedUnlock) {
-            onLockUnlockRequested()
+            showAppLockUnlock()
             widgetLaunch?.let { onWidgetLaunchConsumed(it.id) }
             if (widgetLaunch == null) onReminderLaunchConsumed()
         }
@@ -405,7 +423,18 @@ fun LifeOsApp(
     val showCaptureFab = primaryScreen && !isFocusGuarded() &&
         (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
     val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
+    fun appLockEnabled(): Boolean = lockSnapshot.policy?.enabled == true
+    fun openRestrictedCapture() {
+        capturing = false
+        widgetQuickCapture = false
+        calendarCaptureDueDate = null
+        navController.navigate(AppRoutes.RESTRICTED_CAPTURE) { launchSingleTop = true }
+    }
     fun openCapture(route: String, date: LocalDate?) {
+        if (appLockEnabled()) {
+            openRestrictedCapture()
+            return
+        }
         capturing = false
         widgetQuickCapture = false
         calendarCaptureDueDate = null
@@ -413,10 +442,21 @@ fun LifeOsApp(
         navController.navigate(if (target == null) route else "$route?initialTime=$target")
     }
     fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null, requestDelete: Boolean = false) {
+        if (taskId == null && appLockEnabled()) {
+            openRestrictedCapture()
+            return
+        }
         navController.navigate("task_editor?taskId=${taskId?.toString().orEmpty()}&dueDate=${dueDate?.toString().orEmpty()}")
         if (requestDelete) {
             navController.currentBackStackEntry?.savedStateHandle?.set(TODO_EDITOR_REQUEST_DELETE_KEY, true)
         }
+    }
+    fun openHabitEditor(habitId: UUID? = null) {
+        if (habitId == null && appLockEnabled()) {
+            openRestrictedCapture()
+            return
+        }
+        navController.navigate("habit_editor" + (habitId?.let { "?habitId=$it" } ?: ""))
     }
     fun openFocusHistory(start: LocalDate, through: LocalDate, zone: ZoneId) {
         navController.navigate(
@@ -430,6 +470,15 @@ fun LifeOsApp(
         }
     }
     fun routeWidgetDestination(destination: WidgetDestination) {
+        val isRestrictedCreate = when (destination) {
+            WidgetDestination.QuickCapture, is WidgetDestination.Capture,
+            WidgetDestination.NewTask, WidgetDestination.NewHabit -> true
+            else -> false
+        }
+        if (appLockEnabled() && isRestrictedCreate) {
+            openRestrictedCapture()
+            return
+        }
         val top = navController.currentBackStackEntry
         if (destination != WidgetDestination.QuickCapture) {
             capturing = false
@@ -463,7 +512,7 @@ fun LifeOsApp(
             is WidgetDestination.HabitDetail -> navController.navigate("habit_detail/${destination.id}/${destination.date}")
             WidgetDestination.Tasks -> if (todos != null) navController.navigate(AppRoutes.TASKS)
             is WidgetDestination.Task -> if (todos != null) openTodoEditor(taskId = destination.id)
-            WidgetDestination.NewHabit -> navController.navigate("habit_editor")
+            WidgetDestination.NewHabit -> openHabitEditor()
             WidgetDestination.NewTask -> if (todos != null) {
                 openTodoEditor(dueDate = LocalDate.now(ZoneId.systemDefault()))
             }
@@ -489,6 +538,8 @@ fun LifeOsApp(
     if (appLockGateVisible) {
         AppLockGate(
             canRequestUnlock = lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY,
+            addNewEntryAvailable = restrictedCaptureService != null,
+            appLockSettingsAvailable = lockCredentialService != null,
             focusEmergencyAvailable = currentRoute == AppRoutes.FOCUS && focusViewModel != null,
             focusEmergencyExitReady = focusState.emergencyPromptVisible,
             onUnlock = {
@@ -499,12 +550,14 @@ fun LifeOsApp(
                 ) else appLockCoordinator?.requestBrowse(lockRequest, lockPendingDestination(currentRoute, backStackEntry))
                 if (decision is AccessDecision.NeedUnlock ||
                     (decision is AccessDecision.Deny && decision.reason == com.luma.lifeos.domain.lock.AccessDenial.FRESH_AUTHENTICATION_REQUIRED)
-                ) onLockUnlockRequested()
+                ) showAppLockUnlock()
             },
             onBackToSafeDestination = {
                 appLockCoordinator?.cancelPendingNavigation()
                 lockHelpRequested = true
             },
+            onAddNewEntry = ::openRestrictedCapture,
+            onAppLockSettings = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
             onRequestFocusEmergencyExit = { focusViewModel?.requestEmergencyExit() },
             onConfirmFocusEmergencyExit = {
                 focusViewModel?.confirmEmergencyExit()
@@ -548,7 +601,7 @@ fun LifeOsApp(
             if (showCaptureFab) {
                 val density = LocalDensity.current
                 ExtendedFloatingActionButton(
-                    onClick = { capturing = true },
+                    onClick = { if (appLockEnabled()) openRestrictedCapture() else capturing = true },
                     shape = RoundedCornerShape(percent = 50),
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -567,6 +620,42 @@ fun LifeOsApp(
             startDestination = PrimaryDestination.TODAY.route,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         ) {
+            if (restrictedCaptureService != null) composable(AppRoutes.RESTRICTED_CAPTURE) {
+                RestrictedCaptureRoute(
+                    service = restrictedCaptureService,
+                    onBack = { navController.popBackStack() },
+                    onRequestDraftUnlock = { _, resumeWithProof ->
+                        pendingCaptureResume = resumeWithProof
+                        showAppLockUnlock()
+                    },
+                )
+            }
+            if (lockCredentialService != null && appLockCoordinator != null) composable(AppRoutes.APP_LOCK_SETTINGS) {
+                AppLockSettingsRoute(
+                    lockCredentialService, appLockCoordinator,
+                    onBack = { navController.popBackStack() },
+                    onForgotPassword = {
+                        appLockCoordinator.cancelPendingNavigation()
+                        navController.navigate(AppRoutes.APP_LOCK_RECOVERY) { launchSingleTop = true }
+                    },
+                )
+            }
+            if (lockCredentialService != null && appLockCoordinator != null) composable(AppRoutes.APP_LOCK_RECOVERY) {
+                fun returnToLockShell() {
+                    appLockCoordinator.cancelPendingNavigation()
+                    navController.navigate(PrimaryDestination.TODAY.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+                AppLockRecoveryRoute(
+                    credentials = lockCredentialService,
+                    coordinator = appLockCoordinator,
+                    onBack = ::returnToLockShell,
+                    onCompleted = ::returnToLockShell,
+                    onForgottenResetConfirmed = onForgottenLockResetConfirmed,
+                )
+            }
             PrimaryDestination.entries.forEach { destination ->
                 composable(destination.route) { destinationEntry ->
                     when (destination) {
@@ -584,7 +673,7 @@ fun LifeOsApp(
                                     onSchedule = { date ->
                                         calendarCaptureDueDate = date.toString()
                                         widgetQuickCapture = false
-                                        capturing = true
+                                        if (appLockEnabled()) openRestrictedCapture() else capturing = true
                                     },
                                     onMemory = { id -> navController.navigate("memory?eventId=$id") },
                                     onAddMemory = { date -> openCapture("memory", date) },
@@ -643,7 +732,7 @@ fun LifeOsApp(
                             habitsDate = selectedDate?.let(LocalDate::parse),
                             deviceDate = currentDay.date,
                             onHabits = { openHabitsDate(selectedDate?.let(LocalDate::parse) ?: currentDay.date) },
-                            onCreateHabit = { navController.navigate("habit_editor") },
+                            onCreateHabit = { openHabitEditor() },
                             onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
                             onHabitOpenDate = ::openHabitsDate,
                             onCapture = { type, date -> openCapture(when (type) {
@@ -689,7 +778,7 @@ fun LifeOsApp(
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
                                 integrationAvailability = integrationAvailability,
                                 onIntegrations = { navController.navigate("settings_integrations") },
-                                onCheckIn = { navController.navigate("mood") },
+                                onCheckIn = { openCapture("mood", null) },
                                 focusRepository = focusRepository,
                                 onFocusHistory = ::openFocusHistory,
                                 onSources = { dates, metric ->
@@ -764,7 +853,7 @@ fun LifeOsApp(
                     date = habitsDate,
                     onSelectDate = { entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = it.toString() },
                     onToday = { entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = currentDay.date.toString() },
-                    onCreate = { navController.navigate("habit_editor") },
+                    onCreate = { openHabitEditor() },
                     onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
                     deviceDate = currentDay.date,
                     deviceZone = currentDay.zone,
@@ -951,7 +1040,13 @@ fun LifeOsApp(
                 )
             }
             if (reset != null) composable("privacy") {
-                com.luma.lifeos.ui.privacy.PrivacySettingsRoute(reset, onBack = { navController.popBackStack() })
+                com.luma.lifeos.ui.privacy.PrivacySettingsRoute(
+                    reset,
+                    onBack = { navController.popBackStack() },
+                    appLockAvailable = lockCredentialService != null,
+                    appLockEnabled = appLockEnabled(),
+                    onAppLock = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
+                )
             }
             if (usage != null || health != null) composable("settings_integrations") {
                 IntegrationsSettingsRoute(usage, health, currentDay.zone,
@@ -1185,7 +1280,7 @@ fun LifeOsApp(
                 capturing = false
                 widgetQuickCapture = false
                 calendarCaptureDueDate = null
-                openHabitsDate(date)
+                if (appLockEnabled()) openRestrictedCapture() else openHabitsDate(date)
             },
             taskDueDate = calendarCaptureDueDate?.let(LocalDate::parse),
             onScheduledTask = if (todos != null && calendarCaptureDueDate != null) ({ date ->
@@ -1213,6 +1308,30 @@ fun LifeOsApp(
                 onOpenPendingDestination = ::openPendingFocusDestination,
             )
         }
+    }
+    if (appLockUnlockVisible && appLockCoordinator != null && lockCredentialService != null) {
+        AppLockUnlockDialog(
+            credentials = lockCredentialService,
+            coordinator = appLockCoordinator,
+            proofOnly = pendingCaptureResume != null,
+            onSuccess = { proof ->
+                appLockUnlockVisible = false
+                val resume = pendingCaptureResume
+                pendingCaptureResume = null
+                resume?.invoke(proof)
+            },
+            onCancel = {
+                appLockUnlockVisible = false
+                if (pendingCaptureResume == null) appLockCoordinator.cancelPendingNavigation()
+                pendingCaptureResume = null
+            },
+            onForgotPassword = {
+                appLockUnlockVisible = false
+                pendingCaptureResume = null
+                appLockCoordinator.cancelPendingNavigation()
+                navController.navigate(AppRoutes.APP_LOCK_RECOVERY) { launchSingleTop = true }
+            },
+        )
     }
     }
     }
@@ -1298,8 +1417,10 @@ private fun appLockBrowseContext(
         topLevelDestination = topLevel,
         authorizationScopeId = scope,
         requiredSections = sections,
-        isSettings = destination.startsWith("settings") || destination == "privacy",
-        isRestrictedCapture = restrictedCapture || (destination in setOf(
+        isSettings = destination.startsWith("settings") || destination in setOf(
+            "privacy", AppRoutes.APP_LOCK_SETTINGS, AppRoutes.APP_LOCK_RECOVERY,
+        ),
+        isRestrictedCapture = restrictedCapture || destination == AppRoutes.RESTRICTED_CAPTURE || (destination in setOf(
             "memory?eventId={eventId}&initialTime={initialTime}",
             "journal?eventId={eventId}&initialTime={initialTime}",
             "mood?eventId={eventId}&initialTime={initialTime}",

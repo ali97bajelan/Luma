@@ -55,6 +55,8 @@ import com.luma.lifeos.lock.ProtectedTimelineRepository
 import com.luma.lifeos.lock.ProtectedTodoRepository
 import com.luma.lifeos.lock.ProtectedWeeklyReviewRepository
 import com.luma.lifeos.lock.ProtectedUsageIntegration
+import com.luma.lifeos.lock.AndroidPrivateCaptureDraftStore
+import com.luma.lifeos.lock.RestrictedCaptureService
 
 class LumaApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -124,6 +126,19 @@ class LumaApplication : Application() {
         )
     }
     val moodDraftStore: FileMoodDraftStore by lazy { FileMoodDraftStore(this) }
+    val restrictedCaptureService: RestrictedCaptureService by lazy {
+        RestrictedCaptureService(
+            memories = storage.memories,
+            journals = storage.journals,
+            moods = storage.moods,
+            todos = storage.todos,
+            habits = storage.habits,
+            photos = storage.photos,
+            access = appLockCoordinator,
+            actions = lockActionGuard,
+            drafts = AndroidPrivateCaptureDraftStore(this),
+        )
+    }
     val usage: UsageIntegration by lazy {
         UsageSyncer(AndroidUsageSource(this), storage.usage, UsageWorkScheduler(this, UsageWorker::class.java))
     }
