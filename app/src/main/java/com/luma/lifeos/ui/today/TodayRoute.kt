@@ -65,6 +65,8 @@ fun TodayRoute(
     screenTag: String = "screen_today",
     onEventClick: (EventId) -> Unit = {},
     summaries: DailySummaryRepository? = null,
+    showProtectedSummary: Boolean = true,
+    showProtectedFocus: Boolean = true,
     integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {},
     habits: HabitRepository? = null,
@@ -123,7 +125,7 @@ fun TodayRoute(
     key(repository, summaries, focusRepository, date, zone) {
         val observation = remember(retry) { observeToday(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(initialValue = TodayUiState.Loading)
-        val focusReport = if (focusRepository != null) {
+        val focusReport = if (focusRepository != null && showProtectedFocus) {
             val focusSource = remember(focusRepository) { FocusReportSource(focusRepository) }
             val focusObservation = remember(focusSource, date, zone, focusRetry) {
                 focusSource.day(TimeRange.forDay(date, zone))
@@ -133,7 +135,7 @@ fun TodayRoute(
             )
             observed
         } else null
-        val summary = if (summaries != null) {
+        val summary = if (summaries != null && showProtectedSummary) {
             val summaryFlow = remember(summaryRetry) { observeDailySummary(summaries, date, zone) }
             val summaryState by summaryFlow.collectAsStateWithLifecycle(initialValue = DailySummaryState.Loading)
             summaryState
@@ -152,9 +154,9 @@ fun TodayRoute(
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
-                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused,
-                focusReport = focusReport, focusInProgressMillis = focusInProgressMillis,
-                focusInProgressState = focusInProgressState,
+                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
+                focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
+                focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
                 onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory)
         } else {
             val habitFactory = remember(habits) {
@@ -200,9 +202,9 @@ fun TodayRoute(
                     todayTasksViewModel?.setCompleted(task, completed)
                 }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
-                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused,
-                focusReport = focusReport, focusInProgressMillis = focusInProgressMillis,
-                focusInProgressState = focusInProgressState,
+                deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
+                focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
+                focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
                 onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory)
         }
     }

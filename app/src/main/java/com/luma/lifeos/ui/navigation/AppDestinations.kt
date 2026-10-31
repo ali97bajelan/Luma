@@ -19,6 +19,7 @@ internal object AppRoutes {
     // Retained as secondary routes so restored back stacks keep resolving.
     const val PEOPLE = "people"
     const val SETTINGS = "settings"
+    const val APP_LOCK_HELP = "app_lock_help"
 }
 
 internal enum class PrimaryDestination(

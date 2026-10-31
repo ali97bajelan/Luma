@@ -1284,4 +1284,14 @@
         <item quantity="one">%1$d نشست قطع‌شده در این مجموع محاسبه شده است.</item>
         <item quantity="other">%1$d نشست قطع‌شده در این مجموع محاسبه شده است.</item>
     </plurals>
+    <string name="app_lock_gate_title">لومـا قفل است</string>
+    <string name="app_lock_gate_body">برای ادامه در این بخش از لوما، قفل را باز کنید.</string>
+    <string name="app_lock_gate_unlock">باز کردن قفل</string>
+    <string name="app_lock_gate_back">بازگشت به صفحهٔ امن</string>
+    <string name="app_lock_focus_emergency_exit">خروج اضطراری از فوکوس</string>
+    <string name="app_lock_focus_emergency_title">از فوکوس خارج شوید؟</string>
+    <string name="app_lock_focus_emergency_body">تأیید کنید که می‌خواهید از نشست فعال فوکوس خارج شوید.</string>
+    <string name="app_lock_focus_emergency_confirm">خروج از فوکوس</string>
+    <string name="app_lock_help_title">راهنمای قفل برنامه</string>
+    <string name="app_lock_help_body">محتوای خصوصی لوما تا باز شدن قفل پنهان می‌ماند. بدون باز کردن محتوای خصوصی می‌توانید به این صفحه برگردید.</string>
 </resources>

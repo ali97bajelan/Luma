@@ -1306,4 +1306,14 @@
         <item quantity="other">%1$d sessions interrompues comptabilisées.</item>
         <item quantity="many">%1$d sessions interrompues comptabilisées.</item>
     </plurals>
+    <string name="app_lock_gate_title">Luma est verrouillé</string>
+    <string name="app_lock_gate_body">Déverrouillez Luma pour accéder à cette section.</string>
+    <string name="app_lock_gate_unlock">Déverrouiller</string>
+    <string name="app_lock_gate_back">Revenir à un écran sûr</string>
+    <string name="app_lock_focus_emergency_exit">Quitter Focus en urgence</string>
+    <string name="app_lock_focus_emergency_title">Quitter Focus ?</string>
+    <string name="app_lock_focus_emergency_body">Confirmez que vous souhaitez quitter la session Focus en cours.</string>
+    <string name="app_lock_focus_emergency_confirm">Quitter Focus</string>
+    <string name="app_lock_help_title">Aide du verrouillage</string>
+    <string name="app_lock_help_body">Vos contenus privés restent masqués jusqu’au déverrouillage de Luma. Vous pouvez revenir ici sans ouvrir de contenu privé.</string>
 </resources>

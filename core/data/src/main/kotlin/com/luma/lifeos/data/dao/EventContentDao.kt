@@ -32,6 +32,8 @@ interface EventContentDao {
 
     @Query("SELECT * FROM media_attachment WHERE life_event_id = :eventId ORDER BY id")
     suspend fun attachments(eventId: String): List<MediaAttachmentEntity>
+    @Query("SELECT life_event_id FROM media_attachment WHERE id = :photoId LIMIT 1")
+    suspend fun ownerEventId(photoId: String): String?
     @Query("SELECT relative_path FROM media_attachment ORDER BY relative_path")
     suspend fun referencedMediaPaths(): List<String>
     @Query("DELETE FROM mood_entry WHERE life_event_id = :eventId") suspend fun deleteMood(eventId: String)

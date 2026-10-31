@@ -1283,4 +1283,14 @@
         <item quantity="one">%1$d interrupted session contributed.</item>
         <item quantity="other">%1$d interrupted sessions contributed.</item>
     </plurals>
+    <string name="app_lock_gate_title">Luma is locked</string>
+    <string name="app_lock_gate_body">Unlock to continue to this part of Luma.</string>
+    <string name="app_lock_gate_unlock">Unlock</string>
+    <string name="app_lock_gate_back">Return to a safe screen</string>
+    <string name="app_lock_focus_emergency_exit">Emergency exit Focus</string>
+    <string name="app_lock_focus_emergency_title">Leave Focus?</string>
+    <string name="app_lock_focus_emergency_body">Confirm that you want to leave the active Focus session.</string>
+    <string name="app_lock_focus_emergency_confirm">Leave Focus</string>
+    <string name="app_lock_help_title">App lock help</string>
+    <string name="app_lock_help_body">Your private Luma content stays hidden until the app lock is unlocked. You can return here without opening private content.</string>
 </resources>

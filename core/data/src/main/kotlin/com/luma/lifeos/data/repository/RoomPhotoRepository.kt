@@ -4,6 +4,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.media.AndroidPhotoCodec
 import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.domain.model.PhotoAttachment
+import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.repository.PhotoRepository
 import java.io.InputStream
 import java.util.UUID
@@ -28,6 +29,8 @@ class RoomPhotoRepository(private val database: LumaDatabase, private val files:
             files.resolve(photo.relativePath)?.let { file -> runCatching { AndroidPhotoCodec.preview(file) }.getOrNull() }
         }
     }
+    override suspend fun ownerEventId(photoId: UUID): EventId? =
+        database.content().ownerEventId(photoId.toString())?.let(EventId::parse)
     override suspend fun cleanup() = withContext(Dispatchers.IO) { mutex.withLock { clean() } }
     private suspend fun clean() {
         // Query the current committed references immediately before deletion, outside a transaction.

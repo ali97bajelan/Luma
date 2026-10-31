@@ -139,6 +139,16 @@ import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.focus.FocusViewModel
 import com.luma.lifeos.ui.focus.FocusRoute
 import com.luma.lifeos.ui.focus.FocusHistoryRoute
+import com.luma.lifeos.domain.lock.AccessDecision
+import com.luma.lifeos.domain.lock.LockBrowseContext
+import com.luma.lifeos.domain.lock.LockContentClassification
+import com.luma.lifeos.domain.lock.LockOperation
+import com.luma.lifeos.domain.lock.LockRequest
+import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.lock.AppLockCoordinator
+import com.luma.lifeos.lock.EventEditorKind
+import com.luma.lifeos.lock.LockPendingDestination
+import com.luma.lifeos.ui.privacy.AppLockGate
 
 private const val HABITS_SELECTED_DATE_KEY = "habits_selected_date"
 private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
@@ -180,6 +190,9 @@ fun LifeOsApp(
     focusPreferences: FocusPreferences? = null,
     allowedFocusApps: AllowedFocusApps? = null,
     focusRepository: FocusRepository? = null,
+    appLockCoordinator: AppLockCoordinator? = null,
+    protectedContentGateway: com.luma.lifeos.lock.ProtectedContentGateway? = null,
+    onLockUnlockRequested: () -> Unit = {},
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -265,10 +278,102 @@ fun LifeOsApp(
     var capturing by rememberSaveable { mutableStateOf(false) }
     var widgetQuickCapture by rememberSaveable { mutableStateOf(false) }
     var calendarCaptureDueDate by rememberSaveable { mutableStateOf<String?>(null) }
+    var lockHelpRequested by rememberSaveable { mutableStateOf(false) }
     var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
     var lastCaptureRestoreGeneration by rememberSaveable { mutableStateOf(todoRestoreGeneration) }
     var captureFabHeight by remember { mutableStateOf(0.dp) }
     val currentRoute = backStackEntry?.destination?.route
+    val lockEventId = backStackEntry?.arguments?.getString("eventId")
+    val eventScopedRoute = currentRoute in setOf(
+        "event_detail/{eventId}", "journal_detail/{eventId}",
+        "memory?eventId={eventId}&initialTime={initialTime}",
+        "journal?eventId={eventId}&initialTime={initialTime}",
+        "mood?eventId={eventId}&initialTime={initialTime}",
+        "entry_share/{eventId}/{kind}",
+    )
+    val classifiedEventSections = remember(currentRoute, lockEventId) {
+        mutableStateOf<Set<LockSection>?>(null)
+    }
+    val lockSnapshotHolder = appLockCoordinator?.snapshot?.collectAsStateWithLifecycle()
+        ?: remember { mutableStateOf(com.luma.lifeos.domain.lock.LockSnapshot()) }
+    val lockSnapshot by lockSnapshotHolder
+    val protectedSummaryReadable = appLockCoordinator == null || lockSnapshot.decide(
+        LockRequest(
+            operation = LockOperation.READ,
+            requiredSections = LockSection.entries.toSet(),
+            contentClassification = LockContentClassification.CLASSIFIED,
+        ),
+    ) == AccessDecision.Allow
+    val protectedFocusReadable = appLockCoordinator == null || lockSnapshot.decide(
+        LockRequest(
+            operation = LockOperation.READ,
+            requiredSections = setOf(LockSection.FOCUS),
+            contentClassification = LockContentClassification.CLASSIFIED,
+        ),
+    ) == AccessDecision.Allow
+    val protectedTasksReadable = appLockCoordinator == null || lockSnapshot.decide(
+        LockRequest(LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED),
+    ) == AccessDecision.Allow
+    val protectedHabitsReadable = appLockCoordinator == null || lockSnapshot.decide(
+        LockRequest(LockOperation.READ, setOf(LockSection.HABITS), LockContentClassification.CLASSIFIED),
+    ) == AccessDecision.Allow
+    LaunchedEffect(protectedContentGateway, eventScopedRoute, lockEventId, lockSnapshot.policy?.enabled) {
+        classifiedEventSections.value = if (lockSnapshot.policy?.enabled == true && eventScopedRoute && lockEventId != null) {
+            try {
+                protectedContentGateway?.classifyRecord(EventId.parse(lockEventId))
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            }
+        } else null
+    }
+    val previousBackStackEntry = navController.previousBackStackEntry
+    val lockContext = remember(currentRoute, backStackEntry, previousBackStackEntry,
+        lockSnapshot.activeBrowseContext, classifiedEventSections.value, capturing, widgetQuickCapture) {
+        appLockBrowseContext(
+            currentRoute,
+            backStackEntry,
+            previousBackStackEntry?.destination?.route,
+            lockSnapshot.activeBrowseContext,
+            classifiedEventSections.value,
+            capturing || widgetQuickCapture,
+        )
+    }
+    val lockRequest = remember(lockContext) {
+        LockRequest(
+            operation = appLockOperation(currentRoute),
+            requiredSections = lockContext.requiredSections,
+            contentClassification = if (lockContext.requiredSections.isEmpty()) {
+                LockContentClassification.KNOWN_UNPROTECTED
+            } else LockContentClassification.CLASSIFIED,
+        )
+    }
+    LaunchedEffect(appLockCoordinator, lockContext) {
+        appLockCoordinator?.onNavigationChanged(lockContext)
+    }
+    val safeLockHelp = currentRoute == AppRoutes.APP_LOCK_HELP || lockHelpRequested
+    val appLockGateVisible = appLockCoordinator != null && !safeLockHelp && when {
+        lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY -> true
+        lockSnapshot.policy?.enabled != true -> false
+        lockSnapshot.activeBrowseContext != lockContext -> true
+        else -> lockSnapshot.decide(lockRequest) != AccessDecision.Allow
+    }
+    LaunchedEffect(appLockCoordinator, widgetLaunch?.id, reminderLaunch?.token, lockSnapshot.policy?.generation) {
+        val coordinator = appLockCoordinator ?: return@LaunchedEffect
+        if (lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
+            lockSnapshot.policy?.enabled != true
+        ) return@LaunchedEffect
+        val pending = widgetLaunch?.let { lockRequestForWidget(it.destination) }
+            ?: reminderLaunch?.let(::lockRequestForReminder)
+            ?: return@LaunchedEffect
+        val decision = coordinator.requestBrowse(pending.first, pending.second)
+        if (decision is AccessDecision.NeedUnlock) {
+            onLockUnlockRequested()
+            widgetLaunch?.let { onWidgetLaunchConsumed(it.id) }
+            if (widgetLaunch == null) onReminderLaunchConsumed()
+        }
+    }
     val focusGateVisible = focusRuntime != null && currentRoute != AppRoutes.FOCUS && (
         (focusState.runtime.loading && !focusState.runtime.emergencyExitConfirmed) ||
             (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed) ||
@@ -381,6 +486,41 @@ fun LifeOsApp(
         }
     }
     Box(Modifier.fillMaxSize()) {
+    if (appLockGateVisible) {
+        AppLockGate(
+            canRequestUnlock = lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY,
+            focusEmergencyAvailable = currentRoute == AppRoutes.FOCUS && focusViewModel != null,
+            focusEmergencyExitReady = focusState.emergencyPromptVisible,
+            onUnlock = {
+                val existingRequest = appLockCoordinator?.pendingBrowseRequest()
+                val decision = if (existingRequest != null) AccessDecision.NeedUnlock(
+                    existingRequest.requiredSections,
+                    lockSnapshot.policy?.coverage == com.luma.lifeos.domain.lock.LockCoverage.WHOLE_APP,
+                ) else appLockCoordinator?.requestBrowse(lockRequest, lockPendingDestination(currentRoute, backStackEntry))
+                if (decision is AccessDecision.NeedUnlock ||
+                    (decision is AccessDecision.Deny && decision.reason == com.luma.lifeos.domain.lock.AccessDenial.FRESH_AUTHENTICATION_REQUIRED)
+                ) onLockUnlockRequested()
+            },
+            onBackToSafeDestination = {
+                appLockCoordinator?.cancelPendingNavigation()
+                lockHelpRequested = true
+            },
+            onRequestFocusEmergencyExit = { focusViewModel?.requestEmergencyExit() },
+            onConfirmFocusEmergencyExit = {
+                focusViewModel?.confirmEmergencyExit()
+                appLockCoordinator?.cancelPendingNavigation()
+                lockHelpRequested = true
+            },
+            onCancelFocusEmergencyExit = { focusViewModel?.dismissEmergencyExit() },
+        )
+    } else if (lockHelpRequested) {
+        SettingsSectionPage(
+            title = R.string.app_lock_help_title,
+            onBack = { lockHelpRequested = false },
+        ) {
+            Text(stringResource(R.string.app_lock_help_body))
+        }
+    } else {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -495,9 +635,11 @@ fun LifeOsApp(
                             screenTag = "screen_${destination.route}",
                             onEventClick = { navController.navigate("event_detail/$it") },
                             summaries = summaries,
+                            showProtectedSummary = protectedSummaryReadable,
+                            showProtectedFocus = protectedFocusReadable,
                             integrationAvailability = integrationAvailability,
                             onIntegrations = { navController.navigate("settings_integrations") },
-                            habits = habits,
+                            habits = habits.takeIf { protectedHabitsReadable },
                             habitsDate = selectedDate?.let(LocalDate::parse),
                             deviceDate = currentDay.date,
                             onHabits = { openHabitsDate(selectedDate?.let(LocalDate::parse) ?: currentDay.date) },
@@ -510,7 +652,7 @@ fun LifeOsApp(
                                 EventType.MEMORY -> "memory"
                                 else -> error("Unsupported capture type: $type")
                             }, date) },
-                            todos = todos,
+                            todos = todos.takeIf { protectedTasksReadable },
                             restoreGeneration = todoRestoreGeneration,
                             onTask = { id -> openTodoEditor(taskId = id) },
                             onAllTasks = { navController.navigate(AppRoutes.TASKS) },
@@ -577,7 +719,8 @@ fun LifeOsApp(
                             onFocus = if (focusRuntime != null) ({
                                 navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
                             }) else null,
-                            focusPaused = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.PAUSED,
+                            focusPaused = protectedFocusReadable &&
+                                focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.PAUSED,
                         )
                     }
                 }
@@ -701,6 +844,14 @@ fun LifeOsApp(
                     focusAvailable = focusRuntime != null,
                     onFocus = { navController.navigate("settings_focus") },
                 )
+            }
+            composable(AppRoutes.APP_LOCK_HELP) {
+                com.luma.lifeos.ui.common.AppPageScaffold(
+                    title = stringResource(R.string.app_lock_help_title),
+                    navigation = com.luma.lifeos.ui.common.PageNavigation.NONE,
+                ) { pagePadding ->
+                    Text(stringResource(R.string.app_lock_help_body), modifier = Modifier.padding(pagePadding))
+                }
             }
             if (focusRuntime != null) composable("settings_focus") {
                 val settingsPreferences = remember(applicationContext, focusPreferences) {
@@ -1064,7 +1215,189 @@ fun LifeOsApp(
         }
     }
     }
+    }
 }
+
+private fun appLockBrowseContext(
+    route: String?,
+    entry: NavBackStackEntry?,
+    previousRoute: String?,
+    previousContext: LockBrowseContext?,
+    classifiedEventSections: Set<LockSection>?,
+    restrictedCapture: Boolean,
+): LockBrowseContext {
+    val destination = route ?: AppRoutes.TODAY
+    val eventId = entry?.arguments?.getString("eventId")
+    val taskId = entry?.arguments?.getString("taskId")
+    val habitId = entry?.arguments?.getString("habitId")
+    val sections = when (destination) {
+        AppRoutes.CALENDAR -> emptySet()
+        AppRoutes.HABITS, "habit_editor?habitId={habitId}", "habit_detail/{habitId}/{date}?logId={logId}" ->
+            setOf(LockSection.HABITS)
+        AppRoutes.TASKS, AppRoutes.TASK_EDITOR -> setOf(LockSection.TASKS)
+        AppRoutes.FOCUS, AppRoutes.FOCUS_HISTORY, "settings_focus" -> setOf(LockSection.FOCUS)
+        AppRoutes.PEOPLE, "places" -> emptySet()
+        "person?personId={personId}", "person_detail/{personId}" -> setOf(LockSection.PEOPLE)
+        "place?placeId={placeId}" -> emptySet()
+        "place_detail/{placeId}" -> emptySet()
+        "event_detail/{eventId}", "journal_detail/{eventId}",
+        "memory?eventId={eventId}&initialTime={initialTime}",
+        "journal?eventId={eventId}&initialTime={initialTime}",
+        "mood?eventId={eventId}&initialTime={initialTime}", "entry_share/{eventId}/{kind}" -> LockSection.entries.toSet()
+        else -> if (destination.startsWith("review_sources") || destination.startsWith("review_usage") ||
+            destination == "settings_backup" || destination == "privacy"
+        ) if (destination.startsWith("review_usage")) setOf(LockSection.HEALTH_USAGE) else emptySet() else emptySet()
+    }.let { routeSections ->
+        when {
+            destination in setOf(
+                "event_detail/{eventId}", "journal_detail/{eventId}",
+                "memory?eventId={eventId}&initialTime={initialTime}",
+                "journal?eventId={eventId}&initialTime={initialTime}",
+                "mood?eventId={eventId}&initialTime={initialTime}",
+            ) -> classifiedEventSections ?: LockSection.entries.toSet()
+            destination in setOf(AppRoutes.TODAY, AppRoutes.TIMELINE) -> emptySet()
+            destination == AppRoutes.MORE -> emptySet()
+            else -> routeSections
+        }
+    }
+    val nestedContent = destination in setOf(
+        "memory?eventId={eventId}&initialTime={initialTime}", "journal_detail/{eventId}",
+        "journal?eventId={eventId}&initialTime={initialTime}", "event_detail/{eventId}",
+        "mood?eventId={eventId}&initialTime={initialTime}", AppRoutes.TASK_EDITOR,
+        "habit_editor?habitId={habitId}", "habit_detail/{habitId}/{date}?logId={logId}",
+        "person?personId={personId}", "person_detail/{personId}",
+        "place?placeId={placeId}", "place_detail/{placeId}", AppRoutes.FOCUS_HISTORY,
+        "entry_share/{eventId}/{kind}",
+    )
+    val isReviewSubroute = destination.startsWith("review_sources") || destination.startsWith("review_usage")
+    val inheritedTopLevel = when (previousRoute) {
+        AppRoutes.TODAY, AppRoutes.TIMELINE, AppRoutes.CALENDAR, AppRoutes.REVIEW, AppRoutes.MORE,
+        AppRoutes.PEOPLE -> previousRoute
+        else -> if (previousRoute?.startsWith("review_sources") == true || previousRoute?.startsWith("review_usage") == true) {
+            AppRoutes.REVIEW
+        } else previousContext?.topLevelDestination
+    }
+    val topLevel = if ((nestedContent || isReviewSubroute) && inheritedTopLevel != null) inheritedTopLevel else when (destination) {
+        "memory?eventId={eventId}&initialTime={initialTime}", "journal_detail/{eventId}",
+        "journal?eventId={eventId}&initialTime={initialTime}", "event_detail/{eventId}",
+        "mood?eventId={eventId}&initialTime={initialTime}", "entry_share/{eventId}/{kind}" -> "entries"
+        "habit_editor?habitId={habitId}", "habit_detail/{habitId}/{date}?logId={logId}" -> AppRoutes.HABITS
+        AppRoutes.TASK_EDITOR -> AppRoutes.TASKS
+        AppRoutes.FOCUS_HISTORY -> AppRoutes.FOCUS
+        "person?personId={personId}", "person_detail/{personId}" -> AppRoutes.PEOPLE
+        else -> destination
+    }
+    val scope = when (topLevel) {
+        "entries" -> "entry:${eventId ?: "new"}"
+        AppRoutes.TASKS -> "task:${taskId ?: "list"}"
+        AppRoutes.HABITS -> "habit:${habitId ?: "list"}"
+        AppRoutes.PEOPLE -> "people:${entry?.arguments?.getString("personId") ?: "list"}"
+        else -> topLevel
+    }
+    return LockBrowseContext(
+        topLevelDestination = topLevel,
+        authorizationScopeId = scope,
+        requiredSections = sections,
+        isSettings = destination.startsWith("settings") || destination == "privacy",
+        isRestrictedCapture = restrictedCapture || (destination in setOf(
+            "memory?eventId={eventId}&initialTime={initialTime}",
+            "journal?eventId={eventId}&initialTime={initialTime}",
+            "mood?eventId={eventId}&initialTime={initialTime}",
+        ) && eventId == null),
+    )
+}
+
+private fun lockPendingDestination(route: String?, entry: NavBackStackEntry?): LockPendingDestination? = when (route) {
+    AppRoutes.TODAY, AppRoutes.TIMELINE, AppRoutes.CALENDAR, AppRoutes.REVIEW, AppRoutes.MORE ->
+        LockPendingDestination.Primary(requireNotNull(route))
+    "search" -> LockPendingDestination.Search
+    AppRoutes.PEOPLE -> LockPendingDestination.People
+    "person_detail/{personId}" -> entry?.arguments?.getString("personId")
+        ?.let { LockPendingDestination.PersonDetail(it) }
+    "person?personId={personId}" -> LockPendingDestination.People
+    "place_detail/{placeId}" -> entry?.arguments?.getString("placeId")
+        ?.let { LockPendingDestination.PlaceDetail(it) }
+    "places", "place?placeId={placeId}" -> null
+    AppRoutes.HABITS -> LockPendingDestination.Habits
+    AppRoutes.TASKS -> LockPendingDestination.Tasks
+    "event_detail/{eventId}", "journal_detail/{eventId}" ->
+        entry?.arguments?.getString("eventId")?.let { LockPendingDestination.EventDetail(it) }
+    "memory?eventId={eventId}&initialTime={initialTime}" -> LockPendingDestination.EventEditor(
+        entry?.arguments?.getString("eventId"), EventEditorKind.MEMORY,
+    )
+    "journal?eventId={eventId}&initialTime={initialTime}" -> LockPendingDestination.EventEditor(
+        entry?.arguments?.getString("eventId"), EventEditorKind.JOURNAL,
+    )
+    "mood?eventId={eventId}&initialTime={initialTime}" -> LockPendingDestination.EventEditor(
+        entry?.arguments?.getString("eventId"), EventEditorKind.MOOD,
+    )
+    AppRoutes.TASK_EDITOR -> LockPendingDestination.TaskEditor(entry?.arguments?.getString("taskId"))
+    "habit_detail/{habitId}/{date}?logId={logId}" -> {
+        val args = entry?.arguments
+        val habitId = args?.getString("habitId")
+        val date = args?.getString("date")
+        if (habitId != null && date != null) LockPendingDestination.HabitDetail(habitId, date) else null
+    }
+    AppRoutes.FOCUS_HISTORY -> LockPendingDestination.FocusHistory(requireNotNull(route))
+    else -> null
+}
+
+private fun appLockOperation(route: String?): LockOperation = when (route) {
+    "entry_share/{eventId}/{kind}" -> LockOperation.SHARE
+    "settings_backup" -> LockOperation.BACKUP
+    "privacy" -> LockOperation.RESET
+    else -> LockOperation.READ
+}
+
+private fun lockRequestForWidget(
+    destination: WidgetDestination,
+): Pair<LockRequest, LockPendingDestination> {
+    val pending = when (destination) {
+        WidgetDestination.Today -> LockPendingDestination.Primary(AppRoutes.TODAY)
+        WidgetDestination.QuickCapture -> LockPendingDestination.CaptureMenu
+        is WidgetDestination.Capture -> LockPendingDestination.EventEditor(
+            eventId = null,
+            kind = when (destination.kind) {
+                CaptureKind.MEMORY -> EventEditorKind.MEMORY
+                CaptureKind.JOURNAL -> EventEditorKind.JOURNAL
+                CaptureKind.MOOD -> EventEditorKind.MOOD
+            },
+        )
+        WidgetDestination.Habits -> LockPendingDestination.Habits
+        is WidgetDestination.HabitDetail -> LockPendingDestination.HabitDetail(
+            destination.id.toString(), destination.date.toString(),
+        )
+        WidgetDestination.Tasks -> LockPendingDestination.Tasks
+        is WidgetDestination.Task -> LockPendingDestination.TaskEditor(destination.id.toString())
+        WidgetDestination.NewHabit -> LockPendingDestination.NewHabit
+        WidgetDestination.NewTask -> LockPendingDestination.NewTask
+    }
+    val sections = when (destination) {
+        WidgetDestination.Today -> emptySet()
+        WidgetDestination.QuickCapture, is WidgetDestination.Capture -> LockSection.entries.toSet()
+        WidgetDestination.Habits, is WidgetDestination.HabitDetail, WidgetDestination.NewHabit -> setOf(LockSection.HABITS)
+        WidgetDestination.Tasks, is WidgetDestination.Task, WidgetDestination.NewTask -> setOf(LockSection.TASKS)
+    }
+    return lockBrowseRequest(sections) to pending
+}
+
+private fun lockRequestForReminder(request: ReminderOpenRequest): Pair<LockRequest, LockPendingDestination>? {
+    val (section, destination) = when (request.kind) {
+        "habit" -> LockSection.HABITS to LockPendingDestination.HabitDetail(
+            request.id.toString(), request.date.toString(),
+        )
+        "task" -> LockSection.TASKS to LockPendingDestination.TaskEditor(request.id.toString())
+        else -> return null
+    }
+    return lockBrowseRequest(setOf(section)) to destination
+}
+
+private fun lockBrowseRequest(sections: Set<LockSection>) = LockRequest(
+    operation = LockOperation.READ,
+    requiredSections = sections,
+    contentClassification = if (sections.isEmpty()) LockContentClassification.KNOWN_UNPROTECTED
+    else LockContentClassification.CLASSIFIED,
+)
 
 private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {
     val now = Instant.now()
