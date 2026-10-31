@@ -20,8 +20,13 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.repository.TimelineRepository
 import com.luma.lifeos.language.rememberDisplayTimePolicy
+import com.luma.lifeos.lock.AuthPurpose
+import com.luma.lifeos.lock.LockSensitiveOperationGuard
+import com.luma.lifeos.lock.OperationProof
+import com.luma.lifeos.lock.PendingSensitiveOperation
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailTopBar
+import com.luma.lifeos.ui.privacy.LockSensitiveActionDialog
 import com.luma.lifeos.ui.mood.moodScoreLabel
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -33,7 +38,13 @@ private fun Context.activity(): Activity? = when (this) {
 }
 
 @Composable
-fun EntryShareRoute(repository: TimelineRepository, request: EntryShareRequest, zone: ZoneId, onBack: () -> Unit) {
+fun EntryShareRoute(
+    repository: TimelineRepository,
+    request: EntryShareRequest,
+    zone: ZoneId,
+    onBack: () -> Unit,
+    lockGuard: LockSensitiveOperationGuard? = null,
+) {
     val androidContext = LocalContext.current
     val policy = rememberDisplayTimePolicy()
     val labels = (1..5).associateWith { stringResource(moodScoreLabel(it)) }
@@ -49,6 +60,29 @@ fun EntryShareRoute(repository: TimelineRepository, request: EntryShareRequest, 
     val model: EntryShareViewModel = viewModel(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()
     val chooserTitle = stringResource(R.string.share_action)
+    var showSensitivePrompt by remember { mutableStateOf(false) }
+    var sensitivePending by remember { mutableStateOf<PendingSensitiveOperation?>(null) }
+    var sensitiveError by remember { mutableStateOf(false) }
+
+    fun launchShare(proof: OperationProof? = null) {
+        val pending = sensitivePending
+        model.share(zone, key, { text ->
+            androidContext.activity()?.let { AndroidTextShareLauncher(it, chooserTitle).launch(text) }
+                ?: TextShareLaunchResult.UNAVAILABLE
+        }) { operation ->
+            if (lockGuard != null) {
+                lockGuard.executeSensitive(AuthPurpose.SHARE, pending, proof, operation)
+            } else operation()
+        }
+        sensitivePending = null
+    }
+
+    fun requestShare() {
+        if (lockGuard?.requiresAuthentication() == true) {
+            sensitivePending = lockGuard.begin(AuthPurpose.SHARE)
+            if (sensitivePending == null) sensitiveError = true else showSensitivePrompt = true
+        } else launchShare()
+    }
     LaunchedEffect(model) { model.start(zone, context, key) }
     LaunchedEffect(zone, key, state) { model.invalidateContext(zone, key) }
     DisposableEffect(model) { onDispose { model.cancelPendingLaunch() } }
@@ -57,11 +91,8 @@ fun EntryShareRoute(repository: TimelineRepository, request: EntryShareRequest, 
             val ready = state as? ShareStatus.Ready
             if (ready != null) Column(Modifier.fillMaxWidth().imePadding().navigationBarsPadding().padding(16.dp)) {
                 if (ready.stale) Button(onClick = { model.load(zone, context, key) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_refresh)) }
-                else Button(onClick = {
-                    model.share(zone, key) { text ->
-                        androidContext.activity()?.let { AndroidTextShareLauncher(it, chooserTitle).launch(text) } ?: TextShareLaunchResult.UNAVAILABLE
-                    }
-                }, enabled = !ready.busy && ready.pendingOptions == null, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_action)) }
+                else Button(onClick = ::requestShare, enabled = !ready.busy && ready.pendingOptions == null,
+                    modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_action)) }
             }
         }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -110,6 +141,16 @@ fun EntryShareRoute(repository: TimelineRepository, request: EntryShareRequest, 
                         dismissButton = { TextButton(onClick = model::cancelRegenerate) { Text(stringResource(R.string.cancel)) } })
                 }
             }
+            if (sensitiveError) AccessibleFeedback(stringResource(R.string.app_lock_error_unavailable))
         }
+    }
+    val pending = sensitivePending
+    if (showSensitivePrompt && lockGuard != null && pending != null) {
+        LockSensitiveActionDialog(
+            guard = lockGuard,
+            pending = pending,
+            onAuthorized = { proof -> showSensitivePrompt = false; launchShare(proof) },
+            onCancel = { showSensitivePrompt = false; sensitivePending = null },
+        )
     }
 }

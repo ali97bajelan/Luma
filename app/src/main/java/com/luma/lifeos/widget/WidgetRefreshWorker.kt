@@ -8,6 +8,7 @@ import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
+import com.luma.lifeos.lock.ProtectedPreviewPolicy
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
@@ -58,9 +59,24 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
         val manager = AppWidgetManager.getInstance(applicationContext)
         val now = Instant.now()
         val deviceZone = ZoneId.systemDefault()
+        val lockState = try {
+            withContext(Dispatchers.IO) { app.localLockStore.read()?.policy to true }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            null to false
+        }
         for ((_, ids) in WidgetRefreshCoordinator.activeDataWidgetIds(applicationContext)) {
             ids.forEach { widgetId ->
-                val views = try {
+                val kind = WidgetRefreshCoordinator.kindForWidgetId(applicationContext, widgetId)
+                val protected = kind?.let {
+                    ProtectedPreviewPolicy.redact(lockState.first,
+                        ProtectedPreviewPolicy.widgetSection(it), lockState.second)
+                } ?: !lockState.second
+                val views = if (protected && kind != null) {
+                    WidgetRenderer.render(applicationContext, widgetId, snapshot = null,
+                        failure = false, options = manager.getAppWidgetOptions(widgetId), locked = true)
+                } else try {
                     val snapshot = withContext(Dispatchers.IO) {
                         val store = app.storage.widgets
                         WidgetRenderer.snapshotForRendering(store, widgetId, now, deviceZone) ?: run {
@@ -83,7 +99,25 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                     WidgetRenderer.render(applicationContext, widgetId, snapshot = null, failure = true,
                         options = manager.getAppWidgetOptions(widgetId))
                 }
-                manager.updateAppWidget(widgetId, views)
+                val latestLockState = try {
+                    withContext(Dispatchers.IO) { app.localLockStore.read()?.policy to true }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null to false
+                }
+                val latestProtected = kind?.let {
+                    ProtectedPreviewPolicy.redact(
+                        latestLockState.first,
+                        ProtectedPreviewPolicy.widgetSection(it),
+                        latestLockState.second,
+                    )
+                } ?: !latestLockState.second
+                val safeViews = if (latestProtected && kind != null) {
+                    WidgetRenderer.render(applicationContext, widgetId, snapshot = null,
+                        failure = false, options = manager.getAppWidgetOptions(widgetId), locked = true)
+                } else views
+                manager.updateAppWidget(widgetId, safeViews)
                 manager.notifyAppWidgetViewDataChanged(widgetId, R.id.widget_data_rows)
             }
         }

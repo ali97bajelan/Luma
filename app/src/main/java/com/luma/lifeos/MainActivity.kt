@@ -5,23 +5,30 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.LifeOsApp
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import com.luma.lifeos.widget.WidgetIntents
 import com.luma.lifeos.widget.WidgetLaunchViewModel
 import com.luma.lifeos.widget.WidgetRefreshCoordinator
+import com.luma.lifeos.widget.WidgetActionRequest
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.luma.lifeos.reminders.ReminderOpenRequest
 import com.luma.lifeos.reminders.ReminderPreferences
 import com.luma.lifeos.reminders.reminderOpenRequest
+import com.luma.lifeos.reminders.ReminderActionRequest
+import com.luma.lifeos.reminders.reminderActionRequest
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var widgetLaunches: WidgetLaunchViewModel
     private var reminderLaunch by mutableStateOf<ReminderOpenRequest?>(null)
+    private var reminderAction by mutableStateOf<ReminderActionRequest?>(null)
+    private var widgetAction by mutableStateOf<WidgetActionRequest?>(null)
 
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(com.luma.lifeos.language.AppLanguages.wrap(newBase))
@@ -31,7 +38,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         widgetLaunches = ViewModelProvider(this)[WidgetLaunchViewModel::class.java]
         if (savedInstanceState == null) enqueueWidgetLaunch(intent)
-        if (savedInstanceState == null) reminderLaunch = reminderOpenRequest(intent)
+        if (savedInstanceState == null) {
+            reminderAction = reminderActionRequest(intent)
+            reminderLaunch = if (reminderAction == null) reminderOpenRequest(intent) else null
+        }
+        if (savedInstanceState == null) widgetAction = WidgetIntents.decodePendingMutation(intent)
         enableEdgeToEdge()
         val luma = application as LumaApplication
         val storage = luma.storage
@@ -69,10 +80,23 @@ class MainActivity : ComponentActivity() {
                     protectedContentGateway = luma.protectedContentGateway,
                     restrictedCaptureService = luma.restrictedCaptureService,
                     lockCredentialService = luma.lockCredentialService,
+                    lockSensitiveOperationGuard = luma.lockSensitiveOperationGuard,
+                    onForgottenLockResetConfirmed = {
+                        lifecycleScope.launch {
+                            runCatching {
+                                luma.lockSensitiveOperationGuard.invalidateAll()
+                                luma.appDataReset.requestReset()
+                            }
+                        }
+                    },
                     widgetLaunch = widgetLaunch,
                     onWidgetLaunchConsumed = widgetLaunches::acknowledge,
+                    widgetAction = widgetAction,
+                    onWidgetActionConsumed = { widgetAction = null },
                     reminderLaunch = reminderLaunch,
                     onReminderLaunchConsumed = { reminderLaunch = null },
+                    reminderAction = reminderAction,
+                    onReminderActionConsumed = { reminderAction = null },
                 )
             }
         }
@@ -82,7 +106,9 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         enqueueWidgetLaunch(intent)
-        reminderLaunch = reminderOpenRequest(intent)
+        reminderAction = reminderActionRequest(intent)
+        reminderLaunch = if (reminderAction == null) reminderOpenRequest(intent) else null
+        widgetAction = WidgetIntents.decodePendingMutation(intent)
     }
 
     override fun onStart() {
@@ -90,6 +116,19 @@ class MainActivity : ComponentActivity() {
         WidgetRefreshCoordinator.request(this)
         WidgetRefreshCoordinator.refreshQuickCapture(this)
         enqueueReminderReconciliation(this)
+    }
+
+    override fun onPause() {
+        val app = application as? LumaApplication
+        val lockSnapshot = app?.appLockCoordinator?.snapshot?.value
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU &&
+            (lockSnapshot == null || lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
+                lockSnapshot.policy?.enabled == true)
+        ) {
+            // API 28–32 have no Recents-only screenshot switch. Protect the task snapshot on pause.
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        }
+        super.onPause()
     }
 
     private fun enqueueWidgetLaunch(intent: android.content.Intent) {

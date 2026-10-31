@@ -19,6 +19,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
+import com.luma.lifeos.lock.AuthPurpose
+import com.luma.lifeos.lock.LockSensitiveOperationGuard
+import com.luma.lifeos.lock.OperationProof
+import com.luma.lifeos.lock.PendingSensitiveOperation
+import com.luma.lifeos.ui.privacy.LockSensitiveActionDialog
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.LumaReadingPane
@@ -32,19 +37,78 @@ fun PrivacySettingsRoute(
     appLockAvailable: Boolean = false,
     appLockEnabled: Boolean = false,
     onAppLock: () -> Unit = {},
+    lockGuard: LockSensitiveOperationGuard? = null,
 ) {
     val factory = remember(reset) { viewModelFactory { initializer { PrivacyViewModel(reset) } } }
     val vm: PrivacyViewModel = viewModel(factory = factory)
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
+    var pendingReset by remember { mutableStateOf<PendingSensitiveOperation?>(null) }
+    var resetProof by remember { mutableStateOf<OperationProof?>(null) }
+    var showResetAuth by remember { mutableStateOf(false) }
+    var resetAuthUnavailable by remember { mutableStateOf(false) }
+    fun requestResetConfirmation() {
+        if (appLockEnabled) {
+            val pending = lockGuard?.begin(AuthPurpose.RESET)
+            if (pending == null) resetAuthUnavailable = true else {
+                pendingReset = pending
+                showResetAuth = true
+            }
+        } else vm.requestDelete()
+    }
+    fun cancelResetConfirmation() {
+        pendingReset?.let { lockGuard?.cancel(it) }
+        pendingReset = null
+        resetProof = null
+        vm.cancelDelete()
+    }
+    fun confirmReset() {
+        val pending = pendingReset
+        val proof = resetProof
+        if (lockGuard != null && (!appLockEnabled || (pending != null && proof != null))) {
+            vm.confirmDelete {
+                lockGuard.executeSensitive(AuthPurpose.RESET, pending, proof) {
+                    lockGuard.invalidateAll()
+                    reset.requestReset()
+                }
+            }
+        } else if (!appLockEnabled && lockGuard == null) {
+            vm.confirmDelete { reset.requestReset() }
+        }
+    }
     PrivacySettingsContent(
-        state, onBack, vm::requestDelete, vm::confirmDelete, vm::cancelDelete,
+        state, onBack, ::requestResetConfirmation, ::confirmReset, ::cancelResetConfirmation,
         onAppSettings = { settingsMissing = !openLumaAppSettings(context) },
         settingsMissing = settingsMissing,
         appLockAvailable = appLockAvailable,
         appLockEnabled = appLockEnabled,
         onAppLock = onAppLock,
+    )
+    val pending = pendingReset
+    if (showResetAuth && lockGuard != null && pending != null) {
+        LockSensitiveActionDialog(
+            guard = lockGuard,
+            pending = pending,
+            onAuthorized = { proof ->
+                resetProof = proof
+                showResetAuth = false
+                vm.requestDelete()
+            },
+            onCancel = {
+                showResetAuth = false
+                pendingReset = null
+                resetProof = null
+            },
+        )
+    }
+    if (resetAuthUnavailable) AlertDialog(
+        onDismissRequest = { resetAuthUnavailable = false },
+        title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
+        text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
+        confirmButton = { TextButton(onClick = { resetAuthUnavailable = false }) {
+            Text(stringResource(R.string.cancel))
+        } },
     )
 }
 

@@ -33,7 +33,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
 
         when (action) {
             is WidgetIntents.Action.Refresh -> WidgetRefreshCoordinator.request(context)
-            is WidgetIntents.Action.Mutation -> enqueueMutation(context, action.widgetId, action.token)
+            is WidgetIntents.Action.Mutation -> WidgetIntents.mutationNavigation(context, action.widgetId, action.token)
             is WidgetIntents.Action.DismissFeedback -> {
                 val data = Data.Builder()
                     .putInt(WidgetActionWorker.KEY_WIDGET_ID, action.widgetId)
@@ -52,35 +52,11 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 is WidgetIntents.CollectionRoute.Navigate -> navigateToCollectionItem(
                     context, action.widgetId, route.itemId, route.date,
                 )
-                is WidgetIntents.CollectionRoute.Mutate -> enqueueMutation(
+                is WidgetIntents.CollectionRoute.Mutate -> WidgetIntents.mutationNavigation(
                     context, action.widgetId, route.token, route.itemId, route.date,
                 )
             }
         }
-    }
-
-    private fun enqueueMutation(
-        context: Context,
-        widgetId: Int,
-        token: UUID,
-        itemId: UUID? = null,
-        date: LocalDate? = null,
-    ) {
-        val data = Data.Builder()
-            .putInt(WidgetActionWorker.KEY_WIDGET_ID, widgetId)
-            .putString(WidgetActionWorker.KEY_TOKEN, token.toString())
-        if (itemId != null && date != null) {
-            data.putString(WidgetActionWorker.KEY_COLLECTION_ITEM_ID, itemId.toString())
-            data.putString(WidgetActionWorker.KEY_COLLECTION_DATE, date.toString())
-        }
-        val work = OneTimeWorkRequestBuilder<WidgetActionWorker>()
-            .setInputData(data.build())
-            .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "luma-widget-action:$widgetId:$token",
-            ExistingWorkPolicy.KEEP,
-            work,
-        )
     }
 
     private fun navigateToCollectionItem(context: Context, widgetId: Int, itemId: UUID, date: LocalDate) {
@@ -115,4 +91,17 @@ class WidgetActionReceiver : BroadcastReceiver() {
             }
         }
     }
+}
+
+/** Queues only after any required app unlock and confirmation have completed in the UI. */
+internal fun enqueueWidgetAction(context: Context, request: WidgetActionRequest) {
+    val data = Data.Builder()
+        .putInt(WidgetActionWorker.KEY_WIDGET_ID, request.widgetId)
+        .putString(WidgetActionWorker.KEY_TOKEN, request.token.toString())
+    request.collectionItemId?.let { data.putString(WidgetActionWorker.KEY_COLLECTION_ITEM_ID, it.toString()) }
+    request.collectionDate?.let { data.putString(WidgetActionWorker.KEY_COLLECTION_DATE, it.toString()) }
+    val work = OneTimeWorkRequestBuilder<WidgetActionWorker>().setInputData(data.build()).build()
+    WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
+        "luma-widget-action:${request.widgetId}:${request.token}", ExistingWorkPolicy.KEEP, work,
+    )
 }

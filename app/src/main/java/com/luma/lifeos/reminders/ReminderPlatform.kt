@@ -68,14 +68,27 @@ internal class ReminderPlatform(private val context: Context) {
         registry.edit().putStringSet(KEY_NOTIFICATIONS, emptySet()).apply()
     }
 
-    fun cancelNotificationsExcept(currentRevisions: Map<String, String>, cancelAll: Boolean = false) {
+    fun cancelNotificationsExcept(
+        currentRevisions: Map<String, String>,
+        protectedIdentities: Set<String> = emptySet(),
+        cancelAll: Boolean = false,
+    ) {
         val recorded = registry.getStringSet(KEY_NOTIFICATIONS, emptySet()).orEmpty().toSet()
         val keep = mutableSetOf<String>()
         recorded.forEach { entry ->
-            val parts = entry.split(':', limit = 3)
+            val parts = entry.split(':', limit = 4)
             if (parts.size == 3) {
                 val identity = "${parts[0]}:${parts[1]}"
-                if (!cancelAll && currentRevisions[identity] == parts[2]) keep += entry
+                // Legacy entries do not record preview type; treat them as private when the
+                // corresponding section is protected.
+                if (!cancelAll && currentRevisions[identity] == parts[2] && identity !in protectedIdentities) keep += entry
+                else cancelNotification(parts[0], parts[1])
+            } else if (parts.size == 4) {
+                val identity = "${parts[0]}:${parts[1]}"
+                val isGeneric = parts[3] == "generic"
+                if (!cancelAll && currentRevisions[identity] == parts[2] &&
+                    (identity !in protectedIdentities || isGeneric)
+                ) keep += entry
                 else cancelNotification(parts[0], parts[1])
             }
         }
@@ -105,13 +118,13 @@ internal class ReminderPlatform(private val context: Context) {
             .setOnlyAlertOnce(true)
         if (event.kind == KIND_TASK) {
             builder.addAction(android.R.drawable.ic_menu_save, context.getString(R.string.reminder_complete),
-                broadcastPendingIntent(context, event.copy(action = "COMPLETE"), "COMPLETE"))
+                reminderActionPendingIntent(context, event.copy(action = "COMPLETE")))
         } else {
             builder.addAction(android.R.drawable.ic_menu_add, context.getString(R.string.reminder_log_one),
-                broadcastPendingIntent(context, event.copy(action = "LOG_ONE"), "LOG_ONE"))
+                reminderActionPendingIntent(context, event.copy(action = "LOG_ONE")))
         }
         builder.addAction(android.R.drawable.ic_lock_idle_alarm, context.getString(R.string.reminder_snooze),
-            broadcastPendingIntent(context, event.copy(action = "SNOOZE"), "SNOOZE"))
+            reminderActionPendingIntent(context, event.copy(action = "SNOOZE")))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(
                 context, Manifest.permission.POST_NOTIFICATIONS,
             ) != PackageManager.PERMISSION_GRANTED
@@ -123,7 +136,7 @@ internal class ReminderPlatform(private val context: Context) {
             notifications.notify(notificationTag(event.kind, event.id.toString()), 0, builder.build())
             val entries = registry.getStringSet(KEY_NOTIFICATIONS, emptySet()).orEmpty().toMutableSet()
             entries.removeAll { it.startsWith("${event.kind}:${event.id}:") }
-            entries += "${event.kind}:${event.id}:${event.revision}"
+            entries += "${event.kind}:${event.id}:${event.revision}:${if (privateTitle != null) "private" else "generic"}"
             registry.edit().putStringSet(KEY_NOTIFICATIONS, entries).apply()
         } catch (_: SecurityException) {
             ReminderStatusStore(context).set(event.kind, event.id.toString(), ReminderDeliveryStatus.BLOCKED)
@@ -139,7 +152,10 @@ internal class ReminderPlatform(private val context: Context) {
 
     fun cancelNotificationForEvent(event: ReminderEvent) {
         val identity = "${event.kind}:${event.id}:${event.revision}"
-        if (registry.getStringSet(KEY_NOTIFICATIONS, emptySet()).orEmpty().contains(identity)) {
+        if (registry.getStringSet(KEY_NOTIFICATIONS, emptySet()).orEmpty().any {
+                it == identity || it.startsWith("$identity:")
+            }
+        ) {
             cancelNotification(event.kind, event.id.toString())
         }
     }

@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.net.Uri
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.ui.review.*
@@ -26,6 +29,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.luma.lifeos.domain.repository.PhotoRepository
@@ -107,11 +112,17 @@ import com.luma.lifeos.ui.mood.MoodDraftStore
 import com.luma.lifeos.widget.CaptureKind
 import com.luma.lifeos.widget.WidgetDestination
 import com.luma.lifeos.widget.WidgetLaunchRequest
+import com.luma.lifeos.widget.WidgetActionRequest
+import com.luma.lifeos.widget.WidgetRefreshCoordinator
+import com.luma.lifeos.widget.enqueueWidgetAction
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.luma.lifeos.ui.today.TodayRoute
 import com.luma.lifeos.ui.today.rememberCurrentDay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -119,7 +130,9 @@ import com.luma.lifeos.ui.integrations.IntegrationAvailabilityRefresh
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityViewModel
 import com.luma.lifeos.domain.habit.HabitReminderRepository
 import com.luma.lifeos.reminders.ReminderOpenRequest
+import com.luma.lifeos.reminders.ReminderActionRequest
 import com.luma.lifeos.reminders.ReminderPreferences
+import com.luma.lifeos.reminders.enqueueReminderAction
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
 import com.luma.lifeos.ui.settings.ReminderSettingsRoute
 import java.time.Instant
@@ -145,9 +158,16 @@ import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.lock.LockCoverage
+import com.luma.lifeos.domain.lock.LockLoadStatus
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.RestrictedCaptureService
 import com.luma.lifeos.lock.LockCredentialService
+import com.luma.lifeos.lock.LockSensitiveOperationGuard
+import com.luma.lifeos.lock.LockWindowPrivacy
+import com.luma.lifeos.lock.ProtectedActionDispatcher
+import com.luma.lifeos.lock.ProtectedActionConfirmation
+import com.luma.lifeos.lock.ProtectedPreviewPolicy
 import com.luma.lifeos.lock.OperationProof
 import com.luma.lifeos.lock.EventEditorKind
 import com.luma.lifeos.lock.LockPendingDestination
@@ -159,6 +179,16 @@ import com.luma.lifeos.ui.privacy.AppLockUnlockDialog
 
 private const val HABITS_SELECTED_DATE_KEY = "habits_selected_date"
 private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
+
+private data class PendingWidgetActionConfirmation(
+    val request: WidgetActionRequest,
+    val ticket: ProtectedActionConfirmation,
+)
+
+private data class PendingReminderActionConfirmation(
+    val request: ReminderActionRequest,
+    val ticket: ProtectedActionConfirmation,
+)
 
 private fun NavBackStackEntry.matchesEntryDetailFor(id: EventId): Boolean {
     val isDetailRoute = destination.route == "event_detail/{eventId}" || destination.route == "journal_detail/{eventId}"
@@ -186,6 +216,8 @@ fun LifeOsApp(
     todos: TodoRepository? = null,
     widgetLaunch: WidgetLaunchRequest? = null,
     onWidgetLaunchConsumed: (UUID) -> Unit = {},
+    widgetAction: WidgetActionRequest? = null,
+    onWidgetActionConsumed: () -> Unit = {},
     widgetStore: WidgetStore? = null,
     moodDraftStore: MoodDraftStore? = null,
     calendar: CalendarRepository? = null,
@@ -193,6 +225,8 @@ fun LifeOsApp(
     reminderPreferences: ReminderPreferences? = null,
     reminderLaunch: ReminderOpenRequest? = null,
     onReminderLaunchConsumed: () -> Unit = {},
+    reminderAction: ReminderActionRequest? = null,
+    onReminderActionConsumed: () -> Unit = {},
     focusRuntime: FocusRuntime? = null,
     focusPreferences: FocusPreferences? = null,
     allowedFocusApps: AllowedFocusApps? = null,
@@ -203,6 +237,7 @@ fun LifeOsApp(
     lockCredentialService: LockCredentialService? = null,
     onForgottenLockResetConfirmed: (() -> Unit)? = null,
     onLockUnlockRequested: () -> Unit = {},
+    lockSensitiveOperationGuard: LockSensitiveOperationGuard? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -219,7 +254,9 @@ fun LifeOsApp(
     LaunchedEffect(photos) {
         try { photos.cleanup() } catch (failure: Exception) { if (failure is CancellationException) throw failure }
     }
-    val applicationContext = LocalContext.current.applicationContext
+    val localContext = LocalContext.current
+    val applicationContext = localContext.applicationContext
+    val hostActivity = remember(localContext) { localContext.findActivity() }
     val resolvedMoodDraftStore = remember(applicationContext, moodDraftStore) {
         moodDraftStore ?: FileMoodDraftStore(applicationContext)
     }
@@ -307,8 +344,18 @@ fun LifeOsApp(
     val lockSnapshotHolder = appLockCoordinator?.snapshot?.collectAsStateWithLifecycle()
         ?: remember { mutableStateOf(com.luma.lifeos.domain.lock.LockSnapshot()) }
     val lockSnapshot by lockSnapshotHolder
+    val protectedActionDispatcher = remember(appLockCoordinator) {
+        appLockCoordinator?.let(::ProtectedActionDispatcher)
+    }
     var appLockUnlockVisible by remember { mutableStateOf(false) }
     var pendingCaptureResume by remember { mutableStateOf<((OperationProof) -> Unit)?>(null) }
+    var pendingWidgetLaunchForUnlock by remember { mutableStateOf<UUID?>(null) }
+    var pendingReminderLaunchForUnlock by remember { mutableStateOf<String?>(null) }
+    var pendingWidgetAction by remember { mutableStateOf<PendingWidgetActionConfirmation?>(null) }
+    var showWidgetActionConfirmation by remember { mutableStateOf(false) }
+    var pendingReminderAction by remember { mutableStateOf<PendingReminderActionConfirmation?>(null) }
+    var showReminderActionConfirmation by remember { mutableStateOf(false) }
+    var widgetActionError by remember { mutableStateOf(false) }
     fun showAppLockUnlock() {
         appLockUnlockVisible = true
         onLockUnlockRequested()
@@ -377,19 +424,139 @@ fun LifeOsApp(
         lockSnapshot.activeBrowseContext != lockContext -> true
         else -> lockSnapshot.decide(lockRequest) != AccessDecision.Allow
     }
-    LaunchedEffect(appLockCoordinator, widgetLaunch?.id, reminderLaunch?.token, lockSnapshot.policy?.generation) {
-        val coordinator = appLockCoordinator ?: return@LaunchedEffect
-        if (lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
-            lockSnapshot.policy?.enabled != true
-        ) return@LaunchedEffect
-        val pending = widgetLaunch?.let { lockRequestForWidget(it.destination) }
-            ?: reminderLaunch?.let(::lockRequestForReminder)
-            ?: return@LaunchedEffect
-        val decision = coordinator.requestBrowse(pending.first, pending.second)
-        if (decision is AccessDecision.NeedUnlock) {
-            showAppLockUnlock()
-            widgetLaunch?.let { onWidgetLaunchConsumed(it.id) }
-            if (widgetLaunch == null) onReminderLaunchConsumed()
+    val policyProtectedSections = lockSnapshot.policy?.takeIf { it.enabled }?.let { policy ->
+        if (policy.coverage == LockCoverage.WHOLE_APP) LockSection.entries.toSet() else policy.sections
+    }.orEmpty()
+    val readableProtectedSections = policyProtectedSections.filterTo(linkedSetOf()) { section ->
+        lockSnapshot.decide(lockBrowseRequest(setOf(section))) == AccessDecision.Allow
+    }
+    val aggregateContentRoute = currentRoute in setOf(
+        PrimaryDestination.TODAY.route,
+        PrimaryDestination.TIMELINE.route,
+        PrimaryDestination.CALENDAR.route,
+        PrimaryDestination.REVIEW.route,
+        PrimaryDestination.MORE.route,
+        AppRoutes.PEOPLE,
+        "search",
+    ) || currentRoute?.startsWith("review_sources") == true ||
+        currentRoute?.startsWith("review_usage") == true
+    val screenshotProtectedSections = when {
+        safeLockHelp -> emptySet()
+        currentRoute == AppRoutes.RESTRICTED_CAPTURE -> policyProtectedSections
+        aggregateContentRoute -> readableProtectedSections
+        else -> lockContext.requiredSections.intersect(readableProtectedSections)
+    }
+    val alwaysSecureWindow = appLockUnlockVisible || appLockGateVisible || currentRoute in setOf(
+        AppRoutes.APP_LOCK_SETTINGS,
+        AppRoutes.APP_LOCK_RECOVERY,
+    )
+    val lifecycleOwner = LocalLifecycleOwner.current
+    SideEffect {
+        hostActivity?.let { activity ->
+            LockWindowPrivacy.apply(
+                activity = activity,
+                snapshot = lockSnapshot,
+                visibleSections = screenshotProtectedSections,
+                alwaysSecure = alwaysSecureWindow,
+            )
+        }
+    }
+    DisposableEffect(hostActivity, lifecycleOwner, lockSnapshot, screenshotProtectedSections, alwaysSecureWindow) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) hostActivity?.let { activity ->
+                LockWindowPrivacy.apply(activity, lockSnapshot, screenshotProtectedSections, alwaysSecureWindow)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(widgetAction?.widgetId, widgetAction?.token, lockSnapshot.loadStatus, lockSnapshot.policy?.generation) {
+        val request = widgetAction ?: return@LaunchedEffect
+        if (lockSnapshot.loadStatus == LockLoadStatus.UNKNOWN) return@LaunchedEffect
+        if (lockSnapshot.loadStatus == LockLoadStatus.ERROR) {
+            widgetActionError = true
+            onWidgetActionConsumed()
+            return@LaunchedEffect
+        }
+        if (pendingWidgetAction != null || pendingReminderAction != null) return@LaunchedEffect
+        val kind = WidgetRefreshCoordinator.kindForWidgetId(applicationContext, request.widgetId)
+        val section = when (kind) {
+            com.luma.lifeos.domain.widget.WidgetKind.HABITS -> LockSection.HABITS
+            com.luma.lifeos.domain.widget.WidgetKind.TASKS -> LockSection.TASKS
+            null -> {
+                onWidgetActionConsumed()
+                return@LaunchedEffect
+            }
+        }
+        val policy = lockSnapshot.policy
+        val protected = policy?.enabled == true && (policy.coverage == LockCoverage.WHOLE_APP || section in policy.sections)
+        if (!protected) {
+            enqueueWidgetAction(applicationContext, request)
+            onWidgetActionConsumed()
+            return@LaunchedEffect
+        }
+        val dispatcher = protectedActionDispatcher ?: run {
+            widgetActionError = true
+            onWidgetActionConsumed()
+            return@LaunchedEffect
+        }
+        val ticket = dispatcher.begin(section) ?: run {
+            widgetActionError = true
+            onWidgetActionConsumed()
+            return@LaunchedEffect
+        }
+        pendingWidgetAction = PendingWidgetActionConfirmation(request, ticket)
+        when (appLockCoordinator?.requestBrowse(lockBrowseRequest(setOf(section)), null)) {
+            is AccessDecision.NeedUnlock -> showAppLockUnlock()
+            AccessDecision.Allow -> showWidgetActionConfirmation = true
+            else -> {
+                pendingWidgetAction = null
+                widgetActionError = true
+                onWidgetActionConsumed()
+            }
+        }
+    }
+    LaunchedEffect(reminderAction?.kind, reminderAction?.id, reminderAction?.action, reminderAction?.token,
+        lockSnapshot.loadStatus, lockSnapshot.policy?.generation) {
+        val request = reminderAction ?: return@LaunchedEffect
+        if (lockSnapshot.loadStatus == LockLoadStatus.UNKNOWN) return@LaunchedEffect
+        if (lockSnapshot.loadStatus == LockLoadStatus.ERROR) {
+            widgetActionError = true
+            onReminderActionConsumed()
+            return@LaunchedEffect
+        }
+        if (pendingWidgetAction != null || pendingReminderAction != null) return@LaunchedEffect
+        val section = ProtectedPreviewPolicy.reminderSection(request.kind) ?: run {
+            onReminderActionConsumed()
+            return@LaunchedEffect
+        }
+        val policy = lockSnapshot.policy
+        val protected = policy?.enabled == true &&
+            (policy.coverage == LockCoverage.WHOLE_APP || section in policy.sections)
+        if (!protected) {
+            enqueueReminderAction(applicationContext, request)
+            onReminderActionConsumed()
+            return@LaunchedEffect
+        }
+        val dispatcher = protectedActionDispatcher ?: run {
+            widgetActionError = true
+            onReminderActionConsumed()
+            return@LaunchedEffect
+        }
+        val ticket = dispatcher.begin(section) ?: run {
+            widgetActionError = true
+            onReminderActionConsumed()
+            return@LaunchedEffect
+        }
+        pendingReminderAction = PendingReminderActionConfirmation(request, ticket)
+        when (appLockCoordinator?.requestBrowse(lockBrowseRequest(setOf(section)), null)) {
+            is AccessDecision.NeedUnlock -> showAppLockUnlock()
+            AccessDecision.Allow -> showReminderActionConfirmation = true
+            else -> {
+                pendingReminderAction = null
+                widgetActionError = true
+                onReminderActionConsumed()
+            }
         }
     }
     val focusGateVisible = focusRuntime != null && currentRoute != AppRoutes.FOCUS && (
@@ -1019,7 +1186,11 @@ fun LifeOsApp(
                 BackupSettingsCard(
                     service = backup,
                     focusRuntime = focusRuntime,
+                    lockGuard = lockSensitiveOperationGuard,
+                    onAppLockSetup = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
                     onRestored = {
+                        appLockCoordinator?.lockNow()
+                        lockSensitiveOperationGuard?.invalidateAll()
                         todoRestoreGeneration += 1
                         enqueueReminderReconciliation(applicationContext)
                         snackbarHostState.currentSnackbarData?.dismiss()
@@ -1046,6 +1217,7 @@ fun LifeOsApp(
                     appLockAvailable = lockCredentialService != null,
                     appLockEnabled = appLockEnabled(),
                     onAppLock = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
+                    lockGuard = lockSensitiveOperationGuard,
                 )
             }
             if (usage != null || health != null) composable("settings_integrations") {
@@ -1136,7 +1308,11 @@ fun LifeOsApp(
                         com.luma.lifeos.sharing.EntryShareKind.valueOf(requireNotNull(entry.arguments?.getString("kind")))
                     )
                 }.getOrNull() }
-                if (request != null) com.luma.lifeos.sharing.EntryShareRoute(timeline, request, currentDay.zone) { navController.popBackStack() }
+                if (request != null) com.luma.lifeos.sharing.EntryShareRoute(
+                    timeline, request, currentDay.zone,
+                    onBack = { navController.popBackStack() },
+                    lockGuard = lockSensitiveOperationGuard,
+                )
                 else androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(com.luma.lifeos.R.string.share_unavailable))
             }
             composable("event_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
@@ -1213,10 +1389,18 @@ fun LifeOsApp(
             }
         }
         LaunchedEffect(widgetLaunch?.id, navController, focusState.runtime.loading,
-            focusState.runtime.loadFailed, focusState.runtime.navigationGuarded) {
+            focusState.runtime.loadFailed, focusState.runtime.navigationGuarded,
+            lockSnapshot.loadStatus, lockSnapshot.policy?.generation, lockSnapshot.grant) {
             val request = widgetLaunch ?: return@LaunchedEffect
             if (focusRuntime != null && (focusState.runtime.loading ||
                     (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed))) return@LaunchedEffect
+            if (lockSnapshot.loadStatus == LockLoadStatus.UNKNOWN) return@LaunchedEffect
+            if (lockSnapshot.loadStatus == LockLoadStatus.ERROR) {
+                widgetActionError = true
+                pendingWidgetLaunchForUnlock = null
+                onWidgetLaunchConsumed(request.id)
+                return@LaunchedEffect
+            }
             // The cold-start request waits here until NavHost has installed its graph.
             navController.currentBackStackEntryFlow.first()
             val pending = FocusPendingDestination.Widget(request.destination)
@@ -1226,14 +1410,45 @@ fun LifeOsApp(
                 onWidgetLaunchConsumed(request.id)
                 return@LaunchedEffect
             }
+            val isCreate = request.destination == WidgetDestination.QuickCapture ||
+                request.destination is WidgetDestination.Capture ||
+                request.destination == WidgetDestination.NewTask ||
+                request.destination == WidgetDestination.NewHabit
+            if (!(isCreate && lockSnapshot.policy?.enabled == true)) {
+                val (browseRequest, destination) = lockRequestForWidget(request.destination)
+                when (val decision = appLockCoordinator?.requestBrowse(browseRequest, destination)
+                    ?: AccessDecision.Allow
+                ) {
+                    is AccessDecision.NeedUnlock -> {
+                        pendingWidgetLaunchForUnlock = request.id
+                        showAppLockUnlock()
+                        return@LaunchedEffect
+                    }
+                    is AccessDecision.Deny -> {
+                        pendingWidgetLaunchForUnlock = null
+                        widgetActionError = true
+                        onWidgetLaunchConsumed(request.id)
+                        return@LaunchedEffect
+                    }
+                    AccessDecision.Allow -> pendingWidgetLaunchForUnlock = null
+                }
+            }
             routeWidgetDestination(request.destination)
             onWidgetLaunchConsumed(request.id)
         }
         LaunchedEffect(reminderLaunch?.token, navController, focusState.runtime.loading,
-            focusState.runtime.loadFailed, focusState.runtime.navigationGuarded) {
+            focusState.runtime.loadFailed, focusState.runtime.navigationGuarded,
+            lockSnapshot.loadStatus, lockSnapshot.policy?.generation, lockSnapshot.grant) {
             val request = reminderLaunch ?: return@LaunchedEffect
             if (focusRuntime != null && (focusState.runtime.loading ||
                     (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed))) return@LaunchedEffect
+            if (lockSnapshot.loadStatus == LockLoadStatus.UNKNOWN) return@LaunchedEffect
+            if (lockSnapshot.loadStatus == LockLoadStatus.ERROR) {
+                widgetActionError = true
+                pendingReminderLaunchForUnlock = null
+                onReminderLaunchConsumed()
+                return@LaunchedEffect
+            }
             navController.currentBackStackEntryFlow.first()
             val nextGuard = focusNavigationGuard.interceptIfGuarded(
                 focusState.runtime,
@@ -1241,6 +1456,28 @@ fun LifeOsApp(
             )
             if (nextGuard != null) {
                 focusNavigationGuard = nextGuard
+                onReminderLaunchConsumed()
+                return@LaunchedEffect
+            }
+            val browse = lockRequestForReminder(request)
+            if (browse != null) {
+                when (val decision = appLockCoordinator?.requestBrowse(browse.first, browse.second)
+                    ?: AccessDecision.Allow
+                ) {
+                    is AccessDecision.NeedUnlock -> {
+                        pendingReminderLaunchForUnlock = request.token
+                        showAppLockUnlock()
+                        return@LaunchedEffect
+                    }
+                    is AccessDecision.Deny -> {
+                        pendingReminderLaunchForUnlock = null
+                        widgetActionError = true
+                        onReminderLaunchConsumed()
+                        return@LaunchedEffect
+                    }
+                    AccessDecision.Allow -> pendingReminderLaunchForUnlock = null
+                }
+            } else {
                 onReminderLaunchConsumed()
                 return@LaunchedEffect
             }
@@ -1319,20 +1556,146 @@ fun LifeOsApp(
                 val resume = pendingCaptureResume
                 pendingCaptureResume = null
                 resume?.invoke(proof)
+                pendingWidgetAction?.let { pending ->
+                    val unlocked = protectedActionDispatcher?.requiresUnlock(pending.ticket.section) == false
+                    if (unlocked) showWidgetActionConfirmation = true else {
+                        pendingWidgetAction = null
+                        widgetActionError = true
+                        onWidgetActionConsumed()
+                    }
+                }
+                pendingReminderAction?.let { pending ->
+                    val unlocked = protectedActionDispatcher?.requiresUnlock(pending.ticket.section) == false
+                    if (unlocked) showReminderActionConfirmation = true else {
+                        pendingReminderAction = null
+                        widgetActionError = true
+                        onReminderActionConsumed()
+                    }
+                }
             },
             onCancel = {
                 appLockUnlockVisible = false
                 if (pendingCaptureResume == null) appLockCoordinator.cancelPendingNavigation()
                 pendingCaptureResume = null
+                pendingWidgetLaunchForUnlock?.let { id ->
+                    if (widgetLaunch?.id == id) onWidgetLaunchConsumed(id)
+                }
+                pendingWidgetLaunchForUnlock = null
+                pendingReminderLaunchForUnlock?.let { token ->
+                    if (reminderLaunch?.token == token) onReminderLaunchConsumed()
+                }
+                pendingReminderLaunchForUnlock = null
+                if (pendingWidgetAction != null) {
+                    pendingWidgetAction = null
+                    showWidgetActionConfirmation = false
+                    onWidgetActionConsumed()
+                }
+                if (pendingReminderAction != null) {
+                    pendingReminderAction = null
+                    showReminderActionConfirmation = false
+                    onReminderActionConsumed()
+                }
             },
             onForgotPassword = {
                 appLockUnlockVisible = false
                 pendingCaptureResume = null
                 appLockCoordinator.cancelPendingNavigation()
+                pendingWidgetLaunchForUnlock?.let { id ->
+                    if (widgetLaunch?.id == id) onWidgetLaunchConsumed(id)
+                }
+                pendingWidgetLaunchForUnlock = null
+                pendingReminderLaunchForUnlock?.let { token ->
+                    if (reminderLaunch?.token == token) onReminderLaunchConsumed()
+                }
+                pendingReminderLaunchForUnlock = null
+                if (pendingWidgetAction != null) {
+                    pendingWidgetAction = null
+                    showWidgetActionConfirmation = false
+                    onWidgetActionConsumed()
+                }
+                if (pendingReminderAction != null) {
+                    pendingReminderAction = null
+                    showReminderActionConfirmation = false
+                    onReminderActionConsumed()
+                }
                 navController.navigate(AppRoutes.APP_LOCK_RECOVERY) { launchSingleTop = true }
             },
         )
     }
+    val actionToConfirm = pendingWidgetAction
+    if (showWidgetActionConfirmation && actionToConfirm != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {
+                pendingWidgetAction = null
+                showWidgetActionConfirmation = false
+                appLockCoordinator?.cancelPendingNavigation()
+                onWidgetActionConsumed()
+            },
+            title = { Text(stringResource(R.string.app_lock_action_confirm_title)) },
+            text = { Text(stringResource(R.string.app_lock_action_confirm_body)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    val dispatcher = protectedActionDispatcher
+                    val accepted = dispatcher != null && dispatcher.confirm(actionToConfirm.ticket) &&
+                        dispatcher.consumeForDispatch(actionToConfirm.ticket)
+                    if (accepted) enqueueWidgetAction(applicationContext, actionToConfirm.request)
+                    else widgetActionError = true
+                    pendingWidgetAction = null
+                    showWidgetActionConfirmation = false
+                    onWidgetActionConsumed()
+                }) { Text(stringResource(R.string.app_lock_action_confirm)) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    pendingWidgetAction = null
+                    showWidgetActionConfirmation = false
+                    appLockCoordinator?.cancelPendingNavigation()
+                    onWidgetActionConsumed()
+                }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+    val reminderActionToConfirm = pendingReminderAction
+    if (showReminderActionConfirmation && reminderActionToConfirm != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {
+                pendingReminderAction = null
+                showReminderActionConfirmation = false
+                appLockCoordinator?.cancelPendingNavigation()
+                onReminderActionConsumed()
+            },
+            title = { Text(stringResource(R.string.app_lock_action_confirm_title)) },
+            text = { Text(stringResource(R.string.app_lock_action_confirm_body)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    val dispatcher = protectedActionDispatcher
+                    val accepted = dispatcher != null && dispatcher.confirm(reminderActionToConfirm.ticket) &&
+                        dispatcher.consumeForDispatch(reminderActionToConfirm.ticket)
+                    if (accepted) enqueueReminderAction(applicationContext, reminderActionToConfirm.request)
+                    else widgetActionError = true
+                    pendingReminderAction = null
+                    showReminderActionConfirmation = false
+                    onReminderActionConsumed()
+                }) { Text(stringResource(R.string.app_lock_action_confirm)) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    pendingReminderAction = null
+                    showReminderActionConfirmation = false
+                    appLockCoordinator?.cancelPendingNavigation()
+                    onReminderActionConsumed()
+                }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+    if (widgetActionError) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { widgetActionError = false },
+        title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
+        text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { widgetActionError = false }) {
+            Text(stringResource(R.string.cancel))
+        } },
+    )
     }
     }
 }
@@ -1463,12 +1826,7 @@ private fun lockPendingDestination(route: String?, entry: NavBackStackEntry?): L
     else -> null
 }
 
-private fun appLockOperation(route: String?): LockOperation = when (route) {
-    "entry_share/{eventId}/{kind}" -> LockOperation.SHARE
-    "settings_backup" -> LockOperation.BACKUP
-    "privacy" -> LockOperation.RESET
-    else -> LockOperation.READ
-}
+private fun appLockOperation(route: String?): LockOperation = LockOperation.READ
 
 private fun lockRequestForWidget(
     destination: WidgetDestination,
@@ -1523,4 +1881,10 @@ private fun lockBrowseRequest(sections: Set<LockSection>) = LockRequest(
 private fun captureInitialTimeMillis(date: LocalDate, zone: ZoneId): Long {
     val now = Instant.now()
     return date.atTime(now.atZone(zone).toLocalTime()).atZone(zone).toInstant().toEpochMilli()
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

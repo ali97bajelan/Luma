@@ -11,6 +11,25 @@ Automatic cloud backup and device-transfer extraction are disabled; manual backu
 is explicit and unencrypted. A chosen document provider controls its destination.
 This describes Luma's own behavior, not other apps or device services.
 
+## App Lock
+
+App Lock is an optional device-local password for the whole app or selected
+sections. Its password verifier, recovery material, retry state and policy stay
+in app-private storage and are excluded from Android cloud backup and device
+transfer. App Lock does not encrypt a manual archive or a copy shared to another
+app or document provider. Sharing, archive export, restore and ordinary full reset
+ask for a fresh password when App Lock is enabled. The forgotten-code recovery
+path is an erase-only exception: it requires two confirmations and cannot read or
+export saved content.
+
+Restore never imports a password, recovery code, retry counter, grant, private
+draft or action receipt. A device that already has App Lock keeps its local lock
+policy and returns to a locked state after replacement. On a device without a
+lock, Luma requires an explicit choice to set one up or continue without one
+before restored content is shown. Focus timers and trusted background work keep
+their existing lifecycle; App Lock gates saved Focus history and in-app access,
+and the emergency exit does not grant access to saved data.
+
 Focus history is saved locally with the other Luma data. Manual backups include
 only terminal focus sessions and their credited runs. A paused session is
 excluded until the user explicitly stops it for export; continuing without it is
@@ -30,13 +49,20 @@ the setting can be saved. Quick capture opens the existing Mood, Memory or
 Journal editor and does not save an entry until the user saves in that editor.
 Widget previews use fictional content.
 
+When App Lock protects a widget's section, its preview is replaced by a generic
+open-app prompt even after an in-app unlock. Protected reminder notifications
+also use generic text, and policy changes request an immediate refresh. Widget
+and reminder actions carry opaque tokens and record identity needed to revalidate
+the requested action; a protected action requires unlock and a separate in-app
+confirmation. Names and notes are not placed in those action requests.
+
 The launcher controls widget placement and may retain a cached view. Turning
 details off revokes the widget's existing row and Undo actions and updates its
 current view, but Luma cannot control copies retained by the launcher. Removing
 a widget or resetting Luma also cannot guarantee that the launcher has cleared
-its cached view. Widget action intents contain only the widget ID and an opaque
-command token; entry names and notes are not sent to the launcher in those
-intents.
+its cached view. A collection action may also carry the selected row's opaque ID
+and date so Luma can reject a stale click; entry names and notes are not sent to
+the launcher in those intents.
 
 ## Optional permissions and retained history
 

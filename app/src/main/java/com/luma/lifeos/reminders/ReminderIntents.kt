@@ -25,6 +25,7 @@ internal const val EXTRA_MINUTE = "reminder_minute"
 internal const val EXTRA_TOKEN = "reminder_token"
 internal const val KIND_HABIT = "habit"
 internal const val KIND_TASK = "task"
+internal const val ACTION_EXTERNAL_REMINDER = "com.luma.lifeos.reminders.ACTION_EXTERNAL"
 
 internal data class ReminderEvent(
     val kind: String,
@@ -102,6 +103,22 @@ internal fun openReminderPendingIntent(context: Context, event: ReminderEvent): 
         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
     }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
+internal fun reminderActionPendingIntent(context: Context, event: ReminderEvent): PendingIntent {
+    val actionEvent = event.copy(action = event.action)
+    val intent = actionEvent.toIntent(context).apply {
+        setClass(context, MainActivity::class.java)
+        action = ACTION_EXTERNAL_REMINDER
+        data = actionIdentityUri(actionEvent)
+        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+    }
+    return PendingIntent.getActivity(
+        context,
+        stableRequestCode(event.kind, event.id, event.action),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+}
+
 internal fun ReminderEvent.readFrom(intent: Intent): Boolean = runCatching {
     intent.getStringExtra(EXTRA_KIND) == kind && UUID.fromString(intent.getStringExtra(EXTRA_ID)) == id
 }.getOrDefault(false)
@@ -141,6 +158,55 @@ internal fun reminderOpenRequest(intent: Intent): ReminderOpenRequest? = runCatc
     require(kind == KIND_HABIT || kind == KIND_TASK)
     ReminderOpenRequest(kind, id, date, "$kind:$id:$date")
 }.getOrNull()
+
+internal fun reminderActionRequest(intent: Intent): ReminderActionRequest? {
+    if (intent.component?.className != MainActivity::class.java.name || intent.action != ACTION_EXTERNAL_REMINDER) return null
+    val event = reminderEventFrom(intent) ?: return null
+    if (event.action !in setOf("COMPLETE", "LOG_ONE", "SNOOZE")) return null
+    val uri = intent.data ?: return null
+    if (uri.scheme != "luma" || uri.authority != "reminder-action" || uri.query != null || uri.fragment != null ||
+        uri.userInfo != null || uri.port != -1 || actionIdentityUri(event).toString() != uri.toString()
+    ) return null
+    return ReminderActionRequest(
+        kind = event.kind,
+        action = event.action,
+        id = event.id,
+        revision = event.revision,
+        sourceRevision = event.sourceRevision,
+        date = event.date,
+        key = event.key,
+        scheduledAt = event.scheduledAt,
+        expiresAt = event.expiresAt,
+        minute = event.minute,
+        token = event.token,
+    )
+}
+
+internal fun enqueueReminderAction(context: Context, request: ReminderActionRequest) {
+    enqueueReminderEvent(context, request.toEvent())
+}
+
+data class ReminderActionRequest internal constructor(
+    val kind: String,
+    val action: String,
+    val id: UUID,
+    val revision: UUID,
+    val sourceRevision: UUID?,
+    val date: LocalDate,
+    val key: String,
+    val scheduledAt: Instant,
+    val expiresAt: Instant,
+    val minute: Int,
+    val token: UUID,
+) {
+    internal fun toEvent() = ReminderEvent(
+        kind, action, id, revision, sourceRevision, date, key, scheduledAt, expiresAt, minute, token,
+    )
+}
+
+private fun actionIdentityUri(event: ReminderEvent): Uri = Uri.parse(
+    "luma://reminder-action/${event.kind}/${event.id}/${event.action}/${event.token}",
+)
 
 data class ReminderOpenRequest(val kind: String, val id: UUID, val date: LocalDate, val token: String)
 

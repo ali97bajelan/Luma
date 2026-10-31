@@ -101,6 +101,8 @@
     <string name="widget_data_initial">Open Luma to view your progress.</string>
     <string name="widget_data_setup">Set up this widget in Luma.</string>
     <string name="widget_data_read_error">Couldn’t update. Counts are unavailable.</string>
+    <string name="widget_app_lock_hidden">Unlock Luma to view this protected widget.</string>
+    <string name="widget_app_lock_open">Open Luma to unlock and view this widget.</string>
     <string name="widget_data_date_with_zone">%1$s · %2$s tracking time</string>
     <string name="widget_habits_summary">%1$d of %2$d targets reached</string>
     <string name="widget_habits_empty_library">No habits yet.</string>
@@ -653,6 +655,10 @@
     <string name="backup_stay">Stay</string>
     <string name="backup_restore_in_progress_title">Restore in progress</string>
     <string name="backup_restore_in_progress_message">The restore is being committed and cannot be canceled. Stay here until it finishes.</string>
+    <string name="backup_restore_lock_choice_title">Choose protection for restored data</string>
+    <string name="backup_restore_lock_choice_body">This installation does not have App Lock enabled. Set it up before showing restored content, or explicitly continue without App Lock.</string>
+    <string name="backup_restore_setup_lock">Set up App Lock</string>
+    <string name="backup_restore_without_lock">Continue without App Lock</string>
     <string name="backup_leave_export_cancelled">Backup export canceled. No incomplete file remains.</string>
     <string name="backup_leave_export_may_remain">Backup export canceled. A document provider may have kept an incomplete file; check the destination before using it.</string>
     <string name="backup_leave_export_completed">Backup export completed. The file is ready at the selected destination.</string>
@@ -1341,6 +1347,17 @@
     <string name="app_lock_error_cooldown">Too many attempts. Try again in %1$d seconds.</string>
     <string name="app_lock_error_unavailable">App lock is unavailable right now. Your content remains protected.</string>
     <string name="app_lock_error_cancelled">The operation was cancelled. No security change was made.</string>
+    <string name="app_lock_sensitive_title">Confirm with your Luma password</string>
+    <string name="app_lock_sensitive_body">Enter your Luma password to continue with %1$s.</string>
+    <string name="app_lock_sensitive_operation">this operation</string>
+    <string name="app_lock_sensitive_share">sharing</string>
+    <string name="app_lock_sensitive_export">export</string>
+    <string name="app_lock_sensitive_backup">backup</string>
+    <string name="app_lock_sensitive_restore">restore</string>
+    <string name="app_lock_sensitive_reset">reset</string>
+    <string name="app_lock_action_confirm_title">Confirm protected action</string>
+    <string name="app_lock_action_confirm_body">Continue with this action on a protected item? The item details stay hidden here.</string>
+    <string name="app_lock_action_confirm">Continue</string>
     <string name="app_lock_error_password_length">Use a password between 8 and 128 characters.</string>
     <string name="app_lock_error_password_mismatch">The passwords do not match.</string>
     <string name="app_lock_recovery_code_title">Save your recovery code</string>

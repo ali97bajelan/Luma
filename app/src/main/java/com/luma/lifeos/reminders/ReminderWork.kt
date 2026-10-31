@@ -16,8 +16,17 @@ import com.luma.lifeos.domain.todo.TaskReminderAction
 import com.luma.lifeos.domain.todo.TaskReminderCommand
 import com.luma.lifeos.domain.todo.nextTaskReminder
 import com.luma.lifeos.domain.todo.taskReminderActionToken
+import com.luma.lifeos.LumaApplication
+import com.luma.lifeos.lock.ProtectedPreviewPolicy
+import com.luma.lifeos.lock.LockActionDeniedException
+import com.luma.lifeos.domain.lock.LockContentClassification
+import com.luma.lifeos.domain.lock.LockOperation
+import com.luma.lifeos.domain.lock.LockRequest
+import com.luma.lifeos.domain.lock.LockSection
 import java.time.Clock
 import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val RECONCILE_WORK = "luma-reminder-reconcile"
 
@@ -34,30 +43,68 @@ internal fun enqueueReminderEvent(context: Context, event: ReminderEvent) {
 }
 
 class ReminderWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
-    override suspend fun doWork(): Result = try {
-        val storage = LumaStorage(applicationContext)
-        val preferences = ReminderPreferences(applicationContext)
-        val platform = ReminderPlatform(applicationContext)
-        val event = reminderEventFrom(inputData)
-        if (event == null) {
-            reconcile(storage, preferences, platform)
-        } else {
-            handle(event, storage, preferences, platform)
+    override suspend fun doWork(): Result {
+        return try {
+            val storage = LumaStorage(applicationContext)
+            val preferences = ReminderPreferences(applicationContext)
+            val platform = ReminderPlatform(applicationContext)
+            val app = applicationContext as? LumaApplication
+            val lockState = try {
+                val policy = app?.let { withContext(Dispatchers.IO) { it.localLockStore.read()?.policy } }
+                ReminderLockState(policy, app != null)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                ReminderLockState(policy = null, readable = false)
+            }
+            val event = reminderEventFrom(inputData)
+            if (event == null) {
+                reconcile(storage, preferences, platform, lockState)
+            } else if (event.action == "DELIVER") {
+                handle(event, storage, preferences, platform, lockState)
+            } else {
+                val app = applicationContext as? LumaApplication ?: return Result.failure()
+                val section = ProtectedPreviewPolicy.reminderSection(event.kind)?.let {
+                    if (it == LockSection.HABITS) LockSection.HABITS else LockSection.TASKS
+                } ?: return Result.success()
+                app.appLockCoordinator.initialize()
+                try {
+                    app.lockActionGuard.execute(
+                        LockRequest(
+                            operation = LockOperation.UPDATE,
+                            requiredSections = setOf(section),
+                            contentClassification = LockContentClassification.CLASSIFIED,
+                            objectId = event.id.toString(),
+                        ),
+                    ) {
+                        handle(event, storage, preferences, platform, lockState)
+                    }
+                } catch (_: LockActionDeniedException) {
+                    enqueueReminderReconciliation(applicationContext)
+                    return Result.success()
+                }
+            }
+            Result.success()
+        } catch (_: SecurityException) {
+            Result.retry()
+        } catch (_: IllegalStateException) {
+            Result.retry()
         }
-        Result.success()
-    } catch (_: SecurityException) {
-        Result.retry()
-    } catch (_: IllegalStateException) {
-        Result.retry()
     }
 
-    private suspend fun reconcile(storage: LumaStorage, preferences: ReminderPreferences, platform: ReminderPlatform) {
+    private suspend fun reconcile(
+        storage: LumaStorage,
+        preferences: ReminderPreferences,
+        platform: ReminderPlatform,
+        lockState: ReminderLockState,
+    ) {
         val now = Clock.systemUTC().instant()
         val zone = ZoneId.systemDefault()
         val quiet = preferences.quietHours()
         val status = ReminderStatusStore(applicationContext)
         val desired = linkedMapOf<String, ReminderEvent>()
         val currentRevisions = linkedMapOf<String, String>()
+        val protectedIdentities = linkedSetOf<String>()
 
         val habitInputs = storage.habitReminders.planningInputs(now)
         habitInputs.forEach { input ->
@@ -66,7 +113,11 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Coroutine
                 status.set(KIND_HABIT, input.config.habitId.toString(), ReminderDeliveryStatus.OFF)
                 return@forEach
             }
+            val protected = ProtectedPreviewPolicy.redact(
+                lockState.policy, com.luma.lifeos.domain.lock.LockSection.HABITS, lockState.readable,
+            )
             currentRevisions[identity] = input.config.revision.toString()
+            if (protected) protectedIdentities += identity
             if (platform.permissionBlocked()) {
                 status.set(KIND_HABIT, input.config.habitId.toString(), ReminderDeliveryStatus.BLOCKED)
                 return@forEach
@@ -91,7 +142,11 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Coroutine
                 status.set(KIND_TASK, config.taskId.toString(), ReminderDeliveryStatus.OFF)
                 return@forEach
             }
+            val protected = ProtectedPreviewPolicy.redact(
+                lockState.policy, com.luma.lifeos.domain.lock.LockSection.TASKS, lockState.readable,
+            )
             currentRevisions[identity] = config.revision.toString()
+            if (protected) protectedIdentities += identity
             if (platform.permissionBlocked()) {
                 status.set(KIND_TASK, config.taskId.toString(), ReminderDeliveryStatus.BLOCKED)
                 return@forEach
@@ -117,7 +172,7 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Coroutine
             platform.cancelAlarmsExcept(emptySet())
             platform.cancelNotificationsExcept(emptyMap(), cancelAll = true)
         } else {
-            platform.cancelNotificationsExcept(currentRevisions)
+            platform.cancelNotificationsExcept(currentRevisions, protectedIdentities)
             platform.cancelAlarmsExcept(desired.keys)
             desired.values.forEach { event ->
                 platform.schedule(event)
@@ -130,7 +185,13 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Coroutine
         }
     }
 
-    private suspend fun handle(event: ReminderEvent, storage: LumaStorage, preferences: ReminderPreferences, platform: ReminderPlatform) {
+    private suspend fun handle(
+        event: ReminderEvent,
+        storage: LumaStorage,
+        preferences: ReminderPreferences,
+        platform: ReminderPlatform,
+        lockState: ReminderLockState,
+    ) {
         val now = Clock.systemUTC().instant()
         val zone = ZoneId.systemDefault()
         val quiet = preferences.quietHours()
@@ -147,9 +208,19 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Coroutine
                 enqueueReminderReconciliation(applicationContext)
                 return
             }
-            val privateTitle = if (preferences.privatePreviews()) {
+            val section = ProtectedPreviewPolicy.reminderSection(event.kind)
+            val latestLockState = currentReminderLockState()
+            val redact = section == null || ProtectedPreviewPolicy.redact(
+                latestLockState.policy, section, latestLockState.readable,
+            )
+            var privateTitle = if (!redact && preferences.privatePreviews()) {
                 if (event.kind == KIND_HABIT) storage.habits.get(event.id)?.name else storage.todos.get(event.id)?.title
             } else null
+            val finalLockState = currentReminderLockState()
+            if (section == null || ProtectedPreviewPolicy.redact(
+                    finalLockState.policy, section, finalLockState.readable,
+                )
+            ) privateTitle = null
             platform.show(event, privateTitle)
             enqueueReminderReconciliation(applicationContext)
             return
@@ -174,7 +245,24 @@ class ReminderWorker(context: Context, parameters: WorkerParameters) : Coroutine
         platform.cancelNotificationForEvent(event)
         enqueueReminderReconciliation(applicationContext)
     }
+
+    private suspend fun currentReminderLockState(): ReminderLockState {
+        val app = applicationContext as? LumaApplication ?: return ReminderLockState(null, readable = false)
+        return try {
+            val policy = withContext(kotlinx.coroutines.Dispatchers.IO) { app.localLockStore.read()?.policy }
+            ReminderLockState(policy, readable = true)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            ReminderLockState(policy = null, readable = false)
+        }
+    }
 }
+
+private data class ReminderLockState(
+    val policy: com.luma.lifeos.domain.lock.LockPolicy?,
+    val readable: Boolean,
+)
 
 class ReminderActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

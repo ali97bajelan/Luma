@@ -60,15 +60,18 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
         open: () -> OutputStream,
         discardOutput: suspend () -> Boolean,
         focusChoice: BackupFocusExportChoice? = null,
+        authorize: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
     ) {
         if (state.value.busy || prepared != null) return
         this.discardOutput = discardOutput
         exportCompletedSuccessfully = false
         launchOperation(BackupOperation.EXPORTING) {
             try {
-                withContext(io) {
-                    open().use { service.export(it, focusChoice) }
-                    exportCompletedSuccessfully = true
+                authorize {
+                    withContext(io) {
+                        open().use { service.export(it, focusChoice) }
+                        exportCompletedSuccessfully = true
+                    }
                 }
                 mutable.value = BackupUiState(busy = true, message = BackupMessage.EXPORTED,
                     operation = BackupOperation.EXPORTING)
@@ -80,12 +83,15 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
         }
     }
 
-    fun prepare(open: () -> InputStream) {
+    fun prepare(
+        open: () -> InputStream,
+        authorize: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
+    ) {
         if (state.value.busy || prepared != null) return
         launchOperation(BackupOperation.PREPARING) {
             var candidate: PreparedBackup? = null
             try {
-                withContext(io) { candidate = open().use { service.prepare(it) } }
+                authorize { withContext(io) { candidate = open().use { service.prepare(it) } } }
                 prepared = requireNotNull(candidate)
                 mutable.value = BackupUiState(busy = true, preview = prepared!!.preview,
                     operation = BackupOperation.PREPARING)
@@ -113,18 +119,24 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
     fun confirmRestore(onRestored: () -> Unit = {}): Boolean = confirmRestore(onRestored, {})
 
     /** [onFinished] releases replacement coordination after either restore success or failure. */
-    fun confirmRestore(onRestored: () -> Unit, onFinished: () -> Unit): Boolean {
+    fun confirmRestore(
+        onRestored: () -> Unit,
+        onFinished: () -> Unit,
+        authorize: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
+    ): Boolean {
         if (state.value.busy) return false
         val candidate = prepared ?: return false
         prepared = null
         launchOperation(BackupOperation.RESTORING) {
             try {
-                withContext(io + NonCancellable) {
-                    candidate.use { it.restore() }
-                    try {
-                        withContext(Dispatchers.Main.immediate) { onRestored() }
-                    } catch (failure: Exception) {
-                        Log.e("BackupViewModel", "Restore committed, but its success callback failed", failure)
+                authorize {
+                    withContext(io + NonCancellable) {
+                        candidate.use { it.restore() }
+                        try {
+                            withContext(Dispatchers.Main.immediate) { onRestored() }
+                        } catch (failure: Exception) {
+                            Log.e("BackupViewModel", "Restore committed, but its success callback failed", failure)
+                        }
                     }
                 }
                 mutable.value = BackupUiState(busy = true, message = BackupMessage.RESTORED,
@@ -134,6 +146,7 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
                 mutable.value = BackupUiState(busy = true, message = BackupMessage.RESTORE_FAILED,
                     operation = BackupOperation.RESTORING)
             } finally {
+                withContext(io + NonCancellable) { runCatching { candidate.close() } }
                 withContext(Dispatchers.Main.immediate + NonCancellable) {
                     try { onFinished() } catch (failure: Exception) {
                         Log.e("BackupViewModel", "Restore completion callback failed", failure)

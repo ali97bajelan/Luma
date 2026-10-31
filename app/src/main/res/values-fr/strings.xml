@@ -102,6 +102,8 @@
     <string name="widget_data_initial">Ouvrez Luma pour voir votre progression.</string>
     <string name="widget_data_setup">Configurez ce widget dans Luma.</string>
     <string name="widget_data_read_error">Mise à jour impossible. Les nombres sont indisponibles.</string>
+    <string name="widget_app_lock_hidden">Déverrouillez Luma pour afficher ce widget protégé.</string>
+    <string name="widget_app_lock_open">Ouvrez Luma pour déverrouiller et afficher ce widget.</string>
     <string name="widget_data_date_with_zone">%1$s · fuseau de suivi %2$s</string>
     <string name="widget_habits_summary">%1$d objectif(s) atteint(s) sur %2$d</string>
     <string name="widget_habits_empty_library">Aucune habitude pour le moment.</string>
@@ -665,6 +667,10 @@
     <string name="backup_stay">Rester</string>
     <string name="backup_restore_in_progress_title">Restauration en cours</string>
     <string name="backup_restore_in_progress_message">Le remplacement des données est en cours et ne peut pas être annulé. Restez ici jusqu’à la fin.</string>
+    <string name="backup_restore_lock_choice_title">Choisir la protection des données restaurées</string>
+    <string name="backup_restore_lock_choice_body">Le verrouillage Luma n’est pas activé sur cette installation. Configurez-le avant d’afficher les données restaurées, ou continuez explicitement sans verrouillage.</string>
+    <string name="backup_restore_setup_lock">Configurer le verrouillage</string>
+    <string name="backup_restore_without_lock">Continuer sans verrouillage</string>
     <string name="backup_leave_export_cancelled">Export annulé. Aucun fichier incomplet ne reste.</string>
     <string name="backup_leave_export_may_remain">Export annulé. Le fournisseur de documents peut avoir conservé un fichier incomplet ; vérifiez la destination avant de l’utiliser.</string>
     <string name="backup_leave_export_completed">Export terminé. Le fichier est disponible à l’emplacement choisi.</string>
@@ -1364,6 +1370,17 @@
     <string name="app_lock_error_cooldown">Trop de tentatives. Réessayez dans %1$d secondes.</string>
     <string name="app_lock_error_unavailable">Le verrouillage est indisponible. Vos contenus restent protégés.</string>
     <string name="app_lock_error_cancelled">Opération annulée. Aucun paramètre de sécurité n’a changé.</string>
+    <string name="app_lock_sensitive_title">Confirmez avec votre mot de passe Luma</string>
+    <string name="app_lock_sensitive_body">Saisissez votre mot de passe Luma pour continuer avec %1$s.</string>
+    <string name="app_lock_sensitive_operation">cette opération</string>
+    <string name="app_lock_sensitive_share">le partage</string>
+    <string name="app_lock_sensitive_export">l’exportation</string>
+    <string name="app_lock_sensitive_backup">la sauvegarde</string>
+    <string name="app_lock_sensitive_restore">la restauration</string>
+    <string name="app_lock_sensitive_reset">la réinitialisation</string>
+    <string name="app_lock_action_confirm_title">Confirmer l’action protégée</string>
+    <string name="app_lock_action_confirm_body">Continuer cette action sur un élément protégé ? Les détails restent masqués ici.</string>
+    <string name="app_lock_action_confirm">Continuer</string>
     <string name="app_lock_error_password_length">Utilisez un mot de passe de 8 à 128 caractères.</string>
     <string name="app_lock_error_password_mismatch">Les mots de passe ne correspondent pas.</string>
     <string name="app_lock_recovery_code_title">Enregistrez votre code de récupération</string>

@@ -26,6 +26,11 @@ import com.luma.lifeos.domain.backup.BackupFocusExportChoice
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.focus.FocusRuntime
+import com.luma.lifeos.lock.AuthPurpose
+import com.luma.lifeos.lock.LockSensitiveOperationGuard
+import com.luma.lifeos.lock.OperationProof
+import com.luma.lifeos.lock.PendingSensitiveOperation
+import com.luma.lifeos.ui.privacy.LockSensitiveActionDialog
 import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.LumaSectionSurface
@@ -47,6 +52,8 @@ internal object BackupDepartureSession { val id: String = UUID.randomUUID().toSt
 fun BackupSettingsCard(
     service: BackupService,
     focusRuntime: FocusRuntime? = null,
+    lockGuard: LockSensitiveOperationGuard? = null,
+    onAppLockSetup: () -> Unit = {},
     onRestored: () -> Unit = {},
     onBack: (BackupDeparture?) -> Unit,
 ) {
@@ -68,6 +75,14 @@ fun BackupSettingsCard(
     var focusActionFailed by remember { mutableStateOf(false) }
     var pendingExportChoice by remember { mutableStateOf<BackupFocusExportChoice?>(null) }
     var restoreActionInProgress by remember { mutableStateOf(false) }
+    var pendingSensitive by remember { mutableStateOf<PendingSensitiveOperation?>(null) }
+    var pendingSensitiveStep by remember { mutableStateOf<BackupSensitiveStep?>(null) }
+    var showSensitivePrompt by remember { mutableStateOf(false) }
+    var sensitiveError by remember { mutableStateOf(false) }
+    var exportAuthorization by remember { mutableStateOf<BackupSensitiveAuthorization?>(null) }
+    var restorePreparationAuthorization by remember { mutableStateOf<BackupSensitiveAuthorization?>(null) }
+    var showRestoreProtectionChoice by remember { mutableStateOf(false) }
+    var restoreWithoutProtectionConfirmed by remember { mutableStateOf<Boolean?>(null) }
 
     LaunchedEffect(state.operation) {
         if (state.operation != BackupOperation.RESTORING) showRestoreInProgress = false
@@ -75,15 +90,30 @@ fun BackupSettingsCard(
 
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         if (uri != null) {
+            val authorization = exportAuthorization
+            exportAuthorization = null
             vm.export(
                 open = { requireNotNull(resolver.openOutputStream(uri, "wt")) },
                 discardOutput = { discardCreatedDocument(resolver, uri) },
                 focusChoice = pendingExportChoice,
+                authorize = authorization.authorizer(lockGuard, AuthPurpose.EXPORT),
             )
+        } else {
+            exportAuthorization?.let { authorization -> lockGuard?.cancel(authorization.pending) }
+            exportAuthorization = null
         }
     }
     val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) vm.prepare { requireNotNull(resolver.openInputStream(uri)) }
+        val authorization = restorePreparationAuthorization
+        restorePreparationAuthorization = null
+        if (uri != null) {
+            vm.prepare(
+                open = { requireNotNull(resolver.openInputStream(uri)) },
+                authorize = authorization.authorizer(lockGuard, AuthPurpose.RESTORE),
+            )
+        } else {
+            authorization?.let { lockGuard?.cancel(it.pending) }
+        }
     }
 
     val launchExportPicker: (BackupFocusExportChoice?) -> Unit = { focusChoice ->
@@ -92,19 +122,24 @@ fun BackupSettingsCard(
             pendingExportChoice = focusChoice
             export.launch("Luma-${LocalDate.now()}.zip")
         } catch (_: ActivityNotFoundException) {
+            exportAuthorization?.let { authorization -> lockGuard?.cancel(authorization.pending) }
+            exportAuthorization = null
             vm.pickerUnavailable()
         }
     }
 
-    val requestExport: () -> Unit = {
-        when (openFocusSession?.state) {
-            FocusState.PAUSED -> showPausedExportDisclosure = true
-            FocusState.RUNNING -> focusActionFailed = true
-            else -> launchExportPicker(null)
+    val launchRestorePicker: (BackupSensitiveAuthorization?) -> Unit = { authorization ->
+        try {
+            restorePreparationAuthorization = authorization
+            restore.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed"))
+        } catch (_: ActivityNotFoundException) {
+            restorePreparationAuthorization = null
+            authorization?.let { lockGuard?.cancel(it.pending) }
+            vm.pickerUnavailable()
         }
     }
 
-    val confirmRestore: (Boolean?) -> Unit = { discardOpenSession ->
+    val performRestore: (Boolean?, BackupSensitiveAuthorization?) -> Unit = { discardOpenSession, authorization ->
         if (!restoreActionInProgress) {
             restoreActionInProgress = true
             scope.launch {
@@ -113,6 +148,7 @@ fun BackupSettingsCard(
                     if (!ready) {
                         focusActionFailed = true
                         restoreActionInProgress = false
+                        authorization?.let { lockGuard?.cancel(it.pending) }
                         return@launch
                     }
                     focusActionFailed = false
@@ -122,10 +158,12 @@ fun BackupSettingsCard(
                             focusRuntime?.finishDatabaseReplacement()
                             restoreActionInProgress = false
                         },
+                        authorize = authorization.authorizer(lockGuard, AuthPurpose.RESTORE),
                     )
                     if (!started) {
                         focusRuntime?.finishDatabaseReplacement()
                         restoreActionInProgress = false
+                        authorization?.let { lockGuard?.cancel(it.pending) }
                     }
                 } catch (failure: Exception) {
                     if (failure is CancellationException) {
@@ -136,8 +174,71 @@ fun BackupSettingsCard(
                     focusRuntime?.finishDatabaseReplacement()
                     focusActionFailed = true
                     restoreActionInProgress = false
+                    authorization?.let { lockGuard?.cancel(it.pending) }
                 }
             }
+        }
+    }
+
+    val dispatchSensitiveStep: (BackupSensitiveStep, BackupSensitiveAuthorization?) -> Unit = { step, authorization ->
+        when (step) {
+            is BackupSensitiveStep.ExportPicker -> {
+                scope.launch {
+                    val focusChoice = step.focusChoice
+                    val ready = when (focusChoice) {
+                        BackupFocusExportChoice.STOPPED_AND_INCLUDE -> openFocusSession?.id?.let {
+                            focusRuntime?.stopPausedForBackup(it)
+                        } == true
+                        is BackupFocusExportChoice.EXCLUDE_PAUSED ->
+                            focusRuntime?.confirmPausedExportExclusion(focusChoice.sessionId) == true
+                        null -> true
+                    }
+                    if (ready) {
+                        exportAuthorization = authorization
+                        launchExportPicker(focusChoice)
+                    } else {
+                        authorization?.let { lockGuard?.cancel(it.pending) }
+                        focusActionFailed = true
+                    }
+                }
+            }
+            BackupSensitiveStep.RestorePicker -> launchRestorePicker(authorization)
+            is BackupSensitiveStep.RestoreCommit -> performRestore(step.discardOpenSession, authorization)
+        }
+    }
+
+    val requestSensitiveStep: (BackupSensitiveStep) -> Unit = { step ->
+        if (lockGuard?.requiresAuthentication() == true) {
+            val pending = lockGuard.begin(step.purpose)
+            if (pending == null) sensitiveError = true else {
+                pendingSensitive = pending
+                pendingSensitiveStep = step
+                showSensitivePrompt = true
+                sensitiveError = false
+            }
+        } else dispatchSensitiveStep(step, null)
+    }
+
+    val requestExport: () -> Unit = {
+        when (openFocusSession?.state) {
+            FocusState.PAUSED -> showPausedExportDisclosure = true
+            FocusState.RUNNING -> focusActionFailed = true
+            else -> requestSensitiveStep(BackupSensitiveStep.ExportPicker(null))
+        }
+    }
+
+    val confirmRestore: (Boolean?) -> Unit = { discardOpenSession ->
+        when (lockGuard?.protectionEnabled()) {
+            null -> sensitiveError = true
+            false -> when (restoreWithoutProtectionConfirmed) {
+                null -> showRestoreProtectionChoice = true
+                true -> {
+                    restoreWithoutProtectionConfirmed = null
+                    onAppLockSetup()
+                }
+                false -> requestSensitiveStep(BackupSensitiveStep.RestoreCommit(discardOpenSession))
+            }
+            true -> requestSensitiveStep(BackupSensitiveStep.RestoreCommit(discardOpenSession))
         }
     }
 
@@ -171,13 +272,7 @@ fun BackupSettingsCard(
             showRestoreConfirmation = leavePromptFor == null && !showRestoreInProgress,
             restoreActionInProgress = restoreActionInProgress,
             onExport = requestExport,
-            onRestore = {
-                try {
-                    restore.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed"))
-                } catch (_: ActivityNotFoundException) {
-                    vm.pickerUnavailable()
-                }
-            },
+            onRestore = { requestSensitiveStep(BackupSensitiveStep.RestorePicker) },
             onConfirmRestore = confirmRestore,
             onCancelRestore = vm::cancelRestore,
         )
@@ -194,26 +289,19 @@ fun BackupSettingsCard(
                     TextButton(
                         onClick = {
                             showPausedExportDisclosure = false
-                            scope.launch {
-                                val sessionId = openFocusSession?.id
-                                val stopped = currentSessionIsPaused && sessionId != null &&
-                                    focusRuntime?.stopPausedForBackup(sessionId) == true
-                                if (stopped) launchExportPicker(BackupFocusExportChoice.STOPPED_AND_INCLUDE)
-                                else focusActionFailed = true
-                            }
+                            if (currentSessionIsPaused) requestSensitiveStep(
+                                BackupSensitiveStep.ExportPicker(BackupFocusExportChoice.STOPPED_AND_INCLUDE),
+                            ) else focusActionFailed = true
                         },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("backup_stop_focus_export"),
                     ) { Text(stringResource(R.string.backup_stop_focus_export)) }
                     TextButton(
                         onClick = {
                             showPausedExportDisclosure = false
-                            scope.launch {
-                                val sessionId = openFocusSession?.id
-                                val excluded = currentSessionIsPaused && sessionId != null &&
-                                    focusRuntime?.confirmPausedExportExclusion(sessionId) == true
-                                if (excluded) launchExportPicker(BackupFocusExportChoice.EXCLUDE_PAUSED(requireNotNull(sessionId)))
-                                else focusActionFailed = true
-                            }
+                            val sessionId = openFocusSession?.id
+                            if (currentSessionIsPaused && sessionId != null) requestSensitiveStep(
+                                BackupSensitiveStep.ExportPicker(BackupFocusExportChoice.EXCLUDE_PAUSED(sessionId)),
+                            ) else focusActionFailed = true
                         },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("backup_exclude_paused_focus"),
                     ) { Text(stringResource(R.string.backup_exclude_paused_focus)) }
@@ -278,6 +366,54 @@ fun BackupSettingsCard(
             },
         )
     }
+
+    if (showRestoreProtectionChoice) AlertDialog(
+        onDismissRequest = { showRestoreProtectionChoice = false },
+        title = { Text(stringResource(R.string.backup_restore_lock_choice_title)) },
+        text = { Text(stringResource(R.string.backup_restore_lock_choice_body)) },
+        confirmButton = {
+            Column {
+                TextButton(onClick = {
+                    showRestoreProtectionChoice = false
+                    restoreWithoutProtectionConfirmed = true
+                    onAppLockSetup()
+                }) { Text(stringResource(R.string.backup_restore_setup_lock)) }
+                TextButton(onClick = {
+                    showRestoreProtectionChoice = false
+                    restoreWithoutProtectionConfirmed = false
+                }) { Text(stringResource(R.string.backup_restore_without_lock)) }
+            }
+        },
+        dismissButton = { TextButton(onClick = { showRestoreProtectionChoice = false }) {
+            Text(stringResource(R.string.cancel))
+        } },
+    )
+
+    val authPending = pendingSensitive
+    val authStep = pendingSensitiveStep
+    if (showSensitivePrompt && lockGuard != null && authPending != null && authStep != null) {
+        LockSensitiveActionDialog(
+            guard = lockGuard,
+            pending = authPending,
+            onAuthorized = { proof ->
+                showSensitivePrompt = false
+                pendingSensitive = null
+                pendingSensitiveStep = null
+                dispatchSensitiveStep(authStep, BackupSensitiveAuthorization(authPending, proof))
+            },
+            onCancel = {
+                showSensitivePrompt = false
+                pendingSensitive = null
+                pendingSensitiveStep = null
+            },
+        )
+    }
+    if (sensitiveError) AlertDialog(
+        onDismissRequest = { sensitiveError = false },
+        title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
+        text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
+        confirmButton = { TextButton(onClick = { sensitiveError = false }) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable
@@ -426,6 +562,37 @@ private fun discardCreatedDocument(resolver: android.content.ContentResolver, ur
     } catch (_: Exception) {
         runCatching { resolver.delete(uri, null, null) > 0 }.getOrDefault(false)
     }
+}
+
+private data class BackupSensitiveAuthorization(
+    val pending: PendingSensitiveOperation,
+    val proof: OperationProof,
+)
+
+private sealed interface BackupSensitiveStep {
+    val purpose: AuthPurpose
+
+    data class ExportPicker(val focusChoice: BackupFocusExportChoice?) : BackupSensitiveStep {
+        override val purpose = AuthPurpose.EXPORT
+    }
+
+    data object RestorePicker : BackupSensitiveStep {
+        override val purpose = AuthPurpose.RESTORE
+    }
+
+    data class RestoreCommit(val discardOpenSession: Boolean?) : BackupSensitiveStep {
+        override val purpose = AuthPurpose.RESTORE
+    }
+}
+
+private fun BackupSensitiveAuthorization?.authorizer(
+    guard: LockSensitiveOperationGuard?,
+    purpose: AuthPurpose,
+): suspend (suspend () -> Unit) -> Unit = { operation ->
+    val authorization = this
+    if (guard != null) {
+        guard.executeSensitive(purpose, authorization?.pending, authorization?.proof, operation)
+    } else operation()
 }
 
 private fun BackupDeparture.messageResource(): Int = when {

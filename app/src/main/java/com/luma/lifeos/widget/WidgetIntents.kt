@@ -15,6 +15,7 @@ object WidgetIntents {
     const val ACTION_MUTATION = "com.luma.lifeos.widget.action.MUTATION"
     const val ACTION_DISMISS_FEEDBACK = "com.luma.lifeos.widget.action.DISMISS_FEEDBACK"
     const val ACTION_COLLECTION_ITEM = "com.luma.lifeos.widget.action.COLLECTION_ITEM"
+    const val ACTION_PENDING_MUTATION = "com.luma.lifeos.widget.action.PENDING_MUTATION"
     const val EXTRA_COLLECTION_ACTION = "com.luma.lifeos.widget.extra.COLLECTION_ACTION"
     const val EXTRA_COLLECTION_ITEM_ID = "com.luma.lifeos.widget.extra.COLLECTION_ITEM_ID"
     const val EXTRA_COLLECTION_DATE = "com.luma.lifeos.widget.extra.COLLECTION_DATE"
@@ -66,16 +67,62 @@ object WidgetIntents {
     /** The PendingIntent carries only the live widget ID and opaque persisted command token. */
     fun mutation(context: Context, widgetId: Int, token: UUID): PendingIntent {
         require(widgetId > 0) { "A live widget ID is required" }
-        val intent = Intent(context, WidgetActionReceiver::class.java).apply {
-            action = ACTION_MUTATION
-            data = actionUri("mutation", widgetId, token.toString())
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = ACTION_PENDING_MUTATION
+            data = pendingMutationUri(widgetId, token)
+            putExtra(EXTRA_PENDING_WIDGET_ID, widgetId)
+            putExtra(EXTRA_PENDING_TOKEN, token.toString())
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getActivity(
             context,
-            0,
+            token.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    internal fun mutationNavigation(
+        context: Context,
+        widgetId: Int,
+        token: UUID,
+        collectionItemId: UUID? = null,
+        collectionDate: LocalDate? = null,
+    ) {
+        require((collectionItemId == null) == (collectionDate == null))
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = ACTION_PENDING_MUTATION
+            data = pendingMutationUri(widgetId, token)
+            putExtra(EXTRA_PENDING_WIDGET_ID, widgetId)
+            putExtra(EXTRA_PENDING_TOKEN, token.toString())
+            collectionItemId?.let { putExtra(EXTRA_COLLECTION_ITEM_ID, it.toString()) }
+            collectionDate?.let { putExtra(EXTRA_COLLECTION_DATE, it.toString()) }
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+        context.startActivity(intent)
+    }
+
+    fun decodePendingMutation(intent: Intent): WidgetActionRequest? {
+        if (intent.component?.className != MainActivity::class.java.name ||
+            intent.action != ACTION_PENDING_MUTATION
+        ) return null
+        val uri = intent.data ?: return null
+        if (uri.scheme != "luma-widget-action" || uri.authority != "execute" ||
+            uri.userInfo != null || uri.port != -1 || uri.query != null || uri.fragment != null
+        ) return null
+        val parts = uri.pathSegments
+        if (parts.size != 2) return null
+        val widgetId = parts[0].toIntOrNull()?.takeIf { it > 0 } ?: return null
+        if (widgetId.toString() != parts[0] || intent.getIntExtra(EXTRA_PENDING_WIDGET_ID, 0) != widgetId) return null
+        val token = parts[1].canonicalUuid() ?: return null
+        if (intent.getStringExtra(EXTRA_PENDING_TOKEN) != token.toString()) return null
+        val itemRaw = intent.getStringExtra(EXTRA_COLLECTION_ITEM_ID)
+        val dateRaw = intent.getStringExtra(EXTRA_COLLECTION_DATE)
+        if ((itemRaw == null) != (dateRaw == null)) return null
+        val itemId = itemRaw?.canonicalUuid() ?: if (itemRaw == null) null else return null
+        val date = dateRaw?.canonicalDate() ?: if (dateRaw == null) null else return null
+        return runCatching { WidgetActionRequest(widgetId, token, itemId, date) }.getOrNull()
+            ?.takeIf { pendingMutationUri(widgetId, token).toString() == uri.toString() }
     }
 
     fun dismissFeedback(context: Context, widgetId: Int): PendingIntent {
@@ -274,6 +321,13 @@ object WidgetIntents {
             .apply { token?.let { appendPath(it) } }
             .build()
 
+    private fun pendingMutationUri(widgetId: Int, token: UUID): Uri = Uri.Builder()
+        .scheme("luma-widget-action")
+        .authority("execute")
+        .appendPath(widgetId.toString())
+        .appendPath(token.toString())
+        .build()
+
     private fun String.canonicalUuid(): UUID? = try {
         UUID.fromString(this).takeIf { it.toString() == this }
     } catch (_: IllegalArgumentException) {
@@ -288,4 +342,6 @@ object WidgetIntents {
 
     private const val COLLECTION_NAVIGATE = "navigate"
     private const val COLLECTION_MUTATE = "mutate"
+    private const val EXTRA_PENDING_WIDGET_ID = "com.luma.lifeos.widget.extra.PENDING_WIDGET_ID"
+    private const val EXTRA_PENDING_TOKEN = "com.luma.lifeos.widget.extra.PENDING_TOKEN"
 }

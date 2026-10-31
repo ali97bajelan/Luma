@@ -39,6 +39,7 @@ import com.luma.lifeos.lock.AndroidLockCrypto
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.DefaultLockCredentialService
 import com.luma.lifeos.lock.LockActionGuard
+import com.luma.lifeos.lock.LockSensitiveOperationGuard
 import com.luma.lifeos.lock.ProtectedContentGateway
 import com.luma.lifeos.lock.ProtectedCalendarRepository
 import com.luma.lifeos.lock.ProtectedDailySummaryRepository
@@ -87,8 +88,17 @@ class LumaApplication : Application() {
             store = localLockStore,
             crypto = lockCrypto,
             clock = AndroidLockClock(),
-            onSecurityStateChanged = appLockCoordinator::onPolicyChanged,
+            onSecurityStateChanged = { policy ->
+                appLockCoordinator.onPolicyChanged(policy)
+                WidgetRefreshCoordinator.request(this)
+                enqueueReminderReconciliation(this)
+            },
         )
+    }
+    val lockSensitiveOperationGuard: LockSensitiveOperationGuard by lazy {
+        LockSensitiveOperationGuard(appLockCoordinator, lockCredentialService) {
+            withContext(Dispatchers.IO) { localLockStore.read()?.policy }
+        }
     }
     val lockActionGuard: LockActionGuard by lazy {
         LockActionGuard(appLockCoordinator) {

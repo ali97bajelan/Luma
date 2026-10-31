@@ -101,6 +101,8 @@
     <string name="widget_data_initial">برای دیدن پیشرفت، لوما را باز کنید.</string>
     <string name="widget_data_setup">این ویجت را در لوما تنظیم کنید.</string>
     <string name="widget_data_read_error">به‌روزرسانی انجام نشد. شمارش در دسترس نیست.</string>
+    <string name="widget_app_lock_hidden">برای دیدن این ویجت محافظت‌شده، قفل لوما را باز کنید.</string>
+    <string name="widget_app_lock_open">برای باز کردن قفل و دیدن این ویجت، لوما را باز کنید.</string>
     <string name="widget_data_date_with_zone">%1$s · زمان پیگیری %2$s</string>
     <string name="widget_habits_summary">%1$d هدف از %2$d هدف انجام‌شده</string>
     <string name="widget_habits_empty_library">هنوز عادتی ندارید.</string>
@@ -667,6 +669,10 @@
     <string name="backup_stay">ماندن</string>
     <string name="backup_restore_in_progress_title">بازیابی در حال انجام است</string>
     <string name="backup_restore_in_progress_message">تغییر داده‌ها در حال ثبت است و بازیابی را نمی‌توان لغو کرد. تا پایان کار در این صفحه بمانید.</string>
+    <string name="backup_restore_lock_choice_title">محافظت از داده‌های بازیابی‌شده را انتخاب کنید</string>
+    <string name="backup_restore_lock_choice_body">قفل برنامه در این نصب فعال نیست. پیش از نمایش داده‌های بازیابی‌شده آن را راه‌اندازی کنید یا آگاهانه بدون قفل ادامه دهید.</string>
+    <string name="backup_restore_setup_lock">راه‌اندازی قفل برنامه</string>
+    <string name="backup_restore_without_lock">ادامه بدون قفل برنامه</string>
     <string name="backup_leave_export_cancelled">ساخت نسخهٔ پشتیبان لغو شد. فایل ناقصی باقی نمانده است.</string>
     <string name="backup_leave_export_may_remain">ساخت نسخهٔ پشتیبان لغو شد. ممکن است ارائه‌دهندهٔ سند فایل ناقصی را نگه داشته باشد؛ پیش از استفاده، مقصد را بررسی کنید.</string>
     <string name="backup_leave_export_completed">ساخت نسخهٔ پشتیبان کامل شد. فایل در مقصد انتخاب‌شده آماده است.</string>
@@ -1342,6 +1348,17 @@
     <string name="app_lock_error_cooldown">تلاش‌های زیادی انجام شده است. %1$d ثانیهٔ دیگر دوباره تلاش کنید.</string>
     <string name="app_lock_error_unavailable">قفل برنامه اکنون در دسترس نیست. محتوای شما محافظت‌شده می‌ماند.</string>
     <string name="app_lock_error_cancelled">عملیات لغو شد. تنظیم امنیتی تغییر نکرد.</string>
+    <string name="app_lock_sensitive_title">با گذرواژهٔ لوما تأیید کنید</string>
+    <string name="app_lock_sensitive_body">برای ادامهٔ %1$s، گذرواژهٔ لوما را وارد کنید.</string>
+    <string name="app_lock_sensitive_operation">این کار</string>
+    <string name="app_lock_sensitive_share">اشتراک‌گذاری</string>
+    <string name="app_lock_sensitive_export">خروجی گرفتن</string>
+    <string name="app_lock_sensitive_backup">پشتیبان‌گیری</string>
+    <string name="app_lock_sensitive_restore">بازیابی</string>
+    <string name="app_lock_sensitive_reset">بازنشانی</string>
+    <string name="app_lock_action_confirm_title">تأیید کار محافظت‌شده</string>
+    <string name="app_lock_action_confirm_body">این کار روی یک مورد محافظت‌شده ادامه یابد؟ جزئیات مورد در اینجا پنهان می‌ماند.</string>
+    <string name="app_lock_action_confirm">ادامه</string>
     <string name="app_lock_error_password_length">گذرواژه‌ای با ۸ تا ۱۲۸ نویسه انتخاب کنید.</string>
     <string name="app_lock_error_password_mismatch">گذرواژه‌ها یکسان نیستند.</string>
     <string name="app_lock_recovery_code_title">کد بازیابی را ذخیره کنید</string>

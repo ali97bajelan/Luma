@@ -76,6 +76,7 @@ object WidgetRenderer {
         failure: Boolean,
         options: android.os.Bundle? = null,
         loadingKind: WidgetKind? = null,
+        locked: Boolean = false,
     ): RemoteViews {
         val sizes = options?.let(::supportedSizes).orEmpty()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && sizes.isNotEmpty()) {
@@ -90,6 +91,7 @@ object WidgetRenderer {
                     dimensions.first.roundToInt(),
                     dimensions.second.roundToInt(),
                     loadingKind,
+                    locked,
                 )
             }
             return RemoteViews(responsiveViews)
@@ -108,7 +110,7 @@ object WidgetRenderer {
                 fallbackHeightDp = 250,
             )
         }
-        return renderAtSize(context, widgetId, snapshot, failure, bounds.first, bounds.second, loadingKind)
+        return renderAtSize(context, widgetId, snapshot, failure, bounds.first, bounds.second, loadingKind, locked)
     }
 
     private fun renderAtSize(
@@ -119,11 +121,13 @@ object WidgetRenderer {
         widthDp: Int,
         heightDp: Int,
         loadingKind: WidgetKind?,
+        locked: Boolean,
     ): RemoteViews {
         val appContext = AppLanguages.wrap(context)
         if (loadingKind != null) return WidgetCompactRenderer.render(context, appContext, widgetId,
             null, false, widthDp, heightDp, "", isAppDark(context, appContext), loadingKind)
         val kind = snapshot?.instance?.kind ?: WidgetRefreshCoordinator.kindForWidgetId(context, widgetId)
+        if (locked && kind != null) return lockedState(context, appContext, widgetId, kind, widthDp)
         val header = headerPlan(appContext, kind, widthDp, if (!failure) snapshot?.total else null)
         if (failure || snapshot == null) {
             val density = appContext.resources.displayMetrics.density
@@ -220,6 +224,54 @@ object WidgetRenderer {
                 textColor, secondaryTextColor, utilityTextColor, buttonBackground, utilityBackground,
                 rowActionBackground)
         }
+        return views
+    }
+
+    private fun lockedState(
+        context: Context,
+        appContext: Context,
+        widgetId: Int,
+        kind: WidgetKind,
+        widthDp: Int,
+    ): RemoteViews {
+        val stacked = widthDp < 220
+        val views = RemoteViews(context.packageName,
+            if (stacked) R.layout.widget_data_stacked_header else R.layout.widget_data)
+        val dark = isAppDark(context, appContext)
+        val titleColor = appContext.getColor(if (dark) R.color.widget_text_primary_dark else R.color.widget_text_primary_light)
+        val bodyColor = appContext.getColor(if (dark) R.color.widget_text_secondary_dark else R.color.widget_text_secondary_light)
+        val buttonColor = appContext.getColor(if (dark) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light)
+        val destination = if (kind == WidgetKind.TASKS) WidgetDestination.Tasks else WidgetDestination.Habits
+
+        views.setInt(R.id.widget_data_root, "setLayoutDirection", appContext.resources.configuration.layoutDirection)
+        views.setInt(R.id.widget_data_root, "setBackgroundResource",
+            if (dark) R.drawable.widget_background_dark else R.drawable.widget_background)
+        views.setTextViewText(R.id.widget_data_title, headerPlan(appContext, kind, widthDp, null).title)
+        views.setTextColor(R.id.widget_data_title, titleColor)
+        views.setTextViewText(R.id.widget_data_more, "")
+        views.setViewVisibility(R.id.widget_data_more, View.GONE)
+        views.setTextViewText(R.id.widget_data_summary, appContext.getString(R.string.widget_app_lock_hidden))
+        views.setContentDescription(R.id.widget_data_summary, appContext.getString(R.string.widget_app_lock_hidden))
+        views.setTextColor(R.id.widget_data_summary, bodyColor)
+        views.setViewVisibility(R.id.widget_data_summary, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_data_updated, View.GONE)
+        views.setViewVisibility(R.id.widget_data_action_slot, View.GONE)
+        views.removeAllViews(R.id.widget_data_action_slot)
+        views.setViewVisibility(R.id.widget_feedback_slot, View.GONE)
+        views.removeAllViews(R.id.widget_feedback_slot)
+        views.setViewVisibility(R.id.widget_data_scroll_hint, View.GONE)
+        views.setViewVisibility(R.id.widget_data_rows, View.GONE)
+        views.setViewVisibility(R.id.widget_header_refresh, View.GONE)
+        views.setTextViewText(R.id.widget_data_refresh, appContext.getString(R.string.widget_capture))
+        views.setTextColor(R.id.widget_data_refresh, buttonColor)
+        views.setContentDescription(R.id.widget_data_open, appContext.getString(R.string.widget_app_lock_open))
+        views.setContentDescription(R.id.widget_data_refresh,
+            appContext.getString(R.string.widget_open_quick_capture_description))
+        views.setOnClickPendingIntent(R.id.widget_data_open,
+            WidgetIntents.navigation(context, widgetId, destination))
+        views.setOnClickPendingIntent(R.id.widget_data_refresh,
+            WidgetIntents.navigation(context, widgetId, WidgetDestination.QuickCapture))
+        views.setViewVisibility(R.id.widget_data_refresh, View.VISIBLE)
         return views
     }
 

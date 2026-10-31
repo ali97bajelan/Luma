@@ -78,7 +78,12 @@ class EntryShareViewModel(private val repository: TimelineRepository, private va
         val s = state.value as? ShareStatus.Ready ?: return
         if (s.snapshot.zone != zone || s.contextKey != contextKey) mutableState.value = s.copy(stale = true)
     }
-    fun share(zone: ZoneId, contextKey: String, launch: (String) -> TextShareLaunchResult) {
+    fun share(
+        zone: ZoneId,
+        contextKey: String,
+        launch: (String) -> TextShareLaunchResult,
+        authorizeLaunch: suspend (suspend () -> TextShareLaunchResult) -> TextShareLaunchResult = { operation -> operation() },
+    ) {
         val s = state.value as? ShareStatus.Ready ?: return
         if (s.busy || s.stale || s.pendingOptions != null) return
         val error = validateEntryShareText(s.text)
@@ -95,7 +100,10 @@ class EntryShareViewModel(private val repository: TimelineRepository, private va
                     current == null -> ShareStatus.Unavailable
                     current != s.snapshot || active.stale -> active.copy(busy = false, stale = true)
                     validateEntryShareText(s.text) != null -> active.copy(busy = false, textError = validateEntryShareText(s.text))
-                    else -> active.copy(busy = false, launchError = launch(s.text) == TextShareLaunchResult.UNAVAILABLE)
+                    else -> active.copy(
+                        busy = false,
+                        launchError = authorizeLaunch { launch(s.text) } == TextShareLaunchResult.UNAVAILABLE,
+                    )
                 }
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) {

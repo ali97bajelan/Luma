@@ -16,13 +16,13 @@ class PrivacyViewModel(private val reset: AppDataReset, private val io: Coroutin
         if (!state.value.busy && !state.value.requestAccepted) mutable.value = PrivacyUiState(confirming = true)
     }
     fun cancelDelete() { if (!state.value.busy) mutable.value = PrivacyUiState() }
-    fun confirmDelete() {
+    fun confirmDelete(resetOperation: suspend () -> Boolean = { reset.requestReset() }) {
         if (!state.value.confirming || state.value.busy || state.value.requestAccepted) return
         mutable.value = PrivacyUiState(busy = true)
         // Start the confirmed OS request even if navigation clears this ViewModel immediately.
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                val accepted = withContext(io + NonCancellable) { reset.requestReset() }
+                val accepted = withContext(io + NonCancellable) { resetOperation() }
                 mutable.value = if (accepted) PrivacyUiState(busy = true, requestAccepted = true)
                     else PrivacyUiState(actionError = true)
             } catch (failure: Exception) {

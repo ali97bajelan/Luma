@@ -7,6 +7,17 @@ task count and terminal focus-session count before asking to replace the current
 saved data. There is no merge mode.
 Export current data first to retain it.
 
+App Lock credentials and policy are device-local and are never archive members.
+The fixed table and photo allowlist excludes retry state, in-memory grants,
+restricted-capture drafts, action receipts, notification/widget runtime and Focus
+runtime. Android cloud backup and device transfer are disabled for app data; the
+lock store also lives under `noBackupFilesDir`. A fresh password is required for
+export and for the restore commit when App Lock is enabled. Restore into a device
+with an existing lock keeps that device's policy and returns it to a locked
+state. A destination without a lock must explicitly choose to set one up or
+continue without one before replacement is committed and restored content is
+shown. The archive itself remains unencrypted.
+
 Backups are unencrypted and contain private text, terminal focus history, task titles and notes, names and
 photos. No automatic
 upload occurs; the selected document provider controls the destination. No broad

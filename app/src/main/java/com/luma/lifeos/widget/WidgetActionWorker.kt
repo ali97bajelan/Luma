@@ -10,6 +10,11 @@ import androidx.work.WorkManager
 import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.domain.widget.WidgetActionResult
 import com.luma.lifeos.domain.widget.WidgetOutcome
+import com.luma.lifeos.domain.lock.LockContentClassification
+import com.luma.lifeos.domain.lock.LockOperation
+import com.luma.lifeos.domain.lock.LockRequest
+import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.lock.LockActionDeniedException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -58,21 +63,40 @@ class WidgetActionWorker(context: Context, params: WorkerParameters) : Coroutine
             runCatching { LocalDate.parse(raw).takeIf { it.toString() == raw } }.getOrNull()
                 ?: return Result.failure()
         }
+        val kind = WidgetRefreshCoordinator.kindForWidgetId(applicationContext, widgetId)
+            ?: return Result.success()
+        val section = when (kind) {
+            com.luma.lifeos.domain.widget.WidgetKind.HABITS -> LockSection.HABITS
+            com.luma.lifeos.domain.widget.WidgetKind.TASKS -> LockSection.TASKS
+        }
+        app.appLockCoordinator.initialize()
         val now = Instant.now()
         val deviceZone = ZoneId.systemDefault()
         val result = try {
             withContext(Dispatchers.IO) {
-                val store = app.storage.widgets
-                if (collectionItemId != null && collectionDate != null &&
-                    !store.isValidCollectionMutation(widgetId, collectionItemId, token, collectionDate)
+                app.lockActionGuard.execute(
+                    LockRequest(
+                        operation = LockOperation.UPDATE,
+                        requiredSections = setOf(section),
+                        contentClassification = LockContentClassification.CLASSIFIED,
+                        objectId = token.toString(),
+                    ),
                 ) {
-                    WidgetActionResult(WidgetOutcome.INVALID)
-                } else {
-                    store.execute(widgetId, token, now, deviceZone)
+                    val store = app.storage.widgets
+                    if (collectionItemId != null && collectionDate != null &&
+                        !store.isValidCollectionMutation(widgetId, collectionItemId, token, collectionDate)
+                    ) {
+                        WidgetActionResult(WidgetOutcome.INVALID)
+                    } else {
+                        store.execute(widgetId, token, now, deviceZone)
+                    }
                 }
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
+        } catch (_: LockActionDeniedException) {
+            WidgetRefreshCoordinator.request(applicationContext)
+            return Result.success()
         } catch (_: Exception) {
             // Keep and retry the original identity; execute is transactionally replay-safe.
             WidgetRefreshCoordinator.request(applicationContext)

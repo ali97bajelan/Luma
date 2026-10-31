@@ -10,6 +10,11 @@ android {
 
     flavorDimensions += "qa"
     productFlavors {
+        create("appLockQa") {
+            dimension = "qa"
+            applicationIdSuffix = ".applockqa"
+            versionNameSuffix = "-applockqa"
+        }
         create("focusQa") {
             dimension = "qa"
             applicationIdSuffix = ".focusqa"
@@ -22,7 +27,7 @@ android {
         minSdk = 28
         targetSdk = 35
         versionCode = 8
-        versionName = "1.4.0"
+        versionName = "1.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

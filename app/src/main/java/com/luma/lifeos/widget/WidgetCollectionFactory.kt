@@ -8,6 +8,7 @@ import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.domain.widget.WidgetKind
+import com.luma.lifeos.lock.ProtectedPreviewPolicy
 import com.luma.lifeos.domain.widget.WidgetRow
 import com.luma.lifeos.domain.widget.WidgetSnapshot
 import com.luma.lifeos.domain.widget.WidgetStore
@@ -112,6 +113,11 @@ internal class WidgetCollectionFactory(
     private fun currentMetadata(): WidgetSnapshot? {
         val current = metadata ?: return null
         if (widgetId <= 0 || WidgetRefreshCoordinator.kindForWidgetId(context, widgetId) != kind) return null
+        if (!privacyAllowsRead()) {
+            metadata = null
+            pageSnapshot = null
+            return null
+        }
         return current
     }
 
@@ -120,6 +126,7 @@ internal class WidgetCollectionFactory(
         deviceZone = ZoneId.systemDefault()
         metadata = null
         if (widgetId <= 0 || kind == null || WidgetRefreshCoordinator.kindForWidgetId(context, widgetId) != kind) return
+        if (!privacyAllowsRead()) return
         val store = widgetStore() ?: return
         metadata = runBlocking(Dispatchers.IO) {
             store.snapshot(widgetId, snapshotNow, deviceZone, rowLimit = 0)
@@ -128,6 +135,16 @@ internal class WidgetCollectionFactory(
     }
 
     private fun widgetStore() = (context.applicationContext as? LumaApplication)?.storage?.widgets
+
+    private fun privacyAllowsRead(): Boolean {
+        val app = context.applicationContext as? LumaApplication ?: return false
+        return try {
+            val policy = runBlocking(Dispatchers.IO) { app.localLockStore.read()?.policy }
+            !ProtectedPreviewPolicy.redact(policy, ProtectedPreviewPolicy.widgetSection(requireNotNull(kind)))
+        } catch (_: Exception) {
+            false
+        }
+    }
 
     @Suppress("DEPRECATION")
     private fun widthDp(): Int {

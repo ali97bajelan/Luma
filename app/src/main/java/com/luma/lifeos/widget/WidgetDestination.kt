@@ -26,3 +26,16 @@ data class WidgetLaunchRequest(
     val id: UUID,
     val destination: WidgetDestination,
 ) : Serializable
+
+/** Safe pointer to a persisted widget command; it carries no record preview or unlock authority. */
+data class WidgetActionRequest(
+    val widgetId: Int,
+    val token: UUID,
+    val collectionItemId: UUID? = null,
+    val collectionDate: LocalDate? = null,
+) {
+    init {
+        require(widgetId > 0)
+        require((collectionItemId == null) == (collectionDate == null))
+    }
+}

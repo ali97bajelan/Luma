@@ -35,6 +35,7 @@ import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
+import com.luma.lifeos.lock.ProtectedPreviewPolicy
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.theme.LifeOsTheme
@@ -133,7 +134,19 @@ class WidgetConfigurationActivity : ComponentActivity() {
                     }
                     storage.widgets.configure(WidgetInstance(selectedWidgetId, selectedKind))
                 }
-                val snapshot = try {
+                val policyRead = try {
+                    withContext(Dispatchers.IO) { (application as LumaApplication).localLockStore.read()?.policy to true }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null to false
+                }
+                val locked = ProtectedPreviewPolicy.redact(
+                    policyRead.first,
+                    ProtectedPreviewPolicy.widgetSection(selectedKind),
+                    policyRead.second,
+                )
+                val snapshot = if (locked) null else try {
                     withContext(Dispatchers.IO) {
                         WidgetRenderer.snapshotForRendering(
                             store = storage.widgets,
@@ -147,16 +160,30 @@ class WidgetConfigurationActivity : ComponentActivity() {
                 } catch (_: Exception) {
                     null
                 }
+                val latestPolicyRead = try {
+                    withContext(Dispatchers.IO) { (application as LumaApplication).localLockStore.read()?.policy to true }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null to false
+                }
+                val latestLocked = ProtectedPreviewPolicy.redact(
+                    latestPolicyRead.first,
+                    ProtectedPreviewPolicy.widgetSection(selectedKind),
+                    latestPolicyRead.second,
+                )
+                val safeSnapshot = snapshot.takeUnless { latestLocked }
                 val manager = AppWidgetManager.getInstance(this@WidgetConfigurationActivity)
                 manager.updateAppWidget(
                     selectedWidgetId,
                     WidgetRenderer.render(
                         this@WidgetConfigurationActivity,
                         selectedWidgetId,
-                        snapshot,
-                        failure = snapshot == null,
+                        safeSnapshot,
+                        failure = !latestLocked && safeSnapshot == null,
                         options = AppWidgetManager.getInstance(this@WidgetConfigurationActivity)
                             .getAppWidgetOptions(selectedWidgetId),
+                        locked = latestLocked,
                     ),
                 )
                 manager.notifyAppWidgetViewDataChanged(selectedWidgetId, R.id.widget_data_rows)
