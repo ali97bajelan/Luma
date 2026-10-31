@@ -21,7 +21,7 @@
         android:paddingStart="0dp"
         android:paddingEnd="0dp">
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_task_row_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -34,7 +34,7 @@
             android:textAlignment="viewStart"
             android:gravity="start|center_vertical" />
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_task_row_due"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -45,7 +45,7 @@
             android:gravity="start|center_vertical" />
     </LinearLayout>
 
-    <TextView
+    <TextView android:fontFamily="@font/widget_sans"
         android:id="@+id/widget_task_row_action"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

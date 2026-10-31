@@ -186,6 +186,8 @@ For every case capture fixture identity, exact steps and independently inspected
 
 **Evidence:** Dated primary-source links, capability table, explicit scope decision; authorized spike artifacts only if actually performed. **Initial result: NOT RUN.**
 
+**Scoped result — 31 October 2026:** SCOPE/API CAPABILITY PASS. Current official Android docs and a read-only source/manifest audit support the decision to retain personal-phone v1 and defer strict blocking to a managed-device DPC/EMM branch. A read-only check of the API 36 emulator confirmed no device-owner policy, lock-task allowlist, or active lock-task state. No device was provisioned and no DPC enforcement behavior was exercised; strict device-wide enforcement remains unmet. Details and limits are recorded in [FM08 assessment evidence](evidence/2026-10-31/F16/fm08-assessment.md).
+
 ## FM01 domain QA run — 30 October 2026
 
 The FM01 pure-domain subset passed. The exact command, environment, source/test patch identity, defects and evidence files are recorded in [the run report](evidence/2026-10-30/F16/fm01-domain-qa.md). The focused suite covers transitions, pause exclusion, monotonic continuity/recovery, half-open day/week overlap, DST-sized ranges, deduplication, interrupted/zero-time contribution, and comparison rounding/baselines. At that time the integrated cases were still waiting on FM03; the later FM03 scoped run is recorded below.
@@ -226,7 +228,7 @@ FM06 passed scoped host, connected and lint checks on the isolated `focusQaDebug
 
 QA caught two regressions and their fixes. `confirmRestore { ... }` had changed Kotlin trailing-lambda binding when the second callback was added, causing failure completion to call the success callback; a compatibility overload restores the original call behavior. The active restore dialog placed Cancel beside the two vertically stacked destructive actions and its button overlapped Discard; Cancel now stacks below them. The API36.1 Compose bounds regression passed after the fix. Exact commands, candidate/APK hashes, manual screenshots and logs are in [FM06 execution evidence](evidence/2026-10-30/F16/fm06-qa.md).
 
-QA10–11 are **PARTIAL**, not full acceptance. The run does not cover every archive version or malformed fixture, photo/hash preservation, stop-and-include export, queued old-generation writes racing a real restore/reset, reset refusal/reconciliation, every receipt replay case or the full platform/accessibility/locale matrix. QA12/13 remain partial; QA14 performance remains not run. F16 integrated acceptance, FM07 and FM08 remain open.
+QA10–11 are **PARTIAL**, not full acceptance. The run does not cover every archive version or malformed fixture, photo/hash preservation, stop-and-include export, queued old-generation writes racing a real restore/reset, reset refusal/reconciliation, every receipt replay case or the full platform/accessibility/locale matrix. QA12/13 remain partial; QA14 performance remains not run. F16 integrated acceptance remains pending; FM08 scope QA is recorded below, while strict device-wide enforcement remains unmet.
 
 ## FM07 integrated source review and QA — 30 October 2026
 
@@ -234,7 +236,7 @@ FM07 completed a source/resource/manifest review and fixed five defects covering
 
 QA caught a stale `today_focus` selector in `FocusLifecycleTest` after FM05 changed the Today action to `today_focus_open`; updating the selector made both lifecycle tests pass and the full selected Focus app set passed on retest. The complete 262-test app instrumentation run was interrupted after 83 tests and ten observed failures, including the known `AppNavigationTest` ActivityScenario teardown and failures in Journal/Memory/Mood/People/Place/Search/Calendar coverage. It is a partial run, not a regression pass. The R8 minifier emitted 300 Kotlin metadata parser compatibility warnings despite a successful build and smoke launch.
 
-QA01–13 remain **PARTIAL** because native process/clock cases, real external-app launch/return, the required API28 and locale/theme/window/font/accessibility matrix were not completed. QA14 remains **NOT RUN**: no 50,000-session fixture or representative-device 5-warmup/30-sample measurement was collected. Full F16 acceptance and QA14 are still pending; FM08 device-wide enforcement remains separate and unresolved.
+QA01–13 remain **PARTIAL** because native process/clock cases, real external-app launch/return, the required API28 and locale/theme/window/font/accessibility matrix were not completed. QA14 remains **NOT RUN**: no 50,000-session fixture or representative-device 5-warmup/30-sample measurement was collected. QA15's scope/API assessment and read-only emulator policy-state check are complete; strict device-wide enforcement remains deferred and unmet. Full F16 acceptance and QA14 are still pending.
 
 ## Execution ledger
 
@@ -254,6 +256,6 @@ QA01–13 remain **PARTIAL** because native process/clock cases, real external-a
 | F16-QA12 | NOT RUN | PARTIAL | FM07 focused Focus app tests pass 13/13; debug and release app host suites pass 304/304 each. The full app connected suite was interrupted at 83/262 after ten observed failures and was not rerun; all entry paths, drafts and restore races remain open. See [FM07 evidence](evidence/2026-10-30/F16/fm07-qa.md). |
 | F16-QA13 | NOT RUN | PARTIAL | FM07 observed one English/light/portrait/normal-font API36.1 cell; lint has no findings in Focus production files. API28, TalkBack/keyboard/predictive Back and EN/FR/FA theme/window/font/orientation matrix remain unrun. |
 | F16-QA14 | NOT RUN | NOT RUN | No 50,000-row fixture or representative-device performance measurements were run; FM07 records this as NOT RUN. |
-| F16-QA15 | NOT RUN | NOT RUN | FM08 scope/capability assessment has not run. |
+| F16-QA15 | NOT RUN | PASS — scope/API assessment only | Current official Android capability docs, read-only source/manifest inspection, and API 36 emulator policy-state inspection support the personal-phone scope recommendation. No DPC enforcement behavior was exercised; strict device-wide enforcement remains unmet. See [FM08 assessment evidence](evidence/2026-10-31/F16/fm08-assessment.md). |
 
 The FM01 host-domain subset is complete. F16 acceptance remains pending because the integrated cases and remaining tasks have not passed.

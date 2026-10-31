@@ -1,6 +1,6 @@
 # F16 — Focus mode specification
 
-Date: 30 October 2026 · Priority: **P1 (proposed)** · Status: **DRAFT — FM01 DOMAIN QA PASS; FM02 SOURCE COMPLETE / QA PENDING; INTEGRATED QA BLOCKED**
+Date: 31 October 2026 · Priority: **P1 (proposed)** · Status: **DRAFT — FM01 DOMAIN QA PASS; FM02 STORAGE/REPOSITORY QA PASS; FM03–FM06 SCOPED QA PASS (FM06 PARTIAL); FM07 SCOPED QA PASS (FULL ACCEPTANCE PARTIAL); FM08 ASSESSMENT + QA15 DOCUMENTATION/API PASS (STRICT BLOCKING DEFERRED/UNMET); INTEGRATED QA AND FULL MATRIX PENDING**
 
 [Tasks](../../FOCUS_MODE_TASKS.md) · [Plan](../plans/2026-10-28-roadmap-16-focus-mode.md) · [QA scenarios](../../feature-roadmap/16-focus-mode-qa.md) · [Roadmap](../../FEATURE_ROADMAP_2026-10-26.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -8,7 +8,7 @@ Date: 30 October 2026 · Priority: **P1 (proposed)** · Status: **DRAFT — FM01
 
 Help a user concentrate, retain each focus session, and compare recorded focus time across days and weeks. The requested behavior is: save each session; show a total on Today and comparisons in Weekly Review; let the user select allowed apps in focus settings; keep the user on the focus screen until Pause or Stop, except for selected apps.
 
-This specification defines a **proposed personal-phone v1**, plus a separate enforcement investigation. FM01 implements pure session, timing, transition and statistics contracts, and its host-domain QA subset passes. FM02's durable Room source handoff is complete with migration and repository QA pending; integrated scenarios remain pending; FM03 has a clock source only and FM04–FM08 implementation remains pending. Complete all implementation handoffs before beginning remaining QA; pending earlier QA does not block subsequent implementation. This does not claim that proposed defaults were approved or that the feature is complete. In particular, the requested device-wide app restriction is **not fulfilled by the personal-phone navigation guard**. It remains a tracked scope decision in FM08, rather than silently weakening that requirement.
+This specification defines a **proposed personal-phone v1**, plus a separate enforcement assessment. FM01–FM07 source handoffs and scoped QA are recorded in the [task status](../../FOCUS_MODE_TASKS.md); integrated scenarios and the full platform matrix remain pending. FM08 recommends retaining the personal-phone proposal for this version and documents managed-device DPC lock task as the Android path for package-level enforcement. This recommendation does not claim the proposed defaults were approved or the feature is complete. The requested device-wide restriction is **not fulfilled by the personal-phone navigation guard** and remains unmet; see the [FM08 assessment](../../feature-roadmap/evidence/2026-10-31/F16/fm08-assessment.md).
 
 Proposed defaults: count-up stopwatch; no target or automatic finish; empty allowed-app selection; navigation guard always enabled while RUNNING; only explicitly ended/interrupted sessions contribute to saved reports; stopped sessions retain all positive active time; pause time is excluded. A stopwatch avoids introducing unrequested Pomodoro cycles, scheduled starts and alarm delivery. These can be separate extensions later.
 
@@ -17,7 +17,7 @@ Proposed defaults: count-up stopwatch; no target or automatic finish; empty allo
 | Approach | What it can provide | Limits and proposed disposition |
 | --- | --- | --- |
 | Personal-phone navigation guard and app shortcuts | Guard all Luma navigation while running; launch selected apps from focus screen; reliable local timing/history | Proposed v1. Home, Recents, notification shade, system UI, other apps and force-stop remain under Android/user control. The shortcut list does not block nonselected apps across Android. |
-| Opt-in personal-phone restriction integration | Investigate supported launcher/accessibility/device capabilities with explicit user setup | FM08 investigation only. No promised enforcement, automatic accessibility consent, overlay, foreground polling or assumed store approval. |
+| Opt-in personal-phone restriction integration | Investigate supported launcher/accessibility/device capabilities with explicit user setup | Reviewed in FM08 and not selected: monitoring does not deny launches, and accessibility/overlay/background-relaunch paths do not establish the required managed allowlist. No promised enforcement, automatic accessibility consent, overlay, foreground polling or assumed store approval. |
 | Managed-device lock task mode | A DPC can allowlist Luma and selected packages on a provisioned managed device | Stronger restriction option; requires a different deployment/setup scope. Not a silent personal-phone default. |
 
 Android distinguishes lock task mode from user-exitable screen pinning. A DPC must allowlist packages for lock task mode; calling `startLockTask()` without this setup does not supply a non-exitable multi-app kiosk. See [Android lock task mode](https://developer.android.com/work/dpc/dedicated-devices/lock-task-mode). Android also restricts background activity launches, so repeatedly forcing Luma on top is not the proposed design. See [background activity starts](https://developer.android.com/guide/components/activities/background-starts).
@@ -149,7 +149,7 @@ interface FocusRepository {
 
 ## Scope decisions and exclusions
 
-- FM08 must resolve whether the user needs strict device-wide restrictions before the feature can be advertised as satisfying the full original restriction request. Personal-phone shortcuts alone cannot close it.
+- FM08 assessment recommends retaining the proposed personal-phone scope; QA15's documentation/API capability review passed. This closes the investigation only. Device-wide restriction remains unmet, so personal-phone shortcuts cannot satisfy or be advertised as the original strict restriction request. A managed-device DPC/EMM branch requires a revised product scope and authorized device QA. See [FM08 assessment evidence](../../feature-roadmap/evidence/2026-10-31/F16/fm08-assessment.md).
 - No Pomodoro cycles, countdown target, alarms, scheduled focus, goals/streaks, mood capture, task linkage, widgets, automatic app blocking, automatic DND, website/domain filtering, attention scoring or cloud synchronization in this proposal.
 - Tests, schema export, builds, lint, runtime actions and evidence are phase 2 work under the shared workflow. Every new scenario starts NOT RUN.
 - Before implementation, reconcile current source paths/schema versions, chosen enforcement scope and proposed stopwatch/background counting semantics with the execution request. Documentation review does not authorize product changes.

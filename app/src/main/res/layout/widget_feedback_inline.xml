@@ -22,7 +22,7 @@
             android:src="@drawable/ic_widget_feedback"
             android:visibility="gone" />
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_data_feedback"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -31,7 +31,7 @@
             android:textColor="@color/widget_on_primary"
             android:textSize="14sp" />
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_feedback_primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -45,7 +45,7 @@
             android:textSize="14sp"
             android:visibility="gone" />
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_feedback_dismiss"
             android:layout_width="48dp"
             android:layout_height="48dp"
@@ -63,7 +63,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_feedback_secondary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

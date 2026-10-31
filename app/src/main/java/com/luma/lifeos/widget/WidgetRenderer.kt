@@ -811,7 +811,7 @@ object WidgetRenderer {
     internal fun measureTextWidth(context: Context, text: String, sizeSp: Float, bold: Boolean = false): Float {
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             textLocales = context.resources.configuration.locales
-            if (bold) typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = WidgetTypography.typeface(context, bold)
             textSize = TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP,
                 sizeSp,
@@ -893,7 +893,7 @@ object WidgetRenderer {
         if (text.isEmpty()) return 0
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             textLocales = context.resources.configuration.locales
-            typeface = if (bold) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
+            typeface = WidgetTypography.typeface(context, bold)
             textSize = TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP,
                 sizeSp,

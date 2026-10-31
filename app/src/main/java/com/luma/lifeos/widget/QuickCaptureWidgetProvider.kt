@@ -69,6 +69,7 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
         val density = appContext.resources.displayMetrics.density
         val paint = android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             textLocales = appContext.resources.configuration.locales
+            typeface = WidgetTypography.typeface(appContext)
             textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
                 16f, appContext.resources.displayMetrics)
         }

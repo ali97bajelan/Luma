@@ -3,17 +3,17 @@
  android:id="@+id/quick_capture_widget_root" android:layout_width="match_parent"
  android:layout_height="match_parent" android:orientation="horizontal"
  android:padding="12dp" android:background="@drawable/widget_background">
-<TextView android:id="@+id/widget_capture_mood" android:layout_width="0dp"
+<TextView android:fontFamily="@font/widget_sans" android:id="@+id/widget_capture_mood" android:layout_width="0dp"
  android:layout_height="match_parent" android:layout_weight="1"
   android:minWidth="48dp" android:minHeight="48dp" android:gravity="center"
  android:padding="8dp" android:background="@drawable/widget_button_background"
  android:text="@string/widget_capture_mood" android:textSize="16sp" android:textColor="@color/widget_on_primary" />
-<TextView android:id="@+id/widget_capture_memory" android:layout_width="0dp"
+<TextView android:fontFamily="@font/widget_sans" android:id="@+id/widget_capture_memory" android:layout_width="0dp"
  android:layout_height="match_parent" android:layout_weight="1"
  android:layout_marginStart="8dp" android:minWidth="48dp" android:minHeight="48dp" android:gravity="center"
  android:padding="8dp" android:background="@drawable/widget_button_background"
  android:text="@string/widget_capture_memory" android:textSize="16sp" android:textColor="@color/widget_on_primary" />
-<TextView android:id="@+id/widget_capture_journal" android:layout_width="0dp"
+<TextView android:fontFamily="@font/widget_sans" android:id="@+id/widget_capture_journal" android:layout_width="0dp"
  android:layout_height="match_parent" android:layout_weight="1"
  android:layout_marginStart="8dp" android:minWidth="48dp" android:minHeight="48dp" android:gravity="center"
  android:padding="8dp" android:background="@drawable/widget_button_background"

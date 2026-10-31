@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <TextView
+    <TextView android:fontFamily="@font/widget_sans"
         android:id="@+id/widget_quick_capture_open"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

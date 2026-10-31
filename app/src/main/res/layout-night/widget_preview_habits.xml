@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <TextView
+    <TextView android:fontFamily="@font/widget_sans"
         android:id="@+id/widget_preview_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -21,7 +21,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
@@ -31,7 +31,7 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_preview_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -47,7 +47,7 @@
             android:textColor="@color/widget_action_utility_dark"
             android:textSize="12sp" />
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:layout_width="wrap_content"
             android:layout_height="48dp"
             android:background="@drawable/widget_button_background_dark"
@@ -93,7 +93,7 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <TextView android:fontFamily="@font/widget_sans"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -103,7 +103,7 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <TextView
+                <TextView android:fontFamily="@font/widget_sans"
                     android:id="@+id/widget_preview_habit_count"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -127,7 +127,7 @@
                 android:progressDrawable="@drawable/widget_habit_progress_dark" />
         </LinearLayout>
 
-        <TextView
+        <TextView android:fontFamily="@font/widget_sans"
             android:id="@+id/widget_preview_habit_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -164,7 +164,7 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <TextView android:fontFamily="@font/widget_sans"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -174,7 +174,7 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <TextView
+                <TextView android:fontFamily="@font/widget_sans"
                     android:id="@+id/widget_preview_habit_second_count"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -199,7 +199,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <TextView
+    <TextView android:fontFamily="@font/widget_sans"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
