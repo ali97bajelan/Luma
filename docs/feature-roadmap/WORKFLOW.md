@@ -9,6 +9,8 @@ Date: 26 October 2026. Status: documentation only; no feature implementation, Gr
 
 For F16 focus mode, the user directed a feature-wide sequence: complete all implementation handoffs before starting remaining QA; pending earlier QA does not block later implementation. FM01 domain QA was already performed. Source dependencies and release gates still apply.
 
+For the 31 October app-lock revision, the user also directed that later implementation must not depend on previous-task QA. The [app-lock board](../APP_LOCK_TASKS.md) and [plan](../superpowers/plans/2026-10-31-app-lock.md) use an implementation-first wave: finish T01–T08 source handoffs, then QA. All implementation dependency edges are source-handoff edges only; none require predecessor QA PASS. This exception changes scheduling, not the two-phase responsibilities or final acceptance/release gates. The 26 October F06 documents remain historical inputs for that revision.
+
 For other roadmap features, the boundary applies to **each task**: finish task 01 implementation, then task 01 QA; dependencies may then proceed. It does not require all implementations before any QA. Phase 1 status is `SOURCE COMPLETE — QA PENDING`, never `verified`, `passing`, `release ready` or task complete. Do not merge/release schema-changing work until phase 2 exports, inspects and validates the schema and migration chain.
 
 ## Baseline and authority

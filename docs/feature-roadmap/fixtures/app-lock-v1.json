@@ -1,0 +1,737 @@
+{
+  "fixtureVersion": 1,
+  "fixtureId": "luma-app-lock-v1",
+  "syntheticOnly": true,
+  "format": "LOGICAL_QA_FIXTURE_NOT_LUMA_BACKUP",
+  "seed": "luma-app-lock-v1",
+  "environment": {
+    "wallNow": "2026-10-31T06:30:00Z",
+    "zone": "Asia/Tehran",
+    "alternateZone": "UTC",
+    "bootId": "qa-boot-01",
+    "elapsedNowMs": 1000000,
+    "network": "OFFLINE"
+  },
+  "credentials": {
+    "warning": "PUBLIC SYNTHETIC VECTORS; NEVER USE FOR REAL LOCKS",
+    "password": "Luma QA pass 31",
+    "wrongPassword": "Luma QA pass 32",
+    "replacementPassword": "New Luma QA pass 31",
+    "recoveryCode": "QA-ONLY-RECOVERY-0001-0002-0003",
+    "replacementRecoveryCode": "QA-ONLY-RECOVERY-0004-0005-0006",
+    "recoveryCodesAreInjectedVerifierVectors": true
+  },
+  "passwordVectors": [
+    {
+      "id": "pw-7",
+      "value": "aaaaaaa",
+      "valid": false
+    },
+    {
+      "id": "pw-8",
+      "value": "aaaaaaaa",
+      "valid": true
+    },
+    {
+      "id": "pw-128",
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "valid": true
+    },
+    {
+      "id": "pw-129",
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "valid": false
+    },
+    {
+      "id": "pw-space",
+      "value": "  abcdef  ",
+      "valid": true,
+      "mustEqualTrimmed": false
+    },
+    {
+      "id": "pw-fa",
+      "value": "رمز آزمایشی ۱۲۳",
+      "valid": true
+    },
+    {
+      "id": "pw-emoji",
+      "value": "🔒🔒🔒🔒🔒🔒🔒🔒",
+      "valid": true,
+      "codePoints": 8,
+      "utf16Units": 16
+    },
+    {
+      "id": "pw-nfc",
+      "value": "éééééééé",
+      "valid": true
+    },
+    {
+      "id": "pw-nfd",
+      "value": "éééééééé",
+      "valid": true,
+      "mustEqualNfc": false
+    }
+  ],
+  "records": [
+    {
+      "alias": "memory_private",
+      "id": "6470ecd1-5576-596f-ae46-7dcf36d72ed1",
+      "kind": "memory",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "MANUAL",
+      "title": "AL_SECRET_MEMORY_01",
+      "note": "Synthetic memory body",
+      "importance": 4,
+      "photoAliases": [
+        "photo_saved"
+      ],
+      "personAliases": [
+        "person_en"
+      ]
+    },
+    {
+      "alias": "journal_public",
+      "id": "de36ce62-c348-56d1-928c-17d083872334",
+      "kind": "journal",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "MANUAL",
+      "title": "AL_JOURNAL_01",
+      "body": "Synthetic ordinary journal body",
+      "tagNames": [
+        "fixture"
+      ]
+    },
+    {
+      "alias": "journal_marked",
+      "id": "8f8ecdba-fabe-5098-8bd9-b40addb389df",
+      "kind": "journal",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "MANUAL",
+      "title": "AL_SECRET_MARKED_JOURNAL_01",
+      "body": "Synthetic marked journal body",
+      "memoryMarker": {
+        "importance": 5,
+        "note": "AL_SECRET_MARKER_01"
+      },
+      "photoAliases": [
+        "photo_marked"
+      ]
+    },
+    {
+      "alias": "mood_public",
+      "id": "dedeb49a-56b5-55ea-9bc0-5a8884ac0526",
+      "kind": "mood",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "MANUAL",
+      "score": 3,
+      "energy": 2,
+      "stress": 4,
+      "note": "AL_MOOD_01"
+    },
+    {
+      "alias": "mood_marked",
+      "id": "28bcb40b-3d52-507f-8755-caf633e8f97f",
+      "kind": "mood",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "MANUAL",
+      "score": 1,
+      "energy": 1,
+      "stress": 5,
+      "note": "AL_SECRET_MARKED_MOOD_01",
+      "memoryMarker": {
+        "importance": 3,
+        "note": "Synthetic marker"
+      }
+    },
+    {
+      "alias": "journal_person_linked",
+      "id": "9b9c4017-9992-5a8c-a620-837e9e4b67c4",
+      "kind": "journal",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "MANUAL",
+      "title": "AL_LINKED_JOURNAL_01",
+      "body": "Synthetic meeting without a typed identity",
+      "personAliases": [
+        "person_en",
+        "person_fa"
+      ],
+      "placeAlias": "place_fixture"
+    },
+    {
+      "alias": "health_activity",
+      "id": "4457072f-316f-5c7f-87a0-b7f0627ee6f7",
+      "kind": "activity",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "endedAt": "2026-10-31T06:45:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "HEALTH_CONNECT",
+      "sourceReference": "qa-health-activity-01",
+      "title": "AL_SECRET_HEALTH_01",
+      "activity": {
+        "type": "walking",
+        "durationMs": 900000
+      }
+    },
+    {
+      "alias": "usage_event",
+      "id": "4cee213a-636f-5b72-91d6-0dd2fce12590",
+      "kind": "app_usage",
+      "occurredAt": "2026-10-31T06:30:00Z",
+      "endedAt": "2026-10-31T06:40:00Z",
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "source": "USAGE_STATS",
+      "sourceReference": "qa-usage-01",
+      "title": "AL_SECRET_USAGE_01",
+      "appUsage": {
+        "packageName": "invalid.luma.synthetic",
+        "durationMs": 600000
+      }
+    },
+    {
+      "alias": "task_open",
+      "id": "5c7b2e26-3859-5280-a646-5bfbc6717dfd",
+      "kind": "task",
+      "title": "AL_SECRET_TASK_01",
+      "note": "Synthetic task note",
+      "dueDate": "2026-10-31",
+      "dueTime": "14:00",
+      "completedAt": null,
+      "createdAt": "2026-10-31T06:30:00Z",
+      "updatedAt": "2026-10-31T06:30:00Z",
+      "revision": "a5e6c78f-298d-5701-8cad-4c5c9997dacd"
+    },
+    {
+      "alias": "habit_water",
+      "id": "e5bd0753-c12f-59b0-9860-51d3c02ec473",
+      "kind": "habit",
+      "name": "AL_SECRET_HABIT_01",
+      "unitLabel": "glass",
+      "target": 2,
+      "start": "2026-10-30",
+      "weekdays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ],
+      "zone": "Asia/Tehran",
+      "lifecycle": "ACTIVE",
+      "logDates": [
+        "2026-10-30"
+      ]
+    },
+    {
+      "alias": "person_en",
+      "id": "09e4aab2-642e-51ee-99ee-b860135c0ec7",
+      "kind": "person",
+      "name": "AL_SECRET_PERSON_01",
+      "note": "Synthetic directory note"
+    },
+    {
+      "alias": "person_fa",
+      "id": "8cec8534-5fdd-5b88-8db3-24cab9e768cc",
+      "kind": "person",
+      "name": "شخص آزمایشی قفل",
+      "note": "داده آزمایشی"
+    },
+    {
+      "alias": "place_fixture",
+      "id": "afda080d-81e3-5002-a3f2-632c66a34efa",
+      "kind": "place",
+      "name": "AL_PLACE_01"
+    },
+    {
+      "alias": "focus_saved",
+      "id": "82148d90-20b7-5aed-b93b-2af885b067b0",
+      "kind": "focus",
+      "title": "AL_SECRET_FOCUS_01",
+      "status": "COMPLETED",
+      "startedAt": "2026-10-31T05:00:00Z",
+      "endedAt": "2026-10-31T05:25:00Z",
+      "creditedMs": 1500000
+    }
+  ],
+  "profiles": [
+    {
+      "name": "memories_locked",
+      "coverage": "SELECTED",
+      "sections": [
+        "MEMORIES"
+      ],
+      "grants": [],
+      "visibleRecordAliases": [
+        "journal_public",
+        "mood_public",
+        "journal_person_linked",
+        "health_activity",
+        "usage_event",
+        "task_open",
+        "habit_water",
+        "person_en",
+        "person_fa",
+        "place_fixture",
+        "focus_saved"
+      ],
+      "hiddenRecordAliases": [
+        "memory_private",
+        "journal_marked",
+        "mood_marked"
+      ],
+      "redactedPersonLinkAliases": [],
+      "relockMode": "EVERY_TIME",
+      "screenshotsProtected": true,
+      "enabled": true,
+      "loadStatus": "READY",
+      "policyGeneration": 1
+    },
+    {
+      "name": "people_locked",
+      "coverage": "SELECTED",
+      "sections": [
+        "PEOPLE"
+      ],
+      "grants": [],
+      "visibleRecordAliases": [
+        "memory_private",
+        "journal_public",
+        "journal_marked",
+        "mood_public",
+        "mood_marked",
+        "journal_person_linked",
+        "health_activity",
+        "usage_event",
+        "task_open",
+        "habit_water",
+        "place_fixture",
+        "focus_saved"
+      ],
+      "hiddenRecordAliases": [
+        "person_en",
+        "person_fa"
+      ],
+      "redactedPersonLinkAliases": [
+        "memory_private",
+        "journal_person_linked"
+      ],
+      "relockMode": "EVERY_TIME",
+      "screenshotsProtected": true,
+      "enabled": true,
+      "loadStatus": "READY",
+      "policyGeneration": 1
+    },
+    {
+      "name": "tasks_habits_locked",
+      "coverage": "SELECTED",
+      "sections": [
+        "TASKS",
+        "HABITS"
+      ],
+      "grants": [],
+      "visibleRecordAliases": [
+        "memory_private",
+        "journal_public",
+        "journal_marked",
+        "mood_public",
+        "mood_marked",
+        "journal_person_linked",
+        "health_activity",
+        "usage_event",
+        "person_en",
+        "person_fa",
+        "place_fixture",
+        "focus_saved"
+      ],
+      "hiddenRecordAliases": [
+        "task_open",
+        "habit_water"
+      ],
+      "redactedPersonLinkAliases": [],
+      "relockMode": "EVERY_TIME",
+      "screenshotsProtected": true,
+      "enabled": true,
+      "loadStatus": "READY",
+      "policyGeneration": 1
+    },
+    {
+      "name": "health_focus_locked",
+      "coverage": "SELECTED",
+      "sections": [
+        "HEALTH_USAGE",
+        "FOCUS"
+      ],
+      "grants": [],
+      "visibleRecordAliases": [
+        "memory_private",
+        "journal_public",
+        "journal_marked",
+        "mood_public",
+        "mood_marked",
+        "journal_person_linked",
+        "task_open",
+        "habit_water",
+        "person_en",
+        "person_fa",
+        "place_fixture"
+      ],
+      "hiddenRecordAliases": [
+        "health_activity",
+        "usage_event",
+        "focus_saved"
+      ],
+      "redactedPersonLinkAliases": [],
+      "relockMode": "EVERY_TIME",
+      "screenshotsProtected": true,
+      "enabled": true,
+      "loadStatus": "READY",
+      "policyGeneration": 1
+    },
+    {
+      "name": "all_sections_locked",
+      "coverage": "SELECTED",
+      "sections": [
+        "MEMORIES",
+        "JOURNAL",
+        "MOOD",
+        "TASKS",
+        "HABITS",
+        "PEOPLE",
+        "FOCUS",
+        "HEALTH_USAGE"
+      ],
+      "grants": [],
+      "visibleRecordAliases": [
+        "place_fixture"
+      ],
+      "hiddenRecordAliases": [
+        "memory_private",
+        "journal_public",
+        "journal_marked",
+        "mood_public",
+        "mood_marked",
+        "journal_person_linked",
+        "health_activity",
+        "usage_event",
+        "task_open",
+        "habit_water",
+        "person_en",
+        "person_fa",
+        "focus_saved"
+      ],
+      "redactedPersonLinkAliases": [],
+      "relockMode": "EVERY_TIME",
+      "screenshotsProtected": true,
+      "enabled": true,
+      "loadStatus": "READY",
+      "policyGeneration": 1
+    },
+    {
+      "name": "whole_app_locked",
+      "coverage": "WHOLE_APP",
+      "sections": [],
+      "grants": [],
+      "visibleRecordAliases": [],
+      "hiddenRecordAliases": [
+        "memory_private",
+        "journal_public",
+        "journal_marked",
+        "mood_public",
+        "mood_marked",
+        "journal_person_linked",
+        "health_activity",
+        "usage_event",
+        "task_open",
+        "habit_water",
+        "person_en",
+        "person_fa",
+        "place_fixture",
+        "focus_saved"
+      ],
+      "redactedPersonLinkAliases": [],
+      "relockMode": "EVERY_TIME",
+      "screenshotsProtected": true,
+      "enabled": true,
+      "loadStatus": "READY",
+      "policyGeneration": 1
+    },
+    {
+      "name": "disabled",
+      "enabled": false,
+      "visibleRecordAliases": [
+        "memory_private",
+        "journal_public",
+        "journal_marked",
+        "mood_public",
+        "mood_marked",
+        "journal_person_linked",
+        "health_activity",
+        "usage_event",
+        "task_open",
+        "habit_water",
+        "person_en",
+        "person_fa",
+        "place_fixture",
+        "focus_saved"
+      ],
+      "hiddenRecordAliases": [],
+      "loadStatus": "READY",
+      "policyGeneration": 1
+    }
+  ],
+  "assets": [
+    {
+      "alias": "photo_saved",
+      "id": "8a2e68ad-2d30-5ffa-9836-a1e6e855de0d",
+      "recipe": "opaque 16x16 PNG solid RGB(200,40,40)",
+      "ownerAlias": "memory_private"
+    },
+    {
+      "alias": "photo_marked",
+      "id": "72f392ea-6537-5c22-9a66-dd386891f88a",
+      "recipe": "opaque 16x16 PNG solid RGB(40,40,200)",
+      "ownerAlias": "journal_marked"
+    },
+    {
+      "alias": "photo_new",
+      "id": "fa0c8256-350e-55d0-a9a5-ddfdca68dbb5",
+      "recipe": "opaque 16x16 PNG solid RGB(40,200,40)",
+      "ownerAlias": "draft_new"
+    }
+  ],
+  "newEntries": [
+    {
+      "alias": "new_memory",
+      "kind": "MEMORY",
+      "id": "539f65bc-71a3-56c0-91c8-7e7c37185a58",
+      "operationId": "185dc912-1c02-56b8-a2ad-0b059003161e",
+      "input": {
+        "title": "AL_NEW_MEMORY",
+        "note": "Synthetic new memory",
+        "occurredAt": "2026-10-31T06:30:00Z",
+        "photoAlias": "photo_new"
+      }
+    },
+    {
+      "alias": "new_journal",
+      "kind": "JOURNAL",
+      "id": "e9c8b2ce-69ec-598a-893c-e0cfd73a383f",
+      "operationId": "efa3d365-6cd8-5f37-9f06-675561747d0f",
+      "input": {
+        "title": "AL_NEW_JOURNAL",
+        "body": "Synthetic new journal",
+        "occurredAt": "2026-10-31T06:30:00Z"
+      }
+    },
+    {
+      "alias": "new_mood",
+      "kind": "MOOD",
+      "id": "327a7779-b3bf-5520-a0a5-010ab7b52a9a",
+      "operationId": "6e9cfd2d-0511-563f-8285-c175eaff32b7",
+      "input": {
+        "score": 4,
+        "energy": 3,
+        "stress": 2,
+        "note": "AL_NEW_MOOD",
+        "occurredAt": "2026-10-31T06:30:00Z"
+      }
+    },
+    {
+      "alias": "new_task",
+      "kind": "TASK",
+      "id": "760bab65-23a4-5c26-b1f5-28afefe00c22",
+      "operationId": "9dbaffba-6cfb-559d-8b2a-8f01c0f97c27",
+      "initialRevision": "bd9afe18-4695-5ddd-a108-59c3fa5b0034",
+      "input": {
+        "title": "AL_NEW_TASK",
+        "note": "Synthetic new task",
+        "dueDate": "2026-10-31"
+      }
+    },
+    {
+      "alias": "new_habit",
+      "kind": "HABIT_DEFINITION",
+      "id": "ca3c34c6-7bfb-5f70-a1fa-2f60b43a14ee",
+      "operationId": "a6914dd9-78f2-54dd-b375-a44b8163a305",
+      "input": {
+        "name": "AL_NEW_HABIT",
+        "target": 1,
+        "unitLabel": "time",
+        "start": "2026-10-31",
+        "weekdays": [
+          "SATURDAY"
+        ],
+        "zone": "Asia/Tehran"
+      }
+    }
+  ],
+  "drafts": [
+    {
+      "alias": "draft_old",
+      "id": "8828373a-af46-57cd-8196-12e5f57118d7",
+      "kind": "JOURNAL",
+      "body": "AL_SECRET_OLDER_DRAFT",
+      "requiresUnlockAfterDeparture": true
+    },
+    {
+      "alias": "draft_new",
+      "id": "f6582bde-83fb-557f-bd54-0026f7527e2e",
+      "kind": "MEMORY",
+      "note": "AL_SECRET_NEW_DRAFT",
+      "photoAliases": [
+        "photo_new"
+      ],
+      "requiresUnlockAfterDeparture": true
+    }
+  ],
+  "pendingCommands": [
+    {
+      "alias": "complete_task_valid",
+      "commandId": "8521d21a-be90-5e9f-af57-05888be2cd9b",
+      "recordAlias": "task_open",
+      "expectedRevision": "a5e6c78f-298d-5701-8cad-4c5c9997dacd",
+      "nextRevision": "8f79fc7a-741f-5090-8d32-e60385b1e0bb",
+      "expiresElapsedMs": 1300000,
+      "operation": "COMPLETE_TASK"
+    },
+    {
+      "alias": "complete_task_stale",
+      "commandId": "e744b89c-6009-5944-8d8b-b4c21bdacbe1",
+      "recordAlias": "task_open",
+      "expectedRevision": "801f200a-90dd-5e71-919b-a2db4788a3b3",
+      "nextRevision": "a019bbba-a733-531b-bf13-5e9a603b0a0d",
+      "expiresElapsedMs": 1300000,
+      "operation": "COMPLETE_TASK"
+    },
+    {
+      "alias": "habit_log_existing",
+      "commandId": "c6590426-2888-55e3-8f6e-0487e75ae76e",
+      "recordAlias": "habit_water",
+      "date": "2026-10-31",
+      "zone": "Asia/Tehran",
+      "expiresElapsedMs": 1300000,
+      "operation": "LOG_HABIT"
+    }
+  ],
+  "clocks": {
+    "departureElapsedMs": 1000000,
+    "timeoutVectors": [
+      {
+        "intervalMs": 60000,
+        "returnBeforeMs": 1059999,
+        "returnAtMs": 1060000,
+        "returnAfterMs": 1060001,
+        "expectedBefore": "GRANT_RETAINED",
+        "expectedAt": "LOCKED",
+        "expectedAfter": "LOCKED"
+      },
+      {
+        "intervalMs": 300000,
+        "returnBeforeMs": 1299999,
+        "returnAtMs": 1300000,
+        "returnAfterMs": 1300001,
+        "expectedBefore": "GRANT_RETAINED",
+        "expectedAt": "LOCKED",
+        "expectedAfter": "LOCKED"
+      },
+      {
+        "intervalMs": 900000,
+        "returnBeforeMs": 1899999,
+        "returnAtMs": 1900000,
+        "returnAfterMs": 1900001,
+        "expectedBefore": "GRANT_RETAINED",
+        "expectedAt": "LOCKED",
+        "expectedAfter": "LOCKED"
+      }
+    ],
+    "captureDuringFiveMinuteGrace": {
+      "openElapsedMs": 1120000,
+      "saveElapsedMs": 1240000,
+      "expectedDeadlineMs": 1300000
+    },
+    "expiryAtCommandDeadline": "EXPIRED",
+    "wallClockDeltaVectorsMs": [
+      86400000,
+      -86400000
+    ]
+  },
+  "cooldowns": [
+    {
+      "consecutiveFailure": 5,
+      "expectedDelayMs": 30000
+    },
+    {
+      "consecutiveFailure": 6,
+      "expectedDelayMs": 60000
+    },
+    {
+      "consecutiveFailure": 7,
+      "expectedDelayMs": 120000
+    },
+    {
+      "consecutiveFailure": 8,
+      "expectedDelayMs": 240000
+    },
+    {
+      "consecutiveFailure": 9,
+      "expectedDelayMs": 480000
+    },
+    {
+      "consecutiveFailure": 10,
+      "expectedDelayMs": 900000
+    },
+    {
+      "consecutiveFailure": 11,
+      "expectedDelayMs": 900000
+    }
+  ],
+  "faults": [
+    "credential_write_before_commit",
+    "recovery_replace_before_commit",
+    "policy_read_corrupt",
+    "credential_store_unavailable",
+    "late_old_generation_projection",
+    "draft_save_unavailable",
+    "photo_import_denied",
+    "capture_commit_then_ack_lost",
+    "restore_before_commit",
+    "reset_request_rejected"
+  ],
+  "oracles": {
+    "baselineRecordCount": 14,
+    "existingTaskCompletedAt": null,
+    "existingHabitLogDates": [
+      "2026-10-30"
+    ],
+    "focusCreditedMs": 1500000,
+    "restrictedSaveDistinctCreatedIds": 1,
+    "restrictedSaveSavedRecordReadCallbacks": 0,
+    "restrictedSaveReturnedGrantCount": 0,
+    "ordinaryFailedOrCancelledMutationDelta": 0,
+    "archiveExcludedKinds": [
+      "passwordVerifier",
+      "recoveryVerifier",
+      "retryState",
+      "lockPolicy",
+      "unlockGrant",
+      "operationProof",
+      "privateDraft",
+      "createReceipt"
+    ]
+  }
+}
