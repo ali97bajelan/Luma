@@ -10,6 +10,9 @@ android {
 
     flavorDimensions += "qa"
     productFlavors {
+        create("production") {
+            dimension = "qa"
+        }
         create("appLockQa") {
             dimension = "qa"
             applicationIdSuffix = ".applockqa"
@@ -48,6 +51,50 @@ android {
 }
 
 kotlin { jvmToolchain(17) }
+
+val apkVariants = listOf(
+    "productionRelease" to ":app:assembleProductionRelease",
+    "productionDebug" to ":app:assembleProductionDebug",
+    "appLockQaRelease" to ":app:assembleAppLockQaRelease",
+    "appLockQaDebug" to ":app:assembleAppLockQaDebug",
+    "focusQaRelease" to ":app:assembleFocusQaRelease",
+    "focusQaDebug" to ":app:assembleFocusQaDebug",
+)
+
+val buildApkRequested = gradle.startParameter.taskNames.any {
+    it.substringAfterLast(':') == "buildApk"
+}
+
+val selectedAssemblyTask = if (buildApkRequested) {
+    logger.lifecycle("Select an APK variant to build:")
+    apkVariants.forEachIndexed { index, (variant, _) ->
+        logger.lifecycle("${index + 1}. $variant")
+    }
+    logger.lifecycle("Enter a number (or send EOF to cancel):")
+
+    val selection = readLine()?.trim()
+    if (selection.isNullOrEmpty()) {
+        throw GradleException("No variant selected; APK build canceled.")
+    }
+
+    val selectedVariant = selection.toIntOrNull()
+        ?.let { apkVariants.getOrNull(it - 1) }
+        ?: throw GradleException("Invalid selection '$selection'; APK build canceled.")
+
+    logger.lifecycle("Building ${selectedVariant.first}...")
+    selectedVariant.second
+} else {
+    null
+}
+
+tasks.register("buildApk") {
+    group = "build"
+    description = "Prompts for an APK variant and assembles it."
+    notCompatibleWithConfigurationCache("This task prompts for interactive input.")
+    if (selectedAssemblyTask != null) {
+        dependsOn(selectedAssemblyTask)
+    }
+}
 
 dependencies {
     implementation(project(":core:domain"))
