@@ -52,8 +52,8 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
             )
             if (remindersAvailable) SettingsRow(R.string.reminder_settings_title, R.string.reminder_settings_description,
                 "settings_reminders", onReminders)
-            SettingsRow(R.string.settings_language_title, R.string.settings_language_description, "settings_language", onLanguage)
-            com.luma.lifeos.ui.theme.ThemeSettingsCard()
+            SettingsRow(R.string.settings_appearance_language_title,
+                R.string.settings_appearance_language_description, "settings_language", onLanguage)
             if (backupAvailable) SettingsRow(R.string.settings_backup_title, R.string.settings_backup_description, "settings_backup", onBackup)
             if (privacyAvailable) SettingsRow(R.string.settings_privacy_title, R.string.settings_privacy_description, "settings_privacy", onPrivacy)
             if (integrationsAvailable) SettingsRow(R.string.settings_integrations_title, R.string.settings_integrations_description,

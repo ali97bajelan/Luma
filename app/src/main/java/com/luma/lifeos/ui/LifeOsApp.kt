@@ -1146,8 +1146,11 @@ fun LifeOsApp(
                     onBack = { navController.popBackStack() }, onEvent = ::openEvent) }
             }
             composable("settings_language") {
-                SettingsSectionPage(R.string.settings_language_title, onBack = { navController.popBackStack() },
-                    screenTag = "screen_settings_language") { com.luma.lifeos.language.LanguageSettingsCard() }
+                SettingsSectionPage(R.string.settings_appearance_language_title, onBack = { navController.popBackStack() },
+                    screenTag = "screen_settings_language") {
+                    com.luma.lifeos.ui.theme.ThemeSettingsCard()
+                    com.luma.lifeos.language.LanguageSettingsCard()
+                }
             }
             if (backup != null) composable("settings_backup") {
                 BackupSettingsCard(

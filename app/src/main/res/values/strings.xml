@@ -752,7 +752,9 @@
     <string name="more_people_places_description">Browse the people and places connected to your life.</string>
     <string name="more_habits_description">Browse your scheduled habits and activity.</string>
     <string name="more_settings">Settings</string>
-    <string name="more_settings_description">Language, theme, backup, privacy and integrations.</string>
+    <string name="more_settings_description">Appearance &amp; language, backup, privacy and integrations.</string>
+    <string name="settings_appearance_language_title">Appearance &amp; language</string>
+    <string name="settings_appearance_language_description">Choose Luma\'s theme and language.</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_language_description">Choose the language used by Luma.</string>
     <string name="settings_backup_title">Backup</string>
