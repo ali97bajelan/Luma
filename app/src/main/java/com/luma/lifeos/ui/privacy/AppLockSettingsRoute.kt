@@ -310,7 +310,7 @@ fun AppLockSettingsRoute(
             errorText = context.getString(R.string.app_lock_error_password_mismatch)
             return
         }
-        if (selected == LockSettingsAction.PASSWORD && Character.codePointCount(typedNew, 0, typedNew.size) !in 8..128) {
+        if (selected == LockSettingsAction.PASSWORD && Character.codePointCount(typedNew, 0, typedNew.size) !in 4..32) {
             typedCurrent.fill('\u0000')
             typedNew.fill('\u0000')
             typedConfirm.fill('\u0000')
@@ -385,7 +385,7 @@ fun AppLockSettingsRoute(
             errorText = context.getString(R.string.app_lock_error_password_mismatch)
             return
         }
-        if (passwordCodePoints(setupPassword) !in 8..128) {
+        if (passwordCodePoints(setupPassword) !in 4..32) {
             errorText = context.getString(R.string.app_lock_error_password_length)
             return
         }

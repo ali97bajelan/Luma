@@ -460,8 +460,8 @@ class DefaultLockCredentialService internal constructor(
 
     private companion object {
         val PROCESS_MUTEX = Mutex()
-        const val MIN_PASSWORD_CODE_POINTS = 8
-        const val MAX_PASSWORD_CODE_POINTS = 128
+        const val MIN_PASSWORD_CODE_POINTS = 4
+        const val MAX_PASSWORD_CODE_POINTS = 32
         const val BOOT_MARKER_TOLERANCE_MS = 1_000L
     }
 }

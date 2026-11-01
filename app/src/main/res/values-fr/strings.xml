@@ -1402,7 +1402,7 @@
     <string name="app_lock_action_confirm_title">Confirmer l’action protégée</string>
     <string name="app_lock_action_confirm_body">Continuer cette action sur un élément protégé ? Les détails restent masqués ici.</string>
     <string name="app_lock_action_confirm">Continuer</string>
-    <string name="app_lock_error_password_length">Utilisez un mot de passe de 8 à 128 caractères.</string>
+    <string name="app_lock_error_password_length">Utilisez un mot de passe de 4 à 32 caractères.</string>
     <string name="app_lock_error_password_mismatch">Les mots de passe ne correspondent pas.</string>
     <string name="app_lock_recovery_code_title">Enregistrez votre code de récupération</string>
     <string name="app_lock_recovery_code_body">Conservez ce code hors de Luma. Il peut remplacer votre mot de passe et votre code de récupération. Luma ne l’affichera plus.</string>

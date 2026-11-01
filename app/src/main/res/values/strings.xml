@@ -1379,7 +1379,7 @@
     <string name="app_lock_action_confirm_title">Confirm protected action</string>
     <string name="app_lock_action_confirm_body">Continue with this action on a protected item? The item details stay hidden here.</string>
     <string name="app_lock_action_confirm">Continue</string>
-    <string name="app_lock_error_password_length">Use a password between 8 and 128 characters.</string>
+    <string name="app_lock_error_password_length">Use a password between 4 and 32 characters.</string>
     <string name="app_lock_error_password_mismatch">The passwords do not match.</string>
     <string name="app_lock_recovery_code_title">Save your recovery code</string>
     <string name="app_lock_recovery_code_body">Keep this code somewhere outside Luma. It can replace your password and recovery code. Luma will not show it again.</string>

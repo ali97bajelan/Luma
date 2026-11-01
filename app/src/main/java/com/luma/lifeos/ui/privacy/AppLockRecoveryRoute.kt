@@ -135,7 +135,7 @@ fun AppLockRecoveryRoute(
             return
         }
         val points = replacementPassword.codePointCount(0, replacementPassword.length)
-        if (points !in 8..128) {
+        if (points !in 4..32) {
             errorText = context.getString(R.string.app_lock_error_password_length)
             return
         }

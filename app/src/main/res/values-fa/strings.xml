@@ -1380,7 +1380,7 @@
     <string name="app_lock_action_confirm_title">تأیید کار محافظت‌شده</string>
     <string name="app_lock_action_confirm_body">این کار روی یک مورد محافظت‌شده ادامه یابد؟ جزئیات مورد در اینجا پنهان می‌ماند.</string>
     <string name="app_lock_action_confirm">ادامه</string>
-    <string name="app_lock_error_password_length">گذرواژه‌ای با ۸ تا ۱۲۸ نویسه انتخاب کنید.</string>
+    <string name="app_lock_error_password_length">گذرواژه‌ای با ۴ تا ۳۲ نویسه انتخاب کنید.</string>
     <string name="app_lock_error_password_mismatch">گذرواژه‌ها یکسان نیستند.</string>
     <string name="app_lock_recovery_code_title">کد بازیابی را ذخیره کنید</string>
     <string name="app_lock_recovery_code_body">این کد را بیرون از لوما نگه دارید. با آن می‌توان گذرواژه و کد بازیابی را جایگزین کرد. لوما دوباره آن را نشان نمی‌دهد.</string>

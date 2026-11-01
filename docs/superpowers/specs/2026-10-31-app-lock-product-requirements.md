@@ -55,7 +55,7 @@ Entry point: **Settings → Privacy → App lock**.
 Setup sequence:
 
 1. Explain: “Protect your saved information. You can still add new entries while locked.”
-2. Create and confirm a password. Recommended policy: 8–128 Unicode characters, spaces allowed, no forced character classes, no silent trimming/truncation. Support paste, password managers and an accessible show/hide control. Password mismatch keeps setup incomplete.
+2. Create and confirm a password. Passwords use 4–32 Unicode code points, spaces are allowed, and there are no forced character classes or silent trimming/truncation. Apply this range during setup, password changes, recovery replacements, and authentication. Support paste, password managers and an accessible show/hide control. Password mismatch keeps setup incomplete.
 3. Choose **Whole app** or **Selected sections**. Recommend Whole app as the initial selection; do not enable it before confirmation. Selected sections must contain at least one section.
 4. Choose **Every time** (recommended default) or **After 1 minute / 5 minutes / 15 minutes away**. Five minutes directly supports the requested example. One timing policy applies to all selected sections in v1.
 5. Complete the recovery setup described in section 10 and acknowledge its consequences.

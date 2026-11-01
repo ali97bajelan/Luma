@@ -41,7 +41,7 @@ Also run one parameterized policy for **each of the eight sections alone**, with
 
 ## Credential and timer vectors
 
-- Password lengths: 7 rejected, 8 accepted, 128 accepted, 129 rejected. Count Unicode code points; eight emoji are eight characters despite 16 UTF-16 units. Preserve leading/trailing spaces and distinguish NFC/NFD representations. Confirm mismatch never enables protection.
+- New password lengths: 3 rejected, 4 accepted, 32 accepted, 33 rejected in setup, password change, and recovery replacement. Count Unicode code points; four emoji are four characters despite 8 UTF-16 units. Preserve leading/trailing spaces and distinguish NFC/NFD representations. Confirm mismatch never enables protection.
 - Use the synthetic current, incorrect and replacement passwords only through test interfaces. Verify no real phone credential and no network are required. A newly generated recovery code is acknowledged before final setup.
 - At departure 1,000,000 ms, each 60,000/300,000/900,000 ms interval has explicit before/at/after samples in JSON. At the exact deadline, access is locked. A ±86,400,000 ms wall-clock jump changes none of these outcomes.
 - Five-minute capture: open at 1,120,000 ms, save at 1,240,000 ms; deadline remains 1,300,000 ms. Capture does not reset it. Cold-process start, new boot, device lock and Lock now revoke regardless of these times.
