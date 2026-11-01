@@ -13,24 +13,14 @@ android {
         create("production") {
             dimension = "qa"
         }
-        create("appLockQa") {
-            dimension = "qa"
-            applicationIdSuffix = ".applockqa"
-            versionNameSuffix = "-applockqa"
-        }
-        create("focusQa") {
-            dimension = "qa"
-            applicationIdSuffix = ".focusqa"
-            versionNameSuffix = "-focusqa"
-        }
     }
 
     defaultConfig {
         applicationId = "com.luma.lifeos"
         minSdk = 28
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.5.0"
+        versionCode = 9
+        versionName = "1.5.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -55,10 +45,6 @@ kotlin { jvmToolchain(17) }
 val apkVariants = listOf(
     "productionRelease" to ":app:assembleProductionRelease",
     "productionDebug" to ":app:assembleProductionDebug",
-    "appLockQaRelease" to ":app:assembleAppLockQaRelease",
-    "appLockQaDebug" to ":app:assembleAppLockQaDebug",
-    "focusQaRelease" to ":app:assembleFocusQaRelease",
-    "focusQaDebug" to ":app:assembleFocusQaDebug",
 )
 
 val buildApkRequested = gradle.startParameter.taskNames.any {

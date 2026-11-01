@@ -1064,6 +1064,8 @@ fun LifeOsApp(
                     onReminders = { navController.navigate("settings_reminders") },
                     focusAvailable = focusRuntime != null,
                     onFocus = { navController.navigate("settings_focus") },
+                    appLockAvailable = lockCredentialService != null && appLockCoordinator != null,
+                    onAppLock = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
                 )
             }
             composable(AppRoutes.APP_LOCK_HELP) {
@@ -1179,9 +1181,7 @@ fun LifeOsApp(
                 com.luma.lifeos.ui.privacy.PrivacySettingsRoute(
                     reset,
                     onBack = { navController.popBackStack() },
-                    appLockAvailable = lockCredentialService != null,
                     appLockEnabled = appLockEnabled(),
-                    onAppLock = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
                     lockGuard = lockSensitiveOperationGuard,
                 )
             }

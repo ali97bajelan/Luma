@@ -22,7 +22,8 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
     onLanguage: () -> Unit, onBackup: () -> Unit, onPrivacy: () -> Unit, onIntegrations: () -> Unit,
     onBack: (() -> Unit)? = null, widgetsAvailable: Boolean = false, onWidgets: () -> Unit = {},
     remindersAvailable: Boolean = false, onReminders: () -> Unit = {},
-    focusAvailable: Boolean = false, onFocus: () -> Unit = {}) {
+    focusAvailable: Boolean = false, onFocus: () -> Unit = {},
+    appLockAvailable: Boolean = false, onAppLock: () -> Unit = {}) {
     BackHandler(enabled = onBack != null) { onBack?.invoke() }
     AppPageScaffold(
         title = stringResource(R.string.settings),
@@ -35,6 +36,8 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
             .verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.settings_hub_description))
+            if (appLockAvailable) SettingsRow(R.string.app_lock_settings_title, R.string.app_lock_privacy_description,
+                "settings_app_lock", onAppLock)
             if (widgetsAvailable) SettingsRow(
                 R.string.settings_widgets_title,
                 R.string.settings_widgets_description,

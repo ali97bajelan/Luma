@@ -34,9 +34,7 @@ import com.luma.lifeos.ui.common.PageNavigation
 fun PrivacySettingsRoute(
     reset: AppDataReset,
     onBack: () -> Unit,
-    appLockAvailable: Boolean = false,
     appLockEnabled: Boolean = false,
-    onAppLock: () -> Unit = {},
     lockGuard: LockSensitiveOperationGuard? = null,
 ) {
     val factory = remember(reset) { viewModelFactory { initializer { PrivacyViewModel(reset) } } }
@@ -81,9 +79,7 @@ fun PrivacySettingsRoute(
         state, onBack, ::requestResetConfirmation, ::confirmReset, ::cancelResetConfirmation,
         onAppSettings = { settingsMissing = !openLumaAppSettings(context) },
         settingsMissing = settingsMissing,
-        appLockAvailable = appLockAvailable,
         appLockEnabled = appLockEnabled,
-        onAppLock = onAppLock,
     )
     val pending = pendingReset
     if (showResetAuth && lockGuard != null && pending != null) {
@@ -141,7 +137,7 @@ private fun PrivacySection(@StringRes heading: Int, @StringRes description: Int,
 internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
     onDelete: () -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit,
     onAppSettings: () -> Unit, settingsMissing: Boolean = false,
-    appLockAvailable: Boolean = false, appLockEnabled: Boolean = false, onAppLock: () -> Unit = {}) {
+    appLockEnabled: Boolean = false) {
     AppPageScaffold(
         title = stringResource(R.string.privacy_title),
         navigation = PageNavigation.BACK,
@@ -159,20 +155,6 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
                 Text(stringResource(R.string.privacy_app_settings))
             }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.privacy_settings_missing), Modifier.testTag("privacy_settings_missing"))
-        }
-        if (appLockAvailable) {
-            LumaSectionSurface {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.app_lock_settings_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() })
-                    Text(stringResource(R.string.app_lock_privacy_description))
-                    TextButton(onClick = onAppLock, enabled = !state.busy,
-                        modifier = Modifier.testTag("privacy_app_lock")) {
-                        Text(stringResource(R.string.app_lock_privacy_action))
-                    }
-                }
-            }
         }
         LumaSectionSurface {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
