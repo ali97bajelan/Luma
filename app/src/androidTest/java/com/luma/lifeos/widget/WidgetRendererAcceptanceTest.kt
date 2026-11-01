@@ -14,7 +14,7 @@ import android.widget.TextView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -494,7 +494,8 @@ class WidgetRendererAcceptanceTest {
         assertEquals("8 tasks", totalCue.text.toString())
         assertTrue("The total cue sits beneath the title", boundsIn(root, totalCue).top >= boundsIn(root, title).bottom)
         val background = capture.background as StateListDrawable
-        assertEquals(Color.TRANSPARENT, (background.current as ColorDrawable).color)
+        assertEquals(context.getColor(R.color.widget_mutation_fill_light),
+            (background.current as GradientDrawable).color?.defaultColor)
         val captureBitmap = Bitmap.createBitmap(capture.width, capture.height, Bitmap.Config.ARGB_8888)
         try {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->

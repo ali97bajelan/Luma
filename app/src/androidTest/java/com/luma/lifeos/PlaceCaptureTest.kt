@@ -56,6 +56,7 @@ class PlaceCaptureTest {
         compose.onNodeWithTag("journal_edit").performClick()
         awaitTag("journal_delete")
         compose.onNodeWithTag("journal_delete").performClick()
+        awaitTag("journal_confirm_delete")
         compose.onNodeWithTag("journal_confirm_delete").performClick()
         awaitTag("screen_today")
         openPlace("$name edited")
@@ -123,6 +124,7 @@ class PlaceCaptureTest {
         compose.onNodeWithTag("place_edit").performClick()
         awaitTag("place_delete")
         compose.onNodeWithTag("place_delete").performClick()
+        awaitTag("place_confirm_delete")
         compose.onNodeWithTag("place_confirm_delete").performClick()
         awaitTag("places_ready")
     }

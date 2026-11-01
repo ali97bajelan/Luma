@@ -2,6 +2,7 @@ package com.luma.lifeos
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
 import org.junit.Rule
 import org.junit.Test
 
@@ -12,7 +13,11 @@ class MemoryCaptureTest {
         compose.onNodeWithTag("today_capture_memory").performClick()
         awaitTag("memory_note")
         compose.onNodeWithTag("memory_note").performTextInput(note)
+        awaitEnabled("memory_save")
+        awaitStateDescription("memory_importance_toggle", R.string.review_details_collapsed)
         compose.onNodeWithTag("memory_importance_toggle").performClick()
+        awaitStateDescription("memory_importance_toggle", R.string.review_details_expanded)
+        awaitTag("memory_importance_5")
         compose.onNodeWithTag("memory_importance_5").performScrollTo().performClick()
         compose.activityRule.scenario.recreate()
         awaitTag("memory_note")
@@ -52,8 +57,10 @@ class MemoryCaptureTest {
         compose.onNodeWithTag("today_capture_journal").performClick()
         awaitTag("journal_body")
         compose.onNodeWithTag("journal_body").performTextInput(body)
+        awaitEnabled("journal_save")
         compose.onNodeWithTag("journal_save").performClick()
-        awaitTag("screen_today"); awaitTag("today_summary")
+        awaitTag("screen_today")
+        awaitTodayReady()
         compose.onNodeWithTag("screen_today").performScrollToNode(hasText(body))
         compose.onNodeWithText(body).performClick()
         awaitTag("journal_detail_body")
@@ -80,5 +87,38 @@ class MemoryCaptureTest {
     }
     private fun awaitTag(tag: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    private fun awaitEnabled(tag: String) {
+        compose.waitUntil(10_000) {
+            try {
+                compose.onNodeWithTag(tag).assertIsEnabled()
+                true
+            } catch (_: AssertionError) {
+                false
+            }
+        }
+    }
+
+    private fun awaitStateDescription(tag: String, stateResource: Int) {
+        val expected = compose.activity.getString(stateResource)
+        compose.waitUntil(10_000) {
+            try {
+                compose.onNodeWithTag(tag).assert(
+                    SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, expected),
+                )
+                true
+            } catch (_: AssertionError) {
+                false
+            }
+        }
+    }
+
+    private fun awaitTodayReady() {
+        compose.waitUntil(15_000) {
+            compose.onAllNodesWithTag("today_summary").fetchSemanticsNodes().isNotEmpty() ||
+                compose.onAllNodesWithTag("today_error").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("today_summary").assertExists()
     }
 }

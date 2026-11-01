@@ -129,6 +129,7 @@ class PeopleCaptureTest {
         compose.onNodeWithTag("person_edit").performClick()
         awaitTag("person_delete")
         compose.onNodeWithTag("person_delete").performClick()
+        awaitTag("person_confirm_delete")
         compose.onNodeWithTag("person_confirm_delete").performClick()
         awaitTag("screen_people")
     }

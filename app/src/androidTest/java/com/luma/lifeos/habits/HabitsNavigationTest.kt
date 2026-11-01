@@ -104,8 +104,7 @@ class HabitsNavigationTest {
 
         compose.onNodeWithTag("habit_open_$id").performClick()
         compose.onNodeWithTag("screen_habit_detail").assertIsDisplayed()
-        compose.onNodeWithTag("habit_manage").performScrollTo().performClick()
-        compose.onNodeWithTag("habit_manage_edit").assertIsDisplayed()
+        compose.onNodeWithTag("habit_detail_edit").assertIsDisplayed()
     }
 
     @Test fun quickCaptureHabitShortcutUsesTrackingTodayAndPreservesHistoricalDateWithoutLogging() {
@@ -154,7 +153,7 @@ class HabitsNavigationTest {
             compose.onAllNodesWithTag("habits_scheduled_heading").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithTag("habits_scheduled_heading").assertIsDisplayed()
-        compose.onNodeWithTag("day_selected")
+        compose.onNodeWithTag("day_selected", useUnmergedTree = true)
             .assertTextEquals(trackingDate.format(localizedDate(FormatStyle.MEDIUM)))
         assertEquals(0, runBlocking { habits.history(habitId, null, 0).total })
 
@@ -169,7 +168,7 @@ class HabitsNavigationTest {
             compose.onAllNodesWithTag("habits_scheduled_heading").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithTag("habits_scheduled_heading").assertIsDisplayed()
-        compose.onNodeWithTag("day_selected")
+        compose.onNodeWithTag("day_selected", useUnmergedTree = true)
             .assertTextEquals(historicalDate.format(localizedDate(FormatStyle.MEDIUM)))
         assertEquals(0, runBlocking { habits.history(habitId, null, 0).total })
     }

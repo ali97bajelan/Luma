@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.AnnotatedString
+import androidx.test.platform.app.InstrumentationRegistry
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.SearchRepository
 import com.luma.lifeos.domain.search.*
@@ -88,7 +89,8 @@ class SearchStatesTest {
         compose.onNodeWithTag("search_text").performTextReplacement("failure query")
         awaitTag("search_error")
         compose.onNodeWithTag("search_scope_help").assertIsDisplayed()
-        compose.onNodeWithText("Retry").assertExists()
+        val retryLabel = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.retry)
+        compose.onNodeWithText(retryLabel).assertExists()
     }
 
     @Test fun filterResetPreservesQueryAndClearAllRemovesBoth() {

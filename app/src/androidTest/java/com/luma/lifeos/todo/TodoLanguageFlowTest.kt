@@ -41,8 +41,12 @@ class TodoLanguageFlowTest {
         compose.onNodeWithTag("todo_editor_title").performTextInput(title)
         compose.onNodeWithTag("todo_editor_note").performTextInput(note)
         compose.onNodeWithTag("todo_editor_change_due_date").performClick()
+        awaitTag("todo_editor_date_dialog")
+        awaitTag("todo_editor_select_date")
         compose.onNodeWithTag("todo_editor_select_date").performClick()
         compose.onNodeWithTag("todo_editor_add_due_time").performClick()
+        awaitTag("todo_editor_time_dialog")
+        awaitTag("todo_editor_select_time")
         compose.onNodeWithTag("todo_editor_select_time").performClick()
         var use24Hour = false
         compose.activityRule.scenario.onActivity { use24Hour = DateFormat.is24HourFormat(it) }
@@ -129,6 +133,12 @@ class TodoLanguageFlowTest {
         compose.waitUntil(5_000) {
             try { compose.onNodeWithTag(tag).assertTextContains(text, substring = true); true }
             catch (_: AssertionError) { false }
+        }
+    }
+
+    private fun awaitTag(tag: String) {
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
         }
     }
 

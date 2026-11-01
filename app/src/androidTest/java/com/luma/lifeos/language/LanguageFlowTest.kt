@@ -46,7 +46,7 @@ class LanguageFlowTest {
             compose.onNodeWithTag("nav_today").performClick()
             compose.onNodeWithTag("day_selected", useUnmergedTree = true)
                 .assertTextEquals(selected.format(localizedDate(FormatStyle.MEDIUM)))
-            for (route in listOf("timeline", "habits", "review", "more")) {
+            for (route in listOf("timeline", "review", "more")) {
                 compose.onNodeWithTag("nav_$route").performClick()
                 compose.onNodeWithTag("screen_$route").assertIsDisplayed()
                 if (route == "timeline" || route == "review") {
@@ -57,6 +57,12 @@ class LanguageFlowTest {
                     compose.onNodeWithTag("quick_capture").assertDoesNotExist()
                 }
             }
+            compose.onNodeWithTag("more_habits").performScrollTo().performClick()
+            awaitTag("screen_habits")
+            compose.onNodeWithTag("screen_habits").assertIsDisplayed()
+            compose.onNodeWithTag("quick_capture").assertDoesNotExist()
+            compose.onNodeWithTag("habits_back").performClick()
+            compose.onNodeWithTag("screen_more").assertIsDisplayed()
             if (language != AppLanguage.ENGLISH) openLanguageSettings()
         }
     }

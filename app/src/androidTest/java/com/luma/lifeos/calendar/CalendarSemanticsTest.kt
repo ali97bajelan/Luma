@@ -11,6 +11,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.language.localizedDate
 import java.time.LocalDate
 import java.time.format.FormatStyle
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -28,7 +29,8 @@ class CalendarSemanticsTest {
         val semantics = node.fetchSemanticsNode().config
         val description = semantics[SemanticsProperties.ContentDescription].joinToString(" ")
         assertTrue(description.contains(today.format(localizedDate(FormatStyle.FULL))))
-        assertTrue(description.contains(compose.activity.getString(R.string.calendar_day_today_selected)))
+        assertEquals(compose.activity.getString(R.string.calendar_day_today),
+            semantics[SemanticsProperties.StateDescription])
         assertTrue(description.contains(compose.activity.resources.getQuantityString(R.plurals.calendar_tasks_count, 0, 0)))
         assertTrue(description.contains(compose.activity.resources.getQuantityString(R.plurals.calendar_memories_count, 0, 0)))
 

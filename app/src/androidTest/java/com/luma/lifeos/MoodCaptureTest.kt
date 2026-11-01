@@ -1,6 +1,7 @@
 package com.luma.lifeos
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -35,6 +36,16 @@ class MoodCaptureTest {
         compose.activityRule.scenario.recreate()
         awaitTag("mood_score_4")
         compose.onNodeWithTag("mood_score_4").assertIsSelected()
+        awaitTag("mood_note")
+        compose.waitUntil(15_000) {
+            try {
+                compose.onNodeWithTag("mood_note").assertTextContains(note)
+                compose.onNodeWithTag("mood_save").assertIsEnabled()
+                true
+            } catch (_: AssertionError) {
+                false
+            }
+        }
         compose.onNodeWithTag("mood_save").performClick()
         awaitTag("screen_today")
         awaitText(note, "screen_today")

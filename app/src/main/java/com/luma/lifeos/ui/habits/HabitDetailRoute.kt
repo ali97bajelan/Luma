@@ -376,6 +376,8 @@ fun HabitDetailScreen(
                             }
                         }
                     }
+                    habitHistoryItems(detail.history, detail.historyTotal, selectedTarget?.id, trackingZone, onEditLog, onDeleteLog,
+                        onLoadMore, historyError = detail.actionErrors[HabitDetailOperation.HISTORY] is HabitDetailActionError.History)
                     item(key = "manage-${habit.id}") {
                         HabitManagementSection(
                             lifecycle = lifecycle,
@@ -387,8 +389,6 @@ fun HabitDetailScreen(
                             onRetryDelete = onDeleteHabit,
                         )
                     }
-                    habitHistoryItems(detail.history, detail.historyTotal, selectedTarget?.id, trackingZone, onEditLog, onDeleteLog,
-                        onLoadMore, historyError = detail.actionErrors[HabitDetailOperation.HISTORY] is HabitDetailActionError.History)
                 }
             }
         }

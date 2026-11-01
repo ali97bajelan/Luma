@@ -13,11 +13,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.luma.lifeos.ui.common.LumaUi
 
 @Composable
@@ -50,13 +52,19 @@ internal fun PrimaryNavigationBar(
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 label = {
+                    val fontScale = LocalDensity.current.fontScale
+                    val labelStyle = if (fontScale >= 2f) {
+                        MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp, lineHeight = 12.sp)
+                    } else {
+                        MaterialTheme.typography.labelMedium
+                    }
                     Text(
                         text = stringResource(destination.compactLabel),
                         modifier = Modifier
                             .testTag("nav_label_${destination.route}")
                             .semantics { contentDescription = fullLabel },
                         maxLines = 2,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = labelStyle,
                     )
                 },
             )

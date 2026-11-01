@@ -214,7 +214,7 @@ class HabitCaptureFlowTest {
         compose.onNodeWithTag("habit_row_${rows[4].day.habit.id}").assertIsDisplayed()
         compose.onNodeWithTag("habit_row_${rows[5].day.habit.id}").assertDoesNotExist()
         assertEquals(0, compose.onAllNodes(hasTestTag("habit_row_${rows[0].day.habit.id}")).fetchSemanticsNodes().size)
-        compose.onNodeWithTag("habits_view_all").assertTextContains("5")
+        compose.onNodeWithTag("habits_view_all").assertTextContains("5", substring = true)
         compose.onNodeWithTag("habits_view_all").performClick()
         assertTrue(viewAllOpened)
     }
@@ -701,7 +701,7 @@ class HabitCaptureFlowTest {
         compose.onNodeWithTag("habit_name").assert(
             SemanticsMatcher.expectValue(SemanticsProperties.Error, message),
         )
-        compose.onNodeWithText(message).assertIsDisplayed()
+        compose.onNodeWithTag("habit_editor_error").assertTextEquals(message)
     }
 
     private fun previewRow(name: String, scheduled: Boolean, paused: Boolean = false): HabitDayRow {

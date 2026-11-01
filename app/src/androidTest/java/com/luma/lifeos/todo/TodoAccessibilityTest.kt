@@ -276,7 +276,7 @@ class TodoAccessibilitySemanticsTest {
         val today = LocalDate.now()
         val task = task(700)
         val state = mutableStateOf(
-            listState(listOf(task), total = 1, today = today).copy(
+            listState(emptyList(), total = 0, today = today).copy(
                 rowErrors = mapOf(task.id to TodoListRowError.CONFLICT),
                 rowErrorTitles = mapOf(task.id to task.title),
             ),

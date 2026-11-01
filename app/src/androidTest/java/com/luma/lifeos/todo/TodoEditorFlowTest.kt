@@ -6,8 +6,10 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
@@ -19,6 +21,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.text.input.ImeAction
 import com.luma.lifeos.R
 import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.domain.todo.TodoConflictException
@@ -507,11 +510,17 @@ class TodoEditorFlowTest {
     private val appContext get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private fun enterPickerMinute(value: String) {
-        val activeTimeField = hasSetTextAction() and hasAnyAncestor(
-            androidx.compose.ui.test.hasTestTag("todo_editor_time_input"),
+        val timeInput = hasAnyAncestor(androidx.compose.ui.test.hasTestTag("todo_editor_time_input"))
+        val hourField = hasSetTextAction() and timeInput and SemanticsMatcher.expectValue(
+            SemanticsProperties.ImeAction,
+            ImeAction.Next,
         )
-        compose.onNode(activeTimeField, useUnmergedTree = true).performImeAction()
-        compose.onNode(activeTimeField, useUnmergedTree = true).performTextReplacement(value)
+        val minuteField = hasSetTextAction() and timeInput and SemanticsMatcher.expectValue(
+            SemanticsProperties.ImeAction,
+            ImeAction.Done,
+        )
+        compose.onNode(hourField, useUnmergedTree = true).performImeAction()
+        compose.onNode(minuteField, useUnmergedTree = true).performTextReplacement(value)
     }
 
     private fun tapOutsideDialog() {

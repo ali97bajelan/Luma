@@ -382,12 +382,14 @@ object WidgetRenderer {
         renderFeedback(context, appContext, feedbackViews, widgetId, snapshot, textColor, utilityTextColor,
             buttonBackground, utilityBackground, feedbackText, inlineFeedback)
         views.addView(R.id.widget_feedback_slot, feedbackViews)
-        val progressColumnWidthPx = if (snapshot.instance.kind == WidgetKind.HABITS) {
-            collectionProgressColumnWidthPx(appContext)
-        } else 0
         val measurements = measurementRows.map { row ->
             when (row) {
-                is WidgetRow.Habit -> measureHabitRow(appContext, widthDp, row, progressColumnWidthPx)
+                is WidgetRow.Habit -> measureHabitRow(
+                    appContext,
+                    widthDp,
+                    row,
+                    habitProgressColumnWidthPx(appContext, row),
+                )
                 is WidgetRow.Task -> measureTaskRow(appContext, widthDp, row, snapshot.date)
             }
         }
@@ -574,7 +576,7 @@ object WidgetRenderer {
         else R.drawable.widget_row_action_background
         return when (row) {
             is WidgetRow.Habit -> {
-                val progressWidth = collectionProgressColumnWidthPx(appContext)
+                val progressWidth = habitProgressColumnWidthPx(appContext, row)
                 val measured = measureHabitRow(appContext, widthDp, row, progressWidth)
                 habitRow(
                     context, appContext, snapshot, row, textColor, secondaryTextColor,
@@ -588,15 +590,8 @@ object WidgetRenderer {
         }
     }
 
-    internal fun collectionProgressColumnWidthPx(context: Context): Int {
-        val samples = listOf(
-            context.getString(R.string.widget_habit_count, 999_999, 999),
-            context.getString(R.string.widget_habit_target_reached, 999_999, 999),
-            context.getString(R.string.widget_habit_skipped, 999_999, 999),
-        ).map { bidiWrapped(context, it) }
-        val density = context.resources.displayMetrics.density
-        return ceil(samples.maxOf { measureTextWidth(context, it, 14f) } + 8f * density).toInt()
-    }
+    private fun habitProgressColumnWidthPx(context: Context, row: WidgetRow.Habit): Int =
+        ceil(measureTextWidth(context, habitProgressText(context, row), 14f)).toInt().coerceAtLeast(1)
 
     private fun renderFeedback(
         context: Context,

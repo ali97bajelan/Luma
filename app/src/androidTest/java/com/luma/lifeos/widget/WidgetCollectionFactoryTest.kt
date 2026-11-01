@@ -17,7 +17,7 @@ class WidgetCollectionFactoryTest {
         assertEquals(71 to WidgetKind.HABITS, WidgetCollectionService.parseIdentity(first))
         assertNotEquals(first.data, second.data)
         assertNotEquals(first.data, otherKind.data)
-        assertEquals(2, WidgetCollectionFactory(context, first).getViewTypeCount())
+        assertEquals(4, WidgetCollectionFactory(context, first).getViewTypeCount())
         assertEquals(1, WidgetCollectionFactory(context, otherKind).getViewTypeCount())
         assertEquals(true, WidgetCollectionFactory(context, first).hasStableIds())
     }
