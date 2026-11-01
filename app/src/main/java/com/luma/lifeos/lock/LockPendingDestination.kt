@@ -12,6 +12,7 @@ sealed interface LockPendingDestination {
     data object People : LockPendingDestination
     data object Habits : LockPendingDestination
     data object Tasks : LockPendingDestination
+    data object MemoryLibrary : LockPendingDestination
     data class PersonDetail(val personId: String) : LockPendingDestination
     data class PlaceDetail(val placeId: String) : LockPendingDestination
     data class EventDetail(val eventId: String) : LockPendingDestination

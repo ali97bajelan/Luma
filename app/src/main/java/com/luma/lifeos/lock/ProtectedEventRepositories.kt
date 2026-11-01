@@ -25,8 +25,12 @@ import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.lock.LockLoadStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.ZoneId
@@ -192,6 +196,37 @@ class ProtectedMemoryRepository(
 ) : MemoryRepository by delegate {
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
     override fun observe(range: TimeRange): Flow<List<LifeEventRecord>> = gateway.records(delegate.observe(range))
+    override fun observeLibrary(limit: Int, eventTypes: Set<EventType>): Flow<List<LifeEventRecord>> {
+        require(limit > 0) { "Library limit must be positive" }
+        val supported = setOf(EventType.MEMORY, EventType.JOURNAL, EventType.MOOD)
+        require(eventTypes.all { it in supported }) { "Only memory, journal, and mood events can be listed as memories" }
+        if (eventTypes.isEmpty()) return flowOf(emptyList())
+
+        return gateway.snapshot
+            .distinctUntilChangedBy { state ->
+                listOf(state.loadStatus, state.policy, state.sessionGeneration, state.grant)
+            }
+            .flatMapLatest { before ->
+                if (before.loadStatus != LockLoadStatus.READY) return@flatMapLatest flowOf(emptyList())
+                val authorizedTypes = eventTypes.filterTo(linkedSetOf()) { type ->
+                    val sections = when (type) {
+                        EventType.MEMORY -> setOf(LockSection.MEMORIES)
+                        EventType.JOURNAL -> setOf(LockSection.MEMORIES, LockSection.JOURNAL)
+                        EventType.MOOD -> setOf(LockSection.MEMORIES, LockSection.MOOD)
+                        else -> emptySet()
+                    }
+                    before.decide(LockRequest(LockOperation.READ, sections)) ==
+                        com.luma.lifeos.domain.lock.AccessDecision.Allow
+                }
+                if (authorizedTypes.isEmpty()) return@flatMapLatest flowOf(emptyList())
+
+                delegate.observeLibrary(limit, authorizedTypes).map { records ->
+                    val after = gateway.snapshot.value
+                    if (!gateway.sameAuthorizationEpoch(before, after)) emptyList()
+                    else gateway.projectRecords(records, before)
+                }
+            }
+    }
     override suspend fun create(id: EventId, input: MemoryInput): EventId =
         gateway.commit(LockOperation.CREATE, setOf(LockSection.MEMORIES), id.toString()) { delegate.create(id, input) }
     override suspend fun update(id: EventId, input: MemoryInput) =

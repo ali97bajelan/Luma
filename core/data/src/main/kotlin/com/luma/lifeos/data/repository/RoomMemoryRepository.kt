@@ -10,6 +10,8 @@ import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.repository.MemoryRepository
 import com.luma.lifeos.domain.time.TimeRange
 import java.time.Clock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 class RoomMemoryRepository(private val database: LumaDatabase, private val clock: Clock = Clock.systemUTC()) : MemoryRepository {
@@ -20,6 +22,14 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
     override suspend fun get(id: EventId): LifeEventRecord? = events.getDetails(id.toString())?.toRecord()
     override fun observe(range: TimeRange) = events.observeMemories(range.start.storageBoundary(), range.endExclusive.storageBoundary())
         .map { rows -> rows.map { it.toRecord() } }
+    override fun observeLibrary(limit: Int, eventTypes: Set<EventType>): Flow<List<LifeEventRecord>> {
+        require(limit > 0) { "Library limit must be positive" }
+        val supported = setOf(EventType.MEMORY, EventType.JOURNAL, EventType.MOOD)
+        require(eventTypes.all { it in supported }) { "Only memory, journal, and mood events can be listed as memories" }
+        if (eventTypes.isEmpty()) return flowOf(emptyList())
+        return events.observeMemoryLibrary(eventTypes.map(EventType::name), limit)
+            .map { rows -> rows.map { it.toRecord() } }
+    }
 
     override suspend fun create(id: EventId, input: MemoryInput): EventId = database.withTransaction {
         val title = input.title.clean()

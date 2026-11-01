@@ -64,6 +64,13 @@ interface LifeEventDao {
     fun observeMemories(start: Long, end: Long): Flow<List<EventWithDetails>>
 
     @Transaction
+    @Query("""SELECT * FROM life_event
+        WHERE type IN (:eventTypes)
+          AND EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id)
+        ORDER BY occurred_at DESC, id DESC LIMIT :limit""")
+    fun observeMemoryLibrary(eventTypes: List<String>, limit: Int): Flow<List<EventWithDetails>>
+
+    @Transaction
     @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND " + TIMELINE_VISIBLE + " ORDER BY occurred_at DESC, id DESC LIMIT :limit OFFSET :offset")
     suspend fun pageDetails(start: Long, end: Long, offset: Int, limit: Int, showAppUsage: Boolean): List<EventWithDetails>
 

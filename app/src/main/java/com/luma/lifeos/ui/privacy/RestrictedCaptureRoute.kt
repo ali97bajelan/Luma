@@ -62,6 +62,7 @@ import com.luma.lifeos.domain.model.JournalInput
 import com.luma.lifeos.domain.model.MemoryInput
 import com.luma.lifeos.domain.model.MoodInput
 import com.luma.lifeos.domain.model.PhotoAttachment
+import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.lock.CaptureDraft
 import com.luma.lifeos.lock.CaptureInput
@@ -213,7 +214,7 @@ private class RestrictedCaptureViewModel(private val service: RestrictedCaptureS
         } finally { mutableState.value = state.value.copy(busy = false) }
     }
 
-    fun save(zone: ZoneId, onSaved: () -> Unit) = viewModelScope.launch {
+    fun save(zone: ZoneId, onSaved: (CaptureKind, EventId?) -> Unit) = viewModelScope.launch {
         if (state.value.busy) return@launch
         val session = state.value.session ?: return@launch
         mutableState.value = state.value.copy(busy = true, error = null)
@@ -235,11 +236,11 @@ private class RestrictedCaptureViewModel(private val service: RestrictedCaptureS
             CaptureResult.RetryableFailure
         }
         when (result) {
-            CaptureResult.Saved -> {
+            is CaptureResult.Saved -> {
                 mutableState.value = state.value.copy(
                     busy = false, session = null, draft = null, draftIds = emptyList(), saved = true, error = null,
                 )
-                onSaved()
+                onSaved(session.kind, result.eventId)
             }
             CaptureResult.ValidationError -> mutableState.value = state.value.copy(busy = false, error = CaptureUiError.VALIDATION)
             CaptureResult.RetryableFailure -> mutableState.value = state.value.copy(busy = false, error = CaptureUiError.RETRY)
@@ -333,6 +334,8 @@ fun RestrictedCaptureRoute(
     service: RestrictedCaptureService,
     onBack: () -> Unit,
     onRequestDraftUnlock: (UUID, (OperationProof) -> Unit) -> Unit,
+    initialKind: CaptureKind? = null,
+    onMemorySaved: (EventId) -> Unit = {},
 ) {
     val factory = remember(service) { viewModelFactory { initializer { RestrictedCaptureViewModel(service) } } }
     val vm: RestrictedCaptureViewModel = viewModel(factory = factory)
@@ -379,6 +382,11 @@ fun RestrictedCaptureRoute(
             if (screenshotProtectionRequired) window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
             else window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             if (activity?.isChangingConfigurations != true) cameraFilePath?.let(::File)?.delete()
+        }
+    }
+    LaunchedEffect(initialKind, state.loading) {
+        if (initialKind != null && !state.loading && state.session == null && !state.busy && !state.saved) {
+            vm.begin(initialKind)
         }
     }
     LaunchedEffect(state.saved) {
@@ -476,7 +484,11 @@ fun RestrictedCaptureRoute(
                         AccessibleFeedback(stringResource(resource), Modifier.testTag("restricted_capture_error"))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(enabled = !state.busy, onClick = { vm.save(ZoneId.systemDefault()) { } },
+                        Button(enabled = !state.busy, onClick = {
+                            vm.save(ZoneId.systemDefault()) { kind, eventId ->
+                                if (kind == CaptureKind.MEMORY) eventId?.let(onMemorySaved)
+                            }
+                        },
                             modifier = Modifier.testTag("restricted_capture_save")) {
                             Text(stringResource(R.string.save))
                         }

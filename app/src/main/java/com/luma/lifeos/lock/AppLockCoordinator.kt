@@ -281,6 +281,7 @@ class AppLockCoordinator(
         LockPendingDestination.People -> setOf(LockSection.PEOPLE)
         LockPendingDestination.Habits -> setOf(LockSection.HABITS)
         LockPendingDestination.Tasks -> setOf(LockSection.TASKS)
+        LockPendingDestination.MemoryLibrary -> setOf(LockSection.MEMORIES)
         is LockPendingDestination.PersonDetail -> setOf(LockSection.PEOPLE)
         is LockPendingDestination.PlaceDetail -> LockSection.entries.toSet()
         is LockPendingDestination.EventDetail -> LockSection.entries.toSet()

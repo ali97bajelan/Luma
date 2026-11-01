@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -70,6 +71,7 @@ import com.luma.lifeos.domain.repository.LifeEventRepository
 import com.luma.lifeos.domain.repository.MemoryRepository
 import com.luma.lifeos.ui.memory.MemoryEditorRoute
 import com.luma.lifeos.ui.memory.MemoryReviewRoute
+import com.luma.lifeos.ui.memory.MemoryLibraryRoute
 import com.luma.lifeos.domain.repository.JournalRepository
 import com.luma.lifeos.ui.journal.JournalEditorRoute
 import com.luma.lifeos.ui.journal.JournalDetailRoute
@@ -163,6 +165,7 @@ import com.luma.lifeos.domain.lock.LockCoverage
 import com.luma.lifeos.domain.lock.LockLoadStatus
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.RestrictedCaptureService
+import com.luma.lifeos.lock.CaptureKind as RestrictedCaptureKind
 import com.luma.lifeos.lock.LockCredentialService
 import com.luma.lifeos.lock.LockSensitiveOperationGuard
 import com.luma.lifeos.lock.LockWindowPrivacy
@@ -180,6 +183,9 @@ import com.luma.lifeos.ui.privacy.AppLockUnlockDialog
 
 private const val HABITS_SELECTED_DATE_KEY = "habits_selected_date"
 private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
+private const val MEMORY_LIBRARY_CAPTURE_ORIGIN_KEY = "memory_library_capture_origin"
+private const val MEMORY_LIBRARY_RESTRICTED_CAPTURE_SAVED_ID_KEY = "memory_library_restricted_capture_saved_id"
+private const val RESTRICTED_CAPTURE_INITIAL_KIND_KEY = "restricted_capture_initial_kind"
 
 private data class PendingWidgetActionConfirmation(
     val request: WidgetActionRequest,
@@ -276,6 +282,8 @@ fun LifeOsApp(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val entrySavedMessage = stringResource(R.string.entry_saved_feedback)
+    val memorySavedMessage = stringResource(R.string.memory_library_saved)
+    val memorySavedViewLabel = stringResource(R.string.memory_library_view)
     val primaryScreen = PrimaryDestination.entries.any { it.route == backStackEntry?.destination?.route }
     fun editEvent(record: LifeEventRecord) {
         if (!record.canEditContent) return
@@ -297,6 +305,8 @@ fun LifeOsApp(
         editorEntry.savedStateHandle.entryEditorResultIdFlow().collect { resultId ->
             if (resultId == null) return@collect
             val result = editorEntry.savedStateHandle.consumeEntryEditorResult() ?: return@collect
+            val fromMemoryLibraryCapture =
+                editorEntry.savedStateHandle.remove<Boolean>(MEMORY_LIBRARY_CAPTURE_ORIGIN_KEY) == true
             val caller = navController.previousBackStackEntry
             val removeMatchingDetail = result is EntryEditorResult.Deleted && caller?.matchesEntryDetailFor(result.id) == true
             val removedDetail = removeMatchingDetail && caller != null &&
@@ -304,10 +314,38 @@ fun LifeOsApp(
             if (!removedDetail) navController.popBackStack()
             if (result is EntryEditorResult.Saved) {
                 photoScope.launch {
-                    acknowledgeSavedEntry(result, snackbarHostState, entrySavedMessage)
+                    if (fromMemoryLibraryCapture) {
+                        val outcome = snackbarHostState.showSnackbar(
+                            message = memorySavedMessage,
+                            actionLabel = memorySavedViewLabel,
+                            duration = androidx.compose.material3.SnackbarDuration.Long,
+                        )
+                        if (outcome == SnackbarResult.ActionPerformed) {
+                            val request = LockRequest(LockOperation.READ, setOf(LockSection.MEMORIES))
+                            if (appLockCoordinator == null ||
+                                appLockCoordinator.snapshot.value.decide(request) == AccessDecision.Allow
+                            ) {
+                                val savedRecord = try {
+                                    timeline.get(result.id)
+                                } catch (failure: Exception) {
+                                    if (failure is CancellationException) throw failure
+                                    null
+                                }
+                                if (savedRecord != null) {
+                                    openEvent(savedRecord)
+                                } else if (appLockCoordinator == null ||
+                                    appLockCoordinator.snapshot.value.decide(request) == AccessDecision.Allow
+                                ) {
+                                    navController.navigate("event_detail/${result.id}")
+                                }
+                            }
+                        }
+                    } else {
+                        acknowledgeSavedEntry(result, snackbarHostState, entrySavedMessage)
+                    }
                 }
             }
-            if (result !is EntryEditorResult.Deleted) {
+            if (result !is EntryEditorResult.Deleted && !fromMemoryLibraryCapture) {
                 photoScope.launch {
                     val occurredAt = try {
                         repository.get(result.id)?.occurredAt
@@ -425,6 +463,47 @@ fun LifeOsApp(
         lockSnapshot.activeBrowseContext != lockContext -> true
         else -> lockSnapshot.decide(lockRequest) != AccessDecision.Allow
     }
+    LaunchedEffect(backStackEntry, appLockGateVisible, memorySavedMessage, memorySavedViewLabel) {
+        val libraryEntry = backStackEntry ?: return@LaunchedEffect
+        if (libraryEntry.destination.route != AppRoutes.MEMORIES || appLockGateVisible) return@LaunchedEffect
+        val request = LockRequest(LockOperation.READ, setOf(LockSection.MEMORIES))
+        if (appLockCoordinator != null &&
+            appLockCoordinator.snapshot.value.decide(request) != AccessDecision.Allow
+        ) return@LaunchedEffect
+        val savedIdValue = libraryEntry.savedStateHandle.get<String>(
+            MEMORY_LIBRARY_RESTRICTED_CAPTURE_SAVED_ID_KEY,
+        ) ?: return@LaunchedEffect
+        val savedId = runCatching { EventId.parse(savedIdValue) }.getOrNull()
+        if (savedId == null) {
+            libraryEntry.savedStateHandle.remove<String>(MEMORY_LIBRARY_RESTRICTED_CAPTURE_SAVED_ID_KEY)
+            return@LaunchedEffect
+        }
+        val outcome = snackbarHostState.showSnackbar(
+            message = memorySavedMessage,
+            actionLabel = memorySavedViewLabel,
+            duration = androidx.compose.material3.SnackbarDuration.Long,
+        )
+        if (libraryEntry.savedStateHandle.get<String>(MEMORY_LIBRARY_RESTRICTED_CAPTURE_SAVED_ID_KEY) == savedIdValue) {
+            libraryEntry.savedStateHandle.remove<String>(MEMORY_LIBRARY_RESTRICTED_CAPTURE_SAVED_ID_KEY)
+        }
+        if (outcome == SnackbarResult.ActionPerformed &&
+            (appLockCoordinator == null || appLockCoordinator.snapshot.value.decide(request) == AccessDecision.Allow)
+        ) {
+            val savedRecord = try {
+                timeline.get(savedId)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                null
+            }
+            if (savedRecord != null) {
+                openEvent(savedRecord)
+            } else if (appLockCoordinator == null ||
+                appLockCoordinator.snapshot.value.decide(request) == AccessDecision.Allow
+            ) {
+                navController.navigate("event_detail/$savedId")
+            }
+        }
+    }
     val policyProtectedSections = lockSnapshot.policy?.takeIf { it.enabled }?.let { policy ->
         if (policy.coverage == LockCoverage.WHOLE_APP) LockSection.entries.toSet() else policy.sections
     }.orEmpty()
@@ -437,6 +516,7 @@ fun LifeOsApp(
         PrimaryDestination.CALENDAR.route,
         PrimaryDestination.REVIEW.route,
         PrimaryDestination.MORE.route,
+        AppRoutes.MEMORIES,
         AppRoutes.PEOPLE,
         "search",
     ) || currentRoute?.startsWith("review_sources") == true ||
@@ -592,11 +672,14 @@ fun LifeOsApp(
         (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
     val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
     fun appLockEnabled(): Boolean = lockSnapshot.policy?.enabled == true
-    fun openRestrictedCapture() {
+    fun openRestrictedCapture(initialKind: RestrictedCaptureKind? = null) {
         capturing = false
         widgetQuickCapture = false
         calendarCaptureDueDate = null
         navController.navigate(AppRoutes.RESTRICTED_CAPTURE) { launchSingleTop = true }
+        initialKind?.let { kind ->
+            navController.currentBackStackEntry?.savedStateHandle?.set(RESTRICTED_CAPTURE_INITIAL_KIND_KEY, kind.name)
+        }
     }
     fun openCapture(route: String, date: LocalDate?) {
         if (appLockEnabled()) {
@@ -608,6 +691,20 @@ fun LifeOsApp(
         calendarCaptureDueDate = null
         val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
         navController.navigate(if (target == null) route else "$route?initialTime=$target")
+    }
+    fun openMemoryLibrary() {
+        capturing = false
+        widgetQuickCapture = false
+        calendarCaptureDueDate = null
+        navController.navigate(AppRoutes.MEMORIES) { launchSingleTop = true }
+    }
+    fun openMemoryCaptureFromLibrary() {
+        if (appLockEnabled()) {
+            openRestrictedCapture(RestrictedCaptureKind.MEMORY)
+            return
+        }
+        navController.navigate("memory")
+        navController.currentBackStackEntry?.savedStateHandle?.set(MEMORY_LIBRARY_CAPTURE_ORIGIN_KEY, true)
     }
     fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null, requestDelete: Boolean = false) {
         if (taskId == null && appLockEnabled()) {
@@ -752,10 +849,26 @@ fun LifeOsApp(
             startDestination = PrimaryDestination.TODAY.route,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         ) {
-            if (restrictedCaptureService != null) composable(AppRoutes.RESTRICTED_CAPTURE) {
+            if (restrictedCaptureService != null) composable(AppRoutes.RESTRICTED_CAPTURE) { entry ->
+                val initialKind = remember(entry) {
+                    entry.savedStateHandle.get<String>(RESTRICTED_CAPTURE_INITIAL_KIND_KEY)
+                        ?.let { kind -> runCatching { RestrictedCaptureKind.valueOf(kind) }.getOrNull() }
+                }
                 RestrictedCaptureRoute(
                     service = restrictedCaptureService,
-                    onBack = { navController.popBackStack() },
+                    onBack = {
+                        entry.savedStateHandle.remove<String>(RESTRICTED_CAPTURE_INITIAL_KIND_KEY)
+                        navController.popBackStack()
+                    },
+                    initialKind = initialKind,
+                    onMemorySaved = { eventId ->
+                        if (initialKind == RestrictedCaptureKind.MEMORY) {
+                            navController.previousBackStackEntry
+                                ?.takeIf { it.destination.route == AppRoutes.MEMORIES }
+                                ?.savedStateHandle
+                                ?.set(MEMORY_LIBRARY_RESTRICTED_CAPTURE_SAVED_ID_KEY, eventId.toString())
+                        }
+                    },
                     onRequestDraftUnlock = { _, resumeWithProof ->
                         pendingCaptureResume = resumeWithProof
                         showAppLockUnlock()
@@ -942,8 +1055,28 @@ fun LifeOsApp(
                             }) else null,
                             focusPaused = protectedFocusReadable &&
                                 focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.PAUSED,
+                            onMemory = ::openMemoryLibrary,
                         )
                     }
+                }
+            }
+            composable(AppRoutes.MEMORIES) {
+                if (!appLockGateVisible) {
+                    MemoryLibraryRoute(
+                        repository = memories,
+                        today = currentDay.date,
+                        zone = currentDay.zone,
+                        authorizationEpoch = (lockSnapshot.policy?.generation ?: 0L) to lockSnapshot.sessionGeneration,
+                        onBack = {
+                            if (!navController.popBackStack()) {
+                                navController.navigate(AppRoutes.MORE) { launchSingleTop = true }
+                            }
+                        },
+                        onRecordMemory = ::openMemoryCaptureFromLibrary,
+                        onEvent = ::openEvent,
+                    )
+                } else {
+                    Box(Modifier.fillMaxSize())
                 }
             }
             composable(AppRoutes.FOCUS) {
@@ -1543,7 +1676,14 @@ fun LifeOsApp(
             },
             onCancel = {
                 appLockUnlockVisible = false
-                if (pendingCaptureResume == null) appLockCoordinator.cancelPendingNavigation()
+                if (pendingCaptureResume == null) {
+                    appLockCoordinator.cancelPendingNavigation()
+                    if (currentRoute == AppRoutes.MEMORIES && appLockGateVisible) {
+                        if (!navController.popBackStack(AppRoutes.MORE, inclusive = false)) {
+                            navController.navigate(AppRoutes.MORE) { launchSingleTop = true }
+                        }
+                    }
+                }
                 pendingCaptureResume = null
                 pendingWidgetLaunchForUnlock?.let { id ->
                     if (widgetLaunch?.id == id) onWidgetLaunchConsumed(id)
@@ -1684,9 +1824,15 @@ fun LifeOsApp(
             },
             onBackToSafeDestination = {
                 appLockCoordinator?.cancelPendingNavigation()
-                lockHelpRequested = true
+                if (currentRoute == AppRoutes.MEMORIES) {
+                    if (!navController.popBackStack(AppRoutes.MORE, inclusive = false)) {
+                        navController.navigate(AppRoutes.MORE) { launchSingleTop = true }
+                    }
+                } else {
+                    lockHelpRequested = true
+                }
             },
-            onAddNewEntry = ::openRestrictedCapture,
+            onAddNewEntry = { openRestrictedCapture() },
             onAppLockSettings = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
             onRequestFocusEmergencyExit = { focusViewModel?.requestEmergencyExit() },
             onConfirmFocusEmergencyExit = {
@@ -1723,6 +1869,7 @@ private fun appLockBrowseContext(
         AppRoutes.HABITS, "habit_editor?habitId={habitId}", "habit_detail/{habitId}/{date}?logId={logId}" ->
             setOf(LockSection.HABITS)
         AppRoutes.TASKS, AppRoutes.TASK_EDITOR -> setOf(LockSection.TASKS)
+        AppRoutes.MEMORIES -> setOf(LockSection.MEMORIES)
         AppRoutes.FOCUS, AppRoutes.FOCUS_HISTORY, "settings_focus" -> setOf(LockSection.FOCUS)
         AppRoutes.PEOPLE, "places" -> emptySet()
         "person?personId={personId}", "person_detail/{personId}" -> setOf(LockSection.PEOPLE)
@@ -1760,7 +1907,7 @@ private fun appLockBrowseContext(
     val isReviewSubroute = destination.startsWith("review_sources") || destination.startsWith("review_usage")
     val inheritedTopLevel = when (previousRoute) {
         AppRoutes.TODAY, AppRoutes.TIMELINE, AppRoutes.CALENDAR, AppRoutes.REVIEW, AppRoutes.MORE,
-        AppRoutes.PEOPLE -> previousRoute
+        AppRoutes.PEOPLE, AppRoutes.MEMORIES -> previousRoute
         else -> if (previousRoute?.startsWith("review_sources") == true || previousRoute?.startsWith("review_usage") == true) {
             AppRoutes.REVIEW
         } else previousContext?.topLevelDestination
@@ -1780,6 +1927,7 @@ private fun appLockBrowseContext(
         AppRoutes.TASKS -> "task:${taskId ?: "list"}"
         AppRoutes.HABITS -> "habit:${habitId ?: "list"}"
         AppRoutes.PEOPLE -> "people:${entry?.arguments?.getString("personId") ?: "list"}"
+        AppRoutes.MEMORIES -> "memories"
         else -> topLevel
     }
     return LockBrowseContext(
@@ -1800,6 +1948,7 @@ private fun appLockBrowseContext(
 private fun lockPendingDestination(route: String?, entry: NavBackStackEntry?): LockPendingDestination? = when (route) {
     AppRoutes.TODAY, AppRoutes.TIMELINE, AppRoutes.CALENDAR, AppRoutes.REVIEW, AppRoutes.MORE ->
         LockPendingDestination.Primary(requireNotNull(route))
+    AppRoutes.MEMORIES -> LockPendingDestination.MemoryLibrary
     "search" -> LockPendingDestination.Search
     AppRoutes.PEOPLE -> LockPendingDestination.People
     "person_detail/{personId}" -> entry?.arguments?.getString("personId")

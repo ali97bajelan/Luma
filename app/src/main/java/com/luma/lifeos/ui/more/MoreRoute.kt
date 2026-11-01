@@ -28,6 +28,7 @@ internal fun MoreRoute(
     onHabits: (() -> Unit)? = null,
     onFocus: (() -> Unit)? = null,
     focusPaused: Boolean = false,
+    onMemory: (() -> Unit)? = null,
 ) {
     AppPageScaffold(title = stringResource(R.string.more), navigation = PageNavigation.NONE) { pagePadding ->
         LumaReadingPane(
@@ -61,6 +62,15 @@ internal fun MoreRoute(
                         description = R.string.more_tasks_description,
                         icon = R.drawable.ic_nav_tasks,
                         testTag = "more_tasks",
+                        onClick = action,
+                    )
+                }
+                onMemory?.let { action ->
+                    MoreEntry(
+                        title = R.string.more_memory,
+                        description = R.string.more_memory_description,
+                        icon = R.drawable.ic_bookmark_outline,
+                        testTag = "more_memory",
                         onClick = action,
                     )
                 }

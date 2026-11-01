@@ -67,7 +67,7 @@ class CreateSession internal constructor(
 }
 
 sealed interface CaptureResult {
-    data object Saved : CaptureResult
+    data class Saved(val eventId: EventId? = null) : CaptureResult
     data object ValidationError : CaptureResult
     data object RetryableFailure : CaptureResult
     data object Conflict : CaptureResult
@@ -214,6 +214,7 @@ class RestrictedCaptureService(
             return@withLock CaptureResult.ValidationError
         }
         try {
+            var savedEventId: EventId? = null
             actions.execute(
                 LockRequest(
                     operation = LockOperation.CREATE,
@@ -228,9 +229,9 @@ class RestrictedCaptureService(
                     AccessDecision.Deny(com.luma.lifeos.domain.lock.AccessDenial.INVALID_CREATE_SESSION),
                 )
                 when (input) {
-                    is CaptureInput.Memory -> memories.create(EventId(draft.id), input.value.copy(photos = draft.photos))
-                    is CaptureInput.Journal -> journals.create(EventId(draft.id), input.value.copy(photos = draft.photos))
-                    is CaptureInput.Mood -> moods.create(EventId(draft.id), input.value)
+                    is CaptureInput.Memory -> savedEventId = memories.create(EventId(draft.id), input.value.copy(photos = draft.photos))
+                    is CaptureInput.Journal -> savedEventId = journals.create(EventId(draft.id), input.value.copy(photos = draft.photos))
+                    is CaptureInput.Mood -> savedEventId = moods.create(EventId(draft.id), input.value)
                     is CaptureInput.Task -> todos.create(draft.id, draft.idempotencyRevision, input.value)
                     is CaptureInput.HabitDefinition -> habits.create(draft.id, input.value)
                 }
@@ -241,7 +242,7 @@ class RestrictedCaptureService(
             drafts.delete(draft.id)
             active.remove(session.token)
             runCatching { photos.releaseDraft(draft.id) }
-            CaptureResult.Saved
+            CaptureResult.Saved(savedEventId)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: LockActionDeniedException) {
