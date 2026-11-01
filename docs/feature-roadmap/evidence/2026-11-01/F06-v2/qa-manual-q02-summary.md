@@ -1,0 +1,11 @@
+# Manual App Lock password and cold-launch check — Q02 partial
+
+- Device: `emulator-5554`, Android 16 / API36, 1080x2400 / 420 dpi.
+- Package: isolated `com.luma.lifeos.applockqa.qa` App Lock QA debug build. It was uninstalled after the check; package inventory retained `com.luma.lifeos` and `com.luma.lifeos.qa`.
+- On a fresh isolated install, the setup screen showed Whole app and Every time. Two matching synthetic Luma password entries were accepted. The generated recovery code was acknowledged for the disposable QA flow but was not copied, printed, stored, or captured in evidence.
+- A force-stop followed by a fresh app process launch displayed the preview-free `Luma is locked` gate. Selecting Unlock opened the password-only `Unlock Luma` dialog. Entering the synthetic Luma password returned to Today. No Android credential prompt appeared, and no device credential was entered or added.
+- This was an app process cold relaunch, not an emulator reboot. Network was not disconnected, and API28 was not available in this run. Therefore Q02 remains partial.
+- The first gate interaction exposed a shell-composition defect: the gate replaced the `Scaffold`/`NavHost`, so the unlock dialog did not appear and the settings shortcut crashed with `Navigation graph has not been set for NavController`. Keeping the host composed exposed Today semantics beneath the visible gate; a second RED assertion caught that leak. The gate now overlays the host and clears covered scaffold semantics while locked. Focused API36 regression `wholeAppGateKeepsUnlockDialogAndSettingsNavigationAvailable` passes 1/1, asserting Today semantics are absent while Unlock, cancellation back to the gate, and authenticated-settings entry still work.
+- No recovery secret or raw recovery-screen hierarchy was retained. Temporary emulator dumps were removed. The user’s `com.luma.lifeos` package and the existing Focus QA `com.luma.lifeos.qa` package were not modified or uninstalled.
+
+Evidence: [focused dialog RED run](c4-red-app-lock-gate-dialog.log), [covered-semantics RED run](c4-red-app-lock-gate-semantics.log), [focused GREEN run](c4-green-app-lock-gate-dialog.log), [GREEN JUnit](c4-green-app-lock-gate-dialog.xml), [current full C4 run](c4-app-gate-fix.log), [current C2/C3/C5 gates](c2-c3-c5-gate-fix-summary.md), [cleanup inventory](qa-manual-q02-cleanup.txt).

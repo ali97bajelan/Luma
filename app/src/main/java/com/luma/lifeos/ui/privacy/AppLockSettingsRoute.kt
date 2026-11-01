@@ -92,6 +92,7 @@ fun AppLockSettingsRoute(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
+    val settingsScrollState = rememberScrollState()
     val storedPolicy = snapshot.policy ?: LockPolicy()
     var policy by remember(storedPolicy) { mutableStateOf(storedPolicy) }
     var opened by remember(storedPolicy.generation, storedPolicy.enabled) { mutableStateOf(!storedPolicy.enabled) }
@@ -112,6 +113,11 @@ fun AppLockSettingsRoute(
     var pendingSecrets by remember { mutableStateOf(emptyList<CharArray>()) }
     var busy by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(errorText, settingsScrollState.maxValue) {
+        if (errorText != null) settingsScrollState.animateScrollTo(settingsScrollState.maxValue)
+    }
+
 
     fun clearVisibleSecrets() {
         setupPassword = ""
@@ -397,7 +403,7 @@ fun AppLockSettingsRoute(
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
+                Modifier.fillMaxSize().verticalScroll(settingsScrollState).padding(20.dp)
                     .testTag("screen_app_lock_settings"),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {

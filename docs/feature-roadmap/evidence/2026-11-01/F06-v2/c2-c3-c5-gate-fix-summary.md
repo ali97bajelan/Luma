@@ -1,0 +1,10 @@
+# Current-source C2/C3/C5 after gate semantics fix
+
+- Command: `:app:testAppLockQaDebugUnitTest :core:data:testDebugUnitTest :app:assembleAppLockQaDebug :app:assembleAppLockQaDebugAndroidTest :core:data:assembleDebugAndroidTest :app:lintAppLockQaDebug :core:data:lintDebug :app:assembleAppLockQaRelease --offline`.
+- Final offline verification with Gradle 9.1.0 completed successfully in 1s (3 tasks executed, 373 up-to-date) using the existing local distribution/dependency cache. The host-test tasks were up-to-date in this last run; their persisted XML reports total 310 app and 30 core:data tests with no failures/errors/skips. No dependencies were downloaded. An initial sandboxed attempt stopped before Gradle startup because the read-only default cache blocked its wrapper lock-file write; the successful runs used the already-cached Gradle home.
+- **C2:** 340/340 host tests passed: app 310/310 and core:data 30/30.
+- **C3:** App Lock QA debug APK, app instrumentation APK, and core:data instrumentation APK assembled. App debug lint completed with 156 warnings and 11 informational findings; core:data debug lint completed with no findings. No lint errors or fatal findings were reported.
+- **C5:** Minified `appLockQaRelease` assembled as an unsigned APK (7,575,508 bytes), SHA-256 `ba6ddfc0ae7ba03b25b893639d1aea270dd57665222428cc10be60a810ac10de`. R8 emitted 303 repetitions of its Kotlin-metadata compatibility warning; assembly still succeeded. A subsequent current-source API36 smoke with a temporary debug-signed copy launched Today and reached App Lock setup. It did not yield usable evidence for setup submission or the locked release gate; see [release smoke summary](c5-gate-fix-release-smoke-summary.md).
+- This gate pass does not clear the separate API36 app C4 result: 279 JUnit cases, 256 passed, 22 failed, 1 skipped; console/JUnit count differs by one. App Lock QA remains in progress.
+
+Evidence: [full Gradle log](c2-c3-c5-gate-fix.log), [API36 C4 summary](c4-app-gate-fix-summary.md).

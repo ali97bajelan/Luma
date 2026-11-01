@@ -144,7 +144,8 @@ class ProtectedSearchRepository(
         return SearchPage(immutableProjectionList(safe.drop(offset).take(limit)), offset, safe.size)
     }
 
-    private companion object { const val SCAN_SIZE = 100 }
+    // RoomSearchRepository accepts pages of at most 50 rows.
+    private companion object { const val SCAN_SIZE = 50 }
 }
 
 class ProtectedLifeEventRepository(

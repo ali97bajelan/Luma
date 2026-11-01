@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import com.luma.lifeos.domain.lock.LockPolicy
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.JournalInput
 import com.luma.lifeos.domain.model.PersonInput
@@ -19,7 +20,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import com.luma.lifeos.widget.WidgetIntents
+import com.luma.lifeos.lock.AndroidLockCrypto
+import com.luma.lifeos.lock.CredentialResult
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class AppNavigationTest {
@@ -196,6 +202,77 @@ class AppNavigationTest {
         awaitTag("screen_timeline")
     }
 
+    @Test fun quickCaptureWidgetOpensChooserWhenAppLockIsDisabled() {
+        launchWidgetQuickCapture(53)
+        compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
+        compose.onNodeWithTag("capture_mood").assertExists()
+        compose.onNodeWithTag("capture_journal").assertExists()
+        compose.onNodeWithTag("capture_memory").assertExists()
+    }
+
+    @Test fun emptyAppLockSetupScrollsValidationIntoView() {
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_settings").performClick()
+        awaitTag("screen_settings")
+        compose.onNodeWithTag("settings_privacy").performScrollTo().performClick()
+        awaitTag("screen_privacy")
+        compose.onNodeWithTag("privacy_app_lock").performScrollTo().performClick()
+        awaitTag("screen_app_lock_settings")
+
+        compose.onNodeWithTag("app_lock_setup_continue").performScrollTo().performClick()
+        val error = compose.onNodeWithTag("app_lock_settings_error")
+        error.assertTextContains("Use a password between 8 and 128 characters.")
+        val errorBounds = error.fetchSemanticsNode().boundsInRoot
+        assertTrue("error is not in the visible scroll viewport: $errorBounds", errorBounds.height > 0f)
+    }
+
+    @Test fun wholeAppGateKeepsUnlockDialogAndSettingsNavigationAvailable() {
+        val application = compose.activity.application as LumaApplication
+        resetAppLockForTest(application)
+        try {
+            enableWholeAppLockForTest(application)
+            val gateTitle = compose.activity.getString(R.string.app_lock_gate_title)
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithText(gateTitle).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("screen_today").assertDoesNotExist()
+
+            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_gate_unlock)).performClick()
+            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_unlock_title)).assertIsDisplayed()
+            compose.onNodeWithText(compose.activity.getString(R.string.cancel)).performClick()
+            compose.onNodeWithText(gateTitle).assertIsDisplayed()
+
+            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_gate_settings)).performClick()
+            compose.onNodeWithTag("screen_app_lock_settings").assertIsDisplayed()
+            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_current_password)).assertIsDisplayed()
+        } finally {
+            resetAppLockForTest(application)
+        }
+    }
+
+    private fun enableWholeAppLockForTest(application: LumaApplication) = runBlocking {
+        val credentials = application.lockCredentialService
+        val preparation = credentials.prepareRecovery()
+        val displayedCode = preparation.takeCodeForDisplay()
+        val password = "QA-only-lock-2026".toCharArray()
+        try {
+            val confirmation = credentials.confirmRecovery(preparation)
+            assertEquals(
+                CredentialResult.Success(),
+                credentials.enable(password, LockPolicy(enabled = true), confirmation),
+            )
+        } finally {
+            displayedCode.fill('\u0000')
+            password.fill('\u0000')
+        }
+    }
+
+    private fun resetAppLockForTest(application: LumaApplication) {
+        File(application.noBackupFilesDir, "app_lock").deleteRecursively()
+        AndroidLockCrypto().removeKeyIfPresent()
+        runBlocking { application.appLockCoordinator.initialize() }
+    }
+
     @Test fun selectedDaySurvivesNavigationAndRecreation() {
         val yesterday = LocalDate.now().minusDays(1)
             .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
@@ -222,6 +299,7 @@ class AppNavigationTest {
     }
 
     private fun launchWidgetQuickCapture(widgetId: Int) {
+        val scenarioLaunchIntent = compose.activity.intent
         val intent = Intent(compose.activity, MainActivity::class.java).apply {
             action = WidgetIntents.ACTION_NAVIGATION
             data = Uri.parse("luma-widget://navigate/navigation/$widgetId/quick-capture")
@@ -230,5 +308,8 @@ class AppNavigationTest {
             it.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
         }
         awaitTag("capture_sheet")
+        // MainActivity replaces its Intent in onNewIntent. Restore the scenario's launch Intent
+        // after the widget request is consumed so ActivityScenario can observe teardown.
+        compose.activityRule.scenario.onActivity { it.intent = scenarioLaunchIntent }
     }
 }

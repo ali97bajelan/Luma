@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.widthIn
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -702,46 +703,10 @@ fun LifeOsApp(
         }
     }
     Box(Modifier.fillMaxSize()) {
-    if (appLockGateVisible) {
-        AppLockGate(
-            canRequestUnlock = lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY,
-            addNewEntryAvailable = restrictedCaptureService != null,
-            appLockSettingsAvailable = lockCredentialService != null,
-            focusEmergencyAvailable = currentRoute == AppRoutes.FOCUS && focusViewModel != null,
-            focusEmergencyExitReady = focusState.emergencyPromptVisible,
-            onUnlock = {
-                val existingRequest = appLockCoordinator?.pendingBrowseRequest()
-                val decision = if (existingRequest != null) AccessDecision.NeedUnlock(
-                    existingRequest.requiredSections,
-                    lockSnapshot.policy?.coverage == com.luma.lifeos.domain.lock.LockCoverage.WHOLE_APP,
-                ) else appLockCoordinator?.requestBrowse(lockRequest, lockPendingDestination(currentRoute, backStackEntry))
-                if (decision is AccessDecision.NeedUnlock ||
-                    (decision is AccessDecision.Deny && decision.reason == com.luma.lifeos.domain.lock.AccessDenial.FRESH_AUTHENTICATION_REQUIRED)
-                ) showAppLockUnlock()
-            },
-            onBackToSafeDestination = {
-                appLockCoordinator?.cancelPendingNavigation()
-                lockHelpRequested = true
-            },
-            onAddNewEntry = ::openRestrictedCapture,
-            onAppLockSettings = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
-            onRequestFocusEmergencyExit = { focusViewModel?.requestEmergencyExit() },
-            onConfirmFocusEmergencyExit = {
-                focusViewModel?.confirmEmergencyExit()
-                appLockCoordinator?.cancelPendingNavigation()
-                lockHelpRequested = true
-            },
-            onCancelFocusEmergencyExit = { focusViewModel?.dismissEmergencyExit() },
-        )
-    } else if (lockHelpRequested) {
-        SettingsSectionPage(
-            title = R.string.app_lock_help_title,
-            onBack = { lockHelpRequested = false },
-        ) {
-            Text(stringResource(R.string.app_lock_help_body))
-        }
-    } else {
     Scaffold(
+        modifier = if (appLockGateVisible || lockHelpRequested) {
+            Modifier.clearAndSetSemantics { }
+        } else Modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (primaryScreen && !isFocusGuarded()) {
@@ -1414,7 +1379,7 @@ fun LifeOsApp(
                 request.destination is WidgetDestination.Capture ||
                 request.destination == WidgetDestination.NewTask ||
                 request.destination == WidgetDestination.NewHabit
-            if (!(isCreate && lockSnapshot.policy?.enabled == true)) {
+            if (!isCreate) {
                 val (browseRequest, destination) = lockRequestForWidget(request.destination)
                 when (val decision = appLockCoordinator?.requestBrowse(browseRequest, destination)
                     ?: AccessDecision.Allow
@@ -1697,6 +1662,44 @@ fun LifeOsApp(
         } },
     )
     }
+    if (appLockGateVisible) {
+        AppLockGate(
+            canRequestUnlock = lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY,
+            addNewEntryAvailable = restrictedCaptureService != null,
+            appLockSettingsAvailable = lockCredentialService != null,
+            focusEmergencyAvailable = currentRoute == AppRoutes.FOCUS && focusViewModel != null,
+            focusEmergencyExitReady = focusState.emergencyPromptVisible,
+            onUnlock = {
+                val existingRequest = appLockCoordinator?.pendingBrowseRequest()
+                val decision = if (existingRequest != null) AccessDecision.NeedUnlock(
+                    existingRequest.requiredSections,
+                    lockSnapshot.policy?.coverage == com.luma.lifeos.domain.lock.LockCoverage.WHOLE_APP,
+                ) else appLockCoordinator?.requestBrowse(lockRequest, lockPendingDestination(currentRoute, backStackEntry))
+                if (decision is AccessDecision.NeedUnlock ||
+                    (decision is AccessDecision.Deny && decision.reason == com.luma.lifeos.domain.lock.AccessDenial.FRESH_AUTHENTICATION_REQUIRED)
+                ) showAppLockUnlock()
+            },
+            onBackToSafeDestination = {
+                appLockCoordinator?.cancelPendingNavigation()
+                lockHelpRequested = true
+            },
+            onAddNewEntry = ::openRestrictedCapture,
+            onAppLockSettings = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
+            onRequestFocusEmergencyExit = { focusViewModel?.requestEmergencyExit() },
+            onConfirmFocusEmergencyExit = {
+                focusViewModel?.confirmEmergencyExit()
+                appLockCoordinator?.cancelPendingNavigation()
+                lockHelpRequested = true
+            },
+            onCancelFocusEmergencyExit = { focusViewModel?.dismissEmergencyExit() },
+        )
+    } else if (lockHelpRequested) {
+        SettingsSectionPage(
+            title = R.string.app_lock_help_title,
+            onBack = { lockHelpRequested = false },
+        ) {
+            Text(stringResource(R.string.app_lock_help_body))
+        }
     }
 }
 

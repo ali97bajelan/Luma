@@ -189,7 +189,10 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                         title = R.string.journal_tags,
                         tag = "journal_tags_toggle",
                         expanded = tagsExpanded,
-                        onExpandedChange = { tagsExpanded = it },
+                        onExpandedChange = {
+                            tagsExpansionInitialized = true
+                            tagsExpanded = it
+                        },
                         summary = if (state.draft.tagNames.isEmpty()) null else {
                             {
                                 Text(

@@ -17,6 +17,28 @@ import org.junit.Test
 class JournalEditorScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun openingTagsBeforeLoadCompletesKeepsTheSectionExpanded() {
+        val state = androidx.compose.runtime.mutableStateOf(
+            JournalEditorState(JournalDraft(1_791_720_000_000L, body = "Entry"), ready = false),
+        )
+        compose.setContent {
+            LifeOsTheme {
+                JournalEditorScreen(
+                    state = state.value,
+                    onCancel = {}, onSave = {}, onDelete = {}, onRetry = {},
+                    onTitle = {}, onBody = {}, onAddTag = { true }, onRemoveTag = {},
+                    onTime = { _: LocalDateTime, _: ZoneId -> true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("journal_tags_toggle").performClick()
+        compose.onNodeWithTag("journal_tag_input").assertExists()
+        state.value = state.value.copy(ready = true)
+        compose.waitForIdle()
+        compose.onNodeWithTag("journal_tag_input").assertExists()
+    }
+
     @Test fun rejectedPendingTagKeepsEditorOpenRetainsInputAndShowsFieldError() {
         val saves = AtomicInteger()
         compose.setContent {
