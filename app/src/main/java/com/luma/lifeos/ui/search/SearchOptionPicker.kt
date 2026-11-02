@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.search
 
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
@@ -30,10 +34,10 @@ internal fun SearchOptionPicker(title: String, options: List<SearchOption>, sele
         selected.filter { it !in known }.map { SearchOption(it, "$unavailable (${it.toString().take(8)})") } + options
     }
     val visible = remember(all, text) { all.filter { it.name.contains(text.trim(), ignoreCase = true) } }
-    AlertDialog(onDismissRequest = onDone, title = { Text(title) },
+    LumaAlertDialog(onDismissRequest = onDone, title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = text, onValueChange = { text = it.take(200) }, singleLine = true,
+                LumaOutlinedTextField(value = text, onValueChange = { text = it.take(200) }, singleLine = true,
                     label = { Text(stringResource(R.string.search_options_hint)) }, modifier = Modifier.fillMaxWidth().testTag("search_option_text"))
                 TextButton(onClick = onClear) { Text(stringResource(R.string.search_clear_selection)) }
                 if (loading) CircularProgressIndicator()

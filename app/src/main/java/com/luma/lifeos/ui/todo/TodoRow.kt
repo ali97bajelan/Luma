@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.todo
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -138,7 +139,7 @@ internal fun TodoRow(
                     modifier = Modifier.testTag("todo_row_status_${task.id}"),
                 )
                 if (error == TodoListRowError.FAILED) {
-                    Button(
+                    LumaButton(
                         onClick = onRetry,
                         enabled = canMutate,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("todo_retry_${task.id}"),

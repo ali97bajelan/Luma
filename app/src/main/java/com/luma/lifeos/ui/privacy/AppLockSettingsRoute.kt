@@ -1,5 +1,12 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
@@ -16,11 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -427,7 +430,7 @@ fun AppLockSettingsRoute(
                             onCheckedChange = { recoveryAcknowledged = it })
                         Text(stringResource(R.string.app_lock_recovery_ack), Modifier.padding(top = 12.dp))
                     }
-                    Button(enabled = recoveryAcknowledged && !busy, onClick = ::finishRecoveryDisplay,
+                    LumaButton(enabled = recoveryAcknowledged && !busy, onClick = ::finishRecoveryDisplay,
                         modifier = Modifier.testTag("app_lock_recovery_confirm")) {
                         Text(stringResource(R.string.app_lock_recovery_continue))
                     }
@@ -438,7 +441,7 @@ fun AppLockSettingsRoute(
                     Text(stringResource(R.string.app_lock_settings_auth_body))
                     SecretField(R.string.app_lock_current_password, unlockPassword, !busy,
                         { unlockPassword = it }, "app_lock_settings_password")
-                    Button(enabled = unlockPassword.isNotEmpty() && !busy, onClick = ::submitOpenSettings,
+                    LumaButton(enabled = unlockPassword.isNotEmpty() && !busy, onClick = ::submitOpenSettings,
                         modifier = Modifier.testTag("app_lock_settings_auth")) {
                         Text(stringResource(R.string.app_lock_unlock_settings))
                     }
@@ -456,14 +459,14 @@ fun AppLockSettingsRoute(
                         { setupPassword = it }, "app_lock_setup_password")
                     SecretField(R.string.app_lock_confirm_password, setupConfirmation, !busy,
                         { setupConfirmation = it }, "app_lock_setup_confirm")
-                    Button(enabled = !busy, onClick = ::submitSetupPassword,
+                    LumaButton(enabled = !busy, onClick = ::submitSetupPassword,
                         modifier = Modifier.testTag("app_lock_setup_continue")) {
                         Text(stringResource(R.string.app_lock_setup_continue))
                     }
                 } else if (opened) {
                     Text(stringResource(R.string.app_lock_settings_body))
                     PolicyControls(policy, enabled = !busy, onPolicy = { policy = it })
-                    Button(enabled = !busy, onClick = { action = LockSettingsAction.POLICY },
+                    LumaButton(enabled = !busy, onClick = { action = LockSettingsAction.POLICY },
                         modifier = Modifier.testTag("app_lock_save_policy")) {
                         Text(stringResource(R.string.app_lock_save_policy))
                     }
@@ -491,7 +494,7 @@ fun AppLockSettingsRoute(
     }
 
     action?.let { selected ->
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { if (!busy) { action = null; actionPassword = ""; replacementPassword = ""; replacementConfirmation = "" } },
             title = { Text(stringResource(when (selected) {
                 LockSettingsAction.POLICY -> R.string.app_lock_save_policy
@@ -549,7 +552,7 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             LockSection.entries.forEach { section ->
                 val selected = section in policy.sections
-                FilterChip(selected = selected, enabled = enabled, onClick = {
+                LumaFilterChip(selected = selected, enabled = enabled, onClick = {
                     val sections = if (selected) policy.sections - section else policy.sections + section
                     if (sections.isNotEmpty()) onPolicy(policy.copy(sections = sections))
                 }, label = { Text(stringResource(section.labelResource())) },
@@ -581,7 +584,7 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
 @Composable
 private fun SecretField(label: Int, value: String, enabled: Boolean, onValue: (String) -> Unit, tag: String) {
     var revealed by remember(tag) { mutableStateOf(false) }
-    OutlinedTextField(
+    LumaOutlinedTextField(
         value = value, onValueChange = onValue, enabled = enabled,
         label = { Text(stringResource(label)) }, singleLine = true,
         visualTransformation = if (revealed) VisualTransformation.None else PasswordVisualTransformation(),

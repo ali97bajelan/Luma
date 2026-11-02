@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.people
 
+import com.luma.lifeos.ui.common.LumaInputChip
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,7 +37,7 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         selected.forEach { id ->
             val person = catalog.firstOrNull { it.id == id }
-            InputChip(selected = true, enabled = enabled, onClick = { onToggle(id) },
+            LumaInputChip(selected = true, enabled = enabled, onClick = { onToggle(id) },
                 modifier = Modifier.testTag("person_selected_$id"),
                 label = { Text(if (person != null) stringResource(R.string.person_remove, person.name)
                     else stringResource(if (state is PeopleState.Data) R.string.person_unavailable else R.string.person_selected_loading)) })

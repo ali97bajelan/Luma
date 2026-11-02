@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
@@ -17,7 +19,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -86,7 +87,7 @@ internal fun FocusSettingsScreen(
                 modifier = Modifier.testTag("focus_settings_running"),
             )
         }
-        OutlinedTextField(
+        LumaOutlinedTextField(
             value = search,
             onValueChange = { search = it },
             label = { Text(stringResource(R.string.focus_settings_search)) },

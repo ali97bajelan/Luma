@@ -1,5 +1,12 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import android.app.Activity
 import android.content.Context
 import android.net.Uri
@@ -19,12 +26,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -484,7 +487,7 @@ fun RestrictedCaptureRoute(
                         AccessibleFeedback(stringResource(resource), Modifier.testTag("restricted_capture_error"))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(enabled = !state.busy, onClick = {
+                        LumaButton(enabled = !state.busy, onClick = {
                             vm.save(ZoneId.systemDefault()) { kind, eventId ->
                                 if (kind == CaptureKind.MEMORY) eventId?.let(onMemorySaved)
                             }
@@ -504,7 +507,7 @@ fun RestrictedCaptureRoute(
             }
         }
     }
-    if (state.confirmDiscard) AlertDialog(
+    if (state.confirmDiscard) LumaAlertDialog(
         onDismissRequest = vm::dismissDiscard,
         title = { Text(stringResource(R.string.restricted_capture_discard_title)) },
         text = { Text(stringResource(R.string.restricted_capture_discard_body)) },
@@ -554,7 +557,7 @@ private fun CaptureFields(draft: CaptureDraft, enabled: Boolean, change: (String
                 java.time.DayOfWeek.entries.forEach { day ->
                     val code = day.value.toString()
                     val selected = code in values["weekdays"].orEmpty().split(',')
-                    FilterChip(selected = selected, enabled = enabled, onClick = {
+                    LumaFilterChip(selected = selected, enabled = enabled, onClick = {
                         val next = if (selected) values["weekdays"].orEmpty().split(',').filterNot { it == code }
                         else (values["weekdays"].orEmpty().split(',') + code).filter(String::isNotBlank)
                         change("weekdays", next.distinct().sorted().joinToString(","))
@@ -575,7 +578,7 @@ private fun CaptureField(
     singleLine: Boolean = false,
     minLines: Int = 1,
 ) {
-    OutlinedTextField(
+    LumaOutlinedTextField(
         value = values[key].orEmpty(), onValueChange = { change(key, it) }, enabled = enabled,
         label = { Text(stringResource(label)) }, modifier = Modifier.fillMaxWidth().testTag("restricted_capture_field_$key"),
         singleLine = singleLine, minLines = minLines,

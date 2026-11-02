@@ -1,12 +1,13 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaCard
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,7 +30,7 @@ internal fun TodayFocusCard(
     onHistory: () -> Unit,
     onFocus: (() -> Unit)?,
 ) {
-    Card(Modifier.fillMaxWidth().testTag("today_focus_card")) {
+    LumaCard(Modifier.fillMaxWidth().testTag("today_focus_card")) {
         Column(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),

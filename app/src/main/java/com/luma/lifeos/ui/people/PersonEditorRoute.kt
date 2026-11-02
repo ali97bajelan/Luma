@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.people
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -83,7 +85,7 @@ fun PersonEditorScreen(state: PersonEditorState, onCancel: () -> Unit, onSave: (
                         }
                     } else null,
                     primaryAction = { actionModifier ->
-                        Button(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
+                        LumaButton(enabled = enabled && state.draft.name.isNotBlank(), onClick = onSave,
                             modifier = actionModifier.testTag("person_save")) {
                             Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                         }

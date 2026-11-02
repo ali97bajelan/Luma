@@ -1,10 +1,12 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -95,13 +97,13 @@ fun LockSensitiveActionDialog(
     }
 
     SecurePrivacyWindow()
-    AlertDialog(
+    LumaAlertDialog(
         onDismissRequest = { if (!busy) cancel() },
         title = { Text(stringResource(R.string.app_lock_sensitive_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.app_lock_sensitive_body, purposeLabel(pending.purpose)))
-                OutlinedTextField(
+                LumaOutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
                     enabled = !busy,

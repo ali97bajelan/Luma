@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.usage
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
@@ -70,24 +72,24 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
                 it.atZone(zone).format(displayTime.dateTime(FormatStyle.MEDIUM)))) }
             when {
                 currentAvailability.access == IntegrationAccessState.REQUIRED ->
-                    Button(onClick = { showAccessExplanation = true }, enabled = !state.busy,
+                    LumaButton(onClick = { showAccessExplanation = true }, enabled = !state.busy,
                         modifier = Modifier.testTag("usage_grant")) { Text(stringResource(R.string.usage_grant)) }
                 state.loading || currentAvailability.configurationFailed || currentAvailability.enabled == null ||
                     currentAvailability.access == IntegrationAccessState.ERROR || currentAvailability.access == IntegrationAccessState.CHECKING ->
-                    Button(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
+                    LumaButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                         modifier = Modifier.testTag("usage_refresh_primary")) { Text(stringResource(R.string.usage_refresh)) }
                 currentAvailability.access == IntegrationAccessState.LOCKED ->
                     Text(stringResource(R.string.usage_locked), modifier = Modifier.testTag("usage_locked_message"))
                 currentAvailability.access == IntegrationAccessState.UNAVAILABLE ->
                     Text(stringResource(R.string.usage_service_unavailable), modifier = Modifier.testTag("usage_unavailable_message"))
                 currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true ->
-                    Button(onClick = vm::importNow, enabled = !state.busy && !state.loading,
+                    LumaButton(onClick = vm::importNow, enabled = !state.busy && !state.loading,
                         modifier = Modifier.testTag("usage_import")) {
                         Text(stringResource(if (currentAvailability.importFailed ||
                             state.errors.containsKey(IntegrationSettingsOperation.IMPORT)) R.string.usage_retry_import else R.string.usage_import_now))
                     }
                 currentAvailability.access == IntegrationAccessState.ALLOWED ->
-                    Button(onClick = { showAccessExplanation = true }, enabled = !state.busy,
+                    LumaButton(onClick = { showAccessExplanation = true }, enabled = !state.busy,
                         modifier = Modifier.testTag("usage_manage_primary")) { Text(stringResource(R.string.usage_manage_access)) }
                 else -> Unit
             }

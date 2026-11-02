@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -299,7 +300,7 @@ fun HabitDetailScreen(
                                     HabitLogDisabledReason.PAUSED -> R.string.habit_log_disabled_paused
                                     HabitLogDisabledReason.ARCHIVED -> R.string.habit_log_disabled_archived
                                 }))
-                                Button(onClick = onLog, enabled = activeRow.canLog,
+                                LumaButton(onClick = onLog, enabled = activeRow.canLog,
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_detail_log")) {
                                     Text(stringResource(R.string.habit_log))
                                 }

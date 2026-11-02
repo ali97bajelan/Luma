@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.timeline
 
+import com.luma.lifeos.ui.common.LumaCard
+
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -37,7 +39,7 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
     val contentSpacing = if (LocalDensity.current.fontScale >= 1.3f) 4.dp else 8.dp
     val event = record.event
     val action = stringResource(openActionLabel)
-    Card(
+    LumaCard(
         modifier = Modifier.fillMaxWidth().testTag("event_${event.id}")
             .clickable(onClickLabel = action, onClick = onOpen),
         shape = RoundedCornerShape(LumaUi.SectionRadius),
@@ -142,7 +144,7 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
     record.appUsage?.let { usage ->
         if (full) {
             val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
-            Card(Modifier.fillMaxWidth().testTag("event_usage_detail"),
+            LumaCard(Modifier.fillMaxWidth().testTag("event_usage_detail"),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)

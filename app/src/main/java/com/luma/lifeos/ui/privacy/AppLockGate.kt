@@ -1,5 +1,11 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,10 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -79,7 +82,7 @@ fun AppLockGate(
                 modifier = Modifier.padding(top = 12.dp),
                 style = MaterialTheme.typography.bodyLarge,
             )
-            Button(
+            LumaButton(
                 onClick = onUnlock,
                 enabled = canRequestUnlock,
                 modifier = Modifier.padding(top = 20.dp),
@@ -109,7 +112,7 @@ fun AppLockGate(
         }
     }
     if (confirmingFocusExit) {
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = {
                 confirmingFocusExit = false
                 requestingFocusExit = false
@@ -214,13 +217,13 @@ fun AppLockUnlockDialog(
         }
     }
     SecurePrivacyWindow()
-    AlertDialog(
+    LumaAlertDialog(
         onDismissRequest = { if (!busy) { password = ""; onCancel() } },
         title = { Text(stringResource(com.luma.lifeos.R.string.app_lock_unlock_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(com.luma.lifeos.R.string.app_lock_unlock_body))
-                OutlinedTextField(
+                LumaOutlinedTextField(
                     value = password, onValueChange = { password = it }, enabled = !busy,
                     label = { Text(stringResource(com.luma.lifeos.R.string.app_lock_current_password)) },
                     singleLine = true,

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.places
 
+import com.luma.lifeos.ui.common.LumaInputChip
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,7 +35,7 @@ fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
         modifier = Modifier.semantics { heading() }.testTag("place_heading"))
     if (selected != null) {
         val place = catalog.firstOrNull { it.id == selected }
-        InputChip(selected = true, enabled = enabled, onClick = { onSelect(null) },
+        LumaInputChip(selected = true, enabled = enabled, onClick = { onSelect(null) },
             modifier = Modifier.testTag("place_selected"),
             label = { Text(if (place != null) stringResource(R.string.place_remove, place.name)
                 else stringResource(if (state is PlacesState.Data) R.string.place_unavailable else R.string.place_selected_loading)) })

@@ -8,6 +8,7 @@
     <string name="nav_today_compact">Jour</string>
     <string name="nav_timeline_compact">Par&#173;cours</string>
     <string name="nav_calendar_compact">Calendrier</string>
+    <string name="nav_calendar_narrow">Cal.</string>
     <string name="nav_people_compact">Con&#173;tacts</string>
     <string name="nav_habits_compact">Hab.</string>
     <string name="nav_review_compact">Bilan</string>

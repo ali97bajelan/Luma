@@ -1,5 +1,7 @@
 package com.luma.lifeos.reminders
 
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -12,7 +14,6 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -67,7 +68,7 @@ internal fun rememberReminderNotificationAccess(onRequestComplete: () -> Unit = 
     }
 
     if (showRationale) {
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { showRationale = false; completeRequest() },
             title = { Text(stringResource(R.string.reminder_notification_access)) },
             text = { Text(stringResource(R.string.reminder_notification_access_hint)) },

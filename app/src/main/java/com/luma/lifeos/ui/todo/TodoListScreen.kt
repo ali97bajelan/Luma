@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.todo
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,10 +16,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -114,14 +116,14 @@ fun TodoListScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
          ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
+                LumaFilterChip(
                     selected = !state.completed,
                     onClick = { onSelectCompleted(false) },
                     label = { Text(stringResource(R.string.todo_list_open_tab)) },
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).focusRequester(openTabFocusRequester)
                         .testTag("todo_list_open_tab"),
                 )
-                FilterChip(
+                LumaFilterChip(
                     selected = state.completed,
                     onClick = { onSelectCompleted(true) },
                     label = { Text(stringResource(R.string.todo_list_completed_tab)) },
@@ -305,7 +307,7 @@ fun TodoListScreen(
                                                 Text(stringResource(R.string.todo_list_open_tab))
                                             }
                                         } else {
-                                            Button(
+                                            LumaButton(
                                                 onClick = onAddTask,
                                                 modifier = Modifier.heightIn(min = 48.dp),
                                             ) {

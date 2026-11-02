@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui
 
+import com.luma.lifeos.ui.common.LumaFilterChip
+
+import com.luma.lifeos.ui.common.LumaModalBottomSheet
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
@@ -12,11 +16,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -51,13 +53,9 @@ fun QuickCaptureSheet(
     var useBrowsedDate by rememberSaveable(browsedDate) { mutableStateOf(false) }
     val captureDate = browsedDate.takeIf { useBrowsedDate }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    LumaModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = MaterialTheme.shapes.large,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 0.dp,
     ) {
         Column(
             Modifier.fillMaxWidth()
@@ -92,13 +90,13 @@ fun QuickCaptureSheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        FilterChip(
+                        LumaFilterChip(
                             selected = !useBrowsedDate,
                             onClick = { useBrowsedDate = false },
                             label = { Text(stringResource(R.string.capture_use_now)) },
                             modifier = Modifier.heightIn(min = 48.dp).testTag("capture_now"),
                         )
-                        FilterChip(
+                        LumaFilterChip(
                             selected = useBrowsedDate,
                             onClick = { useBrowsedDate = true },
                             label = {

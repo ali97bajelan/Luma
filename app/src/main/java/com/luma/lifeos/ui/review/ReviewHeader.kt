@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import com.luma.lifeos.ui.theme.primaryFixed
 import com.luma.lifeos.ui.theme.onPrimaryFixed
 
@@ -95,7 +97,7 @@ internal fun ReviewHeader(
             }
         }
     }
-    if (about) AlertDialog(
+    if (about) LumaAlertDialog(
         onDismissRequest = { about = false },
         icon = { Icon(painterResource(R.drawable.ic_info), contentDescription = null) },
         title = { Text(stringResource(R.string.review_about)) },

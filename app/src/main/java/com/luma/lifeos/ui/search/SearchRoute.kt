@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.search
 
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -53,7 +55,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
         AppSectionHeading(stringResource(R.string.search_entries_title), style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.testTag("search_title"))
         LumaSectionSurface {
-            OutlinedTextField(value = state.input.text, onValueChange = vm::setText, singleLine = true,
+            LumaOutlinedTextField(value = state.input.text, onValueChange = vm::setText, singleLine = true,
                 label = { Text(stringResource(R.string.search_text_hint)) },
                 supportingText = if (state.input.text.length >= 180) {
                     { Text(stringResource(R.string.search_text_help, state.input.text.length), Modifier.testTag("search_text_limit")) }

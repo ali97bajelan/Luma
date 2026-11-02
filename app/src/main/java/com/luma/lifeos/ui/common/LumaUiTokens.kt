@@ -16,4 +16,7 @@ internal object LumaUi {
     val ChoiceRadius = 12.dp
     val IconSize = 24.dp
     val HabitTrackHeight = 8.dp
+    val MinTouchTargetHeight = 48.dp
+    val PrimaryActionHeight = 56.dp
+    val EditorFooterVerticalPadding = 12.dp
 }

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaDatePickerDialog
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
@@ -235,7 +237,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 override fun isSelectableDate(utcTimeMillis: Long) = pickerDate(utcTimeMillis) <= today
                 override fun isSelectableYear(year: Int) = year <= today.year
             })
-        DatePickerDialog(onDismissRequest = { picking = false },
+        LumaDatePickerDialog(onDismissRequest = { picking = false },
             confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { selected = minOf(pickerDate(it), today).toString() }; picking = false
             }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.select_date)) } },

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
@@ -54,7 +56,7 @@ internal fun ReviewSection(
             content()
         }
     }
-    if (about && explanation != null) AlertDialog(
+    if (about && explanation != null) LumaAlertDialog(
         onDismissRequest = { about = false },
         title = { Text(stringResource(title)) },
         text = {

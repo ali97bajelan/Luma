@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.mood
 
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.BorderStroke
@@ -25,7 +27,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +72,8 @@ import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaDestructiveTextButton
+import com.luma.lifeos.ui.common.LumaEditorActionFooter
+import com.luma.lifeos.ui.common.LumaPrimaryActionButton
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -116,8 +119,7 @@ fun MoodEditorScreen(
             EditorTopBar(stringResource(if (editing) R.string.mood_edit else R.string.mood_capture), "mood_cancel", !state.busy, ::close)
         },
         bottomBar = {
-            LumaReadingPane(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LumaEditorActionFooter {
                     val actionError = when (state.error) {
                         MoodEditorError.SAVE -> stringResource(R.string.mood_save_error)
                         MoodEditorError.DELETE -> stringResource(R.string.mood_delete_error)
@@ -138,14 +140,12 @@ fun MoodEditorScreen(
                             }
                         } else null,
                         primaryAction = { actionModifier ->
-                            Button(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting,
-                                onClick = onSave, modifier = actionModifier.heightIn(min = 56.dp).testTag("mood_save"),
-                                shape = CircleShape) {
+                            LumaPrimaryActionButton(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting,
+                                onClick = onSave, modifier = actionModifier.testTag("mood_save")) {
                                 Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                             }
                         },
                     )
-                }
             }
         },
     ) { padding ->
@@ -295,7 +295,7 @@ fun MoodEditorScreen(
                                 state.emotions.forEach { emotion ->
                                     val selected = emotion.id in state.draft.emotionIds
                                     val colors = MaterialTheme.colorScheme
-                                    FilterChip(selected = selected, enabled = enabled,
+                                    LumaFilterChip(selected = selected, enabled = enabled,
                                         onClick = { onEmotion(emotion.id) },
                                         modifier = Modifier.heightIn(min = 48.dp).testTag("mood_emotion_${emotion.name}"),
                                         shape = CircleShape,
@@ -426,7 +426,7 @@ private fun OptionalScale(label: String, tag: String, value: Int?, enabled: Bool
     ) {
         (1..5).forEach { score ->
             val description = stringResource(R.string.mood_scale_description, label, score)
-            FilterChip(selected = value == score, enabled = enabled, onClick = { onValue(if (score == value) null else score) },
+            LumaFilterChip(selected = value == score, enabled = enabled, onClick = { onValue(if (score == value) null else score) },
                 modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
                     .testTag("mood_${tag}_$score").semantics { contentDescription = description },
                 shape = RoundedCornerShape(16.dp),

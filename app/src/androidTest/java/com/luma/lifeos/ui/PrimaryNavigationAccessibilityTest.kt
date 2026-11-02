@@ -121,8 +121,13 @@ class PrimaryNavigationAccessibilityTest {
                 val laidOutText = labelNode.config[SemanticsProperties.Text]
                     .joinToString(separator = "") { it.text }
                     .replace("\u00ad", "")
+                val expectedVisibleLabel = if (case.widthDp < 360 && case.fontScale >= 1.2f && route == "calendar") {
+                    if (case.tag == "fa") "تقویم" else "Cal."
+                } else {
+                    case.visible[index]
+                }
                 assertEquals("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route visible label",
-                    case.visible[index], laidOutText)
+                    expectedVisibleLabel, laidOutText)
                 val layoutResults = mutableListOf<TextLayoutResult>()
                 val layoutAction = labelNode.config[SemanticsActions.GetTextLayoutResult]
                 assertTrue("${case.tag}/${case.widthDp}dp/${case.fontScale}/$route text layout is available",

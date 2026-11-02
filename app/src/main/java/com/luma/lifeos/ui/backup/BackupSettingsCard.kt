@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.backup
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import android.content.ActivityNotFoundException
 import android.net.Uri
 import android.provider.DocumentsContract
@@ -280,7 +284,7 @@ fun BackupSettingsCard(
 
     if (showPausedExportDisclosure) {
         val currentSessionIsPaused = openFocusSession?.state == FocusState.PAUSED
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { showPausedExportDisclosure = false },
             title = { Text(stringResource(R.string.backup_paused_focus_title)) },
             text = { Text(stringResource(R.string.backup_paused_focus_message)) },
@@ -320,7 +324,7 @@ fun BackupSettingsCard(
             else R.string.backup_leave_prepare_title
         val message = if (operation == BackupOperation.EXPORTING) R.string.backup_leave_export_message
             else R.string.backup_leave_prepare_message
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { if (!cancelling) leavePromptFor = null },
             title = { Text(stringResource(title)) },
             text = { Text(stringResource(message)) },
@@ -355,7 +359,7 @@ fun BackupSettingsCard(
     }
 
     if (showRestoreInProgress) {
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { showRestoreInProgress = false },
             title = { Text(stringResource(R.string.backup_restore_in_progress_title)) },
             text = { Text(stringResource(R.string.backup_restore_in_progress_message)) },
@@ -367,7 +371,7 @@ fun BackupSettingsCard(
         )
     }
 
-    if (showRestoreProtectionChoice) AlertDialog(
+    if (showRestoreProtectionChoice) LumaAlertDialog(
         onDismissRequest = { showRestoreProtectionChoice = false },
         title = { Text(stringResource(R.string.backup_restore_lock_choice_title)) },
         text = { Text(stringResource(R.string.backup_restore_lock_choice_body)) },
@@ -408,7 +412,7 @@ fun BackupSettingsCard(
             },
         )
     }
-    if (sensitiveError) AlertDialog(
+    if (sensitiveError) LumaAlertDialog(
         onDismissRequest = { sensitiveError = false },
         title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
         text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
@@ -438,7 +442,7 @@ internal fun BackupCardContent(
                 AccessibleFeedback(stringResource(R.string.backup_focus_action_failed),
                     Modifier.testTag("backup_focus_action_failed"))
             }
-            Button(onClick = onExport, enabled = !state.busy && state.preview == null,
+            LumaButton(onClick = onExport, enabled = !state.busy && state.preview == null,
                 modifier = Modifier.testTag("backup_export")) {
                 Text(stringResource(R.string.backup_export))
             }
@@ -465,7 +469,7 @@ internal fun BackupCardContent(
         }
     }
     state.preview?.takeIf { showRestoreConfirmation }?.let { preview ->
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = onCancelRestore,
             title = { Text(stringResource(R.string.backup_confirm_title)) },
             text = {

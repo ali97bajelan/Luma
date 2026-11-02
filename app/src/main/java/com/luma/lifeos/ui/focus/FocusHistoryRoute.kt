@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaCard
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,9 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -190,7 +192,7 @@ private fun FocusHistoryScreen(
     }
 
     deleteTarget?.let { target ->
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text(stringResource(R.string.focus_history_delete_title)) },
             text = { Text(stringResource(R.string.focus_history_delete_confirm)) },
@@ -227,7 +229,7 @@ private fun FocusHistoryItem(
     val formatter = remember(zone, Locale.getDefault()) {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(zone)
     }
-    Card(Modifier.fillMaxWidth().testTag("focus_history_row_${row.session.id}")) {
+    LumaCard(Modifier.fillMaxWidth().testTag("focus_history_row_${row.session.id}")) {
         Column(
             Modifier.fillMaxWidth().padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaCard
+
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -146,7 +147,7 @@ private fun HabitReviewRow(
     } else stringResource(R.string.review_habits_day_details)
     val historyDate = if (row.current != null) currentThrough else previousThrough
 
-    Card(
+    LumaCard(
         Modifier.fillMaxWidth().testTag("review_habit_${row.habit.id}"),
         shape = RoundedCornerShape(LumaUi.InnerCardRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),

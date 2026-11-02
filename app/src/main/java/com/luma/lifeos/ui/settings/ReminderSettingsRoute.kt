@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.settings
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import android.app.TimePickerDialog
 import android.content.Context
 import android.text.format.DateFormat
@@ -8,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -43,7 +44,7 @@ fun ReminderSettingsRoute(preferences: ReminderPreferences, onBack: () -> Unit) 
             Text(stringResource(if (notificationAccess.granted) R.string.reminder_notifications_allowed
                 else R.string.reminder_status_blocked), Modifier.testTag("reminder_notification_access_status"))
             Text(stringResource(R.string.reminder_notification_access_hint), style = MaterialTheme.typography.bodySmall)
-            Button(onClick = notificationAccess.request, modifier = Modifier.testTag("reminder_notification_access_request")) {
+            LumaButton(onClick = notificationAccess.request, modifier = Modifier.testTag("reminder_notification_access_request")) {
                 Text(stringResource(if (notificationAccess.granted) R.string.reminder_notification_settings
                     else R.string.reminder_allow_notifications))
             }
@@ -58,13 +59,13 @@ fun ReminderSettingsRoute(preferences: ReminderPreferences, onBack: () -> Unit) 
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.reminder_quiet_start), Modifier.weight(1f))
-            Button(onClick = { showMinutePicker(context, quiet.startMinute) { minute ->
+            LumaButton(onClick = { showMinutePicker(context, quiet.startMinute) { minute ->
                 quiet = quiet.copy(startMinute = minute); preferences.setQuietHours(quiet); enqueueReminderReconciliation(context)
             } }, enabled = quiet.enabled) { Text(formatMinute(quiet.startMinute)) }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.reminder_quiet_end), Modifier.weight(1f))
-            Button(onClick = { showMinutePicker(context, quiet.endMinute) { minute ->
+            LumaButton(onClick = { showMinutePicker(context, quiet.endMinute) { minute ->
                 quiet = quiet.copy(endMinute = minute); preferences.setQuietHours(quiet); enqueueReminderReconciliation(context)
             } }, enabled = quiet.enabled) { Text(formatMinute(quiet.endMinute)) }
         }

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.widgets
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -14,7 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -168,7 +169,7 @@ private fun ProviderCard(kind: WidgetKind, title: Int, description: Int, onAdd: 
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(description), style = MaterialTheme.typography.bodyMedium)
             WidgetExample(kind)
-            Button(onClick = onAdd) {
+            LumaButton(onClick = onAdd) {
                 Text(stringResource(R.string.widget_settings_add_named, stringResource(title)))
             }
         }
@@ -189,7 +190,7 @@ private fun InstanceCard(instance: WidgetInstance, ordinal: Int?, onConfigure: (
                 name,
                 Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
             )
-            Button(onClick = onConfigure) { Text(stringResource(R.string.widget_settings_configure)) }
+            LumaButton(onClick = onConfigure) { Text(stringResource(R.string.widget_settings_configure)) }
         }
     }
 }

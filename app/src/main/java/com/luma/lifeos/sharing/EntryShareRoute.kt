@@ -1,5 +1,11 @@
 package com.luma.lifeos.sharing
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -90,8 +96,8 @@ fun EntryShareRoute(
         bottomBar = {
             val ready = state as? ShareStatus.Ready
             if (ready != null) Column(Modifier.fillMaxWidth().imePadding().navigationBarsPadding().padding(16.dp)) {
-                if (ready.stale) Button(onClick = { model.load(zone, context, key) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_refresh)) }
-                else Button(onClick = ::requestShare, enabled = !ready.busy && ready.pendingOptions == null,
+                if (ready.stale) LumaButton(onClick = { model.load(zone, context, key) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_refresh)) }
+                else LumaButton(onClick = ::requestShare, enabled = !ready.busy && ready.pendingOptions == null,
                     modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_action)) }
             }
         }) { padding ->
@@ -134,8 +140,8 @@ fun EntryShareRoute(
                     }
                     Text(stringResource(R.string.share_privacy_explanation), style = MaterialTheme.typography.bodySmall)
                     if (record.photos.isNotEmpty()) Text(stringResource(R.string.share_no_photos), style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(value = s.text, onValueChange = model::edit, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp), label = { Text(stringResource(R.string.share_text)) })
-                    if (s.pendingOptions != null) AlertDialog(onDismissRequest = model::cancelRegenerate,
+                    LumaOutlinedTextField(value = s.text, onValueChange = model::edit, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp), label = { Text(stringResource(R.string.share_text)) })
+                    if (s.pendingOptions != null) LumaAlertDialog(onDismissRequest = model::cancelRegenerate,
                         title = { Text(stringResource(R.string.share_regenerate)) }, text = { Text(stringResource(R.string.share_regenerate_explanation)) },
                         confirmButton = { TextButton(onClick = { model.regenerate(context) }) { Text(stringResource(R.string.share_regenerate)) } },
                         dismissButton = { TextButton(onClick = model::cancelRegenerate) { Text(stringResource(R.string.cancel)) } })

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.people
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -87,7 +89,7 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
                 LumaOutlinedTextField(value = query, onValueChange = onQueryChange,
                     label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("people_search"))
-                if (!empty) Button(onClick = onCreate, modifier = Modifier.testTag("people_create")) { Text(stringResource(R.string.person_create)) }
+                if (!empty) LumaButton(onClick = onCreate, modifier = Modifier.testTag("people_create")) { Text(stringResource(R.string.person_create)) }
              }
             }
         }

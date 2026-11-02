@@ -8,6 +8,7 @@
     <string name="nav_today_compact">Today</string>
     <string name="nav_timeline_compact">Timeline</string>
     <string name="nav_calendar_compact">Calendar</string>
+    <string name="nav_calendar_narrow">Cal.</string>
     <string name="nav_people_compact">People</string>
     <string name="nav_habits_compact">Habits</string>
     <string name="nav_review_compact">Review</string>

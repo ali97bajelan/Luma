@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.memory
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -175,7 +176,7 @@ internal fun MemoryLibraryRoute(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "memory-library-add") {
-                    Button(
+                    LumaButton(
                         onClick = onRecordMemory,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("memory_library_add"),
                         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
@@ -262,12 +263,12 @@ internal fun MemoryLibraryRoute(
                                         ) { Text(stringResource(R.string.retry)) }
                                     }
                                 } else when (current.olderLoad) {
-                                    MemoryOlderLoadState.Idle -> Button(
+                                    MemoryOlderLoadState.Idle -> LumaButton(
                                         onClick = holder::loadOlder,
                                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                                             .testTag("memory_library_load_older"),
                                     ) { Text(stringResource(R.string.memory_library_load_older), maxLines = 2) }
-                                    MemoryOlderLoadState.Loading -> Button(
+                                    MemoryOlderLoadState.Loading -> LumaButton(
                                         onClick = {},
                                         enabled = false,
                                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)

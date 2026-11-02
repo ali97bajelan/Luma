@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.search
 
+import com.luma.lifeos.ui.common.LumaAssistChip
+
 import com.luma.lifeos.domain.search.SearchOption
 import com.luma.lifeos.domain.search.SearchOptions
 import androidx.compose.foundation.layout.Arrangement
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,7 +91,7 @@ internal fun ActiveSearchFilters(state: SearchState, onRemove: (SearchFilterKey)
                 val label = stringResource(R.string.search_filter_named, category, visibleValue)
                 val accessibleValue = suffix?.let { stringResource(R.string.search_filter_identity, value, it) } ?: value
                 val removeLabel = stringResource(R.string.search_remove_filter, category, accessibleValue)
-                AssistChip(
+                LumaAssistChip(
                     onClick = { onRemove(filter.key) },
                     label = { Text(label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                     trailingIcon = {

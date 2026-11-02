@@ -8,6 +8,7 @@
     <string name="nav_today_compact">امروز</string>
     <string name="nav_timeline_compact">خط زمانی</string>
     <string name="nav_calendar_compact">تقویم</string>
+    <string name="nav_calendar_narrow">تقویم</string>
     <string name="nav_people_compact">افراد</string>
     <string name="nav_habits_compact">عادت‌ها</string>
     <string name="nav_review_compact">مرور</string>

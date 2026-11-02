@@ -1,10 +1,11 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -113,7 +114,7 @@ fun TodayHabitsCard(
                     modifier = Modifier.testTag("today_habit_retained_${action.id}"))
             }
         }
-        Button(
+        LumaButton(
             onClick = onCreate,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_habits_add"),
         ) {

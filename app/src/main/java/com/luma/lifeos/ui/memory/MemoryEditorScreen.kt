@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.memory
 
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -39,6 +41,8 @@ import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaDestructiveTextButton
+import com.luma.lifeos.ui.common.LumaEditorActionFooter
+import com.luma.lifeos.ui.common.LumaPrimaryActionButton
 
 @Composable
 fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: () -> Unit, onRemove: () -> Unit,
@@ -81,11 +85,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
         EditorTopBar(stringResource(if (state.editing) R.string.memory_edit else if (state.direct) R.string.memory_capture else R.string.memory_promote),
             "memory_cancel", !state.busy, ::close)
     }, bottomBar = {
-        LumaReadingPane(Modifier.fillMaxWidth()) {
-            Column(
-                Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+        LumaEditorActionFooter {
                 val actionError = when (state.error) {
                     MemoryEditorError.SAVE -> stringResource(R.string.memory_save_error)
                     MemoryEditorError.REMOVE -> stringResource(R.string.memory_remove_error)
@@ -103,13 +103,12 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         }
                     } else null,
                     primaryAction = { actionModifier ->
-                        Button(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
-                            modifier = actionModifier.heightIn(min = 56.dp).testTag("memory_save"), shape = CircleShape) {
+                        LumaPrimaryActionButton(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
+                            modifier = actionModifier.testTag("memory_save")) {
                             Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                         }
                     },
                 )
-            }
         }
     }) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
@@ -186,7 +185,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             (1..5).forEach { value ->
                                 val description = stringResource(R.string.memory_importance_value, value)
-                                FilterChip(selected = state.draft.importance == value, enabled = enabled,
+                                LumaFilterChip(selected = state.draft.importance == value, enabled = enabled,
                                     onClick = { onImportance(if (state.draft.importance == value) null else value) },
                                     label = { Text(NumberFormat.getIntegerInstance().format(value)) },
                                     modifier = Modifier.weight(1f).testTag("memory_importance_$value")

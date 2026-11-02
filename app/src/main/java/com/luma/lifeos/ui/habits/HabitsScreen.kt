@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,7 +16,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
@@ -133,7 +134,7 @@ fun HabitsScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text(stringResource(R.string.habit_empty_heading), style = MaterialTheme.typography.titleLarge)
                                 Text(stringResource(R.string.habit_empty_body))
-                                Button(onClick = onCreate, modifier = Modifier.heightIn(min = 48.dp)) {
+                                LumaButton(onClick = onCreate, modifier = Modifier.heightIn(min = 48.dp)) {
                                     Text(stringResource(R.string.habit_add))
                                 }
                             }
@@ -333,7 +334,7 @@ private fun HabitOpenTarget(
 
 @Composable
 private fun HabitLogTarget(row: HabitDayRow, onLog: () -> Unit, logLabel: String) {
-    Button(onClick = onLog, enabled = row.canLog, modifier = Modifier.heightIn(min = 48.dp)
+    LumaButton(onClick = onLog, enabled = row.canLog, modifier = Modifier.heightIn(min = 48.dp)
         .testTag("habit_log_${row.day.habit.id}").semantics { contentDescription = logLabel }) {
         Text(stringResource(R.string.habit_log))
     }

@@ -1,5 +1,7 @@
 package com.luma.lifeos.health
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,7 +32,7 @@ class HealthRationaleActivity : ComponentActivity() {
                         Text(stringResource(R.string.health_explanation))
                         Text(stringResource(R.string.health_privacy_retention))
                         com.luma.lifeos.ui.privacy.PrivacyPolicyContent()
-                        Button(onClick = { finish() }) { Text(stringResource(R.string.health_close)) }
+                        LumaButton(onClick = { finish() }) { Text(stringResource(R.string.health_close)) }
                     }
                 }
             }

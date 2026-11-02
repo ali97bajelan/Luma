@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -98,7 +102,7 @@ fun PrivacySettingsRoute(
             },
         )
     }
-    if (resetAuthUnavailable) AlertDialog(
+    if (resetAuthUnavailable) LumaAlertDialog(
         onDismissRequest = { resetAuthUnavailable = false },
         title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
         text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
@@ -161,7 +165,7 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
                 Text(stringResource(R.string.privacy_delete_section), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { heading() })
                 Text(stringResource(R.string.privacy_delete_description))
-                Button(onClick = onDelete, enabled = !state.busy && !state.requestAccepted && !appLockEnabled,
+                LumaButton(onClick = onDelete, enabled = !state.busy && !state.requestAccepted && !appLockEnabled,
                     modifier = Modifier.testTag("privacy_delete"),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError)) {
@@ -180,7 +184,7 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
       }
       }
     }
-    if (state.confirming) AlertDialog(onDismissRequest = onCancel,
+    if (state.confirming) LumaAlertDialog(onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.privacy_delete_title)) },
         text = { Text(stringResource(R.string.privacy_delete_warning)) },
         confirmButton = { TextButton(onClick = onConfirm, modifier = Modifier.testTag("privacy_confirm")) {
@@ -192,7 +196,7 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
 @Composable
 internal fun PermissionExplanationDialog(@StringRes title: Int, @StringRes body: Int,
     onContinue: () -> Unit, onCancel: () -> Unit) {
-    AlertDialog(onDismissRequest = onCancel,
+    LumaAlertDialog(onDismissRequest = onCancel,
         title = { Text(stringResource(title)) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(body))

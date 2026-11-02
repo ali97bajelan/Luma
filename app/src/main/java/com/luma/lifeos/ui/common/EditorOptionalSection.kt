@@ -66,13 +66,14 @@ internal fun EditorActionRow(
         val availableWidth = maxWidth
         if (maxWidth < 360.dp || LocalDensity.current.fontScale >= 1.5f) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                secondaryAction?.invoke(Modifier.fillMaxWidth().heightIn(min = 48.dp))
-                primaryAction(Modifier.fillMaxWidth().heightIn(min = 48.dp))
+                secondaryAction?.invoke(Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight))
+                primaryAction(Modifier.fillMaxWidth().heightIn(min = LumaUi.PrimaryActionHeight))
             }
         } else {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                secondaryAction?.invoke(Modifier.widthIn(max = availableWidth * 0.45f).heightIn(min = 48.dp))
-                primaryAction(Modifier.weight(1f).heightIn(min = 48.dp))
+                secondaryAction?.invoke(Modifier.widthIn(max = availableWidth * 0.45f)
+                    .heightIn(min = LumaUi.MinTouchTargetHeight))
+                primaryAction(Modifier.weight(1f).heightIn(min = LumaUi.PrimaryActionHeight))
             }
         }
     }

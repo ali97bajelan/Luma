@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.summary
 
+import com.luma.lifeos.ui.common.LumaCard
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -35,7 +37,7 @@ import java.time.LocalDate
 fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCount: Int? = null,
     availability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {}, onCheckIn: (LocalDate) -> Unit = {}) {
-    Card(
+    LumaCard(
         modifier = Modifier.fillMaxWidth().testTag("daily_summary"),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),

@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaDatePickerDialog
+
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,7 +12,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
@@ -19,17 +22,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.BorderStroke
 import androidx.annotation.StringRes
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -73,6 +71,8 @@ import java.util.UUID
 import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
+import com.luma.lifeos.ui.common.LumaEditorActionFooter
+import com.luma.lifeos.ui.common.LumaPrimaryActionButton
 
 @Composable
 fun HabitEditorRoute(
@@ -125,11 +125,7 @@ fun HabitEditorScreen(
                 "habit_editor_close", !state.busy, ::close)
         },
         bottomBar = {
-            LumaReadingPane(Modifier.fillMaxWidth()) {
-                Column(
-                    Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+            LumaEditorActionFooter {
                     state.error?.let { error ->
                         val message = when (error) {
                             HabitEditorError.LOAD -> R.string.habit_load_error
@@ -141,20 +137,14 @@ fun HabitEditorScreen(
                         if (error == HabitEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                     }
                     EditorActionRow { actionModifier ->
-                        Button(
+                        LumaPrimaryActionButton(
                             onClick = onSave,
                             enabled = enabled,
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = colors.primaryContainer,
-                                contentColor = colors.onPrimaryContainer,
-                            ),
-                            modifier = actionModifier.heightIn(min = 56.dp).testTag("habit_save"),
+                            modifier = actionModifier.testTag("habit_save"),
                         ) {
                             Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                         }
                     }
-                }
             }
         },
     ) { padding ->
@@ -196,7 +186,7 @@ fun HabitEditorScreen(
                     } else {
                         stringResource(R.string.habit_target_unit_per_day, targetUnit)
                     }
-                    OutlinedTextField(
+                    LumaOutlinedTextField(
                         value = state.draft.target,
                         onValueChange = onTarget,
                         enabled = enabled,
@@ -284,7 +274,7 @@ fun HabitEditorScreen(
                         modifier = Modifier.testTag("habit_schedule_presets"),
                     ) {
                         HabitSchedulePreset.entries.forEach { preset ->
-                            FilterChip(
+                            LumaFilterChip(
                                 selected = selectedPreset == preset,
                                 enabled = enabled,
                                 onClick = { onWeekdays(schedulePresetDays(preset, state.draft.weekdays)) },
@@ -311,7 +301,7 @@ fun HabitEditorScreen(
                         modifier = Modifier.semantics { weekdaysError?.let(::error) }.testTag("habit_weekdays"),
                     ) {
                         DayOfWeek.entries.forEach { day ->
-                            FilterChip(
+                            LumaFilterChip(
                                 selected = day in state.draft.weekdays,
                                 enabled = enabled,
                                 onClick = {
@@ -357,11 +347,8 @@ fun HabitEditorScreen(
     }
     if (choosingStart) {
         val picker = rememberDatePickerState(initialSelectedDateMillis = state.draft.start.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-        DatePickerDialog(
+        LumaDatePickerDialog(
             onDismissRequest = { choosingStart = false },
-            shape = MaterialTheme.shapes.large,
-            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            tonalElevation = 0.dp,
             confirmButton = {
             TextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { onStart(pickerLocalDate(it)) }

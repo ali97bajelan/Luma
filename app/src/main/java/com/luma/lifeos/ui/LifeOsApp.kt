@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui
 
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -1737,7 +1739,7 @@ fun LifeOsApp(
     }
     val actionToConfirm = pendingWidgetAction
     if (showWidgetActionConfirmation && actionToConfirm != null) {
-        androidx.compose.material3.AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = {
                 pendingWidgetAction = null
                 showWidgetActionConfirmation = false
@@ -1770,7 +1772,7 @@ fun LifeOsApp(
     }
     val reminderActionToConfirm = pendingReminderAction
     if (showReminderActionConfirmation && reminderActionToConfirm != null) {
-        androidx.compose.material3.AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = {
                 pendingReminderAction = null
                 showReminderActionConfirmation = false
@@ -1801,7 +1803,7 @@ fun LifeOsApp(
             },
         )
     }
-    if (widgetActionError) androidx.compose.material3.AlertDialog(
+    if (widgetActionError) LumaAlertDialog(
         onDismissRequest = { widgetActionError = false },
         title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
         text = { Text(stringResource(R.string.app_lock_error_unavailable)) },

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.common
 
+import com.luma.lifeos.ui.common.LumaInputChip
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -87,7 +88,7 @@ fun ContextOptionPicker(
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         selectedOptions.forEach { (id, option) ->
-                            InputChip(
+                            LumaInputChip(
                                 selected = true,
                                 enabled = enabled,
                                 onClick = { remove(id) },
@@ -96,7 +97,7 @@ fun ContextOptionPicker(
                             )
                         }
                         unavailableIds.forEach { id ->
-                            InputChip(
+                            LumaInputChip(
                                 selected = true,
                                 enabled = enabled,
                                 onClick = { remove(id) },

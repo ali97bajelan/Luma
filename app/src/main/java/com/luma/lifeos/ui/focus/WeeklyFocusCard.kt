@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaCard
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,7 +35,7 @@ internal fun WeeklyFocusCard(
     onCurrentHistory: () -> Unit,
     onPreviousHistory: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth().testTag("review_focus_card")) {
+    LumaCard(Modifier.fillMaxWidth().testTag("review_focus_card")) {
         Column(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),

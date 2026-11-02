@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaCard
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +10,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -112,7 +113,7 @@ private fun HabitLogCard(
     val displayTime = rememberDisplayTimePolicy()
     val selectedDescription = stringResource(R.string.habit_selected_repetition)
     Column(Modifier.fillMaxWidth().testTag(if (selected) "habit_target_log_${log.id}" else "habit_log_${log.id}")) {
-        Card(Modifier.fillMaxWidth().semantics {
+        LumaCard(Modifier.fillMaxWidth().semantics {
             if (selected) {
                 this.selected = true
                 stateDescription = selectedDescription

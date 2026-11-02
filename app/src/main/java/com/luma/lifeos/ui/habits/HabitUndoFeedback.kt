@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaCard
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
@@ -106,7 +107,7 @@ private fun UndoStatusCard(
     pending: Boolean,
     onRetry: (UUID) -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth().testTag("habit_undo_feedback_${log.id}")) {
+    LumaCard(Modifier.fillMaxWidth().testTag("habit_undo_feedback_${log.id}")) {
         Column(
             Modifier.fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),

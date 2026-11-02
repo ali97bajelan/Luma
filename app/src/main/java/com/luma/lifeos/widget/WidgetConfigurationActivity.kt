@@ -1,5 +1,7 @@
 package com.luma.lifeos.widget
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -18,7 +20,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -260,7 +261,7 @@ internal fun ConfigurationContent(
                         loadFailed -> {
                             LumaSectionSurface {
                                 Text(stringResource(R.string.widget_config_load_error), color = MaterialTheme.colorScheme.error)
-                                Button(onClick = onRetryLoad) { Text(stringResource(R.string.retry)) }
+                                LumaButton(onClick = onRetryLoad) { Text(stringResource(R.string.retry)) }
                             }
                         }
                         else -> {
@@ -286,7 +287,7 @@ internal fun ConfigurationContent(
                     OutlinedButton(onClick = onCancel, enabled = !saving) {
                         Text(stringResource(R.string.widget_config_cancel))
                     }
-                    Button(
+                    LumaButton(
                         onClick = onSave,
                         enabled = loaded && !loadFailed && !saving,
                     ) {

@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.journal
 
+import com.luma.lifeos.ui.common.LumaInputChip
+
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -40,6 +44,8 @@ import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaDestructiveTextButton
+import com.luma.lifeos.ui.common.LumaEditorActionFooter
+import com.luma.lifeos.ui.common.LumaPrimaryActionButton
 
 internal fun reduceJournalTagInput(current: String, hasError: Boolean, proposed: String): Pair<String, Boolean> = when {
     proposed.length > JournalTextLimits.TAG -> current to true
@@ -111,8 +117,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
         EditorTopBar(stringResource(if (state.editing) R.string.journal_edit else R.string.journal_capture),
             "journal_cancel", !state.busy, ::close)
     }, bottomBar = {
-        LumaReadingPane(Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LumaEditorActionFooter {
                 val actionError = when (state.error) {
                     JournalEditorError.SAVE -> stringResource(R.string.journal_save_error)
                     JournalEditorError.DELETE -> stringResource(R.string.journal_delete_error)
@@ -126,14 +131,13 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                         }
                     } else null,
                     primaryAction = { actionModifier ->
-                        Button(enabled = enabled && state.draft.body.isNotBlank(), onClick = {
+                        LumaPrimaryActionButton(enabled = enabled && state.draft.body.isNotBlank(), onClick = {
                             if (addPendingTag()) onSave()
                         }, modifier = actionModifier.testTag("journal_save")) {
                             Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                         }
                     },
                 )
-            }
         }
     }) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
@@ -209,7 +213,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                     ) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             state.draft.tagNames.forEach { name ->
-                                InputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
+                                LumaInputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
                                     label = { Text(stringResource(R.string.journal_remove_tag, name)) })
                             }
                         }
@@ -235,7 +239,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                         }
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }.forEach { tag ->
-                                FilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
+                                LumaFilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
                             }
                         }
                     }

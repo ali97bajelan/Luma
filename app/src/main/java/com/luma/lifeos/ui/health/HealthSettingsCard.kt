@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.health
 
+import com.luma.lifeos.ui.common.LumaButton
+
 import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.*
@@ -76,23 +78,23 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
                 style = MaterialTheme.typography.bodySmall)
             when {
                 currentAvailability.access == IntegrationAccessState.REQUIRED ->
-                    Button(onClick = { showPermissionExplanation = true }, enabled = !state.busy,
+                    LumaButton(onClick = { showPermissionExplanation = true }, enabled = !state.busy,
                         modifier = Modifier.testTag("health_access")) { Text(stringResource(R.string.health_grant)) }
                 currentAvailability.access == IntegrationAccessState.UPDATE_REQUIRED ->
-                    Button(onClick = { settingsMissing = !openHealthProviderInstall(context) },
+                    LumaButton(onClick = { settingsMissing = !openHealthProviderInstall(context) },
                         modifier = Modifier.testTag("health_install")) { Text(stringResource(R.string.health_install)) }
                 state.loading || currentAvailability.configurationFailed || currentAvailability.enabled == null ||
                     currentAvailability.access == IntegrationAccessState.ERROR || currentAvailability.access == IntegrationAccessState.CHECKING ->
-                    Button(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
+                    LumaButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                         modifier = Modifier.testTag("health_refresh_primary")) { Text(stringResource(R.string.health_refresh)) }
                 currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true ->
-                    Button(onClick = vm::importNow, enabled = !state.busy && !state.loading,
+                    LumaButton(onClick = vm::importNow, enabled = !state.busy && !state.loading,
                         modifier = Modifier.testTag("health_import")) {
                         Text(stringResource(if (currentAvailability.importFailed ||
                             state.errors.containsKey(IntegrationSettingsOperation.IMPORT)) R.string.health_retry_import else R.string.health_import))
                     }
                 currentAvailability.access == IntegrationAccessState.ALLOWED ->
-                    Button(onClick = { settingsMissing = !openHealthSettings(context) }, enabled = !state.busy,
+                    LumaButton(onClick = { settingsMissing = !openHealthSettings(context) }, enabled = !state.busy,
                         modifier = Modifier.testTag("health_manage_primary")) { Text(stringResource(R.string.health_manage)) }
                 currentAvailability.access == IntegrationAccessState.LOCKED ->
                     Text(stringResource(R.string.integration_access_locked), modifier = Modifier.testTag("health_locked_message"))

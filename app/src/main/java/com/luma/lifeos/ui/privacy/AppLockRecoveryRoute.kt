@@ -1,5 +1,11 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,11 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -218,7 +221,7 @@ fun AppLockRecoveryRoute(
                     AccessibleFeedback(stringResource(R.string.app_lock_error_unavailable),
                         Modifier.testTag("app_lock_recovery_unavailable"))
                 } else if (replacementCode == null) {
-                    OutlinedTextField(
+                    LumaOutlinedTextField(
                         value = recoveryCode, onValueChange = { recoveryCode = it }, enabled = !busy,
                         label = { Text(stringResource(R.string.app_lock_recovery_enter_code)) },
                         singleLine = true,
@@ -229,7 +232,7 @@ fun AppLockRecoveryRoute(
                             Text(stringResource(if (revealRecoveryCode) R.string.app_lock_hide_password else R.string.app_lock_show_password))
                         } },
                     )
-                    OutlinedTextField(
+                    LumaOutlinedTextField(
                         value = replacementPassword, onValueChange = { replacementPassword = it }, enabled = !busy,
                         label = { Text(stringResource(R.string.app_lock_new_password)) }, singleLine = true,
                         visualTransformation = if (revealReplacementPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -239,14 +242,14 @@ fun AppLockRecoveryRoute(
                             Text(stringResource(if (revealReplacementPassword) R.string.app_lock_hide_password else R.string.app_lock_show_password))
                         } },
                     )
-                    OutlinedTextField(
+                    LumaOutlinedTextField(
                         value = replacementConfirmation, onValueChange = { replacementConfirmation = it }, enabled = !busy,
                         label = { Text(stringResource(R.string.app_lock_confirm_password)) }, singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth().testTag("app_lock_recovery_confirm_password"),
                     )
-                    Button(enabled = !busy && recoveryCode.isNotEmpty() && replacementPassword.isNotEmpty(),
+                    LumaButton(enabled = !busy && recoveryCode.isNotEmpty() && replacementPassword.isNotEmpty(),
                         onClick = ::beginRecovery, modifier = Modifier.testTag("app_lock_recovery_continue")) {
                         Text(stringResource(R.string.app_lock_recovery_continue))
                     }
@@ -269,7 +272,7 @@ fun AppLockRecoveryRoute(
                         Checkbox(checked = recoveryAcknowledged, enabled = !busy, onCheckedChange = { recoveryAcknowledged = it })
                         Text(stringResource(R.string.app_lock_recovery_ack), Modifier.padding(top = 12.dp))
                     }
-                    Button(enabled = !busy && recoveryAcknowledged, onClick = ::finishRecovery,
+                    LumaButton(enabled = !busy && recoveryAcknowledged, onClick = ::finishRecovery,
                         modifier = Modifier.testTag("app_lock_recovery_finish")) {
                         Text(stringResource(R.string.app_lock_recovery_finish))
                     }
@@ -282,7 +285,7 @@ fun AppLockRecoveryRoute(
             }
         }
     }
-    if (eraseDialogStep == 1) AlertDialog(
+    if (eraseDialogStep == 1) LumaAlertDialog(
         onDismissRequest = { eraseDialogStep = 0 },
         title = { Text(stringResource(R.string.app_lock_erase_title)) },
         text = { Text(stringResource(R.string.app_lock_erase_warning)) },
@@ -291,7 +294,7 @@ fun AppLockRecoveryRoute(
         } },
         dismissButton = { TextButton(onClick = { eraseDialogStep = 0 }) { Text(stringResource(R.string.cancel)) } },
     )
-    if (eraseDialogStep == 2) AlertDialog(
+    if (eraseDialogStep == 2) LumaAlertDialog(
         onDismissRequest = { eraseDialogStep = 0 },
         title = { Text(stringResource(R.string.app_lock_erase_final_title)) },
         text = {

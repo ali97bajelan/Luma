@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,8 +16,6 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -143,7 +144,7 @@ internal fun ReviewSectionNavigation(
     }
 
     if (showSections) {
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { showSections = false },
             title = { Text(stringResource(R.string.review_sections)) },
             text = {
@@ -187,7 +188,7 @@ private fun SectionShortcuts(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         shortcuts.forEach { destination ->
-            FilterChip(
+            LumaFilterChip(
                 selected = selected == destination.key,
                 onClick = { onSection(destination.key) },
                 label = { Text(stringResource(destination.title)) },

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaDatePickerDialog
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -133,11 +134,8 @@ internal fun HabitLogCorrectionDialog(
             initialSelectedDateMillis = pickerMillis(draft.selectedDate),
             yearRange = minOf(1900, draft.selectedDate.year)..maxOf(2100, draft.selectedDate.year),
         )
-        DatePickerDialog(
+        LumaDatePickerDialog(
             onDismissRequest = ::closeDate,
-            shape = MaterialTheme.shapes.large,
-            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            tonalElevation = 0.dp,
             confirmButton = {
                 TextButton(enabled = date.selectedDateMillis != null, onClick = {
                     date.selectedDateMillis?.let { onDate(pickerDate(it)) }

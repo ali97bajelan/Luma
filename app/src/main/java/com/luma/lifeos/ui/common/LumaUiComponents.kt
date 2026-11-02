@@ -11,34 +11,276 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableChipColors
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.theme.onPrimaryFixed
+import com.luma.lifeos.ui.theme.primaryFixed
 
 internal enum class LumaSurfaceTone { Neutral, Reflective }
+
+@Composable
+internal fun LumaCard(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(LumaUi.SectionRadius),
+    colors: CardColors? = null,
+    elevation: CardElevation? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Card(
+        modifier = modifier,
+        shape = shape,
+        colors = colors ?: CardDefaults.cardColors(
+            containerColor = scheme.surfaceContainerLow,
+            contentColor = scheme.onSurface,
+        ),
+        elevation = elevation ?: CardDefaults.cardElevation(defaultElevation = 0.dp),
+        content = content,
+    )
+}
+
+@Composable
+internal fun LumaButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = CircleShape,
+    colors: ButtonColors? = null,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = ButtonDefaults.ContentPadding,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Button(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+        enabled = enabled,
+        shape = shape,
+        colors = colors ?: ButtonDefaults.buttonColors(
+            containerColor = scheme.primary,
+            contentColor = scheme.onPrimary,
+        ),
+        elevation = null,
+        contentPadding = contentPadding,
+        content = content,
+    )
+}
+
+@Composable
+internal fun LumaPrimaryActionButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Button(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = LumaUi.PrimaryActionHeight),
+        enabled = enabled,
+        shape = CircleShape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colors.primaryContainer,
+            contentColor = colors.onPrimaryContainer,
+        ),
+        elevation = null,
+        content = content,
+    )
+}
+
+@Composable
+internal fun LumaFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
+    shape: Shape = CircleShape,
+    colors: SelectableChipColors? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val chipColors = colors ?: FilterChipDefaults.filterChipColors(
+        containerColor = scheme.surfaceContainerLow,
+        labelColor = scheme.onSurfaceVariant,
+        iconColor = scheme.onSurfaceVariant,
+        selectedContainerColor = scheme.primaryFixed,
+        selectedLabelColor = scheme.onPrimaryFixed,
+        selectedLeadingIconColor = scheme.onPrimaryFixed,
+        selectedTrailingIconColor = scheme.onPrimaryFixed,
+    )
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = label,
+        modifier = modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+        enabled = enabled,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        shape = shape,
+        colors = chipColors,
+    )
+}
+
+@Composable
+internal fun LumaAssistChip(
+    onClick: () -> Unit,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    trailingIcon: (@Composable () -> Unit)? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    AssistChip(
+        onClick = onClick,
+        label = label,
+        modifier = modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+        trailingIcon = trailingIcon,
+        shape = CircleShape,
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = scheme.surfaceContainerLow,
+            labelColor = scheme.onSurfaceVariant,
+            trailingIconContentColor = scheme.primary,
+        ),
+    )
+}
+
+@Composable
+internal fun LumaInputChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    trailingIcon: (@Composable () -> Unit)? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    InputChip(
+        selected = selected,
+        onClick = onClick,
+        label = label,
+        modifier = modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+        enabled = enabled,
+        trailingIcon = trailingIcon,
+        shape = CircleShape,
+        colors = InputChipDefaults.inputChipColors(
+            containerColor = scheme.surfaceContainerLow,
+            labelColor = scheme.onSurfaceVariant,
+            selectedContainerColor = scheme.secondaryContainer,
+            selectedLabelColor = scheme.onSecondaryContainer,
+            selectedLeadingIconColor = scheme.onSecondaryContainer,
+            selectedTrailingIconColor = scheme.onSecondaryContainer,
+        ),
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun LumaModalBottomSheet(
+    onDismissRequest: () -> Unit,
+    sheetState: SheetState,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.large,
+        containerColor = colors.surface,
+        contentColor = colors.onSurface,
+        tonalElevation = 0.dp,
+        content = content,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun LumaDatePickerDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    properties: DialogProperties = DialogProperties(),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    DatePickerDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        modifier = modifier,
+        dismissButton = dismissButton,
+        shape = MaterialTheme.shapes.large,
+        colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        tonalElevation = 0.dp,
+        properties = properties,
+        content = content,
+    )
+}
+
+@Composable
+internal fun LumaEditorActionFooter(
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    LumaReadingPane(Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .imePadding()
+                .padding(horizontal = LumaUi.PageGutter, vertical = LumaUi.EditorFooterVerticalPadding),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+            content = content,
+        )
+    }
+}
 
 @Composable
 internal fun LumaOutlinedTextField(
@@ -53,11 +295,17 @@ internal fun LumaOutlinedTextField(
     label: (@Composable () -> Unit)? = null,
     placeholder: (@Composable () -> Unit)? = null,
     supportingText: (@Composable () -> Unit)? = null,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    textStyle: TextStyle? = null,
+    shape: Shape? = null,
+    colors: TextFieldColors? = null,
 ) {
-    val colors = MaterialTheme.colorScheme
+    val scheme = MaterialTheme.colorScheme
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -70,33 +318,37 @@ internal fun LumaOutlinedTextField(
         label = label,
         placeholder = placeholder,
         supportingText = supportingText,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
         isError = isError,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        shape = MaterialTheme.shapes.medium,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = colors.onSurface,
-            unfocusedTextColor = colors.onSurface,
-            disabledTextColor = colors.onSurfaceVariant,
-            errorTextColor = colors.onSurface,
-            focusedContainerColor = colors.surfaceContainerLow,
-            unfocusedContainerColor = colors.surfaceContainerLow,
-            disabledContainerColor = colors.surfaceContainerLow,
-            errorContainerColor = colors.surfaceContainerLow,
-            cursorColor = colors.primary,
-            errorCursorColor = colors.error,
-            focusedBorderColor = colors.primary,
-            unfocusedBorderColor = colors.outlineVariant,
-            disabledBorderColor = colors.outlineVariant,
-            errorBorderColor = colors.error,
-            focusedLabelColor = colors.primary,
-            unfocusedLabelColor = colors.onSurfaceVariant,
-            disabledLabelColor = colors.onSurfaceVariant,
-            errorLabelColor = colors.error,
-            focusedSupportingTextColor = colors.onSurfaceVariant,
-            unfocusedSupportingTextColor = colors.onSurfaceVariant,
-            disabledSupportingTextColor = colors.onSurfaceVariant,
-            errorSupportingTextColor = colors.error,
+        visualTransformation = visualTransformation,
+        textStyle = textStyle ?: LocalTextStyle.current,
+        shape = shape ?: MaterialTheme.shapes.medium,
+        colors = colors ?: OutlinedTextFieldDefaults.colors(
+            focusedTextColor = scheme.onSurface,
+            unfocusedTextColor = scheme.onSurface,
+            disabledTextColor = scheme.onSurfaceVariant,
+            errorTextColor = scheme.onSurface,
+            focusedContainerColor = scheme.surfaceContainerLow,
+            unfocusedContainerColor = scheme.surfaceContainerLow,
+            disabledContainerColor = scheme.surfaceContainerLow,
+            errorContainerColor = scheme.surfaceContainerLow,
+            cursorColor = scheme.primary,
+            errorCursorColor = scheme.error,
+            focusedBorderColor = scheme.primary,
+            unfocusedBorderColor = scheme.outlineVariant,
+            disabledBorderColor = scheme.outlineVariant,
+            errorBorderColor = scheme.error,
+            focusedLabelColor = scheme.primary,
+            unfocusedLabelColor = scheme.onSurfaceVariant,
+            disabledLabelColor = scheme.onSurfaceVariant,
+            errorLabelColor = scheme.error,
+            focusedSupportingTextColor = scheme.onSurfaceVariant,
+            unfocusedSupportingTextColor = scheme.onSurfaceVariant,
+            disabledSupportingTextColor = scheme.onSurfaceVariant,
+            errorSupportingTextColor = scheme.error,
         ),
     )
 }
@@ -107,6 +359,7 @@ internal fun LumaAlertDialog(
     confirmButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     dismissButton: (@Composable () -> Unit)? = null,
+    icon: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
     properties: DialogProperties = DialogProperties(),
@@ -117,6 +370,7 @@ internal fun LumaAlertDialog(
         confirmButton = confirmButton,
         modifier = modifier,
         dismissButton = dismissButton,
+        icon = icon,
         title = title,
         text = text,
         shape = MaterialTheme.shapes.large,

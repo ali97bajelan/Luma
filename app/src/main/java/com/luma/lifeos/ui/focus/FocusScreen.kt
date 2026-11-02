@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaButton
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -11,8 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -93,7 +95,7 @@ internal fun FocusScreen(
                 }
                 runtime.loadFailed -> {
                     Text(stringResource(R.string.focus_load_error), color = MaterialTheme.colorScheme.error)
-                    Button(onClick = onRetryInitialization, modifier = Modifier.testTag("focus_retry_load")) {
+                    LumaButton(onClick = onRetryInitialization, modifier = Modifier.testTag("focus_retry_load")) {
                         Text(stringResource(R.string.retry))
                     }
                     TextButton(onClick = onEmergencyExit, modifier = Modifier.testTag("focus_emergency_exit")) {
@@ -156,7 +158,7 @@ internal fun FocusScreen(
     }
 
     if (state.backPromptVisible && runtime.navigationGuarded) {
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = {},
             title = { Text(stringResource(R.string.focus_back_title)) },
             text = { Text(stringResource(R.string.focus_back_message)) },
@@ -191,7 +193,7 @@ internal fun FocusScreen(
         } else {
             R.string.focus_emergency_marker_failed
         }
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = onDismissEmergencyExit,
             title = { Text(stringResource(R.string.focus_emergency_exit)) },
             text = { Text(stringResource(warning)) },
@@ -217,7 +219,7 @@ private fun SetupContent(
     onOpenHistory: () -> Unit,
 ) {
     Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
-    Button(onClick = onStart, enabled = !state.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start")) {
+    LumaButton(onClick = onStart, enabled = !state.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start")) {
         Text(if (state.busy) stringResource(R.string.focus_saving) else stringResource(R.string.focus_start))
     }
     OpenHistoryButton(onOpenHistory)
@@ -254,7 +256,7 @@ private fun RunningContent(
     )
     Text(stringResource(R.string.focus_background_note), style = MaterialTheme.typography.bodyMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Button(
+        LumaButton(
             onClick = { onAction(FocusAction.PAUSE) },
             enabled = !state.busy,
             modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_pause"),
@@ -301,7 +303,7 @@ private fun PausedContent(
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall,
         modifier = Modifier.testTag("focus_elapsed"))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Button(onClick = { onAction(FocusAction.RESUME) }, enabled = !state.busy,
+        LumaButton(onClick = { onAction(FocusAction.RESUME) }, enabled = !state.busy,
             modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_resume")) {
             Text(stringResource(R.string.focus_resume))
         }
@@ -326,7 +328,7 @@ private fun RecoveryContent(
     Text(stringResource(R.string.focus_recovery_title), style = MaterialTheme.typography.titleLarge)
     Text(stringResource(R.string.focus_recovery_body))
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
-    Button(onClick = { onResolveRecovery(FocusRecoveryChoice.CONTINUE_ELAPSED) }, enabled = !busy,
+    LumaButton(onClick = { onResolveRecovery(FocusRecoveryChoice.CONTINUE_ELAPSED) }, enabled = !busy,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_recovery_continue")) {
         Text(stringResource(R.string.focus_recovery_continue))
     }
@@ -359,7 +361,7 @@ private fun TerminalContent(
     )
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
     if (interrupted) Text(stringResource(R.string.focus_interrupted_gap))
-    Button(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done")) {
+    LumaButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done")) {
         Text(stringResource(R.string.focus_done))
     }
     OutlinedButton(onClick = onStart, enabled = !state.busy,
@@ -374,7 +376,7 @@ private fun TerminalContent(
 @Composable
 private fun PendingDestinationButton(enabled: Boolean = true, onOpenPendingDestination: () -> Unit) {
     Text(stringResource(R.string.focus_pending_destination))
-    Button(onClick = onOpenPendingDestination, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+    LumaButton(onClick = onOpenPendingDestination, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
         .testTag("focus_open_pending_destination")) {
         Text(stringResource(R.string.focus_open_pending))
     }

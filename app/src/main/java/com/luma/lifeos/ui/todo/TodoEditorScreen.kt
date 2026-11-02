@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.todo
 
+import com.luma.lifeos.ui.common.LumaDatePickerDialog
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +27,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -63,6 +64,8 @@ import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.EditorActionRow
+import com.luma.lifeos.ui.common.LumaEditorActionFooter
+import com.luma.lifeos.ui.common.LumaPrimaryActionButton
 import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import java.text.NumberFormat
@@ -150,11 +153,7 @@ fun TodoEditorScreen(
             )
         },
         bottomBar = {
-            LumaReadingPane(Modifier.fillMaxWidth()) {
-                Column(
-                    Modifier.fillMaxWidth().imePadding().padding(horizontal = 20.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+            LumaEditorActionFooter {
                     state.error?.let { error ->
                         val message = stringResource(
                             when (error) {
@@ -182,11 +181,10 @@ fun TodoEditorScreen(
                             ) { Text(stringResource(R.string.delete)) }
                         } else null,
                         primaryAction = { actionModifier ->
-                            Button(
+                            LumaPrimaryActionButton(
                                 onClick = onSave,
                                 enabled = canEdit,
-                                modifier = actionModifier.heightIn(min = 56.dp).testTag("todo_editor_save"),
-                                shape = CircleShape,
+                                modifier = actionModifier.testTag("todo_editor_save"),
                             ) {
                                 Text(
                                     when {
@@ -199,8 +197,7 @@ fun TodoEditorScreen(
                                 )
                             }
                         },
-  )
-                }
+                    )
             }
         },
     ) { padding ->
@@ -289,7 +286,6 @@ fun TodoEditorScreen(
                             if (dueDateError == null) MaterialTheme.colorScheme.outlineVariant
                             else MaterialTheme.colorScheme.error,
                         ),
-                        tonalElevation = 0.dp,
                     ) {
                         Column(
                             Modifier.fillMaxWidth().padding(16.dp),
@@ -489,12 +485,9 @@ fun TodoEditorScreen(
             initialSelectedDateMillis = pickerMillis(pickerDate),
             yearRange = minOf(1900, pickerDate.year)..maxOf(2100, pickerDate.year),
         )
-        DatePickerDialog(
+        LumaDatePickerDialog(
             onDismissRequest = { pickingDate = false },
             modifier = Modifier.testTag("todo_editor_date_dialog"),
-            shape = MaterialTheme.shapes.large,
-            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            tonalElevation = 0.dp,
             confirmButton = {
                 TextButton(
                     enabled = picker.selectedDateMillis != null,

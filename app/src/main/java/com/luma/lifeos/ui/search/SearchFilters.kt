@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.search
 
+import com.luma.lifeos.ui.common.LumaDatePickerDialog
+
+import com.luma.lifeos.ui.common.LumaAlertDialog
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -28,7 +32,7 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
     var datePicking by rememberSaveable { mutableStateOf<String?>(null) }
     val input = state.input
     if (picking == null && datePicking == null) {
-        AlertDialog(onDismissRequest = onDone, title = { Text(stringResource(R.string.search_filters)) },
+        LumaAlertDialog(onDismissRequest = onDone, title = { Text(stringResource(R.string.search_filters)) },
             text = {
                 LazyColumn(Modifier.heightIn(max = 450.dp).testTag("search_filter_panel"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
@@ -60,7 +64,7 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
     datePicking?.let { side ->
         val selected = (if (side == "from") input.from else input.through) ?: LocalDate.now(state.zone)
         val picker = rememberDatePickerState(initialSelectedDateMillis = pickerMillis(selected), yearRange = minOf(1900, selected.year)..maxOf(2100, selected.year))
-        DatePickerDialog(onDismissRequest = { datePicking = null }, modifier = Modifier.testTag("search_date_dialog"),
+        LumaDatePickerDialog(onDismissRequest = { datePicking = null }, modifier = Modifier.testTag("search_date_dialog"),
             confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { if (side == "from") vm.setFrom(pickerDate(it)) else vm.setThrough(pickerDate(it)) }
                 datePicking = null

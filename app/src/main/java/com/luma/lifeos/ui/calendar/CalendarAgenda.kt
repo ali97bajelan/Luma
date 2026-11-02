@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.calendar
 
+import com.luma.lifeos.ui.common.LumaFilterChip
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +16,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -211,7 +212,7 @@ private fun CalendarAgendaFilters(
             }
             val countText = count?.let { java.text.NumberFormat.getIntegerInstance(locale).format(it) }
                 ?: stringResource(R.string.calendar_count_unavailable)
-            FilterChip(
+            LumaFilterChip(
                 selected = selected,
                 onClick = { onFilter(filter) },
                 label = { Text(stringResource(R.string.calendar_filter_with_count, title, countText), maxLines = 1) },
