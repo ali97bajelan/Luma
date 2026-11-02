@@ -2,6 +2,7 @@ package com.luma.lifeos.ui.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -37,35 +38,35 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.settings_hub_description))
             if (appLockAvailable) SettingsRow(R.string.app_lock_settings_title, R.string.app_lock_privacy_description,
-                "settings_app_lock", onAppLock)
+                "settings_app_lock", R.drawable.ic_settings_lock, onAppLock)
             if (widgetsAvailable) SettingsRow(
                 R.string.settings_widgets_title,
                 R.string.settings_widgets_description,
                 "settings_widgets",
-                onWidgets,
+                R.drawable.ic_settings_widgets, onWidgets,
             )
             if (focusAvailable) SettingsRow(
                 R.string.focus_settings_title,
                 R.string.focus_settings_description,
                 "settings_focus",
-                onFocus,
+                R.drawable.ic_settings_focus, onFocus,
             )
             if (remindersAvailable) SettingsRow(R.string.reminder_settings_title, R.string.reminder_settings_description,
-                "settings_reminders", onReminders)
+                "settings_reminders", R.drawable.ic_settings_reminders, onReminders)
             SettingsRow(R.string.settings_appearance_language_title,
-                R.string.settings_appearance_language_description, "settings_language", onLanguage)
-            if (backupAvailable) SettingsRow(R.string.settings_backup_title, R.string.settings_backup_description, "settings_backup", onBackup)
-            if (privacyAvailable) SettingsRow(R.string.settings_privacy_title, R.string.settings_privacy_description, "settings_privacy", onPrivacy)
+                R.string.settings_appearance_language_description, "settings_language", R.drawable.ic_settings_language, onLanguage)
+            if (backupAvailable) SettingsRow(R.string.settings_backup_title, R.string.settings_backup_description, "settings_backup", R.drawable.ic_settings_backup, onBackup)
+            if (privacyAvailable) SettingsRow(R.string.settings_privacy_title, R.string.settings_privacy_description, "settings_privacy", R.drawable.ic_settings_privacy, onPrivacy)
             if (integrationsAvailable) SettingsRow(R.string.settings_integrations_title, R.string.settings_integrations_description,
-                "settings_integrations", onIntegrations)
+                "settings_integrations", R.drawable.ic_settings_integrations, onIntegrations)
         }
       }
     }
 }
 
 @Composable
-private fun SettingsRow(@StringRes title: Int, @StringRes description: Int, tag: String, onClick: () -> Unit) {
-    LumaChoiceRow(title = stringResource(title), icon = R.drawable.ic_nav_settings, onClick = onClick,
+private fun SettingsRow(@StringRes title: Int, @StringRes description: Int, tag: String, @DrawableRes icon: Int, onClick: () -> Unit) {
+    LumaChoiceRow(title = stringResource(title), icon = icon, onClick = onClick,
         modifier = Modifier.testTag(tag), supportingText = stringResource(description), showChevron = true)
 }
 
