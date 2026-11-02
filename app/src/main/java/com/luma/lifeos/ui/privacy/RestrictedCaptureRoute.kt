@@ -449,7 +449,7 @@ fun RestrictedCaptureRoute(
                 } else {
                     val draft = requireNotNull(state.draft)
                     Text(stringResource(R.string.restricted_capture_private_notice), style = MaterialTheme.typography.bodyMedium)
-                    CaptureFields(draft, state.busy, vm::setField)
+                    CaptureFields(draft, !state.busy, vm::setField)
                     if (draft.kind in setOf(CaptureKind.MEMORY, CaptureKind.JOURNAL)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(enabled = !state.busy && draft.photos.size < 20, onClick = {
