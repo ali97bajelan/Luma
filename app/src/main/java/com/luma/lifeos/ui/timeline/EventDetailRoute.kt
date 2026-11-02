@@ -40,7 +40,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
     val editLabel = recordForEdit?.let { record ->
         stringResource(when (record.event.type) {
             EventType.MOOD -> R.string.mood_edit_action
-            EventType.JOURNAL -> R.string.journal_edit
+            EventType.JOURNAL -> R.string.memory_edit
             EventType.MEMORY -> R.string.memory_edit
             EventType.ACTIVITY, EventType.APP_USAGE -> R.string.event_edit
         })
@@ -91,9 +91,9 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                                 Text(zone.id, style = MaterialTheme.typography.bodySmall)
                             }
                             record.mood?.let { MoodContent(it) }
-                            val body = record.journal?.body ?: record.mood?.note ?: record.event.note ?: record.memory?.note
+                            val body = record.event.note ?: record.mood?.note ?: record.memory?.note
                             body?.let { Text(it, modifier = Modifier.testTag("event_detail_body")) }
-                            record.journal?.tags?.takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(", ") { tag -> tag.name }) }
+                            record.tags.takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(", ") { tag -> tag.name }) }
                             SignalContent(record, zone, full = true)
                             record.memory?.let { marker ->
                                 MemoryStatus(marker)

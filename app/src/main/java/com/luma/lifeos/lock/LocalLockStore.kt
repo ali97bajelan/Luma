@@ -180,12 +180,15 @@ internal class AndroidLocalLockStore internal constructor(
                 if (sectionCount !in 0..LockSection.values().size) {
                     throw LockStoreCorruptException("Invalid section count")
                 }
-                val sections = buildSet {
+                val storedSections = buildSet {
                     repeat(sectionCount) {
                         if (!add(enumValue<LockSection>(input.readUTF()))) {
                             throw LockStoreCorruptException("Duplicate lock section")
                         }
                     }
+                }
+                val sections = storedSections.mapTo(linkedSetOf()) { section ->
+                    if (section == LockSection.JOURNAL) LockSection.MEMORIES else section
                 }
                 val relockMode = enumValue<RelockMode>(input.readUTF())
                 val screenshotsProtected = input.readBoolean()

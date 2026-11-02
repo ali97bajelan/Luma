@@ -120,7 +120,7 @@ class ProtectedSearchRepository(
     override fun observeOptions(): Flow<SearchOptions> = combine(delegate.observeOptions(), gateway.snapshot) { options, state ->
         options.copy(
             tags = immutableProjectionList(
-                options.tags.takeIf { gateway.filterSection(true, LockSection.JOURNAL, state) }.orEmpty(),
+                options.tags.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty(),
             ),
             people = immutableProjectionList(
                 options.people.takeIf { gateway.filterSection(true, LockSection.PEOPLE, state) }.orEmpty(),
@@ -184,7 +184,7 @@ class ProtectedLifeEventRepository(
 
     private fun LifeEvent.requiredSection(): Set<LockSection> = setOf(when (type) {
         EventType.MEMORY -> LockSection.MEMORIES
-        EventType.JOURNAL -> LockSection.JOURNAL
+        EventType.JOURNAL -> LockSection.MEMORIES
         EventType.MOOD -> LockSection.MOOD
         EventType.ACTIVITY, EventType.APP_USAGE -> LockSection.HEALTH_USAGE
     })
@@ -194,12 +194,16 @@ class ProtectedMemoryRepository(
     private val delegate: MemoryRepository,
     private val gateway: ProtectedContentGateway,
 ) : MemoryRepository by delegate {
+    override fun observeTags(): Flow<List<com.luma.lifeos.domain.model.Tag>> =
+        combine(delegate.observeTags(), gateway.snapshot) { tags, state ->
+            immutableProjectionList(tags.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty())
+        }
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
     override fun observe(range: TimeRange): Flow<List<LifeEventRecord>> = gateway.records(delegate.observe(range))
     override fun observeLibrary(limit: Int, eventTypes: Set<EventType>): Flow<List<LifeEventRecord>> {
         require(limit > 0) { "Library limit must be positive" }
-        val supported = setOf(EventType.MEMORY, EventType.JOURNAL, EventType.MOOD)
-        require(eventTypes.all { it in supported }) { "Only memory, journal, and mood events can be listed as memories" }
+        val supported = setOf(EventType.MEMORY, EventType.MOOD)
+        require(eventTypes.all { it in supported }) { "Only memory and mood events can be listed as memories" }
         if (eventTypes.isEmpty()) return flowOf(emptyList())
 
         return gateway.snapshot
@@ -211,7 +215,7 @@ class ProtectedMemoryRepository(
                 val authorizedTypes = eventTypes.filterTo(linkedSetOf()) { type ->
                     val sections = when (type) {
                         EventType.MEMORY -> setOf(LockSection.MEMORIES)
-                        EventType.JOURNAL -> setOf(LockSection.MEMORIES, LockSection.JOURNAL)
+                        EventType.JOURNAL -> setOf(LockSection.MEMORIES)
                         EventType.MOOD -> setOf(LockSection.MEMORIES, LockSection.MOOD)
                         else -> emptySet()
                     }
@@ -289,11 +293,11 @@ class ProtectedJournalRepository(
     private val gateway: ProtectedContentGateway,
 ) : JournalRepository by delegate {
     override fun observeTags() = combine(delegate.observeTags(), gateway.snapshot) { tags, state ->
-        immutableProjectionList(tags.takeIf { gateway.filterSection(true, LockSection.JOURNAL, state) }.orEmpty())
+        immutableProjectionList(tags.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty())
     }
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
     override suspend fun create(id: EventId, input: JournalInput): EventId =
-        gateway.commit(LockOperation.CREATE, setOf(LockSection.JOURNAL), id.toString()) { delegate.create(id, input) }
+        gateway.commit(LockOperation.CREATE, setOf(LockSection.MEMORIES), id.toString()) { delegate.create(id, input) }
     override suspend fun update(id: EventId, input: JournalInput) =
         gateway.commit(
             LockOperation.UPDATE,

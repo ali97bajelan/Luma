@@ -12,15 +12,22 @@ import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.domain.model.MemoryDetails
 import java.util.UUID
 
-fun EventWithDetails.toRecord(): LifeEventRecord = LifeEventRecord(event.toDomain(), mood?.let {
-    MoodDetails(it.entry.moodScore,
-        it.emotions.map { emotion -> Emotion(UUID.fromString(emotion.id), emotion.name) }
-            .sortedWith(compareBy<Emotion> { emotion -> emotion.name }.thenBy { emotion -> emotion.id }),
-        it.entry.energy, it.entry.stress, it.entry.note)
-}, journal?.let { entry ->
-    JournalDetails(entry.title, entry.body, tags.map { Tag(UUID.fromString(it.id), it.name) }
-        .sortedWith(compareBy<Tag> { Tag.normalize(it.name) }.thenBy { it.id }))
-}, memory?.let { MemoryDetails(it.importance, it.note) },
-    people.map { it.toDomainPerson() }.sortedWith(compareBy({ it.name }, { it.id.toString() })), places.singleOrNull()?.toDomainPlace(), attachments.map { it.toDomainPhoto() }.sortedBy { it.id.toString() },
-    activities.map { ActivityDetails(UUID.fromString(it.id), it.activityType, it.value, it.unit, it.source) }.sortedBy { it.id.toString() },
-    appUsage?.let { AppUsageDetails(it.packageName, Instant.ofEpochMilli(it.bucketStart), Instant.ofEpochMilli(it.bucketEnd), it.durationMs, event.metadataJson.usageLabel()) })
+fun EventWithDetails.toRecord(): LifeEventRecord {
+    val domainTags = tags.map { Tag(UUID.fromString(it.id), it.name) }
+        .sortedWith(compareBy<Tag> { Tag.normalize(it.name) }.thenBy { it.id })
+    return LifeEventRecord(event.toDomain(), mood?.let {
+        MoodDetails(it.entry.moodScore,
+            it.emotions.map { emotion -> Emotion(UUID.fromString(emotion.id), emotion.name) }
+                .sortedWith(compareBy<Emotion> { emotion -> emotion.name }.thenBy { emotion -> emotion.id }),
+            it.entry.energy, it.entry.stress, it.entry.note)
+    }, journal?.let { entry -> JournalDetails(entry.title, entry.body, domainTags) },
+        memory?.let { MemoryDetails(it.importance,
+            it.note?.takeUnless { note -> event.type == com.luma.lifeos.domain.model.EventType.MEMORY && (note == event.note || event.note == null) }) },
+        people.map { it.toDomainPerson() }.sortedWith(compareBy({ it.name }, { it.id.toString() })),
+        places.singleOrNull()?.toDomainPlace(), attachments.map { it.toDomainPhoto() }.sortedBy { it.id.toString() },
+        activities.map { ActivityDetails(UUID.fromString(it.id), it.activityType, it.value, it.unit, it.source) }
+            .sortedBy { it.id.toString() },
+        appUsage?.let { AppUsageDetails(it.packageName, Instant.ofEpochMilli(it.bucketStart), Instant.ofEpochMilli(it.bucketEnd),
+            it.durationMs, event.metadataJson.usageLabel()) },
+        tags = domainTags)
+}

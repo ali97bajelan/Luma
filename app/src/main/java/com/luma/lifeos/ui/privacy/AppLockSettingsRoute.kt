@@ -550,7 +550,7 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
     }
     if (policy.coverage == LockCoverage.SELECTED) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            LockSection.entries.forEach { section ->
+            LockSection.entries.filterNot { it == LockSection.JOURNAL }.forEach { section ->
                 val selected = section in policy.sections
                 LumaFilterChip(selected = selected, enabled = enabled, onClick = {
                     val sections = if (selected) policy.sections - section else policy.sections + section

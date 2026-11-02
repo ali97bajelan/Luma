@@ -58,7 +58,9 @@ interface CalendarDao {
         WITH saved_memories AS (
             SELECT event.id AS event_id, event.occurred_at,
                 COALESCE(NULLIF(TRIM(event.title), ''), journal.title) AS title,
-                substr(memory.note, 1, 160) AS memory_note,
+                substr(CASE WHEN event.type = 'MEMORY'
+                    THEN COALESCE(NULLIF(event.note, ''), memory.note)
+                    ELSE memory.note END, 1, 160) AS memory_note,
                 substr(journal.body, 1, 160) AS journal_body,
                 substr(mood.note, 1, 160) AS mood_note,
                 substr(event.note, 1, 160) AS event_note

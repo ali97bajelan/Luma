@@ -86,8 +86,6 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                     val activity = summary.activities
                     DetailsDisclosure(R.string.summary_details, "summary_details") {
                         Text(stringResource(R.string.summary_saved_only), style = MaterialTheme.typography.bodySmall)
-                        Text(stringResource(R.string.summary_journals, summary.journals),
-                            modifier = Modifier.testTag("summary_journals"), style = MaterialTheme.typography.bodySmall)
                         Text(stringResource(R.string.summary_memories, summary.memories),
                             modifier = Modifier.testTag("summary_memories"), style = MaterialTheme.typography.bodySmall)
                         val format = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 2 }

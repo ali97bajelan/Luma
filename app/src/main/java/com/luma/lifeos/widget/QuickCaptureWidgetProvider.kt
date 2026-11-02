@@ -65,7 +65,7 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
         widthDp: Int,
         heightDp: Int,
     ): RemoteViews {
-        val labels = listOf(R.string.widget_capture_mood, R.string.widget_capture_memory, R.string.widget_capture_journal)
+        val labels = listOf(R.string.widget_capture_mood, R.string.widget_capture_memory)
         val density = appContext.resources.displayMetrics.density
         val paint = android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             textLocales = appContext.resources.configuration.locales
@@ -80,15 +80,15 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
         val layout = WidgetLayoutPolicy.captureLayoutOrder(appContext.resources.configuration.fontScale)
             .firstOrNull { candidate ->
                 val columns = when (candidate) {
-                    WidgetLayoutPolicy.CaptureLayout.WIDE -> 3
+                    WidgetLayoutPolicy.CaptureLayout.WIDE -> 2
                     WidgetLayoutPolicy.CaptureLayout.GRID -> 2
                     else -> 1
                 }
                 val cellWidth = (widthDp - 24 - (columns - 1) * 8) / columns
                 val labelWidths = when (candidate) {
-                    WidgetLayoutPolicy.CaptureLayout.WIDE -> List(3) { cellWidth }
-                    WidgetLayoutPolicy.CaptureLayout.GRID -> listOf(cellWidth, cellWidth, widthDp - 24)
-                    WidgetLayoutPolicy.CaptureLayout.TALL -> List(3) { widthDp - 24 }
+                    WidgetLayoutPolicy.CaptureLayout.WIDE -> List(2) { cellWidth }
+                    WidgetLayoutPolicy.CaptureLayout.GRID -> listOf(cellWidth, widthDp - 24)
+                    WidgetLayoutPolicy.CaptureLayout.TALL -> List(2) { widthDp - 24 }
                     WidgetLayoutPolicy.CaptureLayout.FALLBACK -> emptyList()
                 }
                 val sizes = labels.mapIndexed { index, label ->
@@ -141,7 +141,6 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
             val buttons = listOf(
                 R.id.widget_capture_mood,
                 R.id.widget_capture_memory,
-                R.id.widget_capture_journal,
             )
             applyPalette(context, appContext, R.id.quick_capture_widget_root, buttons)
             setTextViewText(R.id.widget_capture_mood, appContext.getString(R.string.widget_capture_mood))
@@ -155,13 +154,6 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
                 appContext.getString(R.string.widget_capture_memory_description))
             setOnClickPendingIntent(R.id.widget_capture_memory,
                 WidgetIntents.navigation(context, widgetId, WidgetDestination.Capture(CaptureKind.MEMORY)))
-
-            setTextViewText(R.id.widget_capture_journal, appContext.getString(R.string.widget_capture_journal))
-            setContentDescription(R.id.widget_capture_journal,
-                appContext.getString(R.string.widget_capture_journal_description))
-            setOnClickPendingIntent(R.id.widget_capture_journal,
-                WidgetIntents.navigation(context, widgetId, WidgetDestination.Capture(CaptureKind.JOURNAL)))
-
 
         }
 

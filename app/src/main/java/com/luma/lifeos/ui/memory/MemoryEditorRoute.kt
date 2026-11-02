@@ -112,7 +112,9 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
         }
     }
     MemoryEditorScreen(state, { editor.discardPhotos(onCancel) }, editor::save, editor::remove, editor::load,
-        editor::setTitle, editor::setNote, editor::setImportance, editor::setLocalTime, peopleContent = {
+        editor::setTitle, editor::setNote, editor::setImportance, editor::setLocalTime,
+        onContextNote = editor::setContextNote, onAddTag = editor::addTag, onRemoveTag = editor::removeTag,
+        peopleContent = {
             PersonPicker(people, state.draft.personIds, state.ready && !state.busy && !state.completed,
                 editor::togglePerson, { personFeedback = null; onCreatePerson() }, personFeedbackText, personFeedback?.isError == true)
         },

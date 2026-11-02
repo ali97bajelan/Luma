@@ -312,14 +312,14 @@ private fun MemoryLibraryCard(
     onClick: () -> Unit,
 ) {
     val type = record.event.type
-    val note = record.memory?.note.orEmpty()
+    val note = record.event.note ?: record.memory?.note.orEmpty()
+    val contextNote = record.memory?.note?.takeIf { it != note }
     val noteLines = note.split('\n')
     val noteHeadingIndex = noteLines.indexOfFirst(String::isNotBlank)
     val noteHeading = noteLines.getOrNull(noteHeadingIndex)?.trim()?.takeIf(String::isNotEmpty)
     val title = record.event.title?.takeIf(String::isNotBlank)?.trim()
         ?: noteHeading
         ?: stringResource(when (type) {
-            EventType.JOURNAL -> R.string.memory_library_journal_fallback
             EventType.MOOD -> R.string.memory_library_mood_fallback
             else -> R.string.memory_library_memory_fallback
         })
@@ -333,7 +333,6 @@ private fun MemoryLibraryCard(
             .withDecimalStyle(DecimalStyle.of(displayTime.locale)),
     )
     val source = when (type) {
-        EventType.JOURNAL -> stringResource(R.string.memory_library_from_journal)
         EventType.MOOD -> stringResource(R.string.memory_library_from_mood)
         else -> null
     }
@@ -344,6 +343,7 @@ private fun MemoryLibraryCard(
     val accessibleLabel = listOfNotNull(
         title,
         preview.takeIf(String::isNotBlank),
+        contextNote,
         source,
         dateText,
         futureDateLabel,

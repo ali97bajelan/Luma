@@ -168,7 +168,7 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 EventCard(record, zone, onOpen = { onEvent(record) },
-                                    openActionLabel = if (record.journal != null) R.string.journal_open else R.string.event_open)
+                                    openActionLabel = R.string.event_open)
                             }
                         }
                     }

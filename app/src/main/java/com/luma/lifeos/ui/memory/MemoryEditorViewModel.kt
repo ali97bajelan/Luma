@@ -19,11 +19,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null, val photos: List<PhotoAttachment> = emptyList())
+data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null, val photos: List<PhotoAttachment> = emptyList(), val tagNames: Set<String> = emptySet(), val contextNote: String = "")
 enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT, PHOTO }
-enum class MemoryTextField { TITLE, NOTE }
+enum class MemoryTextField { TITLE, NOTE, CONTEXT_NOTE }
 data class MemoryEditorState(
     val draft: MemoryDraft,
     val original: LifeEventRecord? = null,
@@ -37,6 +38,7 @@ data class MemoryEditorState(
     val hasChanges: Boolean = false,
     val error: MemoryEditorError? = null,
     val textErrors: Set<MemoryTextField> = emptySet(),
+    val tags: List<Tag> = emptyList(),
 )
 
 class MemoryEditorViewModel(private val repository: MemoryRepository, private val eventId: EventId?,
@@ -74,7 +76,12 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         if (!state.value.busy && !state.value.completed) photoSession.discard(onDone)
     }
 
-    init { if (!state.value.completed) load() }
+    init {
+        viewModelScope.launch {
+            repository.observeTags().collect { tags -> mutableState.value = state.value.copy(tags = tags) }
+        }
+        if (!state.value.completed) load()
+    }
 
     fun load() {
         if (state.value.busy || state.value.ready || state.value.completed || loadingJob?.isActive == true) return
@@ -98,7 +105,9 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                 if (record != null) require(if (direct) record.event.isEditable && record.memory != null else record.canPromoteToMemory)
                 baseline = record?.toDraft(direct) ?: MemoryDraft(initialTime)
                 // Larger legacy content stays in the database rather than entering saved state.
-                require(baseline.title.length <= MemoryTextLimits.TITLE && baseline.note.length <= MemoryTextLimits.NOTE && baseline.personIds.size <= PersonTextLimits.SELECTION)
+                require(baseline.title.length <= MemoryTextLimits.TITLE && baseline.note.length <= MemoryTextLimits.NOTE &&
+                    baseline.contextNote.length <= MemoryTextLimits.CONTEXT_NOTE && baseline.tagNames.size <= MemoryTextLimits.TAG_COUNT &&
+                    baseline.personIds.size <= PersonTextLimits.SELECTION)
                 editingId = record?.event?.id
                 saved["direct"] = direct
                 val draft = if (saved.get<Boolean>("has_draft") == true) readDraft() else baseline
@@ -121,9 +130,27 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         change(clearTextField = MemoryTextField.TITLE) { it.copy(title = title) }
     }
     fun setNote(note: String) {
-        if (note.length > MemoryTextLimits.NOTE) { rejectText(MemoryTextField.NOTE); return }
+        val limit = if (state.value.direct) MemoryTextLimits.NOTE else MemoryTextLimits.CONTEXT_NOTE
+        if (note.length > limit) { rejectText(MemoryTextField.NOTE); return }
         change(clearTextField = MemoryTextField.NOTE) { it.copy(note = note) }
     }
+    fun setContextNote(note: String) {
+        if (note.length > MemoryTextLimits.CONTEXT_NOTE) { rejectText(MemoryTextField.CONTEXT_NOTE); return }
+        change(clearTextField = MemoryTextField.CONTEXT_NOTE) { it.copy(contextNote = note) }
+    }
+    fun addTag(name: String): Boolean {
+        val trimmed = name.trim()
+        val current = state.value
+        if (!current.ready || current.busy || current.completed || trimmed.isBlank() ||
+            trimmed.length > MemoryTextLimits.TAG ||
+            (current.draft.tagNames.size >= MemoryTextLimits.TAG_COUNT &&
+                current.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(trimmed) })) return false
+        val catalogName = current.tags.firstOrNull { Tag.normalize(it.name) == Tag.normalize(trimmed) }?.name ?: trimmed
+        if (current.draft.tagNames.any { Tag.normalize(it) == Tag.normalize(catalogName) }) return true
+        change { it.copy(tagNames = it.tagNames + catalogName) }
+        return catalogName in state.value.draft.tagNames
+    }
+    fun removeTag(name: String) = change { it.copy(tagNames = it.tagNames.filterNot { tag -> Tag.normalize(tag) == Tag.normalize(name) }.toSet()) }
     fun setImportance(value: Int?) {
         require(value == null || value in 1..5)
         change { it.copy(importance = value) }
@@ -153,13 +180,17 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["pending_remove"] = null
         write(MemoryEditorError.SAVE) {
             if (current.direct) {
-                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title, draft.importance, draft.personIds, PlaceSelection(draft.placeId), draft.photos)
+                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title,
+                    draft.importance, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
+                    draft.contextNote.trim().takeIf(String::isNotEmpty))
                 val recoveredId = editingId ?: repository.get(captureId)?.event?.id
                 if (recoveredId == null) repository.create(captureId, input) else {
                     editingId = recoveredId
                     repository.update(recoveredId, input)
                 }
-            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId), draft.photos))
+            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(
+                draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
+            ))
         }
     }
     fun remove() {
@@ -227,6 +258,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         saved["title"] = draft.title
         saved["note"] = draft.note
         saved["importance"] = draft.importance
+        saved["tags"] = ArrayList(draft.tagNames)
+        saved["context_note"] = draft.contextNote
     }
     private fun readTextErrors(): Set<MemoryTextField> = saved.get<ArrayList<String>>("text_error_fields")
         .orEmpty().mapNotNull { runCatching { MemoryTextField.valueOf(it) }.getOrNull() }.toSet()
@@ -237,7 +270,11 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     private fun readDraft() = MemoryDraft(saved.get<Long>("time") ?: initialTime, saved.get<String>("title") ?: "",
         saved.get<String>("note") ?: "", saved["importance"],
         saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet(),
-        saved.get<String>("place")?.let(UUID::fromString), saved.readPhotos())
+        saved.get<String>("place")?.let(UUID::fromString), saved.readPhotos(),
+        saved.get<ArrayList<String>>("tags")?.toSet() ?: emptySet(), saved.get<String>("context_note") ?: "")
     private fun LifeEventRecord.toDraft(direct: Boolean) = MemoryDraft(event.occurredAt.toEpochMilli(),
-        if (direct) event.title.orEmpty() else "", if (direct) (memory?.note ?: event.note).orEmpty() else memory?.note.orEmpty(), memory?.importance, people.map { it.id }.toSet(), place?.id, photos)
+        if (direct) event.title.orEmpty() else "",
+        if (direct) (event.note ?: memory?.note).orEmpty() else memory?.note.orEmpty(), memory?.importance,
+        people.map { it.id }.toSet(), place?.id, photos, tags.map(Tag::name).toSet(),
+        if (direct) memory?.note?.takeUnless { it == event.note || event.note == null }.orEmpty() else "")
 }

@@ -83,7 +83,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 EventCard(row, zone, onOpen = { onEvent(row) },
-                                    openActionLabel = if (row.journal != null) R.string.journal_open else R.string.event_open,
+                                    openActionLabel = R.string.event_open,
                                     onMemory = onMemory?.let { { it(row) } })
                             }
                         }

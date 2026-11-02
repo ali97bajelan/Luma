@@ -44,7 +44,7 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
                         Text(state.zone.id, style = MaterialTheme.typography.bodySmall)
                         if (state.invalidDates) AccessibleFeedback(stringResource(R.string.search_invalid_dates), Modifier.testTag("search_invalid_dates_dialog"))
                     }
-                    item { SelectionButton(stringResource(R.string.journal_tags), "search_tags", state.options.tags, input.tagIds) { picking = "tags" } }
+                    item { SelectionButton(stringResource(R.string.memory_tags), "search_tags", state.options.tags, input.tagIds) { picking = "tags" } }
                     item { SelectionButton(stringResource(R.string.people), "search_people", state.options.people, input.personIds) { picking = "people" } }
                     item { SelectionButton(stringResource(R.string.places), "search_places", state.options.places, setOfNotNull(input.placeId)) { picking = "places" } }
                 }
@@ -53,7 +53,7 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
     picking?.let { kind ->
         val choices = when (kind) { "tags" -> state.options.tags; "people" -> state.options.people; else -> state.options.places }
         val selected = when (kind) { "tags" -> input.tagIds; "people" -> input.personIds; else -> setOfNotNull(input.placeId) }
-        SearchOptionPicker(stringResource(when (kind) { "tags" -> R.string.journal_tags; "people" -> R.string.people; else -> R.string.places }),
+        SearchOptionPicker(stringResource(when (kind) { "tags" -> R.string.memory_tags; "people" -> R.string.people; else -> R.string.places }),
             choices, selected, single = kind == "places", loading = state.optionsLoading, error = state.optionsError,
             onRetry = vm::retryOptions, onToggle = { id ->
                 when (kind) { "tags" -> vm.toggleTag(id); "people" -> vm.togglePerson(id); else -> vm.setPlace(if (id == input.placeId) null else id) }

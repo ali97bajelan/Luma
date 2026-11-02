@@ -35,18 +35,18 @@ internal fun TodayCaptureActions(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        listOf(EventType.MOOD to R.string.today_capture_mood, EventType.JOURNAL to R.string.today_capture_journal,
-            EventType.MEMORY to R.string.today_capture_memory).forEach { (type, label) ->
+        listOf(EventType.MOOD to R.string.today_capture_mood, EventType.MEMORY to R.string.today_capture_memory)
+            .forEach { (type, label) ->
             val icon = when (type) {
                 EventType.MOOD -> R.drawable.ic_review_mood
-                EventType.JOURNAL -> R.drawable.ic_nav_timeline
                 EventType.MEMORY -> R.drawable.ic_bookmark_outline
+                EventType.JOURNAL -> return@forEach
                 EventType.ACTIVITY, EventType.APP_USAGE -> return@forEach
             }
             val iconTint = when (type) {
                 EventType.MOOD -> colors.primary
-                EventType.JOURNAL -> colors.tertiary
                 EventType.MEMORY -> colors.secondary
+                EventType.JOURNAL -> return@forEach
                 EventType.ACTIVITY, EventType.APP_USAGE -> return@forEach
             }
             FilledTonalButton(onClick = { onDateCapture(type) },

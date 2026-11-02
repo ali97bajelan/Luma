@@ -308,6 +308,7 @@ private class RestrictedCaptureViewModel(private val service: RestrictedCaptureS
             CaptureKind.MEMORY -> CaptureInput.Memory(MemoryInput(
                 note = required("note"), occurredAt = time, title = optional("title"),
                 importance = optional("importance")?.toInt(), photos = draft.photos,
+                tagNames = optional("tags")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)?.toSet().orEmpty(),
             ))
             CaptureKind.JOURNAL -> CaptureInput.Journal(JournalInput(
                 body = required("body"), occurredAt = time, title = optional("title"),
@@ -435,7 +436,7 @@ fun RestrictedCaptureRoute(
                     }
                     Text(stringResource(R.string.restricted_capture_choose_type),
                         style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-                    CaptureKind.entries.forEach { kind ->
+                    CaptureKind.entries.filterNot { it == CaptureKind.JOURNAL }.forEach { kind ->
                         LumaChoiceRow(
                             title = stringResource(kind.labelResource()), icon = R.drawable.ic_nav_timeline,
                             onClick = { vm.begin(kind) }, modifier = Modifier.testTag("restricted_capture_kind_${kind.name.lowercase()}"),
@@ -525,6 +526,7 @@ private fun CaptureFields(draft: CaptureDraft, enabled: Boolean, change: (String
         CaptureKind.MEMORY -> {
             CaptureField(R.string.restricted_capture_title_field, "title", values, enabled, change, singleLine = true)
             CaptureField(R.string.restricted_capture_note, "note", values, enabled, change, minLines = 4)
+            CaptureField(R.string.restricted_capture_tags, "tags", values, enabled, change, singleLine = true)
             CaptureField(R.string.restricted_capture_importance, "importance", values, enabled, change, singleLine = true)
             CaptureField(R.string.restricted_capture_datetime, "occurredAt", values, enabled, change, singleLine = true)
         }

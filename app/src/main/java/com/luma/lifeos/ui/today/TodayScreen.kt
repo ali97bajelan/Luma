@@ -195,15 +195,12 @@ fun TodayScreen(
                         val record = state.records[event.id] ?: LifeEventRecord(event, state.moods[event.id],
                             state.journals[event.id], state.memories[event.id], state.people[event.id].orEmpty(), state.places[event.id])
                         val openActionLabel = when {
-                            record.canEditContent && record.journal != null -> R.string.journal_edit
                             record.canEditContent && event.type == EventType.MOOD -> R.string.mood_edit_action
                             record.canEditContent && event.type == EventType.MEMORY -> R.string.memory_edit
-                            record.journal != null -> R.string.journal_open
                             else -> R.string.event_open
                         }
                         EventCard(record, zone, onOpen = {
                             when {
-                                record.canEditContent && record.journal != null -> onJournalClick(event.id)
                                 record.canEditContent && event.type == EventType.MOOD -> onMoodClick(event.id)
                                 record.canEditContent && event.type == EventType.MEMORY -> onMemoryClick(event.id)
                                 else -> onEventClick(event.id)

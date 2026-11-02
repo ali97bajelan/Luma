@@ -205,6 +205,6 @@ class MemoryLibraryStateHolder(
         const val INITIAL_LIMIT = 30
         const val LOAD_INCREMENT = 30
         const val MAX_VISIBLE_LIMIT = Int.MAX_VALUE - 1
-        val SUPPORTED_TYPES = setOf(EventType.MEMORY, EventType.JOURNAL, EventType.MOOD)
+        val SUPPORTED_TYPES = setOf(EventType.MEMORY, EventType.MOOD)
     }
 }

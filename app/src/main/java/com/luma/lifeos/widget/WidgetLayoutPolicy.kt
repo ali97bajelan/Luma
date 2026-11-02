@@ -29,11 +29,16 @@ internal object WidgetLayoutPolicy {
 
     /** Label sizes include text padding and the minimum 48dp target. */
     fun captureLayout(widthDp: Int, heightDp: Int, labels: List<Pair<Int, Int>>): CaptureLayout {
-        require(labels.size == 3)
+        require(labels.size in 2..3)
         val width = widthDp - 24
         val height = heightDp - 24
         val cellWidth = labels.maxOf { it.first.coerceAtLeast(48) }
         val cellHeight = labels.maxOf { it.second.coerceAtLeast(48) }
+        if (labels.size == 2) return when {
+            width >= cellWidth * 2 + 8 && height >= cellHeight -> CaptureLayout.WIDE
+            width >= cellWidth && height >= cellHeight * 2 + 8 -> CaptureLayout.TALL
+            else -> CaptureLayout.FALLBACK
+        }
         return when {
             width >= cellWidth * 3 + 16 && height >= cellHeight -> CaptureLayout.WIDE
             width >= labels.take(2).maxOf { it.first.coerceAtLeast(48) } * 2 + 8 &&

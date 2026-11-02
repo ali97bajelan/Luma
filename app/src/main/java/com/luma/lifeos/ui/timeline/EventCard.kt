@@ -72,7 +72,7 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
             }
             // Usage already supplies its app name as the primary content.
             if (record.appUsage == null) event.title?.takeIf { it.isNotBlank() }?.let {
-                val titleStyle = if (record.journal != null) {
+                val titleStyle = if (record.event.type == EventType.MEMORY) {
                     MaterialTheme.typography.titleLarge.copy(
                         fontFamily = MaterialTheme.typography.headlineSmall.fontFamily,
                     )
@@ -83,10 +83,10 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
                 Text(stringResource(R.string.mood_score_value, mood.score, stringResource(moodScoreLabel(mood.score))),
                     style = MaterialTheme.typography.titleMedium)
             }
-            val body = record.journal?.body ?: record.mood?.note ?: event.note ?: record.memory?.note
+            val body = event.note ?: record.mood?.note ?: record.memory?.note
             body?.takeIf { it.isNotBlank() }?.let {
                 Text(it.take(500), style = MaterialTheme.typography.bodyMedium,
-                    color = if (record.journal != null) MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (event.type == EventType.MEMORY) MaterialTheme.colorScheme.onSurfaceVariant
                     else MaterialTheme.colorScheme.onSurface,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
@@ -112,7 +112,7 @@ private fun EventContext(record: LifeEventRecord) {
         if (record.people.isNotEmpty()) add(stringResource(R.string.people_linked, record.people.joinToString(", ") { it.name }))
         record.place?.let { add(stringResource(R.string.place_linked, it.name)) }
         if (record.photos.isNotEmpty()) add(pluralStringResource(R.plurals.photo_count, record.photos.size, record.photos.size))
-        record.journal?.tags?.takeIf { it.isNotEmpty() }?.let { add(it.joinToString(", ") { tag -> tag.name }) }
+        record.tags.takeIf { it.isNotEmpty() }?.let { add(it.joinToString(", ") { tag -> tag.name }) }
         record.memory?.let { memory ->
             add(memory.importance?.let { stringResource(R.string.memory_status_importance, it) }
                 ?: stringResource(R.string.memory_status))

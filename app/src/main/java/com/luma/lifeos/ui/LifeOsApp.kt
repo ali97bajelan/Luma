@@ -77,8 +77,6 @@ import com.luma.lifeos.ui.memory.MemoryEditorRoute
 import com.luma.lifeos.ui.memory.MemoryReviewRoute
 import com.luma.lifeos.ui.memory.MemoryLibraryRoute
 import com.luma.lifeos.domain.repository.JournalRepository
-import com.luma.lifeos.ui.journal.JournalEditorRoute
-import com.luma.lifeos.ui.journal.JournalDetailRoute
 import com.luma.lifeos.domain.repository.MoodRepository
 import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.calendar.CalendarRepository
@@ -293,13 +291,11 @@ fun LifeOsApp(
         if (!record.canEditContent) return
         navController.navigate(when (record.event.type) {
             EventType.MOOD -> "mood?eventId=${record.event.id}"
-            EventType.JOURNAL -> "journal?eventId=${record.event.id}"
             else -> "memory?eventId=${record.event.id}"
         })
     }
     fun openEvent(record: LifeEventRecord) {
-        if (record.canEditContent && record.journal != null) navController.navigate("journal_detail/${record.event.id}")
-        else navController.navigate("event_detail/${record.event.id}")
+        navController.navigate("event_detail/${record.event.id}")
     }
     val currentDay by rememberCurrentDay()
     // Null follows the current day; a chosen date survives tab switches and recreation.
@@ -689,15 +685,16 @@ fun LifeOsApp(
         }
     }
     fun openCapture(route: String, date: LocalDate?) {
+        val targetRoute = if (route == "journal") "memory" else route
         if (appLockEnabled()) {
-            openRestrictedCapture()
+            openRestrictedCapture(if (route == "journal") RestrictedCaptureKind.MEMORY else null)
             return
         }
         capturing = false
         widgetQuickCapture = false
         calendarCaptureDueDate = null
         val target = date?.let { captureInitialTimeMillis(it, currentDay.zone) }
-        navController.navigate(if (target == null) route else "$route?initialTime=$target")
+        navController.navigate(if (target == null) targetRoute else "$targetRoute?initialTime=$target")
     }
     fun openMemoryLibrary() {
         capturing = false
@@ -769,13 +766,11 @@ fun LifeOsApp(
             is WidgetDestination.Capture -> {
                 val route = when (destination.kind) {
                     CaptureKind.MOOD -> "mood"
-                    CaptureKind.MEMORY -> "memory"
-                    CaptureKind.JOURNAL -> "journal"
+                    CaptureKind.MEMORY, CaptureKind.JOURNAL -> "memory"
                 }
                 val pattern = when (destination.kind) {
                     CaptureKind.MOOD -> "mood?eventId={eventId}&initialTime={initialTime}"
-                    CaptureKind.MEMORY -> "memory?eventId={eventId}&initialTime={initialTime}"
-                    CaptureKind.JOURNAL -> "journal?eventId={eventId}&initialTime={initialTime}"
+                    CaptureKind.MEMORY, CaptureKind.JOURNAL -> "memory?eventId={eventId}&initialTime={initialTime}"
                 }
                 val isSameNewEditor = top?.destination?.route == pattern && top.arguments?.getString("eventId") == null
                 if (!isSameNewEditor) navController.navigate(route)
@@ -860,6 +855,7 @@ fun LifeOsApp(
                 val initialKind = remember(entry) {
                     entry.savedStateHandle.get<String>(RESTRICTED_CAPTURE_INITIAL_KIND_KEY)
                         ?.let { kind -> runCatching { RestrictedCaptureKind.valueOf(kind) }.getOrNull() }
+                        ?.let { kind -> if (kind == RestrictedCaptureKind.JOURNAL) RestrictedCaptureKind.MEMORY else kind }
                 }
                 RestrictedCaptureRoute(
                     service = restrictedCaptureService,
@@ -970,7 +966,7 @@ fun LifeOsApp(
                             onSelectDate = { selectedDate = it.toString() },
                             onToday = { selectedDate = null },
                             onMoodClick = { navController.navigate("mood?eventId=$it") },
-                            onJournalClick = { navController.navigate("journal_detail/$it") },
+                            onJournalClick = { navController.navigate("memory?eventId=$it") },
                             onMemoryClick = { navController.navigate("memory?eventId=$it") },
                             heading = destination.label,
                             screenTag = "screen_${destination.route}",
@@ -989,7 +985,7 @@ fun LifeOsApp(
                             onHabitOpenDate = ::openHabitsDate,
                             onCapture = { type, date -> openCapture(when (type) {
                                 EventType.MOOD -> "mood"
-                                EventType.JOURNAL -> "journal"
+                                EventType.JOURNAL -> "memory"
                                 EventType.MEMORY -> "memory"
                                 else -> error("Unsupported capture type: $type")
                             }, date) },
@@ -1049,7 +1045,7 @@ fun LifeOsApp(
                                 captureBottomClearance = captureBottomClearance,
                             ) else MemoryReviewRoute(memories, currentDay.date, currentDay.zone,
                                 onMemory = { navController.navigate("memory?eventId=$it") },
-                                onJournal = { navController.navigate("journal_detail/$it") },
+                                onJournal = { navController.navigate("memory?eventId=$it") },
                                 captureBottomClearance = captureBottomClearance)
                         }
                         PrimaryDestination.MORE -> MoreRoute(
@@ -1451,29 +1447,25 @@ fun LifeOsApp(
             }
             composable("journal_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->
                 val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
-                JournalDetailRoute(journals, id, onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate("journal?eventId=$id") },
-                    onMemory = { navController.navigate("memory?eventId=$id") }, photos = photos,
-                    onShare = { navController.navigate("entry_share/$id/MEMORY") })
+                LaunchedEffect(id) {
+                    navController.navigate("memory?eventId=$id") {
+                        popUpTo(entry.destination.id) { inclusive = true }
+                    }
+                }
             }
             composable("journal?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
                 navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
                 navArgument("initialTime") { type = NavType.StringType; nullable = true; defaultValue = null },
             )) { entry ->
-                JournalEditorRoute(journals, entry.arguments?.getString("eventId")?.let(EventId::parse),
-                    onCancel = { navController.popBackStack() },
-                    onFinished = { result ->
-                        cleanPhotos()
-                        entry.savedStateHandle.recordEntryEditorResult(result)
-                    }, people = people, onCreatePerson = {
-                        entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PERSON)
-                        navController.navigate("person")
-                    },
-                        initialTimeMillis = entry.arguments?.getString("initialTime")?.toLongOrNull(),
-                        places = places, onCreatePlace = {
-                            entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PLACE)
-                            navController.navigate("place")
-                        }, photos = photos, catalogResultHandle = entry.savedStateHandle)
+                val eventId = entry.arguments?.getString("eventId")
+                val initialTime = entry.arguments?.getString("initialTime")
+                LaunchedEffect(eventId, initialTime) {
+                    val target = if (eventId != null) "memory?eventId=$eventId"
+                        else "memory" + (initialTime?.let { "?initialTime=$it" } ?: "")
+                    navController.navigate(target) {
+                        popUpTo(entry.destination.id) { inclusive = true }
+                    }
+                }
             }
             composable("mood?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
                 navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },
@@ -1613,7 +1605,7 @@ fun LifeOsApp(
                 calendarCaptureDueDate = null
             },
             onMood = { date -> openCapture("mood", date) },
-            onJournal = { date -> openCapture("journal", date) },
+            onJournal = { date -> openCapture("memory", date) },
             onMemory = { date -> openCapture("memory", date) },
             onTask = if (todos != null && calendarCaptureDueDate == null) ({
                 capturing = false
@@ -1983,7 +1975,7 @@ private fun lockPendingDestination(route: String?, entry: NavBackStackEntry?): L
         entry?.arguments?.getString("eventId"), EventEditorKind.MEMORY,
     )
     "journal?eventId={eventId}&initialTime={initialTime}" -> LockPendingDestination.EventEditor(
-        entry?.arguments?.getString("eventId"), EventEditorKind.JOURNAL,
+        entry?.arguments?.getString("eventId"), EventEditorKind.MEMORY,
     )
     "mood?eventId={eventId}&initialTime={initialTime}" -> LockPendingDestination.EventEditor(
         entry?.arguments?.getString("eventId"), EventEditorKind.MOOD,
@@ -2011,7 +2003,7 @@ private fun lockRequestForWidget(
             eventId = null,
             kind = when (destination.kind) {
                 CaptureKind.MEMORY -> EventEditorKind.MEMORY
-                CaptureKind.JOURNAL -> EventEditorKind.JOURNAL
+                CaptureKind.JOURNAL -> EventEditorKind.MEMORY
                 CaptureKind.MOOD -> EventEditorKind.MOOD
             },
         )

@@ -248,7 +248,6 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
 @Composable private fun ReviewCounts(report: WeeklyReview, onSources: (ReviewDates, ReviewMetric) -> Unit) {
     ReviewValueGroup {
         listOf(ReviewMetricKind.ENTRIES to (report.current.records to report.previous.records),
-            ReviewMetricKind.JOURNALS to (report.current.journals to report.previous.journals),
             ReviewMetricKind.MEMORIES to (report.current.memories to report.previous.memories)).forEach { (kind, counts) ->
             val metric = ReviewMetric(kind)
             ReviewValue(stringResource(kind.label()), reviewNumber(counts.first), reviewNumber(counts.second),
@@ -343,7 +342,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             if (current.page.records.isEmpty()) ReviewEmpty(R.string.review_memory_empty_short, "review_memories_empty")
             current.page.records.forEach { row ->
                 EventCard(row, period.zone, onOpen = { onEvent(row) },
-                    openActionLabel = if (row.journal != null) R.string.journal_open else R.string.event_open,
+                    openActionLabel = R.string.event_open,
                     onMemory = onMemory?.let { { it(row) } })
                 Spacer(Modifier.height(8.dp))
             }

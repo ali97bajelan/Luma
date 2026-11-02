@@ -61,6 +61,7 @@ class ProtectedContentGateway(
         val projected = record.copy(
             mood = mood?.copy(emotions = immutableProjectionList(mood.emotions)),
             journal = journal?.copy(tags = immutableProjectionList(journal.tags)),
+            tags = immutableProjectionList(record.tags),
             people = immutableProjectionList(people),
             photos = immutableProjectionList(record.photos),
             activities = immutableProjectionList(record.activities),

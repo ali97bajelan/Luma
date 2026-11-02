@@ -8,11 +8,7 @@ object ProtectedRecordClassifier {
     /** Returns every section that protects the complete event graph, including its photos. */
     fun requiredSections(record: LifeEventRecord): Set<LockSection> = when (record.event.type) {
         EventType.MEMORY -> setOf(LockSection.MEMORIES)
-        EventType.JOURNAL -> if (record.memory != null) {
-            setOf(LockSection.MEMORIES, LockSection.JOURNAL)
-        } else {
-            setOf(LockSection.JOURNAL)
-        }
+        EventType.JOURNAL -> setOf(LockSection.MEMORIES)
         EventType.MOOD -> if (record.memory != null) {
             setOf(LockSection.MEMORIES, LockSection.MOOD)
         } else {

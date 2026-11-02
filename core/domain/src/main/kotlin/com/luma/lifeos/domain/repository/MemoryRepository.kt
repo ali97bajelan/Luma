@@ -6,17 +6,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 interface MemoryRepository {
+    fun observeTags(): Flow<List<Tag>> = flowOf(emptyList())
     /** Also returns unmarked events so eligible original records can be promoted. */
     suspend fun get(id: EventId): LifeEventRecord?
     fun observe(range: TimeRange): Flow<List<LifeEventRecord>>
     /** Newest saved-memory records, bounded before the read and filtered to the requested sources. */
     fun observeLibrary(
         limit: Int,
-        eventTypes: Set<EventType> = setOf(EventType.MEMORY, EventType.JOURNAL, EventType.MOOD),
+        eventTypes: Set<EventType> = setOf(EventType.MEMORY, EventType.MOOD),
     ): Flow<List<LifeEventRecord>> {
         require(limit > 0) { "Library limit must be positive" }
-        val supported = setOf(EventType.MEMORY, EventType.JOURNAL, EventType.MOOD)
-        require(eventTypes.all { it in supported }) { "Only memory, journal, and mood events can be listed as memories" }
+        val supported = setOf(EventType.MEMORY, EventType.MOOD)
+        require(eventTypes.all { it in supported }) { "Only memory and mood events can be listed as memories" }
         if (eventTypes.isEmpty()) return flowOf(emptyList())
         error("MemoryRepository implementations must provide a bounded library query")
     }

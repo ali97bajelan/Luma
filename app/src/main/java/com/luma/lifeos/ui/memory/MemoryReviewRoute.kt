@@ -66,14 +66,13 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
-                                record.journal?.let { Text(it.body, maxLines = 3, overflow = TextOverflow.Ellipsis) }
+                                record.event.note?.let { Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis) }
                                 record.mood?.let {
                                     Text(stringResource(R.string.memory_mood_score, it.score))
                                     it.note?.let { note -> Text(note, maxLines = 3, overflow = TextOverflow.Ellipsis) }
                                 }
-                                record.memory?.note?.let { Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis) }
-                                if (record.journal != null) TextButton(onClick = { onJournal(record.event.id) }) {
-                                    Text(stringResource(R.string.journal_open))
+                                record.memory?.note?.takeIf { it != record.event.note }?.let {
+                                    Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis)
                                 }
                                 if (record.canPromoteToMemory ||
                                     (record.event.type == EventType.MEMORY && record.event.isEditable && record.memory != null)) {

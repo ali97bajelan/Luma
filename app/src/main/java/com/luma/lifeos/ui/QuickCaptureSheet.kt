@@ -117,13 +117,6 @@ fun QuickCaptureSheet(
                     showChevron = false,
                 )
                 LumaChoiceRow(
-                    title = stringResource(R.string.capture_journal),
-                    icon = R.drawable.ic_nav_timeline,
-                    onClick = { onJournal(captureDate) },
-                    modifier = Modifier.testTag("capture_journal"),
-                    showChevron = false,
-                )
-                LumaChoiceRow(
                     title = stringResource(R.string.capture_memory),
                     icon = R.drawable.ic_bookmark_outline,
                     onClick = { onMemory(captureDate) },

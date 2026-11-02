@@ -3,7 +3,7 @@
 ## Meet Luma
 
 Luma is a private place to keep track of everyday life, all on your Android
-device. Capture how you feel, save journal entries and memories, keep up with
+device. Capture how you feel, save long-form memories with tags, keep up with
 tasks and habits, and connect moments with the people and places that matter.
 Later, look back through your days and weeks to notice what stands out. Your
 records stay on your device, and optional health and app-usage imports are
@@ -12,9 +12,9 @@ available when you choose to enable them.
 A privacy-first, local-first native Android life record, based on the supplied
 October 2026 product definition. The foundation includes an application shell,
 a pure Kotlin domain, Room-backed local persistence, Today and paged daily Timeline
-browsing, mood check-ins, offline journals with reusable tags, direct/reversible
+browsing, mood check-ins, long-form memories with reusable tags, direct/reversible
 memories, people with linked event histories, reusable manual places, private
-photo attachments on journals/memories, offline one-time tasks with optional due
+photo attachments on memories, offline one-time tasks with optional due
 dates and optional hour/minute due times, optional on-device app-usage imports, optional Health Connect step imports,
 saved daily summaries, simple local lookup, and deterministic weekly reviews.
 Remaining reliability and release work follows [TASKS.md](TASKS.md).
@@ -28,7 +28,7 @@ records, user text, selected dates and capture drafts are preserved.
 
 Use Android Studio with support for AGP 8.7.3, JDK 17, and Android SDK Platform 35. Open this directory, let Gradle sync, then run the `app`
 configuration on an Android 9/API 28 or newer device. No account or runtime
-permissions are needed for browsing, mood check-ins, journals, memories, people, manual places, or photo selection through the system picker.
+permissions are needed for browsing, mood check-ins, memories, people, manual places, or photo selection through the system picker.
 
 From a shell with `JAVA_HOME` and `ANDROID_HOME` configured (or `sdk.dir` in an
 untracked `local.properties`):
@@ -89,7 +89,7 @@ Luma provides Habits, Tasks and Quick capture widgets. Habits and Tasks start in
 summary mode, which shows the date and counts without names or row actions. Open
 Settings → Home-screen widgets to add a widget or configure an existing instance;
 names and progress are an explicit per-instance choice. Quick capture opens the
-Mood, Memory or Journal editor directly. Your launcher controls widget placement
+Mood or Memory editor directly. Your launcher controls widget placement
 and may retain cached views, including after a widget is removed or Luma is reset.
 
 ## Project references
@@ -107,7 +107,7 @@ and may retain cached views, including after a widget is removed or Luma is rese
 Timeline’s Search action looks up titles and linked tag, person and place names,
 with optional dates and saved catalog selections. Filters combine across categories;
 multiple tags or people match any selected item. Results open their source entries.
-Lookup uses debounced SQL queries and bounded pages, without searching journal
+Lookup uses debounced SQL queries and bounded pages, without searching memory
 bodies or notes. No extra permission or integration access is needed.
 On the API 36 emulator with 50,000 saved entries, title and no-match searches took
 about 2.0–2.2 seconds per page; improving that large-fixture response remains open.
@@ -139,7 +139,7 @@ Sleep, workouts and background health reads are deferred.
 Today shares the event previews and date controls, excluding screen-time event
 rows. Event counts on Today, Timeline and saved summaries exclude screen time;
 usage views and aggregate usage metrics remain available. Its saved daily summary shows
-compact entry/journal/memory counts, mood/energy/stress averages,
+compact entry and memory counts, mood/energy/stress averages,
 foreground usage totals and per-app durations, and activity totals by type, unit
 and source. Missing measurements display as unavailable; recorded zero stays zero.
 Memory promotion keeps one underlying entry. Summaries use the selected day's
@@ -150,13 +150,14 @@ not complete provider coverage. Summary errors expose retry while entries remain
 available. “About this summary” reveals sample counts, full app package names,
 activity details and data explanations. Usage and Health Connect settings place
 controls above expandable import explanations. Quick Capture
-creates mood, journal and memory records offline; journals include a full detail
-view. Existing moods/journals can be remembered without copying their content.
+creates mood and memory records offline. Memories support long text, reusable
+tags, people, places and photos. Existing moods can be remembered without
+copying their content.
 People can be linked during capture/edit; person detail shows shared history,
 and deleting a person keeps the entries. People and Places are managed from
 More → People & Places; places can be attached optionally during capture/edit
 without location permission.
-Journal and memory forms can add up to 20 photos (25 MiB each); selected images
+Memory forms can add up to 20 photos (25 MiB each); selected images
 are copied into app-private storage, with unavailable-photo states and safe
 removal. Photos remain on-device; no upload or automatic backup is enabled.
 Abandoned protected drafts may retain private files until released.

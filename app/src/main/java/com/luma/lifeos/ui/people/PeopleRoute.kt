@@ -184,14 +184,14 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Text(stringResource(when (record.event.type) {
                                         EventType.MOOD -> R.string.event_mood
-                                        EventType.JOURNAL -> R.string.event_journal
+                                        EventType.JOURNAL -> R.string.event_memory
                                         EventType.MEMORY -> R.string.event_memory
                                         EventType.ACTIVITY -> R.string.event_activity
                                         EventType.APP_USAGE -> R.string.event_app_usage
                                     }), style = MaterialTheme.typography.labelLarge)
                                     record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
                                     record.mood?.let { Text(stringResource(R.string.memory_mood_score, it.score)) }
-                                    (record.journal?.body ?: record.mood?.note ?: record.event.note)?.let {
+                                    (record.event.note ?: record.journal?.body ?: record.mood?.note)?.let {
                                         Text(it, maxLines = 4, overflow = TextOverflow.Ellipsis)
                                     }
                                     record.memory?.let { MemoryStatus(it) }

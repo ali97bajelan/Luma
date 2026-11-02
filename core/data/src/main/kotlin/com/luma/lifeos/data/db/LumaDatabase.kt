@@ -74,7 +74,7 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focus(): FocusDao
 
     companion object {
-        const val VERSION = 8
+        const val VERSION = 9
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
@@ -298,6 +298,11 @@ abstract class LumaDatabase : RoomDatabase() {
                         "INSERT OR IGNORE INTO focus_storage_state(singleton_id, generation_id) VALUES (1, ?)",
                         arrayOf(java.util.UUID.randomUUID().toString()),
                     )
+                }
+            },
+            object : Migration(8, 9) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    normalizeLegacyJournals(db)
                 }
             },
         )

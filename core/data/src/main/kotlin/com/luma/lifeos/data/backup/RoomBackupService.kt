@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.luma.lifeos.data.db.LumaDatabase
+import com.luma.lifeos.data.db.normalizeLegacyJournals
 import com.luma.lifeos.data.media.AndroidPhotoCodec
 import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.domain.backup.*
@@ -103,6 +104,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
                         }
                     }
                 }
+                normalizeLegacyJournals(sql)
                 validateFocusArchive(sql)
                 sql.query("PRAGMA foreign_key_check").use { require(!it.moveToFirst()) { "Backup contains broken references" } }
                 sql.query("PRAGMA integrity_check").use { require(it.moveToFirst() && it.getString(0) == "ok") }
@@ -203,6 +205,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                         }
                                     }
                                 }
+                                normalizeLegacyJournals(target)
                                 target.execSQL("""INSERT INTO habit_reminder_runtime
                                     (habit_id, revision_token, last_delivered_slot, consumed_action_token, snooze_slot, snooze_until, needs_reconcile)
                                     SELECT habit_id, revision_token, NULL, NULL, NULL, NULL, 1 FROM habit_reminder""")

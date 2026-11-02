@@ -1,9 +1,11 @@
 package com.luma.lifeos.ui.memory
 
 import com.luma.lifeos.ui.common.LumaFilterChip
+import com.luma.lifeos.ui.common.LumaInputChip
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
@@ -17,8 +19,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
@@ -28,6 +32,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.MemoryTextLimits
+import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.ui.common.EditorOptionalSection
@@ -44,22 +49,33 @@ import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 import com.luma.lifeos.ui.common.LumaEditorActionFooter
 import com.luma.lifeos.ui.common.LumaPrimaryActionButton
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: () -> Unit, onRemove: () -> Unit,
-    onRetry: () -> Unit, onTitle: (String) -> Unit, onNote: (String) -> Unit, onImportance: (Int?) -> Unit,
-    onTime: (LocalDateTime, ZoneId) -> Boolean, peopleContent: @Composable () -> Unit = {}, placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {}, onShare: (() -> Unit)? = null, shareEnabled: Boolean = false) {
+    onRetry: () -> Unit, onTitle: (String) -> Unit, onNote: (String) -> Unit,
+    onImportance: (Int?) -> Unit, onTime: (LocalDateTime, ZoneId) -> Boolean,
+    onContextNote: (String) -> Unit = {}, onAddTag: (String) -> Boolean = { false },
+    onRemoveTag: (String) -> Unit = {}, peopleContent: @Composable () -> Unit = {},
+    placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {},
+    onShare: (() -> Unit)? = null, shareEnabled: Boolean = false) {
     var removing by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
+    var tagText by rememberSaveable { mutableStateOf("") }
+    var tagError by rememberSaveable { mutableStateOf(false) }
+    var tagsExpanded by rememberSaveable { mutableStateOf(false) }
+    var tagsExpansionInitialized by rememberSaveable { mutableStateOf(false) }
     var more by rememberSaveable { mutableStateOf(false) }
     var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
     var importanceExpanded by rememberSaveable { mutableStateOf(false) }
     var importanceExpansionInitialized by rememberSaveable { mutableStateOf(false) }
     val noteFocus = remember { FocusRequester() }
     val photosBringIntoViewRequester = remember { BringIntoViewRequester() }
+    val tagInputBringIntoViewRequester = remember { BringIntoViewRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     val enabled = state.ready && !state.busy && !state.completed
     fun close() {
         if (state.busy) return
-        if (state.hasChanges) discarding = true else onCancel()
+        if (state.hasChanges || tagText.isNotBlank()) discarding = true else onCancel()
     }
     LaunchedEffect(state.ready, state.editing, state.original, state.draft.personIds, state.draft.placeId, state.draft.photos) {
         if (state.ready && !contextExpansionInitialized) {
@@ -74,11 +90,28 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
             importanceExpansionInitialized = true
         }
     }
+    LaunchedEffect(state.ready, state.draft.tagNames, tagText, tagError) {
+        if (state.ready && !tagsExpansionInitialized) {
+            tagsExpanded = state.draft.tagNames.isNotEmpty() || tagText.isNotBlank() || tagError
+            tagsExpansionInitialized = true
+        }
+    }
     LaunchedEffect(state.error) {
         if (state.error == MemoryEditorError.PHOTO) more = true
     }
     LaunchedEffect(state.error, more) {
         if (state.error == MemoryEditorError.PHOTO && more) photosBringIntoViewRequester.bringIntoView()
+    }
+    fun addPendingTag(): Boolean {
+        if (tagText.isBlank()) return true
+        if (onAddTag(tagText)) {
+            tagText = ""
+            tagError = false
+            return true
+        }
+        tagError = true
+        tagsExpanded = true
+        return false
     }
     BackHandler { close() }
     Scaffold(modifier = Modifier.testTag("screen_memory"), contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
@@ -155,13 +188,74 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     label = { Text(stringResource(R.string.memory_title)) }, modifier = Modifier.fillMaxWidth()
                         .semantics { titleError?.let { error(it) } }.testTag("memory_title"))
                 val noteError = if (MemoryTextField.NOTE in state.textErrors)
-                    stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(MemoryTextLimits.NOTE)) else null
+                    stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(
+                        if (state.direct) MemoryTextLimits.NOTE else MemoryTextLimits.CONTEXT_NOTE,
+                    )) else null
                 LumaOutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled, minLines = 5,
                     label = { Text(stringResource(if (state.direct) R.string.memory_note else R.string.memory_marker_note)) },
                     isError = noteError != null, supportingText = { noteError?.let { AccessibleFeedback(it) } },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
                     modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
                         .semantics { noteError?.let { error(it) } }.testTag("memory_note"))
+                if (state.direct && state.draft.contextNote.isNotEmpty()) {
+                    val contextError = if (MemoryTextField.CONTEXT_NOTE in state.textErrors)
+                        stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(MemoryTextLimits.CONTEXT_NOTE)) else null
+                    LumaOutlinedTextField(value = state.draft.contextNote, onValueChange = onContextNote, enabled = enabled, minLines = 2,
+                        label = { Text(stringResource(R.string.memory_context_note)) },
+                        isError = contextError != null, supportingText = { contextError?.let { AccessibleFeedback(it) } },
+                        modifier = Modifier.fillMaxWidth().semantics { contextError?.let { error(it) } }.testTag("memory_context_note"))
+                }
+                Column(Modifier.testTag("memory_tags")) {
+                    EditorOptionalSection(
+                        title = R.string.memory_tags,
+                        tag = "memory_tags_toggle",
+                        expanded = tagsExpanded,
+                        onExpandedChange = { tagsExpansionInitialized = true; tagsExpanded = it },
+                        summary = if (state.draft.tagNames.isEmpty()) null else {
+                            {
+                                Text(
+                                    pluralStringResource(R.plurals.memory_tags_summary, state.draft.tagNames.size, state.draft.tagNames.size),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                    ) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            state.draft.tagNames.forEach { name ->
+                                LumaInputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
+                                    label = { Text(stringResource(R.string.memory_remove_tag, name)) })
+                            }
+                        }
+                        val tagFeedback = if (tagError) stringResource(R.string.memory_tag_size_error) else null
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            LumaOutlinedTextField(value = tagText, onValueChange = {
+                                when {
+                                    it.length > MemoryTextLimits.TAG -> tagError = true
+                                    else -> { tagText = it; tagError = false }
+                                }
+                            }, enabled = enabled, singleLine = true, isError = tagFeedback != null,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = {
+                                    if (tagText.isBlank()) keyboardController?.hide()
+                                    else if (addPendingTag()) keyboardController?.hide()
+                                }),
+                                supportingText = { tagFeedback?.let { AccessibleFeedback(it) } },
+                                label = { Text(stringResource(R.string.memory_tag_name)) },
+                                modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester)
+                                    .semantics { tagFeedback?.let { error(it) } }.testTag("memory_tag_input"))
+                            TextButton(enabled = enabled && tagText.isNotBlank(), onClick = { addPendingTag() },
+                                modifier = Modifier.testTag("memory_add_tag")) { Text(stringResource(R.string.add)) }
+                        }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }
+                                .forEach { tag ->
+                                    LumaFilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) },
+                                        label = { Text(tag.name) })
+                                }
+                        }
+                    }
+                }
                 Column(Modifier.testTag("memory_importance")) {
                     EditorOptionalSection(
                         title = R.string.memory_importance,

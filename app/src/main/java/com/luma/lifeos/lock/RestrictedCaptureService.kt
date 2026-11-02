@@ -102,9 +102,10 @@ class RestrictedCaptureService(
     private val sessionMutex = Mutex()
 
     suspend fun begin(kind: CaptureKind): CreateSession = sessionMutex.withLock {
-        val draft = newDraft(kind)
+        val effectiveKind = kind.asMemoryKind()
+        val draft = newDraft(effectiveKind)
         drafts.write(draft)
-        CreateSession(draft.id, kind).also { active[it.token] = it }
+        CreateSession(draft.id, effectiveKind).also { active[it.token] = it }
     }
 
     /** Returns opaque IDs only. It never decrypts a draft or returns private content. */
@@ -114,13 +115,21 @@ class RestrictedCaptureService(
         if (isActive(session)) drafts.read(session.draftId) else null
 
     suspend fun resume(draftId: UUID, proof: OperationProof? = null): CaptureResumeResult = sessionMutex.withLock {
-        val draft = try {
+        var draft = try {
             drafts.read(draftId)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
             return@withLock CaptureResumeResult.Unavailable
         } ?: return@withLock CaptureResumeResult.Missing
+        if (draft.kind == CaptureKind.JOURNAL) {
+            draft = draft.copy(
+                kind = CaptureKind.MEMORY,
+                revision = nextRevision(draft.revision),
+                fields = (draft.fields - "body") + ("note" to draft.fields["body"].orEmpty()),
+            )
+            drafts.write(draft)
+        }
         val request = readRequest(draft.kind)
         when (access.snapshot.value.decide(request)) {
             AccessDecision.Allow -> {
@@ -287,11 +296,14 @@ class RestrictedCaptureService(
 
     private fun sectionFor(kind: CaptureKind): LockSection = when (kind) {
         CaptureKind.MEMORY -> LockSection.MEMORIES
-        CaptureKind.JOURNAL -> LockSection.JOURNAL
+        CaptureKind.JOURNAL -> LockSection.MEMORIES
         CaptureKind.MOOD -> LockSection.MOOD
         CaptureKind.TASK -> LockSection.TASKS
         CaptureKind.HABIT_DEFINITION -> LockSection.HABITS
     }
+
+    private fun CaptureKind.asMemoryKind(): CaptureKind =
+        if (this == CaptureKind.JOURNAL) CaptureKind.MEMORY else this
 
     private fun validateRestrictedInput(draft: CaptureDraft, input: CaptureInput) {
         require(input.kind == draft.kind)

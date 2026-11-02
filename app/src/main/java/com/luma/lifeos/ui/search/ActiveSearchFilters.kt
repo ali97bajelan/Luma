@@ -109,7 +109,7 @@ internal fun ActiveSearchFilters(state: SearchState, onRemove: (SearchFilterKey)
 private fun SearchFilterKind.categoryResource(): Int = when (this) {
     SearchFilterKind.FROM -> R.string.search_from
     SearchFilterKind.THROUGH -> R.string.search_through
-    SearchFilterKind.TAG -> R.string.journal_tags
+    SearchFilterKind.TAG -> R.string.memory_tags
     SearchFilterKind.PERSON -> R.string.people
     SearchFilterKind.PLACE -> R.string.places
 }

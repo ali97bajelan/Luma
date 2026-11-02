@@ -28,16 +28,16 @@
     <string name="select_date">انتخاب تاریخ</string>
     <string name="cancel">لغو</string>
     <string name="retry">تلاش دوباره</string>
-    <string name="today_no_entries">هنوز ورودی حال‌وهوا، یادداشت روزانه یا خاطره‌ای ثبت نشده</string>
+    <string name="today_no_entries">هنوز ورودی حال‌وهوا یا خاطره‌ای ثبت نشده</string>
     <string name="today_capture_mood">حال‌وهوا</string>
-    <string name="today_capture_journal">یادداشت</string>
+    <string name="today_capture_journal">خاطره</string>
     <string name="today_capture_memory">خاطره</string>
     <string name="today_recent_entries">ثبت‌های اخیر</string>
     <string name="today_capture_when">این مورد را برای چه زمانی ثبت می‌کنید؟</string>
     <string name="today_loading">در حال بارگذاری روز شما…</string>
     <string name="today_selected_date">رویدادهای %1$s</string>
     <string name="today_viewing_date">در حال مشاهدهٔ %1$s</string>
-    <string name="today_empty_heading">هنوز ورودی حال‌وهوا، یادداشت روزانه یا خاطره‌ای ثبت نشده</string>
+    <string name="today_empty_heading">هنوز ورودی حال‌وهوا یا خاطره‌ای ثبت نشده</string>
     <string name="today_empty_body">روز دیگری را ببینید یا برای ثبت حال‌وهوایتان، ثبت سریع را باز کنید. نیازی به مجوز یا حساب کاربری نیست.</string>
     <string name="today_error">اطلاعات این روز بارگذاری نشد. دوباره تلاش کنید.</string>
     <plurals name="entry_count">
@@ -47,7 +47,7 @@
     <string name="entry_habit_counts">%1$s · %2$s</string>
     <string name="event_type_count">%1$s: %2$d</string>
     <string name="event_mood">حال‌وهوا</string>
-    <string name="event_journal">یادداشت روزانه</string>
+    <string name="event_journal">خاطره</string>
     <string name="event_memory">خاطره</string>
     <string name="event_activity">فعالیت</string>
     <string name="event_app_usage">زمان استفاده از صفحه‌نمایش</string>
@@ -61,12 +61,12 @@
     <string name="widget_capture_mood_description">ثبت حال‌وهوای تازه</string>
     <string name="widget_capture_memory">خاطره</string>
     <string name="widget_capture_memory_description">ثبت خاطرهٔ تازه</string>
-    <string name="widget_capture_journal">یادداشت</string>
-    <string name="widget_capture_journal_description">نوشتن یادداشت روزانهٔ تازه</string>
+    <string name="widget_capture_journal">خاطره</string>
+    <string name="widget_capture_journal_description">ثبت خاطرهٔ تازه</string>
     <string name="widget_open_luma">باز کردن لوما</string>
     <string name="widget_open_luma_description">باز کردن صفحهٔ امروز لوما</string>
     <string name="widget_open_quick_capture">باز کردن ثبت سریع</string>
-    <string name="widget_open_quick_capture_description">انتخاب حال‌وهوا، خاطره یا یادداشت روزانه</string>
+    <string name="widget_open_quick_capture_description">انتخاب حال‌وهوا یا خاطره</string>
     <string name="widget_habits_title">عادت‌ها</string>
     <string name="widget_habits_name">عادت‌های لوما</string>
     <string name="widget_habits_description">پیشرفت امروز عادت‌ها را ببینید، برای فهرست کامل عنوان را لمس کنید، تکرار ثبت کنید یا از صفحهٔ اصلی ثبت را باز کنید.</string>
@@ -272,6 +272,11 @@
     <string name="memory_edit">ویرایش خاطره</string>
     <string name="memory_title">عنوان (اختیاری)</string>
     <string name="memory_note">این خاطره را توصیف کنید</string>
+    <string name="memory_context_note">زمینهٔ بیشتر</string>
+    <string name="memory_tags">برچسب‌ها</string>
+    <string name="memory_tag_name">برچسب جدید یا موجود</string>
+    <string name="memory_remove_tag">%1$s · حذف</string>
+    <string name="memory_tag_size_error">حداکثر ۵۰ نویسه و ۵۰ برچسب وارد کنید. متن برچسب شما محفوظ است.</string>
     <string name="memory_marker_note">چرا مهم است (اختیاری)</string>
     <string name="memory_importance">اهمیت (اختیاری)</string>
     <string name="memory_importance_value">اهمیت: %1$d/۵</string>
@@ -289,25 +294,25 @@
     <string name="memory_load_error">این رویداد برای ویرایش خاطره باز نشد. پیش‌نویس شما محفوظ است.</string>
     <string name="memory_save_error">خاطره ذخیره نشد. تغییرات شما محفوظ است؛ دوباره تلاش کنید.</string>
     <string name="memory_remove_error">خاطره حذف نشد. تغییرات شما محفوظ است؛ دوباره تلاش کنید.</string>
-    <string name="memory_text_error">پیش‌نویس قبلی محفوظ است. برای عنوان حداکثر ۲۰۰ نویسه و برای یادداشت حداکثر ۱۰٬۰۰۰ نویسه وارد کنید.</string>
+    <string name="memory_text_error">پیش‌نویس قبلی محفوظ است. برای عنوان حداکثر ۲۰۰ نویسه، برای متن ۵۰٬۰۰۰ نویسه و برای زمینه ۱۰٬۰۰۰ نویسه وارد کنید.</string>
     <string name="memory_review_heading">خاطره‌های این هفته</string>
     <string name="memory_review_intro">لحظه‌های به‌یادماندنی این هفته‌تان را مرور کنید.</string>
     <string name="memory_review_range">%1$s – %2$s</string>
-    <string name="memory_review_empty">هنوز خاطره‌ای برای این هفته ثبت نشده. خاطره‌ای ثبت کنید یا یادداشت روزانه یا حال‌وهوایی را به‌عنوان خاطره نگه دارید.</string>
+    <string name="memory_review_empty">هنوز خاطره‌ای برای این هفته ثبت نشده. خاطره‌ای ثبت کنید یا حال‌وهوایی را به‌عنوان خاطره نگه دارید.</string>
     <string name="memory_review_error">خاطره‌هایتان بارگذاری نشدند. دوباره تلاش کنید.</string>
     <string name="memory_library_title">خاطره</string>
     <string name="memory_library_loading">در حال بارگذاری خاطره‌ها…</string>
     <string name="memory_library_empty">هنوز خاطره‌ای برای نمایش نیست</string>
-    <string name="memory_library_empty_description">لحظه‌ای را که می‌خواهید به خاطر بسپارید ثبت کنید. همچنین می‌توانید یادداشت روزانه یا حال‌وهوایی را به‌عنوان خاطره نگه دارید.</string>
+    <string name="memory_library_empty_description">لحظه‌ای را که می‌خواهید به خاطر بسپارید ثبت کنید. همچنین می‌توانید حال‌وهوایی را به‌عنوان خاطره نگه دارید.</string>
     <string name="memory_library_error">خاطره‌ها بارگذاری نشدند</string>
     <string name="memory_library_error_description">برای دیدن لحظه‌های ذخیره‌شده دوباره تلاش کنید.</string>
     <string name="memory_library_load_older">بارگذاری خاطره‌های قدیمی‌تر</string>
     <string name="memory_library_loading_older">در حال بارگذاری خاطره‌های قدیمی‌تر…</string>
     <string name="memory_library_older_error">خاطره‌های قدیمی‌تر بارگذاری نشدند</string>
     <string name="memory_library_memory_fallback">خاطره</string>
-    <string name="memory_library_journal_fallback">خاطرهٔ یادداشت روزانه</string>
+    <string name="memory_library_journal_fallback">خاطره</string>
     <string name="memory_library_mood_fallback">خاطرهٔ حال‌وهوا</string>
-    <string name="memory_library_from_journal">از یادداشت روزانه</string>
+    <string name="memory_library_from_journal">خاطره</string>
     <string name="memory_library_from_mood">از حال‌وهوا</string>
     <string name="memory_library_future_date">تاریخ آینده</string>
     <string name="memory_library_saved">خاطره ذخیره شد</string>
@@ -315,7 +320,7 @@
     <string name="people">افراد</string>
     <string name="people_intro">افراد زندگی‌تان را کنار لحظه‌های مشترکتان نگه دارید.</string>
     <string name="people_empty_heading">فهرست افراد زندگی‌تان را بسازید</string>
-    <string name="people_empty">فردی را اضافه کنید و سپس او را به حال‌وهوای ثبت‌شده، یادداشت روزانه یا خاطره‌ای پیوند دهید.</string>
+    <string name="people_empty">فردی را اضافه کنید و سپس او را به حال‌وهوای ثبت‌شده یا خاطره‌ای پیوند دهید.</string>
     <string name="people_load_error">افراد بارگذاری نشدند. پیش‌نویس شما محفوظ است. دوباره تلاش کنید.</string>
     <string name="person_create">فرد جدید</string>
     <string name="person_edit">ویرایش فرد</string>
@@ -323,14 +328,14 @@
     <string name="person_note">یادداشت (اختیاری)</string>
     <string name="person_history">پیشینهٔ مشترک</string>
     <string name="person_history_empty_heading">پیشینهٔ مشترک را بسازید</string>
-    <string name="person_history_empty">این فرد را به حال‌وهوای ثبت‌شده، یادداشت روزانه یا خاطره پیوند دهید تا اینجا نمایش داده شود.</string>
+    <string name="person_history_empty">این فرد را به حال‌وهوای ثبت‌شده یا خاطره پیوند دهید تا اینجا نمایش داده شود.</string>
     <string name="person_missing">این فرد دیگر در دسترس نیست.</string>
     <string name="person_open_event">باز کردن نوشته</string>
     <string name="person_save_error">اطلاعات این فرد ذخیره نشد. پیش‌نویس شما محفوظ است. دوباره تلاش کنید.</string>
     <string name="person_delete_error">این فرد حذف نشد. پیش‌نویس شما محفوظ است. دوباره تلاش کنید.</string>
     <string name="person_text_error">برای نام حداکثر ۲۰۰ نویسه و برای یادداشت حداکثر ۱۰٬۰۰۰ نویسه وارد کنید. متن قبلی شما محفوظ است.</string>
     <string name="person_delete_title">این فرد حذف شود؟</string>
-    <string name="person_delete_body">این کار فرد و پیوندهای او را حذف می‌کند. همهٔ رویدادهای زندگی، یادداشت‌های روزانه و خاطره‌ها حفظ می‌شوند.</string>
+    <string name="person_delete_body">این کار فرد و پیوندهای او را حذف می‌کند. همهٔ ثبت‌ها و خاطره‌های شما حفظ می‌شوند.</string>
     <string name="person_discard_title">تغییرات اطلاعات فرد کنار گذاشته شوند؟</string>
     <string name="person_discard_body">تغییرات ذخیره‌نشدهٔ اطلاعات فرد از دست می‌روند.</string>
     <string name="people_choose">انتخاب افراد</string>
@@ -346,7 +351,7 @@
     <string name="places">مکان‌ها</string>
     <string name="places_intro">مکان‌ها را با نام ذخیره کنید و دوباره در نوشته‌هایتان به کار ببرید. نیازی به مجوز مکان نیست.</string>
     <string name="places_empty_heading">مکانی برای استفادهٔ دوباره ذخیره کنید</string>
-    <string name="places_empty">مکانی اضافه کنید و آن را به حال‌وهوای ثبت‌شده، یادداشت روزانه یا خاطره پیوند دهید.</string>
+    <string name="places_empty">مکانی اضافه کنید و آن را به حال‌وهوای ثبت‌شده یا خاطره پیوند دهید.</string>
     <string name="places_load_error">مکان‌ها بارگذاری نشدند. دوباره تلاش کنید.</string>
     <string name="place_create">مکان جدید</string>
     <string name="place_edit">ویرایش مکان</string>
@@ -357,7 +362,7 @@
     <string name="place_delete_error">این مکان حذف نشد. پیش‌نویس شما محفوظ است. دوباره تلاش کنید.</string>
     <string name="place_text_error">برای نام حداکثر ۲۰۰ نویسه و برای یادداشت حداکثر ۱۰٬۰۰۰ نویسه وارد کنید. متن قبلی شما محفوظ است.</string>
     <string name="place_delete_title">این مکان حذف شود؟</string>
-    <string name="place_delete_body">این کار مکان و پیوندهای آن را حذف می‌کند. همهٔ رویدادهای زندگی، یادداشت‌های روزانه و خاطره‌ها حفظ می‌شوند.</string>
+    <string name="place_delete_body">این کار مکان و پیوندهای آن را حذف می‌کند. همهٔ ثبت‌ها و خاطره‌های شما حفظ می‌شوند.</string>
     <string name="place_discard_title">تغییرات اطلاعات مکان کنار گذاشته شوند؟</string>
     <string name="place_discard_body">تغییرات ذخیره‌نشدهٔ اطلاعات مکان از دست می‌روند.</string>
     <string name="place_optional">مکان (اختیاری)</string>
@@ -382,6 +387,10 @@
     <plurals name="journal_tags_summary">
         <item quantity="one">%1$d برچسب انتخاب‌شده</item>
         <item quantity="other">%1$d برچسب انتخاب‌شده</item>
+    </plurals>
+    <plurals name="memory_tags_summary">
+        <item quantity="one">%1$d برچسب انتخاب شده</item>
+        <item quantity="other">%1$d برچسب انتخاب شده</item>
     </plurals>
     <plurals name="photo_count"><item quantity="one">%d عکس</item><item quantity="other">%d عکس</item></plurals>
     <string name="event_edit">ویرایش</string>
@@ -464,7 +473,7 @@
     <string name="summary_saved_only">تعداد ورودی‌ها شامل ثبت عادت و استفاده از برنامه‌ها نیست. معیارها از اطلاعات ذخیره‌شده محاسبه می‌شوند؛ مقدارهای خالی دلیل نبود مشاهده، دسترسی سرویس یا ورود داده را توضیح می‌دهند. مقدار صفر ذخیره‌شده همچنان صفر است.</string>
     <string name="summary_error">خلاصهٔ روزانه محاسبه نشد. اطلاعات ذخیره‌شدهٔ شما همچنان در دسترس‌اند.</string>
     <string name="summary_records">نوشته‌های ذخیره‌شده: %1$d</string>
-    <string name="summary_journals">یادداشت‌های روزانه: %1$d</string>
+    <string name="summary_journals">خاطره‌ها: %1$d</string>
     <string name="summary_memories">خاطره‌ها، شامل نوشته‌های نشان‌شده به‌عنوان خاطره: %1$d</string>
     <string name="summary_mood">میانگین حال‌وهوا</string>
     <string name="summary_energy">میانگین انرژی</string>
@@ -547,7 +556,7 @@
     <string name="review_usage_partial_total_unknown">از سابقهٔ ذخیره‌شده نمی‌توان مجموع این بازه را تعیین کرد.</string>
     <string name="search">جستجو</string>
     <string name="search_entries_title">جست‌وجوی ثبت‌ها</string>
-    <string name="search_scope_help">عنوان ثبت‌ها، برچسب‌ها، افراد و مکان‌ها پیدا می‌شوند. متن روزنوشت‌ها، یادداشت‌ها، ثبت‌های عادت و کارها جست‌وجو نمی‌شوند.</string>
+    <string name="search_scope_help">عنوان ثبت‌ها، برچسب‌ها، افراد و مکان‌ها پیدا می‌شوند. متن خاطره‌ها، یادداشت‌ها، ثبت‌های عادت و کارها جست‌وجو نمی‌شوند.</string>
     <string name="search_text_hint">عنوان، برچسب، فرد یا مکان</string>
     <string name="search_text_help">%1$d/۲۰۰ نویسه</string>
     <string name="search_filters">فیلترهای جستجو</string>
@@ -619,7 +628,7 @@
     <string name="review_empty">نوشته یا اندازه‌گیری ذخیره‌شده‌ای در این بازه وجود ندارد.</string>
     <string name="review_empty_previous">هفتهٔ قبل: %1$s نوشتهٔ ذخیره‌شده.</string>
     <string name="review_entries">نوشته‌های ذخیره‌شده</string>
-    <string name="review_journals">یادداشت‌های روزانه</string>
+    <string name="review_journals">خاطره‌ها</string>
     <string name="review_memories">خاطره‌ها</string>
     <string name="review_mood">حال‌وهوا</string>
     <string name="review_mood_patterns">الگوهای حال‌وهوا و احساسات</string>
@@ -737,7 +746,7 @@
     <string name="permission_continue">ادامه</string>
     <string name="usage_refresh">به‌روزرسانی وضعیت دسترسی</string>
     <string name="summary_count_entries">نوشته‌ها</string>
-    <string name="summary_count_journals">یادداشت‌ها</string>
+    <string name="summary_count_journals">خاطره‌ها</string>
     <string name="summary_count_memories">خاطره‌ها</string>
     <string name="summary_scale_value">%1$s: %2$s/۵</string>
     <string name="summary_usage_partial">سابقهٔ استفاده ناقص است</string>
@@ -789,7 +798,7 @@
     <string name="place_detail_title">مکان</string>
     <string name="detail_edit">ویرایش</string>
     <string name="place_history_empty_heading">پیشینهٔ مکان را بسازید</string>
-    <string name="place_history_empty">این مکان را به حال‌وهوای ثبت‌شده، یادداشت روزانه یا خاطره پیوند دهید تا اینجا نمایش داده شود.</string>
+    <string name="place_history_empty">این مکان را به حال‌وهوای ثبت‌شده یا خاطره پیوند دهید تا اینجا نمایش داده شود.</string>
     <string name="review_catalog_empty">این هفته فرد یا مکانی پیوند نشده</string>
     <string name="review_mood_empty">این هفته حال‌وهوایی ثبت نشده</string>
     <string name="review_mood_explanation">میانگین‌ها از حال‌وهواهای ثبت‌شده محاسبه می‌شوند. حداکثر ۱۰ احساس با بیشترین ثبت نمایش داده می‌شود.</string>

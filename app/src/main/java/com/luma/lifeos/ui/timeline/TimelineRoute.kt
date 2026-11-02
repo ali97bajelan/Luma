@@ -158,7 +158,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     TimelineRailItem(index = index, itemCount = state.items.size, item = item) {
                         when (item) {
                             is TimelineFeedItem.Entry -> EventCard(item.record, zone, onOpen = { onEvent(item.record) },
-                                openActionLabel = if (item.record.journal != null) R.string.journal_open else R.string.event_open,
+                                openActionLabel = R.string.event_open,
                                 onMemory = { onMemory(item.record.event.id) })
                             is TimelineFeedItem.Habit -> HabitTimelineCard(item, zone) {
                                 onHabit(item.log.habitId, item.log.date, item.log.id)
@@ -236,8 +236,7 @@ private fun TimelineTypeNode(item: TimelineFeedItem, size: Dp, isEnd: Boolean) {
         is TimelineFeedItem.Habit -> Triple(R.drawable.ic_nav_habits, colors.secondaryContainer, colors.onSecondaryContainer)
         is TimelineFeedItem.Entry -> when (item.record.event.type) {
             EventType.MOOD -> Triple(R.drawable.ic_review_mood, colors.secondaryContainer, colors.onSecondaryContainer)
-            EventType.JOURNAL -> Triple(R.drawable.ic_nav_timeline, colors.primaryContainer, colors.onPrimaryContainer)
-            EventType.MEMORY -> Triple(R.drawable.ic_bookmark, colors.tertiaryContainer, colors.onTertiaryContainer)
+            EventType.JOURNAL, EventType.MEMORY -> Triple(R.drawable.ic_bookmark, colors.tertiaryContainer, colors.onTertiaryContainer)
             EventType.ACTIVITY -> Triple(R.drawable.ic_review_activity, colors.surfaceContainerHighest, colors.onSurface)
             EventType.APP_USAGE -> Triple(R.drawable.ic_review_usage, colors.surfaceContainerLow, colors.onSurface)
         }
