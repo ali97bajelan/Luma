@@ -30,7 +30,7 @@ class LockTimingTest {
     }
 
     @Test
-    fun relatedScopesRetainOnlyStillRequiredGrants() {
+    fun relatedNavigationDoesNotRevokeForegroundGrants() {
         val current = LockBrowseContext("timeline", "timeline-list", setOf(LockSection.MEMORIES))
         val related = current.copy(authorizationScopeId = "memory-detail", requiredSections = setOf(LockSection.MEMORIES))
 
@@ -43,7 +43,7 @@ class LockTimingTest {
             ).isEmpty,
         )
         assertEquals(
-            NavigationGrantRevocation(sections = setOf(LockSection.MEMORIES)),
+            NavigationGrantRevocation(),
             navigationGrantRevocation(
                 RelockMode.EVERY_TIME,
                 current,
@@ -54,23 +54,14 @@ class LockTimingTest {
     }
 
     @Test
-    fun topLevelSettingsAndRestrictedCaptureDropSelectedGrantsButTimedNavigationDoesNot() {
+    fun foregroundNavigationDoesNotRevokeSelectedGrantsForAnyRelockMode() {
         val current = LockBrowseContext("timeline", "timeline-list", setOf(LockSection.MEMORIES))
         val grants = setOf(LockSection.MEMORIES, LockSection.JOURNAL)
         val topLevel = LockBrowseContext("today", "today-list")
 
-        assertEquals(
-            NavigationGrantRevocation(sections = grants),
-            navigationGrantRevocation(RelockMode.EVERY_TIME, current, topLevel, grants),
-        )
-        assertEquals(
-            NavigationGrantRevocation(sections = grants),
-            navigationGrantRevocation(RelockMode.EVERY_TIME, current, current.copy(isSettings = true), grants),
-        )
-        assertEquals(
-            NavigationGrantRevocation(sections = grants),
-            navigationGrantRevocation(RelockMode.EVERY_TIME, current, current.copy(isRestrictedCapture = true), grants),
-        )
+        assertEquals(NavigationGrantRevocation(), navigationGrantRevocation(RelockMode.EVERY_TIME, current, topLevel, grants))
+        assertEquals(NavigationGrantRevocation(), navigationGrantRevocation(RelockMode.EVERY_TIME, current, current.copy(isSettings = true), grants))
+        assertEquals(NavigationGrantRevocation(), navigationGrantRevocation(RelockMode.EVERY_TIME, current, current.copy(isRestrictedCapture = true), grants))
         assertEquals(
             NavigationGrantRevocation(),
             navigationGrantRevocation(RelockMode.AFTER_5_MINUTES, current, topLevel, grants),

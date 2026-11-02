@@ -112,22 +112,12 @@ class AppLockCoordinator(
                 return
             }
             val previous = current.activeBrowseContext
-            val returningToParent = previous != null &&
-                previous.topLevelDestination == context.topLevelDestination &&
-                previous.authorizationScopeId != context.authorizationScopeId &&
-                context.authorizationScopeId == context.topLevelDestination
-            val revocation = if (returningToParent) {
-                // A parent list remains a filtered projection of the sections already granted
-                // while viewing its related detail. Entering the detail still narrows grants.
-                com.luma.lifeos.domain.lock.NavigationGrantRevocation()
-            } else {
-                navigationGrantRevocation(
-                    mode = policy.relockMode,
-                    current = previous,
-                    next = context,
-                    currentlyGrantedSections = current.grant.sections,
-                )
-            }
+            val revocation = navigationGrantRevocation(
+                mode = policy.relockMode,
+                current = previous,
+                next = context,
+                currentlyGrantedSections = current.grant.sections,
+            )
             val wholeApp = current.grant.wholeApp && !revocation.wholeApp
             val sections = current.grant.sections - revocation.sections
             val grant = current.grant.copy(sections = sections, wholeApp = wholeApp)

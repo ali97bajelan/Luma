@@ -81,13 +81,13 @@ Unless stated otherwise, precondition for each case is the freshly seeded baseli
 
 **Oracle:** No protected frame or semantics before auth; static help/generic configuration has no records. Unlock opens valid intended destination once. Back/Cancel stays safe; malicious/unresolved routes do not fall through into private content.
 
-### AL-Q06 — Every-time navigation boundaries
+### AL-Q06 — Every-time foreground navigation
 
 **Requirements/owners:** R05; T01/T03. **Data:** memories_locked, then relevant sections granted on Timeline.
 
 **Actions:** Scroll/page/filter/change date; open/close related memory detail; open unrelated task detail; switch Timeline → Today; enter settings/capture; background/return; repeat Whole app departure.
 
-**Oracle:** Related flow/scroll/filter preserves its grant. Unrelated detail revokes unneeded grants; top-level/settings/capture navigation revokes selected grants; reentry prompts. Background revokes all. Whole app does not prompt for each internal navigation while it remains visible.
+**Oracle:** Existing section grants survive scrolling, filters, related and unrelated details, top-level changes, settings and capture while Luma remains visible. Sections not yet granted stay hidden and require authentication. Backgrounding until no Luma activity is visible revokes all grants immediately. Whole app does not prompt for internal navigation while it remains visible.
 
 ### AL-Q07 — Timed exact boundaries and cold restart
 
@@ -103,7 +103,7 @@ Unless stated otherwise, precondition for each case is the freshly seeded baseli
 
 **Actions:** Enter/create/retry capture before deadline, leave it open through deadline, save afterward; repeatedly reopen; use own external picker; return to history.
 
-**Oracle:** Original deadline remains 1,300,000 ms; no pause/extension/grant from capture. History is locked at expiry. Every-time capture revokes selected grants. Picker preserves current input but never revives expired browsing access.
+**Oracle:** Original deadline remains 1,300,000 ms; capture does not pause or extend it or grant new access. History is locked at expiry. Every-time grants remain available during foreground capture and revoke when no Luma activity is visible. Picker preserves current input but never revives expired browsing access.
 
 ### AL-Q09 — Five new-entry types while locked
 
