@@ -4,7 +4,6 @@ import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,7 +53,6 @@ fun AppLockGate(
     addNewEntryAvailable: Boolean = false,
     appLockSettingsAvailable: Boolean = false,
     onUnlock: () -> Unit,
-    onBackToSafeDestination: () -> Unit,
     onAddNewEntry: () -> Unit = {},
     onAppLockSettings: () -> Unit = {},
     onRequestFocusEmergencyExit: () -> Unit = {},
@@ -66,7 +64,6 @@ fun AppLockGate(
     LaunchedEffect(focusEmergencyExitReady, requestingFocusExit) {
         if (requestingFocusExit && focusEmergencyExitReady) confirmingFocusExit = true
     }
-    BackHandler(enabled = !confirmingFocusExit, onBack = onBackToSafeDestination)
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(
             modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -93,9 +90,6 @@ fun AppLockGate(
                 TextButton(onClick = onAppLockSettings, modifier = Modifier.padding(top = 4.dp)) {
                     Text(stringResource(R.string.app_lock_gate_settings))
                 }
-            }
-            TextButton(onClick = onBackToSafeDestination, modifier = Modifier.padding(top = 4.dp)) {
-                Text(stringResource(R.string.app_lock_gate_back))
             }
             if (focusEmergencyAvailable) {
                 TextButton(

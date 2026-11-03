@@ -364,7 +364,6 @@ fun LifeOsApp(
     var capturing by rememberSaveable { mutableStateOf(false) }
     var widgetQuickCapture by rememberSaveable { mutableStateOf(false) }
     var calendarCaptureDueDate by rememberSaveable { mutableStateOf<String?>(null) }
-    var lockHelpRequested by rememberSaveable { mutableStateOf(false) }
     var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
     var lastCaptureRestoreGeneration by rememberSaveable { mutableStateOf(todoRestoreGeneration) }
     var captureFabHeight by remember { mutableStateOf(0.dp) }
@@ -454,8 +453,7 @@ fun LifeOsApp(
     LaunchedEffect(appLockCoordinator, lockContext) {
         appLockCoordinator?.onNavigationChanged(lockContext)
     }
-    val safeLockHelp = currentRoute == AppRoutes.APP_LOCK_HELP || lockHelpRequested
-    val appLockGateVisible = appLockCoordinator != null && !safeLockHelp && when {
+    val appLockGateVisible = appLockCoordinator != null && when {
         currentRoute in setOf(AppRoutes.RESTRICTED_CAPTURE, AppRoutes.APP_LOCK_SETTINGS, AppRoutes.APP_LOCK_RECOVERY) -> false
         currentRoute == "privacy" && lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY -> false
         lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY -> true
@@ -525,7 +523,6 @@ fun LifeOsApp(
     ) || currentRoute?.startsWith("review_sources") == true ||
         currentRoute?.startsWith("review_usage") == true
     val screenshotProtectedSections = when {
-        safeLockHelp -> emptySet()
         currentRoute == AppRoutes.RESTRICTED_CAPTURE -> policyProtectedSections
         aggregateContentRoute -> readableProtectedSections
         else -> lockContext.requiredSections.intersect(readableProtectedSections)
@@ -803,7 +800,7 @@ fun LifeOsApp(
     }
     Box(Modifier.fillMaxSize()) {
     Scaffold(
-        modifier = if (appLockGateVisible || lockContextReconciliationPending || lockHelpRequested) {
+        modifier = if (appLockGateVisible || lockContextReconciliationPending) {
             Modifier.clearAndSetSemantics { }
         } else Modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -1203,14 +1200,6 @@ fun LifeOsApp(
                     appLockAvailable = lockCredentialService != null && appLockCoordinator != null,
                     onAppLock = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
                 )
-            }
-            composable(AppRoutes.APP_LOCK_HELP) {
-                com.luma.lifeos.ui.common.AppPageScaffold(
-                    title = stringResource(R.string.app_lock_help_title),
-                    navigation = com.luma.lifeos.ui.common.PageNavigation.NONE,
-                ) { pagePadding ->
-                    Text(stringResource(R.string.app_lock_help_body), modifier = Modifier.padding(pagePadding))
-                }
             }
             if (focusRuntime != null) composable("settings_focus") {
                 val settingsPreferences = remember(applicationContext, focusPreferences) {
@@ -1832,33 +1821,19 @@ fun LifeOsApp(
                     (decision is AccessDecision.Deny && decision.reason == com.luma.lifeos.domain.lock.AccessDenial.FRESH_AUTHENTICATION_REQUIRED)
                 ) showAppLockUnlock()
             },
-            onBackToSafeDestination = {
-                appLockCoordinator?.cancelPendingNavigation()
-                if (currentRoute == AppRoutes.MEMORIES) {
-                    if (!navController.popBackStack(AppRoutes.MORE, inclusive = false)) {
-                        navController.navigate(AppRoutes.MORE) { launchSingleTop = true }
-                    }
-                } else {
-                    lockHelpRequested = true
-                }
-            },
             onAddNewEntry = { openRestrictedCapture() },
             onAppLockSettings = { navController.navigate(AppRoutes.APP_LOCK_SETTINGS) { launchSingleTop = true } },
             onRequestFocusEmergencyExit = { focusViewModel?.requestEmergencyExit() },
             onConfirmFocusEmergencyExit = {
                 focusViewModel?.confirmEmergencyExit()
                 appLockCoordinator?.cancelPendingNavigation()
-                lockHelpRequested = true
+                navController.navigate(AppRoutes.MORE) {
+                    popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+                    launchSingleTop = true
+                }
             },
             onCancelFocusEmergencyExit = { focusViewModel?.dismissEmergencyExit() },
         )
-    } else if (lockHelpRequested) {
-        SettingsSectionPage(
-            title = R.string.app_lock_help_title,
-            onBack = { lockHelpRequested = false },
-        ) {
-            Text(stringResource(R.string.app_lock_help_body))
-        }
     }
 }
 

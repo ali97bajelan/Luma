@@ -20,7 +20,6 @@ internal object AppRoutes {
     // Retained as secondary routes so restored back stacks keep resolving.
     const val PEOPLE = "people"
     const val SETTINGS = "settings"
-    const val APP_LOCK_HELP = "app_lock_help"
     const val RESTRICTED_CAPTURE = "restricted_capture"
     const val APP_LOCK_SETTINGS = "settings_app_lock"
     const val APP_LOCK_RECOVERY = "app_lock_recovery"
