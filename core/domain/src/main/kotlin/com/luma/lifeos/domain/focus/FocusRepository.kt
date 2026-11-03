@@ -16,6 +16,7 @@ interface FocusRepository {
     suspend fun start(
         commandId: UUID,
         sessionId: UUID,
+        input: FocusStartInput,
         sample: FocusTimeSample,
         context: FocusWriteContext,
     ): FocusWriteResult

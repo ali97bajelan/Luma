@@ -7,6 +7,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteContext
 import com.luma.lifeos.domain.focus.FocusWriteResult
@@ -125,7 +126,7 @@ class FocusReportPersistenceTest {
     ): com.luma.lifeos.domain.focus.FocusSession {
         val running = (repository.start(
             commandId,
-            sessionId,
+            sessionId, FocusStartInput("Test focus", null),
             FocusTimeSample(start, START_ELAPSED, "report-boot"),
             writeContext,
         ) as FocusWriteResult.Applied).snapshot!!

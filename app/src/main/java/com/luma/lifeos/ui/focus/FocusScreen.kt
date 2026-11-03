@@ -18,9 +18,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -32,6 +38,8 @@ import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusStartInput
+import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.ui.common.AppPageScaffold
@@ -45,7 +53,7 @@ internal fun FocusScreen(
     onBack: () -> Unit,
     onShowBackPrompt: () -> Unit,
     onDismissBackPrompt: () -> Unit,
-    onStart: () -> Unit,
+    onStart: (FocusStartInput) -> Unit,
     onAction: (FocusAction) -> Unit,
     onLeaveAfterAction: (FocusAction) -> Unit,
     onResolveRecovery: (FocusRecoveryChoice) -> Unit,
@@ -60,6 +68,16 @@ internal fun FocusScreen(
 ) {
     val runtime = state.runtime
     val session = runtime.session
+    var setupRequested by rememberSaveable { mutableStateOf(false) }
+    var draftName by rememberSaveable { mutableStateOf("") }
+    var draftTag by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(session?.id) {
+        if (session != null) {
+            draftName = ""
+            draftTag = ""
+            setupRequested = false
+        }
+    }
     BackHandler {
         when {
             runtime.navigationGuarded -> onShowBackPrompt()
@@ -128,31 +146,41 @@ internal fun FocusScreen(
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
                 )
-                session?.state == FocusState.FINISHED -> TerminalContent(
+                session?.state == FocusState.FINISHED && !setupRequested -> TerminalContent(
                     state = state,
                     session = session,
                     interrupted = false,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
-                    onStart = onStart,
+                    onStart = { setupRequested = true },
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
                 )
-                session?.state == FocusState.INTERRUPTED -> TerminalContent(
+                session?.state == FocusState.INTERRUPTED && !setupRequested -> TerminalContent(
                     state = state,
                     session = session,
                     interrupted = true,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
-                    onStart = onStart,
+                    onStart = { setupRequested = true },
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
                 )
-                else -> SetupContent(state, onStart, onRetry, onEmergencyExit, onOpenHistory)
+                else -> SetupContent(
+                    state = state,
+                    name = draftName,
+                    tag = draftTag,
+                    onNameChange = { draftName = it },
+                    onTagChange = { draftTag = it },
+                    onStart = onStart,
+                    onRetry = onRetry,
+                    onEmergencyExit = onEmergencyExit,
+                    onOpenHistory = onOpenHistory,
+                )
             }
         }
     }
@@ -213,13 +241,27 @@ internal fun FocusScreen(
 @Composable
 private fun SetupContent(
     state: FocusScreenState,
-    onStart: () -> Unit,
+    name: String,
+    tag: String,
+    onNameChange: (String) -> Unit,
+    onTagChange: (String) -> Unit,
+    onStart: (FocusStartInput) -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenHistory: () -> Unit,
 ) {
+    val input = runCatching { normalizeFocusStartInput(FocusStartInput(name, tag.ifBlank { null })) }.getOrNull()
+    val setupEnabled = !state.busy && !state.operationFailed
     Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
-    LumaButton(onClick = onStart, enabled = !state.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start")) {
+    OutlinedTextField(
+        value = name, onValueChange = onNameChange, label = { Text(stringResource(R.string.focus_name_label)) },
+        singleLine = true, enabled = setupEnabled, modifier = Modifier.fillMaxWidth().testTag("focus_name"),
+    )
+    OutlinedTextField(
+        value = tag, onValueChange = onTagChange, label = { Text(stringResource(R.string.focus_tag_label)) },
+        singleLine = true, enabled = setupEnabled, modifier = Modifier.fillMaxWidth().testTag("focus_tag"),
+    )
+    LumaButton(onClick = { input?.let(onStart) }, enabled = setupEnabled && input != null, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start")) {
         Text(if (state.busy) stringResource(R.string.focus_saving) else stringResource(R.string.focus_start))
     }
     OpenHistoryButton(onOpenHistory)

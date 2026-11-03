@@ -40,6 +40,15 @@ interface FocusDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSession(session: FocusSessionEntity)
 
+    @Query("SELECT * FROM focus_tag WHERE normalized_name = :normalizedName LIMIT 1")
+    suspend fun tagByNormalizedName(normalizedName: String): FocusTagEntity?
+
+    @Query("SELECT * FROM focus_tag WHERE id = :id LIMIT 1")
+    suspend fun tag(id: String): FocusTagEntity?
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertTag(tag: FocusTagEntity)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRun(run: FocusRunEntity)
 
@@ -100,6 +109,8 @@ interface FocusDao {
             s.terminal_reason AS session_terminal_reason,
             s.recovered_or_uncertain AS session_recovered_or_uncertain,
             s.open_slot AS session_open_slot,
+            s.name AS session_name,
+            s.tag_id AS session_tag_id,
             r.id AS run_id,
             r.session_id AS run_session_id,
             r.ordinal AS run_ordinal,

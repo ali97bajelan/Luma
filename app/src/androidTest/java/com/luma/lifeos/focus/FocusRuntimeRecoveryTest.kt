@@ -8,6 +8,7 @@ import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusWriteResult
@@ -44,7 +45,7 @@ class FocusRuntimeRecoveryTest {
         try {
             runtime.initialize()
             awaitInitialized(runtime)
-            assertTrue(runtime.start(UUID.randomUUID(), UUID.randomUUID()) is FocusWriteResult.Applied)
+            assertTrue(runtime.start(UUID.randomUUID(), UUID.randomUUID(), FocusStartInput("Test focus", null)) is FocusWriteResult.Applied)
             val running = requireNotNull(delegate.observeOpen().first())
             val commandId = UUID.randomUUID()
             failing.throwAfterNextApply = true
@@ -76,7 +77,7 @@ class FocusRuntimeRecoveryTest {
             val first = newRuntime(repository, preferences, context, firstScope)
             first.initialize()
             awaitInitialized(first)
-            assertTrue(first.start(UUID.randomUUID(), UUID.randomUUID()) is FocusWriteResult.Applied)
+            assertTrue(first.start(UUID.randomUUID(), UUID.randomUUID(), FocusStartInput("Test focus", null)) is FocusWriteResult.Applied)
             val started = requireNotNull(first.state.value.session)
             assertEquals(FocusState.RUNNING, started.state)
 
@@ -109,7 +110,7 @@ class FocusRuntimeRecoveryTest {
             val first = newRuntime(repository, preferences, context, firstScope)
             first.initialize()
             awaitInitialized(first)
-            assertTrue(first.start(UUID.randomUUID(), UUID.randomUUID()) is FocusWriteResult.Applied)
+            assertTrue(first.start(UUID.randomUUID(), UUID.randomUUID(), FocusStartInput("Test focus", null)) is FocusWriteResult.Applied)
             val started = requireNotNull(first.state.value.session)
             assertTrue(first.markEmergencyExit(started.id))
 

@@ -5,6 +5,7 @@ import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusUnavailableReason
@@ -264,11 +265,12 @@ class FocusRuntime(
     suspend fun start(
         commandId: UUID,
         sessionId: UUID,
+        input: FocusStartInput,
         attempt: FocusCoordinator.OperationAttempt? = null,
     ): FocusWriteResult = operationMutex.withLock {
         if (writesBlocked()) return@withLock FocusWriteResult.Unavailable(FocusUnavailableReason.STORAGE)
         val stableAttempt = attempt ?: operationAttempts.getOrPut(commandId) { coordinator.captureOperationAttempt() }
-        val result = coordinator.start(commandId, sessionId, stableAttempt)
+        val result = coordinator.start(commandId, sessionId, input, stableAttempt)
         if (result !is FocusWriteResult.Unavailable) operationAttempts.remove(commandId)
         applyResult(result, stableAttempt.sample, databaseGeneration = stableAttempt.context.databaseGeneration)
     }

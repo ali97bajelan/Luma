@@ -1247,6 +1247,8 @@
     <string name="focus_write_error">La session n’a pas pu être enregistrée. Réessayez la même action ou utilisez la sortie d’urgence.</string>
     <string name="focus_checkpoint_error">Le temps récent n’a pas pu être enregistré. Réessayez.</string>
     <string name="focus_start">Démarrer une session</string>
+    <string name="focus_name_label">Nom de la session</string>
+    <string name="focus_tag_label">Étiquette (facultative)</string>
     <string name="focus_saving">Enregistrement…</string>
     <string name="focus_intro">Gardez un relevé local d’un minuteur de concentration. Il continue lorsque l’écran est éteint ou que vous quittez Luma ; il mesure un minuteur actif, pas votre attention réelle.</string>
     <string name="focus_running">Session en cours</string>

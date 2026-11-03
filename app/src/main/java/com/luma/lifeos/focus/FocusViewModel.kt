@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -31,6 +32,7 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
         data class Start(
             val commandId: UUID,
             val sessionId: UUID,
+            val input: FocusStartInput,
             val attempt: FocusCoordinator.OperationAttempt,
         ) : PendingOperation
         data class Action(
@@ -76,9 +78,9 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
         FocusScreenState(runtime.state.value),
     )
 
-    fun start() {
+    fun start(input: FocusStartInput) {
         val attempt = runtime.captureUserOperationAttempt() ?: return reportUnavailableAttempt()
-        submit(PendingOperation.Start(UUID.randomUUID(), UUID.randomUUID(), attempt))
+        submit(PendingOperation.Start(UUID.randomUUID(), UUID.randomUUID(), input, attempt))
     }
 
     fun act(action: FocusAction, onSuccess: (() -> Unit)? = null) {
@@ -129,7 +131,9 @@ class FocusViewModel(private val runtime: FocusRuntime) : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = when (operation) {
-                    is PendingOperation.Start -> runtime.start(operation.commandId, operation.sessionId, operation.attempt)
+                    is PendingOperation.Start -> runtime.start(
+                        operation.commandId, operation.sessionId, operation.input, operation.attempt,
+                    )
                     is PendingOperation.Action -> runtime.act(
                         operation.commandId, operation.session, operation.action, operation.attempt,
                     )

@@ -7,6 +7,7 @@ import com.luma.lifeos.domain.focus.FocusPage
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusTimeSample
@@ -31,7 +32,7 @@ class FocusCoordinatorTest {
         val second = sample("2026-10-30T12:00:05Z", 15_000)
         val coordinator = FocusCoordinator(repository, FocusClock { first }, processId)
 
-        coordinator.start(commandId, sessionId, first)
+        coordinator.start(commandId, sessionId, FocusStartInput("Reading", null), first)
         val session = repository.startedSession!!
         coordinator.act(actionId, session, FocusAction.PAUSE, second)
 
@@ -73,12 +74,14 @@ class FocusCoordinatorTest {
         override suspend fun start(
             commandId: UUID,
             sessionId: UUID,
+            input: FocusStartInput,
             sample: FocusTimeSample,
             context: FocusWriteContext,
         ): FocusWriteResult {
             startSample = sample
             startContext = context
             val snapshot = com.luma.lifeos.domain.focus.createFocusSession(sessionId, commandId, sample)
+                .copy(metadata = com.luma.lifeos.domain.focus.FocusMetadata(input.name))
             startedSession = snapshot
             return FocusWriteResult.Applied(snapshot = snapshot)
         }

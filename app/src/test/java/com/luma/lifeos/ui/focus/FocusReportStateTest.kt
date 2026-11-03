@@ -4,6 +4,7 @@ import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusTimeSample
@@ -123,6 +124,7 @@ class FocusReportStateTest {
         override suspend fun start(
             commandId: UUID,
             sessionId: UUID,
+            input: FocusStartInput,
             sample: FocusTimeSample,
             context: FocusWriteContext,
         ): FocusWriteResult = error("Not used by report streams")

@@ -121,6 +121,7 @@ data class FocusCommand(
 }
 
 enum class FocusInvalidReason {
+    INVALID_METADATA,
     INVALID_TRANSITION,
     SESSION_MISMATCH,
     INVALID_SAMPLE,

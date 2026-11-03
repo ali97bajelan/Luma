@@ -1227,6 +1227,8 @@
     <string name="focus_write_error">ذخیرهٔ تمرکز انجام نشد. همان کار را دوباره انجام دهید یا از خروج اضطراری استفاده کنید.</string>
     <string name="focus_checkpoint_error">ذخیرهٔ زمان اخیر تمرکز انجام نشد. دوباره تلاش کنید.</string>
     <string name="focus_start">شروع تمرکز</string>
+    <string name="focus_name_label">نام نشست</string>
+    <string name="focus_tag_label">برچسب (اختیاری)</string>
     <string name="focus_saving">در حال ذخیره…</string>
     <string name="focus_intro">زمان‌سنج تمرکز را به‌صورت محلی ثبت کنید. زمان‌سنج با خاموش شدن صفحه یا خروج از لوما ادامه می‌یابد؛ این فقط زمان‌سنج روشن را ثبت می‌کند، نه میزان توجه را.</string>
     <string name="focus_running">نشست تمرکز در حال اجرا</string>

@@ -9,6 +9,7 @@ import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteContext
@@ -59,14 +60,17 @@ class FocusPersistenceTest {
         val startCommandId = id(101)
         val origin = sample(0)
 
-        val started = repository.start(startCommandId, sessionId, origin, writeContext).snapshot()
+        val startInput = FocusStartInput(" Read chapter 4 ", " Work ")
+        val started = repository.start(startCommandId, sessionId, startInput, origin, writeContext).snapshot()
+        assertEquals("Read chapter 4", started.metadata.name)
+        assertEquals("Work", started.metadata.tag?.name)
         assertEquals(
             FocusWriteResult.AlreadyApplied(started),
-            repository.start(startCommandId, sessionId, origin, writeContext),
+            repository.start(startCommandId, sessionId, startInput, origin, writeContext),
         )
         assertEquals(
             FocusInvalidReason.COMMAND_ID_REUSED,
-            (repository.start(startCommandId, sessionId, sample(1), writeContext) as FocusWriteResult.Invalid).reason,
+            (repository.start(startCommandId, sessionId, FocusStartInput("Different task", "Work"), origin, writeContext) as FocusWriteResult.Invalid).reason,
         )
 
         val paused = repository.apply(
@@ -116,8 +120,8 @@ class FocusPersistenceTest {
 
         val starts = coroutineScope {
             listOf(
-                async(Dispatchers.IO) { first.start(startId, sessionId, sample(0), writeContext) },
-                async(Dispatchers.IO) { second.start(startId, sessionId, sample(0), writeContext) },
+                async(Dispatchers.IO) { first.start(startId, sessionId, FocusStartInput("Test focus", null), sample(0), writeContext) },
+                async(Dispatchers.IO) { second.start(startId, sessionId, FocusStartInput("Test focus", null), sample(0), writeContext) },
             ).map { it.await() }
         }
         assertEquals(1, starts.count { it is FocusWriteResult.Applied })
@@ -125,7 +129,7 @@ class FocusPersistenceTest {
         assertEquals(1, scalar(firstDb, "SELECT COUNT(*) FROM focus_session WHERE open_slot = 1"))
         assertEquals(1, scalar(secondDb, "SELECT COUNT(*) FROM focus_runtime"))
 
-        val competingStart = second.start(id(202), id(3), sample(0), writeContext)
+        val competingStart = second.start(id(202), id(3), FocusStartInput("Competing task", null), sample(0), writeContext)
         assertTrue(competingStart is FocusWriteResult.Conflict)
         val pause = command(sessionId, 0, FocusAction.PAUSE, sample(1_000), writeContext, id(203))
         val pauses = coroutineScope {
@@ -147,7 +151,7 @@ class FocusPersistenceTest {
         val generation = repository.currentGeneration()
         val writeContext = FocusWriteContext(generation, processId)
         val sessionId = id(4)
-        val started = repository.start(id(401), sessionId, sample(0), writeContext).snapshot()
+        val started = repository.start(id(401), sessionId, FocusStartInput("Test focus", null), sample(0), writeContext).snapshot()
 
         val checkpointed = repository.checkpoint(sessionId, 0, sample(20 * MINUTE), writeContext).snapshot()
         assertEquals(0, checkpointed.revision)
@@ -174,7 +178,7 @@ class FocusPersistenceTest {
         val generation = repository.currentGeneration()
         val oldContext = FocusWriteContext(generation, processId)
         val sessionId = id(5)
-        repository.start(id(501), sessionId, sample(0), oldContext)
+        repository.start(id(501), sessionId, FocusStartInput("Test focus", null), sample(0), oldContext)
         repository.checkpoint(sessionId, 0, sample(20 * MINUTE), oldContext)
 
         close(database)
@@ -204,7 +208,7 @@ class FocusPersistenceTest {
 
         val secondId = id(6)
         val secondCommandId = id(601)
-        repository.start(secondCommandId, secondId, sample(40 * MINUTE), newContext)
+        repository.start(secondCommandId, secondId, FocusStartInput("Test focus", null), sample(40 * MINUTE), newContext)
         repository.checkpoint(secondId, 0, sample(60 * MINUTE), newContext)
         val endContext = FocusWriteContext(reopenedGeneration, id(602))
         assertTrue(repository.reconcile(sample(65 * MINUTE), endContext) is FocusWriteResult.RecoveryRequired)
@@ -222,7 +226,7 @@ class FocusPersistenceTest {
         val generation = repository.currentGeneration()
         val writeContext = FocusWriteContext(generation, processId)
         val sessionId = id(7)
-        repository.start(id(701), sessionId, sample(0), writeContext)
+        repository.start(id(701), sessionId, FocusStartInput("Test focus", null), sample(0), writeContext)
         repository.checkpoint(sessionId, 0, sample(59_999), writeContext)
 
         val afterBoot = FocusTimeSample(
@@ -249,7 +253,7 @@ class FocusPersistenceTest {
         for (index in 1L..51L) {
             val sessionId = id(1_000 + index)
             val startId = id(2_000 + index)
-            repository.start(startId, sessionId, sample(0), writeContext)
+            repository.start(startId, sessionId, FocusStartInput("Test focus", null), sample(0), writeContext)
             val duration: Long = if (index == 1L) 0 else 1_000
             repository.apply(
                 command(sessionId, 0, FocusAction.STOP, sample(duration), writeContext, id(3_000 + index)),
@@ -257,7 +261,7 @@ class FocusPersistenceTest {
         }
         val deletedId = id(8_001)
         val deletedStartCommand = id(8_002)
-        repository.start(deletedStartCommand, deletedId, sample(2_000), writeContext)
+        repository.start(deletedStartCommand, deletedId, FocusStartInput("Test focus", null), sample(2_000), writeContext)
         repository.apply(command(deletedId, 0, FocusAction.STOP, sample(2_000), writeContext, id(8_003)))
 
         val firstPage = repository.history(null, 0)
@@ -295,7 +299,7 @@ class FocusPersistenceTest {
         assertEquals(100, scalar("SELECT COUNT(*) FROM focus_command_receipt"))
         assertNull(database.focus().receipt(deletedStartCommand.toString(), generation.toString()))
         assertTrue(
-            repository.start(id(70_001), deletedId, sample(0), writeContext) is FocusWriteResult.Invalid,
+            repository.start(id(70_001), deletedId, FocusStartInput("Test focus", null), sample(0), writeContext) is FocusWriteResult.Invalid,
         )
         assertEquals(50, repository.history(range, 0).total)
     }
@@ -304,7 +308,7 @@ class FocusPersistenceTest {
         val generation = repository.currentGeneration()
         val writeContext = FocusWriteContext(generation, processId)
         val sessionId = id(8)
-        val paused = repository.start(id(801), sessionId, sample(0), writeContext).snapshot()
+        val paused = repository.start(id(801), sessionId, FocusStartInput("Test focus", null), sample(0), writeContext).snapshot()
             .let {
                 repository.apply(command(sessionId, it.revision, FocusAction.PAUSE, sample(1_000), writeContext, id(802)))
                     .snapshot()

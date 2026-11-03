@@ -1226,6 +1226,8 @@
     <string name="focus_write_error">Focus could not be saved. Retry the same action or use emergency exit.</string>
     <string name="focus_checkpoint_error">Recent focus time could not be checkpointed. Retry to save it.</string>
     <string name="focus_start">Start focus</string>
+    <string name="focus_name_label">Session name</string>
+    <string name="focus_tag_label">Tag (optional)</string>
     <string name="focus_saving">Saving…</string>
     <string name="focus_intro">Keep a local record of a running focus timer. It continues while the screen is off or you leave Luma; it records a running timer, not verified attention.</string>
     <string name="focus_running">Focus session in progress</string>

@@ -13,6 +13,10 @@ import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusRun
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
+import com.luma.lifeos.domain.focus.FocusMetadata
+import com.luma.lifeos.domain.focus.FocusTag
+import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.FocusTerminalReason
@@ -55,52 +59,73 @@ class RoomFocusRepository(
     override suspend fun start(
         commandId: UUID,
         sessionId: UUID,
+        input: FocusStartInput,
         sample: FocusTimeSample,
         context: FocusWriteContext,
-    ): FocusWriteResult = runCommand(
-        commandId = commandId,
-        context = context,
-        requestedSessionId = sessionId,
-        payload = commandPayload(
-            "START", sessionId.toString(), sample.payload(), context.payload(),
-        ),
-        createdAt = sample.wall,
-    ) { generationId ->
-        val id = sessionId.toString()
-        if (dao.tombstone(id, generationId) != null) {
-            return@runCommand FocusWriteResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
+    ): FocusWriteResult {
+        val normalized = try {
+            normalizeFocusStartInput(input)
+        } catch (_: IllegalArgumentException) {
+            return FocusWriteResult.Invalid(FocusInvalidReason.INVALID_METADATA)
         }
-
-        val expected = createFocusSession(sessionId, commandId, sample)
-        val existing = dao.sessionWithRuns(id)?.toDomain()
-        if (existing != null) {
-            val sameStart = existing.startedAt == sample.wall &&
-                existing.runs.any { it.id == expected.runs.single().id }
-            return@runCommand if (sameStart) {
-                FocusWriteResult.AlreadyApplied(existing)
-            } else {
-                FocusWriteResult.Conflict(existing)
-            }
-        }
-
-        val active = dao.openSession()?.toDomain()
-        if (active != null) return@runCommand FocusWriteResult.Conflict(active)
-
-        dao.insertSession(expected.toEntity())
-        val run = expected.runs.single()
-        dao.insertRun(run.toEntity())
-        dao.insertRuntime(
-            runtimeFor(
-                sessionId = sessionId,
-                run = run,
-                runStartedElapsedMillis = sample.elapsedMillis,
-                sample = sample,
-                processInstanceId = context.processInstanceId,
-                recoveryRequired = false,
-                revision = expected.revision,
+        return runCommand(
+            commandId = commandId,
+            context = context,
+            requestedSessionId = sessionId,
+            payload = commandPayload(
+                "START_V2", sessionId.toString(), normalized.name,
+                normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(), sample.payload(), context.payload(),
             ),
-        )
-        FocusWriteResult.Applied(expected)
+            createdAt = sample.wall,
+        ) { generationId ->
+            val id = sessionId.toString()
+            if (dao.tombstone(id, generationId) != null) {
+                return@runCommand FocusWriteResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
+            }
+
+            val expected = createFocusSession(sessionId, commandId, sample)
+            val existing = dao.sessionWithRuns(id)?.toDomain()
+            if (existing != null) {
+                val sameStart = existing.startedAt == sample.wall &&
+                    existing.runs.any { it.id == expected.runs.single().id } &&
+                    existing.metadata.name == normalized.name &&
+                    existing.metadata.tag?.name?.lowercase(java.util.Locale.ROOT) ==
+                    normalized.tagName?.lowercase(java.util.Locale.ROOT)
+                return@runCommand if (sameStart) {
+                    FocusWriteResult.AlreadyApplied(existing)
+                } else {
+                    FocusWriteResult.Conflict(existing)
+                }
+            }
+
+            val active = dao.openSession()?.toDomain()
+            if (active != null) return@runCommand FocusWriteResult.Conflict(active)
+
+            val tag = normalized.tagName?.let { tagName ->
+                val normalizedName = tagName.lowercase(java.util.Locale.ROOT)
+                dao.tagByNormalizedName(normalizedName)?.let { FocusTag(UUID.fromString(it.id), it.name) }
+                    ?: FocusTag(UUID.randomUUID(), tagName).also {
+                        dao.insertTag(FocusTagEntity(it.id.toString(), it.name, normalizedName))
+                    }
+            }
+            val session = expected.copy(metadata = FocusMetadata(normalized.name, tag))
+
+            dao.insertSession(session.toEntity())
+            val run = session.runs.single()
+            dao.insertRun(run.toEntity())
+            dao.insertRuntime(
+                runtimeFor(
+                    sessionId = sessionId,
+                    run = run,
+                    runStartedElapsedMillis = sample.elapsedMillis,
+                    sample = sample,
+                    processInstanceId = context.processInstanceId,
+                    recoveryRequired = false,
+                    revision = session.revision,
+                ),
+            )
+            FocusWriteResult.Applied(session)
+        }
     }
 
     override suspend fun apply(command: FocusCommand): FocusWriteResult = runCommand(
@@ -383,7 +408,14 @@ class RoomFocusRepository(
             val runsBySession = dao.runsForSessions(page.map(FocusSessionEntity::id))
                 .groupBy(FocusRunEntity::sessionId)
             val rows = page.map { entity ->
-                val session = entity.toDomain(runsBySession[entity.id].orEmpty().map(FocusRunEntity::toDomain))
+                val tag: FocusTagEntity? = entity.tagId?.let { tagId -> dao.tag(tagId) }
+                val session = entity.toDomain(
+                    runsBySession[entity.id].orEmpty().map(FocusRunEntity::toDomain),
+                    FocusMetadata(
+                        name = entity.name,
+                        tag = tag?.let { FocusTag(UUID.fromString(it.id), it.name) },
+                    ),
+                )
                 FocusHistoryRow(
                     session = session,
                     fullDurationMillis = session.creditedMillis,
@@ -752,9 +784,12 @@ private fun sampleIsStale(runtime: FocusRuntimeEntity, sample: FocusTimeSample):
     return drift in -FOCUS_WALL_DRIFT_TOLERANCE_MILLIS..FOCUS_WALL_DRIFT_TOLERANCE_MILLIS
 }
 
-private fun FocusSessionWithRuns.toDomain(): FocusSession = session.toDomain(runs.map(FocusRunEntity::toDomain))
+private fun FocusSessionWithRuns.toDomain(): FocusSession = session.toDomain(
+    runs.map(FocusRunEntity::toDomain),
+    FocusMetadata(session.name, tag?.let { FocusTag(UUID.fromString(it.id), it.name) }),
+)
 
-private fun FocusSessionEntity.toDomain(runs: List<FocusRun>): FocusSession = FocusSession(
+private fun FocusSessionEntity.toDomain(runs: List<FocusRun>, metadata: FocusMetadata = FocusMetadata(name)): FocusSession = FocusSession(
     id = UUID.fromString(id),
     state = FocusState.valueOf(state),
     revision = revision,
@@ -765,6 +800,7 @@ private fun FocusSessionEntity.toDomain(runs: List<FocusRun>): FocusSession = Fo
     terminalReason = terminalReason?.let(FocusTerminalReason::valueOf),
     recoveredOrUncertain = recoveredOrUncertain,
     runs = runs.sortedBy(FocusRun::ordinal),
+    metadata = metadata,
 )
 
 private fun FocusRunEntity.toDomain(): FocusRun = FocusRun(
@@ -793,6 +829,8 @@ private fun FocusSession.toEntity(): FocusSessionEntity = FocusSessionEntity(
     terminalReason = terminalReason?.name,
     recoveredOrUncertain = recoveredOrUncertain,
     openSlot = if (isTerminal) null else STORAGE_SINGLETON_ID,
+    name = metadata.name,
+    tagId = metadata.tag?.id?.toString(),
 )
 
 private fun FocusRun.toEntity(): FocusRunEntity = FocusRunEntity(

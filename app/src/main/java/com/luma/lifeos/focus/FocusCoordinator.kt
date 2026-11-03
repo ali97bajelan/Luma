@@ -5,6 +5,7 @@ import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import kotlinx.coroutines.flow.Flow
@@ -51,14 +52,16 @@ class FocusCoordinator(
     suspend fun start(
         commandId: UUID,
         sessionId: UUID,
+        input: FocusStartInput,
         sample: FocusTimeSample = clock.sample(),
-    ): FocusWriteResult = repository.start(commandId, sessionId, sample, context())
+    ): FocusWriteResult = repository.start(commandId, sessionId, input, sample, context())
 
     suspend fun start(
         commandId: UUID,
         sessionId: UUID,
+        input: FocusStartInput,
         attempt: OperationAttempt,
-    ): FocusWriteResult = repository.start(commandId, sessionId, attempt.sample, attempt.context)
+    ): FocusWriteResult = repository.start(commandId, sessionId, input, attempt.sample, attempt.context)
 
     suspend fun act(
         commandId: UUID,

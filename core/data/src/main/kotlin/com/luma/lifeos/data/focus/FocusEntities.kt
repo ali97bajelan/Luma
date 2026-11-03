@@ -11,9 +11,18 @@ import androidx.room.Relation
 /** Persisted focus state is device-local except for terminal history handled by FM06. */
 @Entity(
     tableName = "focus_session",
+    foreignKeys = [
+        ForeignKey(
+            entity = FocusTagEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["tag_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
     indices = [
         Index(value = ["open_slot"], unique = true),
         Index(value = ["state", "started_at_seconds", "started_at_nanos"]),
+        Index(value = ["tag_id"]),
     ],
 )
 data class FocusSessionEntity(
@@ -47,6 +56,17 @@ data class FocusSessionEntity(
     /** Nullable unique slot: one active or paused session for the whole installation. */
     @ColumnInfo(name = "open_slot")
     val openSlot: Int?,
+    @ColumnInfo(name = "name")
+    val name: String? = null,
+    @ColumnInfo(name = "tag_id")
+    val tagId: String? = null,
+)
+
+@Entity(tableName = "focus_tag", indices = [Index(value = ["normalized_name"], unique = true)])
+data class FocusTagEntity(
+    @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "name") val name: String,
+    @ColumnInfo(name = "normalized_name") val normalizedName: String,
 )
 
 @Entity(
@@ -202,6 +222,8 @@ data class FocusSessionWithRuns(
     val session: FocusSessionEntity,
     @Relation(parentColumn = "id", entityColumn = "session_id", entity = FocusRunEntity::class)
     val runs: List<FocusRunEntity>,
+    @Relation(parentColumn = "tag_id", entityColumn = "id")
+    val tag: FocusTagEntity?,
 )
 
 /** Narrow joined projection: statistics never materialize unrelated or non-overlapping history. */

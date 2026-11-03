@@ -8,6 +8,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.focus.RoomFocusRepository
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import java.time.Instant
@@ -45,7 +46,7 @@ class FocusShortcutHandoffTest {
         try {
             runtime.initialize()
             awaitInitialized(runtime)
-            assertTrue(runtime.start(UUID.randomUUID(), UUID.randomUUID()) is FocusWriteResult.Applied)
+            assertTrue(runtime.start(UUID.randomUUID(), UUID.randomUUID(), FocusStartInput("Test focus", null)) is FocusWriteResult.Applied)
             assertTrue(secondWindowPreferences.setPackageAllowed(FIXTURE_PACKAGE, true))
 
             clock.current = sample(5_000, 15_000)

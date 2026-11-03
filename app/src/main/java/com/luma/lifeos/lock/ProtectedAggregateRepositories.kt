@@ -7,6 +7,7 @@ import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteContext
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusTerminalReason
@@ -195,10 +196,11 @@ class ProtectedFocusRepository(
     override suspend fun start(
         commandId: UUID,
         sessionId: UUID,
+        input: FocusStartInput,
         sample: FocusTimeSample,
         context: FocusWriteContext,
     ): FocusWriteResult = gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
-        delegate.start(commandId, sessionId, sample, context)
+        delegate.start(commandId, sessionId, input, sample, context)
     }
 
     override suspend fun apply(command: FocusCommand): FocusWriteResult =

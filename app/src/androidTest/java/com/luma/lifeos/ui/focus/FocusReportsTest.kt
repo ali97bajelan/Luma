@@ -14,6 +14,7 @@ import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusRun
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.FocusTerminalReason
@@ -155,6 +156,7 @@ class FocusReportsTest {
         override suspend fun start(
             commandId: UUID,
             sessionId: UUID,
+            input: FocusStartInput,
             sample: FocusTimeSample,
             context: FocusWriteContext,
         ): FocusWriteResult = error("Not used by history")

@@ -16,6 +16,7 @@ import com.luma.lifeos.data.focus.FocusRunEntity
 import com.luma.lifeos.data.focus.FocusRuntimeEntity
 import com.luma.lifeos.data.focus.FocusSessionEntity
 import com.luma.lifeos.data.focus.FocusStorageStateEntity
+import com.luma.lifeos.data.focus.FocusTagEntity
 import com.luma.lifeos.data.dao.DerivedDataDao
 import com.luma.lifeos.data.dao.EventContentDao
 import com.luma.lifeos.data.dao.LifeEventDao
@@ -53,6 +54,7 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         WidgetInstanceEntity::class, WidgetCommandEntity::class,
         FocusSessionEntity::class, FocusRunEntity::class, FocusRuntimeEntity::class,
         FocusCommandReceiptEntity::class, FocusDeletedSessionEntity::class, FocusStorageStateEntity::class,
+        FocusTagEntity::class,
     ],
     version = LumaDatabase.VERSION,
     exportSchema = true,
@@ -74,10 +76,23 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focus(): FocusDao
 
     companion object {
-        const val VERSION = 9
+        const val VERSION = 10
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(9, 10) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_tag (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        normalized_name TEXT NOT NULL
+                    )""")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_tag_normalized_name ON focus_tag(normalized_name)")
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN name TEXT")
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN tag_id TEXT REFERENCES focus_tag(id) ON DELETE SET NULL")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_session_tag_id ON focus_session(tag_id)")
+                }
+            },
             object : Migration(1, 2) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("""CREATE TABLE IF NOT EXISTS usage_session (

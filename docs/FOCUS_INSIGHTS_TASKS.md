@@ -9,7 +9,7 @@ These extend F16 rather than replacing its existing task status. P0 scope assume
 | ID | Priority | Deliverable | Depends on | Acceptance | State |
 | --- | --- | --- | --- | --- | --- |
 | FI01 | P0 | Name/tag rules, metadata models and test fixtures | — | FI-A01 | DONE (source checks) |
-| FI02 | P0 | Transactional metadata persistence, command identity and caller updates | FI01 | FI-A02 | TODO |
+| FI02 | P0 | Transactional metadata persistence, command identity and caller updates | FI01 | FI-A02 | IN PROGRESS (source changes; Room/runtime verification pending) |
 | FI03 | P0 | Room migration, portable backup/legacy adapters and privacy format docs | FI02 | FI-A03 | TODO |
 | FI04 | P0 | Range-correct tag totals, average and longest-session insight source | FI01, FI02 | FI-A04 | TODO |
 | FI05 | P0 | Setup fields, retained drafts, metadata display and focus insight cards | FI02, FI04 | FI-A05 | TODO |
@@ -31,3 +31,5 @@ These extend F16 rather than replacing its existing task status. P0 scope assume
 - Preserve existing F16 unresolved enforcement and platform QA limitations.
 
 FI01 source verification: `python3 scripts/run_focus_domain_tests.py` passes 23 tests. Android runtime/UI and Room generated-schema validation remain NOT RUN; product acceptance remains pending.
+
+FI02 source progress: required Start input now reaches the repository transaction; session name and normalized tag persist with session/run/runtime/receipt writes, and command payload identity includes normalized metadata. Database version 10 adds the focus tag catalog and nullable session metadata through migration 9→10. Standalone domain tests pass 23 tests. Emulator, Room migration execution, and generated-schema validation remain NOT RUN because `adb`/Android CLI are unavailable in this environment; FI-A02 remains pending runtime verification.
