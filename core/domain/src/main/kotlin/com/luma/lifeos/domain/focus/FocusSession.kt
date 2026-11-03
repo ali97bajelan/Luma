@@ -59,6 +59,7 @@ data class FocusSession(
     val terminalReason: FocusTerminalReason?,
     val recoveredOrUncertain: Boolean,
     val runs: List<FocusRun>,
+    val metadata: FocusMetadata = FocusMetadata(),
 ) {
     init {
         require(revision >= 0) { "Revision cannot be negative" }

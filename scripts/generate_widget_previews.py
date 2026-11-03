@@ -10,9 +10,9 @@ ROOT = Path(__file__).resolve().parents[1] / "app/src/main/res"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 COPY = {
-    "": ("Habits", "Tasks", "Oct 20 · 1 of 3 targets reached", "Oct 20 · 3 due today or overdue", "Updated 13:07", "View all habits", "View all tasks", "Add task", ["Mood", "Memory", "Journal"]),
-    "-fr": ("Habitudes", "Tâches", "20 oct. · 1 objectif sur 3 atteint", "20 oct. · 3 tâches dues ou en retard", "Mis à jour à 13:07", "Voir les habitudes", "Voir les tâches", "Ajouter", ["Humeur", "Souvenir", "Journal"]),
-    "-fa": ("عادت‌ها", "کارها", "۲۰ اکتبر · ۱ هدف از ۳ هدف", "۲۰ اکتبر · ۳ کار امروز یا عقب‌افتاده", "به‌روزرسانی ۱۳:۰۷", "همهٔ عادت‌ها", "همهٔ کارها", "افزودن کار", ["حال‌وهوا", "خاطره", "روزنوشت"]),
+    "": ("Habits", "Tasks", "Oct 20 · 1 of 3 targets reached", "Oct 20 · 3 due today or overdue", "Updated 13:07", "View all habits", "View all tasks", "Add task", ["Mood", "Memory"]),
+    "-fr": ("Habitudes", "Tâches", "20 oct. · 1 objectif sur 3 atteint", "20 oct. · 3 tâches dues ou en retard", "Mis à jour à 13:07", "Voir les habitudes", "Voir les tâches", "Ajouter", ["Humeur", "Souvenir"]),
+    "-fa": ("عادت‌ها", "کارها", "۲۰ اکتبر · ۱ هدف از ۳ هدف", "۲۰ اکتبر · ۳ کار امروز یا عقب‌افتاده", "به‌روزرسانی ۱۳:۰۷", "همهٔ عادت‌ها", "همهٔ کارها", "افزودن کار", ["حال‌وهوا", "خاطره"]),
 }
 for suffix, copy in COPY.items():
     output = ROOT / ("drawable" + suffix + "-nodpi")

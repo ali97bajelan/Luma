@@ -66,10 +66,12 @@ fun focusInsights(sessions: List<FocusSession>, range: TimeRange?): FocusInsight
 **Consumes:** Existing `domain/model/Journal.kt` `Tag.normalize` and session invariants.
 **Produces:** Metadata/start input and normalization contracts above; legacy-null session default.
 
-- [ ] Add failing tests for trimmed name/tag, blank name, 120/121 Unicode code points, 50/51 tag UTF-16 units, newline/control rejection, emoji/Persian round-trip, optional tag and Work/work identity. Blank present tag is invalid; absent tag is null.
-- [ ] Compile/run this test through standalone Kotlin/JUnit; confirm missing API failure before implementation.
-- [ ] Implement normalization and append the legacy-compatible metadata default. Test names need not be unique and translated fallback text is never persisted.
-- [ ] Run metadata and existing focus domain tests; record exact output.
+- [x] Add failing tests for trimmed name/tag, blank name, 120/121 Unicode code points, 50/51 tag UTF-16 units, newline/control rejection, emoji/Persian round-trip, optional tag and Work/work identity. Blank present tag is invalid; absent tag is null.
+- [x] Compile/run this test through standalone Kotlin/JUnit; confirm missing API failure before implementation.
+- [x] Implement normalization and append the legacy-compatible metadata default. Test names need not be unique and translated fallback text is never persisted.
+- [x] Run metadata and existing focus domain tests; record exact output.
+
+Source verification: `python3 scripts/run_focus_domain_tests.py` — OK (23 tests). Runtime/UI and Room generated-schema validation remain NOT RUN.
 
 ## FI02 — Atomic writes and metadata lifecycle
 
@@ -150,4 +152,4 @@ fun focusInsights(sessions: List<FocusSession>, range: TimeRange?): FocusInsight
 
 ## Handoff status
 
-This is an unexecuted draft. FI01–FI07 remain TODO. The current work delivers these documents and the baseline code-test runner; it does not add session metadata or insight screens. No commits, emulator runs or Gradle commands are required for this handoff.
+FI01 is complete at source level; FI02–FI07 remain TODO. Session metadata models and validation exist; persistence and insight screens remain pending. No commits, emulator runs or Gradle commands are required for this handoff.
