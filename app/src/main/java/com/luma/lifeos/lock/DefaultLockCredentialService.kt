@@ -12,6 +12,8 @@ import java.util.UUID
 
 internal data class LockClockSample(val elapsedMs: Long, val wallClockMs: Long)
 
+internal enum class LockSessionDisposition { REVOKE, PRESERVE_FOREGROUND }
+
 internal fun interface LockClock {
     fun sample(): LockClockSample
 }
@@ -28,7 +30,7 @@ class DefaultLockCredentialService internal constructor(
     private val store: LocalLockStore,
     private val crypto: AndroidLockCrypto,
     private val clock: LockClock,
-    private val onSecurityStateChanged: (LockPolicy) -> Unit,
+    private val onSecurityStateChanged: (LockPolicy, LockSessionDisposition) -> Unit,
 ) : LockCredentialService {
     private val mutex = PROCESS_MUTEX
     private val pendingRecoveries = mutableMapOf<UUID, PendingRecovery>()
@@ -82,7 +84,12 @@ class DefaultLockCredentialService internal constructor(
                         credential = newCredential,
                         retryBootMarkerMs = bootMarker(sample),
                     )
-                    commitSecurityState(newState, newPolicy) { consumeRecovery(pending) }
+                    commitSecurityState(
+                        newState,
+                        newPolicy,
+                        afterCommit = { consumeRecovery(pending) },
+                        sessionDisposition = LockSessionDisposition.PRESERVE_FOREGROUND,
+                    )
                     CredentialResult.Success()
                 }
             }
@@ -166,6 +173,7 @@ class DefaultLockCredentialService internal constructor(
                         commitSecurityState(
                             resetFailures(state.copy(policy = changedPolicy, credential = changedCredential), validSample()),
                             changedPolicy,
+                            sessionDisposition = LockSessionDisposition.PRESERVE_FOREGROUND,
                         )
                         CredentialResult.Success()
                     } finally {
@@ -424,12 +432,13 @@ class DefaultLockCredentialService internal constructor(
     private suspend fun commitSecurityState(
         state: PersistedLockState,
         policy: LockPolicy,
+        sessionDisposition: LockSessionDisposition = LockSessionDisposition.REVOKE,
         afterCommit: () -> Unit = {},
     ) {
         withContext(NonCancellable) {
             withContext(Dispatchers.IO) { store.writeAtomically(state) }
             afterCommit()
-            onSecurityStateChanged(policy)
+            onSecurityStateChanged(policy, sessionDisposition)
         }
     }
 

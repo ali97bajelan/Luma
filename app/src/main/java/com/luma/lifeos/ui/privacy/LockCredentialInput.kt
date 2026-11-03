@@ -230,6 +230,7 @@ fun LockCredentialInput(
     enabled: Boolean,
     label: String,
     modifier: Modifier = Modifier,
+    onPatternCompleted: () -> Unit = {},
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(stringResource(state.type.helpResource()), style = MaterialTheme.typography.bodySmall)
@@ -237,7 +238,10 @@ fun LockCredentialInput(
             Text(stringResource(R.string.app_lock_pattern_draw))
             LockPatternInput(
                 enabled = enabled,
-                onCompleted = state::setPatternEntry,
+                onCompleted = { nodes ->
+                    state.setPatternEntry(nodes)
+                    onPatternCompleted()
+                },
                 onStarted = state::beginPatternEntry,
                 onCleared = state::beginPatternEntry,
                 resetKey = state to state.resetGeneration,
@@ -279,26 +283,28 @@ fun LockCredentialEnrollment(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(state.type.helpResource()), style = MaterialTheme.typography.bodySmall)
         if (state.type == LockCredentialType.PATTERN) {
-            Text(stringResource(R.string.app_lock_pattern_draw))
+            val confirmingPattern = state.hasEntry
+            Text(stringResource(
+                if (confirmingPattern) R.string.app_lock_pattern_draw_again
+                else R.string.app_lock_pattern_draw,
+            ))
             LockPatternInput(
                 enabled = enabled,
-                onCompleted = state::setPatternEntry,
-                onStarted = state::beginPatternEntry,
-                onCleared = state::beginPatternEntry,
+                onCompleted = { nodes ->
+                    if (state.hasEntry) state.setPatternConfirmation(nodes)
+                    else state.setPatternEntry(nodes)
+                },
+                onStarted = {
+                    if (state.hasEntry) state.clearPatternConfirmation()
+                    else state.beginPatternEntry()
+                },
+                onCleared = {
+                    if (state.hasEntry) state.clearPatternConfirmation()
+                    else state.beginPatternEntry()
+                },
                 resetKey = state to state.resetGeneration,
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (state.hasEntry) {
-                Text(stringResource(R.string.app_lock_pattern_draw_again))
-                LockPatternInput(
-                    enabled = enabled,
-                    onCompleted = state::setPatternConfirmation,
-                    onStarted = state::clearPatternConfirmation,
-                    onCleared = state::clearPatternConfirmation,
-                    resetKey = state to state.resetGeneration,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
             if (state.isComplete) Text(stringResource(R.string.app_lock_pattern_ready))
             if (state.patternMismatch) {
                 AccessibleFeedback(stringResource(R.string.app_lock_error_credential_mismatch))

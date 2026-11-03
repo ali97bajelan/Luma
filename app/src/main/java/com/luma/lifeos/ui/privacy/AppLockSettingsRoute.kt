@@ -120,6 +120,8 @@ fun AppLockSettingsRoute(
     var pendingSetupType by remember { mutableStateOf(LockCredentialType.PASSWORD) }
     var recoveryAcknowledged by remember { mutableStateOf(false) }
     var pendingSecrets by remember { mutableStateOf(emptyList<CharArray>()) }
+    var passwordChangeProof by remember { mutableStateOf<OperationProof?>(null) }
+    var passwordChangeOperationId by remember { mutableStateOf<UUID?>(null) }
     var authRequestEpoch by remember { mutableStateOf(0L) }
     var busy by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
@@ -128,6 +130,10 @@ fun AppLockSettingsRoute(
         if (errorText != null) settingsScrollState.animateScrollTo(settingsScrollState.maxValue)
     }
 
+    fun clearPasswordChangeAuthorization() {
+        passwordChangeProof = null
+        passwordChangeOperationId = null
+    }
 
     fun clearVisibleSecrets() {
         setupEditor.clear()
@@ -176,12 +182,14 @@ fun AppLockSettingsRoute(
         if (snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) {
             cancelPendingRecovery()
             clearSecrets()
+            clearPasswordChangeAuthorization()
             action = null
             opened = false
         } else if (currentGeneration != null && currentGeneration != observedGeneration) {
             observedGeneration = currentGeneration
             cancelPendingRecovery()
             clearSecrets()
+            clearPasswordChangeAuthorization()
             action = null
             opened = false
         }
@@ -190,14 +198,17 @@ fun AppLockSettingsRoute(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 clearSecrets()
+                clearPasswordChangeAuthorization()
                 cancelPendingRecovery()
                 action = null
                 recoveryProof = null
+                opened = false
             }
         }
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
+            clearPasswordChangeAuthorization()
             cancelPendingRecovery()
             clearSecrets()
         }
@@ -333,6 +344,7 @@ fun AppLockSettingsRoute(
         val expectedGeneration = descriptor?.generation ?: return
         if (busy || snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) return
         val secret = unlockEditor?.takeSecret() ?: return
+        clearPasswordChangeAuthorization()
         pendingSecrets = listOf(secret)
         val requestEpoch = authRequestEpoch
         val operationId = UUID.randomUUID()
@@ -340,12 +352,17 @@ fun AppLockSettingsRoute(
         errorText = null
         scope.launch {
             try {
-                val proof = authenticate(secret, AuthPurpose.OPEN_LOCK_SETTINGS, expectedGeneration)
+                val proof = authenticate(secret, AuthPurpose.CHANGE_PASSWORD, expectedGeneration)
                 if (requestEpoch != authRequestEpoch) {
                     describeResult(CredentialResult.Cancelled)
                     return@launch
                 }
-                opened = proof != null && vm.consumeOpenSettings(proof, operationId)
+                opened = proof != null && vm.bindPendingOperation(proof, operationId) &&
+                    vm.validatePendingOperation(proof, operationId)
+                if (opened) {
+                    passwordChangeProof = proof
+                    passwordChangeOperationId = operationId
+                }
                 if (proof != null && !opened) errorText = context.getString(R.string.app_lock_error_unavailable)
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -371,7 +388,20 @@ fun AppLockSettingsRoute(
             )
             return
         }
-        val typedCurrent = actionEditor?.takeSecret() ?: return
+        val passwordAuthorization = if (selected == LockSettingsAction.PASSWORD) {
+            val proof = passwordChangeProof
+            val operationId = passwordChangeOperationId
+            if (proof == null || operationId == null) {
+                errorText = context.getString(R.string.app_lock_error_unavailable)
+                return
+            }
+            proof to operationId
+        } else null
+        val typedCurrent = if (selected == LockSettingsAction.PASSWORD) {
+            charArrayOf()
+        } else {
+            actionEditor?.takeSecret() ?: return
+        }
         val typedNew = if (selected == LockSettingsAction.PASSWORD) replacementEditor.takeSecret() ?: run {
             typedCurrent.fill('\u0000')
             errorText = context.getString(R.string.app_lock_error_credential_invalid)
@@ -379,7 +409,7 @@ fun AppLockSettingsRoute(
         } else charArrayOf()
         pendingSecrets = listOf(typedCurrent, typedNew)
         val requestEpoch = authRequestEpoch
-        val operationId = UUID.randomUUID()
+        val operationId = passwordAuthorization?.second ?: UUID.randomUUID()
         busy = true
         errorText = null
         var recoveryDisplayStarted = false
@@ -391,13 +421,14 @@ fun AppLockSettingsRoute(
                     LockSettingsAction.DISABLE -> AuthPurpose.DISABLE_LOCK
                     LockSettingsAction.RECOVERY -> AuthPurpose.REPLACE_RECOVERY_CODE
                 }
-                val proof = authenticate(typedCurrent, purpose, expectedGeneration)
+                val proof = passwordAuthorization?.first ?: authenticate(typedCurrent, purpose, expectedGeneration)
                 if (requestEpoch != authRequestEpoch) {
                     describeResult(CredentialResult.Cancelled)
                     return@launch
                 }
                 if (proof == null) return@launch
                 if (!vm.bindPendingOperation(proof, operationId)) {
+                    if (selected == LockSettingsAction.PASSWORD) clearPasswordChangeAuthorization()
                     errorText = context.getString(R.string.app_lock_error_unavailable)
                     return@launch
                 }
@@ -413,9 +444,11 @@ fun AppLockSettingsRoute(
                     }
                     LockSettingsAction.PASSWORD -> {
                         if (!vm.validatePendingOperation(proof, operationId)) {
+                            clearPasswordChangeAuthorization()
                             errorText = context.getString(R.string.app_lock_error_unavailable)
                             return@launch
                         }
+                        clearPasswordChangeAuthorization()
                         val result = vm.changePassword(proof, typedNew, replacementType)
                         describeResult(result)
                         if (result is CredentialResult.Success) onBack()
@@ -592,20 +625,22 @@ fun AppLockSettingsRoute(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    when (descriptorResult) {
-                        null -> Text(stringResource(R.string.app_lock_credential_loading))
-                        is CredentialDescriptorResult.Ready -> actionEditor?.let { state ->
-                            LockCredentialInput(
-                                state = state,
-                                enabled = !busy,
-                                label = stringResource(R.string.app_lock_current_credential),
-                                modifier = Modifier.testTag("app_lock_action_password"),
+                    if (selected != LockSettingsAction.PASSWORD) {
+                        when (descriptorResult) {
+                            null -> Text(stringResource(R.string.app_lock_credential_loading))
+                            is CredentialDescriptorResult.Ready -> actionEditor?.let { state ->
+                                LockCredentialInput(
+                                    state = state,
+                                    enabled = !busy,
+                                    label = stringResource(R.string.app_lock_current_credential),
+                                    modifier = Modifier.testTag("app_lock_action_password"),
+                                )
+                            }
+                            CredentialDescriptorResult.Disabled,
+                            CredentialDescriptorResult.Unavailable -> AccessibleFeedback(
+                                stringResource(R.string.app_lock_error_unavailable),
                             )
                         }
-                        CredentialDescriptorResult.Disabled,
-                        CredentialDescriptorResult.Unavailable -> AccessibleFeedback(
-                            stringResource(R.string.app_lock_error_unavailable),
-                        )
                     }
                     if (selected == LockSettingsAction.PASSWORD) {
                         LockCredentialTypeSelector(replacementType, !busy, onSelected = { replacementType = it })
@@ -617,8 +652,10 @@ fun AppLockSettingsRoute(
                     }
                 }
             },
-            confirmButton = { TextButton(enabled = actionEditor?.isComplete == true &&
-                (selected != LockSettingsAction.PASSWORD || replacementEditor.isComplete) && !busy,
+            confirmButton = { TextButton(enabled =
+                (selected == LockSettingsAction.PASSWORD || actionEditor?.isComplete == true) &&
+                    (selected != LockSettingsAction.PASSWORD ||
+                        (passwordChangeProof != null && replacementEditor.isComplete)) && !busy,
                 onClick = ::submitAction, modifier = Modifier.testTag("app_lock_action_confirm")) {
                 Text(stringResource(R.string.app_lock_confirm_action))
             } },

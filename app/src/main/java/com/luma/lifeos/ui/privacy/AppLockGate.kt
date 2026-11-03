@@ -275,6 +275,7 @@ fun AppLockUnlockDialog(
                             enabled = !busy && !cancelled,
                             label = stringResource(com.luma.lifeos.R.string.app_lock_current_credential),
                             modifier = Modifier.testTag("app_lock_unlock_input"),
+                            onPatternCompleted = ::submit,
                         )
                     }
                     CredentialDescriptorResult.Disabled,

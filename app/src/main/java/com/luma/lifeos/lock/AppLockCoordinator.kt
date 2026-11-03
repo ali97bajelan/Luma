@@ -3,6 +3,7 @@ package com.luma.lifeos.lock
 import com.luma.lifeos.domain.lock.AccessDecision
 import com.luma.lifeos.domain.lock.LockAccess
 import com.luma.lifeos.domain.lock.LockBrowseContext
+import com.luma.lifeos.domain.lock.LockCoverage
 import com.luma.lifeos.domain.lock.LockGrant
 import com.luma.lifeos.domain.lock.LockLoadStatus
 import com.luma.lifeos.domain.lock.LockOperation
@@ -152,6 +153,57 @@ class AppLockCoordinator(
                 pendingBrowse = null
                 pendingNavigation = null
             }
+        }
+    }
+
+    /** Applies credential setup or replacement without ending the current foreground session. */
+    fun onCredentialChanged(policy: LockPolicy) {
+        synchronized(monitor) {
+            val current = mutableSnapshot.value
+            val previous = current.policy
+            if (current.loadStatus != LockLoadStatus.READY || previous == null ||
+                !policy.enabled || visibleActivityCount == 0
+            ) {
+                onPolicyChanged(policy)
+                return
+            }
+
+            val sessionGeneration = nextSession(current.sessionGeneration)
+            val grant = when {
+                !previous.enabled -> if (policy.coverage == LockCoverage.WHOLE_APP) {
+                    LockGrant(
+                        wholeApp = true,
+                        policyGeneration = policy.generation,
+                        sessionGeneration = sessionGeneration,
+                    )
+                } else {
+                    LockGrant(
+                        sections = policy.sections,
+                        policyGeneration = policy.generation,
+                        sessionGeneration = sessionGeneration,
+                    )
+                }
+                previous.copy(generation = policy.generation) == policy &&
+                    current.grant.policyGeneration == previous.generation &&
+                    current.grant.sessionGeneration == current.sessionGeneration ->
+                    current.grant.copy(
+                        policyGeneration = policy.generation,
+                        sessionGeneration = sessionGeneration,
+                    )
+                else -> {
+                    onPolicyChanged(policy)
+                    return
+                }
+            }
+
+            mutableSnapshot.value = current.copy(
+                policy = policy,
+                grant = grant,
+                awayDeadlineElapsedMs = null,
+                sessionGeneration = sessionGeneration,
+            )
+            pendingBrowse = null
+            pendingNavigation = null
         }
     }
 

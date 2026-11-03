@@ -39,6 +39,7 @@ import com.luma.lifeos.lock.AndroidLockCrypto
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.DefaultLockCredentialService
 import com.luma.lifeos.lock.LockActionGuard
+import com.luma.lifeos.lock.LockSessionDisposition
 import com.luma.lifeos.lock.LockSensitiveOperationGuard
 import com.luma.lifeos.lock.ProtectedContentGateway
 import com.luma.lifeos.lock.ProtectedCalendarRepository
@@ -88,8 +89,12 @@ class LumaApplication : Application() {
             store = localLockStore,
             crypto = lockCrypto,
             clock = AndroidLockClock(),
-            onSecurityStateChanged = { policy ->
-                appLockCoordinator.onPolicyChanged(policy)
+            onSecurityStateChanged = { policy, sessionDisposition ->
+                if (sessionDisposition == LockSessionDisposition.PRESERVE_FOREGROUND) {
+                    appLockCoordinator.onCredentialChanged(policy)
+                } else {
+                    appLockCoordinator.onPolicyChanged(policy)
+                }
                 WidgetRefreshCoordinator.request(this)
                 enqueueReminderReconciliation(this)
             },
