@@ -86,12 +86,12 @@ class LockCredentialEditorState internal constructor(
             return matches
         }
 
-    fun setEntry(value: String) {
+    fun updateEntry(value: String) {
         entry = value
         patternMismatch = false
     }
 
-    fun setConfirmation(value: String) {
+    fun updateConfirmation(value: String) {
         confirmation = value
         patternMismatch = false
     }
@@ -248,7 +248,7 @@ fun LockCredentialInput(
             val valid = state.entry.isEmpty() || canonicalValid(state.type, state.entry)
             LumaOutlinedTextField(
                 value = state.entry,
-                onValueChange = state::setEntry,
+                onValueChange = state::updateEntry,
                 enabled = enabled,
                 singleLine = true,
                 isError = !valid,
@@ -307,8 +307,8 @@ fun LockCredentialEnrollment(
                 }
             }
         } else {
-            CredentialTextInput(state, enabled, state.entry, state::setEntry, R.string.app_lock_new_credential)
-            CredentialTextInput(state, enabled, state.confirmation, state::setConfirmation, R.string.app_lock_confirm_credential)
+            CredentialTextInput(state, enabled, state.entry, state::updateEntry, R.string.app_lock_new_credential)
+            CredentialTextInput(state, enabled, state.confirmation, state::updateConfirmation, R.string.app_lock_confirm_credential)
             if (state.hasEntry && state.hasConfirmation && !state.isComplete) {
                 AccessibleFeedback(stringResource(R.string.app_lock_error_credential_mismatch))
             }

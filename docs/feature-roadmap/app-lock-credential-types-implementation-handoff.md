@@ -6,10 +6,10 @@ Implementation follows the [design specification](../superpowers/specs/2026-11-0
 
 ## Revision and workspace record
 
-- Git `HEAD`: `03a440a06552f1fb47ff0f3ae0fae69149515f7e`.
-- No commit was created. The feature implementation is an uncommitted working-tree patch; `HEAD` is both its base and current commit.
-- Feature source/resource unified-diff SHA-256 against `HEAD` (18 files, sorted by path): `7c1246b5a0108a1dab8d7752cbde3a51356bcf02617d363fbc942bcdfe62728b` (148,342 bytes). This hash covers only the production Kotlin and localized string resources listed below, not this handoff or the plan/spec documents.
-- The existing staged plan/spec and unrelated workspace changes were preserved. No files were staged or committed by this implementation.
+- Implementation-base `HEAD`: `03a440a06552f1fb47ff0f3ae0fae69149515f7e`.
+- The feature was later committed by the user as `6ac86bfd6dd2167bb362bd787692de58eee9eff3`. The follow-up JVM setter-name fix is an unstaged working-tree change; no commit was created for that fix.
+- Feature source/resource unified-diff SHA-256 against the implementation-base commit (18 files, sorted by path): `c895107885f5ee4abf103482e3cd516f267ac4ef407e2045701e98d8cf5b2d65` (148,357 bytes). This hash covers only the production Kotlin and localized string resources listed below, not this handoff or the plan/spec documents.
+- At initial implementation, existing staged plan/spec files and unrelated workspace changes were preserved. Current unrelated edits include `app/build.gradle.kts`, `scripts/generate_widget_previews.py`, and untracked `app/production/` artifacts.
 
 ## Implemented behavior
 
@@ -18,6 +18,7 @@ Implementation follows the [design specification](../superpowers/specs/2026-11-0
 - Upgraded the authenticated local payload to version 2, storing the type before the existing password salt. Version 1 credentials decode as `PASSWORD` without a read-time rewrite or verifier change.
 - Extended the credential service and sensitive-operation guard with stored-method descriptors, typed mutations, and generation-bound verification. Existing derivation, retry accounting, recovery confirmation, proof purpose, and atomic write paths remain in use.
 - Added shared transient Compose editors, method selection and enrollment, a physical-LTR pattern board with gesture and accessible node controls, and EN/FR/FA copy.
+- Named the text editor mutators `updateEntry` and `updateConfirmation` so they do not clash with JVM setters generated for the corresponding Kotlin properties.
 - Integrated stored-method prompts into app unlock, security settings, recovery replacement, and sensitive operations. Method changes and recovery freeze their selected type with the owned replacement secret until the existing commit ceremony completes.
 - Added lifecycle/generation invalidation for pending authentication and recovery preparation, plus scrolling for credential dialogs.
 
@@ -98,6 +99,8 @@ The test fake/interface adapters and acceptance tests are intentionally deferred
 - `git diff --cached --check`: passed (exit code 0).
 - Python `xml.etree.ElementTree` parsing of `values/strings.xml`, `values-fr/strings.xml`, and `values-fa/strings.xml`: passed; no duplicate string IDs and all three ID sets match.
 - Source path and resource reference scan: passed for all 18 feature-owned Kotlin/resource paths; referenced `R.string` IDs resolve.
+- Source-level clash check: explicit text mutators are named `updateEntry`/`updateConfirmation`, avoiding the generated `setEntry(String)`/`setConfirmation(String)` JVM signatures.
+- Follow-up `git diff --check` passed, and a source search found no remaining `setEntry`/`setConfirmation` editor mutators.
 - Production caller scan: service verification/setup/change/recovery callers use the typed signatures and production `PersistedCredential` constructors provide a credential type. The remaining old test adapters are listed above as deferred QA work.
 - A fresh read-only review found Compose import/coordinate issues, an LTR board placement issue, drag consumption, a sensitive-dialog cancellation lifetime bug, stale-authentication races on stop, and recovery reveal-state cleanup. These were corrected in the source. Static checks were rerun after those corrections; no second review or runtime verification was performed.
 - No Gradle, build, lint, test, emulator, or device command was run, as required by the source plan. This record does not claim compilation or runtime behavior.
