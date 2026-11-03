@@ -45,8 +45,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -458,12 +456,8 @@ fun LifeOsApp(
         currentRoute == "privacy" && lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY -> false
         lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY -> true
         lockSnapshot.policy?.enabled != true -> false
-        lockSnapshot.activeBrowseContext != lockContext -> true
         else -> lockSnapshot.decide(lockRequest) != AccessDecision.Allow
     }
-    val lockContextReconciliationPending = appLockGateVisible &&
-        lockSnapshot.loadStatus == LockLoadStatus.READY &&
-        lockSnapshot.policy?.enabled == true && lockSnapshot.activeBrowseContext != lockContext
     LaunchedEffect(backStackEntry, appLockGateVisible, memorySavedMessage, memorySavedViewLabel) {
         val libraryEntry = backStackEntry ?: return@LaunchedEffect
         if (libraryEntry.destination.route != AppRoutes.MEMORIES || appLockGateVisible) return@LaunchedEffect
@@ -527,7 +521,7 @@ fun LifeOsApp(
         aggregateContentRoute -> readableProtectedSections
         else -> lockContext.requiredSections.intersect(readableProtectedSections)
     }
-    val alwaysSecureWindow = appLockUnlockVisible || appLockGateVisible || lockContextReconciliationPending || currentRoute in setOf(
+    val alwaysSecureWindow = appLockUnlockVisible || appLockGateVisible || currentRoute in setOf(
         AppRoutes.APP_LOCK_SETTINGS,
         AppRoutes.APP_LOCK_RECOVERY,
     )
@@ -800,7 +794,7 @@ fun LifeOsApp(
     }
     Box(Modifier.fillMaxSize()) {
     Scaffold(
-        modifier = if (appLockGateVisible || lockContextReconciliationPending) {
+        modifier = if (appLockGateVisible) {
             Modifier.clearAndSetSemantics { }
         } else Modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -1793,18 +1787,7 @@ fun LifeOsApp(
         } },
     )
     }
-    if (appLockGateVisible && lockContextReconciliationPending) {
-        Surface(
-            modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
-                    }
-                }
-            },
-            color = MaterialTheme.colorScheme.surface,
-        ) {}
-    } else if (appLockGateVisible) {
+    if (appLockGateVisible) {
         AppLockGate(
             canRequestUnlock = lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY,
             addNewEntryAvailable = restrictedCaptureService != null,
