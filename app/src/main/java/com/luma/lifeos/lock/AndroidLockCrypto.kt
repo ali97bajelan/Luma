@@ -192,7 +192,7 @@ internal class AndroidLockCrypto : LockStoreAuthenticator {
         const val KEY_ALIAS = "com.luma.lifeos.app_lock.verifier.v1"
         const val HMAC_ALGORITHM = "HmacSHA256"
         const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
-        const val PBKDF2_ITERATIONS = 600_000
+        const val PBKDF2_ITERATIONS = 200_000
         const val DERIVED_KEY_BITS = 256
         const val SALT_BYTES = 16
         const val RECOVERY_ENTROPY_BYTES = 16 // 128 random bits.

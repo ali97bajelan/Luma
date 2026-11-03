@@ -122,6 +122,7 @@ class DefaultLockCredentialService internal constructor(
                     var ready = reconciled
                     if (ready.cooldownActive) {
                         ready = ready.copy(cooldownActive = false, cooldownUntilElapsedMs = 0L)
+                        // Persist expiry before verification so a reboot cannot restart this cooldown.
                         writeState(ready)
                     }
                     val canonical = LockCredentialInputPolicy.canonicalize(credential.type, secret)
@@ -400,13 +401,18 @@ class DefaultLockCredentialService internal constructor(
         return LockRetryPolicy.remainingMs(state.cooldownUntilElapsedMs, nowElapsedMs).takeIf { it > 0L }
     }
 
-    private fun resetFailures(state: PersistedLockState, sample: LockClockSample): PersistedLockState =
-        state.copy(
+    private fun resetFailures(state: PersistedLockState, sample: LockClockSample): PersistedLockState {
+        // A clean successful unlock does not need a new boot marker or a durable file write.
+        if (state.failedAttempts == 0L && !state.cooldownActive && state.cooldownUntilElapsedMs == 0L) {
+            return state
+        }
+        return state.copy(
             failedAttempts = 0L,
             cooldownActive = false,
             cooldownUntilElapsedMs = 0L,
             retryBootMarkerMs = bootMarker(sample),
         )
+    }
 
     private fun confirmedRecovery(confirmation: RecoveryConfirmation, generation: Long): PendingRecovery? =
         pendingRecoveries[confirmation.id]?.takeIf {
