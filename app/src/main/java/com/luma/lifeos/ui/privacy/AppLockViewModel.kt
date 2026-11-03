@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import com.luma.lifeos.domain.lock.LockPolicy
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.AuthPurpose
+import com.luma.lifeos.lock.CredentialDescriptorResult
 import com.luma.lifeos.lock.CredentialResult
 import com.luma.lifeos.lock.LockCredentialService
+import com.luma.lifeos.lock.LockCredentialType
 import com.luma.lifeos.lock.OperationProof
 import com.luma.lifeos.lock.RecoveryConfirmation
 import com.luma.lifeos.lock.RecoveryPreparation
@@ -16,8 +18,13 @@ class AppLockViewModel(
     private val credentials: LockCredentialService,
     private val coordinator: AppLockCoordinator,
 ) : ViewModel() {
-    suspend fun verify(password: CharArray, purpose: AuthPurpose): CredentialResult =
-        credentials.verify(password, purpose)
+    suspend fun credentialDescriptor(): CredentialDescriptorResult = credentials.credentialDescriptor()
+
+    suspend fun verify(
+        secret: CharArray,
+        purpose: AuthPurpose,
+        expectedGeneration: Long? = null,
+    ): CredentialResult = credentials.verify(secret, purpose, expectedGeneration)
 
     fun consumeOpenSettings(proof: OperationProof, operationId: UUID): Boolean {
         val generation = coordinator.snapshot.value.policy?.generation ?: return false
@@ -35,11 +42,18 @@ class AppLockViewModel(
         return proof.validatePendingOperation(operationId, generation)
     }
 
-    suspend fun enable(password: CharArray, policy: LockPolicy, confirmation: RecoveryConfirmation) =
-        credentials.enable(password, policy, confirmation)
+    suspend fun enable(
+        secret: CharArray,
+        type: LockCredentialType,
+        policy: LockPolicy,
+        confirmation: RecoveryConfirmation,
+    ) = credentials.enable(secret, type, policy, confirmation)
 
-    suspend fun changePassword(proof: OperationProof, password: CharArray) =
-        credentials.changePassword(proof, password)
+    suspend fun changePassword(
+        proof: OperationProof,
+        secret: CharArray,
+        type: LockCredentialType,
+    ) = credentials.changePassword(proof, secret, type)
 
     suspend fun updatePolicy(proof: OperationProof, policy: LockPolicy) =
         credentials.updatePolicy(proof, policy)

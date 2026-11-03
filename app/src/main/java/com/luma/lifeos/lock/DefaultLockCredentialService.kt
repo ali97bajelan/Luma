@@ -33,49 +33,77 @@ class DefaultLockCredentialService internal constructor(
     private val mutex = PROCESS_MUTEX
     private val pendingRecoveries = mutableMapOf<UUID, PendingRecovery>()
 
+    override suspend fun credentialDescriptor(): CredentialDescriptorResult = try {
+        mutex.withLock {
+            val state = readState() ?: return@withLock CredentialDescriptorResult.Disabled
+            if (!state.policy.enabled) return@withLock CredentialDescriptorResult.Disabled
+            val credential = state.credential ?: return@withLock CredentialDescriptorResult.Unavailable
+            CredentialDescriptorResult.Ready(
+                LockCredentialDescriptor(credential.type, state.policy.generation),
+            )
+        }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        CredentialDescriptorResult.Unavailable
+    }
+
     override suspend fun enable(
-        password: CharArray,
+        secret: CharArray,
+        type: LockCredentialType,
         policy: LockPolicy,
         recoveryConfirmation: RecoveryConfirmation,
-    ): CredentialResult = withCleared(password) {
-        safely {
-            mutex.withLock {
-                if (!isValidPassword(password) || !policy.enabled) return@withLock CredentialResult.InvalidInput
-                val state = readState()
-                if (state?.policy?.enabled == true) return@withLock CredentialResult.InvalidInput
-                val pending = confirmedRecovery(recoveryConfirmation, state?.policy?.generation ?: 0L)
-                    ?: return@withLock CredentialResult.InvalidInput
-                val generation = nextGeneration(state?.policy?.generation ?: 0L)
-                    ?: return@withLock CredentialResult.Unavailable
-                val newPolicy = policy.copy(generation = generation)
-                val sample = validSample()
-                val newCredential = try {
-                    newPasswordCredential(password, pending.recoverySalt, pending.recoveryVerifier)
-                } catch (cancelled: CancellationException) {
-                    if (state == null) discardUncommittedInitialKey()
-                    throw cancelled
-                } catch (failure: Exception) {
-                    if (state == null) discardUncommittedInitialKey()
-                    throw failure
+    ): CredentialResult = withCleared(secret) {
+        val canonical = LockCredentialInputPolicy.canonicalize(type, secret)
+            ?: return@withCleared CredentialResult.InvalidInput
+        try {
+            safely {
+                mutex.withLock {
+                    if (!policy.enabled) return@withLock CredentialResult.InvalidInput
+                    val state = readState()
+                    if (state?.policy?.enabled == true) return@withLock CredentialResult.InvalidInput
+                    val pending = confirmedRecovery(recoveryConfirmation, state?.policy?.generation ?: 0L)
+                        ?: return@withLock CredentialResult.InvalidInput
+                    val generation = nextGeneration(state?.policy?.generation ?: 0L)
+                        ?: return@withLock CredentialResult.Unavailable
+                    val newPolicy = policy.copy(generation = generation)
+                    val sample = validSample()
+                    val newCredential = try {
+                        newPasswordCredential(canonical, type, pending.recoverySalt, pending.recoveryVerifier)
+                    } catch (cancelled: CancellationException) {
+                        if (state == null) discardUncommittedInitialKey()
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        if (state == null) discardUncommittedInitialKey()
+                        throw failure
+                    }
+                    val newState = PersistedLockState(
+                        policy = newPolicy,
+                        credential = newCredential,
+                        retryBootMarkerMs = bootMarker(sample),
+                    )
+                    commitSecurityState(newState, newPolicy) { consumeRecovery(pending) }
+                    CredentialResult.Success()
                 }
-                val newState = PersistedLockState(
-                    policy = newPolicy,
-                    credential = newCredential,
-                    retryBootMarkerMs = bootMarker(sample),
-                )
-                commitSecurityState(newState, newPolicy) { consumeRecovery(pending) }
-                CredentialResult.Success()
             }
+        } finally {
+            canonical.fill('\u0000')
         }
     }
 
-    override suspend fun verify(password: CharArray, purpose: AuthPurpose): CredentialResult =
-        withCleared(password) {
+    override suspend fun verify(
+        secret: CharArray,
+        purpose: AuthPurpose,
+        expectedGeneration: Long?,
+    ): CredentialResult = withCleared(secret) {
             safely {
                 mutex.withLock {
                     val state = readState() ?: return@withLock CredentialResult.Unavailable
                     val credential = state.credential ?: return@withLock CredentialResult.Unavailable
                     if (!state.policy.enabled) return@withLock CredentialResult.Unavailable
+                    if (expectedGeneration != null && expectedGeneration != state.policy.generation) {
+                        return@withLock CredentialResult.Cancelled
+                    }
                     val sample = validSample()
                     val reconciled = reconcileBoot(state, sample)
                     val cooldown = activeCooldown(reconciled, sample.elapsedMs)
@@ -89,46 +117,60 @@ class DefaultLockCredentialService internal constructor(
                         ready = ready.copy(cooldownActive = false, cooldownUntilElapsedMs = 0L)
                         writeState(ready)
                     }
-                    if (!isValidPassword(password)) return@withLock CredentialResult.InvalidInput
+                    val canonical = LockCredentialInputPolicy.canonicalize(credential.type, secret)
+                        ?: return@withLock CredentialResult.InvalidInput
+                    try {
+                        val matches = withContext(Dispatchers.Default) {
+                            crypto.passwordMatches(canonical, credential.passwordSalt, credential.passwordVerifier)
+                        }
+                        if (!matches) return@withLock recordFailure(ready, sample)
 
-                    val matches = withContext(Dispatchers.Default) {
-                        crypto.passwordMatches(password, credential.passwordSalt, credential.passwordVerifier)
+                        val reset = resetFailures(ready, sample)
+                        if (reset != ready) writeState(reset)
+                        CredentialResult.Success(OperationProof(purpose, reset.policy.generation))
+                    } finally {
+                        canonical.fill('\u0000')
                     }
-                    if (!matches) return@withLock recordFailure(ready, sample)
-
-                    val reset = resetFailures(ready, sample)
-                    if (reset != ready) writeState(reset)
-                    CredentialResult.Success(OperationProof(purpose, reset.policy.generation))
                 }
             }
         }
 
-    override suspend fun changePassword(proof: OperationProof, replacement: CharArray): CredentialResult =
+    override suspend fun changePassword(
+        proof: OperationProof,
+        replacement: CharArray,
+        replacementType: LockCredentialType,
+    ): CredentialResult =
         withCleared(replacement) {
             safely {
                 mutex.withLock {
-                    if (!isValidPassword(replacement)) return@withLock CredentialResult.InvalidInput
-                    val state = readState() ?: return@withLock CredentialResult.Unavailable
-                    val oldCredential = state.credential ?: return@withLock CredentialResult.Unavailable
-                    if (!state.policy.enabled) return@withLock CredentialResult.Unavailable
-                    if (!proof.consume(AuthPurpose.CHANGE_PASSWORD, state.policy.generation)) {
-                        return@withLock CredentialResult.Cancelled
-                    }
-                    val generation = nextGeneration(state.policy.generation)
-                        ?: return@withLock CredentialResult.Unavailable
-                    val changedCredential = withContext(Dispatchers.Default) {
-                        val salt = crypto.randomSalt()
-                        oldCredential.copy(
-                            passwordSalt = salt,
-                            passwordVerifier = crypto.createPasswordVerifier(replacement, salt),
+                    val canonical = LockCredentialInputPolicy.canonicalize(replacementType, replacement)
+                        ?: return@withLock CredentialResult.InvalidInput
+                    try {
+                        val state = readState() ?: return@withLock CredentialResult.Unavailable
+                        val oldCredential = state.credential ?: return@withLock CredentialResult.Unavailable
+                        if (!state.policy.enabled) return@withLock CredentialResult.Unavailable
+                        if (!proof.consume(AuthPurpose.CHANGE_PASSWORD, state.policy.generation)) {
+                            return@withLock CredentialResult.Cancelled
+                        }
+                        val generation = nextGeneration(state.policy.generation)
+                            ?: return@withLock CredentialResult.Unavailable
+                        val changedCredential = withContext(Dispatchers.Default) {
+                            val salt = crypto.randomSalt()
+                            oldCredential.copy(
+                                type = replacementType,
+                                passwordSalt = salt,
+                                passwordVerifier = crypto.createPasswordVerifier(canonical, salt),
+                            )
+                        }
+                        val changedPolicy = state.policy.copy(generation = generation)
+                        commitSecurityState(
+                            resetFailures(state.copy(policy = changedPolicy, credential = changedCredential), validSample()),
+                            changedPolicy,
                         )
+                        CredentialResult.Success()
+                    } finally {
+                        canonical.fill('\u0000')
                     }
-                    val changedPolicy = state.policy.copy(generation = generation)
-                    commitSecurityState(
-                        resetFailures(state.copy(policy = changedPolicy, credential = changedCredential), validSample()),
-                        changedPolicy,
-                    )
-                    CredentialResult.Success()
                 }
             }
         }
@@ -136,6 +178,7 @@ class DefaultLockCredentialService internal constructor(
     override suspend fun recover(
         code: CharArray,
         replacement: CharArray,
+        replacementType: LockCredentialType,
         confirmation: RecoveryConfirmation,
     ): CredentialResult = withCleared(code, replacement) {
         safely {
@@ -156,28 +199,34 @@ class DefaultLockCredentialService internal constructor(
                     ready = ready.copy(cooldownActive = false, cooldownUntilElapsedMs = 0L)
                     writeState(ready)
                 }
-                if (!isValidPassword(replacement)) return@withLock CredentialResult.InvalidInput
-                val pending = confirmedRecovery(confirmation, state.policy.generation)
+                val canonical = LockCredentialInputPolicy.canonicalize(replacementType, replacement)
                     ?: return@withLock CredentialResult.InvalidInput
-                val codeMatches = withContext(Dispatchers.Default) {
-                    crypto.recoveryCodeMatches(code, oldCredential.recoverySalt, oldCredential.recoveryVerifier)
-                }
-                if (!codeMatches) return@withLock recordFailure(ready, sample)
+                try {
+                    val pending = confirmedRecovery(confirmation, state.policy.generation)
+                        ?: return@withLock CredentialResult.InvalidInput
+                    val codeMatches = withContext(Dispatchers.Default) {
+                        crypto.recoveryCodeMatches(code, oldCredential.recoverySalt, oldCredential.recoveryVerifier)
+                    }
+                    if (!codeMatches) return@withLock recordFailure(ready, sample)
 
-                val generation = nextGeneration(state.policy.generation)
-                    ?: return@withLock CredentialResult.Unavailable
-                val replacementCredential = newPasswordCredential(
-                    replacement,
-                    pending.recoverySalt,
-                    pending.recoveryVerifier,
-                )
-                val changedPolicy = state.policy.copy(generation = generation)
-                val changedState = resetFailures(
-                    ready.copy(policy = changedPolicy, credential = replacementCredential),
-                    sample,
-                )
-                commitSecurityState(changedState, changedPolicy) { consumeRecovery(pending) }
-                CredentialResult.Success()
+                    val generation = nextGeneration(state.policy.generation)
+                        ?: return@withLock CredentialResult.Unavailable
+                    val replacementCredential = newPasswordCredential(
+                        canonical,
+                        replacementType,
+                        pending.recoverySalt,
+                        pending.recoveryVerifier,
+                    )
+                    val changedPolicy = state.policy.copy(generation = generation)
+                    val changedState = resetFailures(
+                        ready.copy(policy = changedPolicy, credential = replacementCredential),
+                        sample,
+                    )
+                    commitSecurityState(changedState, changedPolicy) { consumeRecovery(pending) }
+                    CredentialResult.Success()
+                } finally {
+                    canonical.fill('\u0000')
+                }
             }
         }
     }
@@ -296,14 +345,16 @@ class DefaultLockCredentialService internal constructor(
     }
 
     private suspend fun newPasswordCredential(
-        password: CharArray,
+        secret: CharArray,
+        type: LockCredentialType,
         recoverySalt: ByteArray,
         recoveryVerifier: ByteArray,
     ): PersistedCredential = withContext(Dispatchers.Default) {
         val salt = crypto.randomSalt()
         PersistedCredential(
+            type = type,
             passwordSalt = salt,
-            passwordVerifier = crypto.createPasswordVerifier(password, salt),
+            passwordVerifier = crypto.createPasswordVerifier(secret, salt),
             recoverySalt = recoverySalt.copyOf(),
             recoveryVerifier = recoveryVerifier.copyOf(),
         )
@@ -405,25 +456,6 @@ class DefaultLockCredentialService internal constructor(
     private fun saturatedAdd(left: Long, right: Long): Long =
         if (Long.MAX_VALUE - left < right) Long.MAX_VALUE else left + right
 
-    private fun isValidPassword(password: CharArray): Boolean {
-        var codePoints = 0
-        var index = 0
-        while (index < password.size) {
-            val current = password[index]
-            when {
-                Character.isHighSurrogate(current) -> {
-                    if (index + 1 >= password.size || !Character.isLowSurrogate(password[index + 1])) return false
-                    index += 2
-                }
-                Character.isLowSurrogate(current) -> return false
-                else -> index++
-            }
-            codePoints++
-            if (codePoints > MAX_PASSWORD_CODE_POINTS) return false
-        }
-        return codePoints in MIN_PASSWORD_CODE_POINTS..MAX_PASSWORD_CODE_POINTS
-    }
-
     private suspend fun safely(block: suspend () -> CredentialResult): CredentialResult = try {
         block()
     } catch (cancelled: CancellationException) {
@@ -460,8 +492,6 @@ class DefaultLockCredentialService internal constructor(
 
     private companion object {
         val PROCESS_MUTEX = Mutex()
-        const val MIN_PASSWORD_CODE_POINTS = 4
-        const val MAX_PASSWORD_CODE_POINTS = 32
         const val BOOT_MARKER_TOLERANCE_MS = 1_000L
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.CredentialResult
 import com.luma.lifeos.lock.LockCredentialService
+import com.luma.lifeos.lock.LockCredentialType
 import com.luma.lifeos.lock.RecoveryPreparation
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppPageScaffold
@@ -66,41 +68,63 @@ fun AppLockRecoveryRoute(
     onForgottenResetConfirmed: (() -> Unit)? = null,
 ) {
     val snapshot by coordinator.snapshot.collectAsStateWithLifecycle()
+    var observedGeneration by remember { mutableStateOf(snapshot.policy?.generation) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var recoveryCode by remember { mutableStateOf("") }
-    var replacementPassword by remember { mutableStateOf("") }
-    var replacementConfirmation by remember { mutableStateOf("") }
+    var replacementType by remember { mutableStateOf(LockCredentialType.PASSWORD) }
+    val replacementEditor = rememberLockCredentialEditorState(replacementType, requireConfirmation = true)
     var replacementCode by remember { mutableStateOf<String?>(null) }
     var replacementPreparation by remember { mutableStateOf<RecoveryPreparation?>(null) }
+    var preparationRequestGeneration by remember { mutableStateOf(0L) }
     var recoveryAcknowledged by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var eraseDialogStep by remember { mutableStateOf(0) }
     var revealRecoveryCode by remember { mutableStateOf(false) }
-    var revealReplacementPassword by remember { mutableStateOf(false) }
     var pendingCode by remember { mutableStateOf<CharArray?>(null) }
-    var pendingPassword by remember { mutableStateOf<CharArray?>(null) }
+    var pendingReplacement by remember { mutableStateOf<CharArray?>(null) }
+    var pendingReplacementType by remember { mutableStateOf(LockCredentialType.PASSWORD) }
 
     fun clearSecrets() {
         recoveryCode = ""
-        replacementPassword = ""
-        replacementConfirmation = ""
+        replacementEditor.clear()
         replacementCode = null
         pendingCode?.fill('\u0000')
-        pendingPassword?.fill('\u0000')
+        pendingReplacement?.fill('\u0000')
         pendingCode = null
-        pendingPassword = null
+        pendingReplacement = null
+        pendingReplacementType = LockCredentialType.PASSWORD
         recoveryAcknowledged = false
+        revealRecoveryCode = false
     }
     fun clearClipboard() { runCatching { context.getSystemService(android.content.ClipboardManager::class.java)?.clearPrimaryClip() } }
     fun cancelPreparation() {
-        val preparation = replacementPreparation ?: return
+        preparationRequestGeneration++
+        val preparation = replacementPreparation
         replacementPreparation = null
-        scope.launch { credentials.cancelRecovery(preparation) }
+        if (preparation != null) scope.launch { credentials.cancelRecovery(preparation) }
         clearClipboard()
+    }
+    LaunchedEffect(snapshot.loadStatus, snapshot.policy?.enabled, snapshot.policy?.generation) {
+        val currentGeneration = snapshot.policy?.generation
+        if (snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
+            snapshot.policy?.enabled != true
+        ) {
+            cancelPreparation()
+            clearSecrets()
+            errorText = context.getString(R.string.app_lock_error_unavailable)
+        } else if (observedGeneration != null && currentGeneration != observedGeneration) {
+            observedGeneration = currentGeneration
+            cancelPreparation()
+            clearSecrets()
+            errorText = context.getString(R.string.app_lock_error_cancelled)
+        } else {
+            observedGeneration = currentGeneration
+            if (!busy) errorText = null
+        }
     }
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -133,28 +157,36 @@ fun AppLockRecoveryRoute(
     }
     fun beginRecovery() {
         if (busy) return
-        if (replacementPassword != replacementConfirmation) {
-            errorText = context.getString(R.string.app_lock_error_password_mismatch)
-            return
-        }
-        val points = replacementPassword.codePointCount(0, replacementPassword.length)
-        if (points !in 4..32) {
-            errorText = context.getString(R.string.app_lock_error_password_length)
+        val typedReplacement = replacementEditor.takeSecret()
+        if (typedReplacement == null) {
+            errorText = context.getString(
+                if (replacementEditor.patternMismatch ||
+                    (replacementEditor.hasEntry && replacementEditor.hasConfirmation)
+                )
+                    R.string.app_lock_error_credential_mismatch else R.string.app_lock_error_credential_invalid,
+            )
             return
         }
         pendingCode?.fill('\u0000')
-        pendingPassword?.fill('\u0000')
+        pendingReplacement?.fill('\u0000')
         pendingCode = recoveryCode.toCharArray()
-        pendingPassword = replacementPassword.toCharArray()
+        pendingReplacement = typedReplacement
+        pendingReplacementType = replacementType
         recoveryCode = ""
-        replacementPassword = ""
-        replacementConfirmation = ""
+        replacementEditor.clear()
         busy = true
         errorText = null
+        val requestGeneration = preparationRequestGeneration + 1L
+        preparationRequestGeneration = requestGeneration
         scope.launch {
             try {
                 val preparation = credentials.prepareRecovery()
                 val code = preparation.takeCodeForDisplay()
+                if (requestGeneration != preparationRequestGeneration) {
+                    code.fill('\u0000')
+                    credentials.cancelRecovery(preparation)
+                    return@launch
+                }
                 replacementPreparation = preparation
                 replacementCode = String(code)
                 code.fill('\u0000')
@@ -174,12 +206,13 @@ fun AppLockRecoveryRoute(
         scope.launch {
             try {
                 val confirmation = credentials.confirmRecovery(preparation)
-                val code = pendingCode ?: charArrayOf()
-                val password = pendingPassword ?: charArrayOf()
-                val result = credentials.recover(code, password, confirmation)
+                val code = pendingCode ?: throw IllegalStateException("Recovery code was cleared")
+                val secret = pendingReplacement ?: throw IllegalStateException("Replacement credential was cleared")
+                val replacementType = pendingReplacementType
+                val result = credentials.recover(code, secret, replacementType, confirmation)
                 replacementPreparation = null
                 pendingCode = null
-                pendingPassword = null
+                pendingReplacement = null
                 report(result)
                 if (result is CredentialResult.Success) {
                     clearClipboard()
@@ -229,27 +262,20 @@ fun AppLockRecoveryRoute(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth().testTag("app_lock_recovery_input"),
                         trailingIcon = { TextButton(enabled = !busy, onClick = { revealRecoveryCode = !revealRecoveryCode }) {
-                            Text(stringResource(if (revealRecoveryCode) R.string.app_lock_hide_password else R.string.app_lock_show_password))
+                            Text(stringResource(if (revealRecoveryCode) R.string.app_lock_recovery_code_hide else R.string.app_lock_recovery_code_show))
                         } },
                     )
-                    LumaOutlinedTextField(
-                        value = replacementPassword, onValueChange = { replacementPassword = it }, enabled = !busy,
-                        label = { Text(stringResource(R.string.app_lock_new_password)) }, singleLine = true,
-                        visualTransformation = if (revealReplacementPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth().testTag("app_lock_recovery_new_password"),
-                        trailingIcon = { TextButton(enabled = !busy, onClick = { revealReplacementPassword = !revealReplacementPassword }) {
-                            Text(stringResource(if (revealReplacementPassword) R.string.app_lock_hide_password else R.string.app_lock_show_password))
-                        } },
+                    LockCredentialTypeSelector(
+                        selected = replacementType,
+                        enabled = !busy,
+                        onSelected = { replacementType = it },
                     )
-                    LumaOutlinedTextField(
-                        value = replacementConfirmation, onValueChange = { replacementConfirmation = it }, enabled = !busy,
-                        label = { Text(stringResource(R.string.app_lock_confirm_password)) }, singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth().testTag("app_lock_recovery_confirm_password"),
+                    LockCredentialEnrollment(
+                        state = replacementEditor,
+                        enabled = !busy,
+                        modifier = Modifier.testTag("app_lock_recovery_replacement_credential"),
                     )
-                    LumaButton(enabled = !busy && recoveryCode.isNotEmpty() && replacementPassword.isNotEmpty(),
+                    LumaButton(enabled = !busy && recoveryCode.isNotEmpty() && replacementEditor.isComplete,
                         onClick = ::beginRecovery, modifier = Modifier.testTag("app_lock_recovery_continue")) {
                         Text(stringResource(R.string.app_lock_recovery_continue))
                     }

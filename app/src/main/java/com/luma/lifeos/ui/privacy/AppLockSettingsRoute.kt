@@ -2,8 +2,6 @@ package com.luma.lifeos.ui.privacy
 
 import com.luma.lifeos.ui.common.LumaButton
 
-import com.luma.lifeos.ui.common.LumaOutlinedTextField
-
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaFilterChip
 
@@ -20,8 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -32,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,10 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -63,8 +56,10 @@ import com.luma.lifeos.domain.lock.LockSection
 import com.luma.lifeos.domain.lock.RelockMode
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.AuthPurpose
+import com.luma.lifeos.lock.CredentialDescriptorResult
 import com.luma.lifeos.lock.CredentialResult
 import com.luma.lifeos.lock.LockCredentialService
+import com.luma.lifeos.lock.LockCredentialType
 import com.luma.lifeos.lock.OperationProof
 import com.luma.lifeos.lock.RecoveryPreparation
 import com.luma.lifeos.ui.common.AccessibleFeedback
@@ -97,23 +92,35 @@ fun AppLockSettingsRoute(
     val scope = rememberCoroutineScope()
     val settingsScrollState = rememberScrollState()
     val storedPolicy = snapshot.policy ?: LockPolicy()
+    var observedGeneration by remember { mutableStateOf(storedPolicy.generation) }
     var policy by remember(storedPolicy) { mutableStateOf(storedPolicy) }
     var opened by remember(storedPolicy.generation, storedPolicy.enabled) { mutableStateOf(!storedPolicy.enabled) }
-    var setupPassword by remember { mutableStateOf("") }
-    var setupConfirmation by remember { mutableStateOf("") }
-    var unlockPassword by remember { mutableStateOf("") }
-    var actionPassword by remember { mutableStateOf("") }
-    var replacementPassword by remember { mutableStateOf("") }
-    var replacementConfirmation by remember { mutableStateOf("") }
+    var descriptorResult by remember { mutableStateOf<CredentialDescriptorResult?>(null) }
+    val descriptor = (descriptorResult as? CredentialDescriptorResult.Ready)?.descriptor
+    var setupType by remember { mutableStateOf(LockCredentialType.PASSWORD) }
+    val setupEditor = rememberLockCredentialEditorState(setupType, requireConfirmation = true)
+    val unlockEditor: LockCredentialEditorState? = key(descriptor?.type, descriptor?.generation) {
+        if (descriptor == null) null else rememberLockCredentialEditorState(descriptor.type)
+    }
+    val actionEditor: LockCredentialEditorState? = key(descriptor?.type, descriptor?.generation) {
+        if (descriptor == null) null else rememberLockCredentialEditorState(descriptor.type)
+    }
+    var replacementType by remember(descriptor?.type) { mutableStateOf(descriptor?.type ?: LockCredentialType.PASSWORD) }
+    val replacementEditor = key(replacementType, descriptor?.generation) {
+        rememberLockCredentialEditorState(replacementType, requireConfirmation = true)
+    }
     var action by remember { mutableStateOf<LockSettingsAction?>(null) }
     var recoveryPreparation by remember { mutableStateOf<RecoveryPreparation?>(null) }
+    var recoveryRequestGeneration by remember { mutableStateOf(0L) }
     var recoveryProof by remember { mutableStateOf<OperationProof?>(null) }
     var recoveryOperationId by remember { mutableStateOf<UUID?>(null) }
     var recoveryDisplay by remember { mutableStateOf<String?>(null) }
     var recoveryPurpose by remember { mutableStateOf<RecoveryDisplayPurpose?>(null) }
-    var pendingSetupPassword by remember { mutableStateOf<CharArray?>(null) }
+    var pendingSetupSecret by remember { mutableStateOf<CharArray?>(null) }
+    var pendingSetupType by remember { mutableStateOf(LockCredentialType.PASSWORD) }
     var recoveryAcknowledged by remember { mutableStateOf(false) }
     var pendingSecrets by remember { mutableStateOf(emptyList<CharArray>()) }
+    var authRequestEpoch by remember { mutableStateOf(0L) }
     var busy by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
@@ -123,20 +130,20 @@ fun AppLockSettingsRoute(
 
 
     fun clearVisibleSecrets() {
-        setupPassword = ""
-        setupConfirmation = ""
-        unlockPassword = ""
-        actionPassword = ""
-        replacementPassword = ""
-        replacementConfirmation = ""
+        setupEditor.clear()
+        unlockEditor?.clear()
+        actionEditor?.clear()
+        replacementEditor.clear()
         recoveryDisplay = null
         recoveryAcknowledged = false
     }
     fun clearSecrets() {
+        authRequestEpoch = if (authRequestEpoch == Long.MAX_VALUE) 0L else authRequestEpoch + 1L
         pendingSecrets.forEach { it.fill('\u0000') }
         pendingSecrets = emptyList()
-        pendingSetupPassword?.fill('\u0000')
-        pendingSetupPassword = null
+        pendingSetupSecret?.fill('\u0000')
+        pendingSetupSecret = null
+        pendingSetupType = LockCredentialType.PASSWORD
         clearVisibleSecrets()
         recoveryProof = null
         recoveryOperationId = null
@@ -145,10 +152,39 @@ fun AppLockSettingsRoute(
         runCatching { context.getSystemService(ClipboardManager::class.java)?.clearPrimaryClip() }
     }
     fun cancelPendingRecovery() {
-        val pending = recoveryPreparation ?: return
+        recoveryRequestGeneration++
+        val pending = recoveryPreparation
         recoveryPreparation = null
-        scope.launch { vm.cancelRecovery(pending) }
+        if (pending != null) scope.launch { vm.cancelRecovery(pending) }
         clearClipboard()
+    }
+
+    LaunchedEffect(snapshot.loadStatus, storedPolicy.enabled, storedPolicy.generation) {
+        descriptorResult = when {
+            snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY -> null
+            !storedPolicy.enabled -> CredentialDescriptorResult.Disabled
+            else -> {
+                val loaded = vm.credentialDescriptor()
+                if (loaded is CredentialDescriptorResult.Ready &&
+                    loaded.descriptor.generation != storedPolicy.generation
+                ) CredentialDescriptorResult.Unavailable else loaded
+            }
+        }
+    }
+    LaunchedEffect(snapshot.loadStatus, snapshot.policy?.generation) {
+        val currentGeneration = snapshot.policy?.generation
+        if (snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) {
+            cancelPendingRecovery()
+            clearSecrets()
+            action = null
+            opened = false
+        } else if (currentGeneration != null && currentGeneration != observedGeneration) {
+            observedGeneration = currentGeneration
+            cancelPendingRecovery()
+            clearSecrets()
+            action = null
+            opened = false
+        }
     }
     DisposableEffect(lifecycle, vm) {
         val observer = LifecycleEventObserver { _, event ->
@@ -180,9 +216,16 @@ fun AppLockSettingsRoute(
             is CredentialResult.Success -> null
         }
     }
-    suspend fun authenticate(password: CharArray, purpose: AuthPurpose): OperationProof? {
-        val result = vm.verify(password, purpose)
+    suspend fun authenticate(secret: CharArray, purpose: AuthPurpose, expectedGeneration: Long): OperationProof? {
+        val result = vm.verify(secret, purpose, expectedGeneration)
         describeResult(result)
+        val current = coordinator.snapshot.value
+        if (current.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
+            current.policy?.generation != expectedGeneration
+        ) {
+            describeResult(CredentialResult.Cancelled)
+            return null
+        }
         return (result as? CredentialResult.Success)?.proof
     }
     fun displayRecovery(
@@ -190,12 +233,19 @@ fun AppLockSettingsRoute(
         proof: OperationProof? = null,
         operationId: UUID? = null,
     ) {
+        val requestGeneration = recoveryRequestGeneration + 1L
+        recoveryRequestGeneration = requestGeneration
         busy = true
         errorText = null
         scope.launch {
             try {
                 val preparation = vm.prepareRecovery()
                 val code = preparation.takeCodeForDisplay()
+                if (requestGeneration != recoveryRequestGeneration) {
+                    code.fill('\u0000')
+                    vm.cancelRecovery(preparation)
+                    return@launch
+                }
                 recoveryPreparation = preparation
                 recoveryProof = proof
                 recoveryOperationId = operationId
@@ -220,7 +270,14 @@ fun AppLockSettingsRoute(
         errorText = null
         val displayProof = recoveryProof
         val displayOperationId = recoveryOperationId
-        val setupSecret = pendingSetupPassword ?: charArrayOf()
+        val setupSecret = if (purpose == RecoveryDisplayPurpose.SETUP) {
+            pendingSetupSecret ?: run {
+                errorText = context.getString(R.string.app_lock_error_unavailable)
+                busy = false
+                return
+            }
+        } else charArrayOf()
+        val setupType = pendingSetupType
         if (purpose == RecoveryDisplayPurpose.SETUP) clearVisibleSecrets() else clearSecrets()
         scope.launch {
             try {
@@ -228,6 +285,7 @@ fun AppLockSettingsRoute(
                 val result = when (purpose) {
                     RecoveryDisplayPurpose.SETUP -> vm.enable(
                         setupSecret,
+                        setupType,
                         policy.copy(enabled = true, generation = storedPolicy.generation),
                         confirmation,
                     )
@@ -264,23 +322,29 @@ fun AppLockSettingsRoute(
                 recoveryProof = null
                 recoveryOperationId = null
                 setupSecret.fill('\u0000')
-                if (pendingSetupPassword === setupSecret) pendingSetupPassword = null
+                if (pendingSetupSecret === setupSecret) pendingSetupSecret = null
+                if (purpose == RecoveryDisplayPurpose.SETUP) pendingSetupType = LockCredentialType.PASSWORD
                 clearClipboard()
                 busy = false
             }
         }
     }
     fun submitOpenSettings() {
+        val expectedGeneration = descriptor?.generation ?: return
         if (busy || snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) return
-        val secret = unlockPassword.toCharArray()
+        val secret = unlockEditor?.takeSecret() ?: return
         pendingSecrets = listOf(secret)
+        val requestEpoch = authRequestEpoch
         val operationId = UUID.randomUUID()
-        unlockPassword = ""
         busy = true
         errorText = null
         scope.launch {
             try {
-                val proof = authenticate(secret, AuthPurpose.OPEN_LOCK_SETTINGS)
+                val proof = authenticate(secret, AuthPurpose.OPEN_LOCK_SETTINGS, expectedGeneration)
+                if (requestEpoch != authRequestEpoch) {
+                    describeResult(CredentialResult.Cancelled)
+                    return@launch
+                }
                 opened = proof != null && vm.consumeOpenSettings(proof, operationId)
                 if (proof != null && !opened) errorText = context.getString(R.string.app_lock_error_unavailable)
             } catch (cancelled: CancellationException) {
@@ -296,31 +360,26 @@ fun AppLockSettingsRoute(
     }
     fun submitAction() {
         val selected = action ?: return
+        val expectedGeneration = descriptor?.generation ?: return
         if (busy || snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) return
-        val typedCurrent = actionPassword.toCharArray()
-        val typedNew = replacementPassword.toCharArray()
-        val typedConfirm = replacementConfirmation.toCharArray()
-        pendingSecrets = listOf(typedCurrent, typedNew, typedConfirm)
+        if (selected == LockSettingsAction.PASSWORD && !replacementEditor.isComplete) {
+            errorText = context.getString(
+                if (replacementEditor.patternMismatch ||
+                    (replacementEditor.hasEntry && replacementEditor.hasConfirmation)
+                )
+                    R.string.app_lock_error_credential_mismatch else R.string.app_lock_error_credential_invalid,
+            )
+            return
+        }
+        val typedCurrent = actionEditor?.takeSecret() ?: return
+        val typedNew = if (selected == LockSettingsAction.PASSWORD) replacementEditor.takeSecret() ?: run {
+            typedCurrent.fill('\u0000')
+            errorText = context.getString(R.string.app_lock_error_credential_invalid)
+            return
+        } else charArrayOf()
+        pendingSecrets = listOf(typedCurrent, typedNew)
+        val requestEpoch = authRequestEpoch
         val operationId = UUID.randomUUID()
-        actionPassword = ""
-        replacementPassword = ""
-        replacementConfirmation = ""
-        if (selected == LockSettingsAction.PASSWORD && !typedNew.contentEquals(typedConfirm)) {
-            typedCurrent.fill('\u0000')
-            typedNew.fill('\u0000')
-            typedConfirm.fill('\u0000')
-            pendingSecrets = emptyList()
-            errorText = context.getString(R.string.app_lock_error_password_mismatch)
-            return
-        }
-        if (selected == LockSettingsAction.PASSWORD && Character.codePointCount(typedNew, 0, typedNew.size) !in 4..32) {
-            typedCurrent.fill('\u0000')
-            typedNew.fill('\u0000')
-            typedConfirm.fill('\u0000')
-            pendingSecrets = emptyList()
-            errorText = context.getString(R.string.app_lock_error_password_length)
-            return
-        }
         busy = true
         errorText = null
         var recoveryDisplayStarted = false
@@ -332,7 +391,11 @@ fun AppLockSettingsRoute(
                     LockSettingsAction.DISABLE -> AuthPurpose.DISABLE_LOCK
                     LockSettingsAction.RECOVERY -> AuthPurpose.REPLACE_RECOVERY_CODE
                 }
-                val proof = authenticate(typedCurrent, purpose)
+                val proof = authenticate(typedCurrent, purpose, expectedGeneration)
+                if (requestEpoch != authRequestEpoch) {
+                    describeResult(CredentialResult.Cancelled)
+                    return@launch
+                }
                 if (proof == null) return@launch
                 if (!vm.bindPendingOperation(proof, operationId)) {
                     errorText = context.getString(R.string.app_lock_error_unavailable)
@@ -353,7 +416,7 @@ fun AppLockSettingsRoute(
                             errorText = context.getString(R.string.app_lock_error_unavailable)
                             return@launch
                         }
-                        val result = vm.changePassword(proof, typedNew)
+                        val result = vm.changePassword(proof, typedNew, replacementType)
                         describeResult(result)
                         if (result is CredentialResult.Success) onBack()
                     }
@@ -376,26 +439,25 @@ fun AppLockSettingsRoute(
             } catch (_: Exception) {
                 errorText = context.getString(R.string.app_lock_error_unavailable)
             } finally {
-                listOf(typedCurrent, typedNew, typedConfirm).forEach { it.fill('\u0000') }
-                pendingSecrets = pendingSecrets.filterNot { it === typedCurrent || it === typedNew || it === typedConfirm }
+                listOf(typedCurrent, typedNew).forEach { it.fill('\u0000') }
+                pendingSecrets = pendingSecrets.filterNot { it === typedCurrent || it === typedNew }
                 if (!recoveryDisplayStarted) busy = false
             }
         }
     }
-    fun submitSetupPassword() {
+    fun submitSetupCredential() {
         if (busy || snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) return
-        if (setupPassword != setupConfirmation) {
-            errorText = context.getString(R.string.app_lock_error_password_mismatch)
+        val secret = setupEditor.takeSecret()
+        if (secret == null) {
+            errorText = context.getString(
+                if (setupEditor.patternMismatch || (setupEditor.hasEntry && setupEditor.hasConfirmation))
+                    R.string.app_lock_error_credential_mismatch else R.string.app_lock_error_credential_invalid,
+            )
             return
         }
-        if (passwordCodePoints(setupPassword) !in 4..32) {
-            errorText = context.getString(R.string.app_lock_error_password_length)
-            return
-        }
-        pendingSetupPassword?.fill('\u0000')
-        pendingSetupPassword = setupPassword.toCharArray()
-        setupPassword = ""
-        setupConfirmation = ""
+        pendingSetupSecret?.fill('\u0000')
+        pendingSetupSecret = secret
+        pendingSetupType = setupType
         displayRecovery(RecoveryDisplayPurpose.SETUP)
     }
 
@@ -439,9 +501,23 @@ fun AppLockSettingsRoute(
                     }
                 } else if (storedPolicy.enabled && !opened) {
                     Text(stringResource(R.string.app_lock_settings_auth_body))
-                    SecretField(R.string.app_lock_current_password, unlockPassword, !busy,
-                        { unlockPassword = it }, "app_lock_settings_password")
-                    LumaButton(enabled = unlockPassword.isNotEmpty() && !busy, onClick = ::submitOpenSettings,
+                    when (descriptorResult) {
+                        null -> Text(stringResource(R.string.app_lock_credential_loading))
+                        is CredentialDescriptorResult.Ready -> unlockEditor?.let { state ->
+                            LockCredentialInput(
+                                state = state,
+                                enabled = !busy,
+                                label = stringResource(R.string.app_lock_current_credential),
+                                modifier = Modifier.testTag("app_lock_settings_password"),
+                            )
+                        }
+                        CredentialDescriptorResult.Disabled,
+                        CredentialDescriptorResult.Unavailable -> AccessibleFeedback(
+                            stringResource(R.string.app_lock_error_unavailable),
+                            Modifier.testTag("app_lock_settings_unavailable"),
+                        )
+                    }
+                    LumaButton(enabled = unlockEditor?.isComplete == true && !busy, onClick = ::submitOpenSettings,
                         modifier = Modifier.testTag("app_lock_settings_auth")) {
                         Text(stringResource(R.string.app_lock_unlock_settings))
                     }
@@ -455,22 +531,31 @@ fun AppLockSettingsRoute(
                 } else if (!storedPolicy.enabled) {
                     Text(stringResource(R.string.app_lock_setup_body))
                     PolicyControls(policy, enabled = !busy, onPolicy = { policy = it })
-                    SecretField(R.string.app_lock_new_password, setupPassword, !busy,
-                        { setupPassword = it }, "app_lock_setup_password")
-                    SecretField(R.string.app_lock_confirm_password, setupConfirmation, !busy,
-                        { setupConfirmation = it }, "app_lock_setup_confirm")
-                    LumaButton(enabled = !busy, onClick = ::submitSetupPassword,
+                    LockCredentialTypeSelector(setupType, !busy, onSelected = { setupType = it })
+                    LockCredentialEnrollment(
+                        state = setupEditor,
+                        enabled = !busy,
+                        modifier = Modifier.testTag("app_lock_setup_credential"),
+                    )
+                    LumaButton(enabled = setupEditor.isComplete && !busy, onClick = ::submitSetupCredential,
                         modifier = Modifier.testTag("app_lock_setup_continue")) {
                         Text(stringResource(R.string.app_lock_setup_continue))
                     }
                 } else if (opened) {
                     Text(stringResource(R.string.app_lock_settings_body))
+                    descriptor?.let { current ->
+                        Text(stringResource(R.string.app_lock_current_method))
+                        Text(stringResource(current.type.labelResource()))
+                    }
                     PolicyControls(policy, enabled = !busy, onPolicy = { policy = it })
                     LumaButton(enabled = !busy, onClick = { action = LockSettingsAction.POLICY },
                         modifier = Modifier.testTag("app_lock_save_policy")) {
                         Text(stringResource(R.string.app_lock_save_policy))
                     }
-                    TextButton(enabled = !busy, onClick = { action = LockSettingsAction.PASSWORD },
+                    TextButton(enabled = !busy, onClick = {
+                        replacementType = descriptor?.type ?: LockCredentialType.PASSWORD
+                        action = LockSettingsAction.PASSWORD
+                    },
                         modifier = Modifier.testTag("app_lock_change_password")) {
                         Text(stringResource(R.string.app_lock_change_password))
                     }
@@ -495,7 +580,7 @@ fun AppLockSettingsRoute(
 
     action?.let { selected ->
         LumaAlertDialog(
-            onDismissRequest = { if (!busy) { action = null; actionPassword = ""; replacementPassword = ""; replacementConfirmation = "" } },
+            onDismissRequest = { if (!busy) { action = null; clearSecrets() } },
             title = { Text(stringResource(when (selected) {
                 LockSettingsAction.POLICY -> R.string.app_lock_save_policy
                 LockSettingsAction.PASSWORD -> R.string.app_lock_change_password
@@ -503,18 +588,37 @@ fun AppLockSettingsRoute(
                 LockSettingsAction.RECOVERY -> R.string.app_lock_replace_recovery
             })) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SecretField(R.string.app_lock_current_password, actionPassword, !busy,
-                        { actionPassword = it }, "app_lock_action_password")
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    when (descriptorResult) {
+                        null -> Text(stringResource(R.string.app_lock_credential_loading))
+                        is CredentialDescriptorResult.Ready -> actionEditor?.let { state ->
+                            LockCredentialInput(
+                                state = state,
+                                enabled = !busy,
+                                label = stringResource(R.string.app_lock_current_credential),
+                                modifier = Modifier.testTag("app_lock_action_password"),
+                            )
+                        }
+                        CredentialDescriptorResult.Disabled,
+                        CredentialDescriptorResult.Unavailable -> AccessibleFeedback(
+                            stringResource(R.string.app_lock_error_unavailable),
+                        )
+                    }
                     if (selected == LockSettingsAction.PASSWORD) {
-                        SecretField(R.string.app_lock_new_password, replacementPassword, !busy,
-                            { replacementPassword = it }, "app_lock_replacement_password")
-                        SecretField(R.string.app_lock_confirm_password, replacementConfirmation, !busy,
-                            { replacementConfirmation = it }, "app_lock_replacement_confirm")
+                        LockCredentialTypeSelector(replacementType, !busy, onSelected = { replacementType = it })
+                        LockCredentialEnrollment(
+                            state = replacementEditor,
+                            enabled = !busy,
+                            modifier = Modifier.testTag("app_lock_replacement_credential"),
+                        )
                     }
                 }
             },
-            confirmButton = { TextButton(enabled = actionPassword.isNotEmpty() && !busy,
+            confirmButton = { TextButton(enabled = actionEditor?.isComplete == true &&
+                (selected != LockSettingsAction.PASSWORD || replacementEditor.isComplete) && !busy,
                 onClick = ::submitAction, modifier = Modifier.testTag("app_lock_action_confirm")) {
                 Text(stringResource(R.string.app_lock_confirm_action))
             } },
@@ -582,25 +686,6 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
 }
 
 @Composable
-private fun SecretField(label: Int, value: String, enabled: Boolean, onValue: (String) -> Unit, tag: String) {
-    var revealed by remember(tag) { mutableStateOf(false) }
-    LumaOutlinedTextField(
-        value = value, onValueChange = onValue, enabled = enabled,
-        label = { Text(stringResource(label)) }, singleLine = true,
-        visualTransformation = if (revealed) VisualTransformation.None else PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { }),
-        modifier = Modifier.fillMaxWidth().testTag(tag),
-        trailingIcon = {
-            TextButton(onClick = { revealed = !revealed }, enabled = enabled,
-                modifier = Modifier.testTag("${tag}_visibility")) {
-                Text(stringResource(if (revealed) R.string.app_lock_hide_password else R.string.app_lock_show_password))
-            }
-        },
-    )
-}
-
-@Composable
 internal fun SecurePrivacyWindow() {
     val context = LocalContext.current
     val activity = remember(context) { context.findSecureWindowActivity() }
@@ -618,8 +703,6 @@ private fun Context.findSecureWindowActivity(): Activity? = when (this) {
     else -> null
 }
 
-private fun passwordCodePoints(value: String): Int = value.codePointCount(0, value.length)
-
 private fun LockSection.labelResource(): Int = when (this) {
     LockSection.MEMORIES -> R.string.app_lock_section_memories
     LockSection.JOURNAL -> R.string.app_lock_section_journal
@@ -629,6 +712,12 @@ private fun LockSection.labelResource(): Int = when (this) {
     LockSection.PEOPLE -> R.string.app_lock_section_people
     LockSection.FOCUS -> R.string.app_lock_section_focus
     LockSection.HEALTH_USAGE -> R.string.app_lock_section_health_usage
+}
+
+private fun LockCredentialType.labelResource(): Int = when (this) {
+    LockCredentialType.PIN -> R.string.app_lock_credential_pin
+    LockCredentialType.PASSWORD -> R.string.app_lock_credential_password
+    LockCredentialType.PATTERN -> R.string.app_lock_credential_pattern
 }
 
 private fun RelockMode.labelResource(): Int = when (this) {

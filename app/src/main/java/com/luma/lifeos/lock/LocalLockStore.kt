@@ -16,6 +16,7 @@ import java.io.IOException
 import java.security.MessageDigest
 
 internal data class PersistedCredential(
+    val type: LockCredentialType,
     val passwordSalt: ByteArray,
     val passwordVerifier: ByteArray,
     val recoverySalt: ByteArray,
@@ -157,6 +158,7 @@ internal class AndroidLocalLockStore internal constructor(
             val credential = state.credential
             output.writeBoolean(credential != null)
             if (credential != null) {
+                output.writeUTF(credential.type.name)
                 output.writeBoundedBytes(credential.passwordSalt)
                 output.writeBoundedBytes(credential.passwordVerifier)
                 output.writeBoundedBytes(credential.recoverySalt)
@@ -173,7 +175,8 @@ internal class AndroidLocalLockStore internal constructor(
     private fun decode(payload: ByteArray): PersistedLockState {
         try {
             DataInputStream(ByteArrayInputStream(payload)).use { input ->
-                if (input.readInt() != VERSION) throw LockStoreCorruptException("Unsupported lock state version")
+                val version = input.readInt()
+                if (version !in MIN_VERSION..VERSION) throw LockStoreCorruptException("Unsupported lock state version")
                 val enabled = input.readBoolean()
                 val coverage = enumValue<LockCoverage>(input.readUTF())
                 val sectionCount = input.readInt()
@@ -201,6 +204,8 @@ internal class AndroidLocalLockStore internal constructor(
 
                 val credential = if (input.readBoolean()) {
                     PersistedCredential(
+                        type = if (version == 1) LockCredentialType.PASSWORD
+                        else enumValue<LockCredentialType>(input.readUTF()),
                         passwordSalt = input.readBoundedBytes(SALT_BYTES),
                         passwordVerifier = input.readBoundedBytes(VERIFIER_BYTES),
                         recoverySalt = input.readBoundedBytes(SALT_BYTES),
@@ -258,7 +263,8 @@ internal class AndroidLocalLockStore internal constructor(
         const val DIRECTORY = "app_lock"
         const val FILE_NAME = "credential_state.bin"
         const val MAGIC = 0x4c554d41 // "LUMA"
-        const val VERSION = 1
+        const val MIN_VERSION = 1
+        const val VERSION = 2
         const val AUTH_TAG_BYTES = 32
         const val SALT_BYTES = 16
         const val VERIFIER_BYTES = 32

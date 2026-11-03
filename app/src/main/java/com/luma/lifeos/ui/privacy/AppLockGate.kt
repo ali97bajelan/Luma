@@ -2,8 +2,6 @@ package com.luma.lifeos.ui.privacy
 
 import com.luma.lifeos.ui.common.LumaButton
 
-import com.luma.lifeos.ui.common.LumaOutlinedTextField
-
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
 import androidx.activity.compose.BackHandler
@@ -12,8 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,23 +23,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.AuthPurpose
+import com.luma.lifeos.lock.CredentialDescriptorResult
 import com.luma.lifeos.lock.CredentialResult
 import com.luma.lifeos.lock.LockCredentialService
 import com.luma.lifeos.lock.OperationProof
@@ -138,7 +135,7 @@ fun AppLockGate(
     }
 }
 
-/** Password-only unlock UI shared by the app gate and the private-draft resume handoff. */
+/** Stored-method unlock UI shared by the app gate and private-draft resume handoff. */
 @Composable
 fun AppLockUnlockDialog(
     credentials: LockCredentialService,
@@ -150,34 +147,75 @@ fun AppLockUnlockDialog(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var password by remember { mutableStateOf("") }
-    var revealed by remember { mutableStateOf(false) }
+    val snapshot by coordinator.snapshot.collectAsStateWithLifecycle()
+    var descriptorResult by remember { mutableStateOf<CredentialDescriptorResult?>(null) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var cancelled by remember { mutableStateOf(false) }
+    val descriptor = (descriptorResult as? CredentialDescriptorResult.Ready)?.descriptor
+    val editorState: LockCredentialEditorState? = key(descriptor?.type, descriptor?.generation) {
+        if (descriptor == null) null else rememberLockCredentialEditorState(descriptor.type)
+    }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(lifecycle, onCancel) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                password = ""
-                onCancel()
+    fun cancelPrompt() {
+        editorState?.clear()
+        if (!cancelled) {
+            cancelled = true
+            onCancel()
+        }
+    }
+    LaunchedEffect(credentials, snapshot.loadStatus, snapshot.policy?.enabled, snapshot.policy?.generation) {
+        descriptorResult = when {
+            snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY -> null
+            snapshot.policy?.enabled != true -> CredentialDescriptorResult.Disabled
+            else -> {
+                val loaded = credentials.credentialDescriptor()
+                if (loaded is CredentialDescriptorResult.Ready &&
+                    loaded.descriptor.generation != snapshot.policy?.generation
+                ) CredentialDescriptorResult.Unavailable else loaded
             }
         }
+    }
+    LaunchedEffect(snapshot.loadStatus, snapshot.policy?.generation, descriptorResult) {
+        if (descriptorResult != null &&
+            (snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
+                snapshot.policy?.enabled != true ||
+                (descriptorResult is CredentialDescriptorResult.Ready &&
+                    snapshot.policy?.generation != descriptor?.generation))
+        ) cancelPrompt()
+    }
+    DisposableEffect(lifecycle, onCancel, editorState) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) cancelPrompt()
+        }
         lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer); password = "" }
+        onDispose { lifecycle.removeObserver(observer); editorState?.clear() }
     }
     fun submit() {
-        if (busy || password.isEmpty()) return
-        val typed = password
-        password = ""
+        val currentDescriptor = descriptor ?: return
+        val typed = editorState?.takeSecret() ?: return
+        if (busy) {
+            typed.fill('\u0000')
+            return
+        }
         busy = true
         error = null
         scope.launch {
             try {
-                val result = credentials.verify(typed.toCharArray(), AuthPurpose.BROWSE)
+                val result = credentials.verify(typed, AuthPurpose.BROWSE, currentDescriptor.generation)
+                if (cancelled) {
+                    error = context.getString(com.luma.lifeos.R.string.app_lock_error_cancelled)
+                    return@launch
+                }
                 when (result) {
                     is CredentialResult.Success -> {
                         val proof = result.proof
-                        if (proof == null) {
+                        val latest = coordinator.snapshot.value
+                        if (latest.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
+                            latest.policy?.generation != currentDescriptor.generation
+                        ) {
+                            error = context.getString(com.luma.lifeos.R.string.app_lock_error_cancelled)
+                        } else if (proof == null) {
                             error = context.getString(com.luma.lifeos.R.string.app_lock_error_unavailable)
                         } else if (proofOnly) {
                             onSuccess(proof)
@@ -213,42 +251,50 @@ fun AppLockUnlockDialog(
                 throw cancelled
             } catch (_: Exception) {
                 error = context.getString(com.luma.lifeos.R.string.app_lock_error_unavailable)
-            } finally { busy = false }
+            } finally {
+                typed.fill('\u0000')
+                busy = false
+            }
         }
     }
     SecurePrivacyWindow()
     LumaAlertDialog(
-        onDismissRequest = { if (!busy) { password = ""; onCancel() } },
+        onDismissRequest = { if (!busy) cancelPrompt() },
         title = { Text(stringResource(com.luma.lifeos.R.string.app_lock_unlock_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Text(stringResource(com.luma.lifeos.R.string.app_lock_unlock_body))
-                LumaOutlinedTextField(
-                    value = password, onValueChange = { password = it }, enabled = !busy,
-                    label = { Text(stringResource(com.luma.lifeos.R.string.app_lock_current_password)) },
-                    singleLine = true,
-                    visualTransformation = if (revealed) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { submit() }),
-                    modifier = Modifier.fillMaxWidth().testTag("app_lock_unlock_password"),
-                    trailingIcon = { TextButton(enabled = !busy, onClick = { revealed = !revealed },
-                        modifier = Modifier.testTag("app_lock_unlock_visibility")) {
-                        Text(stringResource(if (revealed) com.luma.lifeos.R.string.app_lock_hide_password
-                            else com.luma.lifeos.R.string.app_lock_show_password))
-                    } },
-                )
+                when (val loaded = descriptorResult) {
+                    null -> Text(stringResource(com.luma.lifeos.R.string.app_lock_credential_loading))
+                    is CredentialDescriptorResult.Ready -> editorState?.let { state ->
+                        LockCredentialInput(
+                            state = state,
+                            enabled = !busy && !cancelled,
+                            label = stringResource(com.luma.lifeos.R.string.app_lock_current_credential),
+                            modifier = Modifier.testTag("app_lock_unlock_input"),
+                        )
+                    }
+                    CredentialDescriptorResult.Disabled,
+                    CredentialDescriptorResult.Unavailable ->
+                        com.luma.lifeos.ui.common.AccessibleFeedback(
+                            stringResource(com.luma.lifeos.R.string.app_lock_error_unavailable),
+                        )
+                }
                 error?.let { com.luma.lifeos.ui.common.AccessibleFeedback(it, Modifier.testTag("app_lock_unlock_error")) }
-                TextButton(enabled = !busy, onClick = { password = ""; onForgotPassword() },
+                TextButton(enabled = !busy, onClick = { editorState?.clear(); onForgotPassword() },
                     modifier = Modifier.testTag("app_lock_forgot_password")) {
                     Text(stringResource(com.luma.lifeos.R.string.app_lock_forgot_password))
                 }
             }
         },
-        confirmButton = { TextButton(enabled = !busy && password.isNotEmpty(), onClick = ::submit,
+        confirmButton = { TextButton(enabled = !busy && !cancelled && editorState?.isComplete == true, onClick = ::submit,
             modifier = Modifier.testTag("app_lock_unlock_submit")) {
             Text(stringResource(com.luma.lifeos.R.string.app_lock_unlock_action))
         } },
-        dismissButton = { TextButton(enabled = !busy, onClick = { password = ""; onCancel() }) {
+        dismissButton = { TextButton(enabled = !busy, onClick = ::cancelPrompt) {
             Text(stringResource(com.luma.lifeos.R.string.cancel))
         } },
     )

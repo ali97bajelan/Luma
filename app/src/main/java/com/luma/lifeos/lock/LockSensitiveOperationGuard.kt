@@ -3,7 +3,9 @@ package com.luma.lifeos.lock
 import com.luma.lifeos.domain.lock.LockLoadStatus
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockPolicy
+import com.luma.lifeos.domain.lock.LockSnapshot
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
@@ -24,6 +26,7 @@ class LockSensitiveOperationGuard internal constructor(
     private val readPersistedPolicy: suspend () -> LockPolicy?,
 ) {
     private val operationGeneration = AtomicLong(0L)
+    val lockSnapshot: StateFlow<LockSnapshot> = coordinator.snapshot
 
     fun requiresAuthentication(): Boolean = coordinator.snapshot.value.let { snapshot ->
         snapshot.loadStatus != LockLoadStatus.READY || snapshot.policy?.enabled == true
@@ -43,15 +46,32 @@ class LockSensitiveOperationGuard internal constructor(
         return PendingSensitiveOperation(UUID.randomUUID(), purpose, policy.generation, operationGeneration.get())
     }
 
+    suspend fun credentialDescriptor(pending: PendingSensitiveOperation): CredentialDescriptorResult {
+        if (!isCurrent(pending)) return CredentialDescriptorResult.Unavailable
+        val descriptor = credentials.credentialDescriptor()
+        if (!isCurrent(pending)) return CredentialDescriptorResult.Unavailable
+        return when (descriptor) {
+            is CredentialDescriptorResult.Ready -> if (
+                descriptor.descriptor.generation == pending.policyGeneration
+            ) descriptor else CredentialDescriptorResult.Unavailable
+            CredentialDescriptorResult.Disabled -> CredentialDescriptorResult.Unavailable
+            CredentialDescriptorResult.Unavailable -> CredentialDescriptorResult.Unavailable
+        }
+    }
+
     suspend fun verify(
         pending: PendingSensitiveOperation,
-        password: CharArray,
+        secret: CharArray,
     ): CredentialResult {
         if (!isCurrent(pending)) {
-            password.fill('\u0000')
-            return CredentialResult.Unavailable
+            secret.fill('\u0000')
+            return CredentialResult.Cancelled
         }
-        val result = credentials.verify(password, pending.purpose)
+        val result = credentials.verify(secret, pending.purpose, pending.policyGeneration)
+        if (!isCurrent(pending)) {
+            cancel(pending)
+            return CredentialResult.Cancelled
+        }
         if (result is CredentialResult.Success) {
             val proof = result.proof ?: return CredentialResult.Unavailable
             if (!proof.bindPendingOperation(pending.id, pending.policyGeneration)) {

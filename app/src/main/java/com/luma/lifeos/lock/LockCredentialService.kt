@@ -95,7 +95,7 @@ class OperationProof internal constructor(
     }
 
     /**
-     * Binds browsing proof to the coordinator's request captured when the password prompt opened.
+     * Binds browsing proof to the coordinator's request captured when the credential prompt opened.
      * The coordinator must compare that captured request with its current pending request first.
      */
     @Synchronized
@@ -178,19 +178,31 @@ class LockCredentialUnavailableException(cause: Throwable? = null) :
  * handles are process-local and must never be put in saved state, intents, archives, or logs.
  */
 interface LockCredentialService {
+    suspend fun credentialDescriptor(): CredentialDescriptorResult
+
     suspend fun enable(
-        password: CharArray,
+        secret: CharArray,
+        type: LockCredentialType,
         policy: LockPolicy,
         recoveryConfirmation: RecoveryConfirmation,
     ): CredentialResult
 
-    suspend fun verify(password: CharArray, purpose: AuthPurpose): CredentialResult
+    suspend fun verify(
+        secret: CharArray,
+        purpose: AuthPurpose,
+        expectedGeneration: Long? = null,
+    ): CredentialResult
 
-    suspend fun changePassword(proof: OperationProof, replacement: CharArray): CredentialResult
+    suspend fun changePassword(
+        proof: OperationProof,
+        replacement: CharArray,
+        replacementType: LockCredentialType,
+    ): CredentialResult
 
     suspend fun recover(
         code: CharArray,
         replacement: CharArray,
+        replacementType: LockCredentialType,
         confirmation: RecoveryConfirmation,
     ): CredentialResult
 

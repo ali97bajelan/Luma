@@ -1,6 +1,6 @@
 package com.luma.lifeos.lock
 
-/** Consecutive password and recovery-code failures share this bounded delay schedule. */
+/** Consecutive credential and recovery-code failures share this bounded delay schedule. */
 object LockRetryPolicy {
     const val FIRST_COOLDOWN_FAILURE: Long = 5L
     const val FIRST_COOLDOWN_MS: Long = 30_000L
