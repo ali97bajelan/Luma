@@ -117,12 +117,12 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
                 snoozeUntil = long("snooze_until"), needsReconcile = l("needs_reconcile") == 1L,
             )
         }
+        "focus_tag" -> FocusMetadataArchiveAdapter.validateTag(
+            FocusMetadataArchiveAdapter.TagRow(s("id"), s("name"), s("normalized_name")),
+        )
         "focus_session" -> {
             val state = FocusState.valueOf(s("state"))
-            require(state == FocusState.FINISHED || state == FocusState.INTERRUPTED) {
-                "Only terminal focus sessions can be restored"
-            }
-            require(long("open_slot") == null) { "An open focus session cannot be restored" }
+            FocusMetadataArchiveAdapter.validateSession(state.name, long("open_slot"), text("name"))
             require(l("revision") >= 0)
             require(l("recovered_or_uncertain") in 0..1)
             val terminalReason = text("terminal_reason")?.let(FocusTerminalReason::valueOf)
@@ -156,6 +156,21 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
             )
         }
     }
+}
+
+/** Validates focus tag references and excludes unused catalog entries from portable archives. */
+internal fun validateFocusMetadataArchive(sqlite: SupportSQLiteDatabase) {
+    val tags = sqlite.query("SELECT id, name, normalized_name FROM focus_tag ORDER BY id").use { cursor ->
+        buildList {
+            while (cursor.moveToNext()) {
+                add(FocusMetadataArchiveAdapter.TagRow(cursor.getString(0), cursor.getString(1), cursor.getString(2)))
+            }
+        }
+    }
+    val sessionTagIds = sqlite.query("SELECT tag_id FROM focus_session ORDER BY id").use { cursor ->
+        buildList { while (cursor.moveToNext()) add(if (cursor.isNull(0)) null else cursor.getString(0)) }
+    }
+    FocusMetadataArchiveAdapter.validateReferences(tags, sessionTagIds)
 }
 
 /** Validates relationships and overflow after every focus row has been staged. */

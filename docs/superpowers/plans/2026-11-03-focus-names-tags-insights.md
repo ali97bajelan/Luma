@@ -1,6 +1,6 @@
 # Focus Names, Tags, and Insights Implementation Plan
 
-> **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task after the draft specification is reviewed. Steps use checkboxes for tracking. This handoff does not execute the product plan.
+> **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task after the draft specification is reviewed. Steps use checkboxes for tracking. FI03 source implementation is recorded below; Room-generated schema and runtime validation remain deferred.
 
 **Goal:** Add named/tagged focus sessions and useful period insights without changing timer behavior.
 
@@ -87,15 +87,15 @@ Source verification: `python3 scripts/run_focus_domain_tests.py` — OK (23 test
 
 ## FI03 — Migration, backup and legacy compatibility
 
-**Files:** Modify data `db/LumaDatabase.kt`, `backup/{BackupArchive,BackupValidation,BackupSql,RoomBackupService}.kt`; create data `backup/FocusMetadataArchiveAdapter.kt` and test `backup/FocusMetadataArchiveAdapterTest.kt`; create `scripts/check_focus_metadata_sql.py`; update `docs/{BACKUP_FORMAT,PRIVACY}.md`. Future Room snapshot target: `core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/10.json` after permitted generation.
+**Files:** Fixture-test the existing data `db/LumaDatabase.kt` 9→10 migration; modify data `backup/{BackupArchive,BackupValidation,RoomBackupService}.kt`; create data `backup/FocusMetadataArchiveAdapter.kt` and test `backup/FocusMetadataArchiveAdapterTest.kt`; create `scripts/check_focus_metadata_sql.py`; update `docs/{BACKUP_FORMAT,PRIVACY}.md`. Future Room snapshot target: `core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/10.json` after permitted generation.
 
 **Consumes:** FI02 entity/SQL contract.
 **Produces:** Migration 9→10 and archive 8 adapters, rebased if versions advance.
 
-- [ ] Write failing adapter fixtures for schema 7 null metadata, schemas 1–6 absence of focus, schema 8 round-trip, dangling/duplicate tags, invalid labels, open sessions and omitted unused tags.
-- [ ] Implement staged validation/adaptation and export/import table ordering. Keep legacy command receipts compatible and preserve current reset/generation rotation and paused-export behavior.
-- [ ] Create a Python SQLite fixture check that reads the actual migration SQL (not a separately maintained copy); seed v9 running/paused/terminal sessions, execute 9→10 and assert existing rows, indices, FKs and receipts survive. If SQL is not extractable, factor a single source for the SQL rather than claiming a copied fixture tests the migration.
-- [ ] Run pure adapter tests and `python3 scripts/check_focus_metadata_sql.py`; record what each proves. Do not generate or fabricate Room schema JSON manually; record schema generation/Room validation as deferred under the no-Gradle constraint.
+- [x] Add adapter fixtures for schema 7 null metadata, schemas 1–6 absence of focus, schema 8 round-trip, dangling/duplicate tags, invalid labels, open sessions and omitted unused tags.
+- [x] Implement staged validation/adaptation and export/import table ordering. Keep legacy command receipts compatible and preserve current reset/generation rotation and paused-export behavior.
+- [x] Create a Python SQLite fixture check that extracts and executes the actual migration SQL; seed v9 running/paused/terminal sessions, execute 9→10 and assert existing rows, indices, FKs and receipts survive.
+- [x] Run pure adapter tests and `python3 scripts/check_focus_metadata_sql.py`; record what each proves. Do not generate or fabricate Room schema JSON manually; record schema generation/Room validation as deferred under the no-Gradle constraint.
 
 ## FI04 — Tag summaries and longest session
 
@@ -152,4 +152,4 @@ Source verification: `python3 scripts/run_focus_domain_tests.py` — OK (23 test
 
 ## Handoff status
 
-FI01 is complete at source level; FI02–FI07 remain TODO. Session metadata models and validation exist; persistence and insight screens remain pending. No commits, emulator runs or Gradle commands are required for this handoff.
+FI01 is complete at source level; FI02 source changes and FI03 source implementation are present, while FI02 runtime verification and FI04–FI07 remain pending. Session metadata models and persistence exist; insight screens remain pending. Room-generated schema validation and Android runtime checks were not run. No commit, emulator run or Gradle command was required for FI03.

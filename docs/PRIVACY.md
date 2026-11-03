@@ -4,9 +4,10 @@ Settings → Privacy and local data explains Luma's storage, optional permission
 backup copies and full reset. The same read-only policy appears in the native
 Health Connect rationale activity.
 
-Life records, task titles and notes, names, imported observations and private photo
-copies are stored on this device. The app has no account, advertising or telemetry
-SDK and makes no network requests. The built debug manifest does not request Internet access.
+Life records, task titles and notes, focus-session names and tags, personal names,
+imported observations and private photo copies are stored on this device. The app
+has no account, advertising or telemetry SDK and makes no network requests. The
+built debug manifest does not request Internet access.
 Automatic cloud backup and device-transfer extraction are disabled; manual backup
 is explicit and unencrypted. A chosen document provider controls its destination.
 This describes Luma's own behavior, not other apps or device services.
@@ -30,15 +31,17 @@ before restored content is shown. Focus timers and trusted background work keep
 their existing lifecycle; App Lock gates saved Focus history and in-app access,
 and the emergency exit does not grant access to saved data.
 
-Focus history is saved locally with the other Luma data. Manual backups include
-only terminal focus sessions and their credited runs. A paused session is
+Focus history, including session names and tags, is saved locally with the other
+Luma data. Manual backups include only terminal focus sessions, their credited
+runs and tags used by that exported history. A paused session is
 excluded until the user explicitly stops it for export; continuing without it is
 also an explicit choice. Running state, boot/monotonic clock checkpoints,
-command receipts, deletion tombstones, emergency markers and selected app
-shortcuts are not portable. Restore validates the complete archive before
+command receipts, deletion tombstones, emergency markers, selected app shortcuts
+and unused focus tags are not portable. Restore validates the complete archive before
 replacement, imports terminal history only, and keeps device-local focus app
 choices on the device. Archives created before focus-history support restore
-with empty focus history.
+with empty focus history; schema 7 archives restore focus history with null names
+and tags.
 
 ## Home-screen widgets
 

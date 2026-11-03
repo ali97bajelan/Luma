@@ -50,6 +50,27 @@ class RoomBackupService(private val context: Context, private val database: Luma
                     for (table in BACKUP_TABLES) {
                         currentCoroutineContext().ensureActive()
                         val file = File(work, "$table.tsv")
+                        if (table == "focus_tag") {
+                            val sessionQuery = FocusMetadataArchiveAdapter.focusSessionExportQuery(excludedSessionId != null)
+                            val exportedTagIds = FocusMetadataArchiveAdapter.exportedTagIds(
+                                (if (excludedSessionId == null) sqlite.query(sessionQuery)
+                                else sqlite.query(sessionQuery, arrayOf(excludedSessionId))).use { cursor ->
+                                    val tagIndex = cursor.getColumnIndexOrThrow("tag_id")
+                                    buildList { while (cursor.moveToNext()) add(if (cursor.isNull(tagIndex)) null else cursor.getString(tagIndex)) }
+                                },
+                            )
+                            sqlite.query("SELECT * FROM focus_tag ORDER BY id").use { cursor ->
+                                file.outputStream().use { out ->
+                                    BackupRows.write(
+                                        out,
+                                        cursor.columnNames.toList(),
+                                        FocusMetadataArchiveAdapter.referencedTagRows(cursorRows(cursor), exportedTagIds),
+                                    )
+                                }
+                            }
+                            payloads["tables/$table.tsv"] = file
+                            continue
+                        }
                         val query = exportQuery(table, excludedSessionId != null)
                         val cursor = if (excludedSessionId != null && table in setOf("focus_session", "focus_run")) {
                             sqlite.query(query, arrayOf(excludedSessionId))
@@ -89,23 +110,27 @@ class RoomBackupService(private val context: Context, private val database: Luma
                 for (table in backupTables(manifest.schemaVersion)) {
                     currentCoroutineContext().ensureActive()
                     val currentColumns = columns(sql, table)
-                    val names = backupImportColumns(table, manifest.schemaVersion, currentColumns.map { it.name })
+                    val currentNames = currentColumns.map { it.name }
+                    val names = backupImportColumns(table, manifest.schemaVersion, currentNames)
+                    val insertNames = FocusMetadataArchiveAdapter.insertColumns(table, manifest.schemaVersion, names, currentNames)
                     val importColumns = currentColumns.filter { it.name in names }
-                    val statement = sql.compileStatement(BackupSql.insert(table, names))
+                    val statement = sql.compileStatement(BackupSql.insert(table, insertNames))
                     statement.use {
                         BackupRows.read(File(work, "payload/tables/$table.tsv"), names) { row ->
                             validateTypes(importColumns, row)
-                            val validationRow = names.zip(row).toMap().toMutableMap()
+                            val insertRow = FocusMetadataArchiveAdapter.adaptRow(table, manifest.schemaVersion, names, row, insertNames)
+                            val validationRow = insertNames.zip(insertRow).toMap().toMutableMap()
                             if (table == "todo_task" && manifest.schemaVersion == 4) {
                                 validationRow["due_time_minutes"] = null
                             }
                             validateBackupRow(table, validationRow)
-                            bind(statement, row); statement.executeInsert()
+                            bind(statement, insertRow); statement.executeInsert()
                         }
                     }
                 }
                 normalizeLegacyJournals(sql)
                 validateFocusArchive(sql)
+                validateFocusMetadataArchive(sql)
                 sql.query("PRAGMA foreign_key_check").use { require(!it.moveToFirst()) { "Backup contains broken references" } }
                 sql.query("PRAGMA integrity_check").use { require(it.moveToFirst() && it.getString(0) == "ok") }
                 BackupSql.invalidGraphQueries.forEach { query ->
@@ -240,8 +265,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
             else { val text = cursor.getString(0); requireSafeJsonDepth(text); org.json.JSONObject(text) }
         }
     private fun exportQuery(table: String, excludePausedSession: Boolean): String = when (table) {
-        "focus_session" -> "SELECT * FROM focus_session WHERE state IN ('FINISHED', 'INTERRUPTED') AND open_slot IS NULL" +
-            (if (excludePausedSession) " AND id != ?" else "") + " ORDER BY id"
+        "focus_session" -> FocusMetadataArchiveAdapter.focusSessionExportQuery(excludePausedSession) + " ORDER BY id"
         "focus_run" -> """SELECT r.* FROM focus_run AS r
             INNER JOIN focus_session AS s ON s.id = r.session_id
             WHERE s.state IN ('FINISHED', 'INTERRUPTED') AND s.open_slot IS NULL

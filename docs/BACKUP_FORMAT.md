@@ -18,7 +18,8 @@ state. A destination without a lock must explicitly choose to set one up or
 continue without one before replacement is committed and restored content is
 shown. The archive itself remains unencrypted.
 
-Backups are unencrypted and contain private text, terminal focus history, task titles and notes, names and
+Backups are unencrypted and contain private text, terminal focus history including
+focus-session names and tags, task titles and notes, names and
 photos. No automatic
 upload occurs; the selected document provider controls the destination. No broad
 storage permission is requested. The picker follows Android's
@@ -30,7 +31,7 @@ referenced photos abort export rather than silently omitting them.
 ## Archive layout
 
 - `manifest.properties`: Java Properties syntax. Required `format=luma-backup`,
-  `format_version=1`, `schema_version=1`, `2`, `3`, `4`, `5`, `6` or `7`, `created_at` (UTC epoch
+  `format_version=1`, `schema_version=1`, `2`, `3`, `4`, `5`, `6`, `7` or `8`, `created_at` (UTC epoch
   milliseconds),
   and `file_count`. Every payload has `size.<path>` and `sha256.<path>` entries.
 - `tables/<table>.tsv`: one file per application table. Header is the exact column
@@ -74,10 +75,18 @@ Schema 6 appends `task_reminder`, for 28 tables total. It stores optional task
 reminder configuration and short-lived action runtime. Restore disables task
 reminders, rotates task and reminder revisions, and clears delivered-action and
 snooze state. Schema 1–5 archives contain no task reminder rows.
-Schema 7 appends `focus_session` and `focus_run`, for 30 tables total. Only
-`FINISHED` and `INTERRUPTED` sessions and their closed runs are exported; paused
-sessions require an explicit stop-or-exclude choice. Schema 1–6 contain no focus
-rows, so restoring one replaces current focus history with an empty history.
+Schema 7 appends `focus_session` and `focus_run`, for 30 tables total. Its focus
+session header has no name or tag columns; imports adapt those fields to null.
+Only `FINISHED` and `INTERRUPTED` sessions and their closed runs are exported;
+paused sessions require an explicit stop-or-exclude choice. Schema 1–6 contain no
+focus rows, so restoring one replaces current focus history with an empty history.
+Schema 8 adds the focus-only `focus_tag` table and nullable `name` and `tag_id`
+columns to `focus_session`, for 31 tables total. The tag table precedes sessions
+so restore can enforce its foreign key. Export includes only tags referenced by
+exported terminal sessions; old unused catalog entries are omitted. Import checks
+tag labels and normalized identities, references, unused tags, terminal session
+state and closed-run timing before live data can be replaced. Schema 7 remains
+readable and restores legacy sessions with null metadata.
 Unknown format/schema versions fail safely; future versions require an explicit
 reader. Task rows are validated for canonical UUIDs and civil dates, minute range,
 the date/time pairing, title/note limits, and update/creation chronology. Schema 4
@@ -87,8 +96,10 @@ versions rotate revision tokens so pre-restore writes cannot change replacement
 data. Room schema 6 adds `due_time_minutes`; its 5→6 migration keeps every existing
 task and gives it null time. Room schema 7 adds `task_reminder`; its 6→7 migration
 creates no enabled reminder rows. Room schema 8 adds focus sessions, their runs and
-device-local focus runtime/replay state. Only the two terminal-history tables are
-portable; all focus runtime and widget runtime tables stay device-local. Task due times are floating civil values: changing time
+device-local focus runtime/replay state. Room schema 10 adds nullable focus metadata
+and the focus tag catalog through the non-destructive 9→10 migration. Only terminal
+history and referenced focus tags are portable; all focus runtime and widget runtime
+tables stay device-local. Task due times are floating civil values: changing time
 zone does not convert the saved date or minute. Buckets remain based on the local
 calendar date. A task reminder is created only after the user enables it and the
 task has both a due date and time.
@@ -106,8 +117,9 @@ Rows enter a separate generated Room database using bound statements. Column nam
 nullability, SQLite value types, stable UUIDs, entity/domain invariants, foreign
 keys, existing child/parent type/source, database integrity and exact photo
 coverage are checked. Focus sessions and runs must be terminal, closed, linked,
-canonical and nonnegative; a session without runs or per-session duration overflow
-is rejected. Habit records must also satisfy their tracking-zone,
+canonical and nonnegative. Names and tag labels must satisfy their stored format;
+tag identities must be unique and referenced. A session without runs or per-session
+duration overflow is rejected. Habit records must also satisfy their tracking-zone,
 schedule, log, choice and reminder-runtime relationships. Incomplete event
 envelopes remain supported. Native usage bounds remain independent of historical
 event timestamps, as in the existing usage views. No live record is replaced
@@ -140,8 +152,9 @@ reminder runtime is discarded so restore cannot replay an old notification actio
 Schema 4 restores retain open and completed tasks with no due time. Schema 5 also
 retains optional due minutes. Schema 6 includes task reminder rows but always
 restores them disabled with fresh revisions and empty runtime. Task revision tokens rotate during publication.
-Older schema 1–3 restores clear the live task table. Older schema 1–6 restores clear
-the live focus history. Restored focus rows never include an open session or active
+Older schema 1–3 restores clear the live task table. Schema 1–6 restores clear the
+live focus history; schema 7 restores legacy focus rows without names or tags.
+Schema 8 restores focus names and referenced tags. Restored focus rows never include an open session or active
 restriction; focus app selections and emergency markers remain device-local.
 Replacement clears runtime, receipts and tombstones and rotates the focus database
 generation in the same transaction as importing history, rejecting delayed writes
@@ -151,7 +164,7 @@ widget instances and command tokens; Room schema 6 adds task due minutes; Room s
 8 adds focus data. Device-local tables are excluded from every archive inventory. A successful replacement restore revokes all widget
 commands, hides per-instance details and clears widget feedback in the same
 transaction as the content replacement. A failed or cancelled restore leaves widget
-runtime state untouched. The portable archive schema is version 7. Device-only quiet
+runtime state untouched. The portable archive schema is version 8. Device-only quiet
 hours and lock-screen preview privacy are not included in backups.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss
