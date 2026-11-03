@@ -1,24 +1,29 @@
 package com.luma.lifeos.ui.privacy
 
-import com.luma.lifeos.ui.common.LumaButton
-
-import com.luma.lifeos.ui.common.LumaAlertDialog
-import com.luma.lifeos.ui.common.LumaFilterChip
-
 import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.WindowManager
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -33,15 +38,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -64,8 +74,13 @@ import com.luma.lifeos.lock.OperationProof
 import com.luma.lifeos.lock.RecoveryPreparation
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppPageScaffold
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaButton
+import com.luma.lifeos.ui.common.LumaFilterChip
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.PageNavigation
+import com.luma.lifeos.ui.theme.onPrimaryFixed
+import com.luma.lifeos.ui.theme.primaryFixed
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -498,12 +513,29 @@ fun AppLockSettingsRoute(
         title = stringResource(R.string.app_lock_settings_title), navigation = PageNavigation.BACK,
         onNavigate = { if (!busy) onBack() }, navigationEnabled = !busy,
         titleTag = "app_lock_settings_heading", navigationTag = "app_lock_settings_back",
+        actions = {
+            Surface(
+                modifier = Modifier.padding(end = 12.dp).size(40.dp),
+                shape = androidx.compose.foundation.shape.CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_person),
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+        },
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(settingsScrollState).padding(20.dp)
+                Modifier.fillMaxSize().verticalScroll(settingsScrollState)
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
                     .testTag("screen_app_lock_settings"),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
                 if (snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) {
                     AccessibleFeedback(stringResource(R.string.app_lock_error_unavailable),
@@ -575,22 +607,107 @@ fun AppLockSettingsRoute(
                         Text(stringResource(R.string.app_lock_setup_continue))
                     }
                 } else if (opened) {
-                    Text(stringResource(R.string.app_lock_settings_body))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(18.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(40.dp),
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_settings_lock),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                stringResource(R.string.app_lock_settings_body),
+                                modifier = Modifier.padding(top = 2.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     descriptor?.let { current ->
-                        Text(stringResource(R.string.app_lock_current_method))
-                        Text(stringResource(current.type.labelResource()))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(18.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Surface(
+                                    modifier = Modifier.size(44.dp),
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryFixed,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryFixed,
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(
+                                                if (current.type == LockCredentialType.PIN) {
+                                                    R.drawable.ic_dialpad
+                                                } else {
+                                                    R.drawable.ic_settings_lock
+                                                },
+                                            ),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(22.dp),
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.width(16.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.app_lock_current_method).uppercase(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        letterSpacing = 0.7.sp,
+                                    )
+                                    Text(
+                                        stringResource(current.type.labelResource()),
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                                androidx.compose.material3.FilledTonalButton(
+                                    onClick = {
+                                        replacementType = current.type
+                                        action = LockSettingsAction.PASSWORD
+                                    },
+                                    enabled = !busy,
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        contentColor = MaterialTheme.colorScheme.onSurface,
+                                    ),
+                                    modifier = Modifier.testTag("app_lock_change_password"),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                        horizontal = 18.dp,
+                                        vertical = 0.dp,
+                                    ),
+                                ) {
+                                    Text(stringResource(R.string.app_lock_change_method_short))
+                                }
+                            }
+                        }
                     }
                     PolicyControls(policy, enabled = !busy, onPolicy = { policy = it })
                     LumaButton(enabled = !busy, onClick = { action = LockSettingsAction.POLICY },
-                        modifier = Modifier.testTag("app_lock_save_policy")) {
+                        modifier = Modifier.fillMaxWidth().height(52.dp).testTag("app_lock_save_policy")) {
                         Text(stringResource(R.string.app_lock_save_policy))
-                    }
-                    TextButton(enabled = !busy, onClick = {
-                        replacementType = descriptor?.type ?: LockCredentialType.PASSWORD
-                        action = LockSettingsAction.PASSWORD
-                    },
-                        modifier = Modifier.testTag("app_lock_change_password")) {
-                        Text(stringResource(R.string.app_lock_change_password))
                     }
                     TextButton(enabled = !busy, onClick = { action = LockSettingsAction.RECOVERY },
                         modifier = Modifier.testTag("app_lock_replace_recovery")) {
@@ -669,56 +786,164 @@ fun AppLockSettingsRoute(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (LockPolicy) -> Unit) {
-    Text(stringResource(R.string.app_lock_coverage), style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.semantics { heading() })
-    Row {
-        RadioButton(selected = policy.coverage == LockCoverage.WHOLE_APP, enabled = enabled, onClick = {
-            onPolicy(policy.copy(coverage = LockCoverage.WHOLE_APP, sections = emptySet()))
-        })
-        TextButton(enabled = enabled, onClick = { onPolicy(policy.copy(coverage = LockCoverage.WHOLE_APP, sections = emptySet())) }) {
-            Text(stringResource(R.string.app_lock_coverage_whole))
+    Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.app_lock_coverage),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 4.dp).semantics { heading() },
+            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    LockPolicyChoice(
+                        selected = policy.coverage == LockCoverage.WHOLE_APP,
+                        enabled = enabled,
+                        label = stringResource(R.string.app_lock_coverage_whole),
+                        onClick = { onPolicy(policy.copy(coverage = LockCoverage.WHOLE_APP, sections = emptySet())) },
+                        testTag = "app_lock_coverage_whole",
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LockPolicyChoice(
+                            selected = policy.coverage == LockCoverage.SELECTED,
+                            enabled = enabled,
+                            label = stringResource(R.string.app_lock_coverage_selected),
+                            onClick = {
+                                onPolicy(policy.copy(coverage = LockCoverage.SELECTED,
+                                    sections = policy.sections.ifEmpty { setOf(LockSection.MEMORIES) }))
+                            },
+                            testTag = "app_lock_coverage_selected",
+                        )
+                        if (policy.coverage == LockCoverage.SELECTED) {
+                            FlowRow(
+                                modifier = Modifier.padding(start = 44.dp, bottom = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                LockSection.entries.filterNot { it == LockSection.JOURNAL }.forEach { section ->
+                                    val selected = section in policy.sections
+                                    LumaFilterChip(
+                                        selected = selected,
+                                        enabled = enabled,
+                                        onClick = {
+                                            val sections = if (selected) policy.sections - section else policy.sections + section
+                                            if (sections.isNotEmpty()) onPolicy(policy.copy(sections = sections))
+                                        },
+                                        label = { Text(stringResource(section.labelResource())) },
+                                        leadingIcon = if (selected) {
+                                            {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.ic_check),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                            }
+                                        } else null,
+                                        modifier = Modifier.testTag("app_lock_section_${section.name.lowercase()}"),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-    }
-    Row {
-        RadioButton(selected = policy.coverage == LockCoverage.SELECTED, enabled = enabled, onClick = {
-            onPolicy(policy.copy(coverage = LockCoverage.SELECTED,
-                sections = policy.sections.ifEmpty { setOf(LockSection.MEMORIES) }))
-        })
-        TextButton(enabled = enabled, onClick = { onPolicy(policy.copy(coverage = LockCoverage.SELECTED,
-            sections = policy.sections.ifEmpty { setOf(LockSection.MEMORIES) })) }) {
-            Text(stringResource(R.string.app_lock_coverage_selected))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.app_lock_relock),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 4.dp).semantics { heading() },
+            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    RelockMode.entries.forEach { mode ->
+                        LockPolicyChoice(
+                            selected = policy.relockMode == mode,
+                            enabled = enabled,
+                            label = stringResource(mode.labelResource()),
+                            onClick = { onPolicy(policy.copy(relockMode = mode)) },
+                            testTag = "app_lock_relock_${mode.name.lowercase()}",
+                        )
+                    }
+                }
+            }
         }
-    }
-    if (policy.coverage == LockCoverage.SELECTED) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            LockSection.entries.filterNot { it == LockSection.JOURNAL }.forEach { section ->
-                val selected = section in policy.sections
-                LumaFilterChip(selected = selected, enabled = enabled, onClick = {
-                    val sections = if (selected) policy.sections - section else policy.sections + section
-                    if (sections.isNotEmpty()) onPolicy(policy.copy(sections = sections))
-                }, label = { Text(stringResource(section.labelResource())) },
-                    modifier = Modifier.testTag("app_lock_section_${section.name.lowercase()}"))
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().toggleable(
+                    value = policy.screenshotsProtected,
+                    enabled = enabled,
+                    role = Role.Checkbox,
+                    onValueChange = { onPolicy(policy.copy(screenshotsProtected = it)) },
+                ).padding(18.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Checkbox(
+                    checked = policy.screenshotsProtected,
+                    enabled = enabled,
+                    onCheckedChange = null,
+                    modifier = Modifier.padding(top = 1.dp).testTag("app_lock_screenshot_protection"),
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.padding(top = 4.dp)) {
+                    Text(stringResource(R.string.app_lock_screenshot_title), style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.app_lock_screenshot_body),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
-    Text(stringResource(R.string.app_lock_relock), style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.semantics { heading() })
-    RelockMode.entries.forEach { mode ->
-        Row {
-            RadioButton(selected = policy.relockMode == mode, enabled = enabled,
-                onClick = { onPolicy(policy.copy(relockMode = mode)) })
-            TextButton(enabled = enabled, onClick = { onPolicy(policy.copy(relockMode = mode)) }) {
-                Text(stringResource(mode.labelResource()))
-            }
-        }
-    }
-    Row {
-        androidx.compose.material3.Checkbox(checked = policy.screenshotsProtected, enabled = enabled,
-            onCheckedChange = { onPolicy(policy.copy(screenshotsProtected = it)) })
-        Column(Modifier.padding(top = 8.dp)) {
-            Text(stringResource(R.string.app_lock_screenshot_title))
-            Text(stringResource(R.string.app_lock_screenshot_body), style = MaterialTheme.typography.bodySmall)
-        }
+}
+
+@Composable
+private fun LockPolicyChoice(
+    selected: Boolean,
+    enabled: Boolean,
+    label: String,
+    onClick: () -> Unit,
+    testTag: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().selectable(
+            selected = selected,
+            enabled = enabled,
+            role = Role.RadioButton,
+            onClick = onClick,
+        ).testTag(testTag).padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, enabled = enabled, onClick = null)
+        Text(
+            text = label,
+            modifier = Modifier.padding(start = 4.dp),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 

@@ -1331,7 +1331,7 @@
     <string name="app_lock_privacy_action">App lock settings</string>
     <string name="app_lock_gate_settings">App lock settings</string>
     <string name="app_lock_reset_requires_auth">Data reset is unavailable while app lock is enabled.</string>
-    <string name="app_lock_settings_title">App lock</string>
+    <string name="app_lock_settings_title">App Lock</string>
     <string name="app_lock_setup_body">Create an independent Luma password and choose which sections it protects.</string>
     <string name="app_lock_setup_continue">Continue to recovery code</string>
     <string name="app_lock_settings_auth_body">Enter your Luma lock credential to open security settings.</string>
@@ -1354,7 +1354,8 @@
     <string name="app_lock_relock_fifteen_minutes">After 15 minutes</string>
     <string name="app_lock_screenshot_title">Protect screenshots and previews</string>
     <string name="app_lock_screenshot_body">When on, protected screens are hidden in screenshots and app previews. Credential and recovery-code screens are always protected.</string>
-    <string name="app_lock_save_policy">Save protection settings</string>
+    <string name="app_lock_save_policy">Save changes</string>
+    <string name="app_lock_change_method_short">Change</string>
     <string name="app_lock_confirm_action">Confirm</string>
     <string name="app_lock_new_password">New password</string>
     <string name="app_lock_confirm_password">Confirm password</string>

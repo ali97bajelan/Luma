@@ -1377,7 +1377,8 @@
     <string name="app_lock_relock_fifteen_minutes">Après 15 minutes</string>
     <string name="app_lock_screenshot_title">Protéger les captures et les aperçus</string>
     <string name="app_lock_screenshot_body">Lorsque cette option est activée, les écrans protégés sont masqués dans les captures et les aperçus de l’application. Les écrans d’identifiant et de code de récupération restent toujours protégés.</string>
-    <string name="app_lock_save_policy">Enregistrer la protection</string>
+    <string name="app_lock_save_policy">Enregistrer les modifications</string>
+    <string name="app_lock_change_method_short">Modifier</string>
     <string name="app_lock_confirm_action">Confirmer</string>
     <string name="app_lock_new_password">Nouveau mot de passe</string>
     <string name="app_lock_confirm_password">Confirmer le mot de passe</string>

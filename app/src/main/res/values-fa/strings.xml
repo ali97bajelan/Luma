@@ -1355,7 +1355,8 @@
     <string name="app_lock_relock_fifteen_minutes">پس از ۱۵ دقیقه</string>
     <string name="app_lock_screenshot_title">محافظت از تصویرها و پیش‌نمایش‌ها</string>
     <string name="app_lock_screenshot_body">وقتی روشن باشد، صفحه‌های محافظت‌شده در تصویرها و پیش‌نمایش برنامه پنهان می‌شوند. صفحه‌های اطلاعات قفل و کد بازیابی همیشه محافظت می‌شوند.</string>
-    <string name="app_lock_save_policy">ذخیرهٔ تنظیمات محافظت</string>
+    <string name="app_lock_save_policy">ذخیرهٔ تغییرات</string>
+    <string name="app_lock_change_method_short">تغییر</string>
     <string name="app_lock_confirm_action">تأیید</string>
     <string name="app_lock_new_password">گذرواژهٔ جدید</string>
     <string name="app_lock_confirm_password">تأیید گذرواژه</string>
