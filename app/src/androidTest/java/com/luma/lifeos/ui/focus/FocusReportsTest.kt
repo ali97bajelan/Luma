@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performClick
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusHistoryRow
+import com.luma.lifeos.domain.focus.FocusInsights
 import com.luma.lifeos.domain.focus.FocusPage
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
@@ -17,6 +18,7 @@ import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStatistics
+import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteContext
@@ -185,6 +187,9 @@ class FocusReportsTest {
             FocusStatistics(if (deleted) 0 else row.rangeContributionMillis,
                 if (deleted) 0 else 1, 0),
         )
+
+        override fun observeInsights(range: TimeRange?): Flow<FocusInsights> = flowOf(FocusInsights.EMPTY)
+        override fun observeTagSuggestions(): Flow<List<FocusTag>> = flowOf(emptyList())
 
         override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage {
             val rows = if (deleted) emptyList() else listOf(row).drop(offset).take(limit)

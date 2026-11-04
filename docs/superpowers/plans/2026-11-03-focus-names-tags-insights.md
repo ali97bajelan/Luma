@@ -104,11 +104,13 @@ Source verification: `python3 scripts/run_focus_domain_tests.py` — OK (23 test
 **Consumes:** FI01 metadata, existing overlap arithmetic and FI02 persisted tags.
 **Produces:** `focusInsights`, repository insight/suggestion flows, query-bound Loading/Ready/Error state.
 
-- [ ] Add failing tests using the spec's 45-minute example, untagged bucket, multi-run pauses, positive interrupted credit, zero duration, no data, exact boundary, Tehran midnight, 23/25-hour DST days, all-time and deterministic ties.
-- [ ] Add duplicate-identical snapshot deduplication, conflicting duplicate rejection and checked-overflow cases. Assert sum(tag.totalMillis)==totalMillis, truncated average and one-decimal HALF_UP percentages.
-- [ ] Implement pure calculation by deduplicating consistently with `focusStatistics`, then using `focusRangeContributionMillis` (or full credit for null range). Ignore nonterminal sessions at the repository query boundary; pure function rejects them to prevent silent mixed snapshots.
-- [ ] Read a consistent complete terminal snapshot off the main thread, including associated tags; do not derive aggregates from a paged result. Observe all relevant table invalidations and expose top-10 referenced-tag suggestions in specified order.
-- [ ] Test reducer cancellation/query/generation keys, empty vs error and stale result rejection. Run standalone domain/state tests; do not claim unmeasured all-time performance or Room observation coverage.
+- [x] Add failing tests using the spec's 45-minute example, untagged bucket, multi-run pauses, positive interrupted credit, zero duration, no data, exact boundary, Tehran midnight, 23/25-hour DST days, all-time and deterministic ties.
+- [x] Add duplicate-identical snapshot deduplication, conflicting duplicate rejection and checked-overflow cases. Assert sum(tag.totalMillis)==totalMillis, truncated average and one-decimal HALF_UP percentages.
+- [x] Implement pure calculation by deduplicating consistently with `focusStatistics`, then using `focusRangeContributionMillis` (or full credit for null range). Ignore nonterminal sessions at the repository query boundary; pure function rejects them to prevent silent mixed snapshots.
+- [x] Read a consistent complete terminal snapshot off the main thread, including associated tags; do not derive aggregates from a paged result. Observe all relevant table invalidations and expose top-10 referenced-tag suggestions in specified order.
+- [x] Test reducer cancellation/query/generation keys, empty vs error and stale result rejection. Run standalone domain/state tests; do not claim unmeasured all-time performance or Room observation coverage.
+
+FI04 source verification: standalone focus-domain plus insight-state tests pass 38/38 JUnit tests, including same-query retry and cooperative cancellation checks. A SQLite smoke check of the DAO suggestion query confirms the specified order, unused-tag exclusion and top-10 limit. Room query compilation/invalidation and Android integration remain NOT RUN; no performance claim is made for unbounded all-time aggregation.
 
 ## FI05 — Setup, session labels and insight cards
 
@@ -152,4 +154,4 @@ Source verification: `python3 scripts/run_focus_domain_tests.py` — OK (23 test
 
 ## Handoff status
 
-FI01 is complete at source level; FI02 source changes and FI03 source implementation are present, while FI02 runtime verification and FI04–FI07 remain pending. Session metadata models and persistence exist; insight screens remain pending. Room-generated schema validation and Android runtime checks were not run. No commit, emulator run or Gradle command was required for FI03.
+FI01, FI03 and FI04 are complete at source level; FI02 runtime verification and FI05–FI07 remain pending. FI02 metadata persistence exists, and FI04 supplies the insight calculation and repository/state flows; insight screens remain pending. Room-generated schema validation, FI04 Room observation behavior, and Android runtime checks were not run. No commit, emulator run or Gradle command was required for this source-only FI04 handoff.

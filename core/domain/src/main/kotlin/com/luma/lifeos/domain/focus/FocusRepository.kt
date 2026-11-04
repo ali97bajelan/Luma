@@ -47,6 +47,12 @@ interface FocusRepository {
 
     fun observeStatistics(range: TimeRange): Flow<FocusStatistics>
 
+    /** Observes a complete terminal snapshot; a null range means all saved history. */
+    fun observeInsights(range: TimeRange?): Flow<FocusInsights>
+
+    /** Referenced focus tags ordered by most recent session start, limited to ten suggestions. */
+    fun observeTagSuggestions(): Flow<List<FocusTag>>
+
     /** Returns at most [FOCUS_HISTORY_PAGE_SIZE] rows in stable started-descending, id-descending order. */
     suspend fun history(range: TimeRange?, offset: Int, limit: Int = FOCUS_HISTORY_PAGE_SIZE): FocusPage
 

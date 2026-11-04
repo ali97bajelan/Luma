@@ -6,6 +6,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusHistoryRow
+import com.luma.lifeos.domain.focus.FocusInsights
 import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusPage
 import com.luma.lifeos.domain.focus.FocusRecoveryAssessment
@@ -34,6 +35,7 @@ import com.luma.lifeos.domain.focus.assessFocusRecovery
 import com.luma.lifeos.domain.focus.calculateFocusTiming
 import com.luma.lifeos.domain.focus.createFocusSession
 import com.luma.lifeos.domain.focus.focusRangeContributionMillis
+import com.luma.lifeos.domain.focus.focusInsightsCancellable
 import com.luma.lifeos.domain.focus.focusStatistics
 import com.luma.lifeos.domain.focus.resolveFocusRecovery
 import com.luma.lifeos.domain.time.TimeRange
@@ -41,8 +43,15 @@ import java.time.Instant
 import java.time.Duration
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
 
 /** Room implementation whose mutations are serialized with runtime, generation and receipt state. */
 class RoomFocusRepository(
@@ -379,6 +388,25 @@ class RoomFocusRepository(
             }
             focusStatistics(sessions, range)
         }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeInsights(range: TimeRange?): Flow<FocusInsights> =
+        dao.observeTerminalSessions()
+            .mapLatest { snapshots ->
+                val job = requireNotNull(currentCoroutineContext()[Job])
+                val sessions = ArrayList<FocusSession>(snapshots.size)
+                for (snapshot in snapshots) {
+                    job.ensureActive()
+                    sessions += snapshot.toDomain { job.ensureActive() }
+                }
+                focusInsightsCancellable(sessions, range) { job.ensureActive() }
+            }
+            .flowOn(Dispatchers.IO)
+
+    override fun observeTagSuggestions(): Flow<List<FocusTag>> =
+        dao.observeTagSuggestions()
+            .map { tags -> tags.map { FocusTag(UUID.fromString(it.id), it.name) } }
+            .flowOn(Dispatchers.IO)
 
     override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage {
         require(offset >= 0 && limit in 1..FOCUS_HISTORY_PAGE_SIZE) {
@@ -784,24 +812,45 @@ private fun sampleIsStale(runtime: FocusRuntimeEntity, sample: FocusTimeSample):
     return drift in -FOCUS_WALL_DRIFT_TOLERANCE_MILLIS..FOCUS_WALL_DRIFT_TOLERANCE_MILLIS
 }
 
-private fun FocusSessionWithRuns.toDomain(): FocusSession = session.toDomain(
-    runs.map(FocusRunEntity::toDomain),
-    FocusMetadata(session.name, tag?.let { FocusTag(UUID.fromString(it.id), it.name) }),
-)
+private fun FocusSessionWithRuns.toDomain(checkActive: () -> Unit = {}): FocusSession {
+    checkActive()
+    val domainRuns = ArrayList<FocusRun>(runs.size)
+    for (run in runs) {
+        checkActive()
+        domainRuns += run.toDomain()
+    }
+    val domainTag = tag?.let {
+        checkActive()
+        FocusTag(UUID.fromString(it.id), it.name)
+    }
+    return session.toDomain(domainRuns, FocusMetadata(session.name, domainTag), checkActive)
+}
 
-private fun FocusSessionEntity.toDomain(runs: List<FocusRun>, metadata: FocusMetadata = FocusMetadata(name)): FocusSession = FocusSession(
-    id = UUID.fromString(id),
-    state = FocusState.valueOf(state),
-    revision = revision,
-    startedAt = Instant.ofEpochSecond(startedAtSeconds, startedAtNanos.toLong()),
-    endedAt = pairedInstant(endedAtSeconds, endedAtNanos),
-    createdAt = Instant.ofEpochSecond(createdAtSeconds, createdAtNanos.toLong()),
-    updatedAt = Instant.ofEpochSecond(updatedAtSeconds, updatedAtNanos.toLong()),
-    terminalReason = terminalReason?.let(FocusTerminalReason::valueOf),
-    recoveredOrUncertain = recoveredOrUncertain,
-    runs = runs.sortedBy(FocusRun::ordinal),
-    metadata = metadata,
-)
+private fun FocusSessionEntity.toDomain(
+    runs: List<FocusRun>,
+    metadata: FocusMetadata = FocusMetadata(name),
+    checkActive: () -> Unit = {},
+): FocusSession {
+    checkActive()
+    val sortedRuns = runs.sortedWith { left, right ->
+        checkActive()
+        left.ordinal.compareTo(right.ordinal)
+    }
+    checkActive()
+    return FocusSession(
+        id = UUID.fromString(id),
+        state = FocusState.valueOf(state),
+        revision = revision,
+        startedAt = Instant.ofEpochSecond(startedAtSeconds, startedAtNanos.toLong()),
+        endedAt = pairedInstant(endedAtSeconds, endedAtNanos),
+        createdAt = Instant.ofEpochSecond(createdAtSeconds, createdAtNanos.toLong()),
+        updatedAt = Instant.ofEpochSecond(updatedAtSeconds, updatedAtNanos.toLong()),
+        terminalReason = terminalReason?.let(FocusTerminalReason::valueOf),
+        recoveredOrUncertain = recoveredOrUncertain,
+        runs = sortedRuns,
+        metadata = metadata,
+    )
+}
 
 private fun FocusRunEntity.toDomain(): FocusRun = FocusRun(
     id = UUID.fromString(id),

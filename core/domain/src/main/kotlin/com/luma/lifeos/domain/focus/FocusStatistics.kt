@@ -130,7 +130,7 @@ fun compareFocusStatistics(current: FocusStatistics, previous: FocusStatistics):
  * Compute bucket overlap by differences from the run's start. This keeps fractional-millisecond
  * boundary offsets additive, so splitting a run at midnight cannot lose credited whole millis.
  */
-private fun overlapMillis(run: FocusRun, range: TimeRange): Long {
+internal fun overlapMillis(run: FocusRun, range: TimeRange): Long {
     val end = run.endedAt ?: error("Terminal session contains an open run")
     if (run.creditedMillis == 0L) return 0
 

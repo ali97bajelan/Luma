@@ -31,6 +31,28 @@ interface FocusDao {
     @Transaction
     suspend fun sessionWithRuns(sessionId: String): FocusSessionWithRuns?
 
+    @Query(
+        """SELECT * FROM focus_session
+        WHERE state IN ('FINISHED', 'INTERRUPTED')
+        ORDER BY started_at_seconds DESC, started_at_nanos DESC, id DESC""",
+    )
+    @Transaction
+    fun observeTerminalSessions(): Flow<List<FocusSessionWithRuns>>
+
+    @Query(
+        """SELECT t.* FROM focus_tag AS t
+        WHERE EXISTS (SELECT 1 FROM focus_session AS s WHERE s.tag_id = t.id)
+        ORDER BY
+          (SELECT s.started_at_seconds FROM focus_session AS s WHERE s.tag_id = t.id
+             ORDER BY s.started_at_seconds DESC, s.started_at_nanos DESC, s.id DESC LIMIT 1) DESC,
+          (SELECT s.started_at_nanos FROM focus_session AS s WHERE s.tag_id = t.id
+             ORDER BY s.started_at_seconds DESC, s.started_at_nanos DESC, s.id DESC LIMIT 1) DESC,
+          t.normalized_name ASC,
+          t.id ASC
+        LIMIT 10""",
+    )
+    fun observeTagSuggestions(): Flow<List<FocusTagEntity>>
+
     @Query("SELECT * FROM focus_session WHERE id = :sessionId LIMIT 1")
     suspend fun session(sessionId: String): FocusSessionEntity?
 
