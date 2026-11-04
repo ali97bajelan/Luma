@@ -10,6 +10,7 @@ import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusUnavailableReason
 import com.luma.lifeos.domain.focus.FocusWriteResult
+import com.luma.lifeos.domain.focus.remainingFocusMillis
 import java.util.IdentityHashMap
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 data class FocusRuntimeState(
     val initialized: Boolean = false,
@@ -42,6 +44,7 @@ data class FocusRuntimeState(
     val emergencyMarkerSaved: Boolean? = null,
     val emergencyExitConfirmed: Boolean = false,
     val databaseGeneration: UUID? = null,
+    val breakState: FocusBreakState = FocusBreakState.Idle,
 ) {
     val guardReleased: Boolean
         get() = session?.let { emergencyExitSessionId == it.id }
@@ -59,6 +62,8 @@ class FocusRuntime(
     private val preferences: FocusPreferences,
     private val allowedApps: AllowedFocusApps,
     private val scope: CoroutineScope,
+    private val expiryPlatform: FocusExpiryPlatform? = null,
+    val breakRuntime: FocusBreakRuntime? = null,
 ) {
     private val mutableState = MutableStateFlow(FocusRuntimeState())
     val state: StateFlow<FocusRuntimeState> = mutableState.asStateFlow()
@@ -71,8 +76,17 @@ class FocusRuntime(
     private var checkpointJob: Job? = null
     private val operationAttempts = linkedMapOf<UUID, FocusCoordinator.OperationAttempt>()
     private var lastCheckpointElapsedMillis: Long? = null
+    private var scheduledFocusAlarm: Triple<UUID, UUID, Long>? = null
     @Volatile private var databaseReplacementInProgress = false
     @Volatile private var appDataResetInProgress = false
+
+    init {
+        breakRuntime?.let { breaks ->
+            scope.launch {
+                breaks.state.collect { breakState -> mutableState.update { it.copy(breakState = breakState) } }
+            }
+        }
+    }
 
     fun initialize() {
         if (initializeJob?.isActive == true || mutableState.value.initialized) return
@@ -160,7 +174,12 @@ class FocusRuntime(
                 },
                 emergencyExitConfirmed = emergencyExitConfirmed,
                 databaseGeneration = initializationAttempt.context.databaseGeneration,
+                breakState = breakRuntime?.state?.value ?: FocusBreakState.Idle,
             )
+            if (session?.state == FocusState.PAUSED || session?.isTerminal == true || session == null) {
+                session?.let { expiryPlatform?.cancelFocus(it.id, initializationAttempt.context.databaseGeneration) }
+                scheduledFocusAlarm = null
+            }
             observeOpenSessions()
             ensureCheckpointLoopIfResumed()
         } catch (failure: Exception) {
@@ -192,6 +211,11 @@ class FocusRuntime(
                         } else {
                             current.copy(session = null, recoveryRequired = false, displayedMillis = 0)
                         }
+                    }
+                    if (open?.state == FocusState.PAUSED || open == null) {
+                        val generation = mutableState.value.databaseGeneration
+                        if (generation != null) previousSession?.let { expiryPlatform?.cancelFocus(it.id, generation) }
+                        scheduledFocusAlarm = null
                     }
                 }
             } catch (failure: Exception) {
@@ -252,6 +276,7 @@ class FocusRuntime(
         val elapsed = (coordinator.sample().elapsedMillis - anchor).coerceAtLeast(0)
         val displayed = runCatching { Math.addExact(session.creditedMillis, elapsed) }
             .getOrDefault(session.creditedMillis)
+            .let { runCatching { com.luma.lifeos.domain.focus.capFocusAdvance(session, it) }.getOrDefault(session.creditedMillis) }
         mutableState.update { state ->
             if (state.session?.id == session.id && state.session.state == FocusState.RUNNING) {
                 state.copy(displayedMillis = displayed)
@@ -377,6 +402,80 @@ class FocusRuntime(
                 databaseGeneration = databaseGeneration ?: it.databaseGeneration,
             )
         }
+        syncFocusExpiry(session, sample, databaseGeneration ?: mutableState.value.databaseGeneration)
+    }
+
+    private fun syncFocusExpiry(session: FocusSession?, sample: com.luma.lifeos.domain.focus.FocusTimeSample, generation: UUID?) {
+        val platform = expiryPlatform ?: return
+        val target = session?.takeIf {
+            it.state == FocusState.RUNNING && it.timer.mode == com.luma.lifeos.domain.focus.FocusTimerMode.TIMED &&
+                !mutableState.value.recoveryRequired
+        }
+        if (target == null || generation == null) {
+            scheduledFocusAlarm?.let { (sessionId, oldGeneration, _) -> platform.cancelFocus(sessionId, oldGeneration) }
+            session?.let { current -> generation?.let { platform.cancelFocus(current.id, it) } }
+            scheduledFocusAlarm = null
+            return
+        }
+        val key = Triple(target.id, generation, target.revision)
+        if (scheduledFocusAlarm == key) return
+        scheduledFocusAlarm?.let { (sessionId, oldGeneration, _) -> platform.cancelFocus(sessionId, oldGeneration) }
+        val remaining = remainingFocusMillis(target) ?: return
+        val trigger = runCatching { Math.addExact(sample.elapsedMillis, remaining) }.getOrNull() ?: return
+        if (runCatching { platform.scheduleFocus(target.id, generation, target.revision, trigger) }.isSuccess) {
+            scheduledFocusAlarm = key
+        }
+    }
+
+    suspend fun startBreak(durationMinutes: Int = 5): Boolean {
+        if (mutableState.value.session?.isTerminal != true || writesBlocked()) return false
+        return breakRuntime?.start(durationMinutes) ?: false
+    }
+
+    suspend fun endBreak(): Boolean = breakRuntime?.end() ?: false
+
+    suspend fun expireFromAlarm(
+        sessionId: UUID,
+        generation: UUID,
+        revision: Long,
+        triggerElapsedMillis: Long,
+    ): FocusExpiryOutcome {
+        if (!mutableState.value.initialized) {
+            initialize()
+            try {
+                withTimeout(10_000L) { state.first { it.initialized || it.loadFailed } }
+            } catch (_: Exception) {
+                return FocusExpiryOutcome.RETRY
+            }
+        }
+        return operationMutex.withLock {
+            if (writesBlocked()) return@withLock FocusExpiryOutcome.RETRY
+            val current = mutableState.value
+            val session = current.session
+            if (session?.id == sessionId && session.terminalReason == FocusTerminalReason.TARGET_REACHED) {
+                return@withLock FocusExpiryOutcome.TARGET_REACHED
+            }
+            if (current.databaseGeneration != generation || session?.id != sessionId || session.revision != revision) {
+                return@withLock FocusExpiryOutcome.IGNORED
+            }
+            if (current.recoveryRequired) return@withLock FocusExpiryOutcome.RECOVERY_REQUIRED
+            if (session.state != FocusState.RUNNING || session.timer.targetMillis == null) {
+                return@withLock FocusExpiryOutcome.IGNORED
+            }
+            val attempt = coordinator.operationAttempt(generation)
+            if (attempt.sample.elapsedMillis < triggerElapsedMillis) return@withLock FocusExpiryOutcome.IGNORED
+            val result = coordinator.act(UUID.randomUUID(), session, FocusAction.STOP, attempt)
+            applyResult(result, attempt.sample, databaseGeneration = generation)
+            when (result) {
+                is FocusWriteResult.Applied -> if (result.snapshot?.terminalReason == FocusTerminalReason.TARGET_REACHED)
+                    FocusExpiryOutcome.TARGET_REACHED else FocusExpiryOutcome.IGNORED
+                is FocusWriteResult.AlreadyApplied -> if (result.snapshot?.terminalReason == FocusTerminalReason.TARGET_REACHED)
+                    FocusExpiryOutcome.TARGET_REACHED else FocusExpiryOutcome.IGNORED
+                is FocusWriteResult.RecoveryRequired -> FocusExpiryOutcome.RECOVERY_REQUIRED
+                is FocusWriteResult.Unavailable -> FocusExpiryOutcome.RETRY
+                else -> FocusExpiryOutcome.IGNORED
+            }
+        }
     }
 
     suspend fun markEmergencyExit(sessionId: UUID): Boolean = operationMutex.withLock {
@@ -470,6 +569,12 @@ class FocusRuntime(
             if (!finished) return@withLock false
         }
 
+        breakRuntime?.end()
+        mutableState.value.databaseGeneration?.let { generation ->
+            session?.let { expiryPlatform?.cancelFocus(it.id, generation) }
+        }
+        scheduledFocusAlarm = null
+
         databaseReplacementInProgress = true
         checkpointJob?.cancel()
         checkpointJob = null
@@ -493,6 +598,11 @@ class FocusRuntime(
 
     /** Quiesces focus actions before Android clears the entire app sandbox. */
     suspend fun prepareForAppDataReset() = operationMutex.withLock {
+        breakRuntime?.end()
+        mutableState.value.session?.let { session ->
+            mutableState.value.databaseGeneration?.let { expiryPlatform?.cancelFocus(session.id, it) }
+        }
+        scheduledFocusAlarm = null
         appDataResetInProgress = true
         checkpointJob?.cancel()
         checkpointJob = null

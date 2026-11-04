@@ -11,6 +11,7 @@ import com.luma.lifeos.data.dao.CatalogDao
 import com.luma.lifeos.data.calendar.CalendarDao
 import com.luma.lifeos.data.focus.FocusCommandReceiptEntity
 import com.luma.lifeos.data.focus.FocusDao
+import com.luma.lifeos.data.focus.FocusBreakEntity
 import com.luma.lifeos.data.focus.FocusDeletedSessionEntity
 import com.luma.lifeos.data.focus.FocusRunEntity
 import com.luma.lifeos.data.focus.FocusRuntimeEntity
@@ -52,7 +53,7 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         TodoEntity::class,
         TaskReminderEntity::class,
         WidgetInstanceEntity::class, WidgetCommandEntity::class,
-        FocusSessionEntity::class, FocusRunEntity::class, FocusRuntimeEntity::class,
+        FocusSessionEntity::class, FocusRunEntity::class, FocusRuntimeEntity::class, FocusBreakEntity::class,
         FocusCommandReceiptEntity::class, FocusDeletedSessionEntity::class, FocusStorageStateEntity::class,
         FocusTagEntity::class,
     ],
@@ -76,10 +77,24 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focus(): FocusDao
 
     companion object {
-        const val VERSION = 10
+        const val VERSION = 11
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(10, 11) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN timer_mode TEXT NOT NULL DEFAULT 'COUNT_UP'")
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN target_millis INTEGER")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_break_runtime (
+                        singleton_id INTEGER NOT NULL PRIMARY KEY,
+                        duration_millis INTEGER NOT NULL CHECK (duration_millis BETWEEN 60000 AND 3600000),
+                        started_elapsed_millis INTEGER NOT NULL CHECK (started_elapsed_millis >= 0),
+                        boot_id TEXT,
+                        database_generation TEXT NOT NULL,
+                        revision INTEGER NOT NULL CHECK (revision >= 0)
+                    )""")
+                }
+            },
             object : Migration(9, 10) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("""CREATE TABLE IF NOT EXISTS focus_tag (

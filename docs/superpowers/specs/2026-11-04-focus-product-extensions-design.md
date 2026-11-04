@@ -1,6 +1,6 @@
 # Focus product extensions specification
 
-Date: 2026-11-04 · Status: **DRAFT — documentation only; no extension implemented or tested**
+Date: 2026-11-04 · Status: **DRAFT — FP01 and FP03 source implemented but unverified; remaining extensions and final QA are pending**
 
 [Task ledger](../../FOCUS_INSIGHTS_TASKS.md) · [Implementation plan](../plans/2026-11-04-focus-product-extensions.md) · [Final QA](../../feature-roadmap/focus-product-extensions-qa.md) · [Existing insights specification](2026-11-03-focus-names-tags-insights-design.md)
 

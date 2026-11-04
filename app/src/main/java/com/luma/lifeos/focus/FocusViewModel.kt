@@ -11,6 +11,7 @@ import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTag
+import com.luma.lifeos.domain.focus.FocusTimerMode
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.ui.focus.FocusInsightsState
@@ -51,6 +52,8 @@ import kotlinx.coroutines.launch
 data class FocusScreenState(
     val runtime: FocusRuntimeState,
     val busy: Boolean = false,
+    val breakBusy: Boolean = false,
+    val breakOperationFailed: Boolean = false,
     val operationFailed: Boolean = false,
     val backPromptVisible: Boolean = false,
     val emergencyPromptVisible: Boolean = false,
@@ -88,6 +91,8 @@ class FocusViewModel(
 
     private data class LocalState(
         val busy: Boolean = false,
+        val breakBusy: Boolean = false,
+        val breakOperationFailed: Boolean = false,
         val operationFailed: Boolean = false,
         val backPromptVisible: Boolean = false,
         val emergencyPromptVisible: Boolean = false,
@@ -128,6 +133,8 @@ class FocusViewModel(
                 emergencyMarkerSaved = localState.emergencyMarkerSaved ?: runtimeState.emergencyMarkerSaved,
             ),
             busy = localState.busy,
+            breakBusy = localState.breakBusy,
+            breakOperationFailed = localState.breakOperationFailed,
             operationFailed = localState.operationFailed,
             backPromptVisible = localState.backPromptVisible,
             emergencyPromptVisible = localState.emergencyPromptVisible,
@@ -233,7 +240,27 @@ class FocusViewModel(
 
     fun changeName(value: String) = updateSetup(FocusSetupEvent.NameChanged(value))
     fun changeTag(value: String) = updateSetup(FocusSetupEvent.TagChanged(value))
+    fun changeTimerMode(value: FocusTimerMode) = updateSetup(FocusSetupEvent.TimerModeChanged(value))
+    fun changeTimedMinutes(value: String) = updateSetup(FocusSetupEvent.TimedMinutesChanged(value))
     fun startAnother() = updateSetup(FocusSetupEvent.StartAnotherRequested)
+
+    fun startBreak(durationMinutes: Int) {
+        if (local.value.breakBusy) return
+        local.update { it.copy(breakBusy = true, breakOperationFailed = false) }
+        viewModelScope.launch {
+            val saved = runtime.startBreak(durationMinutes)
+            local.update { it.copy(breakBusy = false, breakOperationFailed = !saved) }
+        }
+    }
+
+    fun endBreak() {
+        if (local.value.breakBusy) return
+        local.update { it.copy(breakBusy = true, breakOperationFailed = false) }
+        viewModelScope.launch {
+            val ended = runtime.endBreak()
+            local.update { it.copy(breakBusy = false, breakOperationFailed = !ended) }
+        }
+    }
 
     /** Reloads a terminal record under the current Focus grant before creating a repeat draft. */
     fun repeatSession(sessionId: UUID) {
@@ -273,7 +300,7 @@ class FocusViewModel(
                     FocusSetupEvent.PrefillRequested(
                         sessionId = sessionId,
                         requestId = requestId,
-                        input = FocusStartInput(source.metadata.name.orEmpty(), source.metadata.tag?.name),
+                        input = FocusStartInput(source.metadata.name.orEmpty(), source.metadata.tag?.name, source.timer),
                         nextStep = null,
                         generation = generation,
                     ),

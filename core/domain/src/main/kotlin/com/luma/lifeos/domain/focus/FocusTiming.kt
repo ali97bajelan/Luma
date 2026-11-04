@@ -158,6 +158,7 @@ fun createFocusSession(
     sessionId: UUID,
     commandId: UUID,
     sample: FocusTimeSample,
+    timer: FocusTimerConfig = FocusTimerConfig.countUp(),
 ): FocusSession {
     val run = FocusRun(
         id = runIdFor(commandId),
@@ -179,6 +180,7 @@ fun createFocusSession(
         terminalReason = null,
         recoveredOrUncertain = false,
         runs = listOf(run),
+        timer = timer,
     )
 }
 
@@ -236,13 +238,16 @@ fun applyFocusCommand(
         }
         FocusAction.STOP -> if (session.state == FocusState.PAUSED) {
             val revision = nextRevision(session) ?: return invalidSnapshot()
+            val targetReached = session.timer.targetMillis != null &&
+                session.creditedMillis == session.timer.targetMillis
             FocusTransitionResult.Changed(
                 session.copy(
                     state = FocusState.FINISHED,
                     revision = revision,
                     endedAt = command.sample.wall,
                     updatedAt = command.sample.wall,
-                    terminalReason = FocusTerminalReason.USER_STOP,
+                    terminalReason = if (targetReached) FocusTerminalReason.TARGET_REACHED
+                    else FocusTerminalReason.USER_STOP,
                     runs = uniqueFocusRuns(session.runs),
                 ),
             )
@@ -275,19 +280,42 @@ fun resolveFocusRecovery(
         FocusRecoveryChoice.CONTINUE_ELAPSED -> when (
             val timing = calculateFocusTiming(run, checkpoint, sample)
         ) {
-            is FocusTimingResult.Advanced -> FocusTransitionResult.Changed(
-                snapshot = session.copy(
-                    revision = revision,
-                    updatedAt = sample.wall,
-                    recoveredOrUncertain = true,
-                    runs = replaceRun(session, run.copy(creditedMillis = timing.creditedMillis)),
-                ),
+            is FocusTimingResult.Advanced -> transitionAfterRunningAdvance(
+                session = session,
+                run = run,
                 timing = timing,
+                sample = sample,
+                revision = revision,
+                recoveredOrUncertain = true,
+                requestedState = FocusState.RUNNING,
             )
             is FocusTimingResult.InterruptedAtCheckpoint -> interruptAtCheckpoint(session, run, revision, timing)
             is FocusTimingResult.Invalid -> FocusTransitionResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
         }
         FocusRecoveryChoice.END_AT_CHECKPOINT -> {
+            if (session.timer.targetMillis != null && session.creditedMillis == session.timer.targetMillis) {
+                val targetEnd = try {
+                    canonicalFocusEnd(run.startedAt, run.creditedMillis)
+                } catch (_: ArithmeticException) {
+                    return invalidSnapshot()
+                } catch (_: java.time.DateTimeException) {
+                    return invalidSnapshot()
+                }
+                return FocusTransitionResult.Changed(
+                    snapshot = session.copy(
+                        state = FocusState.FINISHED,
+                        revision = revision,
+                        endedAt = sample.wall,
+                        updatedAt = sample.wall,
+                        terminalReason = FocusTerminalReason.TARGET_REACHED,
+                        recoveredOrUncertain = true,
+                        runs = replaceRun(session, run.copy(
+                            endedAt = targetEnd,
+                            rawEndedAt = checkpoint.sample.wall,
+                        )),
+                    ),
+                )
+            }
             val canonicalEnd = try {
                 canonicalFocusEnd(run.startedAt, run.creditedMillis)
             } catch (_: ArithmeticException) {
@@ -312,6 +340,39 @@ fun resolveFocusRecovery(
                 ),
             )
         }
+    }
+}
+
+/** Applies one durable checkpoint, settling target expiry instead of leaving a due timer open. */
+fun applyFocusCheckpoint(
+    session: FocusSession,
+    expectedRevision: Long,
+    checkpoint: FocusTimingCheckpoint,
+    sample: FocusTimeSample,
+): FocusTransitionResult {
+    if (session.state != FocusState.RUNNING) return invalidTransition()
+    if (expectedRevision != session.revision) {
+        return FocusTransitionResult.Conflict(session.copy(runs = uniqueFocusRuns(session.runs)))
+    }
+    val run = uniqueFocusRuns(session.runs).singleOrNull(FocusRun::isOpen) ?: return invalidSnapshot()
+    if (checkpoint.runId != run.id) return FocusTransitionResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
+
+    return when (val timing = calculateFocusTiming(run, checkpoint, sample)) {
+        is FocusTimingResult.Advanced -> transitionAfterRunningAdvance(
+            session = session,
+            run = run,
+            timing = timing,
+            sample = sample,
+            revision = session.revision,
+            recoveredOrUncertain = session.recoveredOrUncertain,
+            requestedState = FocusState.RUNNING,
+            advanceRevisionAtTarget = true,
+        )
+        is FocusTimingResult.InterruptedAtCheckpoint -> {
+            val nextRevision = nextRevision(session) ?: return invalidSnapshot()
+            interruptAtCheckpoint(session, run, nextRevision, timing)
+        }
+        is FocusTimingResult.Invalid -> FocusTransitionResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
     }
 }
 
@@ -347,39 +408,110 @@ private fun applyRunningEnd(
     val anchor = checkpoint ?: return invalidSnapshot()
     val revision = nextRevision(session) ?: return invalidSnapshot()
     return when (val timing = calculateFocusTiming(run, anchor, command.sample)) {
-        is FocusTimingResult.Advanced -> {
-            val closed = run.copy(
-                creditedMillis = timing.creditedMillis,
-                endedAt = timing.canonicalEnd,
-                rawEndedAt = command.sample.wall,
-            )
-            if (requestedState == FocusState.PAUSED) {
-                FocusTransitionResult.Changed(
-                    session.copy(
-                        state = FocusState.PAUSED,
-                        revision = revision,
-                        updatedAt = command.sample.wall,
-                        runs = replaceRun(session, closed),
-                    ),
-                    timing,
-                )
-            } else {
-                FocusTransitionResult.Changed(
-                    session.copy(
-                        state = FocusState.FINISHED,
-                        revision = revision,
-                        endedAt = command.sample.wall,
-                        updatedAt = command.sample.wall,
-                        terminalReason = FocusTerminalReason.USER_STOP,
-                        runs = replaceRun(session, closed),
-                    ),
-                    timing,
-                )
-            }
-        }
+        is FocusTimingResult.Advanced -> transitionAfterRunningAdvance(
+            session = session,
+            run = run,
+            timing = timing,
+            sample = command.sample,
+            revision = revision,
+            recoveredOrUncertain = session.recoveredOrUncertain,
+            requestedState = requestedState,
+        )
         is FocusTimingResult.InterruptedAtCheckpoint -> interruptAtCheckpoint(session, run, revision, timing)
         is FocusTimingResult.Invalid -> invalidSnapshot()
     }
+}
+
+private fun transitionAfterRunningAdvance(
+    session: FocusSession,
+    run: FocusRun,
+    timing: FocusTimingResult.Advanced,
+    sample: FocusTimeSample,
+    revision: Long,
+    recoveredOrUncertain: Boolean,
+    requestedState: FocusState,
+    advanceRevisionAtTarget: Boolean = false,
+): FocusTransitionResult {
+    val priorRunsCredit = try {
+        Math.subtractExact(session.creditedMillis, run.creditedMillis)
+    } catch (_: ArithmeticException) {
+        return invalidSnapshot()
+    }
+    val candidateTotal = try {
+        Math.addExact(priorRunsCredit, timing.creditedMillis)
+    } catch (_: ArithmeticException) {
+        return invalidSnapshot()
+    }
+    val boundedTotal = try {
+        capFocusAdvance(session, candidateTotal)
+    } catch (_: IllegalArgumentException) {
+        return invalidSnapshot()
+    }
+    val boundedRunCredit = try {
+        Math.subtractExact(boundedTotal, priorRunsCredit)
+    } catch (_: ArithmeticException) {
+        return invalidSnapshot()
+    }
+    val canonicalEnd = try {
+        canonicalFocusEnd(run.startedAt, boundedRunCredit)
+    } catch (_: ArithmeticException) {
+        return invalidSnapshot()
+    } catch (_: java.time.DateTimeException) {
+        return invalidSnapshot()
+    }
+    val targetReached = session.timer.targetMillis?.let { candidateTotal >= it } == true
+    val adjustedTiming = timing.copy(creditedMillis = boundedRunCredit, canonicalEnd = canonicalEnd)
+
+    if (targetReached) {
+        val targetRevision = if (advanceRevisionAtTarget) {
+            nextRevision(session) ?: return invalidSnapshot()
+        } else {
+            revision
+        }
+        val closed = run.copy(
+            creditedMillis = boundedRunCredit,
+            endedAt = canonicalEnd,
+            rawEndedAt = sample.wall,
+        )
+        return FocusTransitionResult.Changed(
+            snapshot = session.copy(
+                state = FocusState.FINISHED,
+                revision = targetRevision,
+                endedAt = sample.wall,
+                updatedAt = sample.wall,
+                terminalReason = FocusTerminalReason.TARGET_REACHED,
+                recoveredOrUncertain = recoveredOrUncertain,
+                runs = replaceRun(session, closed),
+            ),
+            timing = adjustedTiming,
+        )
+    }
+
+    val runReplacement = if (requestedState == FocusState.RUNNING) {
+        run.copy(creditedMillis = boundedRunCredit)
+    } else {
+        run.copy(
+            creditedMillis = boundedRunCredit,
+            endedAt = canonicalEnd,
+            rawEndedAt = sample.wall,
+        )
+    }
+    val nextState = when (requestedState) {
+        FocusState.RUNNING -> FocusState.RUNNING
+        FocusState.PAUSED -> FocusState.PAUSED
+        FocusState.FINISHED -> FocusState.FINISHED
+        FocusState.INTERRUPTED -> return invalidSnapshot()
+    }
+    val snapshot = session.copy(
+        state = nextState,
+        revision = revision,
+        endedAt = if (nextState == FocusState.FINISHED) sample.wall else null,
+        updatedAt = sample.wall,
+        terminalReason = if (nextState == FocusState.FINISHED) FocusTerminalReason.USER_STOP else null,
+        recoveredOrUncertain = recoveredOrUncertain,
+        runs = replaceRun(session, runReplacement),
+    )
+    return FocusTransitionResult.Changed(snapshot, adjustedTiming)
 }
 
 private fun interruptAtCheckpoint(

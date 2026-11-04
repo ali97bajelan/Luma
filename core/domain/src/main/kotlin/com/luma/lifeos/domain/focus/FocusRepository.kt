@@ -2,6 +2,7 @@ package com.luma.lifeos.domain.focus
 
 import com.luma.lifeos.domain.time.TimeRange
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import java.util.UUID
 
 const val FOCUS_HISTORY_PAGE_SIZE: Int = 50
@@ -9,6 +10,21 @@ const val FOCUS_HISTORY_PAGE_SIZE: Int = 50
 /** Persistence boundary for local focus sessions; implementations serialize mutations atomically. */
 interface FocusRepository {
     suspend fun currentGeneration(): UUID
+
+    /** Device-local break countdown, excluded from focus statistics and portable archives. */
+    fun observeBreak(): Flow<FocusBreakRecord?> = flowOf(null)
+
+    suspend fun currentBreak(): FocusBreakRecord? = null
+
+    suspend fun startBreak(
+        durationMillis: Long,
+        startedElapsedMillis: Long,
+        bootId: String?,
+        expectedGeneration: UUID,
+    ): FocusBreakWriteResult = FocusBreakWriteResult.Unavailable
+
+    suspend fun endBreak(expectedRevision: Long, expectedGeneration: UUID): FocusBreakWriteResult =
+        FocusBreakWriteResult.Unavailable
 
     /** Reloads a terminal record by identity before using it as a repeat source. */
     suspend fun terminalSession(sessionId: UUID): FocusSession? {

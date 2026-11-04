@@ -276,6 +276,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
 
     private fun prepareFocusReplacement(sqlite: SupportSQLiteDatabase) {
         sqlite.execSQL("DELETE FROM focus_runtime")
+        sqlite.execSQL("DELETE FROM focus_break_runtime")
         sqlite.execSQL("DELETE FROM focus_command_receipt")
         sqlite.execSQL("DELETE FROM focus_deleted_session")
         sqlite.execSQL(

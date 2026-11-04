@@ -12,6 +12,7 @@ enum class FocusRecoveryChoice { CONTINUE_ELAPSED, END_AT_CHECKPOINT }
 /** Why a session ended. Clock and process failures are kept distinct for history guidance. */
 enum class FocusTerminalReason {
     USER_STOP,
+    TARGET_REACHED,
     PROCESS_RESTART_GAP,
     EMERGENCY_EXIT,
     UNKNOWN_BOOT_ID,
@@ -60,6 +61,7 @@ data class FocusSession(
     val recoveredOrUncertain: Boolean,
     val runs: List<FocusRun>,
     val metadata: FocusMetadata = FocusMetadata(),
+    val timer: FocusTimerConfig = FocusTimerConfig.countUp(),
 ) {
     init {
         require(revision >= 0) { "Revision cannot be negative" }
@@ -69,6 +71,11 @@ data class FocusSession(
         require(uniqueRuns.map { it.ordinal }.distinct().size == uniqueRuns.size) { "Run ordinals must be unique" }
         require(uniqueRuns.map { it.ordinal } == uniqueRuns.map { it.ordinal }.sorted()) {
             "Runs must be ordered by ordinal"
+        }
+        val totalCredit = uniqueRuns.fold(0L) { total, run -> Math.addExact(total, run.creditedMillis) }
+        timer.targetMillis?.let { target ->
+            require(totalCredit <= target) { "Timed focus cannot exceed its target" }
+            if (!isTerminal) require(totalCredit < target) { "A due target must be settled before the session remains open" }
         }
 
         val openRuns = uniqueRuns.count(FocusRun::isOpen)
@@ -84,13 +91,22 @@ data class FocusSession(
                 }
             }
             FocusState.FINISHED -> {
-                require(endedAt != null && terminalReason == FocusTerminalReason.USER_STOP && openRuns == 0) {
-                    "A finished session must be closed by a user stop"
+                require(endedAt != null && terminalReason in setOf(
+                    FocusTerminalReason.USER_STOP,
+                    FocusTerminalReason.TARGET_REACHED,
+                ) && openRuns == 0) {
+                    "A finished session must be stopped by the user or reach its target"
+                }
+                if (terminalReason == FocusTerminalReason.TARGET_REACHED) {
+                    require(timer.mode == FocusTimerMode.TIMED && totalCredit == timer.targetMillis) {
+                        "A target-reached session must save exactly its timed target"
+                    }
                 }
             }
             FocusState.INTERRUPTED -> {
                 require(endedAt != null && terminalReason != null &&
-                    terminalReason != FocusTerminalReason.USER_STOP && openRuns == 0) {
+                    terminalReason != FocusTerminalReason.USER_STOP &&
+                    terminalReason != FocusTerminalReason.TARGET_REACHED && openRuns == 0) {
                     "An interrupted session must have a non-user terminal reason"
                 }
             }

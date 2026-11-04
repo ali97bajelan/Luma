@@ -40,7 +40,7 @@ Paths below are relative to the repository root. Shorthand roots: **D** = `core/
 
 - Domain models/commands: create `D/focus/FocusProductModels.kt`, `FocusProductRepository.kt`, `FocusTargetTiming.kt`, `FocusGoalRules.kt`, `FocusReminderRules.kt`; modify `FocusMetadata.kt`, `FocusSession.kt`, `FocusTiming.kt`, `FocusRepository.kt`.
 - Storage: modify `R/focus/FocusEntities.kt`, `FocusDao.kt`, `RoomFocusRepository.kt`, `R/db/LumaDatabase.kt`, `R/LumaStorage.kt`; create `R/focus/FocusProductEntities.kt`, `FocusProductDao.kt`, `FocusProductCommands.kt`; modify `R/backup/BackupArchive.kt`, `BackupValidation.kt`, `BackupRows.kt`, `BackupSql.kt`, `RoomBackupService.kt`; create `R/backup/FocusProductArchiveAdapter.kt`.
-- App state/execution: modify `A/focus/FocusCoordinator.kt`, `FocusRuntime.kt`, `FocusViewModel.kt`; create `FocusBreakRuntime.kt`, `FocusExpiryPlatform.kt`, `FocusExpiryReceiver.kt`.
+- App state/execution: modify `A/focus/FocusRuntime.kt`, `FocusViewModel.kt`; create `FocusBreakRuntime.kt` and `FocusExpiryPlatform.kt` (which contains the receiver and worker).
 - UI: modify `A/ui/focus/FocusScreen.kt`, `FocusRoute.kt`, `FocusSetupState.kt`, `FocusHistoryRoute.kt`, `FocusHistoryViewModel.kt`, `FocusSettingsScreen.kt`, `FocusSettingsRoute.kt`, `WeeklyFocusCard.kt`, `FocusReportPresentation.kt`; create `FocusTaskPicker.kt`, `FocusReflectionEditor.kt`, `FocusGoalSettings.kt`, `FocusReminderSettings.kt`, `FocusTagManager.kt` in `A/ui/focus/`.
 - Integration: modify `A/ui/todo/TodoEditorRoute.kt`, `TodoEditorViewModel.kt`, `A/ui/LifeOsApp.kt`, `A/lock/AppLockCoordinator.kt`, `D/lock/ProtectedRecordClassifier.kt`, `R/repository/RoomTodoRepository.kt`, `D/todo/TodoRepository.kt`; reminder files under `A/reminders/`; `app/src/main/AndroidManifest.xml`; localized `app/src/main/res/values{,-fr,-fa}/strings.xml`.
 
@@ -126,23 +126,29 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 
 ## FX04 — Timed focus, expiry and recovery
 
-**Depends on:** FX01, FX03. **Files:** `D/focus/FocusTargetTiming.kt`, existing timing/repository/coordinator/runtime; `A/focus/FocusExpiryPlatform.kt`, `FocusExpiryReceiver.kt`; manifest and setup/running UI. **Produces:** `remainingFocusMillis(session: FocusSession): Long?` and `capFocusAdvance(session: FocusSession, candidateCreditMillis: Long): Long`; transaction-level due-expiry settlement shared by all timer paths.
+**Depends on:** the timer/break portion of FX01. **Files:** `D/focus/FocusTargetTiming.kt`, existing timing/repository/runtime; `A/focus/FocusExpiryPlatform.kt`; manifest and setup/running UI. **Produces:** `remainingFocusMillis(session: FocusSession): Long?` and `capFocusAdvance(session: FocusSession, candidateCreditMillis: Long): Long`; transaction-level due-expiry settlement shared by all timer paths.
 
-- [ ] Implement checked active-credit capping and canonical target boundary; remaining returns null for count-up, never uses raw wall span. Extend FINISHED validators and apply/reconcile/recovery/checkpoint paths for TARGET_REACHED.
-- [ ] Settle due target before Pause/Stop/checkpoint in the same authority/receipt transaction; resolve duplicate callbacks by persisted state. Preserve actual raw sample and existing monotonic/discontinuity checks.
-- [ ] Add timer selector/validation, remaining-time display and terminal reason copy in all locales. Do not permit changing an open session's configuration.
-- [ ] Schedule one namespaced generation/session/revision-bound inexact elapsed alarm; cancel on Pause/Stop/replacement, reschedule on Resume and ignore stale callbacks. Use bounded receiver-to-worker handoff for storage work; alarms never carry private text.
-- [ ] Preserve explicit new-process recovery and conservative discontinuity outcomes; settle prior durable target without accepting a gap. Reconcile before reporting after reopen and alert only after authoritative result; no new service/exact-alarm permission.
-- [ ] Source-review the 10 run + 7 pause + 15 run example, 3-minute delayed callback, new-process recovery and Stop/expiry race. Defer all execution to FX-Q03/04/09.
+- [x] Implement checked active-credit capping and canonical target boundary; remaining returns null for count-up, never uses raw wall span. Extend FINISHED validators and apply/reconcile/recovery/checkpoint paths for TARGET_REACHED.
+- [x] Settle due target before Pause/Stop/checkpoint in the same repository transaction; resolve duplicate callbacks by persisted state. Preserve actual raw sample and existing monotonic/discontinuity checks.
+- [x] Add timer selector/validation, remaining-time display and terminal reason copy in all locales. Do not permit changing an open session's configuration.
+- [x] Schedule one namespaced generation/session/revision-bound inexact elapsed alarm; cancel on Pause/Stop/replacement, reschedule on Resume and ignore stale callbacks. Use bounded receiver-to-worker handoff for storage work; alarms never carry private text.
+- [x] Preserve explicit new-process recovery and conservative discontinuity outcomes; settle prior durable target without accepting a gap. Report only after authoritative result; no new service/exact-alarm permission.
+- [x] Source-review the 10 run + 7 pause + 15 run example, capped delayed callback, new-process recovery and Stop/expiry transaction race. Defer all execution to FX-Q03/04/09.
+
+**Dependency ruling (2026-11-04):** This FP03-only delivery omits FX03 because task links do not participate in timer credit, expiry, recovery or local breaks. FX01 is partially implemented for timer/break fields, migration and archive compatibility; task, reflection and goal contracts remain pending. Cost if this narrowing is wrong: reconcile task-link Start identity and future shared archive changes with the landed timer payload and archive 9 before FX03 ships.
+
+**FX04 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Runtime/source review only. Room schema generation, compilation, tests, alarm/device behavior and FX-QA remain NOT RUN.
 
 ## FX05 — Separate break countdown
 
 **Depends on:** FX04. **Files:** create `A/focus/FocusBreakRuntime.kt`; local break entity/DAO, expiry platform, runtime/UI. **Produces:** `FocusBreakRuntime.start(durationMinutes: Int)`, `end()` and read-only `StateFlow<FocusBreakState>` with Idle/Running/Expired states bound to generation/boot/revision.
 
-- [ ] Persist an explicitly started 1–60 minute break separately from focus runs, with default 5-minute shortcut, cancellable best-effort expiry and no navigation guard.
-- [ ] Add Start break after saved session, End break during countdown and explicit Start another; starting Focus atomically invalidates local break authority before scheduling the focus alarm.
-- [ ] Restore same-boot countdown on recreation; end uncertain/reboot break, never credit time or revive a cancelled record. Clear local state on replacement/reset.
-- [ ] Source-review that saved statistics/backup never include breaks and alert failure does not block manual actions. FX-Q04/09 remain NOT RUN.
+- [x] Persist an explicitly started 1–60 minute break separately from focus runs, with default 5-minute shortcut, cancellable best-effort expiry and no navigation guard.
+- [x] Add Start break after saved session, End break during countdown and explicit Start another; starting Focus atomically invalidates local break authority before scheduling the focus alarm.
+- [x] Restore same-boot countdown on recreation; end uncertain/reboot break, never credit time or revive a cancelled record. Clear local state on replacement/reset.
+- [x] Source-review that saved statistics/backup never include breaks and alert scheduling failure does not block manual actions. FX-Q04/09 remain NOT RUN.
+
+**FX05 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Break state is local and excluded from archive/statistics. Runtime/source review only; schema generation, compilation, tests, alarm/device behavior and FX-QA remain NOT RUN.
 
 ## FX06 — Reflection and resumption context
 

@@ -22,9 +22,10 @@ internal val BACKUP_TABLES_V6 = BACKUP_TABLES_V5 + listOf("task_reminder")
 internal val BACKUP_TABLES_V7 = BACKUP_TABLES_V6 + listOf("focus_session", "focus_run")
 /** Focus tags precede sessions so the staged database can enforce their foreign key. */
 internal val BACKUP_TABLES_V8 = BACKUP_TABLES_V6 + listOf("focus_tag", "focus_session", "focus_run")
-internal val BACKUP_TABLES = BACKUP_TABLES_V8
+internal val BACKUP_TABLES_V9 = BACKUP_TABLES_V8
+internal val BACKUP_TABLES = BACKUP_TABLES_V9
 /** Keep archive versioning tied to its table inventory and restore behavior, not Room. */
-internal const val CURRENT_BACKUP_SCHEMA_VERSION = 8
+internal const val CURRENT_BACKUP_SCHEMA_VERSION = 9
 internal fun backupImportColumns(table: String, schemaVersion: Int, currentColumns: List<String>): List<String> =
     FocusMetadataArchiveAdapter.importColumns(table, schemaVersion, currentColumns)
 
@@ -37,6 +38,7 @@ internal fun backupTables(version: Int): List<String> = when (version) {
     6 -> BACKUP_TABLES_V6
     7 -> BACKUP_TABLES_V7
     8 -> BACKUP_TABLES_V8
+    9 -> BACKUP_TABLES_V9
     else -> error("Unsupported database schema version")
 }
 data class ArchiveManifest(val formatVersion: Int, val schemaVersion: Int, val createdAt: Long, val names: Set<String>)

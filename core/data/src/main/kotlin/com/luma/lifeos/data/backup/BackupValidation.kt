@@ -19,6 +19,8 @@ import com.luma.lifeos.domain.focus.FocusRun
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTerminalReason
+import com.luma.lifeos.domain.focus.FocusTimerConfig
+import com.luma.lifeos.domain.focus.FocusTimerMode
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.time.LocalDate
 import java.time.ZoneId
@@ -126,11 +128,20 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
             require(l("revision") >= 0)
             require(l("recovered_or_uncertain") in 0..1)
             val terminalReason = text("terminal_reason")?.let(FocusTerminalReason::valueOf)
+            val timer = FocusTimerConfig(
+                mode = FocusTimerMode.valueOf(s("timer_mode")),
+                targetMillis = long("target_millis"),
+            )
             require(when (state) {
-                FocusState.FINISHED -> terminalReason == FocusTerminalReason.USER_STOP
-                FocusState.INTERRUPTED -> terminalReason != null && terminalReason != FocusTerminalReason.USER_STOP
+                FocusState.FINISHED -> terminalReason == FocusTerminalReason.USER_STOP ||
+                    terminalReason == FocusTerminalReason.TARGET_REACHED
+                FocusState.INTERRUPTED -> terminalReason != null && terminalReason !in setOf(
+                    FocusTerminalReason.USER_STOP,
+                    FocusTerminalReason.TARGET_REACHED,
+                )
                 else -> false
             }) { "Focus terminal state and reason do not match" }
+            require(timer.mode == FocusTimerMode.TIMED || timer.targetMillis == null)
             fun instant(prefix: String): Instant = Instant.ofEpochSecond(
                 l("${prefix}_seconds"), int("${prefix}_nanos").toLong().also { require(it in 0..999_999_999) },
             )
@@ -223,6 +234,12 @@ internal fun validateFocusArchive(sqlite: SupportSQLiteDatabase): Long {
                 terminalReason = if (cursor.isNull(11)) null else FocusTerminalReason.valueOf(cursor.getString(11)),
                 recoveredOrUncertain = cursor.getLong(12) == 1L,
                 runs = runs,
+                timer = FocusTimerConfig(
+                    mode = FocusTimerMode.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("timer_mode"))),
+                    targetMillis = cursor.getColumnIndex("target_millis").let { index ->
+                        if (index < 0 || cursor.isNull(index)) null else cursor.getLong(index)
+                    },
+                ),
             )
             session.creditedMillis // Reject aggregate duration overflow before replacement.
             sessionCount = Math.addExact(sessionCount, 1L)

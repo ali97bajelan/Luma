@@ -3,7 +3,10 @@ package com.luma.lifeos.data.focus
 import android.database.sqlite.SQLiteException
 import androidx.room.withTransaction
 import com.luma.lifeos.data.db.LumaDatabase
+import com.luma.lifeos.data.focus.FocusBreakEntity
 import com.luma.lifeos.domain.focus.FocusAction
+import com.luma.lifeos.domain.focus.FocusBreakRecord
+import com.luma.lifeos.domain.focus.FocusBreakWriteResult
 import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusHistoryRow
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
@@ -18,6 +21,7 @@ import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusMetadata
 import com.luma.lifeos.domain.focus.FocusTag
+import com.luma.lifeos.domain.focus.FocusTimerConfig
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStatistics
@@ -32,6 +36,7 @@ import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.FOCUS_HISTORY_PAGE_SIZE
 import com.luma.lifeos.domain.focus.FOCUS_WALL_DRIFT_TOLERANCE_MILLIS
 import com.luma.lifeos.domain.focus.applyFocusCommand
+import com.luma.lifeos.domain.focus.applyFocusCheckpoint
 import com.luma.lifeos.domain.focus.assessFocusRecovery
 import com.luma.lifeos.domain.focus.calculateFocusTiming
 import com.luma.lifeos.domain.focus.createFocusSession
@@ -69,6 +74,61 @@ class RoomFocusRepository(
 
     override fun observeOpen(): Flow<FocusSession?> = dao.observeOpenSession().map { it?.toDomain() }
 
+    override fun observeBreak(): Flow<FocusBreakRecord?> = dao.observeBreakRuntime().map { it?.toDomain() }
+
+    override suspend fun currentBreak(): FocusBreakRecord? = dao.breakRuntime()?.toDomain()
+
+    override suspend fun startBreak(
+        durationMillis: Long,
+        startedElapsedMillis: Long,
+        bootId: String?,
+        expectedGeneration: UUID,
+    ): FocusBreakWriteResult = focusBreakStorageWrite {
+        val validShape = runCatching {
+            FocusBreakRecord(durationMillis, startedElapsedMillis, bootId, expectedGeneration, 0)
+        }.isSuccess
+        if (!validShape) return@focusBreakStorageWrite FocusBreakWriteResult.Invalid
+        database.withTransaction {
+            val generation = ensureGeneration().generationId
+            if (generation != expectedGeneration.toString()) {
+                return@withTransaction FocusBreakWriteResult.Conflict(dao.breakRuntime()?.toDomain())
+            }
+            if (dao.openSession() != null) {
+                return@withTransaction FocusBreakWriteResult.Conflict(dao.breakRuntime()?.toDomain())
+            }
+            val prior = dao.breakRuntime()
+            val revision = try {
+                Math.addExact(prior?.revision ?: 0L, 1L)
+            } catch (_: ArithmeticException) {
+                return@withTransaction FocusBreakWriteResult.Invalid
+            }
+            val record = FocusBreakRecord(durationMillis, startedElapsedMillis, bootId, expectedGeneration, revision)
+            dao.replaceBreakRuntime(record.toEntity())
+            FocusBreakWriteResult.Applied(record)
+        }
+    }
+
+    override suspend fun endBreak(
+        expectedRevision: Long,
+        expectedGeneration: UUID,
+    ): FocusBreakWriteResult = focusBreakStorageWrite {
+        database.withTransaction {
+            val generation = ensureGeneration().generationId
+            val current = dao.breakRuntime()?.toDomain()
+            if (current == null) return@withTransaction FocusBreakWriteResult.AlreadyApplied(null)
+            if (current.databaseGeneration != expectedGeneration || current.revision != expectedRevision) {
+                return@withTransaction FocusBreakWriteResult.Conflict(current)
+            }
+            // A matching stale local row belongs to the replaced database and has no authority.
+            if (generation != expectedGeneration.toString()) {
+                dao.deleteBreakRuntime()
+                return@withTransaction FocusBreakWriteResult.Applied(null)
+            }
+            dao.deleteBreakRuntime()
+            FocusBreakWriteResult.Applied(null)
+        }
+    }
+
     override suspend fun start(
         commandId: UUID,
         sessionId: UUID,
@@ -81,14 +141,25 @@ class RoomFocusRepository(
         } catch (_: IllegalArgumentException) {
             return FocusWriteResult.Invalid(FocusInvalidReason.INVALID_METADATA)
         }
+        val startPayload = if (normalized.timer == FocusTimerConfig.countUp()) {
+            // Keep pre-timer count-up retries byte-for-byte compatible with their stored receipts.
+            commandPayload(
+                "START_V2", sessionId.toString(), normalized.name,
+                normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(), sample.payload(), context.payload(),
+            )
+        } else {
+            commandPayload(
+                "START_V3", sessionId.toString(), normalized.name,
+                normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(),
+                normalized.timer.mode.name, normalized.timer.targetMillis?.toString().orEmpty(),
+                sample.payload(), context.payload(),
+            )
+        }
         return runCommand(
             commandId = commandId,
             context = context,
             requestedSessionId = sessionId,
-            payload = commandPayload(
-                "START_V2", sessionId.toString(), normalized.name,
-                normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(), sample.payload(), context.payload(),
-            ),
+            payload = startPayload,
             createdAt = sample.wall,
         ) { generationId ->
             val id = sessionId.toString()
@@ -96,14 +167,15 @@ class RoomFocusRepository(
                 return@runCommand FocusWriteResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
             }
 
-            val expected = createFocusSession(sessionId, commandId, sample)
+            val expected = createFocusSession(sessionId, commandId, sample, normalized.timer)
             val existing = dao.sessionWithRuns(id)?.toDomain()
             if (existing != null) {
                 val sameStart = existing.startedAt == sample.wall &&
                     existing.runs.any { it.id == expected.runs.single().id } &&
                     existing.metadata.name == normalized.name &&
                     existing.metadata.tag?.name?.lowercase(java.util.Locale.ROOT) ==
-                    normalized.tagName?.lowercase(java.util.Locale.ROOT)
+                    normalized.tagName?.lowercase(java.util.Locale.ROOT) &&
+                    existing.timer == normalized.timer
                 return@runCommand if (sameStart) {
                     FocusWriteResult.AlreadyApplied(existing)
                 } else {
@@ -123,6 +195,8 @@ class RoomFocusRepository(
             }
             val session = expected.copy(metadata = FocusMetadata(normalized.name, tag))
 
+            // A new focus block explicitly replaces any local break before its own runtime is created.
+            dao.deleteBreakRuntime()
             dao.insertSession(session.toEntity())
             val run = session.runs.single()
             dao.insertRun(run.toEntity())
@@ -328,53 +402,29 @@ class RoomFocusRepository(
             val run = current.runs.singleOrNull(FocusRun::isOpen)
                 ?: return@withTransaction FocusWriteResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
             when (
-                val timing = calculateFocusTiming(run, runtime.toCheckpoint(), sample)
+                val transition = applyFocusCheckpoint(
+                    session = current,
+                    expectedRevision = expectedRevision,
+                    checkpoint = runtime.toCheckpoint(),
+                    sample = sample,
+                )
             ) {
-                is FocusTimingResult.Advanced -> {
-                    if (timing.elapsedDeltaMillis == 0L) {
+                is FocusTransitionResult.Changed -> {
+                    if ((transition.timing as? FocusTimingResult.Advanced)?.elapsedDeltaMillis == 0L) {
                         return@withTransaction FocusWriteResult.AlreadyApplied(current)
                     }
-                    val updatedRun = run.copy(creditedMillis = timing.creditedMillis)
-                    val updated = current.copy(
-                        updatedAt = sample.wall,
-                        runs = current.runs.map { if (it.id == run.id) updatedRun else it },
-                    )
-                    if (dao.updateRun(updatedRun.toEntity()) != 1 || dao.updateSession(updated.toEntity()) != 1) {
-                        throw FocusPersistenceException()
-                    }
-                    val newRuntime = runtime.copy(
-                        checkpointElapsedMillis = timing.checkpoint.sample.elapsedMillis,
-                        checkpointWallSeconds = timing.checkpoint.sample.wall.epochSecond,
-                        checkpointWallNanos = timing.checkpoint.sample.wall.nano,
-                        bootId = timing.checkpoint.sample.bootId,
-                    )
-                    if (dao.updateRuntime(newRuntime) != 1) throw FocusPersistenceException()
-                    FocusWriteResult.Applied(updated)
-                }
-                is FocusTimingResult.InterruptedAtCheckpoint -> {
-                    val command = FocusCommand(
-                        commandId = UUID.randomUUID(),
-                        sessionId = current.id,
-                        expectedRevision = current.revision,
-                        action = FocusAction.STOP,
+                    persistTransition(
+                        current = current,
+                        next = transition.snapshot,
+                        timing = transition.timing,
+                        runtime = runtime,
                         sample = sample,
                         context = context,
                     )
-                    when (val transition = applyFocusCommand(current, command, runtime.toCheckpoint())) {
-                        is FocusTransitionResult.Changed -> persistTransition(
-                            current = current,
-                            next = transition.snapshot,
-                            timing = transition.timing,
-                            runtime = runtime,
-                            sample = sample,
-                            context = context,
-                        )
-                        is FocusTransitionResult.AlreadyApplied -> FocusWriteResult.AlreadyApplied(transition.snapshot)
-                        is FocusTransitionResult.Conflict -> FocusWriteResult.Conflict(transition.current)
-                        is FocusTransitionResult.Invalid -> FocusWriteResult.Invalid(transition.reason)
-                    }
                 }
-                is FocusTimingResult.Invalid -> FocusWriteResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
+                is FocusTransitionResult.AlreadyApplied -> FocusWriteResult.AlreadyApplied(transition.snapshot)
+                is FocusTransitionResult.Conflict -> FocusWriteResult.Conflict(transition.current)
+                is FocusTransitionResult.Invalid -> FocusWriteResult.Invalid(transition.reason)
             }
         }
     }
@@ -869,8 +919,28 @@ private fun FocusSessionEntity.toDomain(
         recoveredOrUncertain = recoveredOrUncertain,
         runs = sortedRuns,
         metadata = metadata,
+        timer = FocusTimerConfig(
+            mode = com.luma.lifeos.domain.focus.FocusTimerMode.valueOf(timerMode),
+            targetMillis = targetMillis,
+        ),
     )
 }
+
+private fun FocusBreakEntity.toDomain(): FocusBreakRecord = FocusBreakRecord(
+    durationMillis = durationMillis,
+    startedElapsedMillis = startedElapsedMillis,
+    bootId = bootId,
+    databaseGeneration = UUID.fromString(databaseGeneration),
+    revision = revision,
+)
+
+private fun FocusBreakRecord.toEntity(): FocusBreakEntity = FocusBreakEntity(
+    durationMillis = durationMillis,
+    startedElapsedMillis = startedElapsedMillis,
+    bootId = bootId,
+    databaseGeneration = databaseGeneration.toString(),
+    revision = revision,
+)
 
 private fun FocusRunEntity.toDomain(): FocusRun = FocusRun(
     id = UUID.fromString(id),
@@ -900,6 +970,8 @@ private fun FocusSession.toEntity(): FocusSessionEntity = FocusSessionEntity(
     openSlot = if (isTerminal) null else STORAGE_SINGLETON_ID,
     name = metadata.name,
     tagId = metadata.tag?.id?.toString(),
+    timerMode = timer.mode.name,
+    targetMillis = timer.targetMillis,
 )
 
 private fun FocusRun.toEntity(): FocusRunEntity = FocusRunEntity(
@@ -950,6 +1022,16 @@ private suspend fun storageWrite(block: suspend () -> FocusWriteResult): FocusWr
     FocusWriteResult.Unavailable(FocusUnavailableReason.STORAGE)
 } catch (_: FocusPersistenceException) {
     FocusWriteResult.Unavailable(FocusUnavailableReason.STORAGE)
+}
+
+private suspend fun focusBreakStorageWrite(block: suspend () -> FocusBreakWriteResult): FocusBreakWriteResult = try {
+    block()
+} catch (cancelled: CancellationException) {
+    throw cancelled
+} catch (_: SQLiteException) {
+    FocusBreakWriteResult.Unavailable
+} catch (_: FocusPersistenceException) {
+    FocusBreakWriteResult.Unavailable
 }
 
 private class FocusPersistenceException : RuntimeException()

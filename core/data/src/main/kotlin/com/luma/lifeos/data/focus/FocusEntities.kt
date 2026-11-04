@@ -60,7 +60,28 @@ data class FocusSessionEntity(
     val name: String? = null,
     @ColumnInfo(name = "tag_id")
     val tagId: String? = null,
+    @ColumnInfo(name = "timer_mode", defaultValue = "'COUNT_UP'")
+    val timerMode: String = "COUNT_UP",
+    @ColumnInfo(name = "target_millis")
+    val targetMillis: Long? = null,
 )
+
+/** Device-local countdown state. It is intentionally excluded from portable backup tables. */
+@Entity(tableName = "focus_break_runtime")
+data class FocusBreakEntity(
+    @PrimaryKey @ColumnInfo(name = "singleton_id") val singletonId: Int = 1,
+    @ColumnInfo(name = "duration_millis") val durationMillis: Long,
+    @ColumnInfo(name = "started_elapsed_millis") val startedElapsedMillis: Long,
+    @ColumnInfo(name = "boot_id") val bootId: String?,
+    @ColumnInfo(name = "database_generation") val databaseGeneration: String,
+    @ColumnInfo(name = "revision") val revision: Long,
+) {
+    init {
+        require(singletonId == 1)
+        require(durationMillis in 60_000L..3_600_000L)
+        require(startedElapsedMillis >= 0L && revision >= 0L)
+    }
+}
 
 @Entity(tableName = "focus_tag", indices = [Index(value = ["normalized_name"], unique = true)])
 data class FocusTagEntity(

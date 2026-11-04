@@ -122,6 +122,9 @@
             android:name=".reminders.ReminderActionReceiver"
             android:exported="false" />
         <receiver
+            android:name=".focus.FocusExpiryReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".reminders.ReminderSystemReceiver"
             android:exported="false">
             <intent-filter>

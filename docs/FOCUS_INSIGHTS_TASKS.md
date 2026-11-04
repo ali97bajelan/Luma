@@ -110,21 +110,21 @@ External pattern check (2026-11-04): TickTick documents [focus timers](https://h
 
 ## Product extension delivery — FP01–FP08
 
-Planning date: 2026-11-04 · Status: **FP01 SOURCE COMPLETE — UNVERIFIED; FX01 and FX03–FX10 NOT STARTED; final QA NOT RUN**
+Planning date: 2026-11-04 · Status: **FP01 and FP03 SOURCE COMPLETE — UNVERIFIED; FX01 PARTIAL; FX03 and FX06–FX10 NOT STARTED; final QA NOT RUN**
 
 [Extension specification](superpowers/specs/2026-11-04-focus-product-extensions-design.md) · [Extension implementation plan](superpowers/plans/2026-11-04-focus-product-extensions.md) · [Separate final QA](feature-roadmap/focus-product-extensions-qa.md)
 
-The requested spec/plan covers the minimum FP01–FP08 scope. Reusable presets remain deferred; repeat works without them and invitations open ordinary setup. Draft defaults, contracts and acceptance cases live in the specification. FP01 Repeat source is complete for the current name/tag/count-up contract; QA remains deferred to FX-QA.
+The requested spec/plan covers the minimum FP01–FP08 scope. Reusable presets remain deferred; repeat works without them and invitations open ordinary setup. Draft defaults, contracts and acceptance cases live in the specification. FP01 Repeat source and the standalone FP03 timed-focus/break slice are complete for their current contracts; QA remains deferred to FX-QA.
 
 **Delivery sequence requested by the user:** implement all FX01–FX10 source tasks first, then enter **one separate FX-QA phase to test all new behavior together**. No per-task QA gate or test/build/device execution during implementation. Tests/fixtures, compilation, Room schema generation, lint, platform checks, integrated regression and defect retests belong to FX-QA. Source dependencies still apply; a source-complete task is unverified, not accepted. This sequencing replaces the earlier recommendation to validate between product increments for this extension only.
 
 | ID | Source deliverable | Depends on | Product scope | Implementation | Final QA |
 | --- | --- | --- | --- | --- | --- |
-| FX01 | Domain contracts, Room migration, command identity, portable archive and legacy adapters | Existing FI source | Shared FP01–FP08 foundation | NOT STARTED | NOT RUN |
+| FX01 | Domain contracts, Room migration, command identity, portable archive and legacy adapters | Existing FI source | Shared FP01–FP08 foundation | PARTIAL — timer/break foundation only; task/reflection/goal foundation pending | NOT RUN |
 | FX02 | Editable Repeat prefill and retained setup | Existing FI metadata/start contract; shared FX01 extensions remain prerequisites for later metadata | FP01 | SOURCE COMPLETE — UNVERIFIED (current name/tag/count-up contract) | NOT RUN |
 | FX03 | Task picker/link, saved task totals and independent completion | FX01, FX02 | FP02 | NOT STARTED | NOT RUN |
-| FX04 | Timed focus, capped expiry, background wakeup and explicit recovery | FX01, FX03 | FP03 | NOT STARTED | NOT RUN |
-| FX05 | Explicit uncredited break countdown | FX04 | FP03 | NOT STARTED | NOT RUN |
+| FX04 | Timed focus, capped expiry, background wakeup and explicit recovery | FX01 timer/break slice | FP03 | SOURCE COMPLETE — UNVERIFIED | NOT RUN |
+| FX05 | Explicit uncredited break countdown | FX04 | FP03 | SOURCE COMPLETE — UNVERIFIED | NOT RUN |
 | FX06 | Optional reflection and next-step resumption context | FX01, FX02 | FP04 | NOT STARTED | NOT RUN |
 | FX07 | Versioned weekly goals and actionable Review distribution | FX01, FX06 | FP05, FP08 | NOT STARTED | NOT RUN |
 | FX08 | Opt-in scheduled invitations and safe reminder reconciliation | FX01, FX04, FX05 | FP06 | NOT STARTED | NOT RUN |
@@ -137,6 +137,10 @@ The earlier FI-only source-check restrictions below describe the existing handof
 **FP01 delivery (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Repeat reloads the latest terminal session under Focus access and prefills its editable name/tag; a legacy unnamed session requires a valid name, Start another clears the draft, and no timer starts before explicit Start. Completion and terminal history detail both offer Repeat. Source review only; FX-Q01/09 and the rest of FX-QA remain NOT RUN. The broad FX01 schema/archive work remains pending for task links, timed sessions, reflections and later extensions.
 
 **Ruling:** FP01 Repeat does not depend on the full FX01 shared foundation because the existing FI session and Start contracts already provide the fields needed for this increment. This narrows the FX02 dependency in the implementation plan; cost if wrong: later metadata work may require revisiting Repeat before those fields ship.
+
+**FP03 delivery (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Count-up remains the default; timed sessions persist a fixed 1–180 minute target, cap credited focus at the target and settle expiry through Pause/Stop/checkpoint/recovery paths. A best-effort inexact elapsed alarm wakes a repository-authoritative worker; alerts contain generic text. Explicit 1–60 minute breaks persist locally, resume only on the same boot, remain outside focus totals and backup, and can be ended manually. Timer and break controls, recovery/terminal copy and English/French/Persian strings are wired. Source review only; FX-Q03/04/09 and the rest of FX-QA remain NOT RUN. Room schema generation, builds and tests were not run.
+
+**Ruling:** This FP03 slice narrows FX04’s planned FX03 prerequisite because task linking is not required for timer credit, expiry, recovery or local breaks. FX01 is only partially complete: timer fields, Room 10→11 migration, timer-aware archive 9 compatibility and the break runtime table are present; task, reflection and goal foundation work remains pending. Cost if the dependency assessment is wrong: later task-link or shared-contract work may need to reconcile with the landed Start receipt version and archive 9 columns before those features ship.
 
 ## Completion rules
 

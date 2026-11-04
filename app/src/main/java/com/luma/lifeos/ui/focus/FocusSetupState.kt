@@ -1,6 +1,9 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.domain.focus.FocusStartInput
+import com.luma.lifeos.domain.focus.FocusTimerConfig
+import com.luma.lifeos.domain.focus.FocusTimerMode
+import com.luma.lifeos.domain.focus.MILLIS_PER_MINUTE
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.domain.time.TimeRange
 import java.time.LocalDate
@@ -17,6 +20,8 @@ enum class FocusSetupFailure { VALIDATION, IO }
 data class FocusSetupState(
     val name: String = "",
     val tag: String = "",
+    val timerMode: FocusTimerMode = FocusTimerMode.COUNT_UP,
+    val timedMinutesText: String = "25",
     val period: FocusPeriod = FocusPeriod.TODAY,
     val viewingZoneId: String = ZoneId.systemDefault().id,
     val viewingDate: LocalDate = LocalDate.now(ZoneId.of(viewingZoneId)),
@@ -34,9 +39,18 @@ data class FocusSetupState(
     val isRepeatDraft: Boolean get() = repeatSourceSessionId != null && !repeatLoading && !repeatLoadFailed
 
     val normalizedInput: FocusStartInput?
-        get() = runCatching {
-            normalizeFocusStartInput(FocusStartInput(name, tag.takeIf(String::isNotEmpty)))
-        }.getOrNull()
+        get() {
+            val timer = when (timerMode) {
+                FocusTimerMode.COUNT_UP -> FocusTimerConfig.countUp()
+                FocusTimerMode.TIMED -> timedMinutesText.toIntOrNull()
+                    ?.takeIf { it in 1..180 }
+                    ?.let { FocusTimerConfig.timed(it) }
+                    ?: return null
+            }
+            return runCatching {
+                normalizeFocusStartInput(FocusStartInput(name, tag.takeIf(String::isNotEmpty), timer))
+            }.getOrNull()
+        }
 
     val canStart: Boolean
         get() = normalizedInput != null && capturedStart == null && !unresolvedStartPending
@@ -74,6 +88,8 @@ fun visibleFocusInsightsState(
 sealed interface FocusSetupEvent {
     data class NameChanged(val value: String) : FocusSetupEvent
     data class TagChanged(val value: String) : FocusSetupEvent
+    data class TimerModeChanged(val value: FocusTimerMode) : FocusSetupEvent
+    data class TimedMinutesChanged(val value: String) : FocusSetupEvent
     data class PeriodChanged(val value: FocusPeriod) : FocusSetupEvent
     data class ViewingContextChanged(val date: LocalDate, val zoneId: String) : FocusSetupEvent
     data class GenerationChanged(val value: UUID) : FocusSetupEvent
@@ -105,6 +121,16 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         tag = event.value,
         startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
     )
+    is FocusSetupEvent.TimerModeChanged -> state.copy(
+        timerMode = event.value,
+        startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
+    )
+    is FocusSetupEvent.TimedMinutesChanged -> state.copy(
+        timedMinutesText = event.value.mapNotNull { character ->
+            Character.digit(character, 10).takeIf { it >= 0 }?.digitToChar()
+        }.take(3).joinToString(""),
+        startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
+    )
     is FocusSetupEvent.PeriodChanged -> state.copy(period = event.value)
     is FocusSetupEvent.ViewingContextChanged -> {
         require(runCatching { ZoneId.of(event.zoneId) }.isSuccess) { "Unknown time zone" }
@@ -113,6 +139,8 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     is FocusSetupEvent.RepeatRequested -> state.copy(
         name = "",
         tag = "",
+        timerMode = FocusTimerMode.COUNT_UP,
+        timedMinutesText = "25",
         repeatSourceSessionId = event.sessionId,
         repeatRequestId = event.requestId,
         repeatLoading = true,
@@ -129,6 +157,8 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     ) state else state.copy(
         name = event.input.name,
         tag = event.input.tagName.orEmpty(),
+        timerMode = event.input.timer.mode,
+        timedMinutesText = event.input.timer.targetMillis?.div(MILLIS_PER_MINUTE)?.toString() ?: "25",
         repeatLoading = false,
         repeatRequestId = null,
         repeatLoadFailed = false,
@@ -146,6 +176,8 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.StartAnotherRequested -> state.copy(
         name = "",
         tag = "",
+        timerMode = FocusTimerMode.COUNT_UP,
+        timedMinutesText = "25",
         repeatSourceSessionId = null,
         repeatRequestId = null,
         repeatLoading = false,
@@ -162,6 +194,8 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         state.copy(
             name = "",
             tag = "",
+            timerMode = FocusTimerMode.COUNT_UP,
+            timedMinutesText = "25",
             databaseGeneration = event.value,
             capturedStart = null,
             startFailure = null,
@@ -195,6 +229,8 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.StartSucceeded -> state.copy(
         name = "",
         tag = "",
+        timerMode = FocusTimerMode.COUNT_UP,
+        timedMinutesText = "25",
         capturedStart = null,
         startFailure = null,
         unresolvedStartPending = false,
@@ -213,6 +249,8 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.PrivateContentLocked -> state.copy(
         name = "",
         tag = "",
+        timerMode = FocusTimerMode.COUNT_UP,
+        timedMinutesText = "25",
         unresolvedStartPending = state.unresolvedStartPending || state.capturedStart != null,
         capturedStart = null,
         startFailure = null,
@@ -229,6 +267,8 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
 fun encodeFocusSetupState(state: FocusSetupState): Map<String, Any?> = mapOf(
     KEY_NAME to state.name,
     KEY_TAG to state.tag,
+    KEY_TIMER_MODE to state.timerMode.name,
+    KEY_TIMER_MINUTES to state.timedMinutesText,
     KEY_PERIOD to state.period.name,
     KEY_ZONE to state.viewingZoneId,
     KEY_GENERATION to state.databaseGeneration?.toString(),
@@ -252,6 +292,11 @@ fun restoreFocusSetupState(
     return FocusSetupState(
         name = saved[KEY_NAME] as? String ?: "",
         tag = saved[KEY_TAG] as? String ?: "",
+        timerMode = (saved[KEY_TIMER_MODE] as? String)?.let { value ->
+            FocusTimerMode.entries.firstOrNull { it.name == value }
+        } ?: FocusTimerMode.COUNT_UP,
+        timedMinutesText = (saved[KEY_TIMER_MINUTES] as? String)
+            ?.takeIf { it.length <= 3 && it.all(Char::isDigit) } ?: "25",
         period = (saved[KEY_PERIOD] as? String)?.let { value ->
             FocusPeriod.entries.firstOrNull { it.name == value }
         } ?: FocusPeriod.TODAY,
@@ -313,6 +358,8 @@ fun focusInsightsSelection(state: FocusSetupState): FocusInsightsSelection {
 
 private const val KEY_NAME = "focus.setup.name"
 private const val KEY_TAG = "focus.setup.tag"
+private const val KEY_TIMER_MODE = "focus.setup.timer_mode"
+private const val KEY_TIMER_MINUTES = "focus.setup.timer_minutes"
 private const val KEY_PERIOD = "focus.setup.period"
 private const val KEY_ZONE = "focus.setup.zone"
 private const val KEY_DATE = "focus.setup.date"

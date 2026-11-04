@@ -62,6 +62,18 @@ interface FocusDao {
     @Query("SELECT * FROM focus_runtime WHERE slot_id = 1 LIMIT 1")
     suspend fun runtime(): FocusRuntimeEntity?
 
+    @Query("SELECT * FROM focus_break_runtime WHERE singleton_id = 1 LIMIT 1")
+    suspend fun breakRuntime(): FocusBreakEntity?
+
+    @Query("SELECT * FROM focus_break_runtime WHERE singleton_id = 1 LIMIT 1")
+    fun observeBreakRuntime(): Flow<FocusBreakEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun replaceBreakRuntime(entity: FocusBreakEntity)
+
+    @Query("DELETE FROM focus_break_runtime WHERE singleton_id = 1")
+    suspend fun deleteBreakRuntime(): Int
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSession(session: FocusSessionEntity)
 
@@ -136,6 +148,8 @@ interface FocusDao {
             s.open_slot AS session_open_slot,
             s.name AS session_name,
             s.tag_id AS session_tag_id,
+            s.timer_mode AS session_timer_mode,
+            s.target_millis AS session_target_millis,
             r.id AS run_id,
             r.session_id AS run_session_id,
             r.ordinal AS run_ordinal,

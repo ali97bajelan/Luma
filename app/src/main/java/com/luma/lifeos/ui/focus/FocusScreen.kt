@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -32,12 +34,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.KeyboardType
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStartInput
+import com.luma.lifeos.domain.focus.FocusTimerMode
+import com.luma.lifeos.focus.FocusBreakState
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusScreenState
@@ -70,6 +75,10 @@ internal fun FocusScreen(
     onLaunchApp: (String) -> Unit,
     onOpenPendingDestination: () -> Unit,
     onOpenHistory: () -> Unit,
+    onTimerModeChange: (FocusTimerMode) -> Unit = {},
+    onTimedMinutesChange: (String) -> Unit = {},
+    onStartBreak: (Int) -> Unit = {},
+    onEndBreak: () -> Unit = {},
 ) {
     val runtime = state.runtime
     val session = runtime.session
@@ -102,6 +111,13 @@ internal fun FocusScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (runtime.breakState != FocusBreakState.Idle) {
+                FocusBreakCountdown(
+                    state = runtime.breakState,
+                    busy = state.breakBusy,
+                    onEndBreak = onEndBreak,
+                )
+            }
             when {
                 runtime.loading -> {
                     CircularProgressIndicator(modifier = Modifier.testTag("focus_loading"))
@@ -156,6 +172,7 @@ internal fun FocusScreen(
                         session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
                     },
                     onRepeatSession = onRepeatSession,
+                    onStartBreak = onStartBreak,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
@@ -172,6 +189,7 @@ internal fun FocusScreen(
                         session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
                     },
                     onRepeatSession = onRepeatSession,
+                    onStartBreak = onStartBreak,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
@@ -181,6 +199,8 @@ internal fun FocusScreen(
                     state = state,
                     onNameChange = onNameChange,
                     onTagChange = onTagChange,
+                    onTimerModeChange = onTimerModeChange,
+                    onTimedMinutesChange = onTimedMinutesChange,
                     onPeriodChange = onPeriodChange,
                     onRetryInsights = onRetryInsights,
                     onStart = onStart,
@@ -251,6 +271,8 @@ private fun SetupContent(
     state: FocusScreenState,
     onNameChange: (String) -> Unit,
     onTagChange: (String) -> Unit,
+    onTimerModeChange: (FocusTimerMode) -> Unit,
+    onTimedMinutesChange: (String) -> Unit,
     onPeriodChange: (FocusPeriod) -> Unit,
     onRetryInsights: () -> Unit,
     onStart: (FocusStartInput) -> Unit,
@@ -260,11 +282,12 @@ private fun SetupContent(
     onOpenHistory: () -> Unit,
 ) {
     val setup = state.setup
-    val nameValid = runCatching {
-        normalizeFocusStartInput(FocusStartInput(setup.name, null))
+    val metadataValid = runCatching {
+        normalizeFocusStartInput(FocusStartInput(setup.name, setup.tag.takeIf(String::isNotEmpty)))
     }.isSuccess
+    val nameValid = runCatching { normalizeFocusStartInput(FocusStartInput(setup.name, null)) }.isSuccess
     val input = setup.normalizedInput
-    val tagInvalid = nameValid && setup.tag.isNotEmpty() && input == null
+    val tagInvalid = nameValid && setup.tag.isNotEmpty() && !metadataValid
     val fieldsEnabled = !state.busy && !setup.repeatLoading
     Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
     if (setup.repeatLoading) {
@@ -297,6 +320,49 @@ private fun SetupContent(
         supportingText = { if (tagInvalid) Text(stringResource(R.string.focus_tag_invalid)) },
         modifier = Modifier.fillMaxWidth().testTag("focus_tag"),
     )
+    Text(stringResource(R.string.focus_timer_mode_label), style = MaterialTheme.typography.titleSmall)
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FilterChip(
+            selected = setup.timerMode == FocusTimerMode.COUNT_UP,
+            onClick = { onTimerModeChange(FocusTimerMode.COUNT_UP) },
+            enabled = fieldsEnabled,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_mode_count_up"),
+            label = { Text(stringResource(R.string.focus_timer_mode_count_up)) },
+        )
+        FilterChip(
+            selected = setup.timerMode == FocusTimerMode.TIMED,
+            onClick = { onTimerModeChange(FocusTimerMode.TIMED) },
+            enabled = fieldsEnabled,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_mode_timed"),
+            label = { Text(stringResource(R.string.focus_timer_mode_timed)) },
+        )
+    }
+    if (setup.timerMode == FocusTimerMode.TIMED) {
+        OutlinedTextField(
+            value = setup.timedMinutesText,
+            onValueChange = onTimedMinutesChange,
+            label = { Text(stringResource(R.string.focus_timed_minutes_label)) },
+            singleLine = true,
+            enabled = fieldsEnabled,
+            isError = setup.timedMinutesText.toIntOrNull()?.let { it !in 1..180 } != false,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            supportingText = {
+                if (setup.timedMinutesText.toIntOrNull()?.let { it in 1..180 } != true) {
+                    Text(stringResource(R.string.focus_timed_minutes_invalid))
+                }
+            },
+            modifier = Modifier.fillMaxWidth().testTag("focus_timed_minutes"),
+        )
+        TextButton(
+            onClick = {
+                onTimerModeChange(FocusTimerMode.TIMED)
+                onTimedMinutesChange("25")
+            },
+            enabled = fieldsEnabled,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_25_minute_shortcut"),
+        ) { Text(stringResource(R.string.focus_25_minute_shortcut)) }
+        Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
+    }
     if (state.tagSuggestions.isNotEmpty()) {
         Text(stringResource(R.string.focus_tag_suggestions), style = MaterialTheme.typography.titleSmall)
         state.tagSuggestions.forEach { suggestion ->
@@ -367,11 +433,24 @@ private fun RunningContent(
         style = MaterialTheme.typography.titleLarge,
     )
     state.runtime.session?.let { SessionMetadata(it) }
-    Text(
-        DateUtils.formatElapsedTime(state.runtime.displayedMillis / 1_000),
-        style = MaterialTheme.typography.displayMedium,
-        modifier = Modifier.fillMaxWidth().testTag("focus_elapsed"),
-    )
+    val session = state.runtime.session
+    val targetMillis = session?.timer?.targetMillis
+    if (targetMillis != null) {
+        val remaining = (targetMillis - state.runtime.displayedMillis).coerceAtLeast(0L)
+        Text(stringResource(R.string.focus_remaining_label), style = MaterialTheme.typography.titleSmall)
+        Text(
+            DateUtils.formatElapsedTime(remaining / 1_000),
+            style = MaterialTheme.typography.displayMedium,
+            modifier = Modifier.fillMaxWidth().testTag("focus_remaining"),
+        )
+        Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
+    } else {
+        Text(
+            DateUtils.formatElapsedTime(state.runtime.displayedMillis / 1_000),
+            style = MaterialTheme.typography.displayMedium,
+            modifier = Modifier.fillMaxWidth().testTag("focus_elapsed"),
+        )
+    }
     Text(stringResource(R.string.focus_background_note), style = MaterialTheme.typography.bodyMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         LumaButton(
@@ -419,8 +498,15 @@ private fun PausedContent(
 ) {
     Text(stringResource(R.string.focus_paused), style = MaterialTheme.typography.titleLarge)
     SessionMetadata(session)
-    Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall,
-        modifier = Modifier.testTag("focus_elapsed"))
+    val targetMillis = session.timer.targetMillis
+    if (targetMillis != null) {
+        Text(stringResource(R.string.focus_remaining_label), style = MaterialTheme.typography.titleSmall)
+        Text(DateUtils.formatElapsedTime((targetMillis - session.creditedMillis).coerceAtLeast(0L) / 1_000),
+            style = MaterialTheme.typography.displaySmall, modifier = Modifier.testTag("focus_remaining"))
+    } else {
+        Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier.testTag("focus_elapsed"))
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         LumaButton(onClick = { onAction(FocusAction.RESUME) }, enabled = !state.busy,
             modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_resume")) {
@@ -447,7 +533,11 @@ private fun RecoveryContent(
     Text(stringResource(R.string.focus_recovery_title), style = MaterialTheme.typography.titleLarge)
     Text(stringResource(R.string.focus_recovery_body))
     SessionMetadata(session)
-    Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
+    val recoveryTime = session.timer.targetMillis?.let { target ->
+        Text(stringResource(R.string.focus_remaining_label), style = MaterialTheme.typography.titleSmall)
+        (target - session.creditedMillis).coerceAtLeast(0L)
+    } ?: session.creditedMillis
+    Text(DateUtils.formatElapsedTime(recoveryTime / 1_000), style = MaterialTheme.typography.displaySmall)
     LumaButton(onClick = { onResolveRecovery(FocusRecoveryChoice.CONTINUE_ELAPSED) }, enabled = !busy,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_recovery_continue")) {
         Text(stringResource(R.string.focus_recovery_continue))
@@ -470,19 +560,53 @@ private fun TerminalContent(
     onBack: () -> Unit,
     onStartAnother: () -> Unit,
     onRepeatSession: (java.util.UUID) -> Unit,
+    onStartBreak: (Int) -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenPendingDestination: () -> Unit,
     onOpenHistory: () -> Unit,
 ) {
+    val title = when {
+        interrupted -> R.string.focus_interrupted
+        session.terminalReason == com.luma.lifeos.domain.focus.FocusTerminalReason.TARGET_REACHED -> R.string.focus_target_reached
+        else -> R.string.focus_finished
+    }
     Text(
-        stringResource(if (interrupted) R.string.focus_interrupted else R.string.focus_finished),
+        stringResource(title),
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.testTag(if (interrupted) "focus_interrupted" else "focus_finished"),
     )
     SessionMetadata(session)
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
     if (interrupted) Text(stringResource(R.string.focus_interrupted_gap))
+    if (state.runtime.breakState == FocusBreakState.Idle) {
+        var breakMinutes by rememberSaveable(session.id.toString()) { mutableStateOf("5") }
+        val duration = breakMinutes.toIntOrNull()?.takeIf { it in 1..60 }
+        OutlinedTextField(
+            value = breakMinutes,
+            onValueChange = { value ->
+                breakMinutes = value.mapNotNull { character ->
+                    Character.digit(character, 10).takeIf { it >= 0 }?.digitToChar()
+                }.take(2).joinToString("")
+            },
+            label = { Text(stringResource(R.string.focus_break_minutes_label)) },
+            singleLine = true,
+            enabled = !state.breakBusy,
+            isError = duration == null,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            supportingText = { if (duration == null) Text(stringResource(R.string.focus_break_minutes_invalid)) },
+            modifier = Modifier.fillMaxWidth().testTag("focus_break_minutes"),
+        )
+        Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
+        LumaButton(
+            onClick = { duration?.let(onStartBreak) },
+            enabled = !state.breakBusy && duration != null,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_break"),
+        ) { Text(stringResource(R.string.focus_start_break)) }
+        if (state.breakOperationFailed) {
+            Text(stringResource(R.string.focus_break_operation_error), color = MaterialTheme.colorScheme.error)
+        }
+    }
     val repeatId = state.setup.repeatSourceSessionId ?: session.id
     if (state.setup.repeatLoading) {
         Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
@@ -505,6 +629,34 @@ private fun TerminalContent(
     OpenHistoryButton(onOpenHistory)
     if (hasPendingDestination) PendingDestinationButton(onOpenPendingDestination = onOpenPendingDestination)
     FailureContent(state, onRetry, onEmergencyExit)
+}
+
+@Composable
+private fun FocusBreakCountdown(
+    state: FocusBreakState,
+    busy: Boolean,
+    onEndBreak: () -> Unit,
+) {
+    when (state) {
+        FocusBreakState.Idle -> Unit
+        is FocusBreakState.Running -> Text(
+            stringResource(R.string.focus_break_remaining, DateUtils.formatElapsedTime((state.remainingMillis + 999L) / 1_000L)),
+            modifier = Modifier.fillMaxWidth().testTag("focus_break_countdown"),
+            style = MaterialTheme.typography.titleLarge,
+        )
+        is FocusBreakState.Expired -> Text(
+            stringResource(R.string.focus_break_expired),
+            modifier = Modifier.fillMaxWidth().testTag("focus_break_expired"),
+            style = MaterialTheme.typography.titleLarge,
+        )
+    }
+    if (state != FocusBreakState.Idle) {
+        OutlinedButton(
+            onClick = onEndBreak,
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_end_break"),
+        ) { Text(stringResource(R.string.focus_end_break)) }
+    }
 }
 
 @Composable

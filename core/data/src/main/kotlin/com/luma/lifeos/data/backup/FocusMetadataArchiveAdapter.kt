@@ -12,8 +12,6 @@ internal const val FOCUS_SESSION_EXPORT_EXCLUDING_QUERY =
 
 /** Adapts legacy focus rows and validates the portable metadata graph. */
 internal object FocusMetadataArchiveAdapter {
-    private val metadataColumns = setOf("name", "tag_id")
-
     internal data class TagRow(val id: String, val name: String, val normalizedName: String)
 
     fun focusSessionExportQuery(excludeSessionId: Boolean): String =
@@ -21,17 +19,22 @@ internal object FocusMetadataArchiveAdapter {
 
     fun importColumns(table: String, schemaVersion: Int, currentColumns: List<String>): List<String> = when {
         table == "todo_task" && schemaVersion == 4 -> currentColumns.filterNot { it == "due_time_minutes" }
-        table == "focus_session" && schemaVersion == 7 -> currentColumns.filterNot { it in metadataColumns }
+        table == "focus_session" && schemaVersion == 7 -> currentColumns.filterNot {
+            it in setOf("name", "tag_id", "timer_mode", "target_millis")
+        }
+        table == "focus_session" && schemaVersion == 8 -> currentColumns.filterNot {
+            it in setOf("timer_mode", "target_millis")
+        }
         else -> currentColumns
     }
 
-    /** Schema 7 rows gain nullable metadata columns when staged in a schema 10 database. */
+    /** Older focus rows gain metadata and count-up defaults when staged in a current database. */
     fun insertColumns(
         table: String,
         schemaVersion: Int,
         sourceColumns: List<String>,
         currentColumns: List<String>,
-    ): List<String> = if (table == "focus_session" && schemaVersion == 7) currentColumns else sourceColumns
+    ): List<String> = if (table == "focus_session" && schemaVersion in 7..8) currentColumns else sourceColumns
 
     fun adaptRow(
         table: String,
@@ -41,10 +44,16 @@ internal object FocusMetadataArchiveAdapter {
         insertColumns: List<String>,
     ): List<Any?> {
         require(sourceColumns.size == sourceValues.size)
-        if (table != "focus_session" || schemaVersion != 7) return sourceValues
-        val values = sourceColumns.zip(sourceValues).toMap() + mapOf("name" to null, "tag_id" to null)
+        if (table != "focus_session" || schemaVersion !in 7..8) return sourceValues
+        val source = sourceColumns.zip(sourceValues).toMap()
+        val values = source + mapOf(
+            "name" to source["name"],
+            "tag_id" to source["tag_id"],
+            "timer_mode" to (source["timer_mode"] ?: "COUNT_UP"),
+            "target_millis" to source["target_millis"],
+        )
         return insertColumns.map { column ->
-            require(column in values) { "Unsupported schema-7 focus session column" }
+            require(column in values) { "Unsupported legacy focus session column" }
             values[column]
         }
     }

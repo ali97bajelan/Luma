@@ -16,6 +16,8 @@ import com.luma.lifeos.data.LumaStorage
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.AndroidFocusClock
 import com.luma.lifeos.focus.FocusCoordinator
+import com.luma.lifeos.focus.FocusBreakRuntime
+import com.luma.lifeos.focus.FocusExpiryPlatform
 import com.luma.lifeos.focus.FocusPreferences
 import com.luma.lifeos.focus.FocusRuntime
 import com.luma.lifeos.ui.mood.FileMoodDraftStore
@@ -132,12 +134,23 @@ class LumaApplication : Application() {
     val protectedUsage by lazy { ProtectedUsageIntegration(usage, protectedContentGateway) }
     val focusPreferences: FocusPreferences by lazy { FocusPreferences(this) }
     val allowedFocusApps: AllowedFocusApps by lazy { AllowedFocusApps(this) }
+    val focusExpiryPlatform: FocusExpiryPlatform by lazy { FocusExpiryPlatform(this) }
+    val focusBreakRuntime: FocusBreakRuntime by lazy {
+        FocusBreakRuntime(
+            repository = storage.focus,
+            clock = AndroidFocusClock(this),
+            expiryPlatform = focusExpiryPlatform,
+            scope = applicationScope,
+        )
+    }
     val focusRuntime: FocusRuntime by lazy {
         FocusRuntime(
             coordinator = FocusCoordinator(storage.focus, AndroidFocusClock(this)),
             preferences = focusPreferences,
             allowedApps = allowedFocusApps,
             scope = applicationScope,
+            expiryPlatform = focusExpiryPlatform,
+            breakRuntime = focusBreakRuntime,
         )
     }
     val moodDraftStore: FileMoodDraftStore by lazy { FileMoodDraftStore(this) }

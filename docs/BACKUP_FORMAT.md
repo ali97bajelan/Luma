@@ -87,6 +87,12 @@ exported terminal sessions; old unused catalog entries are omitted. Import check
 tag labels and normalized identities, references, unused tags, terminal session
 state and closed-run timing before live data can be replaced. Schema 7 remains
 readable and restores legacy sessions with null metadata.
+Schema 9 keeps the same 31-table inventory and adds `timer_mode` and nullable
+`target_millis` to `focus_session`. Count-up sessions have no target; timed sessions
+carry their fixed whole-minute target. Archives 7 and 8 remain readable and adapt
+their sessions to count-up with no target. Break countdowns and all other local
+timer/runtime state are not exported. Import validates target bounds, exact target
+credit for target-reached sessions and the cap on all timed-session credit.
 Unknown format/schema versions fail safely; future versions require an explicit
 reader. Task rows are validated for canonical UUIDs and civil dates, minute range,
 the date/time pairing, title/note limits, and update/creation chronology. Schema 4
@@ -97,9 +103,11 @@ data. Room schema 6 adds `due_time_minutes`; its 5→6 migration keeps every exi
 task and gives it null time. Room schema 7 adds `task_reminder`; its 6→7 migration
 creates no enabled reminder rows. Room schema 8 adds focus sessions, their runs and
 device-local focus runtime/replay state. Room schema 10 adds nullable focus metadata
-and the focus tag catalog through the non-destructive 9→10 migration. Only terminal
-history and referenced focus tags are portable; all focus runtime and widget runtime
-tables stay device-local. Task due times are floating civil values: changing time
+and the focus tag catalog through the non-destructive 9→10 migration. Room schema 11
+adds immutable focus timer configuration and a device-local break countdown through
+the non-destructive 10→11 migration. Only terminal history and referenced focus tags
+are portable; breaks and all other focus runtime and widget runtime tables stay
+device-local. Task due times are floating civil values: changing time
 zone does not convert the saved date or minute. Buckets remain based on the local
 calendar date. A task reminder is created only after the user enables it and the
 task has both a due date and time.

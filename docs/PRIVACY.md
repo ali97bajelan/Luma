@@ -31,9 +31,11 @@ before restored content is shown. Focus timers and trusted background work keep
 their existing lifecycle; App Lock gates saved Focus history and in-app access,
 and the emergency exit does not grant access to saved data.
 
-Focus history, including session names and tags, is saved locally with the other
-Luma data. Manual backups include only terminal focus sessions, their credited
-runs and tags used by that exported history. A paused session is
+Focus history, including session names, tags and an optional timed-session target,
+is saved locally with the other Luma data. Manual backups include only terminal
+focus sessions, their credited runs and tags used by that exported history. A
+break countdown is device-local and is never exported or included in focus totals.
+A paused session is
 excluded until the user explicitly stops it for export; continuing without it is
 also an explicit choice. Running state, boot/monotonic clock checkpoints,
 command receipts, deletion tombstones, emergency markers, selected app shortcuts
@@ -41,7 +43,7 @@ and unused focus tags are not portable. Restore validates the complete archive b
 replacement, imports terminal history only, and keeps device-local focus app
 choices on the device. Archives created before focus-history support restore
 with empty focus history; schema 7 archives restore focus history with null names
-and tags.
+and tags. Archives 7 and 8 restore focus sessions with count-up timing and no target.
 
 ## Home-screen widgets
 
