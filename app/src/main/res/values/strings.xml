@@ -1357,6 +1357,10 @@
     <string name="focus_week_duration">Focus: %1$s</string>
     <string name="focus_week_day_duration">%1$s · %2$s</string>
     <string name="focus_week_day_unavailable">Not elapsed yet</string>
+    <string name="focus_review_highest_day">Highest recorded focus day: %1$s · %2$s</string>
+    <string name="focus_review_no_activity">No saved focus activity was recorded in this period.</string>
+    <string name="focus_review_day_history_action">View focus sessions for %1$s</string>
+    <string name="focus_review_plan_another">Plan another session</string>
     <string name="focus_no_change">No change from the previous period.</string>
     <string name="focus_increase_from_empty">Increase of %1$s from a period with no recorded focus time.</string>
     <string name="focus_previous_period_empty">No focus time was recorded in the previous period, so no percentage is shown.</string>
@@ -1559,5 +1563,9 @@
     <plurals name="focus_goal_active_days">
         <item quantity="one">Saved activity on %1$d day</item>
         <item quantity="other">Saved activity on %1$d days</item>
+    </plurals>
+    <plurals name="focus_review_active_days">
+        <item quantity="one">Recorded focus time on %1$d day</item>
+        <item quantity="other">Recorded focus time on %1$d days</item>
     </plurals>
 </resources>

@@ -2,9 +2,11 @@ package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.ui.common.LumaCard
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,11 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusComparisonStatus
+import com.luma.lifeos.domain.focus.focusWeekDistribution
 import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.domain.review.ReviewPeriod
+import java.time.LocalDate
 import java.time.format.FormatStyle
 import java.util.Locale
 import java.time.format.DateTimeFormatter
@@ -36,6 +43,8 @@ internal fun WeeklyFocusCard(
     onRetry: () -> Unit,
     onCurrentHistory: () -> Unit,
     onPreviousHistory: () -> Unit,
+    onDayHistory: ((LocalDate) -> Unit)? = null,
+    onPlanAnotherSession: (() -> Unit)? = null,
     goalReport: FocusGoalReportState = FocusGoalReportState.Hidden,
     inProgressMillis: Long? = null,
     inProgressPaused: Boolean = false,
@@ -58,6 +67,11 @@ internal fun WeeklyFocusCard(
                 }
                 is FocusReportState.Ready -> {
                     val value = report.value
+                    val dailyTotals = value.days.asSequence()
+                        .filter { it.date in period.current.start..period.current.through }
+                        .mapNotNull { day -> day.statistics?.let { day.date to it.totalMillis } }
+                        .toMap()
+                    val distribution = focusWeekDistribution(dailyTotals)
                     val ratio = maxOf(value.current.totalMillis, value.previous.totalMillis)
                     Text(
                         stringResource(
@@ -139,12 +153,55 @@ internal fun WeeklyFocusCard(
                             }
                         }
                     }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Text(
+                        pluralStringResource(
+                            R.plurals.focus_review_active_days,
+                            distribution.activeDays,
+                            distribution.activeDays,
+                        ),
+                        modifier = Modifier.testTag("review_focus_active_days"),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    val highestDate = distribution.highestDate
+                    if (highestDate == null) {
+                        Text(
+                            stringResource(R.string.focus_review_no_activity),
+                            modifier = Modifier.testTag("review_focus_no_activity"),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    } else {
+                        Text(
+                            stringResource(
+                                R.string.focus_review_highest_day,
+                                highestDate.format(localizedDate(FormatStyle.MEDIUM)),
+                                focusDuration(dailyTotals.getValue(highestDate)),
+                            ),
+                            modifier = Modifier.testTag("review_focus_highest_day"),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                     if (value.days.isNotEmpty()) {
                         val dailyMaximum = value.days.mapNotNull { it.statistics?.totalMillis }.maxOrNull() ?: 0L
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             value.days.forEachIndexed { index, day ->
+                                val dayIsInRange = day.date in period.current.start..period.current.through
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp).then(
+                                        if (dayIsInRange && onDayHistory != null) {
+                                            val actionDescription = stringResource(
+                                                R.string.focus_review_day_history_action,
+                                                day.date.format(localizedDate(FormatStyle.MEDIUM)),
+                                            )
+                                            Modifier
+                                                .clickable(role = Role.Button) { onDayHistory?.invoke(day.date) }
+                                                .semantics(mergeDescendants = true) {
+                                                    contentDescription = actionDescription
+                                                }
+                                        } else {
+                                            Modifier
+                                        },
+                                    ),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
@@ -226,6 +283,15 @@ internal fun WeeklyFocusCard(
                         }
                         TextButton(onClick = onPreviousHistory, modifier = Modifier.testTag("review_focus_previous_history")) {
                             Text(stringResource(R.string.focus_view_previous_sources))
+                        }
+                    }
+                    onPlanAnotherSession?.let { onPlan ->
+                        TextButton(
+                            onClick = onPlan,
+                            modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                                .testTag("review_focus_plan_another"),
+                        ) {
+                            Text(stringResource(R.string.focus_review_plan_another))
                         }
                     }
                 }

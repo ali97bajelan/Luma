@@ -1378,6 +1378,10 @@
     <string name="focus_week_duration">Concentration : %1$s</string>
     <string name="focus_week_day_duration">%1$s · %2$s</string>
     <string name="focus_week_day_unavailable">Pas encore écoulé</string>
+    <string name="focus_review_highest_day">Journée avec le plus de concentration enregistrée : %1$s · %2$s</string>
+    <string name="focus_review_no_activity">Aucune activité de concentration enregistrée pendant cette période.</string>
+    <string name="focus_review_day_history_action">Voir les sessions de concentration du %1$s</string>
+    <string name="focus_review_plan_another">Planifier une autre session</string>
     <string name="focus_no_change">Aucun changement par rapport à la période précédente.</string>
     <string name="focus_increase_from_empty">Augmentation de %1$s par rapport à une période sans temps de concentration enregistré.</string>
     <string name="focus_previous_period_empty">Aucun temps n’a été enregistré pendant la période précédente ; aucun pourcentage n’est affiché.</string>
@@ -1582,5 +1586,9 @@
     <plurals name="focus_goal_active_days">
         <item quantity="one">Activité enregistrée pendant %1$d jour</item>
         <item quantity="other">Activité enregistrée pendant %1$d jours</item>
+    </plurals>
+    <plurals name="focus_review_active_days">
+        <item quantity="one">Temps de concentration enregistré sur %1$d jour</item>
+        <item quantity="other">Temps de concentration enregistré sur %1$d jours</item>
     </plurals>
 </resources>

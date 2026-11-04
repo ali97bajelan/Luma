@@ -1051,6 +1051,24 @@ fun LifeOsApp(
                                     com.luma.lifeos.domain.focus.FocusState.PAUSED,
                                 showProtectedFocus = FocusPrivateSurface.REVIEW in visibleFocusSurfaces,
                                 onFocusHistory = ::openFocusHistory,
+                                onPlanAnotherSession = if (
+                                    focusRuntime != null && protectedFocusReadable &&
+                                    focusState.runtime.initialized && !focusState.runtime.loading &&
+                                    !focusState.runtime.loadFailed
+                                ) ({
+                                    val session = focusState.runtime.session
+                                    val sessionState = session?.state
+                                    val sessionIsOpen =
+                                        sessionState == com.luma.lifeos.domain.focus.FocusState.RUNNING ||
+                                            sessionState == com.luma.lifeos.domain.focus.FocusState.PAUSED
+                                    if (!sessionIsOpen && !focusState.busy &&
+                                        focusState.runtime.initialized && !focusState.runtime.loading &&
+                                        !focusState.runtime.loadFailed
+                                    ) {
+                                        focusViewModel?.startAnother()
+                                    }
+                                    navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
+                                }) else null,
                                 onSources = { dates, metric ->
                                     val activity = metric.activity
                                     navController.navigate("review_sources/${dates.start}/${dates.through}/${metric.kind.name}" +

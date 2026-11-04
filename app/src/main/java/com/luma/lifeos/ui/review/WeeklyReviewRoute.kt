@@ -60,6 +60,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     focusInProgressPaused: Boolean = false,
     showProtectedFocus: Boolean = true,
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
+    onPlanAnotherSession: (() -> Unit)? = null,
     captureBottomClearance: Dp = 0.dp) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
@@ -186,6 +187,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                                         onPreviousHistory = {
                                             onFocusHistory(period.previous.start, period.previous.through, period.zone)
                                         },
+                                        onDayHistory = { date -> onFocusHistory(date, date, period.zone) },
+                                        onPlanAnotherSession = onPlanAnotherSession,
                                         goalReport = focusGoalReport,
                                         inProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
                                         inProgressPaused = focusInProgressPaused && showProtectedFocus,

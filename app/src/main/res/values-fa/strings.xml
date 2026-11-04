@@ -1358,6 +1358,10 @@
     <string name="focus_week_duration">تمرکز: %1$s</string>
     <string name="focus_week_day_duration">%1$s · %2$s</string>
     <string name="focus_week_day_unavailable">هنوز نرسیده</string>
+    <string name="focus_review_highest_day">بیشترین تمرکز ثبت‌شده: %1$s · %2$s</string>
+    <string name="focus_review_no_activity">در این دوره فعالیتی برای تمرکز ثبت نشده است.</string>
+    <string name="focus_review_day_history_action">دیدن نشست‌های تمرکز در %1$s</string>
+    <string name="focus_review_plan_another">برنامه‌ریزی نشست دیگر</string>
     <string name="focus_no_change">نسبت به دورهٔ پیشین تغییری ندارد.</string>
     <string name="focus_increase_from_empty">%1$s افزایش نسبت به دوره‌ای بدون زمان تمرکز ثبت‌شده.</string>
     <string name="focus_previous_period_empty">در دورهٔ پیشین زمانی ثبت نشده است؛ بنابراین درصد نمایش داده نمی‌شود.</string>
@@ -1560,5 +1564,9 @@
     <plurals name="focus_goal_active_days">
         <item quantity="one">فعالیت ذخیره‌شده در %1$d روز</item>
         <item quantity="other">فعالیت ذخیره‌شده در %1$d روز</item>
+    </plurals>
+    <plurals name="focus_review_active_days">
+        <item quantity="one">زمان تمرکز ثبت‌شده در %1$d روز</item>
+        <item quantity="other">زمان تمرکز ثبت‌شده در %1$d روز</item>
     </plurals>
 </resources>
