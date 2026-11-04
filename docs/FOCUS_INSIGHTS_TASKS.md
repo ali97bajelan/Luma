@@ -110,18 +110,18 @@ External pattern check (2026-11-04): TickTick documents [focus timers](https://h
 
 ## Product extension delivery — FP01–FP08
 
-Planning date: 2026-11-04 · Status: **DRAFT SPEC/PLAN/QA READY FOR REVIEW — implementation NOT STARTED; final QA NOT RUN**
+Planning date: 2026-11-04 · Status: **FP01 SOURCE COMPLETE — UNVERIFIED; FX01 and FX03–FX10 NOT STARTED; final QA NOT RUN**
 
 [Extension specification](superpowers/specs/2026-11-04-focus-product-extensions-design.md) · [Extension implementation plan](superpowers/plans/2026-11-04-focus-product-extensions.md) · [Separate final QA](feature-roadmap/focus-product-extensions-qa.md)
 
-The requested spec/plan covers the minimum FP01–FP08 scope. Reusable presets remain deferred; repeat works without them and invitations open ordinary setup. Draft defaults, contracts and acceptance cases live in the specification. No application code is changed by this planning handoff.
+The requested spec/plan covers the minimum FP01–FP08 scope. Reusable presets remain deferred; repeat works without them and invitations open ordinary setup. Draft defaults, contracts and acceptance cases live in the specification. FP01 Repeat source is complete for the current name/tag/count-up contract; QA remains deferred to FX-QA.
 
 **Delivery sequence requested by the user:** implement all FX01–FX10 source tasks first, then enter **one separate FX-QA phase to test all new behavior together**. No per-task QA gate or test/build/device execution during implementation. Tests/fixtures, compilation, Room schema generation, lint, platform checks, integrated regression and defect retests belong to FX-QA. Source dependencies still apply; a source-complete task is unverified, not accepted. This sequencing replaces the earlier recommendation to validate between product increments for this extension only.
 
 | ID | Source deliverable | Depends on | Product scope | Implementation | Final QA |
 | --- | --- | --- | --- | --- | --- |
 | FX01 | Domain contracts, Room migration, command identity, portable archive and legacy adapters | Existing FI source | Shared FP01–FP08 foundation | NOT STARTED | NOT RUN |
-| FX02 | Editable Repeat prefill and retained setup | FX01 | FP01 | NOT STARTED | NOT RUN |
+| FX02 | Editable Repeat prefill and retained setup | Existing FI metadata/start contract; shared FX01 extensions remain prerequisites for later metadata | FP01 | SOURCE COMPLETE — UNVERIFIED (current name/tag/count-up contract) | NOT RUN |
 | FX03 | Task picker/link, saved task totals and independent completion | FX01, FX02 | FP02 | NOT STARTED | NOT RUN |
 | FX04 | Timed focus, capped expiry, background wakeup and explicit recovery | FX01, FX03 | FP03 | NOT STARTED | NOT RUN |
 | FX05 | Explicit uncredited break countdown | FX04 | FP03 | NOT STARTED | NOT RUN |
@@ -133,6 +133,10 @@ The requested spec/plan covers the minimum FP01–FP08 scope. Reusable presets r
 | FX-QA | Test authoring, all-layer execution, integrated journeys, fixes/retests and evidence | ALL FX01–FX10 source complete | FP-A01–09; FX-Q01–12; applicable FI/FM gaps | NOT STARTED | NOT RUN |
 
 The earlier FI-only source-check restrictions below describe the existing handoff. The new extension has the distinct two-phase workflow above; the final QA document specifies future Gradle/device work after the source-complete gate. No tests or device/build tooling run as part of generating these documents. Existing FI/FM evidence and unresolved enforcement/platform limitations remain unchanged; no historic PASS carries automatically to the future extension candidate.
+
+**FP01 delivery (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Repeat reloads the latest terminal session under Focus access and prefills its editable name/tag; a legacy unnamed session requires a valid name, Start another clears the draft, and no timer starts before explicit Start. Completion and terminal history detail both offer Repeat. Source review only; FX-Q01/09 and the rest of FX-QA remain NOT RUN. The broad FX01 schema/archive work remains pending for task links, timed sessions, reflections and later extensions.
+
+**Ruling:** FP01 Repeat does not depend on the full FX01 shared foundation because the existing FI session and Start contracts already provide the fields needed for this increment. This narrows the FX02 dependency in the implementation plan; cost if wrong: later metadata work may require revisiting Repeat before those fields ship.
 
 ## Completion rules
 

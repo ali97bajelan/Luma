@@ -76,6 +76,8 @@ internal fun FocusRoute(
         onShowBackPrompt = viewModel::showBackPrompt,
         onDismissBackPrompt = viewModel::dismissBackPrompt,
         onStart = viewModel::start,
+        onRepeatSession = viewModel::repeatSession,
+        onStartAnother = viewModel::startAnother,
         onNameChange = viewModel::changeName,
         onTagChange = viewModel::changeTag,
         onPeriodChange = viewModel::changePeriod,

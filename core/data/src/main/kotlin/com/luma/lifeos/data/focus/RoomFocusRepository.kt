@@ -64,6 +64,9 @@ class RoomFocusRepository(
         ensureGeneration().let { UUID.fromString(it.generationId) }
     }
 
+    override suspend fun terminalSession(sessionId: UUID): FocusSession? =
+        dao.sessionWithRuns(sessionId.toString())?.toDomain()?.takeIf { it.isTerminal }
+
     override fun observeOpen(): Flow<FocusSession?> = dao.observeOpenSession().map { it?.toDomain() }
 
     override suspend fun start(

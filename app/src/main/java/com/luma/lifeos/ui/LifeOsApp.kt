@@ -1253,6 +1253,12 @@ fun LifeOsApp(
                     privateContentAccessFlow = focusPrivateAccessFlow,
                     databaseGenerationFlow = focusDatabaseGenerationFlow,
                     onBack = { navController.popBackStack() },
+                    onRepeatSession = { sessionId ->
+                        focusViewModel?.repeatSession(sessionId)
+                        if (!navController.popBackStack(AppRoutes.FOCUS, inclusive = false)) {
+                            navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
+                        }
+                    },
                 )
             }
             if (reminderPreferences != null) composable("settings_reminders") {

@@ -53,6 +53,8 @@ internal fun FocusScreen(
     onShowBackPrompt: () -> Unit,
     onDismissBackPrompt: () -> Unit,
     onStart: (FocusStartInput) -> Unit,
+    onRepeatSession: (java.util.UUID) -> Unit = {},
+    onStartAnother: () -> Unit = {},
     onNameChange: (String) -> Unit,
     onTagChange: (String) -> Unit,
     onPeriodChange: (FocusPeriod) -> Unit,
@@ -74,7 +76,7 @@ internal fun FocusScreen(
     var setupRequestedForSession by rememberSaveable { mutableStateOf<String?>(null) }
     val showTerminal = session?.let {
         shouldShowFocusTerminal(it.id, setupRequestedForSession, state.setup.databaseGeneration)
-    } ?: false
+    } == true && !state.setup.isRepeatDraft
     BackHandler {
         when {
             runtime.navigationGuarded -> onShowBackPrompt()
@@ -149,9 +151,11 @@ internal fun FocusScreen(
                     interrupted = false,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
-                    onStart = {
+                    onStartAnother = {
+                        onStartAnother()
                         session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
                     },
+                    onRepeatSession = onRepeatSession,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
@@ -163,9 +167,11 @@ internal fun FocusScreen(
                     interrupted = true,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
-                    onStart = {
+                    onStartAnother = {
+                        onStartAnother()
                         session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
                     },
+                    onRepeatSession = onRepeatSession,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
@@ -178,6 +184,7 @@ internal fun FocusScreen(
                     onPeriodChange = onPeriodChange,
                     onRetryInsights = onRetryInsights,
                     onStart = onStart,
+                    onRepeatSession = onRepeatSession,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenHistory = onOpenHistory,
@@ -247,6 +254,7 @@ private fun SetupContent(
     onPeriodChange: (FocusPeriod) -> Unit,
     onRetryInsights: () -> Unit,
     onStart: (FocusStartInput) -> Unit,
+    onRepeatSession: (java.util.UUID) -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenHistory: () -> Unit,
@@ -257,8 +265,26 @@ private fun SetupContent(
     }.isSuccess
     val input = setup.normalizedInput
     val tagInvalid = nameValid && setup.tag.isNotEmpty() && input == null
-    val fieldsEnabled = !state.busy
+    val fieldsEnabled = !state.busy && !setup.repeatLoading
     Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
+    if (setup.repeatLoading) {
+        Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
+    }
+    if (setup.repeatLoadFailed) {
+        Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
+        setup.repeatSourceSessionId?.let { sourceId ->
+            TextButton(
+                onClick = { onRepeatSession(sourceId) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_repeat_retry"),
+            ) { Text(stringResource(R.string.retry)) }
+        }
+    }
+    if (setup.repeatNeedsName) {
+        Text(stringResource(R.string.focus_repeat_legacy_name), modifier = Modifier.testTag("focus_repeat_legacy_name"))
+    }
+    setup.repeatNextStep?.let { nextStep ->
+        Text(stringResource(R.string.focus_repeat_next_step, nextStep), modifier = Modifier.testTag("focus_repeat_next_step"))
+    }
     OutlinedTextField(
         value = setup.name, onValueChange = onNameChange, label = { Text(stringResource(R.string.focus_name_label)) },
         singleLine = true, enabled = fieldsEnabled, isError = !nameValid,
@@ -286,7 +312,7 @@ private fun SetupContent(
     }
     LumaButton(
         onClick = { input?.let(onStart) },
-        enabled = !state.busy && !state.operationFailed && setup.canStart && input != null,
+        enabled = !state.busy && !setup.repeatLoading && !state.operationFailed && setup.canStart && input != null,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start"),
     ) {
         Text(if (state.busy) stringResource(R.string.focus_saving) else stringResource(R.string.focus_start))
@@ -442,7 +468,8 @@ private fun TerminalContent(
     interrupted: Boolean,
     hasPendingDestination: Boolean,
     onBack: () -> Unit,
-    onStart: () -> Unit,
+    onStartAnother: () -> Unit,
+    onRepeatSession: (java.util.UUID) -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenPendingDestination: () -> Unit,
@@ -456,10 +483,22 @@ private fun TerminalContent(
     SessionMetadata(session)
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
     if (interrupted) Text(stringResource(R.string.focus_interrupted_gap))
+    val repeatId = state.setup.repeatSourceSessionId ?: session.id
+    if (state.setup.repeatLoading) {
+        Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
+    }
+    if (state.setup.repeatLoadFailed) {
+        Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
+    }
+    OutlinedButton(
+        onClick = { onRepeatSession(repeatId) },
+        enabled = !state.busy && !state.setup.repeatLoading,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_repeat"),
+    ) { Text(stringResource(R.string.focus_repeat)) }
     LumaButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done")) {
         Text(stringResource(R.string.focus_done))
     }
-    OutlinedButton(onClick = onStart, enabled = !state.busy,
+    OutlinedButton(onClick = onStartAnother, enabled = !state.busy,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_another")) {
         Text(stringResource(R.string.focus_start_another))
     }

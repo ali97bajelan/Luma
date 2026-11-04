@@ -1275,6 +1275,11 @@
     <string name="focus_interrupted_gap">Le temps écoulé après le dernier enregistrement n’a pas été compté.</string>
     <string name="focus_done">Terminé</string>
     <string name="focus_start_another">Démarrer une autre session</string>
+    <string name="focus_repeat">Répéter cette session</string>
+    <string name="focus_repeat_loading">Chargement des détails de la session…</string>
+    <string name="focus_repeat_error">Impossible de charger cette session pour la répéter.</string>
+    <string name="focus_repeat_legacy_name">Ajoutez un nom à cette session avant de la démarrer.</string>
+    <string name="focus_repeat_next_step">Prochaine étape précédente : %1$s</string>
     <string name="focus_shortcuts">Raccourcis d’applications sélectionnées</string>
     <string name="focus_app_unavailable">Cette application n’est plus sélectionnée ou disponible. Vérifiez les applications de concentration et réessayez.</string>
     <string name="focus_pending_destination">Une destination Luma attend. Mettez en pause ou arrêtez la session, puis choisissez de l’ouvrir.</string>

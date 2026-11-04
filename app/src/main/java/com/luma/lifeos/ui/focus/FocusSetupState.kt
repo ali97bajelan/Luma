@@ -24,7 +24,15 @@ data class FocusSetupState(
     val capturedStart: FocusStartInput? = null,
     val startFailure: FocusSetupFailure? = null,
     val unresolvedStartPending: Boolean = false,
+    val repeatSourceSessionId: UUID? = null,
+    val repeatRequestId: UUID? = null,
+    val repeatLoading: Boolean = false,
+    val repeatLoadFailed: Boolean = false,
+    val repeatNeedsName: Boolean = false,
+    val repeatNextStep: String? = null,
 ) {
+    val isRepeatDraft: Boolean get() = repeatSourceSessionId != null && !repeatLoading && !repeatLoadFailed
+
     val normalizedInput: FocusStartInput?
         get() = runCatching {
             normalizeFocusStartInput(FocusStartInput(name, tag.takeIf(String::isNotEmpty)))
@@ -69,6 +77,16 @@ sealed interface FocusSetupEvent {
     data class PeriodChanged(val value: FocusPeriod) : FocusSetupEvent
     data class ViewingContextChanged(val date: LocalDate, val zoneId: String) : FocusSetupEvent
     data class GenerationChanged(val value: UUID) : FocusSetupEvent
+    data class RepeatRequested(val sessionId: UUID, val requestId: UUID) : FocusSetupEvent
+    data class PrefillRequested(
+        val sessionId: UUID,
+        val requestId: UUID,
+        val input: FocusStartInput,
+        val nextStep: String?,
+        val generation: UUID,
+    ) : FocusSetupEvent
+    data class RepeatLoadFailed(val requestId: UUID) : FocusSetupEvent
+    data object StartAnotherRequested : FocusSetupEvent
     data class StartCaptured(val input: FocusStartInput) : FocusSetupEvent
     data object StartIoFailed : FocusSetupEvent
     data object StartValidationRejected : FocusSetupEvent
@@ -80,6 +98,7 @@ sealed interface FocusSetupEvent {
 fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): FocusSetupState = when (event) {
     is FocusSetupEvent.NameChanged -> state.copy(
         name = event.value,
+        repeatNeedsName = state.repeatNeedsName && event.value.isBlank(),
         startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
     )
     is FocusSetupEvent.TagChanged -> state.copy(
@@ -91,6 +110,52 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         require(runCatching { ZoneId.of(event.zoneId) }.isSuccess) { "Unknown time zone" }
         state.copy(viewingDate = event.date, viewingZoneId = event.zoneId)
     }
+    is FocusSetupEvent.RepeatRequested -> state.copy(
+        name = "",
+        tag = "",
+        repeatSourceSessionId = event.sessionId,
+        repeatRequestId = event.requestId,
+        repeatLoading = true,
+        repeatLoadFailed = false,
+        repeatNeedsName = false,
+        repeatNextStep = null,
+        capturedStart = null,
+        startFailure = null,
+        unresolvedStartPending = false,
+    )
+    is FocusSetupEvent.PrefillRequested -> if (
+        state.databaseGeneration != event.generation || state.repeatSourceSessionId != event.sessionId ||
+            state.repeatRequestId != event.requestId
+    ) state else state.copy(
+        name = event.input.name,
+        tag = event.input.tagName.orEmpty(),
+        repeatLoading = false,
+        repeatRequestId = null,
+        repeatLoadFailed = false,
+        repeatNeedsName = event.input.name.isBlank(),
+        repeatNextStep = event.nextStep,
+        capturedStart = null,
+        startFailure = null,
+        unresolvedStartPending = false,
+    )
+    is FocusSetupEvent.RepeatLoadFailed -> if (state.repeatRequestId == event.requestId) state.copy(
+        repeatLoading = false,
+        repeatRequestId = null,
+        repeatLoadFailed = true,
+    ) else state
+    FocusSetupEvent.StartAnotherRequested -> state.copy(
+        name = "",
+        tag = "",
+        repeatSourceSessionId = null,
+        repeatRequestId = null,
+        repeatLoading = false,
+        repeatLoadFailed = false,
+        repeatNeedsName = false,
+        repeatNextStep = null,
+        capturedStart = null,
+        startFailure = null,
+        unresolvedStartPending = false,
+    )
     is FocusSetupEvent.GenerationChanged -> if (
         state.databaseGeneration != null && state.databaseGeneration != event.value
     ) {
@@ -101,6 +166,12 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
             capturedStart = null,
             startFailure = null,
             unresolvedStartPending = false,
+            repeatSourceSessionId = null,
+            repeatRequestId = null,
+            repeatLoading = false,
+            repeatLoadFailed = false,
+            repeatNeedsName = false,
+            repeatNextStep = null,
         )
     } else {
         state.copy(databaseGeneration = event.value)
@@ -127,6 +198,12 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         capturedStart = null,
         startFailure = null,
         unresolvedStartPending = false,
+        repeatSourceSessionId = null,
+        repeatRequestId = null,
+        repeatLoading = false,
+        repeatLoadFailed = false,
+        repeatNeedsName = false,
+        repeatNextStep = null,
     )
     FocusSetupEvent.StartOutcomeReconciled -> state.copy(
         capturedStart = null,
@@ -139,6 +216,12 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         unresolvedStartPending = state.unresolvedStartPending || state.capturedStart != null,
         capturedStart = null,
         startFailure = null,
+        repeatSourceSessionId = null,
+        repeatRequestId = null,
+        repeatLoading = false,
+        repeatLoadFailed = false,
+        repeatNeedsName = false,
+        repeatNextStep = null,
     )
 }
 
@@ -149,6 +232,10 @@ fun encodeFocusSetupState(state: FocusSetupState): Map<String, Any?> = mapOf(
     KEY_PERIOD to state.period.name,
     KEY_ZONE to state.viewingZoneId,
     KEY_GENERATION to state.databaseGeneration?.toString(),
+    KEY_REPEAT_SOURCE to state.repeatSourceSessionId?.takeUnless { state.repeatLoading }?.toString(),
+    KEY_REPEAT_FAILED to state.repeatLoadFailed,
+    KEY_REPEAT_NEEDS_NAME to state.repeatNeedsName,
+    KEY_REPEAT_NEXT_STEP to state.repeatNextStep,
 )
 
 /** Restore user drafts and selection while using the current local date after process recreation. */
@@ -171,6 +258,12 @@ fun restoreFocusSetupState(
         viewingZoneId = zone,
         viewingDate = date,
         databaseGeneration = (saved[KEY_GENERATION] as? String)?.let { runCatching { UUID.fromString(it) }.getOrNull() },
+        repeatSourceSessionId = (saved[KEY_REPEAT_SOURCE] as? String)?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()
+        },
+        repeatLoadFailed = saved[KEY_REPEAT_FAILED] as? Boolean ?: false,
+        repeatNeedsName = saved[KEY_REPEAT_NEEDS_NAME] as? Boolean ?: false,
+        repeatNextStep = saved[KEY_REPEAT_NEXT_STEP] as? String,
     )
 }
 
@@ -224,3 +317,7 @@ private const val KEY_PERIOD = "focus.setup.period"
 private const val KEY_ZONE = "focus.setup.zone"
 private const val KEY_DATE = "focus.setup.date"
 private const val KEY_GENERATION = "focus.setup.generation"
+private const val KEY_REPEAT_SOURCE = "focus.setup.repeat_source"
+private const val KEY_REPEAT_FAILED = "focus.setup.repeat_failed"
+private const val KEY_REPEAT_NEEDS_NAME = "focus.setup.repeat_needs_name"
+private const val KEY_REPEAT_NEXT_STEP = "focus.setup.repeat_next_step"

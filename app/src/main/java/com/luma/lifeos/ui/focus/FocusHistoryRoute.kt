@@ -71,6 +71,7 @@ internal fun FocusHistoryRoute(
     privateContentAccessFlow: Flow<Boolean>,
     databaseGenerationFlow: Flow<UUID?>,
     onBack: () -> Unit,
+    onRepeatSession: (UUID) -> Unit = {},
 ) {
     val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, databaseGenerationFlow) {
         viewModelFactory {
@@ -107,6 +108,7 @@ internal fun FocusHistoryRoute(
             onRetry = model::retry,
             onPage = model::page,
             onDelete = model::delete,
+            onRepeatSession = onRepeatSession,
             onBack = onBack,
         )
     } else {
@@ -124,6 +126,7 @@ private fun FocusHistoryScreen(
     onRetry: () -> Unit,
     onPage: (Int) -> Unit,
     onDelete: (FocusHistoryRow) -> Unit,
+    onRepeatSession: (UUID) -> Unit,
     onBack: () -> Unit,
 ) {
     var expandedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -205,6 +208,7 @@ private fun FocusHistoryScreen(
                                     else row.session.id.toString()
                                 },
                                 onDelete = { deleteTarget = row },
+                                onRepeat = { onRepeatSession(row.session.id) },
                             )
                         }
                         if (state.deletionFailed) item(key = "delete_error") {
@@ -317,6 +321,7 @@ private fun FocusHistoryItem(
     deleting: Boolean,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
+    onRepeat: () -> Unit,
 ) {
     val formatter = remember(zone, Locale.getDefault()) {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(zone)
@@ -384,6 +389,11 @@ private fun FocusHistoryItem(
                         modifier = Modifier.testTag("focus_history_segment_$index"),
                     )
                 }
+                TextButton(
+                    enabled = !deleting,
+                    onClick = onRepeat,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_repeat"),
+                ) { Text(stringResource(R.string.focus_repeat)) }
                 TextButton(
                     enabled = !deleting,
                     onClick = onDelete,

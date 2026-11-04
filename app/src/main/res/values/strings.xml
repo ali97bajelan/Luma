@@ -1254,6 +1254,11 @@
     <string name="focus_interrupted_gap">Time after the last saved checkpoint was not included.</string>
     <string name="focus_done">Done</string>
     <string name="focus_start_another">Start another focus session</string>
+    <string name="focus_repeat">Repeat this session</string>
+    <string name="focus_repeat_loading">Loading session details…</string>
+    <string name="focus_repeat_error">Could not load this session to repeat it.</string>
+    <string name="focus_repeat_legacy_name">Add a name for this session before starting.</string>
+    <string name="focus_repeat_next_step">Previous next step: %1$s</string>
     <string name="focus_shortcuts">Selected app shortcuts</string>
     <string name="focus_app_unavailable">This app is no longer selected or available. Check your focus app settings and try again.</string>
     <string name="focus_pending_destination">A Luma destination is waiting. Pause or stop focus, then choose to open it.</string>

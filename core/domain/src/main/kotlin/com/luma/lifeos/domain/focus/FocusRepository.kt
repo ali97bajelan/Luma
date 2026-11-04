@@ -10,6 +10,17 @@ const val FOCUS_HISTORY_PAGE_SIZE: Int = 50
 interface FocusRepository {
     suspend fun currentGeneration(): UUID
 
+    /** Reloads a terminal record by identity before using it as a repeat source. */
+    suspend fun terminalSession(sessionId: UUID): FocusSession? {
+        var offset = 0
+        while (true) {
+            val page = history(FocusHistoryQuery(range = null), offset, FOCUS_HISTORY_PAGE_SIZE)
+            page.rows.firstOrNull { it.session.id == sessionId }?.let { return it.session }
+            if (page.rows.isEmpty() || offset + page.rows.size >= page.total) return null
+            offset += page.rows.size
+        }
+    }
+
     /** Emits the authoritative RUNNING or PAUSED session, or null after state has loaded. */
     fun observeOpen(): Flow<FocusSession?>
 

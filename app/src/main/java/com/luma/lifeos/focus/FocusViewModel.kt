@@ -8,6 +8,7 @@ import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusWriteResult
@@ -232,6 +233,61 @@ class FocusViewModel(
 
     fun changeName(value: String) = updateSetup(FocusSetupEvent.NameChanged(value))
     fun changeTag(value: String) = updateSetup(FocusSetupEvent.TagChanged(value))
+    fun startAnother() = updateSetup(FocusSetupEvent.StartAnotherRequested)
+
+    /** Reloads a terminal record under the current Focus grant before creating a repeat draft. */
+    fun repeatSession(sessionId: UUID) {
+        val focusRepository = repository ?: return
+        if (!privateContentAccess.value || local.value.busy || local.value.setup.repeatLoading ||
+            pendingOperation is PendingOperation.Start
+        ) return
+        val generation = runtime.state.value.databaseGeneration ?: return
+        if (runtime.state.value.session?.state in setOf(FocusState.RUNNING, FocusState.PAUSED)) return
+        val requestId = UUID.randomUUID()
+        updateSetup(FocusSetupEvent.RepeatRequested(sessionId, requestId))
+        viewModelScope.launch {
+            try {
+                val latestGeneration = focusRepository.currentGeneration()
+                if (latestGeneration != generation) {
+                    updateSetup(FocusSetupEvent.GenerationChanged(latestGeneration))
+                    return@launch
+                }
+                val source = focusRepository.terminalSession(sessionId)
+                val generationAfterRead = focusRepository.currentGeneration()
+                if (generationAfterRead != generation) {
+                    updateSetup(FocusSetupEvent.GenerationChanged(generationAfterRead))
+                    return@launch
+                }
+                if (!privateContentAccess.value || runtime.state.value.databaseGeneration != generation) {
+                    return@launch
+                }
+                if (runtime.state.value.session?.state in setOf(FocusState.RUNNING, FocusState.PAUSED)) {
+                    updateSetup(FocusSetupEvent.RepeatLoadFailed(requestId))
+                    return@launch
+                }
+                if (source == null || !source.isTerminal) {
+                    updateSetup(FocusSetupEvent.RepeatLoadFailed(requestId))
+                    return@launch
+                }
+                updateSetup(
+                    FocusSetupEvent.PrefillRequested(
+                        sessionId = sessionId,
+                        requestId = requestId,
+                        input = FocusStartInput(source.metadata.name.orEmpty(), source.metadata.tag?.name),
+                        nextStep = null,
+                        generation = generation,
+                    ),
+                )
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (!privateContentAccess.value || runtime.state.value.databaseGeneration != generation) {
+                    return@launch
+                }
+                updateSetup(FocusSetupEvent.RepeatLoadFailed(requestId))
+            }
+        }
+    }
+
     fun changePeriod(value: FocusPeriod) = updateSetup(FocusSetupEvent.PeriodChanged(value))
     fun updateViewingContext(date: LocalDate, zone: ZoneId) = updateSetup(
         FocusSetupEvent.ViewingContextChanged(date, zone.id),

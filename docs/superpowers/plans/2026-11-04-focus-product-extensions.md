@@ -22,7 +22,7 @@
 
 ## Phase policy and status
 
-All boxes start unchecked. FX01–FX10 produce source and source-review handoffs only; record **SOURCE COMPLETE — UNVERIFIED** when their code/doc steps exist. No QA gate between these tasks. They are source dependencies, not tested release increments. Preserve a single integration branch/workspace and do not launch partially wired schema/timer features. No automatic commits, release, install or personal-data operations are required by this planning request.
+All boxes initially start unchecked; completed implementation work is recorded below. FX01–FX10 produce source and source-review handoffs only; record **SOURCE COMPLETE — UNVERIFIED** when their code/doc steps exist. No QA gate between these tasks. They are source dependencies, not tested release increments. Preserve a single integration branch/workspace and do not launch partially wired schema/timer features. No automatic commits, release, install or personal-data operations are required by this planning request.
 
 FX-QA starts only when every implementation row is source complete. Test/fixture authoring, build fixes discovered by compilation, schema generation, all automated/manual testing and defect retests occur there. A final defect fix may change earlier source; retain defect ownership under the final QA phase and rerun affected plus integrated cases. No requirement to knowingly preserve a defect until the end: source-review corrections are allowed during implementation.
 
@@ -105,12 +105,14 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 
 ## FX02 — Repeat and retained setup
 
-**Depends on:** FX01. **Files:** existing Focus setup/screen/route/ViewModel/history files. **Consumes:** extended `FocusStartInput`, authoritative terminal detail. **Produces:** `FocusViewModel.repeatSession(sessionId: UUID)` and setup event `PrefillRequested(input: FocusStartInput, nextStep: String?, generation: UUID)`.
+**Depends on:** existing FI metadata and Start contracts. FP01 Repeat only uses currently supported name/tag fields; the shared FX01 foundation remains required for later task, timer and reflection extensions. **Files:** existing Focus setup/screen/route/ViewModel/history files. **Consumes:** authoritative terminal detail. **Produces:** `FocusViewModel.repeatSession(sessionId: UUID)` and setup event `PrefillRequested(input: FocusStartInput, nextStep: String?, generation: UUID)`.
 
-- [ ] Load and authorize the latest terminal source; map only name/tag/timer/task/provenance into editable draft, with previous next step as read-only context. Clear missing/completed task links and legacy invalid names with visible guidance.
-- [ ] Add Repeat to completion/detail and preserve distinct empty Start another behavior. If an open session exists, route to it without replacing a draft behind the user's back.
-- [ ] Retain prefill in SavedStateHandle; clear it on success/relock/generation replacement. Freeze full Start payload/IDs after command capture and preserve identical retry semantics.
-- [ ] Source-review that Repeat never calls Start and that stale detail cannot create a timer. Record source handoff; FX-Q01/09 prove behavior later.
+- [x] Reload and authorize the latest terminal source under the current Focus grant. Prefill editable name/tag; legacy null names stay blank and require valid user input. Task links, timed configuration and next-step context remain unavailable until their owning extension tasks.
+- [x] Add Repeat to the completion screen and terminal history detail. Keep Start another as explicit empty setup; if another session is open, Focus returns to that session without replacing it.
+- [x] Retain the supported Repeat draft in SavedStateHandle; clear it on successful Start, relock and database-generation replacement. The existing captured Start command keeps its payload and IDs unchanged for retries.
+- [x] Source-review that Repeat only requests a prefill and never calls Start; stale/missing terminal details cannot create a timer. FX-Q01/09 remain NOT RUN.
+
+**FP01 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED for the currently available name/tag/count-up contract.** FP01 QA remains NOT RUN in FX-QA. When timed sessions, task links or reflections are introduced, extend Repeat under their owning source tasks.
 
 ## FX03 — Task link and independent completion
 

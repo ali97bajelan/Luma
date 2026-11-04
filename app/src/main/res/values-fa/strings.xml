@@ -1255,6 +1255,11 @@
     <string name="focus_interrupted_gap">زمان پس از آخرین نقطهٔ ذخیره‌شده محاسبه نشد.</string>
     <string name="focus_done">انجام شد</string>
     <string name="focus_start_another">شروع نشست تمرکز دیگر</string>
+    <string name="focus_repeat">تکرار این نشست</string>
+    <string name="focus_repeat_loading">در حال بارگذاری جزئیات نشست…</string>
+    <string name="focus_repeat_error">بارگذاری این نشست برای تکرار ممکن نشد.</string>
+    <string name="focus_repeat_legacy_name">پیش از شروع، برای این نشست نامی وارد کنید.</string>
+    <string name="focus_repeat_next_step">گام بعدی قبلی: %1$s</string>
     <string name="focus_shortcuts">میان‌بر برنامه‌های انتخاب‌شده</string>
     <string name="focus_app_unavailable">این برنامه دیگر انتخاب‌شده یا در دسترس نیست. برنامه‌های تمرکز را بررسی کنید و دوباره تلاش کنید.</string>
     <string name="focus_pending_destination">یک مقصد لوما در انتظار است. تمرکز را مکث یا متوقف کنید، سپس باز کردن آن را انتخاب کنید.</string>
