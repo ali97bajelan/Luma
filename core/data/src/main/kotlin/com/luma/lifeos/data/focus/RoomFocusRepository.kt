@@ -6,6 +6,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusHistoryRow
+import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusInsights
 import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusPage
@@ -408,35 +409,49 @@ class RoomFocusRepository(
             .map { tags -> tags.map { FocusTag(UUID.fromString(it.id), it.name) } }
             .flowOn(Dispatchers.IO)
 
-    override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage {
+    override fun observeTags(): Flow<List<FocusTag>> =
+        dao.observeTags()
+            .map { tags -> tags.map { FocusTag(UUID.fromString(it.id), it.name) } }
+            .flowOn(Dispatchers.IO)
+
+    override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage =
+        history(FocusHistoryQuery(range), offset, limit)
+
+    override suspend fun history(query: FocusHistoryQuery, offset: Int, limit: Int): FocusPage {
         require(offset >= 0 && limit in 1..FOCUS_HISTORY_PAGE_SIZE) {
             "History pages require a nonnegative offset and a limit from 1 to $FOCUS_HISTORY_PAGE_SIZE"
         }
         return database.withTransaction {
-            val start = range?.start
-            val end = range?.endExclusive
-            val total = Math.toIntExact(
-                dao.historyCount(
+            val start = query.range?.start
+            val end = query.range?.endExclusive
+            val filtered = FocusHistoryAccumulator<FocusSessionEntity>(query, offset, limit)
+            var candidateOffset = 0
+            while (true) {
+                val candidates = dao.historyCandidatesPage(
                     startSeconds = start?.epochSecond,
                     startNanos = start?.nano,
                     endSeconds = end?.epochSecond,
                     endNanos = end?.nano,
-                ),
-            )
-            val page = dao.historyPage(
-                startSeconds = start?.epochSecond,
-                startNanos = start?.nano,
-                endSeconds = end?.epochSecond,
-                endNanos = end?.nano,
-                offset = offset,
-                limit = limit,
-            )
-            if (page.isEmpty()) return@withTransaction FocusPage(emptyList(), offset, total)
+                    offset = candidateOffset,
+                    limit = FOCUS_HISTORY_FILTER_BATCH_SIZE,
+                )
+                if (candidates.isEmpty()) break
+                for (candidate in candidates) {
+                    filtered.accept(candidate, candidate.name, candidate.tagId)
+                }
+                candidateOffset = Math.addExact(candidateOffset, candidates.size)
+                if (candidates.size < FOCUS_HISTORY_FILTER_BATCH_SIZE) break
+            }
+            val page = filtered.pageRows()
+            if (page.isEmpty()) return@withTransaction FocusPage(emptyList(), offset, filtered.total)
 
             val runsBySession = dao.runsForSessions(page.map(FocusSessionEntity::id))
                 .groupBy(FocusRunEntity::sessionId)
+            val tagIds = page.mapNotNull(FocusSessionEntity::tagId).distinct()
+            val tagsById: Map<String, FocusTagEntity> =
+                if (tagIds.isEmpty()) emptyMap() else dao.tagsByIds(tagIds).associateBy(FocusTagEntity::id)
             val rows = page.map { entity ->
-                val tag: FocusTagEntity? = entity.tagId?.let { tagId -> dao.tag(tagId) }
+                val tag: FocusTagEntity? = entity.tagId?.let(tagsById::get)
                 val session = entity.toDomain(
                     runsBySession[entity.id].orEmpty().map(FocusRunEntity::toDomain),
                     FocusMetadata(
@@ -447,11 +462,11 @@ class RoomFocusRepository(
                 FocusHistoryRow(
                     session = session,
                     fullDurationMillis = session.creditedMillis,
-                    rangeContributionMillis = range?.let { focusRangeContributionMillis(session, it) }
+                    rangeContributionMillis = query.range?.let { focusRangeContributionMillis(session, it) }
                         ?: session.creditedMillis,
                 )
             }
-            FocusPage(rows, offset, total)
+            FocusPage(rows, offset, filtered.total)
         }
     }
 
@@ -738,6 +753,8 @@ class RoomFocusRepository(
         return checkNotNull(dao.storageState()) { "Focus database generation was not initialized" }
     }
 }
+
+private const val FOCUS_HISTORY_FILTER_BATCH_SIZE = 200
 
 private const val STORAGE_SINGLETON_ID = 1
 private const val RUNTIME_SLOT_ID = 1

@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.domain.focus.FocusCommand
+import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusComparisonStatus
 import com.luma.lifeos.domain.focus.FocusPage
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
@@ -236,6 +237,8 @@ class FocusInsightsStateTest {
         override fun observeStatistics(range: TimeRange): Flow<FocusStatistics> = error("Not used")
         override fun observeInsights(range: TimeRange?): Flow<FocusInsights> = insights(range)
         override fun observeTagSuggestions(): Flow<List<FocusTag>> = emptyFlow()
+        override fun observeTags(): Flow<List<FocusTag>> = emptyFlow()
+        override suspend fun history(query: FocusHistoryQuery, offset: Int, limit: Int): FocusPage = error("Not used")
         override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage = error("Not used")
         override suspend fun delete(
             sessionId: UUID,

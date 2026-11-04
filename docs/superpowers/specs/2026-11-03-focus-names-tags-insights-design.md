@@ -1,12 +1,12 @@
 # Focus names, tags, and insights specification
 
-Date: 2026-11-03 · Status: **Proposed draft; implementation not started**
+Date: 2026-11-03 · Status: **Draft; FI01/FI03/FI04/FI05/FI06 source implementation complete; FI02 runtime verification and FI07 pending**
 
 [Plan](../plans/2026-11-03-focus-names-tags-insights.md) · [Tasks](../../FOCUS_INSIGHTS_TASKS.md) · [Existing focus specification](2026-10-28-roadmap-16-focus-mode.md)
 
 ## Intent and scope
 
-Give each focus session a recognizable name and tag so users can see what they focused on and where their time went. This handoff supplies feature suggestions, a specification, a plan, and implementation tasks. Defaults below are recommendations, not recorded user approval. No product implementation is part of this handoff.
+Give each focus session a recognizable name and tag so users can see what they focused on and where their time went. This specification, plan and task ledger track the P0 implementation and its verification boundaries. Defaults below are recommendations; runtime/product acceptance remains pending as noted in the task ledger.
 
 ## Current code evidence
 
@@ -39,7 +39,7 @@ P1/later items are suggestions only and do not expand the P0 tasks. Existing wee
 2. Multiple tags per session: more flexible classification, but full credit per tag causes overlapping totals, while fractional credit surprises users. Deferred until requested.
 3. Shared journal tag catalog: reuses catalog UI/data, but introduces cross-feature tag deletion, backup and privacy interactions. Avoid for this first focus extension.
 
-The recommended approach has not yet been selected by the user. Draft plan assumes approach 1.
+The P0 implementation plan assumes approach 1. FI06 follows that plan; multi-tag classification and a shared journal tag catalog remain deferred.
 
 ## Global constraints
 

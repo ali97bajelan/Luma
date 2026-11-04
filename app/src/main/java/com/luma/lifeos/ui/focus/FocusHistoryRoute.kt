@@ -5,6 +5,7 @@ import com.luma.lifeos.ui.common.LumaCard
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,9 +15,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,6 +47,8 @@ import com.luma.lifeos.domain.focus.FOCUS_HISTORY_PAGE_SIZE
 import com.luma.lifeos.domain.focus.FocusHistoryRow
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusTag
+import com.luma.lifeos.domain.focus.FocusTagFilter
 import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.ui.common.AccessibleFeedback
@@ -77,7 +82,17 @@ internal fun FocusHistoryRoute(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    FocusHistoryScreen(state, range, zone, model::retry, model::page, model::delete, onBack)
+    FocusHistoryScreen(
+        state = state,
+        range = range,
+        zone = zone,
+        onSearch = model::search,
+        onTag = model::tag,
+        onRetry = model::retry,
+        onPage = model::page,
+        onDelete = model::delete,
+        onBack = onBack,
+    )
 }
 
 @Composable
@@ -85,6 +100,8 @@ private fun FocusHistoryScreen(
     state: FocusHistoryUiState,
     range: TimeRange?,
     zone: ZoneId,
+    onSearch: (String) -> Unit,
+    onTag: (FocusTagFilter) -> Unit,
     onRetry: () -> Unit,
     onPage: (Int) -> Unit,
     onDelete: (FocusHistoryRow) -> Unit,
@@ -119,6 +136,19 @@ private fun FocusHistoryScreen(
                         modifier = Modifier.testTag("focus_history_range"),
                     )
                 }
+                item(key = "filters") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.focus_history_filters_title), style = MaterialTheme.typography.titleMedium)
+                        OutlinedTextField(
+                            value = state.filters.search,
+                            onValueChange = onSearch,
+                            label = { Text(stringResource(R.string.focus_history_search_label)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().testTag("focus_history_search"),
+                        )
+                        FocusHistoryTagSelector(state.filters.tag, state.tags, onTag)
+                    }
+                }
                 when {
                     state.loading -> item(key = "loading") {
                         CircularProgressIndicator(Modifier.testTag("focus_history_loading"))
@@ -133,8 +163,12 @@ private fun FocusHistoryScreen(
                     }
                     state.page?.total == 0 -> item(key = "empty") {
                         Text(
-                            stringResource(if (range == null) R.string.focus_history_empty
-                                else R.string.focus_history_empty_range),
+                            stringResource(
+                                if (state.filters.search.isNotBlank() || state.filters.tag != FocusTagFilter.All) {
+                                    R.string.focus_history_empty_filters
+                                } else if (range == null) R.string.focus_history_empty
+                                else R.string.focus_history_empty_range,
+                            ),
                             modifier = Modifier.testTag("focus_history_empty"),
                         )
                     }
@@ -217,6 +251,45 @@ private fun FocusHistoryScreen(
 }
 
 @Composable
+private fun FocusHistoryTagSelector(
+    selected: FocusTagFilter,
+    tags: List<FocusTag>,
+    onSelect: (FocusTagFilter) -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val selectedLabel = when (selected) {
+        FocusTagFilter.All -> stringResource(R.string.focus_history_tag_all)
+        FocusTagFilter.Untagged -> stringResource(R.string.focus_history_tag_untagged)
+        is FocusTagFilter.Tagged -> tags.firstOrNull { it.id == selected.id }?.name
+            ?: stringResource(R.string.focus_history_tag_selected)
+    }
+    Box {
+        TextButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_history_tag_filter"),
+        ) {
+            Text(stringResource(R.string.focus_history_tag_label, selectedLabel))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.focus_history_tag_all)) },
+                onClick = { expanded = false; onSelect(FocusTagFilter.All) },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.focus_history_tag_untagged)) },
+                onClick = { expanded = false; onSelect(FocusTagFilter.Untagged) },
+            )
+            tags.forEach { tag ->
+                DropdownMenuItem(
+                    text = { Text(tag.name) },
+                    onClick = { expanded = false; onSelect(FocusTagFilter.Tagged(tag.id)) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun FocusHistoryItem(
     row: FocusHistoryRow,
     range: TimeRange?,
@@ -236,7 +309,17 @@ private fun FocusHistoryItem(
         ) {
             TextButton(onClick = onOpen, modifier = Modifier.fillMaxWidth().testTag("focus_history_detail")) {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(formatter.format(row.session.startedAt), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        row.session.metadata.name ?: stringResource(R.string.focus_session_fallback),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.testTag("focus_history_row_name"),
+                    )
+                    Text(
+                        row.session.metadata.tag?.name ?: stringResource(R.string.focus_tag_untagged),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag("focus_history_row_tag"),
+                    )
+                    Text(formatter.format(row.session.startedAt), style = MaterialTheme.typography.bodySmall)
                     Text(
                         stringResource(
                             if (row.session.state == FocusState.INTERRUPTED) R.string.focus_interrupted

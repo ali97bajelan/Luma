@@ -53,8 +53,19 @@ interface FocusRepository {
     /** Referenced focus tags ordered by most recent session start, limited to ten suggestions. */
     fun observeTagSuggestions(): Flow<List<FocusTag>>
 
-    /** Returns at most [FOCUS_HISTORY_PAGE_SIZE] rows in stable started-descending, id-descending order. */
-    suspend fun history(range: TimeRange?, offset: Int, limit: Int = FOCUS_HISTORY_PAGE_SIZE): FocusPage
+    /** Full catalog for filtering saved history. */
+    fun observeTags(): Flow<List<FocusTag>>
+
+    /** Filters are applied before counts and page slicing; ordering is started-descending, id-descending. */
+    suspend fun history(
+        query: FocusHistoryQuery,
+        offset: Int,
+        limit: Int = FOCUS_HISTORY_PAGE_SIZE,
+    ): FocusPage
+
+    /** Compatibility overload for the original period-only history view. */
+    suspend fun history(range: TimeRange?, offset: Int, limit: Int = FOCUS_HISTORY_PAGE_SIZE): FocusPage =
+        history(FocusHistoryQuery(range), offset, limit)
 
     suspend fun delete(
         sessionId: UUID,

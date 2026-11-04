@@ -2,6 +2,7 @@ package com.luma.lifeos.focus
 
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusCommand
+import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusHistoryRow
 import com.luma.lifeos.domain.focus.FocusInsights
 import com.luma.lifeos.domain.focus.FocusPage
@@ -120,6 +121,9 @@ class FocusCoordinatorTest {
         override fun observeStatistics(range: TimeRange): Flow<FocusStatistics> = emptyFlow()
         override fun observeInsights(range: TimeRange?): Flow<FocusInsights> = emptyFlow()
         override fun observeTagSuggestions(): Flow<List<FocusTag>> = emptyFlow()
+        override fun observeTags(): Flow<List<FocusTag>> = emptyFlow()
+        override suspend fun history(query: FocusHistoryQuery, offset: Int, limit: Int): FocusPage =
+            FocusPage(emptyList(), offset, 0)
         override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage =
             FocusPage(emptyList<FocusHistoryRow>(), offset = 0, total = 0)
 

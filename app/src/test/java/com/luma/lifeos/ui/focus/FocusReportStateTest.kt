@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.domain.focus.FocusCommand
+import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusInsights
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
@@ -154,6 +155,9 @@ class FocusReportStateTest {
         override fun observeStatistics(range: TimeRange): Flow<FocusStatistics> = statistics(range)
         override fun observeInsights(range: TimeRange?): Flow<FocusInsights> = emptyFlow()
         override fun observeTagSuggestions(): Flow<List<FocusTag>> = emptyFlow()
+        override fun observeTags(): Flow<List<FocusTag>> = emptyFlow()
+        override suspend fun history(query: FocusHistoryQuery, offset: Int, limit: Int) =
+            error("Not used by report streams")
         override suspend fun history(range: TimeRange?, offset: Int, limit: Int) =
             error("Not used by report streams")
 

@@ -1321,9 +1321,16 @@
     <string name="focus_view_current_sources">دیدن نشست‌های این هفته</string>
     <string name="focus_view_previous_sources">دیدن نشست‌های پیشین</string>
     <string name="focus_history_title">تاریخچهٔ تمرکز</string>
+    <string name="focus_history_filters_title">فیلترهای تاریخچه</string>
+    <string name="focus_history_search_label">جست‌وجوی نشست‌ها</string>
+    <string name="focus_history_tag_label">برچسب: %1$s</string>
+    <string name="focus_history_tag_all">همهٔ برچسب‌ها</string>
+    <string name="focus_history_tag_untagged">بدون برچسب</string>
+    <string name="focus_history_tag_selected">برچسب انتخاب‌شده</string>
     <string name="focus_history_range">نشست‌های هم‌پوشان با %1$s – %2$s</string>
     <string name="focus_history_empty">هنوز نشستی برای تمرکز ذخیره نشده است.</string>
     <string name="focus_history_empty_range">نشست ذخیره‌شده‌ای با این دوره هم‌پوشانی ندارد.</string>
+    <string name="focus_history_empty_filters">هیچ نشستی با این فیلترها مطابقت ندارد.</string>
     <string name="focus_history_error">بارگذاری تاریخچهٔ تمرکز ممکن نشد. نشست‌های شما نگه داشته شده‌اند.</string>
     <string name="focus_history_total">مجموع: %1$s</string>
     <string name="focus_history_contribution">محاسبه‌شده در این دوره: %1$s از مجموع %2$s</string>

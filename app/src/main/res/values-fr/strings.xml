@@ -1341,9 +1341,16 @@
     <string name="focus_view_current_sources">Voir les sessions de cette semaine</string>
     <string name="focus_view_previous_sources">Voir les sessions précédentes</string>
     <string name="focus_history_title">Historique de concentration</string>
+    <string name="focus_history_filters_title">Filtres de l’historique</string>
+    <string name="focus_history_search_label">Rechercher des sessions</string>
+    <string name="focus_history_tag_label">Étiquette : %1$s</string>
+    <string name="focus_history_tag_all">Toutes les étiquettes</string>
+    <string name="focus_history_tag_untagged">Sans étiquette</string>
+    <string name="focus_history_tag_selected">Étiquette sélectionnée</string>
     <string name="focus_history_range">Sessions chevauchant %1$s – %2$s</string>
     <string name="focus_history_empty">Aucune session de concentration enregistrée.</string>
     <string name="focus_history_empty_range">Aucune session enregistrée ne chevauche cette période.</string>
+    <string name="focus_history_empty_filters">Aucune session ne correspond à ces filtres.</string>
     <string name="focus_history_error">Impossible de charger l’historique. Vos sessions sont conservées.</string>
     <string name="focus_history_total">Total : %1$s</string>
     <string name="focus_history_contribution">Comptabilisé dans cette période : %1$s sur %2$s au total</string>

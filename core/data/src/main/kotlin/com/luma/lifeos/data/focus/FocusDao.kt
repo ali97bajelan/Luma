@@ -53,6 +53,9 @@ interface FocusDao {
     )
     fun observeTagSuggestions(): Flow<List<FocusTagEntity>>
 
+    @Query("SELECT * FROM focus_tag ORDER BY normalized_name ASC, id ASC")
+    fun observeTags(): Flow<List<FocusTagEntity>>
+
     @Query("SELECT * FROM focus_session WHERE id = :sessionId LIMIT 1")
     suspend fun session(sessionId: String): FocusSessionEntity?
 
@@ -176,7 +179,7 @@ interface FocusDao {
         ORDER BY s.started_at_seconds DESC, s.started_at_nanos DESC, s.id DESC
         LIMIT :limit OFFSET :offset""",
     )
-    suspend fun historyPage(
+    suspend fun historyCandidatesPage(
         startSeconds: Long?,
         startNanos: Int?,
         endSeconds: Long?,
@@ -185,25 +188,9 @@ interface FocusDao {
         limit: Int,
     ): List<FocusSessionEntity>
 
-    @Query(
-        """SELECT COUNT(*) FROM focus_session AS s
-        WHERE s.state IN ('FINISHED', 'INTERRUPTED')
-          AND (:startSeconds IS NULL OR EXISTS (
-              SELECT 1 FROM focus_run AS r
-              WHERE r.session_id = s.id AND r.credited_millis > 0
-                AND (r.started_at_seconds < :endSeconds
-                     OR (r.started_at_seconds = :endSeconds AND r.started_at_nanos < :endNanos))
-                AND (r.ended_at_seconds > :startSeconds
-                     OR (r.ended_at_seconds = :startSeconds AND r.ended_at_nanos > :startNanos))
-          ))""",
-    )
-    suspend fun historyCount(
-        startSeconds: Long?,
-        startNanos: Int?,
-        endSeconds: Long?,
-        endNanos: Int?,
-    ): Long
-
     @Query("SELECT * FROM focus_run WHERE session_id IN (:sessionIds) ORDER BY session_id, ordinal")
     suspend fun runsForSessions(sessionIds: List<String>): List<FocusRunEntity>
+
+    @Query("SELECT * FROM focus_tag WHERE id IN (:ids)")
+    suspend fun tagsByIds(ids: List<String>): List<FocusTagEntity>
 }

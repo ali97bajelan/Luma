@@ -1,8 +1,10 @@
 package com.luma.lifeos.lock
 
 import com.luma.lifeos.domain.focus.FocusPage
+import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusStatistics
+import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteContext
 import com.luma.lifeos.domain.focus.FocusWriteResult
@@ -187,8 +189,24 @@ class ProtectedFocusRepository(
             stats.takeIf { canRead(state) } ?: FocusStatistics(0, 0, 0)
         }
 
+    override fun observeTagSuggestions(): Flow<List<FocusTag>> =
+        combine(delegate.observeTagSuggestions(), gateway.snapshot) { tags, state ->
+            if (canRead(state)) immutableProjectionList(tags) else emptyList()
+        }
+
+    override fun observeTags(): Flow<List<FocusTag>> =
+        combine(delegate.observeTags(), gateway.snapshot) { tags, state ->
+            if (canRead(state)) immutableProjectionList(tags) else emptyList()
+        }
+
     override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage =
         gateway.readValue(focusRead(), { delegate.history(range, offset, limit) }) { page, _ ->
+            page.copy(rows = immutableProjectionList(page.rows))
+        }
+            ?: FocusPage(emptyList(), offset, 0)
+
+    override suspend fun history(query: FocusHistoryQuery, offset: Int, limit: Int): FocusPage =
+        gateway.readValue(focusRead(), { delegate.history(query, offset, limit) }) { page, _ ->
             page.copy(rows = immutableProjectionList(page.rows))
         }
             ?: FocusPage(emptyList(), offset, 0)

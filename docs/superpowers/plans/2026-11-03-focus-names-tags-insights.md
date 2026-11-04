@@ -1,6 +1,6 @@
 # Focus Names, Tags, and Insights Implementation Plan
 
-> **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task after the draft specification is reviewed. Steps use checkboxes for tracking. FI03 source implementation is recorded below; Room-generated schema and runtime validation remain deferred.
+> **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task after the draft specification is reviewed. Steps use checkboxes for tracking. FI03 and FI06 source implementation is recorded below; Room-generated schema and runtime validation remain deferred.
 
 **Goal:** Add named/tagged focus sessions and useful period insights without changing timer behavior.
 
@@ -128,15 +128,17 @@ FI05 source verification (2026-11-04): `python3 scripts/run_focus_setup_tests.py
 
 ## FI06 — History search and tag filters
 
-**Files:** Create domain `focus/FocusHistoryQuery.kt` with query/filter contracts; modify data `focus/{FocusDao,RoomFocusRepository}.kt`, app `ui/focus/{FocusHistoryViewModel,FocusHistoryRoute}.kt`; create data `focus/FocusHistoryFilter.kt` and test `core/data/src/test/kotlin/com/luma/lifeos/data/focus/FocusHistoryFilterTest.kt`, app test `ui/focus/FocusHistoryFilterStateTest.kt`.
+**Files:** Create domain `focus/FocusHistoryQuery.kt` with query/filter contracts; modify data `focus/{FocusDao,RoomFocusRepository}.kt`, app `ui/focus/{FocusHistoryViewModel,FocusHistoryRoute}.kt` and `lock/ProtectedAggregateRepositories.kt`; create data `focus/FocusHistoryFilter.kt` and test `core/data/src/test/kotlin/com/luma/lifeos/data/focus/FocusHistoryFilterTest.kt`, app `ui/focus/FocusHistoryFilterState.kt` and test `ui/focus/FocusHistoryFilterStateTest.kt`; create `scripts/{run_focus_history_tests.py,check_focus_history_sql.py}`. Update all FocusRepository fakes and EN/FR/FA strings.
 
 **Consumes:** FI02 catalog/session data, FI04 insights for invalidation only.
 **Produces:** Filtered repository paging overload and saved history-filter state.
 
-- [ ] Write failing tests for All/Untagged/Tagged, trimmed Locale.ROOT substring matching, null legacy names, `%`/`_` literal input, >50 matches, consistent total/order and combined period/search/tag predicates. Choose a pure shared matcher if SQLite collation cannot provide the specified Unicode matching; bound DB reads in batches before final filtered paging.
-- [ ] Implement filters before page slicing/counts, stable started-descending/UUID-descending ordering, and tag association loads without row multiplication. Keep page size 50 and old-history forwarding behavior.
-- [ ] Add reducer tests and UI wiring for resetting page offset, canceling stale results, restoration and database replacement. Preserve page-bound deletion authority; refresh history/insights when deletion succeeds.
-- [ ] Run filter/state tests standalone and review source wiring. Keep history filters explicitly separate from whole-period insight cards.
+- [x] Write failing tests for All/Untagged/Tagged, trimmed Locale.ROOT substring matching, null legacy names, `%`/`_` literal input, >50 matches, consistent total/order and combined period/search/tag predicates. Choose a pure shared matcher because SQLite collation cannot provide the specified Unicode matching; bound DB reads in batches before final filtered paging.
+- [x] Implement filters before page slicing/counts, stable started-descending/UUID-descending ordering, and tag association loads without row multiplication. Keep page size 50 and old-history forwarding behavior.
+- [x] Add reducer tests and UI wiring for resetting page offset, canceling stale results, restoration and database replacement. Preserve page-bound deletion authority; repository insight flows refresh totals when deletion succeeds.
+- [x] Run filter/state tests standalone and review source wiring. Keep history filters explicitly separate from whole-period insight cards.
+
+FI06 source verification (2026-11-04): `python3 scripts/run_focus_history_tests.py` — OK (44 tests); `python3 scripts/check_focus_history_sql.py` — OK (60 terminal range matches across stable batches, including half-open boundaries). EN/FR/FA string key parity and `git diff --check` pass. Room query compilation, Compose interaction/lifecycle and relock invalidation of cached history remain NOT RUN; FI-A06 product acceptance remains pending those checks.
 
 ## FI07 — Privacy and final code-only verification
 
@@ -152,8 +154,12 @@ FI05 source verification (2026-11-04): `python3 scripts/run_focus_setup_tests.py
 
 ## Standalone validation available now
 
-`python3 scripts/run_focus_domain_tests.py` compiles the existing production focus domain sources and their JUnit tests using a locally installed Kotlin compiler and cached JUnit/coroutines jars, then invokes JUnitCore directly. It uses a temporary output directory, invokes no Gradle and downloads nothing. This is baseline evidence only; the proposed feature APIs/tests do not exist yet. The runner discovers all focus-domain tests, so extend its production dependency list if FI01 introduces `Tag.normalize` dependencies.
+`python3 scripts/run_focus_domain_tests.py` compiles the production focus domain sources and their JUnit tests using a locally installed Kotlin compiler and cached JUnit/coroutines jars, then invokes JUnitCore directly. It uses a temporary output directory, invokes no Gradle and downloads nothing. FI06 adds `scripts/run_focus_history_tests.py` for the focus-domain, pure history-filter and filter-state tests, plus `scripts/check_focus_history_sql.py` to execute the candidate SQL extracted from `FocusDao.kt` against a SQLite fixture. Neither runner compiles Android/Room classes or downloads dependencies.
 
 ## Handoff status
 
-FI01, FI03, FI04 and FI05 are complete at source level; FI02 runtime verification and FI06–FI07 remain pending. FI02 metadata persistence exists, and FI04 supplies insight calculation/repository flows while FI05 adds the setup and insight presentation. Room-generated schema validation, FI04 Room observation behavior, and FI05 Android UI/lifecycle checks were not run. No commit, emulator run or Gradle command was required for this source-only FI05 handoff.
+FI01, FI03, FI04, FI05 and FI06 are complete at source level; FI02 runtime verification and FI07 remain pending. FI02 metadata persistence exists, and FI04 supplies insight calculation/repository flows while FI05 adds the setup and insight presentation. Room-generated schema validation, FI04 Room observation behavior, and FI05/FI06 Android UI/lifecycle checks were not run. No commit, emulator run or Gradle command was required for this source-only handoff.
+
+Final FI06 review: a fresh read-only reviewer found no definite FI06 blocker. The reviewer noted that cached history/search state is not invalidated on relock; this is tracked by FI07, and full privacy acceptance remains pending it. Behavioral ViewModel/Room compilation and lifecycle checks remain NOT RUN; the pure stale-load tests exercise query/generation/request-key rejection.
+
+Final: Ruling: relock invalidation of cached history — defer to FI07 as specified by the task plan; the visible app gate exists, but cached-state invalidation remains unverified and FI-A07 is not complete — cost if wrong: private history labels could remain in retained screen state until the FI07 access-state invalidation is implemented.

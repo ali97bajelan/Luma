@@ -1320,9 +1320,16 @@
     <string name="focus_view_current_sources">View this week’s sessions</string>
     <string name="focus_view_previous_sources">View previous sessions</string>
     <string name="focus_history_title">Focus history</string>
+    <string name="focus_history_filters_title">History filters</string>
+    <string name="focus_history_search_label">Search sessions</string>
+    <string name="focus_history_tag_label">Tag: %1$s</string>
+    <string name="focus_history_tag_all">All tags</string>
+    <string name="focus_history_tag_untagged">Untagged</string>
+    <string name="focus_history_tag_selected">Selected tag</string>
     <string name="focus_history_range">Sessions overlapping %1$s – %2$s</string>
     <string name="focus_history_empty">No saved focus sessions yet.</string>
     <string name="focus_history_empty_range">No saved focus sessions overlap this period.</string>
+    <string name="focus_history_empty_filters">No focus sessions match these filters.</string>
     <string name="focus_history_error">Focus history could not be loaded. Your sessions are retained.</string>
     <string name="focus_history_total">Total: %1$s</string>
     <string name="focus_history_contribution">Counted in this period: %1$s of %2$s total</string>
