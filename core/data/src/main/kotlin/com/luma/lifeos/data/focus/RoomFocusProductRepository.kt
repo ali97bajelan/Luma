@@ -9,6 +9,8 @@ import com.luma.lifeos.domain.focus.FocusProductInvalidReason
 import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusProductResult
 import com.luma.lifeos.domain.focus.FocusProductUnavailableReason
+import com.luma.lifeos.domain.focus.FocusReflection
+import com.luma.lifeos.domain.focus.normalizeFocusReflection
 import com.luma.lifeos.domain.focus.nextGoalMonday
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +23,7 @@ import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Base64
 import java.util.UUID
 
 /** Room-backed goal history and generation/revision-safe goal commands. */
@@ -45,6 +48,57 @@ class RoomFocusProductRepository(
             settings?.toDomain(versions.map(FocusGoalVersionEntity::toDomain)) ?: FocusGoalState.DISABLED
         })
     }.flowOn(Dispatchers.IO)
+
+    override suspend fun saveReflection(
+        sessionId: UUID,
+        expectedRevision: Long,
+        reflection: FocusReflection,
+        context: FocusProductContext,
+    ): FocusProductResult {
+        val normalized = runCatching { normalizeFocusReflection(reflection) }.getOrElse {
+            return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_REFLECTION)
+        }
+        if (expectedRevision < 0) return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_REFLECTION)
+        val encodedNextStep = normalized.nextStep?.let {
+            Base64.getEncoder().encodeToString(it.toByteArray(Charsets.UTF_8))
+        } ?: "-"
+        val payload = "reflection|$sessionId|$expectedRevision|${normalized.outcome?.name ?: "-"}|$encodedNextStep"
+        return safely {
+            database.withTransaction {
+                val generation = ensureGeneration().generationId
+                if (generation != context.generation.toString()) {
+                    return@withTransaction FocusProductResult.SessionConflict(actualRevision = null)
+                }
+                val replay = replay(context, generation, payload)
+                if (replay != null) return@withTransaction replay
+
+                val session = focusDao.session(sessionId.toString())
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_REFLECTION)
+                if (session.state !in setOf("FINISHED", "INTERRUPTED") || session.openSlot != null) {
+                    return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_REFLECTION)
+                }
+                if (session.revision != expectedRevision) {
+                    return@withTransaction FocusProductResult.SessionConflict(session.revision)
+                }
+                val nextRevision = runCatching { Math.addExact(session.revision, 1L) }.getOrNull()
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_REFLECTION)
+                val updatedAt = clock.instant()
+                check(focusDao.updateSession(
+                    session.copy(
+                        revision = nextRevision,
+                        updatedAtSeconds = updatedAt.epochSecond,
+                        updatedAtNanos = updatedAt.nano,
+                        outcome = normalized.outcome?.name,
+                        nextStep = normalized.nextStep,
+                    ),
+                ) == 1)
+                dao.insertReceipt(
+                    FocusProductCommandReceiptEntity(generation, context.commandId.toString(), payload, RESULT_APPLIED),
+                )
+                FocusProductResult.Applied
+            }
+        }
+    }
 
     override suspend fun scheduleGoal(
         goal: FocusGoalVersion,

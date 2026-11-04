@@ -96,7 +96,7 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 
 **Depends on:** existing FI source. **Produces:** all shared contracts above, Room 11/archive 9 (rebase if occupied), safe defaults for legacy rows and one storage authority.
 
-- [ ] Recheck current Room/archive versions and inspect all model constructors, enum validators, receipt decoders and backup column projections with `rg`; record final reserved versions in the ledger.
+- [x] Recheck current Room/archive versions and inspect all model constructors, enum validators, receipt decoders and backup column projections with `rg`; record final reserved versions in the ledger.
 - [ ] Implement shared types/normalization and session fields. Validate timed 1–180 minutes, count-up null target, next-step 280 code points and TARGET_REACHED exact-target invariant. Update existing constructors/fakes by source review; no test execution.
 - [ ] Add migration/entity/DAO definitions for session fields, goals, singleton settings, local reminder state and break runtime, including FK/index/default rules from the spec. Register the migration without destructive fallback. Do not handwrite exported Room JSON.
 - [ ] Expose `FocusProductRepository` through `LumaStorage`; add versioned auxiliary receipt encoding and generation/revision helpers. Wire individual mutation implementations in their owning tasks; do not expose UI actions backed by placeholders.
@@ -112,7 +112,7 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 - [x] Retain the supported Repeat draft in SavedStateHandle; clear it on successful Start, relock and database-generation replacement. The existing captured Start command keeps its payload and IDs unchanged for retries.
 - [x] Source-review that Repeat only requests a prefill and never calls Start; stale/missing terminal details cannot create a timer. FX-Q01/09 remain NOT RUN.
 
-**FP01 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED for the currently available name/tag/count-up contract.** FP01 QA remains NOT RUN in FX-QA. When timed sessions, task links or reflections are introduced, extend Repeat under their owning source tasks.
+**FP01 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED for the name/tag contract at its original handoff.** FX04 and FX06 subsequently extended Repeat with timed configuration and next-step context; FX03 task-link prefill remains pending. FP01 QA remains NOT RUN in FX-QA.
 
 ## FX03 — Task link and independent completion
 
@@ -154,9 +154,13 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 
 **Depends on:** FX01, FX02. **Files:** new reflection editor; completion/detail/ViewModel; `FocusProductCommands.kt`. **Produces:** `saveReflection` implementation and `FocusReflectionEditor` state with independent failure/retry.
 
-- [ ] Implement terminal-only revision/generation-safe reflection mutations and normalization (blank to null, no controls, maximum 280 code points).
-- [ ] Add optional outcome/next-step inputs after durable save and editable detail. Skip/dismiss never rolls back credit; saving reflection never issues a timer or task-completion action.
-- [ ] Show the prior next step in repeat context, obeying provenance/privacy, and clear private drafts on relock/restore. Source handoff; FX-Q05/09 later prove independence and retry.
+- [x] Implement terminal-only revision/generation-safe reflection mutations and normalization (blank to null, no controls, maximum 280 code points).
+- [x] Add optional outcome/next-step inputs after durable save and editable detail. Skip/dismiss never rolls back credit; saving reflection never issues a timer or task-completion action.
+- [x] Show the prior next step in repeat context, obeying provenance/privacy, and clear private drafts on relock/restore. Source handoff; FX-Q05/09 later prove independence and retry.
+
+**Version ruling (2026-11-04):** The current source is Room 12/archive 10, so reflection columns use the next versions, Room 13/archive 11, and older archives adapt to empty reflection. This advances the design's archive-9 target without changing the portable fields. Cost if wrong: a version collision or an archive reader that expects the older schema-9 inventory.
+
+**FP04 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Terminal sessions support optional stable outcome values and a normalized one-line next-step note (up to 280 Unicode code points), saved through an independent generation/revision-checked command. The completion screen offers save/skip after timer persistence; expanded history details allow edits; Repeat shows the saved next step as context. Reflection columns are included in archive 11, and archives 7–10 adapt to no reflection. Focus access gates the editor and relock/restore clears private drafts. English, French and Persian labels are present. Source changes only; tests, Room schema generation/migration execution, builds, UI/device checks and FX-Q05/09 remain NOT RUN.
 
 ## FX07 — Goal versions and weekly distribution
 
@@ -167,13 +171,13 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 - [x] Add opt-in settings/effective-date/goal-zone labels and saved-only progress; keep open-session amount separate. Reuse daily range helpers and cancellation/generation identity.
 - [x] Add active days/highest-day presentation, day-history action and empty Plan another session action to existing Review (FP08). Source handoff; FX-Q06/11 cover boundaries, tie and sparse data later.
 
-**FP05 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Domain rules, Room goal versions/settings, revision/generation-aware writes, protected settings and Review progress, and archive 10 support are in place. The report uses the captured goal zone, includes terminal saved contributions only, and reports active days without a streak. Goal settings are default-off and display their effective Monday. Room schema generation, compilation, migration/archive execution and FX-Q06/09 remain NOT RUN. FX07 remains partial because FX01/FX06 dependencies are incomplete.
+**FP05 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Domain rules, Room goal versions/settings, revision/generation-aware writes, protected settings and Review progress, and archive 10 support are in place. The report uses the captured goal zone, includes terminal saved contributions only, and reports active days without a streak. Goal settings are default-off and display their effective Monday. Room schema generation, compilation, migration/archive execution and FX-Q06/09 remain NOT RUN. FX07 remains partial because FX01 is incomplete.
 
-**FP08 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Weekly Review derives active days and the highest saved-time date from daily totals in the displayed current range, opens a day-filtered history range from each elapsed day row, and offers empty Focus setup when Focus is initialized and idle while preserving any active session. The existing protected Review visibility gate remains in force. Source changes only; tests, builds, platform checks and FX-Q06/11 remain NOT RUN. FX07 remains PARTIAL until FX01/FX06 are source complete.
+**FP08 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Weekly Review derives active days and the highest saved-time date from daily totals in the displayed current range, opens a day-filtered history range from each elapsed day row, and offers empty Focus setup when Focus is initialized and idle while preserving any active session. The existing protected Review visibility gate remains in force. Source changes only; tests, builds, platform checks and FX-Q06/11 remain NOT RUN. FX07 remains PARTIAL until FX01 is source complete.
 
 **Version ruling (2026-11-04):** The checked-out source had already advanced from the design baseline to Room 11/archive 9, so FP05 adds Room 12/archive 10. Cost if wrong: a migration or archive-version collision with another feature.
 
-**Dependency ruling (2026-11-04):** The FP05 slice landed without completing reflection task FX06 or the remaining shared FX01 work. FP08's Review distribution is source complete, but FX07 remains PARTIAL until those shared dependencies are integrated. Cost if wrong: a later shared product repository may need interface adaptation before those tasks ship.
+**Dependency ruling (2026-11-04):** At the time the FP05/FP08 handoffs were recorded, reflection task FX06 and the remaining shared FX01 work were incomplete. FX06 is now source complete; FX01 remains partial, so FX07 remains PARTIAL until its shared foundation is integrated. Cost if wrong: a later shared product repository may need interface adaptation before those tasks ship.
 
 ## FX08 — Scheduled focus invitations
 

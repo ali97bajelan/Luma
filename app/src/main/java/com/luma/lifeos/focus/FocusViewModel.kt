@@ -7,6 +7,7 @@ import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
+import com.luma.lifeos.domain.focus.FocusReflection
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStartInput
@@ -61,6 +62,7 @@ data class FocusScreenState(
     val setup: FocusSetupState = FocusSetupState(),
     val insights: FocusInsightsState = FocusInsightsState.Unselected,
     val tagSuggestions: List<FocusTag> = emptyList(),
+    val focusContentReadable: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -128,7 +130,10 @@ class FocusViewModel(
         FocusScreenState(
             runtime = runtimeState.copy(
                 session = runtimeState.session?.let { session ->
-                    session.copy(metadata = focusMetadataForPresentation(session.metadata, canReadFocusSurface))
+                    session.copy(
+                        metadata = focusMetadataForPresentation(session.metadata, canReadFocusSurface),
+                        reflection = if (canReadFocusSurface) session.reflection else FocusReflection(),
+                    )
                 },
                 emergencyMarkerSaved = localState.emergencyMarkerSaved ?: runtimeState.emergencyMarkerSaved,
             ),
@@ -142,6 +147,7 @@ class FocusViewModel(
             setup = if (canReadFocusSurface) localState.setup else FocusSetupState(),
             insights = presentation.state,
             tagSuggestions = presentation.tagSuggestions,
+            focusContentReadable = canReadFocusSurface,
         )
     }.stateIn(
         viewModelScope,
@@ -151,10 +157,12 @@ class FocusViewModel(
                 session = runtime.state.value.session?.let { session ->
                     session.copy(
                         metadata = focusMetadataForPresentation(session.metadata, privateContentAccess.value),
+                        reflection = if (privateContentAccess.value) session.reflection else FocusReflection(),
                     )
                 },
             ),
             setup = if (privateContentAccess.value) local.value.setup else FocusSetupState(),
+            focusContentReadable = privateContentAccess.value,
         ),
     )
 
@@ -301,7 +309,7 @@ class FocusViewModel(
                         sessionId = sessionId,
                         requestId = requestId,
                         input = FocusStartInput(source.metadata.name.orEmpty(), source.metadata.tag?.name, source.timer),
-                        nextStep = null,
+                        nextStep = source.reflection.nextStep,
                         generation = generation,
                     ),
                 )

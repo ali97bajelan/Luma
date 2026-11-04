@@ -39,6 +39,8 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimerMode
@@ -79,6 +81,8 @@ internal fun FocusScreen(
     onTimedMinutesChange: (String) -> Unit = {},
     onStartBreak: (Int) -> Unit = {},
     onEndBreak: () -> Unit = {},
+    focusRepository: FocusRepository? = null,
+    focusProductRepository: FocusProductRepository? = null,
 ) {
     val runtime = state.runtime
     val session = runtime.session
@@ -164,6 +168,8 @@ internal fun FocusScreen(
                 session?.state == FocusState.FINISHED && showTerminal -> TerminalContent(
                     state = state,
                     session = session,
+                    focusRepository = focusRepository,
+                    focusProductRepository = focusProductRepository,
                     interrupted = false,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
@@ -181,6 +187,8 @@ internal fun FocusScreen(
                 session?.state == FocusState.INTERRUPTED && showTerminal -> TerminalContent(
                     state = state,
                     session = session,
+                    focusRepository = focusRepository,
+                    focusProductRepository = focusProductRepository,
                     interrupted = true,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
@@ -555,6 +563,8 @@ private fun RecoveryContent(
 private fun TerminalContent(
     state: FocusScreenState,
     session: FocusSession,
+    focusRepository: FocusRepository?,
+    focusProductRepository: FocusProductRepository?,
     interrupted: Boolean,
     hasPendingDestination: Boolean,
     onBack: () -> Unit,
@@ -578,6 +588,16 @@ private fun TerminalContent(
     )
     SessionMetadata(session)
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
+    focusRepository?.let { repository ->
+        FocusReflectionEditor(
+            session = session,
+            repository = repository,
+            productRepository = focusProductRepository,
+            generation = state.runtime.databaseGeneration,
+            isFocusReadable = state.focusContentReadable,
+            showWhenEmpty = true,
+        )
+    }
     if (interrupted) Text(stringResource(R.string.focus_interrupted_gap))
     if (state.runtime.breakState == FocusBreakState.Idle) {
         var breakMinutes by rememberSaveable(session.id.toString()) { mutableStateOf("5") }

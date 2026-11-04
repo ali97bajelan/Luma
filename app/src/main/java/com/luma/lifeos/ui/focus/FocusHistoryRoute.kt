@@ -46,6 +46,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FOCUS_HISTORY_PAGE_SIZE
 import com.luma.lifeos.domain.focus.FocusHistoryRow
 import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusTagFilter
@@ -72,6 +73,7 @@ internal fun FocusHistoryRoute(
     databaseGenerationFlow: Flow<UUID?>,
     onBack: () -> Unit,
     onRepeatSession: (UUID) -> Unit = {},
+    productRepository: FocusProductRepository? = null,
 ) {
     val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, databaseGenerationFlow) {
         viewModelFactory {
@@ -101,6 +103,9 @@ internal fun FocusHistoryRoute(
     if (FocusPrivateSurface.HISTORY in visibleFocusPrivateSurfaces(isFocusReadable)) {
         FocusHistoryScreen(
             state = state,
+            repository = repository,
+            productRepository = productRepository,
+            isFocusReadable = isFocusReadable,
             range = range,
             zone = zone,
             onSearch = model::search,
@@ -109,6 +114,7 @@ internal fun FocusHistoryRoute(
             onPage = model::page,
             onDelete = model::delete,
             onRepeatSession = onRepeatSession,
+            onReflectionSaved = model::refresh,
             onBack = onBack,
         )
     } else {
@@ -119,6 +125,9 @@ internal fun FocusHistoryRoute(
 @Composable
 private fun FocusHistoryScreen(
     state: FocusHistoryUiState,
+    repository: FocusRepository,
+    productRepository: FocusProductRepository?,
+    isFocusReadable: Boolean,
     range: TimeRange?,
     zone: ZoneId,
     onSearch: (String) -> Unit,
@@ -127,6 +136,7 @@ private fun FocusHistoryScreen(
     onPage: (Int) -> Unit,
     onDelete: (FocusHistoryRow) -> Unit,
     onRepeatSession: (UUID) -> Unit,
+    onReflectionSaved: () -> Unit,
     onBack: () -> Unit,
 ) {
     var expandedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -199,6 +209,10 @@ private fun FocusHistoryScreen(
                         items(page.rows, key = { it.session.id.toString() }) { row ->
                             FocusHistoryItem(
                                 row = row,
+                                repository = repository,
+                                productRepository = productRepository,
+                                generation = state.databaseGeneration,
+                                isFocusReadable = isFocusReadable,
                                 range = range,
                                 zone = zone,
                                 expanded = expandedSessionId == row.session.id.toString(),
@@ -209,6 +223,7 @@ private fun FocusHistoryScreen(
                                 },
                                 onDelete = { deleteTarget = row },
                                 onRepeat = { onRepeatSession(row.session.id) },
+                                onReflectionSaved = onReflectionSaved,
                             )
                         }
                         if (state.deletionFailed) item(key = "delete_error") {
@@ -315,6 +330,10 @@ private fun FocusHistoryTagSelector(
 @Composable
 private fun FocusHistoryItem(
     row: FocusHistoryRow,
+    repository: FocusRepository,
+    productRepository: FocusProductRepository?,
+    generation: UUID?,
+    isFocusReadable: Boolean,
     range: TimeRange?,
     zone: ZoneId,
     expanded: Boolean,
@@ -322,6 +341,7 @@ private fun FocusHistoryItem(
     onOpen: () -> Unit,
     onDelete: () -> Unit,
     onRepeat: () -> Unit,
+    onReflectionSaved: () -> Unit,
 ) {
     val formatter = remember(zone, Locale.getDefault()) {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(zone)
@@ -389,6 +409,14 @@ private fun FocusHistoryItem(
                         modifier = Modifier.testTag("focus_history_segment_$index"),
                     )
                 }
+                FocusReflectionEditor(
+                    session = row.session,
+                    repository = repository,
+                    productRepository = productRepository,
+                    generation = generation,
+                    isFocusReadable = isFocusReadable,
+                    onSaved = onReflectionSaved,
+                )
                 TextButton(
                     enabled = !deleting,
                     onClick = onRepeat,

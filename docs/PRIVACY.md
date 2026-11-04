@@ -31,10 +31,11 @@ before restored content is shown. Focus timers and trusted background work keep
 their existing lifecycle; App Lock gates saved Focus history and in-app access,
 and the emergency exit does not grant access to saved data.
 
-Focus history, including session names, tags and an optional timed-session target,
-is saved locally with the other Luma data. Manual backups include only terminal
-focus sessions, their credited runs, tags used by that exported history, and
-portable weekly goal versions/settings. Goal settings contain the saved target,
+Focus history, including session names, tags, an optional timed-session target,
+optional self-reported outcome and private next-step note, is saved locally with the
+other Luma data. Manual backups include only terminal focus sessions, their
+credited runs and reflections, tags used by that exported history, and portable
+weekly goal versions/settings. Goal settings contain the saved target,
 preferred weekdays, captured goal timezone and visibility boundary. Goal progress
 uses saved terminal focus time; active and paused time stay separate. A break
 countdown and goal command receipts are device-local and are never exported or
@@ -46,7 +47,8 @@ command receipts, deletion tombstones, emergency markers, selected app shortcuts
 and unused focus tags are not portable. Restore validates the complete archive before
 replacement, imports terminal history and portable goal configuration, and keeps
 device-local focus app choices and command receipts on the device. Archives before
-schema 10 restore with weekly goals off. Archives created before focus-history support restore
+schema 10 restore with weekly goals off; archives before schema 11 restore with
+empty reflections. Archives created before focus-history support restore
 with empty focus history; schema 7 archives restore focus history with null names
 and tags. Archives 7 and 8 restore focus sessions with count-up timing and no target.
 

@@ -62,11 +62,13 @@ data class FocusSession(
     val runs: List<FocusRun>,
     val metadata: FocusMetadata = FocusMetadata(),
     val timer: FocusTimerConfig = FocusTimerConfig.countUp(),
+    val reflection: FocusReflection = FocusReflection(),
 ) {
     init {
         require(revision >= 0) { "Revision cannot be negative" }
         require(runs.isNotEmpty()) { "A focus session must contain its first run" }
         require(runs.all { it.sessionId == id }) { "Every run must belong to this session" }
+        require(normalizeFocusReflection(reflection) == reflection) { "Reflection must be normalized" }
         val uniqueRuns = uniqueFocusRuns(runs)
         require(uniqueRuns.map { it.ordinal }.distinct().size == uniqueRuns.size) { "Run ordinals must be unique" }
         require(uniqueRuns.map { it.ordinal } == uniqueRuns.map { it.ordinal }.sorted()) {

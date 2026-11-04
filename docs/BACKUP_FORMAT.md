@@ -31,7 +31,7 @@ referenced photos abort export rather than silently omitting them.
 ## Archive layout
 
 - `manifest.properties`: Java Properties syntax. Required `format=luma-backup`,
-  `format_version=1`, `schema_version=1` through `10`, `created_at` (UTC epoch
+  `format_version=1`, `schema_version=1` through `11`, `created_at` (UTC epoch
   milliseconds),
   and `file_count`. Every payload has `size.<path>` and `sha256.<path>` entries.
 - `tables/<table>.tsv`: one file per application table. Header is the exact column
@@ -97,7 +97,12 @@ credit for target-reached sessions and the cap on all timed-session credit. Sche
 Goal versions retain their effective Monday, captured timezone, weekly target and
 preferred-day hints; settings retain whether goals are enabled and the visible-from
 boundary. Goals default off when restoring schemas 1–9. Goal command receipts and
-all other transient runtime remain device-local.
+all other transient runtime remain device-local. Schema 11 keeps the same 33-table
+inventory and adds nullable `outcome` and `next_step` columns to `focus_session`.
+Archives 7–10 restore with no reflection. Outcomes use stable enum identifiers;
+next-step notes are trimmed single-line text of at most 280 Unicode code points.
+Reflection belongs to the terminal session row, so deleting a session also removes
+its reflection.
 Unknown format/schema versions fail safely; future versions require an explicit
 reader. Task rows are validated for canonical UUIDs and civil dates, minute range,
 the date/time pairing, title/note limits, and update/creation chronology. Schema 4
@@ -110,9 +115,12 @@ creates no enabled reminder rows. Room schema 8 adds focus sessions, their runs 
 device-local focus runtime/replay state. Room schema 10 adds nullable focus metadata
 and the focus tag catalog through the non-destructive 9→10 migration. Room schema 11
 adds immutable focus timer configuration and a device-local break countdown through
-the non-destructive 10→11 migration. Only terminal history and referenced focus tags
-are portable; breaks and all other focus runtime and widget runtime tables stay
-device-local. Task due times are floating civil values: changing time
+the non-destructive 10→11 migration. Room schema 12 adds portable goal versions and
+settings; Room schema 13 adds optional outcome and next-step reflection fields to
+focus sessions through the non-destructive 12→13 migration. Terminal history,
+reflections, referenced focus tags and weekly goal versions/settings are portable;
+breaks and all other focus runtime and widget runtime tables stay device-local.
+Task due times are floating civil values: changing time
 zone does not convert the saved date or minute. Buckets remain based on the local
 calendar date. A task reminder is created only after the user enables it and the
 task has both a due date and time.
@@ -167,7 +175,7 @@ retains optional due minutes. Schema 6 includes task reminder rows but always
 restores them disabled with fresh revisions and empty runtime. Task revision tokens rotate during publication.
 Older schema 1–3 restores clear the live task table. Schema 1–6 restores clear the
 live focus history; schema 7 restores legacy focus rows without names or tags.
-Schema 8 restores focus names and referenced tags; schema 10 also restores weekly goals, while schemas 1–9 restore goals off. Restored focus rows never include an open session or active
+Schema 8 restores focus names and referenced tags; schema 10 also restores weekly goals, while schemas 1–9 restore goals off. Schema 11 also restores reflections, while schemas 1–10 restore them empty. Restored focus rows never include an open session or active
 restriction; focus app selections and emergency markers remain device-local.
 Replacement clears runtime, receipts and tombstones and rotates the focus database
 generation in the same transaction as importing history, rejecting delayed writes
@@ -177,7 +185,7 @@ widget instances and command tokens; Room schema 6 adds task due minutes; Room s
 8 adds focus data. Device-local tables are excluded from every archive inventory. A successful replacement restore revokes all widget
 commands, hides per-instance details and clears widget feedback in the same
 transaction as the content replacement. A failed or cancelled restore leaves widget
-runtime state untouched. The portable archive schema is version 10. Device-only quiet
+runtime state untouched. The portable archive schema is version 11. Device-only quiet
 hours and lock-screen preview privacy are not included in backups.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss

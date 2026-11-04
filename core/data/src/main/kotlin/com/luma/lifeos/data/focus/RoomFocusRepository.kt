@@ -923,6 +923,10 @@ private fun FocusSessionEntity.toDomain(
             mode = com.luma.lifeos.domain.focus.FocusTimerMode.valueOf(timerMode),
             targetMillis = targetMillis,
         ),
+        reflection = com.luma.lifeos.domain.focus.FocusReflection(
+            outcome = outcome?.let(com.luma.lifeos.domain.focus.FocusOutcome::valueOf),
+            nextStep = nextStep,
+        ),
     )
 }
 
@@ -972,6 +976,8 @@ private fun FocusSession.toEntity(): FocusSessionEntity = FocusSessionEntity(
     tagId = metadata.tag?.id?.toString(),
     timerMode = timer.mode.name,
     targetMillis = timer.targetMillis,
+    outcome = reflection.outcome?.name,
+    nextStep = reflection.nextStep,
 )
 
 private fun FocusRun.toEntity(): FocusRunEntity = FocusRunEntity(

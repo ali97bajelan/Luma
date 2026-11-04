@@ -83,10 +83,16 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focusProducts(): FocusProductDao
 
     companion object {
-        const val VERSION = 12
+        const val VERSION = 13
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(12, 13) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN outcome TEXT")
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN next_step TEXT")
+                }
+            },
             object : Migration(11, 12) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("""CREATE TABLE IF NOT EXISTS focus_goal_settings (

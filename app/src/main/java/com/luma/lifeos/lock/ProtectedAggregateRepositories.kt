@@ -7,6 +7,7 @@ import com.luma.lifeos.domain.focus.FocusProductContext
 import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusProductResult
 import com.luma.lifeos.domain.focus.FocusProductUnavailableReason
+import com.luma.lifeos.domain.focus.FocusReflection
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusStatistics
@@ -194,6 +195,20 @@ class ProtectedFocusProductRepository(
             if (state.decide(focusProductRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow) goals
             else FocusGoalState.DISABLED
         }
+
+    override suspend fun saveReflection(
+        sessionId: UUID,
+        expectedRevision: Long,
+        reflection: FocusReflection,
+        context: FocusProductContext,
+    ): FocusProductResult = try {
+        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
+            delegate.saveReflection(sessionId, expectedRevision, reflection, context)
+        }
+    } catch (failure: Exception) {
+        if (failure is kotlinx.coroutines.CancellationException) throw failure
+        FocusProductResult.Unavailable(FocusProductUnavailableReason("access"))
+    }
 
     override suspend fun scheduleGoal(
         goal: FocusGoalVersion,

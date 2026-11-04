@@ -108,7 +108,7 @@ fun focusWeekDistribution(dailyTotals: Map<LocalDate, Long>): FocusWeekDistribut
 
 data class FocusProductContext(val commandId: UUID, val generation: UUID)
 
-enum class FocusProductInvalidReason { INVALID_GOAL, INVALID_COMMAND }
+enum class FocusProductInvalidReason { INVALID_GOAL, INVALID_REFLECTION, INVALID_COMMAND }
 
 data class FocusProductUnavailableReason(val code: String = "storage")
 
@@ -116,6 +116,7 @@ sealed interface FocusProductResult {
     data object Applied : FocusProductResult
     data object AlreadyApplied : FocusProductResult
     data class Conflict(val current: FocusGoalState) : FocusProductResult
+    data class SessionConflict(val actualRevision: Long?) : FocusProductResult
     data class Invalid(val reason: FocusProductInvalidReason) : FocusProductResult
     data class Unavailable(val reason: FocusProductUnavailableReason = FocusProductUnavailableReason()) : FocusProductResult
 }
@@ -124,6 +125,12 @@ sealed interface FocusProductResult {
 interface FocusProductRepository {
     suspend fun currentGeneration(): UUID
     fun observeGoals(): Flow<FocusGoalState>
+    suspend fun saveReflection(
+        sessionId: UUID,
+        expectedRevision: Long,
+        reflection: FocusReflection,
+        context: FocusProductContext,
+    ): FocusProductResult
     suspend fun scheduleGoal(
         goal: FocusGoalVersion,
         expectedSettingsRevision: Long,

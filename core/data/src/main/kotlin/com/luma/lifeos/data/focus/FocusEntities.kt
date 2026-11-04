@@ -64,6 +64,10 @@ data class FocusSessionEntity(
     val timerMode: String = "COUNT_UP",
     @ColumnInfo(name = "target_millis")
     val targetMillis: Long? = null,
+    @ColumnInfo(name = "outcome")
+    val outcome: String? = null,
+    @ColumnInfo(name = "next_step")
+    val nextStep: String? = null,
 )
 
 /** Device-local countdown state. It is intentionally excluded from portable backup tables. */

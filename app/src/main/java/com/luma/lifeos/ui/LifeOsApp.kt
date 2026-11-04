@@ -1126,6 +1126,8 @@ fun LifeOsApp(
                 if (focusViewModel != null) {
                     FocusRoute(
                         viewModel = focusViewModel,
+                        focusRepository = focusRepository,
+                        focusProductRepository = focusProductRepository,
                         preferences = focusPreferences,
                         allowedFocusApps = allowedFocusApps,
                         onOpenHistory = {
@@ -1278,6 +1280,7 @@ fun LifeOsApp(
                 } else null
                 FocusHistoryRoute(
                     repository = focusRepository,
+                    productRepository = focusProductRepository,
                     range = range,
                     zone = historyZone,
                     isFocusReadable = FocusPrivateSurface.HISTORY in visibleFocusSurfaces,
@@ -1677,6 +1680,8 @@ fun LifeOsApp(
         ) {
             FocusRoute(
                 viewModel = focusViewModel,
+                focusRepository = focusRepository,
+                focusProductRepository = focusProductRepository,
                 preferences = focusPreferences,
                 allowedFocusApps = allowedFocusApps,
                 onOpenHistory = {

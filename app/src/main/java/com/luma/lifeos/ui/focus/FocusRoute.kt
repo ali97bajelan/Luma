@@ -18,6 +18,8 @@ import com.luma.lifeos.focus.FocusPreferences
 import com.luma.lifeos.focus.FocusViewModel
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
+import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.ui.today.rememberCurrentDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
@@ -32,6 +34,8 @@ internal fun FocusRoute(
     hasPendingDestination: Boolean,
     onBack: () -> Unit,
     onOpenPendingDestination: () -> Unit,
+    focusRepository: FocusRepository? = null,
+    focusProductRepository: FocusProductRepository? = null,
 ) {
     val context = LocalContext.current.applicationContext
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -70,6 +74,8 @@ internal fun FocusRoute(
 
     FocusScreen(
         state = state,
+        focusRepository = focusRepository,
+        focusProductRepository = focusProductRepository,
         allowedApps = discoveredApps.filter { it.packageName in selectedPackages },
         hasPendingDestination = hasPendingDestination,
         onBack = onBack,

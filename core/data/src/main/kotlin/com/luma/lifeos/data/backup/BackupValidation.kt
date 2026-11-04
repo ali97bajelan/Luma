@@ -17,6 +17,8 @@ import com.luma.lifeos.domain.habit.HabitLog
 import com.luma.lifeos.domain.habit.weekdaysFromMask
 import com.luma.lifeos.domain.focus.FocusRun
 import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusOutcome
+import com.luma.lifeos.domain.focus.FocusReflection
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusTimerConfig
@@ -268,6 +270,14 @@ internal fun validateFocusArchive(sqlite: SupportSQLiteDatabase): Long {
                     mode = FocusTimerMode.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("timer_mode"))),
                     targetMillis = cursor.getColumnIndex("target_millis").let { index ->
                         if (index < 0 || cursor.isNull(index)) null else cursor.getLong(index)
+                    },
+                ),
+                reflection = FocusReflection(
+                    outcome = cursor.getColumnIndex("outcome").let { index ->
+                        if (index < 0 || cursor.isNull(index)) null else FocusOutcome.valueOf(cursor.getString(index))
+                    },
+                    nextStep = cursor.getColumnIndex("next_step").let { index ->
+                        if (index < 0 || cursor.isNull(index)) null else cursor.getString(index)
                     },
                 ),
             )
