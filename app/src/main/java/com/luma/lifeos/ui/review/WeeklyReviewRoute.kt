@@ -52,6 +52,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {},
     focusRepository: FocusRepository? = null,
+    showProtectedFocus: Boolean = true,
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
     captureBottomClearance: Dp = 0.dp) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
@@ -76,7 +77,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     key(period, retry) {
         val observation = remember(repository) { observeWeeklyReview(repository, period) }
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
-        val focusReport = if (focusRepository != null) {
+        val focusReport = if (focusRepository != null && showProtectedFocus) {
             val focusSource = remember(focusRepository) { FocusReportSource(focusRepository) }
             val focusObservation = remember(focusSource, period, focusRetry) {
                 focusSource.week(

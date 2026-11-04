@@ -59,22 +59,37 @@ import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 @Composable
 internal fun FocusHistoryRoute(
     repository: FocusRepository,
     range: TimeRange?,
     zone: ZoneId,
+    isFocusReadable: Boolean,
+    privateContentAccessFlow: Flow<Boolean>,
+    databaseGenerationFlow: Flow<UUID?>,
     onBack: () -> Unit,
 ) {
-    val factory = remember(repository, range) {
+    val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, databaseGenerationFlow) {
         viewModelFactory {
-            initializer { FocusHistoryViewModel(repository, range, createSavedStateHandle()) }
+            initializer {
+                FocusHistoryViewModel(
+                    repository, range, createSavedStateHandle(),
+                    privateContentAccessAllowed = isFocusReadable,
+                    privateContentAccessFlow = privateContentAccessFlow,
+                    databaseGenerationFlow = databaseGenerationFlow,
+                )
+            }
         }
     }
     val model = viewModel<FocusHistoryViewModel>(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(model, isFocusReadable) {
+        model.setPrivateContentAccessAllowed(isFocusReadable)
+    }
     DisposableEffect(lifecycleOwner, model) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) model.refresh()
@@ -82,17 +97,21 @@ internal fun FocusHistoryRoute(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    FocusHistoryScreen(
-        state = state,
-        range = range,
-        zone = zone,
-        onSearch = model::search,
-        onTag = model::tag,
-        onRetry = model::retry,
-        onPage = model::page,
-        onDelete = model::delete,
-        onBack = onBack,
-    )
+    if (FocusPrivateSurface.HISTORY in visibleFocusPrivateSurfaces(isFocusReadable)) {
+        FocusHistoryScreen(
+            state = state,
+            range = range,
+            zone = zone,
+            onSearch = model::search,
+            onTag = model::tag,
+            onRetry = model::retry,
+            onPage = model::page,
+            onDelete = model::delete,
+            onBack = onBack,
+        )
+    } else {
+        Box(Modifier.fillMaxSize())
+    }
 }
 
 @Composable

@@ -13,19 +13,25 @@ import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.ui.focus.FocusInsightsState
+import com.luma.lifeos.ui.focus.FocusPrivateSurface
 import com.luma.lifeos.ui.focus.FocusPeriod
 import com.luma.lifeos.ui.focus.FocusSetupEvent
 import com.luma.lifeos.ui.focus.FocusSetupState
+import com.luma.lifeos.ui.focus.FocusTagSuggestionsSnapshot
 import com.luma.lifeos.ui.focus.encodeFocusSetupState
+import com.luma.lifeos.ui.focus.focusMetadataForPresentation
+import com.luma.lifeos.ui.focus.focusInsightsPresentation
 import com.luma.lifeos.ui.focus.focusInsightsQueryFor
 import com.luma.lifeos.ui.focus.observeFocusInsights
 import com.luma.lifeos.ui.focus.reduceFocusSetupState
 import com.luma.lifeos.ui.focus.restoreFocusSetupState
-import com.luma.lifeos.ui.focus.visibleFocusInsightsState
+import com.luma.lifeos.ui.focus.visibleFocusTagSuggestions
+import com.luma.lifeos.ui.focus.visibleFocusPrivateSurfaces
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +39,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -50,6 +59,7 @@ data class FocusScreenState(
     val tagSuggestions: List<FocusTag> = emptyList(),
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FocusViewModel(
     private val runtime: FocusRuntime,
     private val repository: FocusRepository?,
@@ -87,21 +97,33 @@ class FocusViewModel(
 
     private val local = MutableStateFlow(LocalState(setup = restoreSetupState(savedStateHandle)))
     private val insightState = MutableStateFlow<FocusInsightsState>(FocusInsightsState.Unselected)
-    private val tagSuggestions = MutableStateFlow<List<FocusTag>>(emptyList())
+    private val tagSuggestions = MutableStateFlow(FocusTagSuggestionsSnapshot(null, emptyList()))
+    private val privateContentAccess = MutableStateFlow(false)
+    private var privateContentAccessResolved = false
     private val insightRetry = MutableStateFlow(0)
     private var pendingOperation: PendingOperation? = null
     private var pendingShortcutPackage: String? = null
 
     val state: StateFlow<FocusScreenState> = combine(
-        runtime.state, local, insightState, tagSuggestions,
-    ) { runtimeState, localState, insights, suggestions ->
-        val selectedQuery = focusInsightsQueryFor(
+        runtime.state, local, insightState, tagSuggestions, privateContentAccess,
+    ) { runtimeState, localState, insights, suggestions, canReadFocus ->
+        val visibleSurfaces = visibleFocusPrivateSurfaces(canReadFocus)
+        val canReadFocusSurface = FocusPrivateSurface.FOCUS in visibleSurfaces
+        val canReadInsights = FocusPrivateSurface.INSIGHTS in visibleSurfaces
+        val selectedQuery = if (canReadInsights) focusInsightsQueryFor(
             localState.setup,
             runtimeState.initialized,
             runtimeState.databaseGeneration,
-        )
+        ) else null
+        val currentTags = if (canReadFocusSurface) {
+            visibleFocusTagSuggestions(runtimeState.databaseGeneration, suggestions)
+        } else emptyList()
+        val presentation = focusInsightsPresentation(canReadInsights, selectedQuery, insights, currentTags)
         FocusScreenState(
             runtime = runtimeState.copy(
+                session = runtimeState.session?.let { session ->
+                    session.copy(metadata = focusMetadataForPresentation(session.metadata, canReadFocusSurface))
+                },
                 emergencyMarkerSaved = localState.emergencyMarkerSaved ?: runtimeState.emergencyMarkerSaved,
             ),
             busy = localState.busy,
@@ -109,14 +131,23 @@ class FocusViewModel(
             backPromptVisible = localState.backPromptVisible,
             emergencyPromptVisible = localState.emergencyPromptVisible,
             shortcutUnavailable = localState.shortcutUnavailable || runtimeState.shortcutFailed,
-            setup = localState.setup,
-            insights = visibleFocusInsightsState(selectedQuery, insights),
-            tagSuggestions = suggestions,
+            setup = if (canReadFocusSurface) localState.setup else FocusSetupState(),
+            insights = presentation.state,
+            tagSuggestions = presentation.tagSuggestions,
         )
     }.stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
-        FocusScreenState(runtime.state.value, setup = local.value.setup),
+        FocusScreenState(
+            runtime = runtime.state.value.copy(
+                session = runtime.state.value.session?.let { session ->
+                    session.copy(
+                        metadata = focusMetadataForPresentation(session.metadata, privateContentAccess.value),
+                    )
+                },
+            ),
+            setup = if (privateContentAccess.value) local.value.setup else FocusSetupState(),
+        ),
     )
 
     init {
@@ -130,9 +161,16 @@ class FocusViewModel(
                 updateSetup(FocusSetupEvent.GenerationChanged(generation))
             }
         }
+        viewModelScope.launch {
+            runtime.state.map { it.databaseGeneration }.distinctUntilChanged().collect { generation ->
+                if (tagSuggestions.value.databaseGeneration != generation) {
+                    tagSuggestions.value = FocusTagSuggestionsSnapshot(generation, emptyList())
+                }
+            }
+        }
         repository?.let { focusRepository ->
-            val queries = combine(runtime.state, local) { runtimeState, localState ->
-                focusInsightsQueryFor(
+            val queries = combine(runtime.state, local, privateContentAccess) { runtimeState, localState, canReadFocus ->
+                if (!canReadFocus) null else focusInsightsQueryFor(
                     localState.setup,
                     runtimeState.initialized,
                     runtimeState.databaseGeneration,
@@ -140,16 +178,55 @@ class FocusViewModel(
             }.distinctUntilChanged()
             val requests = combine(queries, insightRetry) { query, _ -> query }
             viewModelScope.launch {
-                observeFocusInsights(focusRepository, requests).collect { insightState.value = it }
+                observeFocusInsights(focusRepository, requests).collect {
+                    insightState.value = if (privateContentAccess.value) it else FocusInsightsState.Unselected
+                }
             }
             viewModelScope.launch {
-                focusRepository.observeTagSuggestions()
-                    .catch { failure ->
-                        if (failure is CancellationException) throw failure
-                        emit(emptyList())
+                val tagQueries = combine(
+                    privateContentAccess,
+                    runtime.state.map { it.databaseGeneration }.distinctUntilChanged(),
+                ) { canReadFocus, generation -> if (canReadFocus) generation else null }
+                    .distinctUntilChanged()
+                tagQueries.flatMapLatest { generation ->
+                    if (generation == null) {
+                        flowOf(FocusTagSuggestionsSnapshot(null, emptyList()))
+                    } else {
+                        flow {
+                            val current = focusRepository.currentGeneration()
+                            if (current != generation) {
+                                emit(FocusTagSuggestionsSnapshot(current, emptyList()))
+                            }
+                            focusRepository.observeTagSuggestions().collect { tags ->
+                                val latest = focusRepository.currentGeneration()
+                                emit(
+                                    if (latest == generation) FocusTagSuggestionsSnapshot(generation, tags)
+                                    else FocusTagSuggestionsSnapshot(latest, emptyList()),
+                                )
+                            }
+                        }
                     }
-                    .collect { tagSuggestions.value = it }
+                }.catch { failure ->
+                    if (failure is CancellationException) throw failure
+                    emit(FocusTagSuggestionsSnapshot(null, emptyList()))
+                }.collect { tags ->
+                    val currentGeneration = runtime.state.value.databaseGeneration
+                    tagSuggestions.value = if (
+                        privateContentAccess.value && currentGeneration == tags.databaseGeneration
+                    ) tags else FocusTagSuggestionsSnapshot(currentGeneration, emptyList())
+                }
             }
+        }
+    }
+
+    fun setPrivateContentAccessAllowed(allowed: Boolean) {
+        if (privateContentAccessResolved && privateContentAccess.value == allowed) return
+        privateContentAccessResolved = true
+        privateContentAccess.value = allowed
+        if (!allowed) {
+            updateSetup(FocusSetupEvent.PrivateContentLocked)
+            insightState.value = FocusInsightsState.Unselected
+            tagSuggestions.value = FocusTagSuggestionsSnapshot(null, emptyList())
         }
     }
 
@@ -168,6 +245,7 @@ class FocusViewModel(
     }
 
     fun start(input: FocusStartInput) {
+        if (pendingOperation is PendingOperation.Start) return
         val normalized = runCatching { normalizeFocusStartInput(input) }.getOrElse {
             updateSetup(FocusSetupEvent.StartValidationRejected)
             return

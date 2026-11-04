@@ -144,6 +144,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusNavigationGuard
 import com.luma.lifeos.focus.FocusPendingDestination
@@ -156,6 +158,8 @@ import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.focus.FocusViewModel
 import com.luma.lifeos.ui.focus.FocusRoute
 import com.luma.lifeos.ui.focus.FocusHistoryRoute
+import com.luma.lifeos.ui.focus.FocusPrivateSurface
+import com.luma.lifeos.ui.focus.visibleFocusPrivateSurfaces
 import com.luma.lifeos.domain.lock.AccessDecision
 import com.luma.lifeos.domain.lock.LockBrowseContext
 import com.luma.lifeos.domain.lock.LockContentClassification
@@ -404,13 +408,26 @@ fun LifeOsApp(
             contentClassification = LockContentClassification.CLASSIFIED,
         ),
     ) == AccessDecision.Allow
-    val protectedFocusReadable = appLockCoordinator == null || lockSnapshot.decide(
+    val focusReadRequest = remember {
         LockRequest(
             operation = LockOperation.READ,
             requiredSections = setOf(LockSection.FOCUS),
             contentClassification = LockContentClassification.CLASSIFIED,
-        ),
-    ) == AccessDecision.Allow
+        )
+    }
+    val protectedFocusReadable = appLockCoordinator == null ||
+        lockSnapshot.decide(focusReadRequest) == AccessDecision.Allow
+    val focusPrivateAccessFlow = remember(appLockCoordinator, focusReadRequest) {
+        appLockCoordinator?.snapshot?.map { it.decide(focusReadRequest) == AccessDecision.Allow }
+            ?: flowOf(true)
+    }
+    val focusDatabaseGenerationFlow = remember(focusViewModel) {
+        focusViewModel?.state?.map { it.runtime.databaseGeneration } ?: flowOf(null)
+    }
+    val visibleFocusSurfaces = visibleFocusPrivateSurfaces(protectedFocusReadable)
+    LaunchedEffect(focusViewModel, protectedFocusReadable) {
+        focusViewModel?.setPrivateContentAccessAllowed(protectedFocusReadable)
+    }
     val protectedTasksReadable = appLockCoordinator == null || lockSnapshot.decide(
         LockRequest(LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED),
     ) == AccessDecision.Allow
@@ -965,7 +982,7 @@ fun LifeOsApp(
                             onEventClick = { navController.navigate("event_detail/$it") },
                             summaries = summaries,
                             showProtectedSummary = protectedSummaryReadable,
-                            showProtectedFocus = protectedFocusReadable,
+                            showProtectedFocus = FocusPrivateSurface.TODAY in visibleFocusSurfaces,
                             integrationAvailability = integrationAvailability,
                             onIntegrations = { navController.navigate("settings_integrations") },
                             habits = habits.takeIf { protectedHabitsReadable },
@@ -1020,6 +1037,7 @@ fun LifeOsApp(
                                 onIntegrations = { navController.navigate("settings_integrations") },
                                 onCheckIn = { openCapture("mood", null) },
                                 focusRepository = focusRepository,
+                                showProtectedFocus = FocusPrivateSurface.REVIEW in visibleFocusSurfaces,
                                 onFocusHistory = ::openFocusHistory,
                                 onSources = { dates, metric ->
                                     val activity = metric.activity
@@ -1231,6 +1249,9 @@ fun LifeOsApp(
                     repository = focusRepository,
                     range = range,
                     zone = historyZone,
+                    isFocusReadable = FocusPrivateSurface.HISTORY in visibleFocusSurfaces,
+                    privateContentAccessFlow = focusPrivateAccessFlow,
+                    databaseGenerationFlow = focusDatabaseGenerationFlow,
                     onBack = { navController.popBackStack() },
                 )
             }

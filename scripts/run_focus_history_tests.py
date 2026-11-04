@@ -48,9 +48,10 @@ def main() -> None:
     data = ROOT / 'core/data/src/main/kotlin/com/luma/lifeos/data/focus/FocusHistoryFilter.kt'
     data_test = ROOT / 'core/data/src/test/kotlin/com/luma/lifeos/data/focus/FocusHistoryFilterTest.kt'
     app = ROOT / 'app/src/main/java/com/luma/lifeos/ui/focus/FocusHistoryFilterState.kt'
+    app_state = ROOT / 'app/src/main/java/com/luma/lifeos/ui/focus/FocusHistoryUiState.kt'
     app_test = ROOT / 'app/src/test/java/com/luma/lifeos/ui/focus/FocusHistoryFilterStateTest.kt'
     sources = sorted((domain / 'focus').glob('*.kt')) + [domain / 'time/TimeRange.kt']
-    sources += sorted((domain / 'model').glob('*.kt')) + [data, app]
+    sources += sorted((domain / 'model').glob('*.kt')) + [data, app, app_state]
     tests = sorted(domain_tests.glob('*Test.kt')) + [data_test, app_test]
     classpath = os.pathsep.join(map(str, [junit, hamcrest, coroutines]))
     environment = os.environ.copy()

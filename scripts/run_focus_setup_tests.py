@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the pure FI05 setup reducer tests with the locally installed Kotlin/JUnit tools."""
+"""Run pure Focus setup, insight, and privacy presentation tests with local Kotlin/JUnit tools."""
 from pathlib import Path
 import os
 import shutil
@@ -46,8 +46,15 @@ def main() -> None:
         sorted((domain / 'focus').glob('*.kt'))
         + [domain / 'time/TimeRange.kt']
         + sorted((domain / 'model').glob('*.kt'))
-        + [app / 'FocusSetupState.kt', app / 'FocusInsightsState.kt']
-        + [tests / 'FocusSetupStateTest.kt', tests / 'FocusInsightsStateTest.kt']
+        + [
+            app / 'FocusSetupState.kt', app / 'FocusInsightsState.kt',
+            app / 'FocusInsightsVisibility.kt', app / 'FocusHistoryFilterState.kt',
+            app / 'FocusHistoryUiState.kt',
+        ]
+        + [
+            tests / 'FocusSetupStateTest.kt', tests / 'FocusInsightsStateTest.kt',
+            tests / 'FocusInsightsVisibilityTest.kt',
+        ]
     )
     coroutines = kotlin_lib / 'kotlinx-coroutines-core-jvm.jar'
     if not coroutines.is_file():
@@ -56,7 +63,7 @@ def main() -> None:
     environment = os.environ.copy()
     environment['JAVA_HOME'] = str(Path(java).resolve().parent.parent)
     with tempfile.TemporaryDirectory(prefix='luma-focus-setup-jvm-') as output:
-        print(f'Compiling {len(sources) - 2} production files and two test files.', flush=True)
+        print(f'Compiling {len(sources) - 3} production files and three test files.', flush=True)
         subprocess.run([
             compiler, *map(str, sources), '-jvm-target', '17',
             '-classpath', classpath, '-d', output,
@@ -66,6 +73,7 @@ def main() -> None:
             java, '-cp', runtime_cp, 'org.junit.runner.JUnitCore',
             'com.luma.lifeos.ui.focus.FocusSetupStateTest',
             'com.luma.lifeos.ui.focus.FocusInsightsStateTest',
+            'com.luma.lifeos.ui.focus.FocusInsightsVisibilityTest',
         ], cwd=ROOT, env=environment, check=True)
 
 

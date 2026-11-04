@@ -1,6 +1,6 @@
 # Focus names, tags, and insights tasks
 
-Date: 2026-11-04 · Status: **FI01, FI03, FI04, FI05, and FI06 source implementation complete; FI02 runtime verification and FI07 pending**
+Date: 2026-11-04 · Status: **FI01, FI03, FI04, FI05, FI06, and FI07 source implementation complete; FI02 runtime verification pending**
 
 [Specification](superpowers/specs/2026-11-03-focus-names-tags-insights-design.md) · [Implementation plan](superpowers/plans/2026-11-03-focus-names-tags-insights.md)
 
@@ -14,7 +14,7 @@ These extend F16 rather than replacing its existing task status. P0 scope assume
 | FI04 | P0 | Range-correct tag totals, average and longest-session insight source | FI01, FI02 | FI-A04 | DONE (source checks; Room observation/runtime validation pending) |
 | FI05 | P0 | Setup fields, retained drafts, metadata display and focus insight cards | FI02, FI04 | FI-A05 | DONE (source checks; Android UI/lifecycle acceptance pending) |
 | FI06 | P0 | Name search and tag-filtered history with stable paging | FI02, FI04 | FI-A06 | DONE (source checks; Room/Compose validation pending) |
-| FI07 | P0 | Privacy/resource review and code-only verification evidence | FI03, FI05, FI06 | FI-A07 | TODO |
+| FI07 | P0 | Privacy/resource review and code-only verification evidence | FI03, FI05, FI06 | FI-A07 | DONE (source checks; Android access/lifecycle acceptance pending) |
 
 ## Suggestions outside this implementation
 
@@ -41,3 +41,5 @@ FI04 source verification: the standalone focus-domain plus insight-state suite p
 FI05 source verification (2026-11-04): `python3 scripts/run_focus_setup_tests.py` passes 17/17 JUnit tests for valid Start enablement, saved-draft recreation, immutable retries, successful/reset clearing, terminal-screen session identity, stale insight suppression/cancellation, period/zone selection and day rollover. `python3 scripts/run_focus_domain_tests.py` passes 34/34 JUnit tests. EN/FR/FA resource XML parity passes across 1,447 named resources, and `git diff --check` passes. Actual Compose layout, IME/RTL/large-font interaction, Android lifecycle and Room integration remain NOT RUN; FI-A05 product acceptance remains pending those checks.
 
 FI06 source verification (2026-11-04): `python3 scripts/run_focus_history_tests.py` passes 44/44 JUnit tests, covering the focus domain plus filter matching, >50-row filtered paging, filter restoration, page-offset reset and stale query/generation rejection. `python3 scripts/check_focus_history_sql.py` executes the DAO candidate SQL against SQLite and confirms 60 terminal range matches, stable batched ordering and half-open range boundaries. EN/FR/FA string key parity passes across 1,434 keys, and `git diff --check` passes. Room query compilation, Compose interaction/lifecycle and relock invalidation of cached history remain NOT RUN; FI-A06 source evidence is complete while product acceptance remains pending those checks.
+
+FI07 source verification (2026-11-04): `python3 scripts/run_focus_setup_tests.py` passes 24/24 tests, including six pure privacy visibility/reducer tests. `python3 scripts/run_focus_history_tests.py` passes 44/44 and includes the extracted pure history UI state. All supported standalone source suites pass: focus domain 34/34, metadata archive 16/16, setup/privacy 24/24, and history 44/44. Focus migration/history SQLite fixtures pass; EN/FR/FA each contain the same 1,434 string keys; focus-document links and `git diff --check` pass. Focus access clears cached setup, insights, suggestions, history rows, and search state on relock; restore generation suppresses stale reports/tag suggestions and resets history. Today and Review reports follow the existing Focus access decision. Compose/app-lock lifecycle, Room migration/schema/invalidation and Android runtime acceptance remain NOT RUN. FI02 command identity and transaction verification remains pending. See [FI07 verification evidence](validation/2026-11-04-focus-insights.md).

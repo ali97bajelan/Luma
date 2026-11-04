@@ -142,15 +142,17 @@ FI06 source verification (2026-11-04): `python3 scripts/run_focus_history_tests.
 
 ## FI07 — Privacy and final code-only verification
 
-**Files:** Review app `ui/{LifeOsApp.kt,privacy/AppLockSettingsRoute.kt}`, `ui/focus/{TodayFocusCard,WeeklyFocusCard,FocusRoute,FocusHistoryRoute}.kt`; modify gate wiring only where missing; create pure app test `ui/focus/FocusInsightsVisibilityTest.kt` and evidence `docs/validation/2026-11-03-focus-insights.md` (use actual execution date for future runs).
+**Files:** Review app `ui/{LifeOsApp.kt,privacy/AppLockSettingsRoute.kt}`, `ui/focus/{TodayFocusCard,WeeklyFocusCard,FocusRoute,FocusHistoryRoute}.kt`; update `focus/FocusViewModel.kt`, `ui/focus/{FocusHistoryViewModel,FocusSetupState}.kt`, and `ui/review/WeeklyReviewRoute.kt` for access/generation invalidation; extract pure `ui/focus/{FocusInsightsVisibility,FocusHistoryUiState}.kt` helpers and tests; update the standalone source runners and record evidence in `docs/validation/2026-11-04-focus-insights.md`.
 
 **Consumes:** All P0 work and existing Focus access decisions.
 **Produces:** Coverage matrix with precise PASS/FAIL/NOT RUN states.
 
-- [ ] Add pure access-presentation tests: locked Focus suppresses metadata/insights on every affected surface; relock and restore invalidate cached private state. Do not invent a second credential flow.
-- [ ] Run all supported standalone JVM source suites; expand the local runner source/classpath list explicitly for pure adapter/state classes, rather than compiling Android-dependent classes without their runtime. Never replace production classes with stubs to claim integration passes.
-- [ ] Check relative document links, EN/FR/FA key parity, source call sites and `git diff --check`; record test counts and excluded boundaries.
-- [ ] Review FI-A01–FI-A07 against changes. Mark Android UI/lifecycle, generated Room schema and actual Room migration/concurrency as NOT RUN; source verification alone leaves those acceptance portions pending.
+- [x] Add pure access-presentation tests: locked Focus suppresses metadata/insights on every affected surface; relock and restore invalidate cached private state. Do not invent a second credential flow.
+- [x] Run all supported standalone JVM source suites; expand the local runner source/classpath list explicitly for pure adapter/state classes, rather than compiling Android-dependent classes without their runtime. Never replace production classes with stubs to claim integration passes.
+- [x] Check relative document links, EN/FR/FA key parity, source call sites and `git diff --check`; record test counts and excluded boundaries.
+- [x] Review FI-A01–FI-A07 against changes. Mark Android UI/lifecycle, generated Room schema and actual Room migration/concurrency as NOT RUN; source verification alone leaves those acceptance portions pending.
+
+FI07 source verification: `python3 scripts/run_focus_setup_tests.py` passes 24/24 tests, including six privacy visibility/reducer tests; `python3 scripts/run_focus_history_tests.py` passes 44/44 with the extracted pure history UI state. All standalone source suites pass: domain 34/34, archive 16/16, setup/privacy 24/24, and history 44/44. The focus metadata and history SQLite fixtures pass, all three locales have the same 1,434 string keys, documentation links pass, and `git diff --check` passes. Compose/app-lock lifecycle, Room generated schema/migration/invalidation and Android runtime remain NOT RUN. Evidence: [FI07 verification](../../validation/2026-11-04-focus-insights.md).
 
 ## Standalone validation available now
 
@@ -158,8 +160,8 @@ FI06 source verification (2026-11-04): `python3 scripts/run_focus_history_tests.
 
 ## Handoff status
 
-FI01, FI03, FI04, FI05 and FI06 are complete at source level; FI02 runtime verification and FI07 remain pending. FI02 metadata persistence exists, and FI04 supplies insight calculation/repository flows while FI05 adds the setup and insight presentation. Room-generated schema validation, FI04 Room observation behavior, and FI05/FI06 Android UI/lifecycle checks were not run. No commit, emulator run or Gradle command was required for this source-only handoff.
+FI01, FI03, FI04, FI05, FI06 and FI07 are complete at source level; FI02 runtime verification remains pending. FI02 metadata persistence exists, and FI04 supplies insight calculation/repository flows while FI05 adds the setup and insight presentation. Room-generated schema validation, FI04 Room observation behavior, and FI05–FI07 Android UI/lifecycle checks were not run. No commit, emulator run or Gradle command was required for this source-only handoff.
 
-Final FI06 review: a fresh read-only reviewer found no definite FI06 blocker. The reviewer noted that cached history/search state is not invalidated on relock; this is tracked by FI07, and full privacy acceptance remains pending it. Behavioral ViewModel/Room compilation and lifecycle checks remain NOT RUN; the pure stale-load tests exercise query/generation/request-key rejection.
+Historical FI06 review: a fresh read-only reviewer found no definite FI06 blocker and noted that cached history/search state was not yet invalidated on relock. FI07 now clears that state in the source implementation; behavioral Android ViewModel/Room compilation and lifecycle checks remain NOT RUN.
 
-Final: Ruling: relock invalidation of cached history — defer to FI07 as specified by the task plan; the visible app gate exists, but cached-state invalidation remains unverified and FI-A07 is not complete — cost if wrong: private history labels could remain in retained screen state until the FI07 access-state invalidation is implemented.
+Final FI07 status: source review and code-only verification are complete. FI-A07 product acceptance remains pending Android app-lock/lifecycle validation.

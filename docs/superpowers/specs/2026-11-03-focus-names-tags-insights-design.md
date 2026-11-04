@@ -1,6 +1,6 @@
 # Focus names, tags, and insights specification
 
-Date: 2026-11-03 · Status: **Draft; FI01/FI03/FI04/FI05/FI06 source implementation complete; FI02 runtime verification and FI07 pending**
+Date: 2026-11-03 · Status: **Draft; FI01/FI03/FI04/FI05/FI06/FI07 source implementation complete; FI02 runtime verification pending**
 
 [Plan](../plans/2026-11-03-focus-names-tags-insights.md) · [Tasks](../../FOCUS_INSIGHTS_TASKS.md) · [Existing focus specification](2026-10-28-roadmap-16-focus-mode.md)
 

@@ -67,6 +67,26 @@ class FocusSetupStateTest {
     }
 
     @Test
+    fun unresolvedStartStaysBlockedAfterRelockAndEditingANewDraft() {
+        val captured = reduceFocusSetupState(
+            FocusSetupState(name = "Original", tag = "Work"),
+            FocusSetupEvent.StartCaptured(FocusStartInput("Original", "Work")),
+        )
+        val failed = reduceFocusSetupState(captured, FocusSetupEvent.StartIoFailed)
+        val locked = reduceFocusSetupState(failed, FocusSetupEvent.PrivateContentLocked)
+        val edited = reduceFocusSetupState(locked, FocusSetupEvent.NameChanged("Different session"))
+
+        assertEquals("", locked.name)
+        assertEquals("", locked.tag)
+        assertNull(locked.capturedStart)
+        assertTrue(locked.unresolvedStartPending)
+        assertFalse(edited.canStart)
+
+        val resolved = reduceFocusSetupState(edited, FocusSetupEvent.StartOutcomeReconciled)
+        assertTrue(resolved.canStart)
+    }
+
+    @Test
     fun editingAfterAmbiguousFailureDoesNotChangeRetryPayload() {
         val captured = reduceFocusSetupState(
             FocusSetupState(name = "Original", tag = "Work"),

@@ -23,6 +23,7 @@ data class FocusSetupState(
     val databaseGeneration: UUID? = null,
     val capturedStart: FocusStartInput? = null,
     val startFailure: FocusSetupFailure? = null,
+    val unresolvedStartPending: Boolean = false,
 ) {
     val normalizedInput: FocusStartInput?
         get() = runCatching {
@@ -30,7 +31,7 @@ data class FocusSetupState(
         }.getOrNull()
 
     val canStart: Boolean
-        get() = normalizedInput != null && capturedStart == null
+        get() = normalizedInput != null && capturedStart == null && !unresolvedStartPending
 }
 
 fun focusTerminalRequestKey(sessionId: UUID, generation: UUID?): String =
@@ -73,6 +74,7 @@ sealed interface FocusSetupEvent {
     data object StartValidationRejected : FocusSetupEvent
     data object StartSucceeded : FocusSetupEvent
     data object StartOutcomeReconciled : FocusSetupEvent
+    data object PrivateContentLocked : FocusSetupEvent
 }
 
 fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): FocusSetupState = when (event) {
@@ -98,6 +100,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
             databaseGeneration = event.value,
             capturedStart = null,
             startFailure = null,
+            unresolvedStartPending = false,
         )
     } else {
         state.copy(databaseGeneration = event.value)
@@ -107,6 +110,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         if (!state.canStart || state.normalizedInput != normalized) state else state.copy(
             capturedStart = normalized,
             startFailure = null,
+            unresolvedStartPending = true,
         )
     }
     FocusSetupEvent.StartIoFailed -> if (state.capturedStart == null) state else state.copy(
@@ -115,14 +119,27 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.StartValidationRejected -> state.copy(
         capturedStart = null,
         startFailure = FocusSetupFailure.VALIDATION,
+        unresolvedStartPending = false,
     )
     FocusSetupEvent.StartSucceeded -> state.copy(
         name = "",
         tag = "",
         capturedStart = null,
         startFailure = null,
+        unresolvedStartPending = false,
     )
-    FocusSetupEvent.StartOutcomeReconciled -> state.copy(capturedStart = null, startFailure = null)
+    FocusSetupEvent.StartOutcomeReconciled -> state.copy(
+        capturedStart = null,
+        startFailure = null,
+        unresolvedStartPending = false,
+    )
+    FocusSetupEvent.PrivateContentLocked -> state.copy(
+        name = "",
+        tag = "",
+        unresolvedStartPending = state.unresolvedStartPending || state.capturedStart != null,
+        capturedStart = null,
+        startFailure = null,
+    )
 }
 
 /** Primitive-only representation suitable for SavedStateHandle and Android Bundle restoration. */
