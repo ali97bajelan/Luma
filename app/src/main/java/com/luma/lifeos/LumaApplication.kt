@@ -47,6 +47,7 @@ import com.luma.lifeos.lock.ProtectedContentGateway
 import com.luma.lifeos.lock.ProtectedCalendarRepository
 import com.luma.lifeos.lock.ProtectedDailySummaryRepository
 import com.luma.lifeos.lock.ProtectedFocusRepository
+import com.luma.lifeos.lock.ProtectedFocusProductRepository
 import com.luma.lifeos.lock.ProtectedHabitRepository
 import com.luma.lifeos.lock.ProtectedJournalRepository
 import com.luma.lifeos.lock.ProtectedLifeEventRepository
@@ -131,6 +132,9 @@ class LumaApplication : Application() {
     val protectedSummaries by lazy { ProtectedDailySummaryRepository(storage.summaries, protectedContentGateway) }
     val protectedReviews by lazy { ProtectedWeeklyReviewRepository(storage.reviews, protectedContentGateway) }
     val protectedFocusRepository by lazy { ProtectedFocusRepository(storage.focus, protectedContentGateway) }
+    val protectedFocusProductRepository by lazy {
+        ProtectedFocusProductRepository(storage.focusProducts, protectedContentGateway)
+    }
     val protectedUsage by lazy { ProtectedUsageIntegration(usage, protectedContentGateway) }
     val focusPreferences: FocusPreferences by lazy { FocusPreferences(this) }
     val allowedFocusApps: AllowedFocusApps by lazy { AllowedFocusApps(this) }

@@ -1,6 +1,6 @@
 # Focus product extensions specification
 
-Date: 2026-11-04 · Status: **DRAFT — FP01 and FP03 source implemented but unverified; remaining extensions and final QA are pending**
+Date: 2026-11-04 · Status: **DRAFT — FP01, FP03 and FP05 source implemented but unverified; remaining extensions and final QA are pending**
 
 [Task ledger](../../FOCUS_INSIGHTS_TASKS.md) · [Implementation plan](../plans/2026-11-04-focus-product-extensions.md) · [Final QA](../../feature-roadmap/focus-product-extensions-qa.md) · [Existing insights specification](2026-11-03-focus-names-tags-insights-design.md)
 
@@ -32,7 +32,7 @@ Use approach 1 for this draft. The product review originally suggested learning 
 
 ## Baseline and architecture
 
-Source inspected on 2026-11-04: Room version **10**, archive schema **8**, database entry point `core/data/src/main/kotlin/com/luma/lifeos/data/db/LumaDatabase.kt`. Recheck versions immediately before implementation. Reserve Room **11** and archive **9** for the full extension if still available; rebase together if another feature advances either. Do not generate schema JSON by hand.
+The initial design baseline was Room version **10** and archive schema **8**. Before FP05 implementation, source had advanced to Room **11** and archive **9** with the FP03 timer/break slice. FP05 therefore reserves Room **12** and archive **10**. Recheck versions before later extension work and rebase together if another feature advances either. Do not generate schema JSON by hand.
 
 Use `FocusRepository`/`RoomFocusRepository` for timer transactions and a new `FocusProductRepository` interface implemented by the same Room repository for auxiliary mutations/reports. This keeps generation and revision authority inside the existing storage boundary. Expose it through `LumaStorage`. Keep timing policy pure in domain; Compose consumes state, never calculates persisted credit. Split new setup/task/reflection/goal/reminder UI into small files rather than growing the existing screen indefinitely.
 

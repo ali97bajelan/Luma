@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusComparisonStatus
@@ -34,6 +36,9 @@ internal fun WeeklyFocusCard(
     onRetry: () -> Unit,
     onCurrentHistory: () -> Unit,
     onPreviousHistory: () -> Unit,
+    goalReport: FocusGoalReportState = FocusGoalReportState.Hidden,
+    inProgressMillis: Long? = null,
+    inProgressPaused: Boolean = false,
 ) {
     LumaCard(Modifier.fillMaxWidth().testTag("review_focus_card")) {
         Column(
@@ -76,6 +81,64 @@ internal fun WeeklyFocusCard(
                         progress = { barFraction(value.current.totalMillis, ratio) },
                         modifier = Modifier.fillMaxWidth().height(6.dp).testTag("review_focus_current_bar"),
                     )
+                    when (goalReport) {
+                        FocusGoalReportState.Hidden, FocusGoalReportState.Loading -> Unit
+                        FocusGoalReportState.Error -> Text(
+                            stringResource(R.string.focus_goal_unavailable),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.testTag("review_focus_goal_error"),
+                        )
+                        is FocusGoalReportState.Ready -> {
+                            val goal = goalReport.value
+                            val targetMillis = goal.goal.targetMinutes * 60_000L
+                            val goalRatio = barFraction(goal.savedMillis, targetMillis)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            Text(
+                                stringResource(R.string.focus_goal_progress_heading),
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.testTag("review_focus_goal_heading"),
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.focus_goal_progress,
+                                    focusDuration(goal.savedMillis),
+                                    focusDuration(targetMillis),
+                                ),
+                                modifier = Modifier.testTag("review_focus_goal_progress"),
+                            )
+                            LinearProgressIndicator(
+                                progress = { goalRatio },
+                                modifier = Modifier.fillMaxWidth().height(6.dp).testTag("review_focus_goal_bar"),
+                            )
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.focus_goal_active_days,
+                                    goal.distribution.activeDays,
+                                    goal.distribution.activeDays,
+                                ),
+                                modifier = Modifier.testTag("review_focus_goal_active_days"),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.focus_goal_week_context,
+                                    dateRange(goal.weekStart, goal.weekStart.plusDays(6)),
+                                    goal.zone.id,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            if (inProgressMillis != null && inProgressMillis > 0) {
+                                Text(
+                                    stringResource(
+                                        if (inProgressPaused) R.string.focus_current_paused else R.string.focus_current_in_progress,
+                                        focusDuration(inProgressMillis),
+                                    ),
+                                    modifier = Modifier.testTag("review_focus_goal_in_progress"),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
                     if (value.days.isNotEmpty()) {
                         val dailyMaximum = value.days.mapNotNull { it.statistics?.totalMillis }.maxOrNull() ?: 0L
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

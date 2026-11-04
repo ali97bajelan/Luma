@@ -786,6 +786,23 @@
     <string name="settings_widgets_title">Widgets de l’écran d’accueil</string>
     <string name="settings_widgets_description">Ajoutez ou configurez les widgets Luma et consultez leur contenu.</string>
     <string name="focus_settings_title">Mode concentration</string>
+    <string name="focus_goal_title">Objectif hebdomadaire de concentration</string>
+    <string name="focus_goal_intro">Choisissez une durée enregistrée et des jours préférés. L’objectif est facultatif ; les jours sont des repères de planification.</string>
+    <string name="focus_goal_enabled">Objectif hebdomadaire activé</string>
+    <string name="focus_goal_disabled">Objectif hebdomadaire désactivé</string>
+    <string name="focus_goal_target_label">Minutes par semaine (1–10 080)</string>
+    <string name="focus_goal_days_heading">Jours préférés</string>
+    <string name="focus_goal_zone">Fuseau de l’objectif : %1$s</string>
+    <string name="focus_goal_use_device_zone">Utiliser le fuseau de l’appareil (%1$s) à partir de lundi prochain</string>
+    <string name="focus_goal_effective_date">Prend effet le lundi %1$s</string>
+    <string name="focus_goal_invalid">Saisissez 1 à 10 080 minutes et choisissez au moins un jour.</string>
+    <string name="focus_goal_save">Enregistrer l’objectif</string>
+    <string name="focus_goal_disable">Désactiver l’objectif</string>
+    <string name="focus_goal_save_error">Impossible d’enregistrer l’objectif. Réessayez.</string>
+    <string name="focus_goal_progress_heading">Objectif hebdomadaire</string>
+    <string name="focus_goal_progress">%1$s enregistrées sur %2$s</string>
+    <string name="focus_goal_week_context">Semaine de l’objectif : %1$s · %2$s</string>
+    <string name="focus_goal_unavailable">La progression de l’objectif est indisponible pour le moment.</string>
     <string name="focus_settings_description">Choisissez les applications accessibles depuis une session de concentration.</string>
     <string name="more_people_places">Personnes et lieux</string>
     <string name="more_people_places_description">Parcourez les personnes et les lieux associés à votre vie.</string>
@@ -1562,4 +1579,8 @@
     <string name="app_lock_current_method">Méthode de verrouillage actuelle</string>
     <string name="app_lock_recovery_code_show">Afficher le code de récupération</string>
     <string name="app_lock_recovery_code_hide">Masquer le code de récupération</string>
+    <plurals name="focus_goal_active_days">
+        <item quantity="one">Activité enregistrée pendant %1$d jour</item>
+        <item quantity="other">Activité enregistrée pendant %1$d jours</item>
+    </plurals>
 </resources>

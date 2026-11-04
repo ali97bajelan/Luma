@@ -21,6 +21,9 @@ import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusTimerConfig
 import com.luma.lifeos.domain.focus.FocusTimerMode
+import com.luma.lifeos.domain.focus.FocusGoalVersion
+import com.luma.lifeos.domain.focus.FocusGoalState
+import java.time.DayOfWeek
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.time.LocalDate
 import java.time.ZoneId
@@ -117,6 +120,33 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
                 revisionToken = s("revision_token"), consumedActionToken = text("consumed_action_token"),
                 lastDeliveredSlot = text("last_delivered_slot"), snoozeSlot = text("snooze_slot"),
                 snoozeUntil = long("snooze_until"), needsReconcile = l("needs_reconcile") == 1L,
+            )
+        }
+        "focus_goal_settings" -> {
+            require(int("singleton_id") == 1)
+            require(l("enabled") in 0..1 && l("settings_revision") >= 0)
+            val monday = text("visible_from_monday")
+            val zoneId = text("visible_from_zone_id")
+            require((monday == null) == (zoneId == null))
+            if (l("enabled") == 1L) require(monday != null)
+            monday?.let {
+                val date = LocalDate.parse(it)
+                require(date.toString() == it && date.dayOfWeek == DayOfWeek.MONDAY)
+                zone(requireNotNull(zoneId))
+            }
+        }
+        "focus_goal_version" -> {
+            require(int("settings_id") == 1)
+            val mask = int("preferred_weekday_mask")
+            require(mask in 1..127)
+            val days = DayOfWeek.values().filter { mask and (1 shl (it.value - 1)) != 0 }.toSet()
+            FocusGoalVersion(
+                id = UUID.fromString(s("id")),
+                revision = l("revision"),
+                effectiveMonday = date("effective_monday"),
+                zoneId = zone("zone_id").id,
+                targetMinutes = int("target_minutes"),
+                preferredDays = days,
             )
         }
         "focus_tag" -> FocusMetadataArchiveAdapter.validateTag(
@@ -298,4 +328,67 @@ internal fun requireSafeJsonDepth(text: String, maxDepth: Int = 64) {
         }
     }
     require(!quoted && depth == 0) { "Incomplete backup JSON" }
+}
+
+
+/** Portable goal rows are validated together, including the singleton and enable boundary. */
+internal fun validateFocusGoalsArchive(sqlite: SupportSQLiteDatabase, capturedAt: Instant = Instant.now()) {
+    val settingsRows = sqlite.query("SELECT * FROM focus_goal_settings ORDER BY singleton_id").use { cursor ->
+        buildList {
+            while (cursor.moveToNext()) {
+                add(
+                    FocusGoalState(
+                        enabled = cursor.getLong(cursor.getColumnIndexOrThrow("enabled")) == 1L,
+                        settingsRevision = cursor.getLong(cursor.getColumnIndexOrThrow("settings_revision")),
+                        visibleFromMonday = cursor.getColumnIndex("visible_from_monday").let { index ->
+                            if (index < 0 || cursor.isNull(index)) null else LocalDate.parse(cursor.getString(index))
+                        },
+                        visibleFromZoneId = cursor.getColumnIndex("visible_from_zone_id").let { index ->
+                            if (index < 0 || cursor.isNull(index)) null else cursor.getString(index)
+                        },
+                        versions = emptyList(),
+                    ),
+                )
+            }
+        }
+    }
+    require(settingsRows.size == 1) { "Focus goal settings must have exactly one row" }
+    val versions = sqlite.query("SELECT * FROM focus_goal_version ORDER BY effective_monday, zone_id, id").use { cursor ->
+        buildList {
+            while (cursor.moveToNext()) {
+                val mask = cursor.getInt(cursor.getColumnIndexOrThrow("preferred_weekday_mask"))
+                add(
+                    FocusGoalVersion(
+                        id = UUID.fromString(cursor.getString(cursor.getColumnIndexOrThrow("id"))),
+                        revision = cursor.getLong(cursor.getColumnIndexOrThrow("revision")),
+                        effectiveMonday = LocalDate.parse(cursor.getString(cursor.getColumnIndexOrThrow("effective_monday"))),
+                        zoneId = cursor.getString(cursor.getColumnIndexOrThrow("zone_id")),
+                        targetMinutes = cursor.getInt(cursor.getColumnIndexOrThrow("target_minutes")),
+                        preferredDays = DayOfWeek.values().filter { mask and (1 shl (it.value - 1)) != 0 }.toSet(),
+                    ),
+                )
+            }
+        }
+    }
+    require(versions.map { it.id }.distinct().size == versions.size) { "Duplicate focus goal version" }
+    val settings = settingsRows.single()
+    val portableState = FocusGoalState(
+        enabled = settings.enabled,
+        settingsRevision = settings.settingsRevision,
+        visibleFromMonday = settings.visibleFromMonday,
+        visibleFromZoneId = settings.visibleFromZoneId,
+        versions = versions,
+    )
+    if (portableState.enabled) {
+        val visibleFrom = requireNotNull(portableState.visibleFromMonday)
+            .atStartOfDay(ZoneId.of(requireNotNull(portableState.visibleFromZoneId))).toInstant()
+        require(versions.any { version ->
+            version.effectiveMonday.atStartOfDay(ZoneId.of(version.zoneId)).toInstant() >= visibleFrom
+        }) { "Enabled focus goals need a version after their visible-from boundary" }
+    }
+    val pendingCount = versions.count { version ->
+        version.effectiveMonday.atStartOfDay(ZoneId.of(version.zoneId)).toInstant().isAfter(capturedAt)
+    }
+    require(pendingCount <= 1) { "Only one focus goal version may be pending" }
+    require(portableState.enabled || pendingCount == 0) { "Disabled focus goals cannot retain a pending version" }
 }

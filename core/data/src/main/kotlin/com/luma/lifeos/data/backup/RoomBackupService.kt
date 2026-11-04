@@ -38,6 +38,8 @@ class RoomBackupService(private val context: Context, private val database: Luma
             photoMutex.withLock {
                 database.withTransaction {
                     val sqlite = database.openHelper.writableDatabase
+                    sqlite.execSQL("INSERT OR IGNORE INTO focus_goal_settings(singleton_id, enabled, settings_revision) VALUES (1, 0, 0)")
+                    validateFocusGoalsArchive(sqlite, Instant.ofEpochMilli(System.currentTimeMillis()))
                     val excludedSessionId = (focusChoice as? BackupFocusExportChoice.EXCLUDE_PAUSED)
                         ?.sessionId?.toString()
                     sqlite.query("SELECT id, state FROM focus_session WHERE open_slot = 1 LIMIT 1").use { cursor ->
@@ -129,8 +131,10 @@ class RoomBackupService(private val context: Context, private val database: Luma
                     }
                 }
                 normalizeLegacyJournals(sql)
+                sql.execSQL("INSERT OR IGNORE INTO focus_goal_settings(singleton_id, enabled, settings_revision) VALUES (1, 0, 0)")
                 validateFocusArchive(sql)
                 validateFocusMetadataArchive(sql)
+                validateFocusGoalsArchive(sql, Instant.ofEpochMilli(manifest.createdAt))
                 sql.query("PRAGMA foreign_key_check").use { require(!it.moveToFirst()) { "Backup contains broken references" } }
                 sql.query("PRAGMA integrity_check").use { require(it.moveToFirst() && it.getString(0) == "ok") }
                 BackupSql.invalidGraphQueries.forEach { query ->
@@ -231,6 +235,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                     }
                                 }
                                 normalizeLegacyJournals(target)
+                                target.execSQL("INSERT OR IGNORE INTO focus_goal_settings(singleton_id, enabled, settings_revision) VALUES (1, 0, 0)")
                                 target.execSQL("""INSERT INTO habit_reminder_runtime
                                     (habit_id, revision_token, last_delivered_slot, consumed_action_token, snooze_slot, snooze_until, needs_reconcile)
                                     SELECT habit_id, revision_token, NULL, NULL, NULL, NULL, 1 FROM habit_reminder""")
@@ -278,6 +283,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
         sqlite.execSQL("DELETE FROM focus_runtime")
         sqlite.execSQL("DELETE FROM focus_break_runtime")
         sqlite.execSQL("DELETE FROM focus_command_receipt")
+        sqlite.execSQL("DELETE FROM focus_product_command_receipt")
         sqlite.execSQL("DELETE FROM focus_deleted_session")
         sqlite.execSQL(
             "INSERT OR REPLACE INTO focus_storage_state(singleton_id, generation_id) VALUES (1, ?)",

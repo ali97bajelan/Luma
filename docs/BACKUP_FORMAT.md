@@ -31,7 +31,7 @@ referenced photos abort export rather than silently omitting them.
 ## Archive layout
 
 - `manifest.properties`: Java Properties syntax. Required `format=luma-backup`,
-  `format_version=1`, `schema_version=1`, `2`, `3`, `4`, `5`, `6`, `7` or `8`, `created_at` (UTC epoch
+  `format_version=1`, `schema_version=1` through `10`, `created_at` (UTC epoch
   milliseconds),
   and `file_count`. Every payload has `size.<path>` and `sha256.<path>` entries.
 - `tables/<table>.tsv`: one file per application table. Header is the exact column
@@ -92,7 +92,12 @@ Schema 9 keeps the same 31-table inventory and adds `timer_mode` and nullable
 carry their fixed whole-minute target. Archives 7 and 8 remain readable and adapt
 their sessions to count-up with no target. Break countdowns and all other local
 timer/runtime state are not exported. Import validates target bounds, exact target
-credit for target-reached sessions and the cap on all timed-session credit.
+credit for target-reached sessions and the cap on all timed-session credit. Schema
+10 appends `focus_goal_settings` and `focus_goal_version`, for 33 tables total.
+Goal versions retain their effective Monday, captured timezone, weekly target and
+preferred-day hints; settings retain whether goals are enabled and the visible-from
+boundary. Goals default off when restoring schemas 1–9. Goal command receipts and
+all other transient runtime remain device-local.
 Unknown format/schema versions fail safely; future versions require an explicit
 reader. Task rows are validated for canonical UUIDs and civil dates, minute range,
 the date/time pairing, title/note limits, and update/creation chronology. Schema 4
@@ -162,7 +167,7 @@ retains optional due minutes. Schema 6 includes task reminder rows but always
 restores them disabled with fresh revisions and empty runtime. Task revision tokens rotate during publication.
 Older schema 1–3 restores clear the live task table. Schema 1–6 restores clear the
 live focus history; schema 7 restores legacy focus rows without names or tags.
-Schema 8 restores focus names and referenced tags. Restored focus rows never include an open session or active
+Schema 8 restores focus names and referenced tags; schema 10 also restores weekly goals, while schemas 1–9 restore goals off. Restored focus rows never include an open session or active
 restriction; focus app selections and emergency markers remain device-local.
 Replacement clears runtime, receipts and tombstones and rotates the focus database
 generation in the same transaction as importing history, rejecting delayed writes
@@ -172,7 +177,7 @@ widget instances and command tokens; Room schema 6 adds task due minutes; Room s
 8 adds focus data. Device-local tables are excluded from every archive inventory. A successful replacement restore revokes all widget
 commands, hides per-instance details and clears widget feedback in the same
 transaction as the content replacement. A failed or cancelled restore leaves widget
-runtime state untouched. The portable archive schema is version 8. Device-only quiet
+runtime state untouched. The portable archive schema is version 10. Device-only quiet
 hours and lock-screen preview privacy are not included in backups.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss

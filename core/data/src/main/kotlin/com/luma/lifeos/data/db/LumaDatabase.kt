@@ -17,6 +17,10 @@ import com.luma.lifeos.data.focus.FocusRunEntity
 import com.luma.lifeos.data.focus.FocusRuntimeEntity
 import com.luma.lifeos.data.focus.FocusSessionEntity
 import com.luma.lifeos.data.focus.FocusStorageStateEntity
+import com.luma.lifeos.data.focus.FocusGoalSettingsEntity
+import com.luma.lifeos.data.focus.FocusGoalVersionEntity
+import com.luma.lifeos.data.focus.FocusProductCommandReceiptEntity
+import com.luma.lifeos.data.focus.FocusProductDao
 import com.luma.lifeos.data.focus.FocusTagEntity
 import com.luma.lifeos.data.dao.DerivedDataDao
 import com.luma.lifeos.data.dao.EventContentDao
@@ -55,7 +59,8 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         WidgetInstanceEntity::class, WidgetCommandEntity::class,
         FocusSessionEntity::class, FocusRunEntity::class, FocusRuntimeEntity::class, FocusBreakEntity::class,
         FocusCommandReceiptEntity::class, FocusDeletedSessionEntity::class, FocusStorageStateEntity::class,
-        FocusTagEntity::class,
+        FocusTagEntity::class, FocusGoalSettingsEntity::class, FocusGoalVersionEntity::class,
+        FocusProductCommandReceiptEntity::class,
     ],
     version = LumaDatabase.VERSION,
     exportSchema = true,
@@ -75,12 +80,46 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun taskReminders(): TaskReminderDao
     abstract fun widgets(): WidgetDao
     abstract fun focus(): FocusDao
+    abstract fun focusProducts(): FocusProductDao
 
     companion object {
-        const val VERSION = 11
+        const val VERSION = 12
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(11, 12) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_goal_settings (
+                        singleton_id INTEGER NOT NULL PRIMARY KEY CHECK (singleton_id = 1),
+                        enabled INTEGER NOT NULL DEFAULT 0 CHECK (enabled IN (0, 1)),
+                        settings_revision INTEGER NOT NULL DEFAULT 0 CHECK (settings_revision >= 0),
+                        visible_from_monday TEXT,
+                        visible_from_zone_id TEXT,
+                        CHECK ((visible_from_monday IS NULL) = (visible_from_zone_id IS NULL)),
+                        CHECK (enabled = 0 OR visible_from_monday IS NOT NULL)
+                    )""")
+                    db.execSQL("INSERT OR IGNORE INTO focus_goal_settings(singleton_id, enabled, settings_revision) VALUES (1, 0, 0)")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_goal_version (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        settings_id INTEGER NOT NULL DEFAULT 1,
+                        revision INTEGER NOT NULL CHECK (revision > 0),
+                        effective_monday TEXT NOT NULL,
+                        zone_id TEXT NOT NULL,
+                        target_minutes INTEGER NOT NULL CHECK (target_minutes BETWEEN 1 AND 10080),
+                        preferred_weekday_mask INTEGER NOT NULL CHECK (preferred_weekday_mask BETWEEN 1 AND 127),
+                        FOREIGN KEY(settings_id) REFERENCES focus_goal_settings(singleton_id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )""")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_goal_version_zone_id_effective_monday ON focus_goal_version(zone_id, effective_monday)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_goal_version_settings_id ON focus_goal_version(settings_id)")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_product_command_receipt (
+                        database_generation TEXT NOT NULL,
+                        command_id TEXT NOT NULL,
+                        payload TEXT NOT NULL,
+                        result_type TEXT NOT NULL,
+                        PRIMARY KEY(database_generation, command_id)
+                    )""")
+                }
+            },
             object : Migration(10, 11) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE focus_session ADD COLUMN timer_mode TEXT NOT NULL DEFAULT 'COUNT_UP'")

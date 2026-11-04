@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.displayName
+import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 
 @Composable
@@ -55,6 +56,7 @@ internal fun FocusSettingsScreen(
     onRefresh: () -> Unit,
     onToggle: (AllowedFocusApps.App, Boolean) -> Unit,
     onBack: () -> Unit,
+    goalRepository: FocusProductRepository? = null,
 ) {
     var search by rememberSaveable { mutableStateOf("") }
     val normalizedSearch = search.trim()
@@ -80,6 +82,7 @@ internal fun FocusSettingsScreen(
             style = MaterialTheme.typography.bodyMedium,
         )
         Text(stringResource(R.string.focus_settings_enforcement_limit), style = MaterialTheme.typography.bodyMedium)
+        if (goalRepository != null) FocusGoalSettings(goalRepository)
         if (isRunning) {
             Text(
                 stringResource(R.string.focus_settings_running),

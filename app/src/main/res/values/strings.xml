@@ -774,6 +774,23 @@
     <string name="settings_widgets_title">Home-screen widgets</string>
     <string name="settings_widgets_description">Add or configure Luma widgets and review what they show.</string>
     <string name="focus_settings_title">Focus mode</string>
+    <string name="focus_goal_title">Weekly focus goal</string>
+    <string name="focus_goal_intro">Choose a saved-time target and preferred days. Goals are optional; preferred days are planning hints.</string>
+    <string name="focus_goal_enabled">Weekly goal is on</string>
+    <string name="focus_goal_disabled">Weekly goal is off</string>
+    <string name="focus_goal_target_label">Minutes per week (1–10,080)</string>
+    <string name="focus_goal_days_heading">Preferred days</string>
+    <string name="focus_goal_zone">Goal timezone: %1$s</string>
+    <string name="focus_goal_use_device_zone">Use device timezone (%1$s) and start next Monday</string>
+    <string name="focus_goal_effective_date">Takes effect Monday, %1$s</string>
+    <string name="focus_goal_invalid">Enter 1–10,080 minutes and choose at least one preferred day.</string>
+    <string name="focus_goal_save">Save goal</string>
+    <string name="focus_goal_disable">Turn off goal</string>
+    <string name="focus_goal_save_error">Could not save the goal. Try again.</string>
+    <string name="focus_goal_progress_heading">Weekly goal</string>
+    <string name="focus_goal_progress">%1$s saved of %2$s</string>
+    <string name="focus_goal_week_context">Goal week: %1$s · %2$s</string>
+    <string name="focus_goal_unavailable">Weekly goal progress is unavailable right now.</string>
     <string name="focus_settings_description">Choose which apps appear as shortcuts during a focus session.</string>
     <string name="more_people_places">People &amp; Places</string>
     <string name="more_people_places_description">Browse the people and places connected to your life.</string>
@@ -1539,4 +1556,8 @@
     <string name="app_lock_current_method">Current lock method</string>
     <string name="app_lock_recovery_code_show">Show recovery code</string>
     <string name="app_lock_recovery_code_hide">Hide recovery code</string>
+    <plurals name="focus_goal_active_days">
+        <item quantity="one">Saved activity on %1$d day</item>
+        <item quantity="other">Saved activity on %1$d days</item>
+    </plurals>
 </resources>

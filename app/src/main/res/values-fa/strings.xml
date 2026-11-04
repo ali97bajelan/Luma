@@ -774,6 +774,23 @@
     <string name="settings_widgets_title">ویجت‌های صفحهٔ اصلی</string>
     <string name="settings_widgets_description">افزودن یا تنظیم ویجت‌های لوما و مرور محتوای آن‌ها.</string>
     <string name="focus_settings_title">حالت تمرکز</string>
+    <string name="focus_goal_title">هدف هفتگی تمرکز</string>
+    <string name="focus_goal_intro">مدت ذخیره‌شده و روزهای ترجیحی را انتخاب کنید. هدف اختیاری است و روزها فقط راهنمای برنامه‌ریزی‌اند.</string>
+    <string name="focus_goal_enabled">هدف هفتگی روشن است</string>
+    <string name="focus_goal_disabled">هدف هفتگی خاموش است</string>
+    <string name="focus_goal_target_label">دقیقه در هفته (۱ تا ۱۰٬۰۸۰)</string>
+    <string name="focus_goal_days_heading">روزهای ترجیحی</string>
+    <string name="focus_goal_zone">منطقهٔ زمانی هدف: %1$s</string>
+    <string name="focus_goal_use_device_zone">استفاده از منطقهٔ زمانی دستگاه (%1$s) از دوشنبهٔ آینده</string>
+    <string name="focus_goal_effective_date">از دوشنبه، %1$s، اجرا می‌شود</string>
+    <string name="focus_goal_invalid">۱ تا ۱۰٬۰۸۰ دقیقه وارد کنید و دست‌کم یک روز برگزینید.</string>
+    <string name="focus_goal_save">ذخیرهٔ هدف</string>
+    <string name="focus_goal_disable">خاموش‌کردن هدف</string>
+    <string name="focus_goal_save_error">ذخیرهٔ هدف انجام نشد. دوباره تلاش کنید.</string>
+    <string name="focus_goal_progress_heading">هدف هفتگی</string>
+    <string name="focus_goal_progress">%1$s از %2$s ذخیره شده</string>
+    <string name="focus_goal_week_context">هفتهٔ هدف: %1$s · %2$s</string>
+    <string name="focus_goal_unavailable">پیشرفت هدف هفتگی اکنون در دسترس نیست.</string>
     <string name="focus_settings_description">برنامه‌هایی را انتخاب کنید که هنگام تمرکز به‌صورت میان‌بر دیده شوند.</string>
     <string name="more_people_places">افراد و مکان‌ها</string>
     <string name="more_people_places_description">افراد و مکان‌های پیوندخورده با زندگی‌تان را ببینید.</string>
@@ -1540,4 +1557,8 @@
     <string name="app_lock_current_method">روش قفل فعلی</string>
     <string name="app_lock_recovery_code_show">نمایش کد بازیابی</string>
     <string name="app_lock_recovery_code_hide">پنهان‌کردن کد بازیابی</string>
+    <plurals name="focus_goal_active_days">
+        <item quantity="one">فعالیت ذخیره‌شده در %1$d روز</item>
+        <item quantity="other">فعالیت ذخیره‌شده در %1$d روز</item>
+    </plurals>
 </resources>

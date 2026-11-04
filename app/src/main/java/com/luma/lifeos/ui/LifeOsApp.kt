@@ -243,6 +243,7 @@ fun LifeOsApp(
     focusPreferences: FocusPreferences? = null,
     allowedFocusApps: AllowedFocusApps? = null,
     focusRepository: FocusRepository? = null,
+    focusProductRepository: com.luma.lifeos.domain.focus.FocusProductRepository? = null,
     appLockCoordinator: AppLockCoordinator? = null,
     protectedContentGateway: com.luma.lifeos.lock.ProtectedContentGateway? = null,
     restrictedCaptureService: RestrictedCaptureService? = null,
@@ -1037,6 +1038,17 @@ fun LifeOsApp(
                                 onIntegrations = { navController.navigate("settings_integrations") },
                                 onCheckIn = { openCapture("mood", null) },
                                 focusRepository = focusRepository,
+                                focusProductRepository = focusProductRepository,
+                                focusInProgressMillis = focusState.runtime.session?.let { session ->
+                                    focusState.runtime.displayedMillis.takeIf {
+                                        session.state in setOf(
+                                            com.luma.lifeos.domain.focus.FocusState.RUNNING,
+                                            com.luma.lifeos.domain.focus.FocusState.PAUSED,
+                                        )
+                                    }
+                                },
+                                focusInProgressPaused = focusState.runtime.session?.state ==
+                                    com.luma.lifeos.domain.focus.FocusState.PAUSED,
                                 showProtectedFocus = FocusPrivateSurface.REVIEW in visibleFocusSurfaces,
                                 onFocusHistory = ::openFocusHistory,
                                 onSources = { dates, metric ->
@@ -1225,6 +1237,7 @@ fun LifeOsApp(
                     preferences = settingsPreferences,
                     allowedFocusApps = settingsAllowedApps,
                     isRunning = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.RUNNING,
+                    goalRepository = focusProductRepository,
                     onBack = { navController.popBackStack() },
                 )
             }

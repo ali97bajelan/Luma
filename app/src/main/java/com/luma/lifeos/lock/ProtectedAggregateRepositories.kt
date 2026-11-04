@@ -1,6 +1,12 @@
 package com.luma.lifeos.lock
 
 import com.luma.lifeos.domain.focus.FocusPage
+import com.luma.lifeos.domain.focus.FocusGoalState
+import com.luma.lifeos.domain.focus.FocusGoalVersion
+import com.luma.lifeos.domain.focus.FocusProductContext
+import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusProductResult
+import com.luma.lifeos.domain.focus.FocusProductUnavailableReason
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusStatistics
@@ -174,6 +180,43 @@ class ProtectedPhotoRepository(
         }
         return result
     }
+}
+
+
+class ProtectedFocusProductRepository(
+    private val delegate: FocusProductRepository,
+    private val gateway: ProtectedContentGateway,
+) : FocusProductRepository {
+    override suspend fun currentGeneration(): UUID = delegate.currentGeneration()
+
+    override fun observeGoals(): Flow<FocusGoalState> =
+        combine(delegate.observeGoals(), gateway.snapshot) { goals, state ->
+            if (state.decide(focusProductRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow) goals
+            else FocusGoalState.DISABLED
+        }
+
+    override suspend fun scheduleGoal(
+        goal: FocusGoalVersion,
+        expectedSettingsRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult = commit { delegate.scheduleGoal(goal, expectedSettingsRevision, context) }
+
+    override suspend fun setGoalsEnabled(
+        enabled: Boolean,
+        expectedSettingsRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult = commit { delegate.setGoalsEnabled(enabled, expectedSettingsRevision, context) }
+
+    private suspend fun commit(write: suspend () -> FocusProductResult): FocusProductResult = try {
+        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), commit = write)
+    } catch (failure: Exception) {
+        if (failure is kotlinx.coroutines.CancellationException) throw failure
+        FocusProductResult.Unavailable(FocusProductUnavailableReason("access"))
+    }
+
+    private fun focusProductRead() = LockRequest(
+        LockOperation.READ, setOf(LockSection.FOCUS), LockContentClassification.CLASSIFIED,
+    )
 }
 
 class ProtectedFocusRepository(

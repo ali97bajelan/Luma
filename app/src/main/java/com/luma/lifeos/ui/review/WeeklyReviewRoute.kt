@@ -31,11 +31,14 @@ import com.luma.lifeos.ui.today.pickerDate
 import com.luma.lifeos.ui.today.pickerMillis
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.ui.focus.FocusReportSource
 import com.luma.lifeos.ui.focus.FocusWeekDayRequest
 import com.luma.lifeos.ui.focus.FocusReportState
 import com.luma.lifeos.ui.focus.FocusWeekReport
+import com.luma.lifeos.ui.focus.FocusGoalReportSource
+import com.luma.lifeos.ui.focus.FocusGoalReportState
 import com.luma.lifeos.ui.focus.WeeklyFocusCard
 import androidx.compose.ui.unit.Dp
 import java.time.*
@@ -52,6 +55,9 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     integrationAvailability: IntegrationAvailabilityState = IntegrationAvailabilityState(),
     onIntegrations: () -> Unit = {}, onCheckIn: () -> Unit = {},
     focusRepository: FocusRepository? = null,
+    focusProductRepository: FocusProductRepository? = null,
+    focusInProgressMillis: Long? = null,
+    focusInProgressPaused: Boolean = false,
     showProtectedFocus: Boolean = true,
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
     captureBottomClearance: Dp = 0.dp) {
@@ -101,6 +107,15 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             )
             observed
         } else null
+        val focusGoalReport = if (focusRepository != null && focusProductRepository != null && showProtectedFocus) {
+            val source = remember(focusRepository, focusProductRepository) {
+                FocusGoalReportSource(focusRepository, focusProductRepository)
+            }
+            val goalNow = remember(period) { Instant.now() }
+            val goalObservation = remember(source, goalNow) { source.current(goalNow) }
+            val observed by goalObservation.collectAsStateWithLifecycle(FocusGoalReportState.Loading)
+            observed
+        } else FocusGoalReportState.Hidden
         val report = (state as? WeeklyReviewState.Data)?.report
         var habitRetry by remember { mutableIntStateOf(0) }
         val habitState = if (habits != null) {
@@ -171,6 +186,9 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                                         onPreviousHistory = {
                                             onFocusHistory(period.previous.start, period.previous.through, period.zone)
                                         },
+                                        goalReport = focusGoalReport,
+                                        inProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
+                                        inProgressPaused = focusInProgressPaused && showProtectedFocus,
                                     )
                                 }
                             }

@@ -162,10 +162,16 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 
 **Depends on:** FX01, FX06. **Files:** new domain goal rules/UI, goal DAO/commands, report presentation and weekly card. **Produces:** `nextGoalMonday(now: Instant, zone: ZoneId): LocalDate`, `focusWeekDistribution(dailyTotals: Map<LocalDate, Long>): FocusWeekDistribution`, goal repository methods.
 
-- [ ] Implement strictly next-Monday activation in the new version's captured zone, target 1–10,080, nonempty weekday set, immutable started versions and one globally pending replacement. Select only the latest activated version by activation instant/UUID; retain original historical intervals even across zone-overlap transitions. Store settings/catalog read revisions for consumers.
-- [ ] Implement off/re-enable behavior and zone-change next-week replacement without rewriting current or historical targets. Persist visible-from Monday/zone on enable; do not reactivate a historic goal in the current week. Replace any prior pending version atomically across zones. All positive saved contribution counts regardless of preferred weekday.
-- [ ] Add opt-in settings/effective-date/goal-zone labels and saved-only progress; keep open-session amount separate. Reuse daily range helpers and cancellation/generation identity.
-- [ ] Add active days/highest-day calculation (earliest date wins ties), day-history action and empty Plan another session action to existing Review. Source handoff; FX-Q06/11 cover boundaries, tie and sparse data later.
+- [x] Implement strictly next-Monday activation in the new version's captured zone, target 1–10,080, nonempty weekday set, immutable activated versions and one globally pending replacement. Select only the latest activated version by activation instant/UUID; retain original historical versions across zone changes. Store the goal settings read revision for consumers.
+- [x] Implement off/re-enable behavior and zone-change next-week replacement without rewriting current or historical targets. Persist visible-from Monday/zone on enable; do not reactivate a historic goal in the current week. Replace any prior pending version atomically across zones. All positive saved contribution counts regardless of preferred weekday.
+- [x] Add opt-in settings/effective-date/goal-zone labels and saved-only progress; keep open-session amount separate. Reuse daily range helpers and cancellation/generation identity.
+- [ ] Add active days/highest-day presentation, day-history action and empty Plan another session action to existing Review (FP08). Source handoff; FX-Q06/11 cover boundaries, tie and sparse data later.
+
+**FP05 source handoff (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Domain rules, Room goal versions/settings, revision/generation-aware writes, protected settings and Review progress, and archive 10 support are in place. The report uses the captured goal zone, includes terminal saved contributions only, and reports active days without a streak. Goal settings are default-off and display their effective Monday. Room schema generation, compilation, migration/archive execution and FX-Q06/09 remain NOT RUN. FX07 remains partial for FP08 and its incomplete FX01/FX06 dependencies.
+
+**Version ruling (2026-11-04):** The checked-out source had already advanced from the design baseline to Room 11/archive 9, so FP05 adds Room 12/archive 10. Cost if wrong: a migration or archive-version collision with another feature.
+
+**Dependency ruling (2026-11-04):** The request was limited to FP05; its goal-specific shared contracts and storage were implemented without completing reflection task FX06. FX07 remains PARTIAL until FP08 and the remaining shared FX01/FX06 work are integrated. Cost if wrong: a later shared product repository may need interface adaptation before those tasks ship.
 
 ## FX08 — Scheduled focus invitations
 
@@ -211,4 +217,4 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 
 Coverage: FP01→FX02; FP02→FX03; FP03→FX04–05; FP04→FX06; FP05→FX07; FP06→FX08; FP07→FX09; FP08→FX07/10; compatibility/privacy/localization→FX01/10. Every Review Focus risk maps to a final QA case. New interfaces are defined above or in their owning task; reuse existing task completion and timing APIs rather than parallel versions.
 
-All tasks and all QA are initially pending. Review the draft before code execution. Reusable presets, habit links, automated cycles, duration editing, new permissions and device-wide blocking remain outside this plan. No per-task QA phase is implied by source dependencies.
+Unchecked implementation tasks and all QA remain pending. Review the draft before code execution. Reusable presets, habit links, automated cycles, duration editing, new permissions and device-wide blocking remain outside this plan. No per-task QA phase is implied by source dependencies.

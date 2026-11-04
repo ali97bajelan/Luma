@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusPreferences
+import com.luma.lifeos.domain.focus.FocusProductRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,6 +29,7 @@ internal fun FocusSettingsRoute(
     allowedFocusApps: AllowedFocusApps,
     isRunning: Boolean,
     onBack: () -> Unit,
+    goalRepository: FocusProductRepository? = null,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -85,5 +87,6 @@ internal fun FocusSettingsRoute(
             }
         },
         onBack = onBack,
+        goalRepository = goalRepository,
     )
 }

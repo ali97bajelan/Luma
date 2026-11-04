@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
                     reminderPreferences = ReminderPreferences(this@MainActivity),
                     focusRuntime = luma.focusRuntime,
                     focusRepository = luma.protectedFocusRepository,
+                    focusProductRepository = luma.protectedFocusProductRepository,
                     focusPreferences = luma.focusPreferences,
                     allowedFocusApps = luma.allowedFocusApps,
                     appLockCoordinator = luma.appLockCoordinator,
