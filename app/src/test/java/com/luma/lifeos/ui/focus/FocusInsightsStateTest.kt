@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.domain.focus.FocusCommand
+import com.luma.lifeos.domain.focus.FocusComparisonStatus
 import com.luma.lifeos.domain.focus.FocusPage
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusRepository
@@ -60,6 +61,47 @@ class FocusInsightsStateTest {
         assertEquals(FocusInsightsState.Ready(third, FocusInsights.EMPTY), currentResult)
     }
 
+    @Test fun presentationNeverPairsASelectedQueryWithAnOlderReadyReport() {
+        val old = FocusInsightsQuery(TimeRange(Instant.EPOCH, Instant.EPOCH.plusSeconds(30)), uuid(20))
+        val selected = old.copy(range = TimeRange(Instant.EPOCH.plusSeconds(30), Instant.EPOCH.plusSeconds(60)))
+        val stale = FocusInsightsState.Ready(old, FocusInsights.EMPTY)
+
+        assertEquals(FocusInsightsState.Loading(selected), visibleFocusInsightsState(selected, stale))
+        assertEquals(FocusInsightsState.Unselected, visibleFocusInsightsState(null, stale))
+        assertEquals(stale, visibleFocusInsightsState(old, stale))
+    }
+
+    @Test fun clearingTheSelectedQueryCancelsOldObservationAndHidesItsReport() = runBlocking {
+        val query = FocusInsightsQuery(null, uuid(21))
+        val requests = MutableSharedFlow<FocusInsightsQuery?>(replay = 1).apply { tryEmit(query) }
+        val started = CompletableDeferred<Unit>()
+        val cancelled = CompletableDeferred<Unit>()
+        val repository = InsightsRepository {
+            flow {
+                emit(FocusInsights.EMPTY)
+                started.complete(Unit)
+                try {
+                    awaitCancellation()
+                } finally {
+                    cancelled.complete(Unit)
+                }
+            }
+        }
+        val states = mutableListOf<FocusInsightsState>()
+        val job = launch(start = CoroutineStart.UNDISPATCHED) {
+            observeFocusInsights(repository, requests).collect(states::add)
+        }
+        try {
+            withTimeout(2_000) { started.await() }
+            requests.emit(null)
+            withTimeout(2_000) { cancelled.await() }
+            withTimeout(2_000) { while (states.lastOrNull() != FocusInsightsState.Unselected) kotlinx.coroutines.yield() }
+            assertEquals(FocusInsightsState.Unselected, states.last())
+        } finally {
+            job.cancel()
+        }
+    }
+
     @Test fun successfulEmptySnapshotIsReadyWhileRepositoryFailureIsError() = runBlocking {
         val query = FocusInsightsQuery(null, uuid(3))
         val emptyRepository = InsightsRepository { flowOf(FocusInsights.EMPTY) }
@@ -73,6 +115,23 @@ class FocusInsightsStateTest {
             emptyStates,
         )
         assertEquals(listOf(FocusInsightsState.Loading(query), FocusInsightsState.Error(query)), failedStates)
+    }
+
+    @Test fun selectedPeriodComparesItsPreviousRangeWithExistingRules() = runBlocking {
+        val current = TimeRange(Instant.EPOCH, Instant.EPOCH.plusSeconds(60))
+        val previous = TimeRange(Instant.EPOCH.minusSeconds(60), Instant.EPOCH)
+        val requested = mutableListOf<TimeRange?>()
+        val repository = InsightsRepository { range ->
+            requested += range
+            flowOf(FocusInsights.EMPTY)
+        }
+        val query = FocusInsightsQuery(current, uuid(11), comparisonRange = previous)
+
+        val states = observeFocusInsights(repository, flowOf(query)).toListForTest()
+
+        assertEquals(setOf(current, previous), requested.toSet())
+        val ready = states.last() as FocusInsightsState.Ready
+        assertEquals(FocusComparisonStatus.NO_CHANGE, ready.comparison?.status)
     }
 
     @Test fun reemittingTheSameQueryRetriesAfterAnError() = runBlocking {

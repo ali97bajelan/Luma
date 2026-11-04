@@ -18,6 +18,7 @@ import com.luma.lifeos.focus.FocusPreferences
 import com.luma.lifeos.focus.FocusViewModel
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
+import com.luma.lifeos.ui.today.rememberCurrentDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
@@ -39,6 +40,7 @@ internal fun FocusRoute(
         allowedFocusApps ?: AllowedFocusApps(context)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val currentDay by rememberCurrentDay()
     val selectedPackages by resolvedPreferences.allowedPackages.collectAsStateWithLifecycle(
         initialValue = resolvedPreferences.selectedPackages(),
     )
@@ -62,6 +64,10 @@ internal fun FocusRoute(
         }
     }
 
+    LaunchedEffect(currentDay) {
+        viewModel.updateViewingContext(currentDay.date, currentDay.zone)
+    }
+
     FocusScreen(
         state = state,
         allowedApps = discoveredApps.filter { it.packageName in selectedPackages },
@@ -70,6 +76,10 @@ internal fun FocusRoute(
         onShowBackPrompt = viewModel::showBackPrompt,
         onDismissBackPrompt = viewModel::dismissBackPrompt,
         onStart = viewModel::start,
+        onNameChange = viewModel::changeName,
+        onTagChange = viewModel::changeTag,
+        onPeriodChange = viewModel::changePeriod,
+        onRetryInsights = viewModel::retryInsights,
         onAction = { action -> viewModel.act(action) },
         onLeaveAfterAction = { action -> viewModel.act(action, onSuccess = onBack) },
         onResolveRecovery = viewModel::resolveRecovery,

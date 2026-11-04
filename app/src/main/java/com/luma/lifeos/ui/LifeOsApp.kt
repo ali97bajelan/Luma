@@ -123,6 +123,7 @@ import androidx.navigation.navArgument
 import com.luma.lifeos.ui.today.TodayRoute
 import com.luma.lifeos.ui.today.rememberCurrentDay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -269,8 +270,8 @@ fun LifeOsApp(
     }
     val navController = rememberNavController()
     val focusViewModel = if (focusRuntime == null) null else {
-        val focusFactory = remember(focusRuntime) {
-            viewModelFactory { initializer { FocusViewModel(focusRuntime) } }
+        val focusFactory = remember(focusRuntime, focusRepository) {
+            viewModelFactory { initializer { FocusViewModel(focusRuntime, focusRepository, createSavedStateHandle()) } }
         }
         viewModel<FocusViewModel>(factory = focusFactory)
     }

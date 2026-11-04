@@ -22,7 +22,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -54,6 +53,10 @@ internal fun FocusScreen(
     onShowBackPrompt: () -> Unit,
     onDismissBackPrompt: () -> Unit,
     onStart: (FocusStartInput) -> Unit,
+    onNameChange: (String) -> Unit,
+    onTagChange: (String) -> Unit,
+    onPeriodChange: (FocusPeriod) -> Unit,
+    onRetryInsights: () -> Unit,
     onAction: (FocusAction) -> Unit,
     onLeaveAfterAction: (FocusAction) -> Unit,
     onResolveRecovery: (FocusRecoveryChoice) -> Unit,
@@ -68,16 +71,10 @@ internal fun FocusScreen(
 ) {
     val runtime = state.runtime
     val session = runtime.session
-    var setupRequested by rememberSaveable { mutableStateOf(false) }
-    var draftName by rememberSaveable { mutableStateOf("") }
-    var draftTag by rememberSaveable { mutableStateOf("") }
-    LaunchedEffect(session?.id) {
-        if (session != null) {
-            draftName = ""
-            draftTag = ""
-            setupRequested = false
-        }
-    }
+    var setupRequestedForSession by rememberSaveable { mutableStateOf<String?>(null) }
+    val showTerminal = session?.let {
+        shouldShowFocusTerminal(it.id, setupRequestedForSession, state.setup.databaseGeneration)
+    } ?: false
     BackHandler {
         when {
             runtime.navigationGuarded -> onShowBackPrompt()
@@ -146,25 +143,29 @@ internal fun FocusScreen(
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
                 )
-                session?.state == FocusState.FINISHED && !setupRequested -> TerminalContent(
+                session?.state == FocusState.FINISHED && showTerminal -> TerminalContent(
                     state = state,
                     session = session,
                     interrupted = false,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
-                    onStart = { setupRequested = true },
+                    onStart = {
+                        session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
+                    },
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
                 )
-                session?.state == FocusState.INTERRUPTED && !setupRequested -> TerminalContent(
+                session?.state == FocusState.INTERRUPTED && showTerminal -> TerminalContent(
                     state = state,
                     session = session,
                     interrupted = true,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
-                    onStart = { setupRequested = true },
+                    onStart = {
+                        session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
+                    },
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
@@ -172,10 +173,10 @@ internal fun FocusScreen(
                 )
                 else -> SetupContent(
                     state = state,
-                    name = draftName,
-                    tag = draftTag,
-                    onNameChange = { draftName = it },
-                    onTagChange = { draftTag = it },
+                    onNameChange = onNameChange,
+                    onTagChange = onTagChange,
+                    onPeriodChange = onPeriodChange,
+                    onRetryInsights = onRetryInsights,
                     onStart = onStart,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
@@ -241,29 +242,61 @@ internal fun FocusScreen(
 @Composable
 private fun SetupContent(
     state: FocusScreenState,
-    name: String,
-    tag: String,
     onNameChange: (String) -> Unit,
     onTagChange: (String) -> Unit,
+    onPeriodChange: (FocusPeriod) -> Unit,
+    onRetryInsights: () -> Unit,
     onStart: (FocusStartInput) -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenHistory: () -> Unit,
 ) {
-    val input = runCatching { normalizeFocusStartInput(FocusStartInput(name, tag.ifBlank { null })) }.getOrNull()
-    val setupEnabled = !state.busy && !state.operationFailed
+    val setup = state.setup
+    val nameValid = runCatching {
+        normalizeFocusStartInput(FocusStartInput(setup.name, null))
+    }.isSuccess
+    val input = setup.normalizedInput
+    val tagInvalid = nameValid && setup.tag.isNotEmpty() && input == null
+    val fieldsEnabled = !state.busy
     Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
     OutlinedTextField(
-        value = name, onValueChange = onNameChange, label = { Text(stringResource(R.string.focus_name_label)) },
-        singleLine = true, enabled = setupEnabled, modifier = Modifier.fillMaxWidth().testTag("focus_name"),
+        value = setup.name, onValueChange = onNameChange, label = { Text(stringResource(R.string.focus_name_label)) },
+        singleLine = true, enabled = fieldsEnabled, isError = !nameValid,
+        supportingText = { if (!nameValid) Text(stringResource(R.string.focus_name_invalid)) },
+        modifier = Modifier.fillMaxWidth().testTag("focus_name"),
     )
     OutlinedTextField(
-        value = tag, onValueChange = onTagChange, label = { Text(stringResource(R.string.focus_tag_label)) },
-        singleLine = true, enabled = setupEnabled, modifier = Modifier.fillMaxWidth().testTag("focus_tag"),
+        value = setup.tag, onValueChange = onTagChange, label = { Text(stringResource(R.string.focus_tag_label)) },
+        singleLine = true, enabled = fieldsEnabled, isError = tagInvalid,
+        supportingText = { if (tagInvalid) Text(stringResource(R.string.focus_tag_invalid)) },
+        modifier = Modifier.fillMaxWidth().testTag("focus_tag"),
     )
-    LumaButton(onClick = { input?.let(onStart) }, enabled = setupEnabled && input != null, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start")) {
+    if (state.tagSuggestions.isNotEmpty()) {
+        Text(stringResource(R.string.focus_tag_suggestions), style = MaterialTheme.typography.titleSmall)
+        state.tagSuggestions.forEach { suggestion ->
+            TextButton(
+                onClick = { onTagChange(suggestion.name) },
+                enabled = fieldsEnabled,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_tag_suggestion_${suggestion.id}"),
+            ) { Text(suggestion.name) }
+        }
+    }
+    if (setup.startFailure == FocusSetupFailure.VALIDATION) {
+        Text(stringResource(R.string.focus_setup_invalid), color = MaterialTheme.colorScheme.error)
+    }
+    LumaButton(
+        onClick = { input?.let(onStart) },
+        enabled = !state.busy && !state.operationFailed && setup.canStart && input != null,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start"),
+    ) {
         Text(if (state.busy) stringResource(R.string.focus_saving) else stringResource(R.string.focus_start))
     }
+    FocusInsightsCard(
+        state = state.insights,
+        period = setup.period,
+        onPeriodChange = onPeriodChange,
+        onRetry = onRetryInsights,
+    )
     OpenHistoryButton(onOpenHistory)
     FailureContent(state, onRetry, onEmergencyExit)
 }
@@ -272,6 +305,22 @@ private fun SetupContent(
 private fun OpenHistoryButton(onOpenHistory: () -> Unit) {
     TextButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth().testTag("focus_history_open")) {
         Text(stringResource(R.string.focus_open_history))
+    }
+}
+
+@Composable
+private fun SessionMetadata(session: FocusSession) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            session.metadata.name ?: stringResource(R.string.focus_session_fallback),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.testTag("focus_session_name"),
+        )
+        Text(
+            session.metadata.tag?.name ?: stringResource(R.string.focus_tag_untagged),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.testTag("focus_session_tag"),
+        )
     }
 }
 
@@ -291,6 +340,7 @@ private fun RunningContent(
         modifier = Modifier.semantics { heading() }.testTag("focus_running_label"),
         style = MaterialTheme.typography.titleLarge,
     )
+    state.runtime.session?.let { SessionMetadata(it) }
     Text(
         DateUtils.formatElapsedTime(state.runtime.displayedMillis / 1_000),
         style = MaterialTheme.typography.displayMedium,
@@ -342,6 +392,7 @@ private fun PausedContent(
     onOpenHistory: () -> Unit,
 ) {
     Text(stringResource(R.string.focus_paused), style = MaterialTheme.typography.titleLarge)
+    SessionMetadata(session)
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall,
         modifier = Modifier.testTag("focus_elapsed"))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -369,6 +420,7 @@ private fun RecoveryContent(
 ) {
     Text(stringResource(R.string.focus_recovery_title), style = MaterialTheme.typography.titleLarge)
     Text(stringResource(R.string.focus_recovery_body))
+    SessionMetadata(session)
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
     LumaButton(onClick = { onResolveRecovery(FocusRecoveryChoice.CONTINUE_ELAPSED) }, enabled = !busy,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_recovery_continue")) {
@@ -401,6 +453,7 @@ private fun TerminalContent(
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.testTag(if (interrupted) "focus_interrupted" else "focus_finished"),
     )
+    SessionMetadata(session)
     Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
     if (interrupted) Text(stringResource(R.string.focus_interrupted_gap))
     LumaButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done")) {

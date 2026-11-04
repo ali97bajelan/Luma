@@ -1,7 +1,10 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.domain.focus.FocusInsights
+import com.luma.lifeos.domain.focus.FocusComparison
+import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.focus.compareFocusStatistics
 import com.luma.lifeos.domain.time.TimeRange
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -10,9 +13,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 
 /** The period and database generation identify which saved report a state belongs to. */
-data class FocusInsightsQuery(val range: TimeRange?, val generation: UUID)
+data class FocusInsightsQuery(
+    val range: TimeRange?,
+    val generation: UUID,
+    val comparisonRange: TimeRange? = null,
+)
 
 sealed interface FocusInsightsState {
     val query: FocusInsightsQuery?
@@ -25,7 +33,11 @@ sealed interface FocusInsightsState {
         override val query: FocusInsightsQuery get() = request
     }
 
-    data class Ready(val request: FocusInsightsQuery, val insights: FocusInsights) : FocusInsightsState {
+    data class Ready(
+        val request: FocusInsightsQuery,
+        val insights: FocusInsights,
+        val comparison: FocusComparison? = null,
+    ) : FocusInsightsState {
         override val query: FocusInsightsQuery get() = request
     }
 
@@ -36,8 +48,13 @@ sealed interface FocusInsightsState {
 
 internal sealed interface FocusInsightsEvent {
     data class Selected(val query: FocusInsightsQuery) : FocusInsightsEvent
-    data class Loaded(val query: FocusInsightsQuery, val insights: FocusInsights) : FocusInsightsEvent
+    data class Loaded(
+        val query: FocusInsightsQuery,
+        val insights: FocusInsights,
+        val comparison: FocusComparison? = null,
+    ) : FocusInsightsEvent
     data class Failed(val query: FocusInsightsQuery) : FocusInsightsEvent
+    data object Cleared : FocusInsightsEvent
 }
 
 /** Results from a different period or restored database cannot replace the selected state. */
@@ -47,7 +64,7 @@ internal fun reduceFocusInsightsState(
 ): FocusInsightsState = when (event) {
     is FocusInsightsEvent.Selected -> FocusInsightsState.Loading(event.query)
     is FocusInsightsEvent.Loaded -> if (state.query == event.query) {
-        FocusInsightsState.Ready(event.query, event.insights)
+        FocusInsightsState.Ready(event.query, event.insights, event.comparison)
     } else {
         state
     }
@@ -56,6 +73,7 @@ internal fun reduceFocusInsightsState(
     } else {
         state
     }
+    FocusInsightsEvent.Cleared -> FocusInsightsState.Unselected
 }
 
 /**
@@ -65,20 +83,40 @@ internal fun reduceFocusInsightsState(
 @OptIn(ExperimentalCoroutinesApi::class)
 fun observeFocusInsights(
     repository: FocusRepository,
-    queries: Flow<FocusInsightsQuery>,
+    queries: Flow<FocusInsightsQuery?>,
 ): Flow<FocusInsightsState> = flow {
     var state: FocusInsightsState = FocusInsightsState.Unselected
     queries.flatMapLatest { query ->
-        flow {
-            emit(FocusInsightsEvent.Selected(query))
-            try {
-                repository.observeInsights(query.range).collect { result ->
-                    emit(FocusInsightsEvent.Loaded(query, result))
+        if (query == null) {
+            flowOf<FocusInsightsEvent>(FocusInsightsEvent.Cleared)
+        } else {
+            flow<FocusInsightsEvent> {
+                emit(FocusInsightsEvent.Selected(query))
+                try {
+                    val report = query.comparisonRange?.let { previousRange ->
+                        kotlinx.coroutines.flow.combine(
+                            repository.observeInsights(query.range),
+                            repository.observeInsights(previousRange),
+                        ) { current, previous ->
+                            FocusInsightsEvent.Loaded(
+                                query,
+                                current,
+                                compareFocusStatistics(current.asStatistics(), previous.asStatistics()),
+                            )
+                        }
+                    } ?: repository.observeInsights(query.range).let { source ->
+                        kotlinx.coroutines.flow.flow {
+                            source.collect { emit(FocusInsightsEvent.Loaded(query, it)) }
+                        }
+                    }
+                    report.collect { event ->
+                        emit(event)
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    emit(FocusInsightsEvent.Failed(query))
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                emit(FocusInsightsEvent.Failed(query))
             }
         }
     }.collect { event ->
@@ -86,3 +124,9 @@ fun observeFocusInsights(
         emit(state)
     }
 }
+
+private fun FocusInsights.asStatistics() = FocusStatistics(
+    totalMillis = totalMillis,
+    contributingSessions = sessions,
+    interruptedContributors = interruptedContributors,
+)

@@ -119,10 +119,12 @@ FI04 source verification: standalone focus-domain plus insight-state tests pass 
 **Consumes:** FI01 normalization, FI02 required Start input, FI04 insight flow.
 **Produces:** Setup draft reducer and Compose presentation using existing resource/theme patterns.
 
-- [ ] Add failing pure state tests for Start enablement, draft recreation, failed Start preservation, ambiguous retry with changed editor text, successful clearing, reset-generation clearing and period/zone switching.
-- [ ] Implement SavedStateHandle draft serialization and explicit captured-input submission. Keep IO failure distinct from validation. Add name/tag fields and suggestions without creating tags during typing.
-- [ ] Display metadata in all session states; keep existing Pause/Stop and recovery action ordering. Wire idle period insights, five tag rows/Show all, longest detail and loading/error/retry states. Period comparison reuses existing rules; All time hides it.
-- [ ] Add EN/FR/FA text, accessibility labels and text metrics. Check source for hardcoded new user copy and unsafe logging. Run pure reducer tests and resource parity checks; visual/IME/RTL/large-font/device interaction remains NOT RUN.
+- [x] Add failing pure state tests for Start enablement, draft recreation, failed Start preservation, ambiguous retry with changed editor text, successful clearing, reset-generation clearing and period/zone switching. Add regression checks for terminal visibility, stale insight suppression/cancellation and current-day rollover.
+- [x] Implement SavedStateHandle draft serialization and explicit captured-input submission. Keep IO failure distinct from validation. Add name/tag fields and suggestions without creating tags during typing.
+- [x] Display metadata in all session states; keep existing Pause/Stop and recovery action ordering. Wire idle period insights, five tag rows/Show all, longest detail and loading/error/retry states. Period comparison reuses existing rules; All time hides it.
+- [x] Add EN/FR/FA text, accessibility labels and text metrics. Check source for hardcoded new user copy and unsafe logging. Run pure reducer tests and resource parity checks; visual/IME/RTL/large-font/device interaction remains NOT RUN.
+
+FI05 source verification (2026-11-04): `python3 scripts/run_focus_setup_tests.py` — OK (17/17 JUnit tests); `python3 scripts/run_focus_domain_tests.py` — OK (34/34). EN/FR/FA resource parity passes (1,447 named resources); `git diff --check` passes. Android UI/lifecycle/Room integration remains NOT RUN; FI-A05 product acceptance remains pending.
 
 ## FI06 — History search and tag filters
 
@@ -154,4 +156,4 @@ FI04 source verification: standalone focus-domain plus insight-state tests pass 
 
 ## Handoff status
 
-FI01, FI03 and FI04 are complete at source level; FI02 runtime verification and FI05–FI07 remain pending. FI02 metadata persistence exists, and FI04 supplies the insight calculation and repository/state flows; insight screens remain pending. Room-generated schema validation, FI04 Room observation behavior, and Android runtime checks were not run. No commit, emulator run or Gradle command was required for this source-only FI04 handoff.
+FI01, FI03, FI04 and FI05 are complete at source level; FI02 runtime verification and FI06–FI07 remain pending. FI02 metadata persistence exists, and FI04 supplies insight calculation/repository flows while FI05 adds the setup and insight presentation. Room-generated schema validation, FI04 Room observation behavior, and FI05 Android UI/lifecycle checks were not run. No commit, emulator run or Gradle command was required for this source-only FI05 handoff.
