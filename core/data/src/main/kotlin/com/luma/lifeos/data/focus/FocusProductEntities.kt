@@ -49,3 +49,31 @@ data class FocusProductCommandReceiptEntity(
     @ColumnInfo(name = "payload") val payload: String,
     @ColumnInfo(name = "result_type") val resultType: String,
 )
+
+/** Local catalog revision is generation-scoped and is deliberately excluded from portable backups. */
+@Entity(tableName = "focus_tag_catalog_state")
+data class FocusTagCatalogStateEntity(
+    @PrimaryKey @ColumnInfo(name = "singleton_id") val singletonId: Int = 1,
+    @ColumnInfo(name = "revision", defaultValue = "0") val revision: Long = 0,
+) {
+    init { require(singletonId == 1 && revision >= 0) }
+}
+
+/** Stale tag labels and filters resolve to the current tag after a rename or explicit merge. */
+@Entity(
+    tableName = "focus_tag_alias",
+    foreignKeys = [
+        ForeignKey(
+            entity = FocusTagEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["target_tag_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index(value = ["target_tag_id"])],
+)
+data class FocusTagAliasEntity(
+    @PrimaryKey @ColumnInfo(name = "normalized_name") val normalizedName: String,
+    @ColumnInfo(name = "former_tag_id") val formerTagId: String,
+    @ColumnInfo(name = "target_tag_id") val targetTagId: String,
+)

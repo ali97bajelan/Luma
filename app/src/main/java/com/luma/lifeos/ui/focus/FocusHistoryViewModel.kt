@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.focus.FOCUS_HISTORY_PAGE_SIZE
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusHistoryRow
+import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusTagFilter
 import com.luma.lifeos.domain.focus.FocusWriteContext
@@ -33,6 +34,7 @@ class FocusHistoryViewModel(
     private var privateContentAccessAllowed: Boolean = true,
     private val privateContentAccessFlow: Flow<Boolean>? = null,
     private val databaseGenerationFlow: Flow<UUID?>? = null,
+    private val productRepository: FocusProductRepository? = null,
 ) : ViewModel() {
     private var restoredFilters = restoreFocusHistoryFilterState(
         search = savedStateHandle[SEARCH_KEY],
@@ -126,11 +128,37 @@ class FocusHistoryViewModel(
         tagsJob?.cancel()
         if (!privateContentAccessAllowed) return
         tagsJob = viewModelScope.launch {
-            repository.observeTags()
-                .catch { emit(emptyList()) }
-                .collect { tags ->
-                    if (privateContentAccessAllowed) {
-                        mutableState.value = mutableState.value.copy(tags = tags)
+            val products = productRepository
+            if (products == null) {
+                repository.observeTags()
+                    .catch { emit(emptyList()) }
+                    .collect { tags ->
+                        if (privateContentAccessAllowed) mutableState.value = mutableState.value.copy(tags = tags)
+                    }
+            } else {
+                products.observeTagCatalog()
+                    .catch { failure ->
+                        if (failure is CancellationException) throw failure
+                    }
+                    .collect { catalog ->
+                        if (!privateContentAccessAllowed) return@collect
+                        val current = mutableState.value
+                        val selected = current.filters.tag as? FocusTagFilter.Tagged
+                        val resolved = selected?.let(catalog::resolve)
+                        val filters = when {
+                            selected != null && resolved != null && resolved.id != selected.id ->
+                                current.filters.copy(tag = FocusTagFilter.Tagged(resolved.id), offset = 0)
+                            selected != null && resolved == null && catalog.tags.none { it.id == selected.id } ->
+                                current.filters.copy(tag = FocusTagFilter.All, offset = 0)
+                            else -> current.filters
+                        }
+                        persistFilters(filters)
+                        mutableState.value = current.copy(
+                            tags = catalog.tags,
+                            filters = filters,
+                            tagFilterMergedTo = resolved?.takeIf { selected != null && it.id != selected.id },
+                        )
+                        if (filters != current.filters) load(0)
                     }
                 }
         }
@@ -148,7 +176,7 @@ class FocusHistoryViewModel(
         if (!privateContentAccessAllowed) return
         val filters = reduceFocusHistoryFilterState(mutableState.value.filters, FocusHistoryFilterEvent.SearchChanged(value))
         persistFilters(filters)
-        mutableState.value = mutableState.value.copy(filters = filters)
+        mutableState.value = mutableState.value.copy(filters = filters, tagFilterMergedTo = null)
         load(0)
     }
 
@@ -156,7 +184,7 @@ class FocusHistoryViewModel(
         if (!privateContentAccessAllowed) return
         val filters = reduceFocusHistoryFilterState(mutableState.value.filters, FocusHistoryFilterEvent.TagChanged(value))
         persistFilters(filters)
-        mutableState.value = mutableState.value.copy(filters = filters)
+        mutableState.value = mutableState.value.copy(filters = filters, tagFilterMergedTo = null)
         load(0)
     }
 

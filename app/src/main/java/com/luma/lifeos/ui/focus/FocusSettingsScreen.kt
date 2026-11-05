@@ -82,7 +82,10 @@ internal fun FocusSettingsScreen(
             style = MaterialTheme.typography.bodyMedium,
         )
         Text(stringResource(R.string.focus_settings_enforcement_limit), style = MaterialTheme.typography.bodyMedium)
-        if (goalRepository != null) FocusGoalSettings(goalRepository)
+        if (goalRepository != null) {
+            FocusGoalSettings(goalRepository)
+            FocusTagManager(goalRepository)
+        }
         if (isRunning) {
             Text(
                 stringResource(R.string.focus_settings_running),

@@ -110,7 +110,7 @@ External pattern check (2026-11-04): TickTick documents [focus timers](https://h
 
 ## Product extension delivery — FP01–FP08
 
-Planning date: 2026-11-04 · Status: **FP01, FP03, FP04, FP05 and FP08 SOURCE COMPLETE — UNVERIFIED; FX01 PARTIAL; FX07 PARTIAL (FX01 dependency pending); FX03 and FX08–FX10 NOT STARTED; final QA NOT RUN**
+Planning date: 2026-11-04 · Status: **FP01, FP03, FP04, FP05 and FP08 SOURCE COMPLETE — UNVERIFIED; FP07 PARTIAL — METADATA/TAG CORRECTION SOURCE COMPLETE, TASK UNLINK PENDING FX03; FX01 PARTIAL; FX07 PARTIAL (FX01 dependency pending); FX03 and FX08 NOT STARTED; FX09 PARTIAL; FX10 NOT STARTED; final QA NOT RUN**
 
 [Extension specification](superpowers/specs/2026-11-04-focus-product-extensions-design.md) · [Extension implementation plan](superpowers/plans/2026-11-04-focus-product-extensions.md) · [Separate final QA](feature-roadmap/focus-product-extensions-qa.md)
 
@@ -128,7 +128,7 @@ The requested spec/plan covers the minimum FP01–FP08 scope. Reusable presets r
 | FX06 | Optional reflection and next-step resumption context | FX01, FX02 | FP04 | SOURCE COMPLETE — UNVERIFIED | NOT RUN |
 | FX07 | Versioned weekly goals and actionable Review distribution | FX01, FX06 | FP05, FP08 | PARTIAL — FP05 and FP08 SOURCE COMPLETE — UNVERIFIED; FX01 foundation pending | NOT RUN |
 | FX08 | Opt-in scheduled invitations and safe reminder reconciliation | FX01, FX04, FX05 | FP06 | NOT STARTED | NOT RUN |
-| FX09 | Session corrections, tag rename/merge and report invalidation | FX01, FX03, FX06 | FP07 | NOT STARTED | NOT RUN |
+| FX09 | Session corrections, tag rename/merge and report invalidation | FX01, FX03, FX06 | FP07 | PARTIAL — session name/tag edits and tag rename/merge source complete; task unlink/privacy awaits FX03 | NOT RUN |
 | FX10 | Integrated privacy/navigation/restore/reset, localization and source handoff | FX01–FX09 | All FP01–FP08 | NOT STARTED | NOT RUN |
 | FX-QA | Test authoring, all-layer execution, integrated journeys, fixes/retests and evidence | ALL FX01–FX10 source complete | FP-A01–09; FX-Q01–12; applicable FI/FM gaps | NOT STARTED | NOT RUN |
 
@@ -145,6 +145,10 @@ The earlier FI-only source-check restrictions below describe the existing handof
 **FP05 delivery (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Weekly goals default off, accept 1–10,080 minutes and 1–7 preferred days, and schedule edits for the strictly next Monday in a captured goal timezone. Goal progress counts saved terminal contributions only, shows active days, and keeps in-progress time separate. Disable hides progress immediately; re-enable starts at a new next-Monday boundary. Goal versions and visibility settings are included in archive 10; command receipts remain device-local. Source review only; FX-Q06/09 and the rest of FX-QA remain NOT RUN. FX07 remains PARTIAL because its FX01 foundation is not complete.
 
 **FP08 delivery (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** The existing Weekly Review card shows active days and the highest saved-time local date within the displayed current range, with earliest-date tie resolution and neutral empty-period wording. Day rows open single-day history. “Plan another session” clears setup only when no session is open and Focus is initialized and idle, then opens Focus; a running or paused session remains authoritative. The existing protected Review visibility gate is retained. English, French and Persian labels are present. Source review only; FX-Q06/11 and integrated FX-QA remain NOT RUN. FX07 remains PARTIAL until its FX01 dependency is complete.
+
+**FP07 delivery (2026-11-05): PARTIAL — METADATA/TAG CORRECTION SOURCE COMPLETE, UNVERIFIED.** Terminal history detail can revise a saved session name/tag with generation, session-revision and tag-catalog-revision checks; legacy null names remain unchanged unless a valid name is supplied. Focus Settings can rename tags and presents a named confirmation before a colliding rename merges the source into the target. Session/run writes are transactional; tag changes bump affected session revisions, keep running timer runtime revisions synchronized, and leave credited runs untouched. Local aliases reconcile stale tag names and history filters; Room 13→14 stores the local catalog revision/aliases, which are discarded on database replacement. Existing archive 11 session/tag fields carry corrected history. English, French and Persian labels are present. **Task-link removal and the required TASKS+FOCUS authorization remain pending FX03**, because the current model has no task link or task-origin fields. FP-A07 and FX09 therefore remain partial; FX-Q08/09/10 and integrated FX-QA remain NOT RUN.
+
+**Ruling:** Deliver the independent name/tag correction and tag-catalog paths now; do not invent task-link or cross-section privacy contracts inside FP07. The checked-out source has no `task_id`/`task_origin` session fields or task-linked Focus flow, and FP07 requires both grants for protected linked records. Cost if this dependency call is wrong: FX09 must be revisited after FX03 before FP-A07 can be source complete.
 
 **Ruling:** This FP03 slice narrows FX04’s planned FX03 prerequisite because task linking is not required for timer credit, expiry, recovery or local breaks. FX01 is only partially complete: timer/break and goal foundations plus FP04 reflection fields, Room 13 migration and archive 11 compatibility are present; task, reminder and session-correction contracts remain pending. Cost if the dependency assessment is wrong: later task-link or shared-contract work may need to reconcile with the landed Start receipt version and archive columns before those features ship.
 

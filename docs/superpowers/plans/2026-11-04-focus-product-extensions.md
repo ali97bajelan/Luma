@@ -193,11 +193,13 @@ Use `FocusGoalState.settingsRevision` and `FocusTagCatalog.revision` for writes,
 
 **Depends on:** FX01, FX03, FX06. **Files:** product command implementations, Focus DAO/history/detail/new tag manager and settings. **Produces:** `updateSession`, `renameTag`, `mergeTags` implementations from shared contract.
 
-- [ ] Add terminal name/tag/unlink editing with legacy-null preservation only for untouched legacy names; disallow task reassignment, provenance clearing, target/time edits.
-- [ ] Implement case/spacing display rename and explicit collision-to-merge confirmation with catalog revision. Preserve target label; move references/delete source atomically and advance affected session revisions without modifying runs.
-- [ ] Require both grants if any affected record is task-protected, including open sessions. Reconcile active metadata and pending commands on merge; unchanged legacy receipt replay still returns original outcome without creating a duplicate tag.
-- [ ] Invalidate/requery history filters, suggestions, longest/tag reports, linked totals and Review. If a selected filter tag was merged, move it to the target with visible context; do not show stale rows under the old heading.
-- [ ] Source-review receipt payload stability and run-byte preservation. FX-Q09/10 later prove concurrency, conservation and restore rejection.
+- [x] Add terminal name/tag editing with legacy-null preservation only for untouched legacy names; do not expose task reassignment, provenance clearing, target or time edits.
+- [ ] Add task-link removal after FX03 supplies task-link/provenance fields and the cross-section authorization contract.
+- [x] Implement case/spacing display rename and explicit collision-to-merge confirmation with catalog revision. Preserve the target label; move references/delete source atomically and advance affected session revisions without modifying runs.
+- [x] Reconcile active timer revisions, tag drafts and pending writes after a merge; changed command payload replay is rejected by the generation-bound receipt.
+- [ ] Require both TASKS and FOCUS grants when any affected record is task-protected, including open sessions; finish this after FX03.
+- [x] Invalidate/requery history filters, suggestions, longest/tag reports and Review. Move a selected merged filter to its target with visible context; linked task totals remain pending FX03.
+- [x] Source-review receipt payload stability and run-byte preservation. FX-Q09/10 later prove concurrency, conservation and restore rejection.
 
 ## FX10 — Integrated privacy, replacement and handoff
 

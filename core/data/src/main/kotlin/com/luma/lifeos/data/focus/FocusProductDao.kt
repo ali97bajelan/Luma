@@ -9,6 +9,36 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FocusProductDao {
+    @Query("SELECT * FROM focus_tag_catalog_state WHERE singleton_id = 1 LIMIT 1")
+    suspend fun tagCatalogState(): FocusTagCatalogStateEntity?
+
+    @Query("SELECT * FROM focus_tag_catalog_state WHERE singleton_id = 1 LIMIT 1")
+    fun observeTagCatalogState(): Flow<FocusTagCatalogStateEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTagCatalogStateIfAbsent(state: FocusTagCatalogStateEntity): Long
+
+    @Update
+    suspend fun updateTagCatalogState(state: FocusTagCatalogStateEntity): Int
+
+    @Query("SELECT * FROM focus_tag_alias ORDER BY normalized_name")
+    fun observeTagAliases(): Flow<List<FocusTagAliasEntity>>
+
+    @Query("SELECT * FROM focus_tag_alias ORDER BY normalized_name")
+    suspend fun tagAliases(): List<FocusTagAliasEntity>
+
+    @Query("SELECT * FROM focus_tag_alias WHERE normalized_name = :normalizedName LIMIT 1")
+    suspend fun tagAlias(normalizedName: String): FocusTagAliasEntity?
+
+    @Query("UPDATE focus_tag_alias SET target_tag_id = :targetTagId WHERE target_tag_id = :sourceTagId")
+    suspend fun retargetAliases(sourceTagId: String, targetTagId: String): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun replaceTagAlias(alias: FocusTagAliasEntity)
+
+    @Query("DELETE FROM focus_tag_alias WHERE normalized_name = :normalizedName")
+    suspend fun deleteTagAlias(normalizedName: String): Int
+
     @Query("SELECT * FROM focus_goal_settings WHERE singleton_id = 1 LIMIT 1")
     suspend fun settings(): FocusGoalSettingsEntity?
 

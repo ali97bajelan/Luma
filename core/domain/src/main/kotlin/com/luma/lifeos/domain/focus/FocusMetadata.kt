@@ -1,6 +1,7 @@
 package com.luma.lifeos.domain.focus
 
 import java.util.UUID
+import java.util.Locale
 
 data class FocusTag(val id: UUID, val name: String)
 data class FocusMetadata(val name: String? = null, val tag: FocusTag? = null)
@@ -46,3 +47,13 @@ fun normalizeFocusStartInput(input: FocusStartInput): FocusStartInput {
     require(tag == null || tag.length <= 50) { "Tag is too long" }
     return input.copy(name = name, tagName = tag)
 }
+
+fun normalizeFocusTagName(value: String): String {
+    require(value.none { Character.isISOControl(it) }) { "Control characters are not allowed" }
+    return value.trim().also {
+        require(it.isNotBlank()) { "Tag is required" }
+        require(it.length <= 50) { "Tag is too long" }
+    }
+}
+
+fun normalizeFocusTagIdentity(value: String): String = normalizeFocusTagName(value).lowercase(Locale.ROOT)

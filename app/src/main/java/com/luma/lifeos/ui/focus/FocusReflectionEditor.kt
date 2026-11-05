@@ -202,7 +202,9 @@ internal fun FocusReflectionEditor(
                             onSaved()
                         }
                     }
-                    is FocusProductResult.SessionConflict, is FocusProductResult.Conflict -> {
+                    is FocusProductResult.SessionConflict,
+                    is FocusProductResult.TagCatalogConflict,
+                    is FocusProductResult.Conflict -> {
                         pending = null
                         val latestGeneration = withContext(Dispatchers.IO) { product.currentGeneration() }
                         val latest = if (latestGeneration == request.generation) {
@@ -221,6 +223,7 @@ internal fun FocusReflectionEditor(
                         saveError = !inputRejected
                     }
                     is FocusProductResult.Unavailable -> saveError = true
+                    is FocusProductResult.MergeRequired -> saveError = true
                 }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure

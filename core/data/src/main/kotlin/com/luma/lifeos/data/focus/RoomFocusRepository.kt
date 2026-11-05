@@ -23,6 +23,7 @@ import com.luma.lifeos.domain.focus.FocusMetadata
 import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusTimerConfig
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
+import com.luma.lifeos.domain.focus.normalizeFocusTagIdentity
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.FocusTerminalReason
@@ -64,6 +65,7 @@ class RoomFocusRepository(
     private val database: LumaDatabase,
 ) : FocusRepository {
     private val dao: FocusDao get() = database.focus()
+    private val productDao: FocusProductDao get() = database.focusProducts()
 
     override suspend fun currentGeneration(): UUID = database.withTransaction {
         ensureGeneration().let { UUID.fromString(it.generationId) }
@@ -187,10 +189,13 @@ class RoomFocusRepository(
             if (active != null) return@runCommand FocusWriteResult.Conflict(active)
 
             val tag = normalized.tagName?.let { tagName ->
-                val normalizedName = tagName.lowercase(java.util.Locale.ROOT)
+                val normalizedName = normalizeFocusTagIdentity(tagName)
                 dao.tagByNormalizedName(normalizedName)?.let { FocusTag(UUID.fromString(it.id), it.name) }
+                    ?: productDao.tagAlias(normalizedName)?.let { alias -> dao.tag(alias.targetTagId) }
+                        ?.let { FocusTag(UUID.fromString(it.id), it.name) }
                     ?: FocusTag(UUID.randomUUID(), tagName).also {
                         dao.insertTag(FocusTagEntity(it.id.toString(), it.name, normalizedName))
+                        bumpTagCatalogRevision()
                     }
             }
             val session = expected.copy(metadata = FocusMetadata(normalized.name, tag))
@@ -804,6 +809,13 @@ class RoomFocusRepository(
             FocusStorageStateEntity(singletonId = STORAGE_SINGLETON_ID, generationId = UUID.randomUUID().toString()),
         )
         return checkNotNull(dao.storageState()) { "Focus database generation was not initialized" }
+    }
+
+    private suspend fun bumpTagCatalogRevision() {
+        productDao.insertTagCatalogStateIfAbsent(FocusTagCatalogStateEntity())
+        val current = productDao.tagCatalogState() ?: throw FocusPersistenceException()
+        val next = runCatching { Math.addExact(current.revision, 1L) }.getOrElse { throw FocusPersistenceException() }
+        if (productDao.updateTagCatalogState(current.copy(revision = next)) != 1) throw FocusPersistenceException()
     }
 }
 

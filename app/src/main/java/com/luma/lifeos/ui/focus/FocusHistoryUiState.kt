@@ -7,6 +7,7 @@ import java.util.UUID
 data class FocusHistoryUiState(
     val filters: FocusHistoryFilterState = FocusHistoryFilterState(),
     val tags: List<FocusTag> = emptyList(),
+    val tagFilterMergedTo: FocusTag? = null,
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
     val page: FocusPage? = null,
@@ -18,6 +19,7 @@ data class FocusHistoryUiState(
 fun clearFocusHistoryPrivateState(state: FocusHistoryUiState): FocusHistoryUiState = state.copy(
     filters = FocusHistoryFilterState(),
     tags = emptyList(),
+    tagFilterMergedTo = null,
     loading = false,
     loadFailed = false,
     page = null,

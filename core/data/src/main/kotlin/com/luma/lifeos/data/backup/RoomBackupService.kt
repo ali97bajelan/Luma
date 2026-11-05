@@ -284,6 +284,8 @@ class RoomBackupService(private val context: Context, private val database: Luma
         sqlite.execSQL("DELETE FROM focus_break_runtime")
         sqlite.execSQL("DELETE FROM focus_command_receipt")
         sqlite.execSQL("DELETE FROM focus_product_command_receipt")
+        sqlite.execSQL("DELETE FROM focus_tag_alias")
+        sqlite.execSQL("UPDATE focus_tag_catalog_state SET revision = 0 WHERE singleton_id = 1")
         sqlite.execSQL("DELETE FROM focus_deleted_session")
         sqlite.execSQL(
             "INSERT OR REPLACE INTO focus_storage_state(singleton_id, generation_id) VALUES (1, ?)",

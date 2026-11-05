@@ -10,7 +10,12 @@ import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusProductResult
 import com.luma.lifeos.domain.focus.FocusProductUnavailableReason
 import com.luma.lifeos.domain.focus.FocusReflection
+import com.luma.lifeos.domain.focus.FocusTag
+import com.luma.lifeos.domain.focus.FocusTagCatalog
 import com.luma.lifeos.domain.focus.normalizeFocusReflection
+import com.luma.lifeos.domain.focus.normalizeFocusStartInput
+import com.luma.lifeos.domain.focus.normalizeFocusTagIdentity
+import com.luma.lifeos.domain.focus.normalizeFocusTagName
 import com.luma.lifeos.domain.focus.nextGoalMonday
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +53,192 @@ class RoomFocusProductRepository(
             settings?.toDomain(versions.map(FocusGoalVersionEntity::toDomain)) ?: FocusGoalState.DISABLED
         })
     }.flowOn(Dispatchers.IO)
+
+    override fun observeTagCatalog(): Flow<FocusTagCatalog> = flow {
+        database.withTransaction {
+            ensureGeneration()
+            ensureTagCatalogState()
+        }
+        emitAll(combine(
+            dao.observeTagCatalogState(),
+            focusDao.observeTags(),
+            dao.observeTagAliases(),
+            focusDao.observeStorageState(),
+        ) { state, tags, aliases, generation ->
+            FocusTagCatalog(
+                revision = state?.revision ?: 0L,
+                tags = tags.map { FocusTag(UUID.fromString(it.id), it.name) },
+                mergedIds = aliases.associate { UUID.fromString(it.formerTagId) to UUID.fromString(it.targetTagId) },
+                databaseGeneration = generation?.generationId?.let { UUID.fromString(it) },
+            )
+        })
+    }.flowOn(Dispatchers.IO)
+
+    override suspend fun updateSessionMetadata(
+        sessionId: UUID,
+        expectedRevision: Long,
+        name: String?,
+        tagName: String?,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult {
+        if (expectedRevision < 0 || expectedCatalogRevision < 0) {
+            return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+        }
+        val normalizedTag = try { tagName?.let(::normalizeFocusTagName) } catch (_: IllegalArgumentException) {
+            return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+        }
+        val payload = listOf(
+            "session-metadata", sessionId.toString(), expectedRevision.toString(), expectedCatalogRevision.toString(),
+            encodePayloadPart(name), encodePayloadPart(normalizedTag),
+        ).joinToString("|")
+        return safely {
+            database.withTransaction {
+                val generation = ensureGeneration().generationId
+                if (generation != context.generation.toString()) {
+                    return@withTransaction FocusProductResult.SessionConflict(actualRevision = null)
+                }
+                ensureTagCatalogState()
+                val replay = replay(context, generation, payload)
+                if (replay != null) return@withTransaction replay
+                val currentCatalog = tagCatalogSnapshot()
+                if (currentCatalog.revision != expectedCatalogRevision) {
+                    return@withTransaction FocusProductResult.TagCatalogConflict(currentCatalog)
+                }
+                val session = focusDao.session(sessionId.toString())
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+                if (session.state !in TERMINAL_STATES || session.openSlot != null) {
+                    return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+                }
+                if (session.revision != expectedRevision) return@withTransaction FocusProductResult.SessionConflict(session.revision)
+                val normalizedName = if (session.name == null && name == null) null else runCatching {
+                    normalizeFocusStartInput(com.luma.lifeos.domain.focus.FocusStartInput(name ?: "", normalizedTag)).name
+                }.getOrElse {
+                    return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+                }
+                val nextSessionRevision = nextRevision(session.revision)
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+                val tag = if (normalizedTag == null) null else {
+                    resolveOrCreateTag(normalizedTag)
+                        ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+                }
+                val updatedAt = clock.instant()
+                check(focusDao.updateSession(
+                    session.copy(
+                        name = normalizedName,
+                        tagId = tag?.id,
+                        revision = nextSessionRevision,
+                        updatedAtSeconds = updatedAt.epochSecond,
+                        updatedAtNanos = updatedAt.nano,
+                    ),
+                ) == 1)
+                insertReceipt(generation, context, payload)
+                FocusProductResult.Applied
+            }
+        }
+    }
+
+    override suspend fun renameTag(
+        tagId: UUID,
+        name: String,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult {
+        val normalizedName = try { normalizeFocusTagName(name) } catch (_: IllegalArgumentException) {
+            return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+        }
+        if (expectedCatalogRevision < 0) return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+        val normalizedIdentity = normalizeFocusTagIdentity(normalizedName)
+        val payload = "rename-tag|$tagId|$expectedCatalogRevision|${encodePayloadPart(normalizedName)}"
+        return safely {
+            database.withTransaction {
+                val generation = ensureGeneration().generationId
+                if (generation != context.generation.toString()) return@withTransaction tagCatalogConflict()
+                ensureTagCatalogState()
+                val replay = replay(context, generation, payload)
+                if (replay != null) return@withTransaction replay
+                val state = requireNotNull(dao.tagCatalogState())
+                if (state.revision != expectedCatalogRevision) return@withTransaction tagCatalogConflict()
+                val source = focusDao.tag(tagId.toString())
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+                val target = focusDao.tagByNormalizedName(normalizedIdentity)
+                    ?: dao.tagAlias(normalizedIdentity)?.let { focusDao.tag(it.targetTagId) }
+                if (target != null && target.id != source.id) {
+                    return@withTransaction FocusProductResult.MergeRequired(source.toDomain(), target.toDomain())
+                }
+                if (source.name == normalizedName && source.normalizedName == normalizedIdentity) {
+                    insertReceipt(generation, context, payload)
+                    return@withTransaction FocusProductResult.Applied
+                }
+                val nextCatalogRevision = nextRevision(state.revision)
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+                val updatedAt = clock.instant()
+                if (focusDao.updateTag(source.copy(name = normalizedName, normalizedName = normalizedIdentity)) != 1) {
+                    throw IllegalStateException("Focus tag could not be renamed")
+                }
+                if (source.normalizedName != normalizedIdentity) {
+                    dao.replaceTagAlias(FocusTagAliasEntity(source.normalizedName, source.id, source.id))
+                }
+                dao.deleteTagAlias(normalizedIdentity)
+                bumpSessionsForTag(source.id, updatedAt)
+                check(dao.updateTagCatalogState(state.copy(revision = nextCatalogRevision)) == 1)
+                insertReceipt(generation, context, payload)
+                FocusProductResult.Applied
+            }
+        }
+    }
+
+    override suspend fun mergeTags(
+        sourceTagId: UUID,
+        targetTagId: UUID,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult {
+        if (sourceTagId == targetTagId || expectedCatalogRevision < 0) {
+            return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+        }
+        val payload = "merge-tags|$sourceTagId|$targetTagId|$expectedCatalogRevision"
+        return safely {
+            database.withTransaction {
+                val generation = ensureGeneration().generationId
+                if (generation != context.generation.toString()) return@withTransaction tagCatalogConflict()
+                ensureTagCatalogState()
+                val replay = replay(context, generation, payload)
+                if (replay != null) return@withTransaction replay
+                val state = requireNotNull(dao.tagCatalogState())
+                if (state.revision != expectedCatalogRevision) return@withTransaction tagCatalogConflict()
+                val source = focusDao.tag(sourceTagId.toString())
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+                val target = focusDao.tag(targetTagId.toString())
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+                val nextCatalogRevision = nextRevision(state.revision)
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_TAG)
+                val affected = focusDao.sessionsForTag(source.id).map { session ->
+                    val nextSessionRevision = nextRevision(session.revision)
+                        ?: throw IllegalStateException("Focus session revision is exhausted")
+                    session to nextSessionRevision
+                }
+                val updatedAt = clock.instant()
+                dao.retargetAliases(source.id, target.id)
+                dao.replaceTagAlias(FocusTagAliasEntity(source.normalizedName, source.id, target.id))
+                for ((session, nextSessionRevision) in affected) {
+                    check(focusDao.updateSession(
+                        session.copy(
+                            tagId = target.id,
+                            revision = nextSessionRevision,
+                            updatedAtSeconds = updatedAt.epochSecond,
+                            updatedAtNanos = updatedAt.nano,
+                        ),
+                    ) == 1)
+                    updateOpenRuntimeRevision(session, nextSessionRevision)
+                }
+                check(focusDao.deleteTag(source.id) == 1)
+                check(dao.updateTagCatalogState(state.copy(revision = nextCatalogRevision)) == 1)
+                insertReceipt(generation, context, payload)
+                FocusProductResult.Applied
+            }
+        }
+    }
 
     override suspend fun saveReflection(
         sessionId: UUID,
@@ -273,6 +464,71 @@ class RoomFocusProductRepository(
         return if (receipt.resultType == RESULT_APPLIED) FocusProductResult.AlreadyApplied else null
     }
 
+    private suspend fun resolveOrCreateTag(name: String): FocusTag? {
+        val normalized = normalizeFocusTagIdentity(name)
+        focusDao.tagByNormalizedName(normalized)?.let { return it.toDomain() }
+        dao.tagAlias(normalized)?.let { alias ->
+            return focusDao.tag(alias.targetTagId)?.toDomain()
+        }
+        val state = requireNotNull(dao.tagCatalogState())
+        val nextCatalogRevision = nextRevision(state.revision) ?: return null
+        val tag = FocusTagEntity(UUID.randomUUID().toString(), name, normalized)
+        focusDao.insertTag(tag)
+        check(dao.updateTagCatalogState(state.copy(revision = nextCatalogRevision)) == 1)
+        return tag.toDomain()
+    }
+
+    private suspend fun bumpSessionsForTag(tagId: String, updatedAt: java.time.Instant) {
+        for (session in focusDao.sessionsForTag(tagId)) {
+            val nextSessionRevision = nextRevision(session.revision)
+                ?: throw IllegalStateException("Focus session revision is exhausted")
+            check(focusDao.updateSession(
+                session.copy(
+                    revision = nextSessionRevision,
+                    updatedAtSeconds = updatedAt.epochSecond,
+                    updatedAtNanos = updatedAt.nano,
+                ),
+            ) == 1)
+            updateOpenRuntimeRevision(session, nextSessionRevision)
+        }
+    }
+
+    private suspend fun updateOpenRuntimeRevision(session: FocusSessionEntity, nextSessionRevision: Long) {
+        if (session.openSlot == null || session.state != "RUNNING") return
+        val runtime = focusDao.runtime() ?: throw IllegalStateException("Running focus session has no runtime")
+        check(runtime.sessionId == session.id && runtime.revision == session.revision) {
+            "Running focus session and runtime revisions diverged"
+        }
+        check(focusDao.updateRuntime(runtime.copy(revision = nextSessionRevision)) == 1)
+    }
+
+    private suspend fun tagCatalogSnapshot(): FocusTagCatalog {
+        val state = ensureTagCatalogState()
+        val generation = ensureGeneration().generationId
+        return FocusTagCatalog(
+            revision = state.revision,
+            tags = focusDao.tags().map(FocusTagEntity::toDomain),
+            mergedIds = dao.tagAliases().associate {
+                UUID.fromString(it.formerTagId) to UUID.fromString(it.targetTagId)
+            },
+            databaseGeneration = UUID.fromString(generation),
+        )
+    }
+
+    private suspend fun tagCatalogConflict(): FocusProductResult.TagCatalogConflict =
+        FocusProductResult.TagCatalogConflict(tagCatalogSnapshot())
+
+    private suspend fun ensureTagCatalogState(): FocusTagCatalogStateEntity {
+        dao.insertTagCatalogStateIfAbsent(FocusTagCatalogStateEntity())
+        return requireNotNull(dao.tagCatalogState())
+    }
+
+    private suspend fun insertReceipt(generation: String, context: FocusProductContext, payload: String) {
+        dao.insertReceipt(
+            FocusProductCommandReceiptEntity(generation, context.commandId.toString(), payload, RESULT_APPLIED),
+        )
+    }
+
     private suspend fun conflict(): FocusProductResult.Conflict {
         ensureSettings()
         return FocusProductResult.Conflict(
@@ -300,8 +556,17 @@ class RoomFocusProductRepository(
 
     private companion object {
         const val RESULT_APPLIED = "APPLIED"
+        val TERMINAL_STATES = setOf("FINISHED", "INTERRUPTED")
     }
 }
+
+private fun FocusTagEntity.toDomain() = FocusTag(UUID.fromString(id), name)
+
+private fun nextRevision(value: Long): Long? = runCatching { Math.addExact(value, 1L) }.getOrNull()
+
+private fun encodePayloadPart(value: String?): String = value?.let {
+    Base64.getEncoder().encodeToString(it.toByteArray(Charsets.UTF_8))
+} ?: "-"
 
 private fun FocusGoalSettingsEntity.toDomain(versions: List<FocusGoalVersion>) = FocusGoalState(
     enabled = enabled,

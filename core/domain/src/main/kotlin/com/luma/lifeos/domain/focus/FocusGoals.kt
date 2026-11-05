@@ -108,7 +108,33 @@ fun focusWeekDistribution(dailyTotals: Map<LocalDate, Long>): FocusWeekDistribut
 
 data class FocusProductContext(val commandId: UUID, val generation: UUID)
 
-enum class FocusProductInvalidReason { INVALID_GOAL, INVALID_REFLECTION, INVALID_COMMAND }
+data class FocusTagCatalog(
+    val revision: Long,
+    val tags: List<FocusTag>,
+    /** Former tag IDs mapped to their current destination after an explicit merge. */
+    val mergedIds: Map<UUID, UUID> = emptyMap(),
+    val databaseGeneration: UUID? = null,
+) {
+    init { require(revision >= 0) }
+
+    fun resolve(id: UUID): FocusTag? {
+        var current = id
+        repeat(mergedIds.size + 1) {
+            val next = mergedIds[current] ?: return tags.firstOrNull { it.id == current }
+            if (next == current) return tags.firstOrNull { it.id == current }
+            current = next
+        }
+        return null
+    }
+}
+
+enum class FocusProductInvalidReason {
+    INVALID_GOAL,
+    INVALID_REFLECTION,
+    INVALID_SESSION_EDIT,
+    INVALID_TAG,
+    INVALID_COMMAND,
+}
 
 data class FocusProductUnavailableReason(val code: String = "storage")
 
@@ -117,6 +143,8 @@ sealed interface FocusProductResult {
     data object AlreadyApplied : FocusProductResult
     data class Conflict(val current: FocusGoalState) : FocusProductResult
     data class SessionConflict(val actualRevision: Long?) : FocusProductResult
+    data class TagCatalogConflict(val current: FocusTagCatalog) : FocusProductResult
+    data class MergeRequired(val source: FocusTag, val target: FocusTag) : FocusProductResult
     data class Invalid(val reason: FocusProductInvalidReason) : FocusProductResult
     data class Unavailable(val reason: FocusProductUnavailableReason = FocusProductUnavailableReason()) : FocusProductResult
 }
@@ -129,6 +157,27 @@ interface FocusProductRepository {
         sessionId: UUID,
         expectedRevision: Long,
         reflection: FocusReflection,
+        context: FocusProductContext,
+    ): FocusProductResult
+    fun observeTagCatalog(): Flow<FocusTagCatalog>
+    suspend fun updateSessionMetadata(
+        sessionId: UUID,
+        expectedRevision: Long,
+        name: String?,
+        tagName: String?,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult
+    suspend fun renameTag(
+        tagId: UUID,
+        name: String,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult
+    suspend fun mergeTags(
+        sourceTagId: UUID,
+        targetTagId: UUID,
+        expectedCatalogRevision: Long,
         context: FocusProductContext,
     ): FocusProductResult
     suspend fun scheduleGoal(

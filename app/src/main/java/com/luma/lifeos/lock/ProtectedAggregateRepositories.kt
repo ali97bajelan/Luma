@@ -8,6 +8,7 @@ import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusProductResult
 import com.luma.lifeos.domain.focus.FocusProductUnavailableReason
 import com.luma.lifeos.domain.focus.FocusReflection
+import com.luma.lifeos.domain.focus.FocusTagCatalog
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusStatistics
@@ -196,6 +197,12 @@ class ProtectedFocusProductRepository(
             else FocusGoalState.DISABLED
         }
 
+    override fun observeTagCatalog(): Flow<FocusTagCatalog> =
+        combine(delegate.observeTagCatalog(), gateway.snapshot) { catalog, state ->
+            if (state.decide(focusProductRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow) catalog
+            else FocusTagCatalog(revision = 0, tags = emptyList())
+        }
+
     override suspend fun saveReflection(
         sessionId: UUID,
         expectedRevision: Long,
@@ -210,6 +217,40 @@ class ProtectedFocusProductRepository(
         FocusProductResult.Unavailable(FocusProductUnavailableReason("access"))
     }
 
+    override suspend fun updateSessionMetadata(
+        sessionId: UUID,
+        expectedRevision: Long,
+        name: String?,
+        tagName: String?,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult = try {
+        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
+            delegate.updateSessionMetadata(sessionId, expectedRevision, name, tagName, expectedCatalogRevision, context)
+        }
+    } catch (failure: Exception) {
+        if (failure is kotlinx.coroutines.CancellationException) throw failure
+        FocusProductResult.Unavailable(FocusProductUnavailableReason("access"))
+    }
+
+    override suspend fun renameTag(
+        tagId: UUID,
+        name: String,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult = commit(tagId.toString()) {
+        delegate.renameTag(tagId, name, expectedCatalogRevision, context)
+    }
+
+    override suspend fun mergeTags(
+        sourceTagId: UUID,
+        targetTagId: UUID,
+        expectedCatalogRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult = commit(sourceTagId.toString()) {
+        delegate.mergeTags(sourceTagId, targetTagId, expectedCatalogRevision, context)
+    }
+
     override suspend fun scheduleGoal(
         goal: FocusGoalVersion,
         expectedSettingsRevision: Long,
@@ -222,8 +263,8 @@ class ProtectedFocusProductRepository(
         context: FocusProductContext,
     ): FocusProductResult = commit { delegate.setGoalsEnabled(enabled, expectedSettingsRevision, context) }
 
-    private suspend fun commit(write: suspend () -> FocusProductResult): FocusProductResult = try {
-        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), commit = write)
+    private suspend fun commit(recordId: String? = null, write: suspend () -> FocusProductResult): FocusProductResult = try {
+        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), recordId, commit = write)
     } catch (failure: Exception) {
         if (failure is kotlinx.coroutines.CancellationException) throw failure
         FocusProductResult.Unavailable(FocusProductUnavailableReason("access"))

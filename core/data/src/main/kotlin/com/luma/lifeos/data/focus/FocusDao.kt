@@ -13,6 +13,9 @@ interface FocusDao {
     @Query("SELECT * FROM focus_storage_state WHERE singleton_id = 1")
     suspend fun storageState(): FocusStorageStateEntity?
 
+    @Query("SELECT * FROM focus_storage_state WHERE singleton_id = 1")
+    fun observeStorageState(): Flow<FocusStorageStateEntity?>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertStorageStateIfAbsent(state: FocusStorageStateEntity): Long
 
@@ -53,8 +56,15 @@ interface FocusDao {
     )
     fun observeTagSuggestions(): Flow<List<FocusTagEntity>>
 
-    @Query("SELECT * FROM focus_tag ORDER BY normalized_name ASC, id ASC")
+    @Query("""SELECT t.* FROM focus_tag AS t
+        WHERE EXISTS (SELECT 1 FROM focus_session AS s WHERE s.tag_id = t.id)
+        ORDER BY t.normalized_name ASC, t.id ASC""")
     fun observeTags(): Flow<List<FocusTagEntity>>
+
+    @Query("""SELECT t.* FROM focus_tag AS t
+        WHERE EXISTS (SELECT 1 FROM focus_session AS s WHERE s.tag_id = t.id)
+        ORDER BY t.normalized_name ASC, t.id ASC""")
+    suspend fun tags(): List<FocusTagEntity>
 
     @Query("SELECT * FROM focus_session WHERE id = :sessionId LIMIT 1")
     suspend fun session(sessionId: String): FocusSessionEntity?
@@ -82,6 +92,15 @@ interface FocusDao {
 
     @Query("SELECT * FROM focus_tag WHERE id = :id LIMIT 1")
     suspend fun tag(id: String): FocusTagEntity?
+
+    @Query("SELECT * FROM focus_session WHERE tag_id = :tagId ORDER BY id")
+    suspend fun sessionsForTag(tagId: String): List<FocusSessionEntity>
+
+    @Update
+    suspend fun updateTag(tag: FocusTagEntity): Int
+
+    @Query("DELETE FROM focus_tag WHERE id = :id")
+    suspend fun deleteTag(id: String): Int
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTag(tag: FocusTagEntity)

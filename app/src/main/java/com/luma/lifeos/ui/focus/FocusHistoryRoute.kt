@@ -75,7 +75,7 @@ internal fun FocusHistoryRoute(
     onRepeatSession: (UUID) -> Unit = {},
     productRepository: FocusProductRepository? = null,
 ) {
-    val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, databaseGenerationFlow) {
+    val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, databaseGenerationFlow, productRepository) {
         viewModelFactory {
             initializer {
                 FocusHistoryViewModel(
@@ -83,6 +83,7 @@ internal fun FocusHistoryRoute(
                     privateContentAccessAllowed = isFocusReadable,
                     privateContentAccessFlow = privateContentAccessFlow,
                     databaseGenerationFlow = databaseGenerationFlow,
+                    productRepository = productRepository,
                 )
             }
         }
@@ -179,6 +180,13 @@ private fun FocusHistoryScreen(
                             modifier = Modifier.fillMaxWidth().testTag("focus_history_search"),
                         )
                         FocusHistoryTagSelector(state.filters.tag, state.tags, onTag)
+                        state.tagFilterMergedTo?.let { target ->
+                            Text(
+                                stringResource(R.string.focus_history_tag_merged, target.name),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.testTag("focus_history_tag_merged"),
+                            )
+                        }
                     }
                 }
                 when {
@@ -409,6 +417,13 @@ private fun FocusHistoryItem(
                         modifier = Modifier.testTag("focus_history_segment_$index"),
                     )
                 }
+                FocusSessionMetadataEditor(
+                    session = row.session,
+                    productRepository = productRepository,
+                    generation = generation,
+                    isFocusReadable = isFocusReadable,
+                    onSaved = onReflectionSaved,
+                )
                 FocusReflectionEditor(
                     session = row.session,
                     repository = repository,

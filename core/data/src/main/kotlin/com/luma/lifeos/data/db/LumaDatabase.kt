@@ -21,6 +21,8 @@ import com.luma.lifeos.data.focus.FocusGoalSettingsEntity
 import com.luma.lifeos.data.focus.FocusGoalVersionEntity
 import com.luma.lifeos.data.focus.FocusProductCommandReceiptEntity
 import com.luma.lifeos.data.focus.FocusProductDao
+import com.luma.lifeos.data.focus.FocusTagAliasEntity
+import com.luma.lifeos.data.focus.FocusTagCatalogStateEntity
 import com.luma.lifeos.data.focus.FocusTagEntity
 import com.luma.lifeos.data.dao.DerivedDataDao
 import com.luma.lifeos.data.dao.EventContentDao
@@ -60,7 +62,7 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         FocusSessionEntity::class, FocusRunEntity::class, FocusRuntimeEntity::class, FocusBreakEntity::class,
         FocusCommandReceiptEntity::class, FocusDeletedSessionEntity::class, FocusStorageStateEntity::class,
         FocusTagEntity::class, FocusGoalSettingsEntity::class, FocusGoalVersionEntity::class,
-        FocusProductCommandReceiptEntity::class,
+        FocusProductCommandReceiptEntity::class, FocusTagCatalogStateEntity::class, FocusTagAliasEntity::class,
     ],
     version = LumaDatabase.VERSION,
     exportSchema = true,
@@ -83,10 +85,26 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focusProducts(): FocusProductDao
 
     companion object {
-        const val VERSION = 13
+        const val VERSION = 14
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(13, 14) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_tag_catalog_state (
+                        singleton_id INTEGER NOT NULL PRIMARY KEY CHECK (singleton_id = 1),
+                        revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0)
+                    )""")
+                    db.execSQL("INSERT OR IGNORE INTO focus_tag_catalog_state(singleton_id, revision) VALUES (1, 0)")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_tag_alias (
+                        normalized_name TEXT NOT NULL PRIMARY KEY,
+                        former_tag_id TEXT NOT NULL,
+                        target_tag_id TEXT NOT NULL,
+                        FOREIGN KEY(target_tag_id) REFERENCES focus_tag(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )""")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_tag_alias_target_tag_id ON focus_tag_alias(target_tag_id)")
+                }
+            },
             object : Migration(12, 13) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE focus_session ADD COLUMN outcome TEXT")
