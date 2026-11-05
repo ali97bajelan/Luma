@@ -2,6 +2,8 @@ package com.luma.lifeos.ui.habits
 
 import com.luma.lifeos.ui.common.LumaButton
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +28,6 @@ import java.time.LocalDate
 import java.time.format.FormatStyle
 import java.util.UUID
 
-internal const val TODAY_HABIT_PREVIEW_LIMIT = 2
 
 @Composable
 fun TodayHabitsCard(
@@ -44,7 +45,7 @@ fun TodayHabitsCard(
     val shownDate = state.date ?: fallbackDate
     val rows = state.rowsFor(shownDate)
     val scheduled = splitHabitRows(rows).scheduled
-    val visible = scheduled.take(TODAY_HABIT_PREVIEW_LIMIT)
+    val visible = scheduled
     val visibleHabitIds = visible.mapTo(mutableSetOf()) { it.day.habit.id }
     val showScheduledCount = !state.loading && state.loadedDate == shownDate &&
         state.error != HabitUiError.LOAD && scheduled.isNotEmpty()
@@ -91,7 +92,11 @@ fun TodayHabitsCard(
             if (visible.isEmpty()) Text(stringResource(R.string.habit_no_scheduled),
                 modifier = Modifier.testTag("today_habits_none_scheduled"))
             if (visible.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp)
+                        .verticalScroll(rememberScrollState()).testTag("today_habits_scroll"),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     visible.forEach { row ->
                         HabitRow(row, state.pendingLogs.filter {
                             it.input.habitId == row.day.habit.id && it.input.date == row.day.date

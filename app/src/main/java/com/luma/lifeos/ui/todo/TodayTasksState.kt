@@ -1,6 +1,5 @@
 package com.luma.lifeos.ui.todo
 
-import com.luma.lifeos.domain.todo.TODO_DEFAULT_TODAY_LIMIT
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
 import java.time.LocalDate
@@ -21,12 +20,12 @@ fun TodayTasksState.visibleTaskIds(): Set<UUID> = when (this) {
     TodayTasksState.Error, TodayTasksState.Loading -> emptySet()
 }
 
-/** Observe the bounded due/overdue preview and its full eligible count. */
+/** Observe all due and overdue tasks for the scrollable Today card. */
 fun observeTodayTasks(repository: TodoRepository, date: LocalDate): Flow<TodayTasksState> =
     flow<TodayTasksState> {
         emit(TodayTasksState.Loading)
-        repository.observeToday(date, TODO_DEFAULT_TODAY_LIMIT).collect { page ->
-            emit(TodayTasksState.Data(page.items.take(TODO_DEFAULT_TODAY_LIMIT), page.total))
+        repository.observeToday(date, Int.MAX_VALUE).collect { page ->
+            emit(TodayTasksState.Data(page.items, page.total))
         }
     }.catch { failure ->
         if (failure is CancellationException) throw failure

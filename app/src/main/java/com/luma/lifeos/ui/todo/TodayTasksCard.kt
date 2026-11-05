@@ -85,6 +85,10 @@ fun TodayTasksCard(
                 if (state.total == 0 && state.tasks.isEmpty()) {
                     Text(stringResource(R.string.todo_today_empty), modifier = Modifier.testTag("today_tasks_empty"))
                 } else if (state.tasks.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp)
+                            .verticalScroll(rememberScrollState()).testTag("today_tasks_scroll"),
+                    ) {
                     listOf(TodoBucket.OVERDUE, TodoBucket.TODAY).forEach { bucket ->
                         val bucketTasks = state.tasks.filter { task ->
                             !task.isCompleted && todoBucket(task, today) == bucket
@@ -120,6 +124,7 @@ fun TodayTasksCard(
                                 }
                             }
                         }
+                    }
                     }
                 }
             }

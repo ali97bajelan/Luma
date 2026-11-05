@@ -35,7 +35,7 @@ class TodayTasksStateTest {
 
     @After fun tearDown() = Dispatchers.resetMain()
 
-    @Test fun previewCapsRowsButReportsAllEligibleTasks() = runTest(dispatcher) {
+    @Test fun todayShowsAllEligibleTasks() = runTest(dispatcher) {
         val eligible = listOf(
             todoFixtureTask("Older overdue", id = stableId("overdue-older"), dueDate = today.minusDays(4)),
             todoFixtureTask("Recent overdue", id = stableId("overdue-recent"), dueDate = today.minusDays(1)),
@@ -52,12 +52,12 @@ class TodayTasksStateTest {
 
         assertTrue(states.first() is TodayTasksState.Loading)
         val preview = states.last() as TodayTasksState.Data
-        assertEquals(3, preview.tasks.size)
+        assertEquals(4, preview.tasks.size)
         assertEquals(4, preview.total)
         assertEquals(eligible.take(2).map { it.id }, preview.tasks.take(2).map { it.id })
         assertTrue(preview.tasks.last().id in eligible.takeLast(2).map { it.id })
         assertTrue(preview.tasks.none { it.id in unrelated.map { row -> row.id } })
-        assertEquals(3, repository.todayRequests.single().limit)
+        assertEquals(Int.MAX_VALUE, repository.todayRequests.single().limit)
         assertEquals(today, repository.todayRequests.single().date)
     }
 
@@ -86,7 +86,7 @@ class TodayTasksStateTest {
         assertEquals(today, repository.tasks.single().dueDate)
     }
 
-    @Test fun committedCompletionBackfillsTheNextEligibleTask() = runTest(dispatcher) {
+    @Test fun committedCompletionRemovesTheTask() = runTest(dispatcher) {
         val tasks = (1..4).map { index ->
             todoFixtureTask("Eligible $index", id = stableId("backfill-$index"), dueDate = today.minusDays(index.toLong()))
         }
@@ -95,9 +95,9 @@ class TodayTasksStateTest {
         backgroundScope.launch { observeTodayTasks(repository, today).collect(updates::send) }
         assertTrue(updates.receive() is TodayTasksState.Loading)
         val before = updates.receive() as TodayTasksState.Data
-        assertEquals(3, before.tasks.size)
+        assertEquals(4, before.tasks.size)
         assertEquals(4, before.total)
-        assertFalse(before.tasks.any { it.id == tasks.first().id })
+        assertTrue(before.tasks.any { it.id == tasks.first().id })
 
         val completed = before.tasks.first()
         repository.setCompleted(completed.id, completed.revision, UUID.randomUUID(), completed = true)
@@ -107,7 +107,7 @@ class TodayTasksStateTest {
         assertEquals(3, after.tasks.size)
         assertEquals(3, after.total)
         assertFalse(after.tasks.any { it.id == completed.id })
-        assertTrue(after.tasks.any { it.id == tasks.first().id })
+        assertEquals(before.tasks.map { it.id }.toSet() - completed.id, after.tasks.map { it.id }.toSet())
     }
 
     @Test fun failedCompletionKeepsItsRevisionTokenAndPublishesOneResultOnRetry() = runTest(dispatcher) {
