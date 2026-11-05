@@ -260,7 +260,7 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
             scheduleState == payload.scheduleState && scheduleState == "ACTIVE" &&
             (weekdayMask!! and (1 shl (payload.date.dayOfWeek.value - 1))) != 0 &&
             skipRemaining == payload.skipRemaining && !payload.skipRemaining &&
-            count == payload.expectedCount && count < target!!
+            count == payload.expectedCount
 
     private fun com.luma.lifeos.data.habit.HabitLogEntity.matches(payload: WidgetCommandPayload.HabitUndo): Boolean =
         id == payload.logId.toString() && habitId == payload.habitId.toString() &&

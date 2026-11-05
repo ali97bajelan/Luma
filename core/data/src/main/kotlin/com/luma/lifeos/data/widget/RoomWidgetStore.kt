@@ -177,7 +177,7 @@ class RoomWidgetStore(
                     val rows = if (rowLimit > 0) {
                         database.habits().widgetDayRowsPage(date.toString(), rowLimit, rowOffset).map { row ->
                             val token = if (row.target != null && row.scheduleId != null &&
-                                row.scheduleState == "ACTIVE" && !row.skipRemaining && row.count < row.target
+                                row.scheduleState == "ACTIVE" && !row.skipRemaining
                             ) {
                                 issuer.tokenFor(
                                     WidgetCommandPayload.HabitLog(
@@ -383,7 +383,7 @@ class RoomWidgetStore(
         private val current = mutableListOf<WidgetCommandEntity>()
         // A committed action's undo/retry command is deliberately outside the current row set.
         // Keep it alive while refreshing so feedback stays actionable after the row disappears
-        // (task completion) or no longer offers a row action (habit target reached).
+        // (such as after task completion).
         private val retainedTokens = mutableSetOf<String>().apply {
             listOfNotNull(feedback?.retryToken, feedback?.undoToken).forEach { add(it.toString()) }
         }

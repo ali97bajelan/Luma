@@ -491,7 +491,7 @@ object WidgetRenderer {
             appContext.resources.configuration.layoutDirection)
         setViewVisibility(R.id.widget_habit_row_progress, if (showProgress) View.VISIBLE else View.GONE)
 
-        val canLog = !row.skipped && row.count < row.target && row.actionToken != null
+        val canLog = !row.skipped && row.actionToken != null
         setViewVisibility(R.id.widget_habit_row_action, if (canLog) View.VISIBLE else View.GONE)
         if (canLog) {
             setTextViewText(R.id.widget_habit_row_action, appContext.getString(R.string.widget_habit_log_short))
@@ -800,7 +800,7 @@ object WidgetRenderer {
         progressColumnWidthPx: Int,
     ): MeasuredRow {
         val density = context.resources.displayMetrics.density
-        val canLog = !row.skipped && row.count < row.target && row.actionToken != null
+        val canLog = !row.skipped && row.actionToken != null
         val actionWidthDp = if (canLog) max(48f,
             measureTextWidth(context, context.getString(R.string.widget_habit_log_short), 14f) / density + 24f) else 0f
         val rawTextWidthDp = widthDp - 24 - 16 - actionWidthDp - if (canLog) 8 else 0

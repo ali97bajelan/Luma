@@ -352,10 +352,10 @@ class WidgetRendererAcceptanceTest {
             .toString().contains(longHabit.title))
     }
 
-    @Test fun reachedAndSkippedHabitsKeepStateAndDoNotOfferLogging() {
+    @Test fun reachedHabitOffersLoggingButSkippedHabitDoesNot() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val rows = listOf(
-            WidgetRow.Habit(UUID.randomUUID(), "Reached habit", 3, 3, false, null),
+            WidgetRow.Habit(UUID.randomUUID(), "Reached habit", 3, 3, false, UUID.randomUUID()),
             WidgetRow.Habit(UUID.randomUUID(), "Skipped habit", 1, 3, true, null),
         )
         val snapshot = sampleSnapshot().copy(
@@ -370,7 +370,7 @@ class WidgetRendererAcceptanceTest {
             .contentDescription.toString().contains(context.getString(R.string.widget_habit_target_reached, 3, 3)))
         org.junit.Assert.assertTrue(skipped.findViewById<View>(R.id.widget_habit_row_text)
             .contentDescription.toString().contains(context.getString(R.string.widget_habit_skipped, 1, 3)))
-        assertEquals(View.GONE, reached.findViewById<View>(R.id.widget_habit_row_action).visibility)
+        assertEquals(View.VISIBLE, reached.findViewById<View>(R.id.widget_habit_row_action).visibility)
         assertEquals(View.GONE, skipped.findViewById<View>(R.id.widget_habit_row_action).visibility)
     }
 

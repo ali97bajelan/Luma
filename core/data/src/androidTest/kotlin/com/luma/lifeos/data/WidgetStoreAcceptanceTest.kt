@@ -105,6 +105,34 @@ class WidgetStoreAcceptanceTest {
         assertEquals(WidgetOutcome.UNDONE, afterUndo.feedback?.outcome)
     }
 
+    @Test fun activeHabitCanBeLoggedBeyondItsTargetAndUndone() = runBlocking {
+        val widgetId = 46
+        val habitId = UUID.randomUUID()
+        habits.create(
+            habitId,
+            HabitSaveInput("Drink water", "glasses", today, 7, DayOfWeek.entries.toSet(), habitZone),
+        )
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.HABITS))
+
+        repeat(9) { count ->
+            val snapshot = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 3))
+            val row = snapshot.rows.single() as WidgetRow.Habit
+            assertEquals(count, row.count)
+            assertEquals(if (count >= 7) 1 else 0, snapshot.completed)
+            val token = requireNotNull(row.actionToken)
+            assertEquals(WidgetOutcome.SAVED, widgets.execute(widgetId, token, now, ZoneOffset.UTC).outcome)
+        }
+
+        val afterLog = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 3))
+        assertEquals(9, (afterLog.rows.single() as WidgetRow.Habit).count)
+        assertEquals(1, afterLog.completed)
+        assertEquals(WidgetOutcome.UNDONE,
+            widgets.execute(widgetId, requireNotNull(afterLog.feedback?.undoToken), now, ZoneOffset.UTC).outcome)
+        val afterUndo = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 3))
+        assertEquals(8, (afterUndo.rows.single() as WidgetRow.Habit).count)
+        assertNotNull((afterUndo.rows.single() as WidgetRow.Habit).actionToken)
+    }
+
     @Test fun taskSnapshotFetchesEightCandidatesWithDistinctMutationTokens() = runBlocking {
         val widgetId = 43
         val taskIds = (0 until 9).map { index ->
