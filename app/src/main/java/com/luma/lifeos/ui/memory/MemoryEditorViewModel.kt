@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null, val photos: List<PhotoAttachment> = emptyList(), val tagNames: Set<String> = emptySet(), val contextNote: String = "")
 enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT, PHOTO }
@@ -45,7 +47,7 @@ data class MemoryEditorState(
 )
 
 class MemoryEditorViewModel(private val repository: MemoryRepository, private val eventId: EventId?,
-    private val saved: SavedStateHandle, clock: Clock = Clock.systemUTC(), photoRepository: PhotoRepository? = null,
+    private val saved: SavedStateHandle, clock: Clock = Clock.systemUTC(), private val photoRepository: PhotoRepository? = null,
     initialTimeMillis: Long? = null, private val photoDraftAccessRegistry: PhotoDraftAccessRegistry? = null) : ViewModel() {
     private val initialTime = saved.get<Long>("initial_time") ?: (initialTimeMillis ?: clock.millis())
         .also { saved["initial_time"] = it }
@@ -54,6 +56,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     private var photoDraftAccess: AutoCloseable? = null
     private val activePhotoRoute = MutableStateFlow<Long?>(null)
     private var nextPhotoRouteGeneration = 0L
+    private val photoViewerAccess = mutableMapOf<UUID, AutoCloseable>()
+    private val photoViewerLeaseLocks = mutableMapOf<UUID, Mutex>()
     private var baseline = MemoryDraft(initialTime)
     private var editingId: EventId? = eventId
     val resultEventId: EventId get() = editingId ?: eventId ?: captureId
@@ -66,7 +70,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
 
     private val photoSession = PhotoDraftSession(photoRepository, saved, viewModelScope, captureId.value,
         current = { state.value.draft.photos },
-        canEdit = { state.value.ready && !state.value.busy && !state.value.completed },
+        canEdit = { state.value.ready && !state.value.busy && !state.value.completed && hasPhotoRouteAccess() },
         busy = { mutableState.value = state.value.copy(busy = it) },
         update = { photos ->
             if (photos != state.value.draft.photos) saved["pending_remove"] = null
@@ -75,18 +79,51 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
             mutableState.value = state.value.copy(draft = draft, hasChanges = draft != baseline, error = null)
         }, error = { mutableState.value = state.value.copy(error = MemoryEditorError.PHOTO) })
 
-    fun importPhoto(source: String) = photoSession.importPhoto(source)
-    fun removePhoto(id: UUID) = photoSession.remove(id)
+    private val photoEditSession = MemoryPhotoEditSession(
+        repository = photoRepository,
+        saved = saved,
+        scope = viewModelScope,
+        currentPhotos = { state.value.draft.photos },
+        editorLeaseId = photoDraftId,
+        canEdit = { state.value.ready && !state.value.busy && !state.value.completed && hasPhotoRouteAccess() },
+        canAccess = ::hasPhotoRouteAccess,
+        accessIsRegistered = { leaseId ->
+            photoDraftAccessRegistry?.isRegistered(leaseId) ?: hasPhotoRouteAccess()
+        },
+        openAccess = ::openChildPhotoAccess,
+        attach = photoSession::attachImported,
+        onError = { mutableState.value = state.value.copy(error = MemoryEditorError.PHOTO) },
+    )
+    internal val photoEditState = photoEditSession.state
+
+    fun selectPhoto(source: String) = photoEditSession.select(source)
+    fun setPhotoCrop(crop: PhotoCrop) = photoEditSession.setCrop(crop)
+    fun rotatePhotoClockwise() = photoEditSession.rotateClockwise()
+    fun resetPhotoEdit() = photoEditSession.reset()
+    fun confirmPhotoEdit(keepOriginal: Boolean) = photoEditSession.confirm(keepOriginal)
+    fun retryPhotoEdit() = photoEditSession.retry()
+    fun cancelPhotoEdit() = photoEditSession.cancel()
+
+    fun importPhoto(source: String) {
+        if (photoEditSession.state.value is MemoryPhotoEditState.Idle) photoSession.importPhoto(source)
+    }
+    fun removePhoto(id: UUID) {
+        if (photoEditSession.state.value is MemoryPhotoEditState.Idle) photoSession.remove(id)
+    }
     fun retryPhoto() = photoSession.retry()
     fun hasPendingPhotoImport(): Boolean = saved.get<String>("photo_pending") != null
     fun enterPhotoRoute(): Long {
         val generation = ++nextPhotoRouteGeneration
         activePhotoRoute.value = generation
-        if (state.value.ready) openPhotoDraftAccess(generation) else load()
+        if (state.value.ready) {
+            if (openPhotoDraftAccess(generation)) viewModelScope.launch { photoEditSession.restore() }
+        } else load()
         return generation
     }
     fun leavePhotoRoute(generation: Long) {
         if (activePhotoRoute.value == generation) {
+            photoEditSession.onRouteClosed()
+            photoViewerAccess.keys.toList().forEach(::closePhotoViewer)
             activePhotoRoute.value = null
             closePhotoDraftAccess()
         }
@@ -108,6 +145,58 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
             false
         }
     }
+    private fun hasPhotoRouteAccess(): Boolean = activePhotoRoute.value != null &&
+        (photoDraftAccessRegistry == null || photoDraftAccessRegistry.isRegistered(photoDraftId))
+
+    private fun openChildPhotoAccess(leaseId: UUID): AutoCloseable? {
+        if (!hasPhotoRouteAccess()) return null
+        val registry = photoDraftAccessRegistry ?: return AutoCloseable {}
+        return registry.open(leaseId, eventId, photoDraftId)
+    }
+
+    fun registerPhotoViewer(leaseId: UUID): Boolean {
+        if (!state.value.ready || !hasPhotoRouteAccess()) return false
+        val registered = photoDraftAccessRegistry?.isRegistered(leaseId) ?: (photoViewerAccess[leaseId] != null)
+        if (photoViewerAccess[leaseId] != null && registered) return true
+        photoViewerAccess.remove(leaseId)?.close()
+        val handle = openChildPhotoAccess(leaseId) ?: return false
+        photoViewerAccess[leaseId] = handle
+        return true
+    }
+
+    suspend fun preparePhotoViewer(leaseId: UUID, photos: List<PhotoAttachment>): Boolean =
+        photoViewerLeaseLock(leaseId).withLock {
+            if (!registerPhotoViewer(leaseId)) return@withLock false
+            try {
+                val repository = photoRepository ?: return@withLock false
+                repository.retainDraft(leaseId, photos)
+                hasPhotoRouteAccess() && photos.all { repository.isRetainedBy(leaseId, it) } &&
+                    (photoDraftAccessRegistry?.permits(leaseId, photos.firstOrNull() ?: return@withLock false) ?: true)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                false
+            }
+        }
+
+    fun closePhotoViewer(leaseId: UUID) {
+        photoViewerAccess.remove(leaseId)?.close()
+        viewModelScope.launch {
+            photoViewerLeaseLock(leaseId).withLock {
+                // A restored composition may already have registered this same durable lease.
+                if (photoViewerAccess.containsKey(leaseId)) return@withLock
+                try { photoRepository?.releaseDraft(leaseId) } catch (failure: Exception) {
+                    if (failure is CancellationException) throw failure
+                }
+                try { photoRepository?.cleanup() } catch (failure: Exception) {
+                    if (failure is CancellationException) throw failure
+                }
+            }
+        }
+    }
+
+    private fun photoViewerLeaseLock(leaseId: UUID): Mutex =
+        photoViewerLeaseLocks.getOrPut(leaseId) { Mutex() }
+
     private suspend fun ensurePhotoDraftAccess(): Boolean {
         if (photoDraftAccessRegistry == null) return true
         while (true) {
@@ -121,7 +210,9 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         photoDraftAccess = null
     }
     fun discardPhotos(onDone: () -> Unit) {
-        if (!state.value.busy && !state.value.completed) photoSession.discard(onDone)
+        if (!state.value.busy && !state.value.completed && photoEditSession.state.value is MemoryPhotoEditState.Idle) {
+            photoSession.discard(onDone)
+        }
     }
 
     init {
@@ -164,7 +255,9 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                 photoSession.retain(draft.photos)
                 persist(draft)
                 mutableState.value = state.value.copy(draft = draft, original = record.takeUnless { direct }, direct = direct,
-                    editing = record?.memory != null, loading = false, ready = true, hasChanges = draft != baseline, error = null)
+                    editing = record?.memory != null, loading = true, ready = false, hasChanges = draft != baseline, error = null)
+                photoEditSession.restore()
+                mutableState.value = state.value.copy(loading = false, ready = true)
                 photoSession.resumePending()
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
@@ -205,14 +298,16 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         change { it.copy(importance = value) }
     }
     private fun rejectText(field: MemoryTextField) {
-        if (state.value.ready && !state.value.busy && !state.value.completed) {
+        if (state.value.ready && !state.value.busy && !state.value.completed &&
+            photoEditSession.state.value is MemoryPhotoEditState.Idle) {
             val errors = state.value.textErrors + field
             persistTextErrors(errors)
             mutableState.value = state.value.copy(textErrors = errors, error = MemoryEditorError.TEXT)
         }
     }
     fun setLocalTime(local: LocalDateTime, zone: ZoneId): Boolean {
-        if (!state.value.direct || !state.value.ready || state.value.busy || state.value.completed) return false
+        if (!state.value.direct || !state.value.ready || state.value.busy || state.value.completed ||
+            photoEditSession.state.value !is MemoryPhotoEditState.Idle) return false
         return try {
             val instant = moodInstant(local, zone, Instant.ofEpochMilli(state.value.draft.occurredAtMillis))
             change { it.copy(occurredAtMillis = instant.toEpochMilli()) }
@@ -224,7 +319,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     }
     fun save() {
         val current = state.value
-        if (!current.ready || current.busy || current.completed || (current.direct && current.draft.note.isBlank())) return
+        if (photoEditSession.state.value !is MemoryPhotoEditState.Idle || !current.ready || current.busy || current.completed ||
+            (current.direct && current.draft.note.isBlank())) return
         val draft = current.draft
         saved["pending_remove"] = null
         write(MemoryEditorError.SAVE) {
@@ -244,6 +340,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     }
     fun remove() {
         val current = state.value
+        if (photoEditSession.state.value !is MemoryPhotoEditState.Idle) return
         val id = editingId ?: return
         if (!current.ready || !current.editing || current.busy || current.completed) return
         saved["pending_remove"] = if (current.direct) "delete" else "unmark"
@@ -270,12 +367,14 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     }
 
     override fun onCleared() {
+        photoEditSession.onRouteClosed()
+        photoViewerAccess.keys.toList().forEach(::closePhotoViewer)
         closePhotoDraftAccess()
         super.onCleared()
     }
     private fun change(clearTextField: MemoryTextField? = null, transform: (MemoryDraft) -> MemoryDraft) {
         val current = state.value
-        if (!current.ready || current.busy || current.completed) return
+        if (!current.ready || current.busy || current.completed || photoEditSession.state.value !is MemoryPhotoEditState.Idle) return
         val draft = transform(current.draft)
         if (draft == current.draft) return
         saved["pending_remove"] = null

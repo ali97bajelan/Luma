@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.photos
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -26,6 +26,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.model.PhotoLimits
+import com.luma.lifeos.domain.model.PhotoReadScope
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.LumaListSurface
@@ -60,7 +61,8 @@ fun PhotoEditor(repository: PhotoRepository, photos: List<PhotoAttachment>, enab
 
 @Composable
 fun PhotoGallery(repository: PhotoRepository, photos: List<PhotoAttachment>, enabled: Boolean = true,
-    onRemove: ((UUID) -> Unit)? = null, onOpen: ((UUID) -> Unit)? = null) {
+    onRemove: ((UUID) -> Unit)? = null, onOpen: ((UUID) -> Unit)? = null,
+    readScope: PhotoReadScope? = null, accessEpoch: Any? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         photos.forEachIndexed { index, photo ->
             key(photo.id) {
@@ -72,6 +74,8 @@ fun PhotoGallery(repository: PhotoRepository, photos: List<PhotoAttachment>, ena
                             index + 1,
                             enabled = enabled,
                             onOpen = onOpen?.let { open -> { open(photo.id) } },
+                            readScope = readScope,
+                            accessEpoch = accessEpoch,
                         )
                         onRemove?.let { remove ->
                             TextButton(enabled = enabled, onClick = { remove(photo.id) }, modifier = Modifier.testTag("photo_remove_${photo.id}")) {
@@ -92,23 +96,37 @@ private fun PhotoPreview(
     number: Int,
     enabled: Boolean = true,
     onOpen: (() -> Unit)? = null,
+    readScope: PhotoReadScope? = null,
+    accessEpoch: Any? = null,
 ) {
-    var preview by remember(repository, photo) { mutableStateOf<ImageBitmap?>(null) }
+    var preview by remember(repository, photo, readScope) { mutableStateOf<Bitmap?>(null) }
     var loading by remember { mutableStateOf(true) }
     var retry by remember { mutableIntStateOf(0) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(repository, photo, lifecycle, retry) {
+    DisposableEffect(preview) {
+        onDispose { preview?.takeUnless(Bitmap::isRecycled)?.recycle() }
+    }
+    LaunchedEffect(repository, photo, readScope, accessEpoch, lifecycle, retry) {
+        preview = null
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             loading = true
+            var bytes: ByteArray? = null
+            var decoded: Bitmap? = null
             try {
-                val bytes = repository.preview(photo)
-                preview = withContext(Dispatchers.Default) {
-                    bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+                bytes = if (readScope == null) repository.preview(photo) else repository.preview(photo, readScope)
+                decoded = withContext(Dispatchers.Default) {
+                    bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
                 }
+                preview = decoded
+                decoded = null
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 preview = null
-            } finally { loading = false }
+            } finally {
+                bytes?.fill(0)
+                decoded?.takeUnless(Bitmap::isRecycled)?.recycle()
+                loading = false
+            }
         }
     }
     val openLabel = if (onOpen != null) stringResource(R.string.photo_open) else null
@@ -126,7 +144,7 @@ private fun PhotoPreview(
         if (loading) CircularProgressIndicator()
         else preview?.let { bitmap ->
             Image(
-                bitmap,
+                bitmap.asImageBitmap(),
                 contentDescription = stringResource(R.string.photo_number, number),
                 modifier = Modifier.fillMaxWidth().height(240.dp).testTag("photo_preview_${photo.id}"),
                 contentScale = ContentScale.Fit,

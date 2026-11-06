@@ -49,6 +49,30 @@ internal class PhotoDraftSession(
         }
     }
 
+    /** Attaches an already imported result without exposing it before the main lease is durable. */
+    suspend fun attachImported(photo: PhotoAttachment) {
+        val storage = requireNotNull(repository) { "Photo storage is unavailable" }
+        while (true) {
+            check(canEdit()) { "Memory draft cannot accept photos right now" }
+            val photos = current()
+            val existing = photos.firstOrNull { it.id == photo.id }
+            if (existing != null) {
+                check(existing.relativePath == photo.relativePath) { "Photo ID already belongs to another file" }
+                storage.retainDraft(owner, photos)
+                check(canEdit()) { "Memory draft cannot accept photos right now" }
+                if (current() == photos) return
+                continue
+            }
+            check(photos.size < PhotoLimits.COUNT) { "Memory photo limit reached" }
+            val updated = photos + photo
+            storage.retainDraft(owner, updated)
+            check(canEdit()) { "Memory draft cannot accept photos right now" }
+            if (current() != photos) continue
+            update(updated)
+            return
+        }
+    }
+
     fun retry() { saved.get<String>("photo_source")?.let(::importPhoto) }
     fun resumePending() {
         val pending = saved.get<String>("photo_pending")?.let(UUID::fromString)

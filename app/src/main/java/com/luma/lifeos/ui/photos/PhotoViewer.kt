@@ -161,6 +161,7 @@ fun PhotoViewer(
 
                     LaunchedEffect(selectedPhoto?.id, request, readScope, retry, accessReady, lifecycle) {
                         if (selectedPhoto == null || !accessReady) {
+                            bitmap = null
                             loading = false
                             return@LaunchedEffect
                         }

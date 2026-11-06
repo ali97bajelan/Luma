@@ -57,7 +57,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     onContextNote: (String) -> Unit = {}, onAddTag: (String) -> Boolean = { false },
     onRemoveTag: (String) -> Unit = {}, peopleContent: @Composable () -> Unit = {},
     placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {},
-    onShare: (() -> Unit)? = null, shareEnabled: Boolean = false) {
+    onShare: (() -> Unit)? = null, shareEnabled: Boolean = false, photoOperationActive: Boolean = false) {
     var removing by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
     var tagText by rememberSaveable { mutableStateOf("") }
@@ -72,7 +72,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     val photosBringIntoViewRequester = remember { BringIntoViewRequester() }
     val tagInputBringIntoViewRequester = remember { BringIntoViewRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val enabled = state.ready && !state.busy && !state.completed
+    val enabled = state.ready && !state.busy && !state.completed && !photoOperationActive
     fun close() {
         if (state.busy) return
         if (state.hasChanges || tagText.isNotBlank()) discarding = true else onCancel()
@@ -113,10 +113,10 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
         tagsExpanded = true
         return false
     }
-    BackHandler { close() }
+    BackHandler(enabled = !photoOperationActive) { close() }
     Scaffold(modifier = Modifier.testTag("screen_memory"), contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
         EditorTopBar(stringResource(if (state.editing) R.string.memory_edit else if (state.direct) R.string.memory_capture else R.string.memory_promote),
-            "memory_cancel", !state.busy, ::close)
+            "memory_cancel", !state.busy && !photoOperationActive, ::close)
     }, bottomBar = {
         LumaEditorActionFooter {
                 val actionError = when (state.error) {
@@ -126,7 +126,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 }
                 actionError?.let { AccessibleFeedback(it, Modifier.testTag("memory_action_error")) }
                 if (onShare != null && state.editing) {
-                    TextButton(onClick = onShare, enabled = shareEnabled) { Text(stringResource(R.string.share_action)) }
+                    TextButton(onClick = onShare, enabled = shareEnabled && !photoOperationActive) { Text(stringResource(R.string.share_action)) }
                     if (!shareEnabled) AccessibleFeedback(stringResource(R.string.share_save_first), isError = false)
                 }
                 EditorActionRow(

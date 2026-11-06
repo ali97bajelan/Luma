@@ -43,6 +43,19 @@ class RoomPhotoRepository(private val database: LumaDatabase, private val files:
             files.resolve(photo.relativePath)?.let { file -> runCatching { AndroidPhotoCodec.preview(file) }.getOrNull() }
         }
     }
+    override suspend fun preview(photo: PhotoAttachment, scope: PhotoReadScope): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            if (scope is PhotoReadScope.Draft && !files.isRetainedBy(scope.leaseId, photo)) return@withLock null
+            val file = files.resolve(photo) ?: return@withLock null
+            try {
+                AndroidPhotoCodec.preview(file)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
     override suspend fun display(
         photo: PhotoAttachment,
         request: PhotoDisplayRequest,

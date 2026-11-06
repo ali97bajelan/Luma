@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.memory
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.SavedStateHandle
@@ -9,7 +10,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.domain.repository.PhotoRepository
-import com.luma.lifeos.ui.photos.PhotoEditor
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.ui.places.PlacePicker
 import com.luma.lifeos.domain.repository.PlaceRepository
@@ -18,6 +18,7 @@ import com.luma.lifeos.domain.repository.PersonRepository
 import com.luma.lifeos.domain.repository.MemoryRepository
 import com.luma.lifeos.lock.PhotoDraftAccessRegistry
 import com.luma.lifeos.domain.model.PersonTextLimits
+import com.luma.lifeos.domain.model.PhotoReadScope
 import com.luma.lifeos.ui.navigation.CatalogAttachmentFeedback
 import com.luma.lifeos.ui.navigation.CatalogEditorResult
 import com.luma.lifeos.ui.navigation.EntryEditorResult
@@ -43,6 +44,8 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
     }
     val editor: MemoryEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()
+    val photoEditState by editor.photoEditState.collectAsStateWithLifecycle()
+    var photoPickerActive by rememberSaveable { mutableStateOf(false) }
     DisposableEffect(editor, photoDraftAccessRegistry, photoAccessEpoch) {
         val routeGeneration = editor.enterPhotoRoute()
         onDispose { editor.leavePhotoRoute(routeGeneration) }
@@ -58,12 +61,13 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
     }
     val placeFeedbackText = placeFeedback?.let { stringResource(it.messageResource) }
 
-    LaunchedEffect(resultId, state.ready, state.busy, state.completed, state.draft.personIds, state.draft.placeId) {
+    val photoOperationActive = photoPickerActive || photoEditState !is MemoryPhotoEditState.Idle
+    LaunchedEffect(resultId, state.ready, state.busy, state.completed, state.draft.personIds, state.draft.placeId, photoOperationActive) {
         val handle = catalogResultHandle ?: return@LaunchedEffect
         val delivery = handle.readCatalogEditorDelivery(CatalogEntity.PERSON)
             ?: handle.readCatalogEditorDelivery(CatalogEntity.PLACE)
             ?: return@LaunchedEffect
-        if (!state.ready || state.busy || state.completed) return@LaunchedEffect
+        if (!state.ready || state.busy || state.completed || photoOperationActive) return@LaunchedEffect
         when (delivery.result) {
             is CatalogEditorResult.Created -> {
                 val id = delivery.result.id
@@ -121,16 +125,36 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
         editor::setTitle, editor::setNote, editor::setImportance, editor::setLocalTime,
         onContextNote = editor::setContextNote, onAddTag = editor::addTag, onRemoveTag = editor::removeTag,
         peopleContent = {
-            PersonPicker(people, state.draft.personIds, state.ready && !state.busy && !state.completed,
+            PersonPicker(people, state.draft.personIds, state.ready && !state.busy && !state.completed && !photoOperationActive,
                 editor::togglePerson, { personFeedback = null; onCreatePerson() }, personFeedbackText, personFeedback?.isError == true)
         },
         placeContent = {
-            PlacePicker(places, state.draft.placeId, state.ready && !state.busy && !state.completed,
+            PlacePicker(places, state.draft.placeId, state.ready && !state.busy && !state.completed && !photoOperationActive,
                 editor::setPlace, { placeFeedback = null; onCreatePlace() }, placeFeedbackText, placeFeedback?.isError == true)
         },
-        photosContent = { PhotoEditor(photos, state.draft.photos, state.ready && !state.busy && !state.completed,
-            editor::importPhoto, editor::removePhoto, editor::retryPhoto,
-            importFailed = state.error == MemoryEditorError.PHOTO && editor.hasPendingPhotoImport(),
-            operationFailed = state.error == MemoryEditorError.PHOTO && !editor.hasPendingPhotoImport()) },
-        onShare = onShare, shareEnabled = eventId != null && state.ready && !state.busy && !state.completed && !state.hasChanges && !editor.hasPendingPhotoImport())
+        photosContent = {
+            MemoryPhotoEditor(
+                repository = photos,
+                photos = state.draft.photos,
+                readScope = PhotoReadScope.Draft(editor.photoDraftId),
+                enabled = state.ready && !state.busy && !state.completed,
+                photoState = photoEditState,
+                accessEpoch = photoAccessEpoch,
+                onPickerActiveChange = { photoPickerActive = it },
+                onSelect = editor::selectPhoto,
+                onRemove = editor::removePhoto,
+                onCrop = editor::setPhotoCrop,
+                onRotate = editor::rotatePhotoClockwise,
+                onReset = editor::resetPhotoEdit,
+                onConfirm = editor::confirmPhotoEdit,
+                onRetry = editor::retryPhotoEdit,
+                onCancel = editor::cancelPhotoEdit,
+                onRegisterViewer = editor::registerPhotoViewer,
+                onPrepareViewer = editor::preparePhotoViewer,
+                onCloseViewer = editor::closePhotoViewer,
+            )
+        },
+        onShare = onShare, shareEnabled = eventId != null && state.ready && !state.busy && !state.completed &&
+            !photoOperationActive && !state.hasChanges && !editor.hasPendingPhotoImport(),
+        photoOperationActive = photoOperationActive)
 }

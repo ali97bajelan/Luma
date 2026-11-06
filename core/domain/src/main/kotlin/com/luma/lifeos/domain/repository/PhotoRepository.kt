@@ -15,6 +15,9 @@ interface PhotoRepository {
     suspend fun releaseDraft(draftId: UUID)
     /** Encoded bounded preview, or null for missing, corrupt or unmanaged files. */
     suspend fun preview(photo: PhotoAttachment): ByteArray?
+    /** Existing gallery preview decoded under an authorized saved or live draft lease. */
+    suspend fun preview(photo: PhotoAttachment, scope: PhotoReadScope): ByteArray? =
+        if (scope == PhotoReadScope.Saved) preview(photo) else null
     /** Encoded bounded PNG backed by the managed image, or null when it cannot be read safely. */
     suspend fun display(
         photo: PhotoAttachment,

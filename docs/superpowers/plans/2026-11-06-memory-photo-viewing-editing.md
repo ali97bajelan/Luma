@@ -127,6 +127,7 @@ Register the main memory draft owner (`captureId.value`, exposed by the ViewMode
 ## MP-I04 — Stage and edit selections in create/edit memory
 
 **Requirements:** MP-R01/R03/R04/R05/R06. **Depends on:** MP-I01/I02/I03.
+**Status:** SOURCE COMPLETE — UNVERIFIED.
 
 **Files:** Create `MemoryPhotoEditSession.kt`, `MemoryPhotoEditor.kt`, `PhotoEditScreen.kt`; modify `PhotoDraftSession.kt`, `MemoryEditorViewModel.kt`, `MemoryEditorRoute.kt`, relevant `MemoryEditorScreen.kt` parent-action gating and localized strings.
 
@@ -134,13 +135,13 @@ Register the main memory draft owner (`captureId.value`, exposed by the ViewMode
 
 `MemoryPhotoEditState` is a sealed state: Idle, Importing, Editing, Applying or Failed. Non-Idle states carry the operation ID, staging lease ID and source/output IDs/references available at that stage; Editing/Failed carry `PhotoEdit`. Failed also carries retry stage and localized-error category. ViewModel exports state and delegates commands; UI owns neither persistence nor lease transfer.
 
-- [ ] Implement persisted staging identity before import; import once into the staging lease and show editing only after validation. Keep pending selection outside `MemoryDraft.photos`; use managed files after import. On failed initial import, Retry may reuse the URI; Select again handles lost access. Enforce capacity before selection and attachment.
-- [ ] Implement immutable Apply payload capture before transform. Same-payload retries reuse output ID; a changed edit invalidates the old operation and allocates a new ID. Keep original and identity Apply select the staged source. Guard all completions with operation and authorization generations.
-- [ ] Implement `attachImported`: recheck can-commit state and capacity, retain main-draft references first, then persist/update its list once. If the ID is already present, reconcile without duplicating. Release staging only after draft persistence succeeds; errors retain recoverable work. Save/discard continue using the existing draft session.
-- [ ] Restore from IDs/references and compact edit state. Detect already attached results; recover completed outputs without rerunning transformation, but require an explicit confirmation after restoring an unapplied edit. Reauthorize/register restored staging/main-draft leases from the route. Cancel invalidates operation generation before cleanup and never releases the main editor lease.
-- [ ] Build `PhotoEditScreen` with crop handles, edge percentage controls, rotate/reset, Apply/Keep original/Cancel, progress/retry and resolution-reduction explanation. Keep crop math shared with export. Add tags `memory_photo_edit`, `photo_edit_apply`, `photo_edit_keep_original`, `photo_edit_cancel`, `photo_edit_rotate`, `photo_edit_reset` and `photo_crop_<edge>`.
-- [ ] Introduce the memory-specific picker host `MemoryPhotoEditor`; leave shared `PhotoEditor` behavior unchanged for unrelated callers. Wire both new and existing memories, block competing parent actions while active, and make modal Back close the photo surface first. Wire editor attachment viewing with a distinct viewer lease; opening it must not dirty the draft.
-- [ ] Source-review failure transitions, attach/cleanup ordering, saved-state contents and create/edit parity. Hand off unverified source with no test or Gradle run.
+- [x] Implement persisted staging identity before import; import once into the staging lease and show editing only after validation. Keep pending selection outside `MemoryDraft.photos`; use managed files after import. On failed initial import, Retry may reuse the URI; Select again handles lost access. Enforce capacity before selection and attachment.
+- [x] Implement immutable Apply payload capture before transform. Same-payload retries reuse output ID; a changed edit invalidates the old operation and allocates a new ID. Keep original and identity Apply select the staged source. Guard all completions with operation and authorization generations.
+- [x] Implement `attachImported`: recheck can-commit state and capacity, retain main-draft references first, then persist/update its list once. If the ID is already present, reconcile without duplicating. Release staging only after draft persistence succeeds; errors retain recoverable work. Save/discard continue using the existing draft session.
+- [x] Restore from IDs/references and compact edit state. Detect already attached results; recover completed outputs without rerunning transformation, but require an explicit confirmation after restoring an unapplied edit. Reauthorize/register restored staging/main-draft leases from the route. Cancel invalidates operation generation before cleanup and never releases the main editor lease.
+- [x] Build `PhotoEditScreen` with crop handles, edge percentage controls, rotate/reset, Apply/Keep original/Cancel, progress/retry and resolution-reduction explanation. Keep crop math shared with export. Add tags `memory_photo_edit`, `photo_edit_apply`, `photo_edit_keep_original`, `photo_edit_cancel`, `photo_edit_rotate`, `photo_edit_reset` and `photo_crop_<edge>`.
+- [x] Introduce the memory-specific picker host `MemoryPhotoEditor`; leave shared `PhotoEditor` behavior unchanged for unrelated callers. Wire both new and existing memories, block competing parent actions while active, and make modal Back close the photo surface first. Wire editor attachment viewing with a distinct viewer lease; opening it must not dirty the draft.
+- [x] Source-review failure transitions, attach/cleanup ordering, saved-state contents and create/edit parity. Hand off unverified source with no test or Gradle run.
 
 ## MP-I05 — Integration and source handoff
 
