@@ -110,7 +110,7 @@ External pattern check (2026-11-04): TickTick documents [focus timers](https://h
 
 ## Product extension delivery — FP01–FP08
 
-Planning date: 2026-11-04 · Status: **FP01, FP03, FP04, FP05 and FP08 SOURCE COMPLETE — UNVERIFIED; FP07 PARTIAL — METADATA/TAG CORRECTION SOURCE COMPLETE, TASK UNLINK PENDING FX03; FX01 PARTIAL; FX07 PARTIAL (FX01 dependency pending); FX03 and FX08 NOT STARTED; FX09 PARTIAL; FX10 NOT STARTED; final QA NOT RUN**
+Planning date: 2026-11-04 · Status: **FP01, FP03, FP04, FP05 and FP08 SOURCE COMPLETE — UNVERIFIED; FP07 PARTIAL — METADATA/TAG CORRECTION SOURCE COMPLETE, TASK UNLINK PENDING FX03; FX01 PARTIAL; FX07 PARTIAL (FX01 dependency pending); FX03 and FX08 NOT STARTED; FX09 PARTIAL; FX10 BLOCKED — DEPENDENCIES INCOMPLETE; final QA NOT RUN**
 
 [Extension specification](superpowers/specs/2026-11-04-focus-product-extensions-design.md) · [Extension implementation plan](superpowers/plans/2026-11-04-focus-product-extensions.md) · [Separate final QA](feature-roadmap/focus-product-extensions-qa.md)
 
@@ -129,10 +129,12 @@ The requested spec/plan covers the minimum FP01–FP08 scope. Reusable presets r
 | FX07 | Versioned weekly goals and actionable Review distribution | FX01, FX06 | FP05, FP08 | PARTIAL — FP05 and FP08 SOURCE COMPLETE — UNVERIFIED; FX01 foundation pending | NOT RUN |
 | FX08 | Opt-in scheduled invitations and safe reminder reconciliation | FX01, FX04, FX05 | FP06 | NOT STARTED | NOT RUN |
 | FX09 | Session corrections, tag rename/merge and report invalidation | FX01, FX03, FX06 | FP07 | PARTIAL — session name/tag edits and tag rename/merge source complete; task unlink/privacy awaits FX03 | NOT RUN |
-| FX10 | Integrated privacy/navigation/restore/reset, localization and source handoff | FX01–FX09 | All FP01–FP08 | NOT STARTED | NOT RUN |
+| FX10 | Integrated privacy/navigation/restore/reset, localization and source handoff | FX01–FX09 | All FP01–FP08 | BLOCKED — dependency review only; FX01, FX03, FX07, FX08 and FX09 incomplete | NOT RUN |
 | FX-QA | Test authoring, all-layer execution, integrated journeys, fixes/retests and evidence | ALL FX01–FX10 source complete | FP-A01–09; FX-Q01–12; applicable FI/FM gaps | NOT STARTED | NOT RUN |
 
 The earlier FI-only source-check restrictions below describe the existing handoff. The new extension has the distinct two-phase workflow above; the final QA document specifies future Gradle/device work after the source-complete gate. No tests or device/build tooling run as part of generating these documents. Existing FI/FM evidence and unresolved enforcement/platform limitations remain unchanged; no historic PASS carries automatically to the future extension candidate.
+
+**FX10 dependency review (2026-11-06): BLOCKED — NOT SOURCE COMPLETE.** The integrated sweep requires the unfinished task-link/provenance contracts and flow (FX01/FX03), invitation implementation (FX01/FX08), and the remaining FX07/FX09 work. In particular, dual-section privacy and mixed-report suppression cannot be integrated or reviewed against task-origin records that do not exist yet, and invitation cancellation/reconciliation cannot be connected before invitations exist. Existing Focus replacement/reset hooks quiesce Focus writes, end breaks and cancel the current timer alarm; their complete cross-feature behavior still requires the FX10 sweep after dependencies land. No implementation or QA is claimed by this review. FX-QA remains NOT RUN and its entry gate remains closed; FI02 and applicable FI/FM limitations remain carried forward.
 
 **FP01 delivery (2026-11-04): SOURCE COMPLETE — UNVERIFIED.** Repeat reloads the latest terminal session under Focus access and prefills its editable name/tag; a legacy unnamed session requires a valid name, Start another clears the draft, and no timer starts before explicit Start. Completion and terminal history detail both offer Repeat. FX04 and FX06 have since added timed configuration and next-step context to Repeat; task links remain pending with FX03. Source review only; FX-Q01/09 and the rest of FX-QA remain NOT RUN. The broader FX01 schema/archive work remains partial for task, reminder and session-correction contracts.
 
