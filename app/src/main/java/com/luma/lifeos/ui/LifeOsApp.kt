@@ -1469,7 +1469,13 @@ fun LifeOsApp(
                 val id = EventId.parse(requireNotNull(entry.arguments?.getString("eventId")))
                 EventDetailRoute(timeline, photos, id, currentDay.zone, onBack = { navController.popBackStack() },
                     onEdit = ::editEvent, onMemory = { navController.navigate("memory?eventId=$id") },
-                    onShare = { kind -> navController.navigate("entry_share/$id/${kind.name}") })
+                    onShare = { kind -> navController.navigate("entry_share/$id/${kind.name}") },
+                    photoDraftAccessRegistry = photoDraftAccessRegistry,
+                    photoAccessEpoch = com.luma.lifeos.ui.photos.PhotoViewerAccessEpoch(
+                        lockSnapshot.policy?.generation,
+                        lockSnapshot.sessionGeneration,
+                        lockSnapshot.loadStatus,
+                    ))
             }
             composable("memory?eventId={eventId}&initialTime={initialTime}", arguments = listOf(
                 navArgument("eventId") { type = NavType.StringType; nullable = true; defaultValue = null },

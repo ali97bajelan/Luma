@@ -96,16 +96,17 @@ Register the main memory draft owner (`captureId.value`, exposed by the ViewMode
 ## MP-I02 — Full-screen memory photo viewer
 
 **Requirements:** MP-R01/R02/R06. **Depends on:** MP-I01.
+**Status:** SOURCE COMPLETE — UNVERIFIED.
 
-**Files:** Create `PhotoViewer.kt` and `PhotoViewerState.kt`; modify `PhotoGallery.kt`, `EventDetailRoute.kt` and viewer copy in all three locale files. Final editor wiring is MP-I04.
+**Files:** Create `PhotoViewer.kt` and `PhotoViewerState.kt`; modify `PhotoGallery.kt`, `EventDetailRoute.kt`, pass the registry and access epoch from `LifeOsApp.kt`, and add viewer copy in all three locale files. Final editor wiring is MP-I04.
 
 **Interfaces:** Extend `PhotoGallery(..., onRemove: ((UUID) -> Unit)? = null, onOpen: ((UUID) -> Unit)? = null)`. Add `PhotoViewer(repository: PhotoRepository, photos: List<PhotoAttachment>, initialId: UUID, readScope: PhotoReadScope, onDismiss: () -> Unit)` as a composable. Viewer state stores selected UUID and compact zoom/pan state, never image bytes.
 
-- [ ] Add a separate enabled photo-open target and preserve Remove behavior. Keep all existing callers source-compatible; opt memory details in with `record.memory != null` or standalone MEMORY classification. Do not enable unrelated gallery callers implicitly.
-- [ ] Implement fit, selected-ID navigation, 1×–4× zoom, bounded pan, double-tap and named controls/actions. Cancel/discard old image requests and clear previous imagery before changing position. Expose `photo_viewer`, `photo_viewer_close`, `photo_viewer_previous`, `photo_viewer_next`, `photo_viewer_zoom_in`, `photo_viewer_zoom_out`, `photo_viewer_reset`, and `photo_open_<id>` tags.
-- [ ] Acquire a distinct viewer lease before display. Register its scope where needed; retain it across configuration recreation, reconcile lease IDs after process recreation, and release only that lease on actual dismissal/route disposal. Handle attachment deletion/removal by closing unavailable selection safely.
-- [ ] Implement localized progress, unavailable/Retry/Close, inset handling and focus restoration. Ensure any Dialog window inherits screenshot protection; clear the surface immediately on lock/revocation and require a fresh authorized load.
-- [ ] Wire memory detail selection without changing its scroll/back stack or library-card layout. Source-review decoding, accessibility and lease ownership; hand off unverified source.
+- [x] Add a separate enabled photo-open target and preserve Remove behavior. Keep all existing callers source-compatible; opt memory details in with `record.memory != null` or standalone MEMORY classification. Do not enable unrelated gallery callers implicitly.
+- [x] Implement fit, selected-ID navigation, 1×–4× zoom, bounded pan, double-tap and named controls/actions. Cancel/discard old image requests and clear previous imagery before changing position. Expose `photo_viewer`, `photo_viewer_close`, `photo_viewer_previous`, `photo_viewer_next`, `photo_viewer_zoom_in`, `photo_viewer_zoom_out`, `photo_viewer_reset`, and `photo_open_<id>` tags.
+- [x] Acquire a distinct viewer lease before display. Register its scope where needed; retain it across configuration recreation, reconcile lease IDs after process recreation, and release only that lease on actual dismissal/route disposal. Handle attachment deletion/removal by closing unavailable selection safely.
+- [x] Implement localized progress, unavailable/Retry/Close, inset handling and focus restoration. Ensure any Dialog window inherits screenshot protection; clear the surface immediately on lock/revocation and require a fresh authorized load.
+- [x] Wire memory detail selection without changing its scroll/back stack or library-card layout. Source-review decoding, accessibility and lease ownership; hand off unverified source.
 
 ## MP-I03 — Immutable crop/rotate processing and safe publication
 

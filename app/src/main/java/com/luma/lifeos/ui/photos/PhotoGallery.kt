@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -58,13 +60,19 @@ fun PhotoEditor(repository: PhotoRepository, photos: List<PhotoAttachment>, enab
 
 @Composable
 fun PhotoGallery(repository: PhotoRepository, photos: List<PhotoAttachment>, enabled: Boolean = true,
-    onRemove: ((UUID) -> Unit)? = null) {
+    onRemove: ((UUID) -> Unit)? = null, onOpen: ((UUID) -> Unit)? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         photos.forEachIndexed { index, photo ->
             key(photo.id) {
                 LumaListSurface(Modifier.testTag("photo_card_${photo.id}")) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PhotoPreview(repository, photo, index + 1)
+                        PhotoPreview(
+                            repository,
+                            photo,
+                            index + 1,
+                            enabled = enabled,
+                            onOpen = onOpen?.let { open -> { open(photo.id) } },
+                        )
                         onRemove?.let { remove ->
                             TextButton(enabled = enabled, onClick = { remove(photo.id) }, modifier = Modifier.testTag("photo_remove_${photo.id}")) {
                                 Text(stringResource(R.string.photo_remove))
@@ -78,7 +86,13 @@ fun PhotoGallery(repository: PhotoRepository, photos: List<PhotoAttachment>, ena
 }
 
 @Composable
-private fun PhotoPreview(repository: PhotoRepository, photo: PhotoAttachment, number: Int) {
+private fun PhotoPreview(
+    repository: PhotoRepository,
+    photo: PhotoAttachment,
+    number: Int,
+    enabled: Boolean = true,
+    onOpen: (() -> Unit)? = null,
+) {
     var preview by remember(repository, photo) { mutableStateOf<ImageBitmap?>(null) }
     var loading by remember { mutableStateOf(true) }
     var retry by remember { mutableIntStateOf(0) }
@@ -97,13 +111,30 @@ private fun PhotoPreview(repository: PhotoRepository, photo: PhotoAttachment, nu
             } finally { loading = false }
         }
     }
-    if (loading) CircularProgressIndicator()
-    else preview?.let { bitmap ->
-        Image(bitmap, contentDescription = stringResource(R.string.photo_number, number),
-            modifier = Modifier.fillMaxWidth().height(240.dp).testTag("photo_preview_${photo.id}"), contentScale = ContentScale.Fit)
-    } ?: Column(Modifier.testTag("photo_unavailable_${photo.id}")) {
-        AccessibleFeedback(stringResource(R.string.photo_unavailable), Modifier.testTag("photo_preview_error"))
-        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+    val openLabel = if (onOpen != null) stringResource(R.string.photo_open) else null
+    val openModifier = if (onOpen != null) {
+        Modifier.clickable(
+            enabled = enabled,
+            onClickLabel = openLabel,
+            role = Role.Button,
+        ) { onOpen() }
+    } else Modifier
+    Box(
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).then(openModifier)
+            .testTag(if (onOpen != null) "photo_open_${photo.id}" else "photo_preview_${photo.id}"),
+    ) {
+        if (loading) CircularProgressIndicator()
+        else preview?.let { bitmap ->
+            Image(
+                bitmap,
+                contentDescription = stringResource(R.string.photo_number, number),
+                modifier = Modifier.fillMaxWidth().height(240.dp).testTag("photo_preview_${photo.id}"),
+                contentScale = ContentScale.Fit,
+            )
+        } ?: Column(Modifier.testTag("photo_unavailable_${photo.id}")) {
+            AccessibleFeedback(stringResource(R.string.photo_unavailable), Modifier.testTag("photo_preview_error"))
+            TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+        }
     }
 }
 
