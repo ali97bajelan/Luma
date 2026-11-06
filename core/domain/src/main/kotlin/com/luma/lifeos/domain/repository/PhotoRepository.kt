@@ -3,6 +3,7 @@ package com.luma.lifeos.domain.repository
 import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.PhotoDisplayRequest
+import com.luma.lifeos.domain.model.PhotoEdit
 import com.luma.lifeos.domain.model.PhotoReadScope
 import java.util.UUID
 
@@ -24,6 +25,13 @@ interface PhotoRepository {
     suspend fun isRetainedBy(leaseId: UUID, photo: PhotoAttachment): Boolean = false
     /** Safe ownership metadata for authorizing a saved attachment before decoding its bytes. */
     suspend fun ownerEventId(photoId: UUID): EventId? = null
+    /** Writes a bounded, immutable derived PNG to a fresh output ID owned by the draft. */
+    suspend fun transform(
+        draftId: UUID,
+        outputId: UUID,
+        source: PhotoAttachment,
+        edit: PhotoEdit,
+    ): PhotoAttachment = throw UnsupportedOperationException("Photo transformation is not supported")
     /** Removes only currently unreferenced, unleased, managed files; never inside a DB transaction. */
     suspend fun cleanup()
 }

@@ -111,17 +111,18 @@ Register the main memory draft owner (`captureId.value`, exposed by the ViewMode
 ## MP-I03 — Immutable crop/rotate processing and safe publication
 
 **Requirements:** MP-R03/R04/R05. **Depends on:** MP-I01.
+**Status:** SOURCE COMPLETE — UNVERIFIED.
 
 **Files:** Create `D/model/PhotoEdit.kt`, `R/media/AndroidPhotoTransform.kt`, `A/ui/photos/PhotoCropGeometry.kt`; extend `PhotoRepository.kt`, `RoomPhotoRepository.kt`, `ManagedPhotoFiles.kt` and `ProtectedAggregateRepositories.kt`.
 
 **Consumes:** MP-I01 scopes, budgets, canonical managed-file access and draft registration.
 **Produces:** `transform` above; domain functions `rotateCropClockwise(crop: PhotoCrop): PhotoCrop` and `cropPixelBounds(crop: PhotoCrop, width: Int, height: Int): PhotoPixelBounds` in `D/model/PhotoEdit.kt`. `PhotoPixelBounds` contains validated integer left/top/right/bottom bounds. The UI-only `PhotoCropGeometry.kt` maps handles/viewport positions to those shared normalized coordinates; the data module never imports app UI code.
 
-- [ ] Define edit validation and clockwise crop mapping: `(left, top, right, bottom)` becomes `(1-bottom, left, 1-top, right)`. Rotating increments quarter turns modulo four. Pixel bounds floor left/top, ceil right/bottom, clamp to oriented dimensions and remain nonempty. Reset uses full bounds/zero turns.
-- [ ] Implement EXIF normalization → declared rotation → crop → bounded export. Map crop back to the decoded source region correctly; do not crop a 640-pixel thumbnail or allocate an unbounded 40-megapixel intermediate. Recycle source/intermediate bitmaps as ownership changes. Preserve alpha in PNG output.
-- [ ] Add a managed derived-file publication operation with a caller-chosen fresh output ID: retain before write, write `.part`, fsync, inspect size/MIME/dimensions, atomically publish `.img`, clean partial output on failure. Reuse completed output only for the exact immutable operation ID/payload. Never overwrite source or change an existing attachment's file identity.
-- [ ] Implement `transform` and its explicit protected override. Require source membership in an active draft scope, authorize any existing owner and verify the current epoch before returning/publishing into app state. Check cancellation between expensive stages; stale completions cannot attach.
-- [ ] Keep identity handling in the coordinator: it attaches the staged source unchanged instead of calling transform. Source-review orientation, maximum dimensions, size failure, retry identities and cleanup interactions; hand off unverified source.
+- [x] Define edit validation and clockwise crop mapping: `(left, top, right, bottom)` becomes `(1-bottom, left, 1-top, right)`. Rotating increments quarter turns modulo four. Pixel bounds floor left/top, ceil right/bottom, clamp to oriented dimensions and remain nonempty. Reset uses full bounds/zero turns.
+- [x] Implement EXIF normalization → declared rotation → crop → bounded export. Map crop back to the decoded source region correctly; do not crop a 640-pixel thumbnail or allocate an unbounded 40-megapixel intermediate. Recycle source/intermediate bitmaps as ownership changes. Preserve alpha in PNG output.
+- [x] Add a managed derived-file publication operation with a caller-chosen fresh output ID: retain before write, write `.part`, fsync, inspect size/MIME/dimensions, atomically publish `.img`, clean partial output on failure. Reuse completed output only for the exact immutable operation ID/payload. Never overwrite source or change an existing attachment's file identity.
+- [x] Implement `transform` and its explicit protected override. Require source membership in an active draft scope, authorize any existing owner and verify the current epoch before returning/publishing into app state. Check cancellation between expensive stages; stale completions cannot attach.
+- [x] Keep the transform identity-agnostic; MP-I04's coordinator must attach the staged source unchanged instead of calling transform. Source-review orientation, maximum dimensions, size failure, retry identities and cleanup interactions; hand off unverified source.
 
 ## MP-I04 — Stage and edit selections in create/edit memory
 

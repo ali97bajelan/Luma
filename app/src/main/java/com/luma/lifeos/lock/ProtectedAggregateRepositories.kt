@@ -23,6 +23,7 @@ import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.model.PhotoDisplayRequest
+import com.luma.lifeos.domain.model.PhotoEdit
 import com.luma.lifeos.domain.model.PhotoReadScope
 import com.luma.lifeos.domain.repository.DailySummaryRepository
 import com.luma.lifeos.domain.repository.PhotoRepository
@@ -40,6 +41,11 @@ import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.selects.select
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
@@ -287,6 +293,76 @@ class ProtectedPhotoRepository(
         return gateway.sameAuthorizationEpoch(before, after) && ownerRequest == latestOwnerRequest &&
             (latestOwnerRequest == null || after.decide(latestOwnerRequest) == com.luma.lifeos.domain.lock.AccessDecision.Allow) &&
             allowsPhotoSections(after, sections) && permitted && retained && access.tokenFor(leaseId) == scopeToken
+    }
+
+    override suspend fun transform(
+        draftId: UUID,
+        outputId: UUID,
+        source: PhotoAttachment,
+        edit: PhotoEdit,
+    ): PhotoAttachment {
+        if (outputId == source.id) throw unclassifiedExistingRecord()
+        val access = draftAccess ?: throw unclassifiedExistingRecord()
+        val scopeToken = access.tokenFor(draftId) ?: throw unclassifiedExistingRecord()
+        val routeSections = access.requiredSections(draftId) ?: throw unclassifiedExistingRecord()
+        if (!access.permits(draftId, source) || !delegate.isRetainedBy(draftId, source)) {
+            throw unclassifiedExistingRecord()
+        }
+        val sourceOwnerRequest = photoOwnerReadRequest(source.id)
+        val outputOwnerRequest = photoOwnerReadRequest(outputId)
+        val required = routeSections + sourceOwnerRequest?.requiredSections.orEmpty() +
+            outputOwnerRequest?.requiredSections.orEmpty()
+        val beforeAdmission = gateway.snapshot.value
+        if (!allowsPhotoSections(beforeAdmission, routeSections) ||
+            (sourceOwnerRequest != null && beforeAdmission.decide(sourceOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
+            (outputOwnerRequest != null && beforeAdmission.decide(outputOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow)
+        ) throw unclassifiedExistingRecord()
+
+        val result = coroutineScope {
+            val transformation = async { delegate.transform(draftId, outputId, source, edit) }
+            val revoked = async {
+                gateway.snapshot.first { state ->
+                    !gateway.sameAuthorizationEpoch(beforeAdmission, state) ||
+                        !allowsPhotoSections(state, routeSections) ||
+                        (sourceOwnerRequest != null &&
+                            state.decide(sourceOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
+                        (outputOwnerRequest != null &&
+                            state.decide(outputOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow)
+                }
+            }
+            try {
+                select<PhotoAttachment> {
+                    transformation.onAwait { photo ->
+                        revoked.cancel()
+                        photo
+                    }
+                    revoked.onAwait {
+                        transformation.cancelAndJoin()
+                        throw unclassifiedExistingRecord()
+                    }
+                }
+            } finally {
+                transformation.cancel()
+                revoked.cancel()
+            }
+        }
+        val after = gateway.snapshot.value
+        val latestSections = access.requiredSections(draftId)
+        val latestSourceOwner = photoOwnerReadRequest(source.id)
+        val latestOutputOwner = photoOwnerReadRequest(result.id)
+        val latestSourceRetained = delegate.isRetainedBy(draftId, source)
+        val resultRetained = delegate.isRetainedBy(draftId, result)
+        val sourceStillPermitted = access.permits(draftId, source)
+        val resultPermitted = access.permits(draftId, result)
+        if (result.id != outputId || result.relativePath != "photos/$outputId.img" ||
+            !gateway.sameAuthorizationEpoch(beforeAdmission, after) || latestSections != routeSections ||
+            latestSourceOwner != sourceOwnerRequest || latestOutputOwner != outputOwnerRequest ||
+            (latestSourceOwner != null && after.decide(latestSourceOwner) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
+            (latestOutputOwner != null && after.decide(latestOutputOwner) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
+            !allowsPhotoSections(after, latestSections) || !latestSourceRetained || !resultRetained ||
+            !sourceStillPermitted || !resultPermitted || access.tokenFor(draftId) != scopeToken
+        ) throw unclassifiedExistingRecord()
+        return result
     }
 
     private suspend fun photoReadRequest(photoId: UUID): LockRequest {

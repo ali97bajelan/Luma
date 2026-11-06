@@ -40,6 +40,37 @@ internal object AndroidPhotoCodec {
         } } finally { bitmap.recycle() }
     }
 
+    /** Decodes a source at working resolution after ImageDecoder applies its EXIF orientation. */
+    fun decodeWorking(file: File): Bitmap {
+        require(file.length() in 1..PhotoLimits.BYTES) { "Photo is empty or too large" }
+        val bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
+            val width = info.size.width
+            val height = info.size.height
+            val sourcePixels = width.toLong() * height.toLong()
+            require(width > 0 && height > 0 && sourcePixels <= PhotoLimits.PIXELS) {
+                "Photo dimensions are too large"
+            }
+            val scale = minOf(
+                1.0,
+                PhotoWorkingLimits.EDGE.toDouble() / maxOf(width, height),
+                kotlin.math.sqrt(PhotoWorkingLimits.PIXELS.toDouble() / sourcePixels),
+            )
+            decoder.setTargetSize(
+                maxOf(1, (width * scale).toInt()),
+                maxOf(1, (height * scale).toInt()),
+            )
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+        }
+        if (bitmap.width <= 0 || bitmap.height <= 0 ||
+            maxOf(bitmap.width, bitmap.height) > PhotoWorkingLimits.EDGE ||
+            bitmap.width.toLong() * bitmap.height.toLong() > PhotoWorkingLimits.PIXELS
+        ) {
+            bitmap.recycle()
+            throw IllegalArgumentException("Photo working dimensions are too large")
+        }
+        return bitmap
+    }
+
     /** Decodes only the source detail needed by the requested viewport, within strict work bounds. */
     fun display(file: File, request: PhotoDisplayRequest): ByteArray {
         require(file.length() in 1..PhotoLimits.BYTES) { "Photo is empty or too large" }
