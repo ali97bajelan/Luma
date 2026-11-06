@@ -16,6 +16,7 @@ import com.luma.lifeos.domain.repository.PlaceRepository
 import com.luma.lifeos.ui.people.PersonPicker
 import com.luma.lifeos.domain.repository.PersonRepository
 import com.luma.lifeos.domain.repository.MemoryRepository
+import com.luma.lifeos.lock.PhotoDraftAccessRegistry
 import com.luma.lifeos.domain.model.PersonTextLimits
 import com.luma.lifeos.ui.navigation.CatalogAttachmentFeedback
 import com.luma.lifeos.ui.navigation.CatalogEditorResult
@@ -32,15 +33,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel: () -> Unit,
     onFinished: (EntryEditorResult) -> Unit, people: PersonRepository, onCreatePerson: () -> Unit,
     places: PlaceRepository, onCreatePlace: () -> Unit, photos: PhotoRepository, initialTimeMillis: Long? = null,
-    catalogResultHandle: SavedStateHandle? = null, onShare: (() -> Unit)? = null) {
-    val factory = remember(repository, eventId, photos, initialTimeMillis) {
+    catalogResultHandle: SavedStateHandle? = null, onShare: (() -> Unit)? = null,
+    photoDraftAccessRegistry: PhotoDraftAccessRegistry? = null, photoAccessEpoch: Pair<Long, Long>? = null) {
+    val factory = remember(repository, eventId, photos, initialTimeMillis, photoDraftAccessRegistry) {
         viewModelFactory { initializer {
             MemoryEditorViewModel(repository, eventId, createSavedStateHandle(), photoRepository = photos,
-                initialTimeMillis = initialTimeMillis)
+                initialTimeMillis = initialTimeMillis, photoDraftAccessRegistry = photoDraftAccessRegistry)
         } }
     }
     val editor: MemoryEditorViewModel = viewModel(factory = factory)
     val state by editor.state.collectAsStateWithLifecycle()
+    DisposableEffect(editor, photoDraftAccessRegistry, photoAccessEpoch) {
+        val routeGeneration = editor.enterPhotoRoute()
+        onDispose { editor.leavePhotoRoute(routeGeneration) }
+    }
     val resultIdFlow = remember(catalogResultHandle) {
         catalogResultHandle?.catalogEditorResultIdFlow() ?: MutableStateFlow<String?>(null)
     }

@@ -21,8 +21,11 @@ class ManagedPhotoFiles(directory: File, private val maxBytes: Long = PhotoLimit
         val path = "photos/$id.img"
         val target = managed(path) ?: error("Unsafe photo file")
         val previousLease = leasedBy(owner)
+        if (target.exists()) {
+            require(path in previousLease && target.isFile) { "Photo identity already exists outside this draft" }
+            return PhotoAttachment(id, path, inspect(target))
+        }
         retainPaths(owner, previousLease + path)
-        if (target.isFile) return PhotoAttachment(id, path, inspect(target))
         val temporary = File(root, "$id.part")
         check(temporary.canonicalFile == temporary.absoluteFile)
         try {
@@ -76,9 +79,27 @@ class ManagedPhotoFiles(directory: File, private val maxBytes: Long = PhotoLimit
             return PhotoAttachment(id, path, metadata)
         } finally { temporary.delete() }
     }
-    fun retain(owner: UUID, photos: List<PhotoAttachment>) = retainPaths(owner, photos.map { it.relativePath }.toSet())
+    fun retain(owner: UUID, photos: List<PhotoAttachment>) {
+        require(photos.all { photo ->
+            photo.relativePath == "photos/${photo.id}.img" && managed(photo.relativePath) != null
+        }) { "Photo identity does not match its managed path" }
+        retainPaths(owner, photos.map { it.relativePath }.toSet())
+    }
     fun release(owner: UUID) { check(!lease(owner).exists() || lease(owner).delete()) { "Could not release photo draft" } }
     fun resolve(path: String): File? = managed(path)?.takeIf { it.isFile }
+    fun resolve(photo: PhotoAttachment): File? =
+        photo.relativePath.takeIf { it == "photos/${photo.id}.img" }?.let(::resolve)
+
+    fun isRetainedBy(owner: UUID, photo: PhotoAttachment): Boolean = try {
+        val path = "photos/${photo.id}.img"
+        if (photo.relativePath != path || managed(path) == null) false
+        else {
+            val lease = lease(owner)
+            lease.isFile && lease.canonicalFile == lease.absoluteFile && lease.readLines().any { it == path }
+        }
+    } catch (_: Exception) {
+        false
+    }
 
     fun clean(referenced: Set<String>) {
         // An unreadable lease aborts cleanup rather than risking a draft's files.

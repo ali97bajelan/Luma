@@ -80,17 +80,18 @@ Register the main memory draft owner (`captureId.value`, exposed by the ViewMode
 ## MP-I01 — Original-backed display and private read contracts
 
 **Requirements:** MP-R01/R02/R05. **Depends on:** none.
+**Status:** SOURCE COMPLETE — UNVERIFIED.
 
 **Files:** Domain display model/repository, `AndroidPhotoCodec.kt`, `ManagedPhotoFiles.kt`, `RoomPhotoRepository.kt`, protected facade/registry and registry wiring files listed above.
 
 **Consumes:** Existing private import, retain/release draft, shared photo mutex and gateway generations.
 **Produces:** `display`, `isRetainedBy`, validated display/scope types and active-route draft access registration. MP-I02/I04 consume these without raw storage access.
 
-- [ ] Define display budgets, request validation and Saved/Draft scopes. Preserve the 640-pixel `preview()` behavior.
-- [ ] Add `ManagedPhotoFiles.isRetainedBy(leaseId, photo)` with canonical identity/path matching; missing/unreadable lease returns false. Add bounded source-backed display decoding to `AndroidPhotoCodec`, honoring EXIF and request aspect ratio without upscaling. Move file/decode work off main and release temporary bitmaps.
-- [ ] Implement repository display under the shared mutex. A Draft read must prove lease membership; resolve only canonical managed files. Bound both decoded dimensions and encoded output; missing/corrupt reads return null, coroutine cancellation propagates.
-- [ ] Implement the route registry and explicit `ProtectedPhotoRepository` overrides for display/membership and scoped import/retain behavior; protect results before/after asynchronous reads. Register viewer/editor leases only after authorization and before file work. Wire one registry instance from `LumaApplication` through the existing app/route dependency chain.
-- [ ] Source-review all new sensitive paths for delegated bypasses, saved owner classification, staged-photo authorization and stale-generation returns. Hand off MP-I01 as source complete and unverified; run no build/tests.
+- [x] Define display budgets, request validation and Saved/Draft scopes. Preserve the 640-pixel `preview()` behavior.
+- [x] Add `ManagedPhotoFiles.isRetainedBy(leaseId, photo)` with canonical identity/path matching; missing/unreadable lease returns false. Add bounded source-backed display decoding to `AndroidPhotoCodec`, honoring EXIF and request aspect ratio without upscaling. Move file/decode work off main and release temporary bitmaps.
+- [x] Implement repository display under the shared mutex. A Draft read must prove lease membership; resolve only canonical managed files. Bound both decoded dimensions and encoded output; missing/corrupt reads return null, coroutine cancellation propagates.
+- [x] Implement the route registry and explicit `ProtectedPhotoRepository` overrides for display/membership and scoped import/retain behavior; protect results before/after asynchronous reads. Register viewer/editor leases only after authorization and before file work. Wire one registry instance from `LumaApplication` through the existing app/route dependency chain.
+- [x] Source-review all new sensitive paths for delegated bypasses, saved owner classification, staged-photo authorization and stale-generation returns. Hand off MP-I01 as source complete and unverified; run no build/tests.
 
 ## MP-I02 — Full-screen memory photo viewer
 

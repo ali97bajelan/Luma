@@ -251,6 +251,7 @@ fun LifeOsApp(
     onForgottenLockResetConfirmed: (() -> Unit)? = null,
     onLockUnlockRequested: () -> Unit = {},
     lockSensitiveOperationGuard: LockSensitiveOperationGuard? = null,
+    photoDraftAccessRegistry: com.luma.lifeos.lock.PhotoDraftAccessRegistry? = null,
 ) {
     if (usage != null) UsageForegroundRefresh(usage)
     if (health != null) com.luma.lifeos.ui.health.HealthForegroundRefresh(health)
@@ -1488,6 +1489,8 @@ fun LifeOsApp(
                             entry.savedStateHandle.beginCatalogRequest(CatalogEntity.PLACE)
                             navController.navigate("place")
                         }, photos = photos, catalogResultHandle = entry.savedStateHandle,
+                        photoDraftAccessRegistry = photoDraftAccessRegistry,
+                        photoAccessEpoch = lockSnapshot.policy?.generation?.let { it to lockSnapshot.sessionGeneration },
                         onShare = entry.arguments?.getString("eventId")?.let { id -> { navController.navigate("entry_share/$id/MEMORY") } })
             }
             composable("journal_detail/{eventId}", arguments = listOf(navArgument("eventId") { type = NavType.StringType })) { entry ->

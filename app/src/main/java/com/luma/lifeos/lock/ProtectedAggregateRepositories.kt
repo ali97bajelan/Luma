@@ -22,6 +22,8 @@ import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.model.PhotoAttachment
+import com.luma.lifeos.domain.model.PhotoDisplayRequest
+import com.luma.lifeos.domain.model.PhotoReadScope
 import com.luma.lifeos.domain.repository.DailySummaryRepository
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
@@ -121,14 +123,86 @@ class ProtectedWeeklyReviewRepository(
 class ProtectedPhotoRepository(
     private val delegate: PhotoRepository,
     private val gateway: ProtectedContentGateway,
+    private val draftAccess: PhotoDraftAccessRegistry? = null,
 ) : PhotoRepository by delegate {
-    override suspend fun import(draftId: UUID, id: UUID, source: String): PhotoAttachment =
-        gateway.commit(LockOperation.CREATE, LockSection.entries.toSet()) { delegate.import(draftId, id, source) }
-
-    override suspend fun retainDraft(draftId: UUID, photos: List<PhotoAttachment>) =
-        gateway.commit(LockOperation.UPDATE, requiredPhotoSections(photos), draftId.toString()) {
-            delegate.retainDraft(draftId, photos)
+    override suspend fun import(draftId: UUID, id: UUID, source: String): PhotoAttachment {
+        val access = draftAccess
+        val scopeToken = access?.tokenFor(draftId)
+        if (access == null || scopeToken == null) {
+            return gateway.commit(LockOperation.CREATE, LockSection.entries.toSet()) {
+                delegate.import(draftId, id, source)
+            }
         }
+        val routeSections = access.requiredSections(draftId) ?: throw unclassifiedExistingRecord()
+        val ownerRequest = photoOwnerReadRequest(id)
+        val sections = routeSections + ownerRequest?.requiredSections.orEmpty()
+        return gateway.commit(LockOperation.UPDATE, sections, draftId.toString()) {
+            if (access.tokenFor(draftId) != scopeToken || access.requiredSections(draftId) != routeSections) {
+                throw unclassifiedExistingRecord()
+            }
+            val before = gateway.snapshot.value
+            if (ownerRequest != null && before.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) {
+                throw unclassifiedExistingRecord()
+            }
+            val photo = delegate.import(draftId, id, source)
+            val latestOwnerRequest = photoOwnerReadRequest(id)
+            val latestRouteSections = access.requiredSections(draftId)
+            val retained = delegate.isRetainedBy(draftId, photo)
+            val permitted = access.permits(draftId, photo)
+            val finalSnapshot = gateway.snapshot.value
+            if (!gateway.sameAuthorizationEpoch(before, finalSnapshot) || latestRouteSections != routeSections ||
+                ownerRequest != latestOwnerRequest ||
+                (latestOwnerRequest != null && finalSnapshot.decide(latestOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
+                !allowsPhotoSections(finalSnapshot, routeSections) ||
+                !retained || !permitted || access.tokenFor(draftId) != scopeToken
+            ) throw unclassifiedExistingRecord()
+            photo
+        }
+    }
+
+    override suspend fun retainDraft(draftId: UUID, photos: List<PhotoAttachment>) {
+        val access = draftAccess
+        val scopeToken = access?.tokenFor(draftId)
+        if (access == null || scopeToken == null) {
+            gateway.commit(LockOperation.UPDATE, requiredPhotoSections(photos), draftId.toString()) {
+                delegate.retainDraft(draftId, photos)
+            }
+            return
+        }
+        val routeSections = access.requiredSections(draftId) ?: throw unclassifiedExistingRecord()
+        val ownerRequests = photos.map { photo -> photoOwnerReadRequest(photo.id) }
+        val required = routeSections + ownerRequests.filterNotNull().flatMap { it.requiredSections }
+        gateway.commit(LockOperation.UPDATE, required, draftId.toString()) {
+            val before = gateway.snapshot.value
+            if (access.tokenFor(draftId) != scopeToken || access.requiredSections(draftId) != routeSections) {
+                throw unclassifiedExistingRecord()
+            }
+            photos.forEachIndexed { index, photo ->
+                if (!access.permits(draftId, photo)) throw unclassifiedExistingRecord()
+                val ownerRequest = ownerRequests[index]
+                if (ownerRequest != null && before.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) {
+                    throw unclassifiedExistingRecord()
+                }
+                if (ownerRequest == null && !isRetainedByEditorLease(access, draftId, photo)) {
+                    throw unclassifiedExistingRecord()
+                }
+            }
+            if (access.tokenFor(draftId) != scopeToken) throw unclassifiedExistingRecord()
+            delegate.retainDraft(draftId, photos)
+            val latestOwnerRequests = photos.map { photo -> photoOwnerReadRequest(photo.id) }
+            val latestRouteSections = access.requiredSections(draftId)
+            val retained = photos.all { delegate.isRetainedBy(draftId, it) }
+            val permitted = photos.all { access.permits(draftId, it) }
+            val after = gateway.snapshot.value
+            if (!gateway.sameAuthorizationEpoch(before, after) || latestRouteSections != routeSections ||
+                latestOwnerRequests != ownerRequests || !retained || !permitted || access.tokenFor(draftId) != scopeToken ||
+                !allowsPhotoSections(after, routeSections) ||
+                latestOwnerRequests.filterNotNull().any {
+                    after.decide(it) != com.luma.lifeos.domain.lock.AccessDecision.Allow
+                }
+            ) throw unclassifiedExistingRecord()
+        }
+    }
 
     override suspend fun releaseDraft(draftId: UUID) =
         delegate.releaseDraft(draftId)
@@ -149,15 +223,92 @@ class ProtectedPhotoRepository(
         return bytes
     }
 
+    override suspend fun display(
+        photo: PhotoAttachment,
+        request: PhotoDisplayRequest,
+        scope: PhotoReadScope,
+    ): ByteArray? {
+        if (scope == PhotoReadScope.Saved) {
+            val before = gateway.snapshot.value
+            val ownerRequest = photoReadRequest(photo.id)
+            if (before.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) return null
+            val bytes = delegate.display(photo, request, PhotoReadScope.Saved) ?: return null
+            val latestRequest = photoReadRequest(photo.id)
+            val after = gateway.snapshot.value
+            if (!gateway.sameAuthorizationEpoch(before, after) || ownerRequest != latestRequest ||
+                after.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow ||
+                after.decide(latestRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow
+            ) return null
+            return bytes
+        }
+
+        val access = draftAccess ?: return null
+        val leaseId = (scope as PhotoReadScope.Draft).leaseId
+        val scopeToken = access.tokenFor(leaseId) ?: return null
+        val before = gateway.snapshot.value
+        if (!access.permits(leaseId, photo)) return null
+        val ownerRequest = photoOwnerReadRequest(photo.id)
+        if (ownerRequest != null && before.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) return null
+        if (!delegate.isRetainedBy(leaseId, photo)) return null
+        val beforeSections = access.requiredSections(leaseId)
+        val beforeDecode = gateway.snapshot.value
+        if (!gateway.sameAuthorizationEpoch(before, beforeDecode) ||
+            (ownerRequest != null && beforeDecode.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
+            !allowsPhotoSections(beforeDecode, beforeSections) ||
+            access.tokenFor(leaseId) != scopeToken
+        ) return null
+        val bytes = delegate.display(photo, request, scope) ?: return null
+        val latestOwnerRequest = photoOwnerReadRequest(photo.id)
+        val retained = delegate.isRetainedBy(leaseId, photo)
+        val permitted = access.permits(leaseId, photo)
+        val latestSections = access.requiredSections(leaseId)
+        val after = gateway.snapshot.value
+        if (!gateway.sameAuthorizationEpoch(before, after) || ownerRequest != latestOwnerRequest ||
+            (latestOwnerRequest != null && after.decide(latestOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
+            !allowsPhotoSections(after, latestSections) ||
+            !permitted || !retained || access.tokenFor(leaseId) != scopeToken
+        ) return null
+        return bytes
+    }
+
+    override suspend fun isRetainedBy(leaseId: UUID, photo: PhotoAttachment): Boolean {
+        val access = draftAccess ?: return false
+        val scopeToken = access.tokenFor(leaseId) ?: return false
+        val before = gateway.snapshot.value
+        if (!access.permits(leaseId, photo)) return false
+        val ownerRequest = photoOwnerReadRequest(photo.id)
+        if (ownerRequest != null && before.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) return false
+        if (!delegate.isRetainedBy(leaseId, photo)) return false
+        val latestOwnerRequest = photoOwnerReadRequest(photo.id)
+        val retained = delegate.isRetainedBy(leaseId, photo)
+        val permitted = access.permits(leaseId, photo)
+        val sections = access.requiredSections(leaseId)
+        val after = gateway.snapshot.value
+        return gateway.sameAuthorizationEpoch(before, after) && ownerRequest == latestOwnerRequest &&
+            (latestOwnerRequest == null || after.decide(latestOwnerRequest) == com.luma.lifeos.domain.lock.AccessDecision.Allow) &&
+            allowsPhotoSections(after, sections) && permitted && retained && access.tokenFor(leaseId) == scopeToken
+    }
+
     private suspend fun photoReadRequest(photoId: UUID): LockRequest {
-        val owner = delegate.ownerEventId(photoId)
-        val sections = owner?.let { eventId -> gateway.requiredSections(eventId) }
-            ?: return LockRequest(
+        val owner = delegate.ownerEventId(photoId) ?: return LockRequest(
                 LockOperation.READ,
                 emptySet(),
                 LockContentClassification.UNCLASSIFIED,
                 objectId = photoId.toString(),
             )
+        return photoOwnerReadRequest(photoId, owner)
+    }
+
+    private suspend fun photoOwnerReadRequest(photoId: UUID): LockRequest? =
+        delegate.ownerEventId(photoId)?.let { owner -> photoOwnerReadRequest(photoId, owner) }
+
+    private suspend fun photoOwnerReadRequest(photoId: UUID, owner: com.luma.lifeos.domain.model.EventId): LockRequest {
+        val sections = gateway.requiredSections(owner) ?: return LockRequest(
+            LockOperation.READ,
+            emptySet(),
+            LockContentClassification.UNCLASSIFIED,
+            objectId = photoId.toString(),
+        )
         return LockRequest(
             LockOperation.READ,
             sections,
@@ -165,6 +316,24 @@ class ProtectedPhotoRepository(
             else LockContentClassification.CLASSIFIED,
             objectId = photoId.toString(),
         )
+    }
+
+    private fun allowsPhotoSections(
+        snapshot: com.luma.lifeos.domain.lock.LockSnapshot,
+        sections: Set<LockSection>?,
+    ): Boolean = sections != null && snapshot.decide(
+        LockRequest(LockOperation.READ, sections, LockContentClassification.CLASSIFIED),
+    ) == com.luma.lifeos.domain.lock.AccessDecision.Allow
+
+    private suspend fun isRetainedByEditorLease(
+        access: PhotoDraftAccessRegistry,
+        editorLeaseId: UUID,
+        photo: PhotoAttachment,
+    ): Boolean {
+        for (leaseId in access.activeLeaseIds(editorLeaseId)) {
+            if (delegate.isRetainedBy(leaseId, photo)) return true
+        }
+        return false
     }
 
     private suspend fun requiredPhotoSections(photos: List<PhotoAttachment>): Set<LockSection> {

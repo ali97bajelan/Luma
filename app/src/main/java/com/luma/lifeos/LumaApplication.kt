@@ -55,6 +55,7 @@ import com.luma.lifeos.lock.ProtectedMemoryRepository
 import com.luma.lifeos.lock.ProtectedMoodRepository
 import com.luma.lifeos.lock.ProtectedPersonRepository
 import com.luma.lifeos.lock.ProtectedPhotoRepository
+import com.luma.lifeos.lock.PhotoDraftAccessRegistry
 import com.luma.lifeos.lock.ProtectedSearchRepository
 import com.luma.lifeos.lock.ProtectedTimelineRepository
 import com.luma.lifeos.lock.ProtectedTodoRepository
@@ -116,6 +117,7 @@ class LumaApplication : Application() {
     val protectedContentGateway: ProtectedContentGateway by lazy {
         ProtectedContentGateway(appLockCoordinator, lockActionGuard) { id -> storage.timeline.get(id) }
     }
+    val photoDraftAccessRegistry by lazy { PhotoDraftAccessRegistry(protectedContentGateway, applicationScope) }
     val protectedTimeline by lazy { ProtectedTimelineRepository(storage.timeline, protectedContentGateway) }
     val protectedLifeEvents by lazy {
         ProtectedLifeEventRepository(storage.lifeEvents, protectedTimeline, protectedContentGateway)
@@ -125,7 +127,9 @@ class LumaApplication : Application() {
     val protectedJournals by lazy { ProtectedJournalRepository(storage.journals, protectedContentGateway) }
     val protectedMemories by lazy { ProtectedMemoryRepository(storage.memories, protectedContentGateway) }
     val protectedPeople by lazy { ProtectedPersonRepository(storage.people, protectedContentGateway) }
-    val protectedPhotos by lazy { ProtectedPhotoRepository(storage.photos, protectedContentGateway) }
+    val protectedPhotos by lazy {
+        ProtectedPhotoRepository(storage.photos, protectedContentGateway, photoDraftAccessRegistry)
+    }
     val protectedTodos by lazy { ProtectedTodoRepository(storage.todos, protectedContentGateway) }
     val protectedHabits by lazy { ProtectedHabitRepository(storage.habits, protectedContentGateway) }
     val protectedCalendar by lazy { ProtectedCalendarRepository(storage.calendar, protectedContentGateway) }

@@ -79,6 +79,7 @@ class MainActivity : ComponentActivity() {
                     allowedFocusApps = luma.allowedFocusApps,
                     appLockCoordinator = luma.appLockCoordinator,
                     protectedContentGateway = luma.protectedContentGateway,
+                    photoDraftAccessRegistry = luma.photoDraftAccessRegistry,
                     restrictedCaptureService = luma.restrictedCaptureService,
                     lockCredentialService = luma.lockCredentialService,
                     lockSensitiveOperationGuard = luma.lockSensitiveOperationGuard,
