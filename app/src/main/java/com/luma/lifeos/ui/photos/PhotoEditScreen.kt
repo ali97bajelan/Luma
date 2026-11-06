@@ -201,8 +201,9 @@ private fun PhotoCropPreview(
         var bitmap by remember(source.id, stagingLeaseId, accessEpoch) { mutableStateOf<Bitmap?>(null) }
         var loading by remember(source.id, stagingLeaseId, accessEpoch) { mutableStateOf(true) }
         val lifecycleKey = accessEpoch
-        DisposableEffect(bitmap) {
-            onDispose { bitmap?.takeUnless(Bitmap::isRecycled)?.recycle() }
+        val bitmapToRelease = bitmap
+        DisposableEffect(bitmapToRelease) {
+            onDispose { bitmapToRelease?.takeUnless(Bitmap::isRecycled)?.recycle() }
         }
         LaunchedEffect(repository, source, stagingLeaseId, viewportWidth, viewportHeight, lifecycleKey, retry) {
             bitmap = null
@@ -271,7 +272,7 @@ private fun PhotoCropPreview(
                 Image(
                     bitmap = image.asImageBitmap(),
                     contentDescription = stringResource(R.string.photo_edit_preview_description),
-                    modifier = Modifier.size(imageWidth, imageHeight)
+                    modifier = Modifier.requiredSize(imageWidth, imageHeight)
                         .graphicsLayer { rotationZ = turns * 90f },
                 )
                 CropOverlay(

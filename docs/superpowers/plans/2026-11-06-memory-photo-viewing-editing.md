@@ -146,13 +146,20 @@ Register the main memory draft owner (`captureId.value`, exposed by the ViewMode
 ## MP-I05 — Integration and source handoff
 
 **Requirements:** All MP-R01–MP-R06. **Depends on:** MP-I01–MP-I04.
+**Status:** SOURCE COMPLETE — UNVERIFIED.
 
 **Files:** Task-owned production files above; implementation status in this plan. No test/fixture files in this task.
 
-- [ ] Inspect all new repository methods, protected facade overrides and route-scoped registrations for consistent signatures and cancellation handling. Inspect unrelated callers for preserved defaults; confirm no Room/backup migration or manifest dependency/permission changes were introduced.
-- [ ] Inspect EN/FR/FA resource keys/placeholders, RTL controls, 48 dp targets, focus labels, screenshot policy and reachable Back/Cancel/Retry. This is source review, not emulator/accessibility certification.
-- [ ] Inspect final changes against each acceptance scenario and record any known unresolved issue for MP-QA. Whitespace/link/source-reference checks are allowed; no Gradle or device tooling.
-- [ ] Record MP-I01–MP-I05 as **SOURCE COMPLETE — UNVERIFIED** only when all code is present. Hand off the candidate source identity/patch and proceed to the single final task below; do not ask for per-task QA handoffs.
+- [x] Inspect all new repository methods, protected facade overrides and route-scoped registrations for consistent signatures and cancellation handling. Inspect unrelated callers for preserved defaults; confirm no Room/backup migration or manifest dependency/permission changes were introduced.
+- [x] Inspect EN/FR/FA resource keys/placeholders, RTL controls, 48 dp targets, focus labels, screenshot policy and reachable Back/Cancel/Retry. This is source review, not emulator/accessibility certification.
+- [x] Inspect final changes against each acceptance scenario and record any known unresolved issue for MP-QA. Whitespace/link/source-reference checks are allowed; no Gradle or device tooling.
+- [x] Record MP-I01–MP-I05 as **SOURCE COMPLETE — UNVERIFIED** only when all code is present. Hand off the candidate source identity/patch and proceed to the single final task below; do not ask for per-task QA handoffs.
+
+**MP-I05 source handoff:** Candidate base HEAD: `bc864929ebe083fc42e5e55fd29288c04b9dc665`; this task's source-review corrections and status update are in the current working-tree patch. The feature commit range adds no schema, backup-format, manifest, dependency or permission changes. Existing uncommitted build/manifest edits were checked as line-ending-only and preserved. EN/FR/FA resource keys and format placeholders match. No tests, Gradle, lint, APK or device tooling were run; runtime and accessibility behavior remain for MP-QA.
+
+**MP-I05 source-review corrections:** Fixed restored lease access through the sealed state helper, added the missing Compose `dp` import, captured bitmap references for disposal, prevented crop-preview sizing from being clamped before rotation, and zeroed encoded display bytes when post-decode authorization fails. These source corrections remain unverified until MP-QA.
+
+**Known issue for MP-QA:** `PhotoViewer` and `PhotoEditScreen` always set `FLAG_SECURE` on their separate Dialog windows; verify whether that should follow the app's screenshot policy when screenshot protection is disabled.
 
 ## MP-QA — Separate final task: tests, Gradle and emulator acceptance
 

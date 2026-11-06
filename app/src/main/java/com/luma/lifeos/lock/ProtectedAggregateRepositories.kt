@@ -275,7 +275,10 @@ class ProtectedPhotoRepository(
             if (!gateway.sameAuthorizationEpoch(before, after) || ownerRequest != latestRequest ||
                 after.decide(ownerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow ||
                 after.decide(latestRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow
-            ) return null
+            ) {
+                bytes.fill(0)
+                return null
+            }
             return bytes
         }
 
@@ -304,7 +307,10 @@ class ProtectedPhotoRepository(
             (latestOwnerRequest != null && after.decide(latestOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||
             !allowsPhotoSections(after, latestSections) ||
             !permitted || !retained || access.tokenFor(leaseId) != scopeToken
-        ) return null
+        ) {
+            bytes.fill(0)
+            return null
+        }
         return bytes
     }
 

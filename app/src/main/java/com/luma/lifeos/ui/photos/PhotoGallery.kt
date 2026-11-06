@@ -103,8 +103,9 @@ private fun PhotoPreview(
     var loading by remember { mutableStateOf(true) }
     var retry by remember { mutableIntStateOf(0) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(preview) {
-        onDispose { preview?.takeUnless(Bitmap::isRecycled)?.recycle() }
+    val previewToRelease = preview
+    DisposableEffect(previewToRelease) {
+        onDispose { previewToRelease?.takeUnless(Bitmap::isRecycled)?.recycle() }
     }
     LaunchedEffect(repository, photo, readScope, accessEpoch, lifecycle, retry) {
         preview = null

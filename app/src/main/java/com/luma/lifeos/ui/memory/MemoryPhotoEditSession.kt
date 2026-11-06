@@ -244,11 +244,12 @@ internal class MemoryPhotoEditSession(
             stagingLeaseOf(restored) != newStagingLeaseId(restoredSourceId) ||
             sourceOf(restored)?.let { it.id != restoredSourceId } == true
         ) restored = invalidSavedState()
+        val restoredLeaseId = stagingLeaseOf(restored)
         generation++
         val token = generation
         operationJob?.cancel()
         mutableState.value = restored
-        if (!canAccess() || !ensureAccess(restored.stagingLeaseId)) {
+        if (!canAccess() || !ensureAccess(restoredLeaseId)) {
             if (token == generation) fail(restored, restoredRetryStage(restored), MemoryPhotoEditError.ACCESS)
             return
         }
@@ -259,17 +260,17 @@ internal class MemoryPhotoEditSession(
         val output = outputOf(restored)
         val outputId = outputIdOf(restored)
         val source = sourceOf(restored)
-        if (source != null && !photos.isRetainedBy(restored.stagingLeaseId, source)) {
+        if (source != null && !photos.isRetainedBy(restoredLeaseId, source)) {
             if (token == generation) publish(invalidSavedState())
             return
         }
         if (token != generation) return
         if (output != null && currentPhotos().any { it.id == output.id }) {
-            releaseStage(restored.stagingLeaseId)
+            releaseStage(restoredLeaseId)
             if (token == generation) publish(MemoryPhotoEditState.Idle)
             return
         }
-        val recoveredOutput = output?.takeIf { photos.isRetainedBy(restored.stagingLeaseId, it) }
+        val recoveredOutput = output?.takeIf { photos.isRetainedBy(restoredLeaseId, it) }
         if (token != generation) return
         when (restored) {
             is MemoryPhotoEditState.Importing -> fail(restored, MemoryPhotoRetryStage.IMPORT, MemoryPhotoEditError.IMPORT)
