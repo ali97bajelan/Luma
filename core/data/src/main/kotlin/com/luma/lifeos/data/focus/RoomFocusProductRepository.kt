@@ -126,7 +126,7 @@ class RoomFocusProductRepository(
                 check(focusDao.updateSession(
                     session.copy(
                         name = normalizedName,
-                        tagId = tag?.id,
+                        tagId = tag?.id?.toString(),
                         revision = nextSessionRevision,
                         updatedAtSeconds = updatedAt.epochSecond,
                         updatedAtNanos = updatedAt.nano,

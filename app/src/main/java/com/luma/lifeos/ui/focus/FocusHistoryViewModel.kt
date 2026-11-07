@@ -144,7 +144,7 @@ class FocusHistoryViewModel(
                         if (!privateContentAccessAllowed) return@collect
                         val current = mutableState.value
                         val selected = current.filters.tag as? FocusTagFilter.Tagged
-                        val resolved = selected?.let(catalog::resolve)
+                        val resolved = selected?.let { catalog.resolve(it.id) }
                         val filters = when {
                             selected != null && resolved != null && resolved.id != selected.id ->
                                 current.filters.copy(tag = FocusTagFilter.Tagged(resolved.id), offset = 0)
