@@ -764,11 +764,11 @@
     <string name="privacy_title">Confidentialité et données locales</string>
     <string name="privacy_storage_heading">Vos données sur cet appareil</string>
     <string name="privacy_access_heading">Accès facultatifs</string>
-    <string name="privacy_backup_heading">Sauvegardes et copies</string>
+    <string name="privacy_backup_heading">Sauvegardes et exports</string>
     <string name="privacy_delete_section">Supprimer les données locales</string>
-    <string name="privacy_local_storage">Vos données et photos restent dans le stockage privé de Luma sur cet appareil. Luma n’a ni compte, ni publicité, ni télémétrie et ne fait aucune requête réseau. Les fonctions essentielles marchent sans autorisations facultatives.</string>
-    <string name="privacy_optional_access">L’accès facultatif aux données d’utilisation lit les noms et la durée d’utilisation des applications, y compris en arrière-plan. Santé Connect lit uniquement les pas quotidiens lorsque Luma est ouvert ; Luma ne modifie pas les données de santé. Désactiver les importations conserve l’historique. Gérez les autorisations dans les paramètres Android. Les photos sélectionnées sont copiées avec le sélecteur système.</string>
-    <string name="privacy_backup_policy">La sauvegarde automatique dans le cloud et le transfert entre appareils sont désactivés. Les sauvegardes manuelles contiennent des données privées et des photos et ne sont pas chiffrées. Arrêtez les sessions de concentration en pause avant l’export pour les inclure. Votre fournisseur stocke les exports. Supprimer les données locales ne supprime pas les sauvegardes, les photos originales ou les données des fournisseurs.</string>
+    <string name="privacy_local_storage">Vos données restent sur cet appareil. Aucun compte, aucune publicité, aucune analyse ni requête réseau. Les fonctions essentielles ne nécessitent aucun accès facultatif.</string>
+    <string name="privacy_optional_access">L’accès aux données d’utilisation lit les noms des applis et leur usage, même en arrière-plan. Santé Connect lit les pas quand Luma est ouvert et n’écrit aucune donnée de santé. Désactivez les imports ; l’historique reste. Le sélecteur système copie les photos choisies.</string>
+    <string name="privacy_backup_policy">La sauvegarde cloud et le transfert entre appareils sont désactivés. Les sauvegardes manuelles contiennent des données privées et des photos non chiffrées. Arrêtez les sessions en pause pour les inclure. Les exports vont au fournisseur choisi. Supprimer les données locales ne supprime pas les exports, photos originales ni données des fournisseurs.</string>
     <string name="privacy_delete_title">Supprimer toutes les données locales ?</string>
     <string name="privacy_delete_description">Réinitialisez Luma pour supprimer ses données locales et ses paramètres. Luma se fermera. Exportez d’abord une sauvegarde pour conserver vos données.</string>
     <string name="privacy_delete">Supprimer toutes les données locales</string>

@@ -752,11 +752,11 @@
     <string name="privacy_title">Privacy and local data</string>
     <string name="privacy_storage_heading">Your data on this device</string>
     <string name="privacy_access_heading">Optional access</string>
-    <string name="privacy_backup_heading">Backups and copies</string>
+    <string name="privacy_backup_heading">Backups and exports</string>
     <string name="privacy_delete_section">Delete local data</string>
-    <string name="privacy_local_storage">Your records and photos stay in Luma’s private storage on this device. Luma has no account, ads, telemetry or network requests. Core features work without optional permissions.</string>
-    <string name="privacy_optional_access">Optional Usage Access reads app names and foreground usage, including in the background. Health Connect reads daily steps only while Luma is open; Luma never writes health data. Turning imports off keeps saved history. Manage permissions in Android settings. Selected photos are copied using the system picker.</string>
-    <string name="privacy_backup_policy">Automatic cloud backup and device transfer are off. Manual backups contain private data and photos and are not encrypted. Stop paused focus sessions before export to include them. Exports are stored with your chosen provider. Deleting local data does not delete backups, original photos or provider records.</string>
+    <string name="privacy_local_storage">Your data stays on this device. No account, ads, analytics or network requests. Core features need no optional access.</string>
+    <string name="privacy_optional_access">Usage Access reads app names and usage data, even in the background. Health Connect reads steps only while Luma is open; it never writes health data. Turn imports off; saved history stays. The system picker copies only photos you select.</string>
+    <string name="privacy_backup_policy">Automatic cloud backup and device transfer are off. Manual backups contain private data and photos; they aren’t encrypted. Stop paused Focus sessions to include them. Exports go to your provider. Deleting local data won’t delete exports, original photos or provider records.</string>
     <string name="privacy_delete_title">Delete all local data?</string>
     <string name="privacy_delete_description">Reset Luma to delete its local data and settings. Luma will close. Export a backup first if you want to keep your data.</string>
     <string name="privacy_delete">Delete all local data</string>
