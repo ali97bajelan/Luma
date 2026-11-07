@@ -1,6 +1,6 @@
 # Focus names, tags, and insights tasks
 
-Date: 2026-11-04 · Status: **FI01, FI03, FI04, FI05, FI06, and FI07 source implementation complete; FI02 runtime verification pending**
+Date: 2026-11-07 · Status: **FI01 and FI02 targeted QA complete; FI02 module-wide data instrumentation remains not green; FI03–FI07 Android/Room acceptance remains pending**
 
 [Specification](superpowers/specs/2026-11-03-focus-names-tags-insights-design.md) · [Implementation plan](superpowers/plans/2026-11-03-focus-names-tags-insights.md)
 
@@ -8,13 +8,21 @@ These extend F16 rather than replacing its existing task status. P0 scope assume
 
 | ID | Priority | Deliverable | Depends on | Acceptance | State |
 | --- | --- | --- | --- | --- | --- |
-| FI01 | P0 | Name/tag rules, metadata models and test fixtures | — | FI-A01 | DONE (source checks) |
-| FI02 | P0 | Transactional metadata persistence, command identity and caller updates | FI01 | FI-A02 | IN PROGRESS (source changes; Room/runtime verification pending) |
+| FI01 | P0 | Name/tag rules, metadata models and test fixtures | — | FI-A01 | DONE (targeted QA: 34/34 focus-domain tests) |
+| FI02 | P0 | Transactional metadata persistence, command identity and caller updates | FI01 | FI-A02 | TARGETED QA PASS (7/7 Room persistence; 13/13 app unit; emulator flow); data module suite not green (see QA log) |
 | FI03 | P0 | Room migration, portable backup/legacy adapters and privacy format docs | FI02 | FI-A03 | DONE (source checks; Room validation pending) |
 | FI04 | P0 | Range-correct tag totals, average and longest-session insight source | FI01, FI02 | FI-A04 | DONE (source checks; Room observation/runtime validation pending) |
 | FI05 | P0 | Setup fields, retained drafts, metadata display and focus insight cards | FI02, FI04 | FI-A05 | DONE (source checks; Android UI/lifecycle acceptance pending) |
 | FI06 | P0 | Name search and tag-filtered history with stable paging | FI02, FI04 | FI-A06 | DONE (source checks; Room/Compose validation pending) |
 | FI07 | P0 | Privacy/resource review and code-only verification evidence | FI03, FI05, FI06 | FI-A07 | DONE (source checks; Android access/lifecycle acceptance pending) |
+
+### FI01–FI02 targeted QA — 2026-11-07
+
+- **FI01 — PASS:** `python3 scripts/run_focus_domain_tests.py` — 34/34 JUnit tests.
+- **FI02 — targeted PASS:** `:core:data:connectedDebugAndroidTest --offline -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.data.focus.FocusPersistenceTest` — 7/7 instrumentation tests, including persisted name/tag across pause/resume/stop and database reopen, replay/changed-metadata identity, duplicate tag-row checks, and metadata preservation after stale-generation rejection. `:app:testDebugUnitTest --offline --tests com.luma.lifeos.focus.FocusCoordinatorTest --tests com.luma.lifeos.ui.focus.FocusSetupStateTest` — 13/13 tests.
+- **Emulator walkthrough — PASS (`emulator-5554`):** created a temporary named/tagged session, verified metadata in running, paused, resumed, saved, history, and detail screens; confirmed both credited runs; deleted the temporary session and verified the original three history rows remained.
+- **Broader data suite — NOT GREEN:** `:core:data:connectedDebugAndroidTest --offline` reported 148 passed and 31 failed. Failures include `BackupValidation` Long/String casts and `FocusMigrationTest` schema expectation assertions. This does not negate the focused FI-A02 result, but module-wide Room/migration acceptance is still pending.
+- Updated the [Room persistence tests](../core/data/src/androidTest/kotlin/com/luma/lifeos/data/focus/FocusPersistenceTest.kt) with direct tag-count and stale-generation metadata assertions. Updated the [backup persistence fixture](../core/data/src/androidTest/kotlin/com/luma/lifeos/data/backup/BackupPersistenceTest.kt) to pass valid metadata while checking stale-generation rejection.
 
 ## Suggestions outside this implementation
 
@@ -22,7 +30,7 @@ These extend F16 rather than replacing its existing task status. P0 scope assume
 
 **Recommendation:** prioritize easier starts and meaningful task progress, then support a sustainable routine. More time charts alone will not close the gap between deciding what to do and doing it.
 
-This is a proposed product backlog, not approved implementation scope. It replaces the earlier short suggestion list; FI01–FI07 priorities, states and acceptance rules remain unchanged. Task linking and timed sessions explicitly extend beyond the current insights specification's exclusions and need their own specification before implementation.
+This is a proposed product backlog, not approved implementation scope. It replaces the earlier short suggestion list; FI01–FI07 priorities and acceptance rules remain unchanged. FI01/FI02 states were updated with targeted QA evidence on 2026-11-07 (see the QA log above). Task linking and timed sessions explicitly extend beyond the current insights specification's exclusions and need their own specification before implementation.
 
 **Working audience assumption:** individuals using Luma privately to study, work or make progress on personal tasks. There is no user research, adoption baseline or retention evidence supplied here. Value and effort rankings below are product hypotheses based on the current source and feature fit, not measured demand or engineering estimates.
 

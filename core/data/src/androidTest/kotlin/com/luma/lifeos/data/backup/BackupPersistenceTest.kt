@@ -16,6 +16,7 @@ import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.backup.BackupFocusExportChoice
 import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteContext
 import com.luma.lifeos.domain.focus.FocusWriteResult
@@ -159,6 +160,7 @@ class BackupPersistenceTest {
         }
         val stale = focus.start(
             UUID.randomUUID(), UUID.randomUUID(),
+            FocusStartInput("Stale generation", null),
             FocusTimeSample(now, 0, "boot-test"),
             FocusWriteContext(oldGeneration, UUID.randomUUID()),
         )

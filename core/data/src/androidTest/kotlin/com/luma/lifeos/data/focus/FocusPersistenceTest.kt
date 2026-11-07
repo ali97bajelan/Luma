@@ -68,10 +68,12 @@ class FocusPersistenceTest {
             FocusWriteResult.AlreadyApplied(started),
             repository.start(startCommandId, sessionId, startInput, origin, writeContext),
         )
+        assertEquals(1, scalar("SELECT COUNT(*) FROM focus_tag"))
         assertEquals(
             FocusInvalidReason.COMMAND_ID_REUSED,
             (repository.start(startCommandId, sessionId, FocusStartInput("Different task", "Work"), origin, writeContext) as FocusWriteResult.Invalid).reason,
         )
+        assertEquals(1, scalar("SELECT COUNT(*) FROM focus_tag"))
 
         val paused = repository.apply(
             command(sessionId, 0, FocusAction.PAUSE, sample(20 * MINUTE), writeContext, id(102)),
@@ -151,7 +153,7 @@ class FocusPersistenceTest {
         val generation = repository.currentGeneration()
         val writeContext = FocusWriteContext(generation, processId)
         val sessionId = id(4)
-        val started = repository.start(id(401), sessionId, FocusStartInput("Test focus", null), sample(0), writeContext).snapshot()
+        val started = repository.start(id(401), sessionId, FocusStartInput("Test focus", "Work"), sample(0), writeContext).snapshot()
 
         val checkpointed = repository.checkpoint(sessionId, 0, sample(20 * MINUTE), writeContext).snapshot()
         assertEquals(0, checkpointed.revision)
@@ -168,6 +170,7 @@ class FocusPersistenceTest {
         assertEquals(FocusInvalidReason.STALE_DATABASE_GENERATION, (staleWrite as FocusWriteResult.Invalid).reason)
         assertEquals(started.id, database.focus().openSession()!!.session.id.let(UUID::fromString))
         assertEquals(20 * MINUTE, database.focus().openSession()!!.runs.single().creditedMillis)
+        assertEquals(started.metadata, repository.observeOpen().first()!!.metadata)
     }
 
     @Test fun processRecoveryContinueCreditsGapOnceAndEndChoiceUsesCheckpoint() = runBlocking {
