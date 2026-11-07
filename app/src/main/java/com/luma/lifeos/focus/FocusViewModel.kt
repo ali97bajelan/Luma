@@ -252,6 +252,11 @@ class FocusViewModel(
     fun changeTimedMinutes(value: String) = updateSetup(FocusSetupEvent.TimedMinutesChanged(value))
     fun startAnother() = updateSetup(FocusSetupEvent.StartAnotherRequested)
 
+    fun dismissMissingTerminalSession(sessionId: UUID, generation: UUID): Boolean {
+        if (!privateContentAccess.value) return false
+        return runtime.dismissMissingTerminalSession(sessionId, generation)
+    }
+
     fun startBreak(durationMinutes: Int) {
         if (local.value.breakBusy) return
         local.update { it.copy(breakBusy = true, breakOperationFailed = false) }

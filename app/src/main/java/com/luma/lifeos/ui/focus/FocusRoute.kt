@@ -103,5 +103,8 @@ internal fun FocusRoute(
         onLaunchApp = viewModel::launchSelectedApp,
         onOpenPendingDestination = onOpenPendingDestination,
         onOpenHistory = onOpenHistory,
+        onTerminalSessionMissing = { sessionId, generation ->
+            if (viewModel.dismissMissingTerminalSession(sessionId, generation)) onBack()
+        },
     )
 }

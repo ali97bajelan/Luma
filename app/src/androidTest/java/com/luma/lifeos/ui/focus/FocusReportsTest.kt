@@ -8,7 +8,14 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusCommand
+import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusHistoryRow
+import com.luma.lifeos.domain.focus.FocusGoalState
+import com.luma.lifeos.domain.focus.FocusGoalVersion
+import com.luma.lifeos.domain.focus.FocusProductContext
+import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusProductResult
+import com.luma.lifeos.domain.focus.FocusTagCatalog
 import com.luma.lifeos.domain.focus.FocusInsights
 import com.luma.lifeos.domain.focus.FocusPage
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
@@ -116,6 +123,31 @@ class FocusReportsTest {
         compose.onNodeWithTag("review_focus_day_unavailable_6").assertIsDisplayed()
     }
 
+    @Test fun deletedCompletionDoesNotShowReflectionLoadError() {
+        val row = sampleHistoryRow()
+        val repository = HistoryRepository(row, initiallyDeleted = true)
+        val productRepository = EmptyFocusProductRepository(GENERATION)
+        var missingSessionId: UUID? = null
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusReflectionEditor(
+                    session = row.session,
+                    repository = repository,
+                    productRepository = productRepository,
+                    generation = GENERATION,
+                    isFocusReadable = true,
+                    showWhenEmpty = true,
+                    onSessionMissing = { sessionId, _ -> missingSessionId = sessionId },
+                )
+            }
+        }
+
+        compose.waitUntil(5_000) { repository.terminalLookupCount > 0 }
+        compose.onNodeWithTag("focus_reflection_load_retry").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(row.session.id, missingSessionId) }
+    }
+
     @Test fun historyShowsCreditedRunsAndOnlyDeletesAfterConfirmation() {
         val row = sampleHistoryRow()
         val repository = HistoryRepository(row)
@@ -124,7 +156,15 @@ class FocusReportsTest {
 
         compose.setContent {
             LifeOsTheme {
-                FocusHistoryRoute(repository, range, zone, onBack = {})
+                FocusHistoryRoute(
+                    repository = repository,
+                    range = range,
+                    zone = zone,
+                    isFocusReadable = true,
+                    privateContentAccessFlow = flowOf(true),
+                    databaseGenerationFlow = flowOf(GENERATION),
+                    onBack = {},
+                )
             }
         }
 
@@ -147,11 +187,21 @@ class FocusReportsTest {
         assertEquals(GENERATION, repository.deleteContext?.databaseGeneration)
     }
 
-    private class HistoryRepository(private val row: FocusHistoryRow) : FocusRepository {
+    private class HistoryRepository(
+        private val row: FocusHistoryRow,
+        initiallyDeleted: Boolean = false,
+    ) : FocusRepository {
         val deleteCount = AtomicInteger()
         var generation: UUID = GENERATION
         var deleteContext: FocusWriteContext? = null
-        private var deleted = false
+        private var deleted = initiallyDeleted
+        var terminalLookupCount = 0
+            private set
+
+        override suspend fun terminalSession(sessionId: UUID): FocusSession? {
+            terminalLookupCount++
+            return row.session.takeIf { !deleted && it.id == sessionId }
+        }
 
         override suspend fun currentGeneration(): UUID = generation
         override fun observeOpen(): Flow<FocusSession?> = emptyFlow()
@@ -190,6 +240,13 @@ class FocusReportsTest {
 
         override fun observeInsights(range: TimeRange?): Flow<FocusInsights> = flowOf(FocusInsights.EMPTY)
         override fun observeTagSuggestions(): Flow<List<FocusTag>> = flowOf(emptyList())
+        override fun observeTags(): Flow<List<FocusTag>> = flowOf(emptyList())
+
+        override suspend fun history(
+            query: FocusHistoryQuery,
+            offset: Int,
+            limit: Int,
+        ): FocusPage = history(query.range, offset, limit)
 
         override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage {
             val rows = if (deleted) emptyList() else listOf(row).drop(offset).take(limit)
@@ -206,6 +263,48 @@ class FocusReportsTest {
             deleted = true
             return FocusWriteResult.Applied(deletedSessionId = sessionId)
         }
+    }
+
+    private class EmptyFocusProductRepository(private val generation: UUID) : FocusProductRepository {
+        override suspend fun currentGeneration(): UUID = generation
+        override fun observeGoals() = flowOf(FocusGoalState.DISABLED)
+        override suspend fun saveReflection(
+            sessionId: UUID,
+            expectedRevision: Long,
+            reflection: com.luma.lifeos.domain.focus.FocusReflection,
+            context: FocusProductContext,
+        ): FocusProductResult = error("Not used by this test")
+        override fun observeTagCatalog() = flowOf(FocusTagCatalog(0, emptyList(), databaseGeneration = generation))
+        override suspend fun updateSessionMetadata(
+            sessionId: UUID,
+            expectedRevision: Long,
+            name: String?,
+            tagName: String?,
+            expectedCatalogRevision: Long,
+            context: FocusProductContext,
+        ): FocusProductResult = error("Not used by this test")
+        override suspend fun renameTag(
+            tagId: UUID,
+            name: String,
+            expectedCatalogRevision: Long,
+            context: FocusProductContext,
+        ): FocusProductResult = error("Not used by this test")
+        override suspend fun mergeTags(
+            sourceTagId: UUID,
+            targetTagId: UUID,
+            expectedCatalogRevision: Long,
+            context: FocusProductContext,
+        ): FocusProductResult = error("Not used by this test")
+        override suspend fun scheduleGoal(
+            goal: FocusGoalVersion,
+            expectedSettingsRevision: Long,
+            context: FocusProductContext,
+        ): FocusProductResult = error("Not used by this test")
+        override suspend fun setGoalsEnabled(
+            enabled: Boolean,
+            expectedSettingsRevision: Long,
+            context: FocusProductContext,
+        ): FocusProductResult = error("Not used by this test")
     }
 
     private fun sampleHistoryRow(): FocusHistoryRow {

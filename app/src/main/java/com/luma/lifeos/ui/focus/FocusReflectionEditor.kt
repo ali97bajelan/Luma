@@ -56,6 +56,7 @@ internal fun FocusReflectionEditor(
     isFocusReadable: Boolean,
     showWhenEmpty: Boolean = false,
     onSaved: () -> Unit = {},
+    onSessionMissing: (UUID, UUID) -> Unit = { _, _ -> },
 ) {
     val product = productRepository ?: return
     val currentGeneration = generation ?: return
@@ -106,17 +107,23 @@ internal fun FocusReflectionEditor(
         authorityError = false
         try {
             val beforeRead = withContext(Dispatchers.IO) { product.currentGeneration() }
-            val latest = if (isFocusReadable && beforeRead == currentGeneration) {
+            val readAuthorized = isFocusReadable && beforeRead == currentGeneration
+            val latest = if (readAuthorized) {
                 withContext(Dispatchers.IO) { repository.terminalSession(session.id) }
             } else null
             val afterRead = withContext(Dispatchers.IO) { product.currentGeneration() }
-            if (latest == null || afterRead != currentGeneration || !latest.isTerminal) {
-                authorityError = true
-            } else if (latest.revision >= currentSession.revision) {
-                currentSession = latest
-                outcome = latest.reflection.outcome
-                nextStep = latest.reflection.nextStep.orEmpty()
-                pending = null
+            when {
+                !readAuthorized || afterRead != currentGeneration -> authorityError = true
+                latest == null || latest.id != session.id || !latest.isTerminal -> {
+                    dismissed = true
+                    onSessionMissing(session.id, currentGeneration)
+                }
+                latest.revision >= currentSession.revision -> {
+                    currentSession = latest
+                    outcome = latest.reflection.outcome
+                    nextStep = latest.reflection.nextStep.orEmpty()
+                    pending = null
+                }
             }
         } catch (failure: Exception) {
             if (failure is CancellationException) throw failure

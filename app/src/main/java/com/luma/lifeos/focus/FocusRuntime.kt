@@ -93,6 +93,28 @@ class FocusRuntime(
         initializeJob = scope.launch { initializeState() }
     }
 
+    fun dismissMissingTerminalSession(sessionId: UUID, generation: UUID): Boolean {
+        while (true) {
+            val current = mutableState.value
+            val session = current.session
+            if (current.databaseGeneration != generation || session?.id != sessionId || !session.isTerminal) {
+                return false
+            }
+            val updated = current.copy(
+                session = null,
+                recoveryRequired = false,
+                writeFailed = false,
+                checkpointFailed = false,
+                shortcutFailed = false,
+                displayedMillis = 0,
+                emergencyExitSessionId = null,
+                emergencyMarkerSaved = null,
+                emergencyExitConfirmed = false,
+            )
+            if (mutableState.compareAndSet(current, updated)) return true
+        }
+    }
+
     fun retryInitialization() {
         mutableState.update {
             it.copy(

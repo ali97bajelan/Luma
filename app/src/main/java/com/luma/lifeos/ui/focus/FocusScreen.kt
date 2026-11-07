@@ -83,6 +83,7 @@ internal fun FocusScreen(
     onEndBreak: () -> Unit = {},
     focusRepository: FocusRepository? = null,
     focusProductRepository: FocusProductRepository? = null,
+    onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit = { _, _ -> },
 ) {
     val runtime = state.runtime
     val session = runtime.session
@@ -183,6 +184,7 @@ internal fun FocusScreen(
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
+                    onTerminalSessionMissing = onTerminalSessionMissing,
                 )
                 session?.state == FocusState.INTERRUPTED && showTerminal -> TerminalContent(
                     state = state,
@@ -202,6 +204,7 @@ internal fun FocusScreen(
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
+                    onTerminalSessionMissing = onTerminalSessionMissing,
                 )
                 else -> SetupContent(
                     state = state,
@@ -575,6 +578,7 @@ private fun TerminalContent(
     onEmergencyExit: () -> Unit,
     onOpenPendingDestination: () -> Unit,
     onOpenHistory: () -> Unit,
+    onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit,
 ) {
     val title = when {
         interrupted -> R.string.focus_interrupted
@@ -596,6 +600,7 @@ private fun TerminalContent(
             generation = state.runtime.databaseGeneration,
             isFocusReadable = state.focusContentReadable,
             showWhenEmpty = true,
+            onSessionMissing = onTerminalSessionMissing,
         )
     }
     if (interrupted) Text(stringResource(R.string.focus_interrupted_gap))
