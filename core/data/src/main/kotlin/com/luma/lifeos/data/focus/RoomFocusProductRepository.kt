@@ -74,6 +74,7 @@ class RoomFocusProductRepository(
         })
     }.flowOn(Dispatchers.IO)
 
+    /** Metadata edits preserve taskId and taskOrigin; those fields are not user-editable here. */
     override suspend fun updateSessionMetadata(
         sessionId: UUID,
         expectedRevision: Long,

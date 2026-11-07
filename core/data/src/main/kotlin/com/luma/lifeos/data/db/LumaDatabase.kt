@@ -18,6 +18,8 @@ import com.luma.lifeos.data.focus.FocusRuntimeEntity
 import com.luma.lifeos.data.focus.FocusSessionEntity
 import com.luma.lifeos.data.focus.FocusStorageStateEntity
 import com.luma.lifeos.data.focus.FocusGoalSettingsEntity
+import com.luma.lifeos.data.focus.FocusInvitationDeliveryEntity
+import com.luma.lifeos.data.focus.FocusInvitationSettingsEntity
 import com.luma.lifeos.data.focus.FocusGoalVersionEntity
 import com.luma.lifeos.data.focus.FocusProductCommandReceiptEntity
 import com.luma.lifeos.data.focus.FocusProductDao
@@ -63,6 +65,7 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         FocusCommandReceiptEntity::class, FocusDeletedSessionEntity::class, FocusStorageStateEntity::class,
         FocusTagEntity::class, FocusGoalSettingsEntity::class, FocusGoalVersionEntity::class,
         FocusProductCommandReceiptEntity::class, FocusTagCatalogStateEntity::class, FocusTagAliasEntity::class,
+        FocusInvitationSettingsEntity::class, FocusInvitationDeliveryEntity::class,
     ],
     version = LumaDatabase.VERSION,
     exportSchema = true,
@@ -85,10 +88,39 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focusProducts(): FocusProductDao
 
     companion object {
-        const val VERSION = 14
+        const val VERSION = 15
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(14, 15) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Nullable linked task fields keep all existing session and run rows intact.
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN task_id TEXT REFERENCES todo_task(id) ON DELETE SET NULL")
+                    db.execSQL("ALTER TABLE focus_session ADD COLUMN task_origin INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_session_task_id ON focus_session(task_id)")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_invitation_settings (
+                        singleton_id INTEGER NOT NULL PRIMARY KEY CHECK (singleton_id = 1),
+                        enabled INTEGER NOT NULL DEFAULT 0 CHECK (enabled IN (0, 1)),
+                        revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0),
+                        weekday_mask INTEGER NOT NULL DEFAULT 0 CHECK (weekday_mask BETWEEN 0 AND 127),
+                        minute_of_day INTEGER NOT NULL DEFAULT 540 CHECK (minute_of_day BETWEEN 0 AND 1439),
+                        CHECK (enabled = 0 OR weekday_mask != 0)
+                    )""")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS focus_invitation_delivery (
+                        database_generation TEXT NOT NULL,
+                        schedule_revision INTEGER NOT NULL CHECK (schedule_revision >= 0),
+                        local_date TEXT NOT NULL,
+                        due_at INTEGER NOT NULL,
+                        state TEXT NOT NULL DEFAULT 'PENDING',
+                        snoozed_due_at INTEGER,
+                        action_token TEXT,
+                        PRIMARY KEY(database_generation, schedule_revision, local_date)
+                    )""")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_focus_invitation_delivery_due_at ON focus_invitation_delivery(due_at)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_focus_invitation_delivery_action_token ON focus_invitation_delivery(action_token)")
+                    db.execSQL("INSERT OR IGNORE INTO focus_invitation_settings(singleton_id, enabled, revision, weekday_mask, minute_of_day) VALUES (1, 0, 0, 0, 540)")
+                }
+            },
             object : Migration(13, 14) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("""CREATE TABLE IF NOT EXISTS focus_tag_catalog_state (

@@ -130,6 +130,7 @@ data class FocusTagCatalog(
 
 enum class FocusProductInvalidReason {
     INVALID_GOAL,
+    INVALID_INVITATION,
     INVALID_REFLECTION,
     INVALID_SESSION_EDIT,
     INVALID_TAG,
@@ -142,6 +143,7 @@ sealed interface FocusProductResult {
     data object Applied : FocusProductResult
     data object AlreadyApplied : FocusProductResult
     data class Conflict(val current: FocusGoalState) : FocusProductResult
+    data class InvitationConflict(val current: FocusInvitationConfig) : FocusProductResult
     data class SessionConflict(val actualRevision: Long?) : FocusProductResult
     data class TagCatalogConflict(val current: FocusTagCatalog) : FocusProductResult
     data class MergeRequired(val source: FocusTag, val target: FocusTag) : FocusProductResult

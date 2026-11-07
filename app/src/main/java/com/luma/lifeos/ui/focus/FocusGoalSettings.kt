@@ -253,6 +253,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                                     writeFailed = true
                                 }
                                 is FocusProductResult.TagCatalogConflict,
+                                is FocusProductResult.InvitationConflict,
                                 is FocusProductResult.MergeRequired -> {
                                     pending = null
                                     pendingEffectiveMonday = null
@@ -304,6 +305,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                                     is FocusProductResult.Conflict -> { pending = null; writeFailed = true }
                                     is FocusProductResult.SessionConflict -> { pending = null; writeFailed = true }
                                     is FocusProductResult.TagCatalogConflict,
+                                    is FocusProductResult.InvitationConflict,
                                     is FocusProductResult.MergeRequired -> { pending = null; writeFailed = true }
                                     is FocusProductResult.Invalid -> { pending = null; inputInvalid = true }
                                     is FocusProductResult.Unavailable -> writeFailed = true

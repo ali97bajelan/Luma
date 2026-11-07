@@ -230,6 +230,7 @@ internal fun FocusReflectionEditor(
                         saveError = !inputRejected
                     }
                     is FocusProductResult.Unavailable -> saveError = true
+                    is FocusProductResult.InvitationConflict,
                     is FocusProductResult.MergeRequired -> saveError = true
                 }
             } catch (failure: Exception) {

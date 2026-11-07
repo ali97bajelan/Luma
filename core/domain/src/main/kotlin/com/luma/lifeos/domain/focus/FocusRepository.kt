@@ -40,6 +40,11 @@ interface FocusRepository {
     /** Emits the authoritative RUNNING or PAUSED session, or null after state has loaded. */
     fun observeOpen(): Flow<FocusSession?>
 
+    /**
+     * Start revalidates any selected task in the same transaction that creates the session. A
+     * missing or completed selection returns [FocusConflictReason.TASK_SELECTION] without
+     * silently unlinking the draft.
+     */
     suspend fun start(
         commandId: UUID,
         sessionId: UUID,

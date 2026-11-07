@@ -18,11 +18,18 @@ import androidx.room.Relation
             childColumns = ["tag_id"],
             onDelete = ForeignKey.SET_NULL,
         ),
+        ForeignKey(
+            entity = com.luma.lifeos.data.todo.TodoEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["task_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
     indices = [
         Index(value = ["open_slot"], unique = true),
         Index(value = ["state", "started_at_seconds", "started_at_nanos"]),
         Index(value = ["tag_id"]),
+        Index(value = ["task_id"]),
     ],
 )
 data class FocusSessionEntity(
@@ -68,7 +75,15 @@ data class FocusSessionEntity(
     val outcome: String? = null,
     @ColumnInfo(name = "next_step")
     val nextStep: String? = null,
-)
+    @ColumnInfo(name = "task_id")
+    val taskId: String? = null,
+    @ColumnInfo(name = "task_origin", defaultValue = "0")
+    val taskOrigin: Boolean = false,
+) {
+    init {
+        require(taskId == null || taskOrigin) { "A task-linked session must retain task origin" }
+    }
+}
 
 /** Device-local countdown state. It is intentionally excluded from portable backup tables. */
 @Entity(tableName = "focus_break_runtime")

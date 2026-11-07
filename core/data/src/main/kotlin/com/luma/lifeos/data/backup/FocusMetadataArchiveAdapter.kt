@@ -20,13 +20,16 @@ internal object FocusMetadataArchiveAdapter {
     fun importColumns(table: String, schemaVersion: Int, currentColumns: List<String>): List<String> = when {
         table == "todo_task" && schemaVersion == 4 -> currentColumns.filterNot { it == "due_time_minutes" }
         table == "focus_session" && schemaVersion == 7 -> currentColumns.filterNot {
-            it in setOf("name", "tag_id", "timer_mode", "target_millis", "outcome", "next_step")
+            it in setOf("name", "tag_id", "timer_mode", "target_millis", "outcome", "next_step", "task_id", "task_origin")
         }
         table == "focus_session" && schemaVersion == 8 -> currentColumns.filterNot {
-            it in setOf("timer_mode", "target_millis", "outcome", "next_step")
+            it in setOf("timer_mode", "target_millis", "outcome", "next_step", "task_id", "task_origin")
         }
         table == "focus_session" && schemaVersion in 9..10 -> currentColumns.filterNot {
-            it in setOf("outcome", "next_step")
+            it in setOf("outcome", "next_step", "task_id", "task_origin")
+        }
+        table == "focus_session" && schemaVersion == 11 -> currentColumns.filterNot {
+            it in setOf("task_id", "task_origin")
         }
         else -> currentColumns
     }
@@ -37,7 +40,7 @@ internal object FocusMetadataArchiveAdapter {
         schemaVersion: Int,
         sourceColumns: List<String>,
         currentColumns: List<String>,
-    ): List<String> = if (table == "focus_session" && schemaVersion in 7..10) currentColumns else sourceColumns
+    ): List<String> = if (table == "focus_session" && schemaVersion in 7..11) currentColumns else sourceColumns
 
     fun adaptRow(
         table: String,
@@ -47,7 +50,7 @@ internal object FocusMetadataArchiveAdapter {
         insertColumns: List<String>,
     ): List<Any?> {
         require(sourceColumns.size == sourceValues.size)
-        if (table != "focus_session" || schemaVersion !in 7..10) return sourceValues
+        if (table != "focus_session" || schemaVersion !in 7..11) return sourceValues
         val source = sourceColumns.zip(sourceValues).toMap()
         val values = source + mapOf(
             "name" to source["name"],
@@ -56,6 +59,8 @@ internal object FocusMetadataArchiveAdapter {
             "target_millis" to source["target_millis"],
             "outcome" to source["outcome"],
             "next_step" to source["next_step"],
+            "task_id" to source["task_id"],
+            "task_origin" to (source["task_origin"] ?: 0L),
         )
         return insertColumns.map { column ->
             require(column in values) { "Unsupported legacy focus session column" }
@@ -63,12 +68,27 @@ internal object FocusMetadataArchiveAdapter {
         }
     }
 
-    fun validateSession(state: String, openSlot: Long?, name: String?) {
+    fun validateSession(
+        state: String,
+        openSlot: Long?,
+        name: String?,
+        taskId: String?,
+        taskOrigin: Long,
+    ) {
         require(state == "FINISHED" || state == "INTERRUPTED") {
             "Only terminal focus sessions can be restored"
         }
         require(openSlot == null) { "An open focus session cannot be restored" }
         name?.let { validateLabel(it, isTag = false) }
+        require(taskOrigin in 0L..1L) { "Invalid task-origin marker" }
+        require(taskId == null || taskOrigin == 1L) { "A task-linked session must retain task origin" }
+    }
+
+    fun validateTaskReferences(taskIds: Set<String>, links: Iterable<Pair<String?, Boolean>>) {
+        links.forEach { (taskId, taskOrigin) ->
+            require(taskId == null || taskId in taskIds) { "A focus session references a missing task" }
+            require(taskId == null || taskOrigin) { "A task-linked session must retain task origin" }
+        }
     }
 
     fun validateTag(tag: TagRow) {

@@ -28,6 +28,7 @@ class TodoMissingException(val taskId: UUID) : NoSuchElementException("Task does
 interface TodoRepository {
     fun observeList(completed: Boolean, limit: Int = TODO_DEFAULT_PAGE_SIZE): Flow<TodoPage>
     fun observeToday(date: LocalDate, limit: Int = TODO_DEFAULT_TODAY_LIMIT): Flow<TodoPage>
+    /** Read-only lookup; transaction-sensitive actions must revalidate task state at write time. */
     suspend fun get(id: UUID): TodoTask?
     suspend fun create(id: UUID, initialRevision: UUID, input: TodoInput): TodoTask
     suspend fun update(id: UUID, expectedRevision: UUID, nextRevision: UUID, input: TodoInput): TodoTask

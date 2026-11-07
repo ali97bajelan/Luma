@@ -149,6 +149,7 @@ internal fun FocusSessionMetadataEditor(
                         rejected = true
                     }
                     is FocusProductResult.Conflict,
+                    is FocusProductResult.InvitationConflict,
                     is FocusProductResult.MergeRequired,
                     is FocusProductResult.Unavailable -> saveError = true
                 }

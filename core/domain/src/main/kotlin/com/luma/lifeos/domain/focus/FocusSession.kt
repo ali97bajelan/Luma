@@ -7,6 +7,8 @@ enum class FocusState { RUNNING, PAUSED, FINISHED, INTERRUPTED }
 
 enum class FocusAction { PAUSE, RESUME, STOP }
 
+enum class FocusConflictReason { TASK_SELECTION }
+
 enum class FocusRecoveryChoice { CONTINUE_ELAPSED, END_AT_CHECKPOINT }
 
 /** Why a session ended. Clock and process failures are kept distinct for history guidance. */
@@ -63,9 +65,14 @@ data class FocusSession(
     val metadata: FocusMetadata = FocusMetadata(),
     val timer: FocusTimerConfig = FocusTimerConfig.countUp(),
     val reflection: FocusReflection = FocusReflection(),
+    /** Current task association; deletion or explicit unlink clears this without clearing origin. */
+    val taskId: UUID? = null,
+    /** True when this session began from task context, even after its task link is removed. */
+    val taskOrigin: Boolean = false,
 ) {
     init {
         require(revision >= 0) { "Revision cannot be negative" }
+        require(taskId == null || taskOrigin) { "A task-linked session must retain task origin" }
         require(runs.isNotEmpty()) { "A focus session must contain its first run" }
         require(runs.all { it.sessionId == id }) { "Every run must belong to this session" }
         require(normalizeFocusReflection(reflection) == reflection) { "Reflection must be normalized" }
@@ -167,7 +174,11 @@ sealed interface FocusWriteResult {
         init { require((snapshot == null) xor (deletedSessionId == null)) }
     }
 
-    data class Conflict(val current: FocusSession?) : FocusWriteResult
+    data class Conflict(
+        val current: FocusSession?,
+        /** Identifies a conflict that requires a specific user action while preserving the draft. */
+        val reason: FocusConflictReason? = null,
+    ) : FocusWriteResult
     data class Invalid(val reason: FocusInvalidReason) : FocusWriteResult
     data class Unavailable(val reason: FocusUnavailableReason) : FocusWriteResult
     data class RecoveryRequired(val current: FocusSession) : FocusWriteResult

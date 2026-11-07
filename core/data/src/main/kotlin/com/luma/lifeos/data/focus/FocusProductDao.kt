@@ -68,4 +68,36 @@ interface FocusProductDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertReceipt(receipt: FocusProductCommandReceiptEntity)
+
+    @Query("SELECT * FROM focus_invitation_settings WHERE singleton_id = 1 LIMIT 1")
+    suspend fun invitationSettings(): FocusInvitationSettingsEntity?
+
+    @Query("SELECT * FROM focus_invitation_settings WHERE singleton_id = 1 LIMIT 1")
+    fun observeInvitationSettings(): Flow<FocusInvitationSettingsEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertInvitationSettingsIfAbsent(settings: FocusInvitationSettingsEntity): Long
+
+    @Update
+    suspend fun updateInvitationSettings(settings: FocusInvitationSettingsEntity): Int
+
+    @Query("""SELECT * FROM focus_invitation_delivery
+        WHERE database_generation = :generation AND schedule_revision = :revision AND local_date = :date
+        LIMIT 1""")
+    suspend fun invitationDelivery(generation: String, revision: Long, date: String): FocusInvitationDeliveryEntity?
+
+    @Query("""SELECT * FROM focus_invitation_delivery
+        WHERE database_generation = :generation AND schedule_revision = :revision
+          AND state IN ('PENDING', 'SNOOZED')
+        ORDER BY due_at, local_date""")
+    suspend fun pendingInvitations(generation: String, revision: Long): List<FocusInvitationDeliveryEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertInvitationDelivery(delivery: FocusInvitationDeliveryEntity): Long
+
+    @Update
+    suspend fun updateInvitationDelivery(delivery: FocusInvitationDeliveryEntity): Int
+
+    @Query("DELETE FROM focus_invitation_delivery WHERE database_generation != :generation")
+    suspend fun deleteInvitationsFromOtherGenerations(generation: String): Int
 }

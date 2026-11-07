@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01 SOURCE COMPLETE — UNVERIFIED; FD02–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -24,7 +24,7 @@ Generating this package changes documentation only. Application implementation, 
 
 ## Implementation task ledger
 
-All checkboxes below track source delivery only. All initial states are NOT STARTED.
+The checkboxes below track current source delivery only; source completion is separate from QA and acceptance.
 
 | ID | Priority | Source deliverable | Depends on | Review / carried scope | Acceptance / later proof |
 | --- | --- | --- | --- | --- | --- |
@@ -41,7 +41,7 @@ All checkboxes below track source delivery only. All initial states are NOT STAR
 | FD11 | P0 | All-entry integration, restore/reset cancellation, generation/privacy and localization sweep | FD01–FD10 | remaining FX01/FX07/FX09/FX10 | FD-A09; Q01–Q05, E01–E12 |
 | FD12 | P0 | README/archive docs and accurate source-complete handoff | FD01–FD11 | R1 documentation/release confidence | FD-A09; Q05/Q06 |
 
-- [ ] FD01 source complete
+- [x] FD01 source complete — UNVERIFIED
 - [ ] FD02 source complete
 - [ ] FD03 source complete
 - [ ] FD04 source complete
@@ -53,6 +53,16 @@ All checkboxes below track source delivery only. All initial states are NOT STAR
 - [ ] FD10 source complete
 - [ ] FD11 source complete
 - [ ] FD12 source complete
+
+### FD01 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED.
+- Changed source: `core/domain/.../focus/FocusMetadata.kt`, `FocusSession.kt`, `FocusGoals.kt`, `FocusRepository.kt`, new `FocusInvitations.kt`; `core/domain/.../todo/TodoRepository.kt`; `core/data/.../focus/FocusEntities.kt`, `FocusDao.kt`, `FocusProductDao.kt`, new `FocusInvitationEntities.kt`, `RoomFocusRepository.kt`, `RoomFocusProductRepository.kt`; `core/data/.../db/LumaDatabase.kt`; `core/data/.../backup/BackupArchive.kt`, `FocusMetadataArchiveAdapter.kt`, `BackupValidation.kt`; existing Focus result handlers in `FocusGoalSettings.kt`, `FocusReflectionEditor.kt`, `FocusSessionMetadataEditor.kt` and `FocusTagManager.kt`.
+- Implemented: task ID/origin normalization and mapping; Start-time open-task validation with a distinct, receipt-stable selection conflict; Room 15 task link and device-local invitation tables; archive 12 task projection with explicit task defaults for archives 7–11 and staged reference/provenance validation.
+- Interfaces/version decisions: kept the existing Start signature with defaulted input fields; new Start receipts use `START_V4` while preserving `START_V2`/`START_V3`; the invitation config, occurrence and repository contracts are ready for FD05. Room 14 and archive 11 were confirmed, reserving Room 15 and archive 12.
+- Ruling: added the nullable task foreign-key column using `ALTER TABLE` instead of rebuilding `focus_session`. Migration 9→10 already adds the tag foreign key this way; the nullable reference preserves existing rows and child/runtime relationships. Cost if wrong: migration/schema validation can fail; Q03/E09 own that proof.
+- Source review covered model/entity mappings, Start receipt identity and replay, migration order, archive defaults, task references and invitation exclusion from the portable table inventory. Tests, builds, schema generation, lint and device/emulator checks were NOT RUN in this task, as required by Phase I.
+- Later proof: Q02/Q03 and E02/E09.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

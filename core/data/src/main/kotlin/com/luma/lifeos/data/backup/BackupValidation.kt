@@ -156,7 +156,13 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
         )
         "focus_session" -> {
             val state = FocusState.valueOf(s("state"))
-            FocusMetadataArchiveAdapter.validateSession(state.name, long("open_slot"), text("name"))
+            FocusMetadataArchiveAdapter.validateSession(
+                state = state.name,
+                openSlot = long("open_slot"),
+                name = text("name"),
+                taskId = text("task_id"),
+                taskOrigin = l("task_origin"),
+            )
             require(l("revision") >= 0)
             require(l("recovered_or_uncertain") in 0..1)
             val terminalReason = text("terminal_reason")?.let(FocusTerminalReason::valueOf)
@@ -214,6 +220,18 @@ internal fun validateFocusMetadataArchive(sqlite: SupportSQLiteDatabase) {
         buildList { while (cursor.moveToNext()) add(if (cursor.isNull(0)) null else cursor.getString(0)) }
     }
     FocusMetadataArchiveAdapter.validateReferences(tags, sessionTagIds)
+
+    val taskIds = sqlite.query("SELECT id FROM todo_task ORDER BY id").use { cursor ->
+        buildSet { while (cursor.moveToNext()) add(cursor.getString(0)) }
+    }
+    val taskLinks = sqlite.query("SELECT task_id, task_origin FROM focus_session ORDER BY id").use { cursor ->
+        buildList {
+            while (cursor.moveToNext()) {
+                add((if (cursor.isNull(0)) null else cursor.getString(0)) to (cursor.getLong(1) == 1L))
+            }
+        }
+    }
+    FocusMetadataArchiveAdapter.validateTaskReferences(taskIds, taskLinks)
 }
 
 /** Validates relationships and overflow after every focus row has been staged. */
@@ -280,6 +298,10 @@ internal fun validateFocusArchive(sqlite: SupportSQLiteDatabase): Long {
                         if (index < 0 || cursor.isNull(index)) null else cursor.getString(index)
                     },
                 ),
+                taskId = cursor.getColumnIndex("task_id").let { index ->
+                    if (index < 0 || cursor.isNull(index)) null else UUID.fromString(cursor.getString(index))
+                },
+                taskOrigin = cursor.getLong(cursor.getColumnIndexOrThrow("task_origin")) == 1L,
             )
             session.creditedMillis // Reject aggregate duration overflow before replacement.
             sessionCount = Math.addExact(sessionCount, 1L)

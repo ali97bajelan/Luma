@@ -8,6 +8,7 @@ import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusBreakRecord
 import com.luma.lifeos.domain.focus.FocusBreakWriteResult
 import com.luma.lifeos.domain.focus.FocusCommand
+import com.luma.lifeos.domain.focus.FocusConflictReason
 import com.luma.lifeos.domain.focus.FocusHistoryRow
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusInsights
@@ -143,14 +144,22 @@ class RoomFocusRepository(
         } catch (_: IllegalArgumentException) {
             return FocusWriteResult.Invalid(FocusInvalidReason.INVALID_METADATA)
         }
-        val startPayload = if (normalized.timer == FocusTimerConfig.countUp()) {
-            // Keep pre-timer count-up retries byte-for-byte compatible with their stored receipts.
-            commandPayload(
-                "START_V2", sessionId.toString(), normalized.name,
-                normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(), sample.payload(), context.payload(),
+        val startPayload = when {
+            normalized.taskId != null || normalized.taskOrigin -> commandPayload(
+                "START_V4", sessionId.toString(), normalized.name,
+                normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(),
+                normalized.timer.mode.name, normalized.timer.targetMillis?.toString().orEmpty(),
+                normalized.taskId?.toString().orEmpty(), normalized.taskOrigin.toString(),
+                sample.payload(), context.payload(),
             )
-        } else {
-            commandPayload(
+            normalized.timer == FocusTimerConfig.countUp() -> {
+                // Keep pre-timer count-up retries byte-for-byte compatible with their stored receipts.
+                commandPayload(
+                    "START_V2", sessionId.toString(), normalized.name,
+                    normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(), sample.payload(), context.payload(),
+                )
+            }
+            else -> commandPayload(
                 "START_V3", sessionId.toString(), normalized.name,
                 normalized.tagName?.lowercase(java.util.Locale.ROOT).orEmpty(),
                 normalized.timer.mode.name, normalized.timer.targetMillis?.toString().orEmpty(),
@@ -169,7 +178,10 @@ class RoomFocusRepository(
                 return@runCommand FocusWriteResult.Invalid(FocusInvalidReason.INVALID_SNAPSHOT)
             }
 
-            val expected = createFocusSession(sessionId, commandId, sample, normalized.timer)
+            val expected = createFocusSession(sessionId, commandId, sample, normalized.timer).copy(
+                taskId = normalized.taskId,
+                taskOrigin = normalized.taskOrigin,
+            )
             val existing = dao.sessionWithRuns(id)?.toDomain()
             if (existing != null) {
                 val sameStart = existing.startedAt == sample.wall &&
@@ -177,7 +189,9 @@ class RoomFocusRepository(
                     existing.metadata.name == normalized.name &&
                     existing.metadata.tag?.name?.lowercase(java.util.Locale.ROOT) ==
                     normalized.tagName?.lowercase(java.util.Locale.ROOT) &&
-                    existing.timer == normalized.timer
+                    existing.timer == normalized.timer &&
+                    existing.taskId == normalized.taskId &&
+                    existing.taskOrigin == normalized.taskOrigin
                 return@runCommand if (sameStart) {
                     FocusWriteResult.AlreadyApplied(existing)
                 } else {
@@ -187,6 +201,16 @@ class RoomFocusRepository(
 
             val active = dao.openSession()?.toDomain()
             if (active != null) return@runCommand FocusWriteResult.Conflict(active)
+
+            normalized.taskId?.let { taskId ->
+                val task = database.todos().find(taskId.toString())
+                if (task == null || task.completedAt != null) {
+                    return@runCommand FocusWriteResult.Conflict(
+                        current = null,
+                        reason = FocusConflictReason.TASK_SELECTION,
+                    )
+                }
+            }
 
             val tag = normalized.tagName?.let { tagName ->
                 val normalizedName = normalizeFocusTagIdentity(tagName)
@@ -744,20 +768,25 @@ class RoomFocusRepository(
                 val resultSessionId = when (result) {
                     is FocusWriteResult.Applied -> result.snapshot?.id ?: result.deletedSessionId ?: requestedSessionId
                     is FocusWriteResult.AlreadyApplied -> result.snapshot?.id ?: result.deletedSessionId ?: requestedSessionId
-                    is FocusWriteResult.Conflict -> result.current?.id ?: requestedSessionId
+                    is FocusWriteResult.Conflict -> result.current?.id
+                        ?: if (result.reason == FocusConflictReason.TASK_SELECTION) null else requestedSessionId
                     is FocusWriteResult.Invalid -> requestedSessionId
                     is FocusWriteResult.RecoveryRequired -> result.current.id
                     is FocusWriteResult.Unavailable -> requestedSessionId
                 }
-                val invalidReason = (result as? FocusWriteResult.Invalid)?.reason?.name
+                val resultReason = when (result) {
+                    is FocusWriteResult.Invalid -> result.reason.name
+                    is FocusWriteResult.Conflict -> result.reason?.name
+                    else -> null
+                }
                 dao.insertReceipt(
                     FocusCommandReceiptEntity(
                         commandId = commandId.toString(),
                         databaseGeneration = generationId,
                         payload = payload,
                         resultType = result.receiptType(),
-                        resultSessionId = resultSessionId.toString(),
-                        resultInvalidReason = invalidReason,
+                        resultSessionId = resultSessionId?.toString(),
+                        resultInvalidReason = resultReason,
                         createdAtSeconds = createdAt.epochSecond,
                         createdAtNanos = createdAt.nano,
                     ),
@@ -791,7 +820,10 @@ class RoomFocusRepository(
                     else -> FocusWriteResult.Conflict(null)
                 }
             }
-            RECEIPT_CONFLICT -> FocusWriteResult.Conflict(snapshot)
+            RECEIPT_CONFLICT -> FocusWriteResult.Conflict(
+                current = snapshot,
+                reason = receipt.resultInvalidReason?.let(FocusConflictReason::valueOf),
+            )
             RECEIPT_INVALID -> FocusWriteResult.Invalid(
                 receipt.resultInvalidReason?.let(FocusInvalidReason::valueOf)
                     ?: FocusInvalidReason.INVALID_SNAPSHOT,
@@ -939,6 +971,8 @@ private fun FocusSessionEntity.toDomain(
             outcome = outcome?.let(com.luma.lifeos.domain.focus.FocusOutcome::valueOf),
             nextStep = nextStep,
         ),
+        taskId = taskId?.let(UUID::fromString),
+        taskOrigin = taskOrigin,
     )
 }
 
@@ -990,6 +1024,8 @@ private fun FocusSession.toEntity(): FocusSessionEntity = FocusSessionEntity(
     targetMillis = timer.targetMillis,
     outcome = reflection.outcome?.name,
     nextStep = reflection.nextStep,
+    taskId = taskId?.toString(),
+    taskOrigin = taskOrigin,
 )
 
 private fun FocusRun.toEntity(): FocusRunEntity = FocusRunEntity(

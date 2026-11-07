@@ -33,6 +33,8 @@ data class FocusStartInput(
     val name: String,
     val tagName: String?,
     val timer: FocusTimerConfig = FocusTimerConfig.countUp(),
+    val taskId: UUID? = null,
+    val taskOrigin: Boolean = false,
 )
 
 /** Validate raw input before trimming so control characters cannot be hidden at the edges. */
@@ -45,7 +47,11 @@ fun normalizeFocusStartInput(input: FocusStartInput): FocusStartInput {
     require(name.codePointCount(0, name.length) <= 120) { "Name is too long" }
     val tag = input.tagName?.let(::clean)
     require(tag == null || tag.length <= 50) { "Tag is too long" }
-    return input.copy(name = name, tagName = tag)
+    return input.copy(
+        name = name,
+        tagName = tag,
+        taskOrigin = input.taskOrigin || input.taskId != null,
+    )
 }
 
 fun normalizeFocusTagName(value: String): String {

@@ -77,6 +77,7 @@ internal fun FocusTagManager(repository: FocusProductRepository) {
                     is FocusProductResult.TagCatalogConflict -> failed = true
                     is FocusProductResult.SessionConflict,
                     is FocusProductResult.Conflict,
+                    is FocusProductResult.InvitationConflict,
                     is FocusProductResult.Invalid,
                     is FocusProductResult.Unavailable -> failed = true
                 }
@@ -146,6 +147,7 @@ internal fun FocusTagManager(repository: FocusProductRepository) {
                                     }
                                     is FocusProductResult.SessionConflict,
                                     is FocusProductResult.Conflict,
+                                    is FocusProductResult.InvitationConflict,
                                     is FocusProductResult.MergeRequired,
                                     is FocusProductResult.Invalid,
                                     is FocusProductResult.Unavailable -> {

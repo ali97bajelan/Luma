@@ -167,6 +167,8 @@ interface FocusDao {
             s.open_slot AS session_open_slot,
             s.name AS session_name,
             s.tag_id AS session_tag_id,
+            s.task_id AS session_task_id,
+            s.task_origin AS session_task_origin,
             s.timer_mode AS session_timer_mode,
             s.target_millis AS session_target_millis,
             r.id AS run_id,
