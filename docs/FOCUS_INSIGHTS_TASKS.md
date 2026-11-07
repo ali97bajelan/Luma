@@ -1,6 +1,6 @@
 # Focus names, tags, and insights tasks
 
-Date: 2026-11-07 · Status: **FI01 and FI02 targeted QA complete; FI02 module-wide data instrumentation remains not green; FI03–FI07 Android/Room acceptance remains pending**
+Date: 2026-11-07 · Status: **FI01–FI02 targeted QA complete; FI03 migration QA partial with two Room migration test failures; FI04 targeted QA pass with direct Room insights-observer coverage pending; FI05–FI07 Android/Room acceptance remains pending**
 
 [Specification](superpowers/specs/2026-11-03-focus-names-tags-insights-design.md) · [Implementation plan](superpowers/plans/2026-11-03-focus-names-tags-insights.md)
 
@@ -10,8 +10,8 @@ These extend F16 rather than replacing its existing task status. P0 scope assume
 | --- | --- | --- | --- | --- | --- |
 | FI01 | P0 | Name/tag rules, metadata models and test fixtures | — | FI-A01 | DONE (targeted QA: 34/34 focus-domain tests) |
 | FI02 | P0 | Transactional metadata persistence, command identity and caller updates | FI01 | FI-A02 | TARGETED QA PASS (7/7 Room persistence; 13/13 app unit; emulator flow); data module suite not green (see QA log) |
-| FI03 | P0 | Room migration, portable backup/legacy adapters and privacy format docs | FI02 | FI-A03 | DONE (source checks; Room validation pending) |
-| FI04 | P0 | Range-correct tag totals, average and longest-session insight source | FI01, FI02 | FI-A04 | DONE (source checks; Room observation/runtime validation pending) |
+| FI03 | P0 | Room migration, portable backup/legacy adapters and privacy format docs | FI02 | FI-A03 | PARTIAL QA (archive adapter 7/7 and SQL fixture pass; current migration suite has 2 failures) |
+| FI04 | P0 | Range-correct tag totals, average and longest-session insight source | FI01, FI02 | FI-A04 | TARGETED QA PASS (domain/state/report tests and emulator range/tag walkthrough; direct Room insights-observer coverage pending) |
 | FI05 | P0 | Setup fields, retained drafts, metadata display and focus insight cards | FI02, FI04 | FI-A05 | DONE (source checks; Android UI/lifecycle acceptance pending) |
 | FI06 | P0 | Name search and tag-filtered history with stable paging | FI02, FI04 | FI-A06 | DONE (source checks; Room/Compose validation pending) |
 | FI07 | P0 | Privacy/resource review and code-only verification evidence | FI03, FI05, FI06 | FI-A07 | DONE (source checks; Android access/lifecycle acceptance pending) |
@@ -24,13 +24,20 @@ These extend F16 rather than replacing its existing task status. P0 scope assume
 - **Broader data suite — NOT GREEN:** `:core:data:connectedDebugAndroidTest --offline` reported 148 passed and 31 failed. Failures include `BackupValidation` Long/String casts and `FocusMigrationTest` schema expectation assertions. This does not negate the focused FI-A02 result, but module-wide Room/migration acceptance is still pending.
 - Updated the [Room persistence tests](../core/data/src/androidTest/kotlin/com/luma/lifeos/data/focus/FocusPersistenceTest.kt) with direct tag-count and stale-generation metadata assertions. Updated the [backup persistence fixture](../core/data/src/androidTest/kotlin/com/luma/lifeos/data/backup/BackupPersistenceTest.kt) to pass valid metadata while checking stale-generation rejection.
 
+### FI03–FI04 targeted QA — 2026-11-07
+
+- **FI03 — PARTIAL:** `:core:data:testDebugUnitTest --offline --tests com.luma.lifeos.data.backup.FocusMetadataArchiveAdapterTest` passes 7/7 adapter tests. `python3 scripts/check_focus_metadata_sql.py` passes its 5 extracted SQL statements, covering the Room 9→10 fixture and stale `EXCLUDE_PAUSED` selection. The standalone `python3 scripts/run_focus_metadata_archive_tests.py` runner is stale: it fails before running tests because it omits `FocusGoalArchiveAdapter`, now referenced by `BackupArchive.kt`; the Gradle adapter target above is the executed test result. `:core:data:connectedDebugAndroidTest --offline -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.data.focus.FocusMigrationTest` has 2 failing tests against the current Room v14 schema: the populated v7 migration test cannot find its seeded journal row after the migration chain, and the table-inventory test still expects only the original Focus tables while v14 includes the later tag, break, goal, and tag-catalog tables. Migration acceptance remains unresolved; these results do not establish whether the journal failure is a migration defect or a fixture issue.
+- **FI04 — TARGETED PASS:** `python3 scripts/run_focus_domain_tests.py` passes 34/34; `:app:testDebugUnitTest --offline --tests com.luma.lifeos.ui.focus.FocusInsightsStateTest` passes 7/7; `:core:data:connectedDebugAndroidTest --offline -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.data.focus.FocusReportPersistenceTest` passes 3/3. The report persistence class validates range/history persistence but does not directly exercise `RoomFocusRepository.observeInsights` invalidation, which remains a coverage gap.
+- **Emulator walkthrough — PASS (`emulator-5554`):** the Focus insight UI showed Today = 1 session, This week = 3, and All time = 3 after cleanup, with average, longest-session and by-tag values. A temporary 49-second session named `QA FI04 transtie`, tagged `FI04QA`, appeared as the sole result for the tag filter and showed one credited run in detail. After deletion, history returned to the original three rows. No persistent QA session remains.
+- **Scope note:** FI04’s deterministic calculation/state and visible range behavior passed targeted checks. Full data-level `observeInsights` change/invalidation coverage is still pending.
+
 ## Suggestions outside this implementation
 
 ### Product review — 2026-11-04
 
 **Recommendation:** prioritize easier starts and meaningful task progress, then support a sustainable routine. More time charts alone will not close the gap between deciding what to do and doing it.
 
-This is a proposed product backlog, not approved implementation scope. It replaces the earlier short suggestion list; FI01–FI07 priorities and acceptance rules remain unchanged. FI01/FI02 states were updated with targeted QA evidence on 2026-11-07 (see the QA log above). Task linking and timed sessions explicitly extend beyond the current insights specification's exclusions and need their own specification before implementation.
+This is a proposed product backlog, not approved implementation scope. It replaces the earlier short suggestion list; FI01–FI07 priorities and acceptance rules remain unchanged. FI01–FI04 states were updated with targeted QA evidence on 2026-11-07 (see the QA log above). Task linking and timed sessions explicitly extend beyond the current insights specification's exclusions and need their own specification before implementation.
 
 **Working audience assumption:** individuals using Luma privately to study, work or make progress on personal tasks. There is no user research, adoption baseline or retention evidence supplied here. Value and effort rankings below are product hypotheses based on the current source and feature fit, not measured demand or engineering estimates.
 
@@ -168,21 +175,21 @@ The earlier FI-only source-check restrictions below describe the existing handof
 
 ## Completion rules
 
-The following rules and evidence apply to the existing **FI01–FI07** implementation. For FX01–FX10 and FX-QA, use the extension phase policy above.
+This subsection records the original source-only handoff policy for the existing **FI01–FI07** implementation. The explicit 2026-11-07 request superseded its Gradle/device/testing prohibitions for FI03/FI04; their current results are in the QA log above. For FX01–FX10 and FX-QA, use the extension phase policy above.
 
 - Keep tasks unchecked until code and specified source tests exist and pass.
-- Run standalone Kotlin/JVM tests directly, plus static and archive/SQL fixture checks as applicable.
-- Do not invoke Gradle, emulator/device tooling, instrumentation, lint or APK assembly.
-- Keep runtime/UI/Room generated-schema validation marked NOT RUN; do not mark end-to-end acceptance PASS from source checks.
+- At source handoff, run standalone Kotlin/JVM tests directly, plus static and archive/SQL fixture checks as applicable.
+- The original handoff prohibited Gradle, emulator/device tooling, instrumentation, lint and APK assembly; that restriction was superseded for FI03/FI04 by the explicit QA request.
+- Source checks alone do not establish Room generated-schema or end-to-end acceptance. See the latest table and QA log for current FI status.
 - Preserve existing F16 unresolved enforcement and platform QA limitations.
 
 FI01 source verification: `python3 scripts/run_focus_domain_tests.py` passes 23 tests. Android runtime/UI and Room generated-schema validation remain NOT RUN; product acceptance remains pending.
 
 FI02 source progress: required Start input now reaches the repository transaction; session name and normalized tag persist with session/run/runtime/receipt writes, and command payload identity includes normalized metadata. Database version 10 adds the focus tag catalog and nullable session metadata through migration 9→10. Standalone domain tests pass 23 tests. Emulator, Room migration execution, and generated-schema validation remain NOT RUN because `adb`/Android CLI are unavailable in this environment; FI-A02 remains pending runtime verification.
 
-FI03 source verification: `python3 scripts/run_focus_metadata_archive_tests.py` passes 16 JUnit tests, including 6 metadata adapter tests. `python3 scripts/check_focus_metadata_sql.py` passes 4 migration fixtures for RUNNING, PAUSED, FINISHED and INTERRUPTED v9 sessions plus a stale `EXCLUDE_PAUSED` export fixture; it executes the SQL extracted directly from `LumaDatabase.kt` and verifies existing focus rows, indices, foreign keys and receipts survive. Room-generated schema 10 and Room migration execution remain NOT RUN; FI-A03 remains pending Room/runtime validation.
+FI03 pre-QA source verification (2026-11-04): the standalone archive runner passed 16 JUnit tests and the SQL fixture passed four migration fixtures at that time. Latest FI03 results are in the 2026-11-07 QA log above: the current standalone runner is stale, the Gradle adapter target passes 7/7, five extracted SQL statements pass, and current Room v7→14 migration instrumentation has two failures. FI-A03 remains pending migration diagnosis and generated-schema review.
 
-FI04 source verification: the standalone focus-domain plus insight-state suite passes 38/38 JUnit tests, covering range clipping, tag conservation, deterministic longest-session ties, exact HALF_UP rounding, duplicate/conflicting snapshots, overflow, same-query retry, cancellation, stale query/generation rejection, and empty/error separation. A SQLite smoke check of the DAO suggestion query confirms newest-session ordering, normalized-name tie order, omission of unused tags, and the 10-row limit. Room query compilation, invalidation behavior and Android/runtime integration remain NOT RUN; FI-A04 product acceptance remains pending those checks.
+FI04 pre-QA source verification (2026-11-04): the standalone focus-domain plus insight-state suite passed 38/38 JUnit tests, and a SQLite suggestion-query smoke check confirmed ordering, unused-tag omission and the 10-row limit. Latest FI04 targeted results are in the 2026-11-07 QA log above: domain 34/34, insight-state 7/7, report persistence 3/3, and the emulator range/tag walkthrough passed. Direct RoomFocusRepository.observeInsights invalidation coverage remains pending; FI-A04 is targeted-pass with that data-level gap documented.
 
 FI05 source verification (2026-11-04): `python3 scripts/run_focus_setup_tests.py` passes 17/17 JUnit tests for valid Start enablement, saved-draft recreation, immutable retries, successful/reset clearing, terminal-screen session identity, stale insight suppression/cancellation, period/zone selection and day rollover. `python3 scripts/run_focus_domain_tests.py` passes 34/34 JUnit tests. EN/FR/FA resource XML parity passes across 1,447 named resources, and `git diff --check` passes. Actual Compose layout, IME/RTL/large-font interaction, Android lifecycle and Room integration remain NOT RUN; FI-A05 product acceptance remains pending those checks.
 
