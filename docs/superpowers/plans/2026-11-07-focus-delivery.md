@@ -122,16 +122,17 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 ## FD05 — Invitation rules and local persistence
 
 **Depends on:** FD01, FD04; existing timed/break source. **Spec:** R05.
+**Status:** SOURCE COMPLETE — UNVERIFIED.
 
 **Files:** create D/focus/FocusInvitationRules.kt and C/focus/RoomFocusInvitationRepository.kt, FocusInvitationDao.kt. Modify C/db/LumaDatabase.kt, C/LumaStorage.kt and source migration from FD01 as needed without another version bump.
 
 **Produces:** FocusInvitationRepository implementation; nextFocusInvitation(now, zone, weekdays, time): Instant?; generation/revision/date occurrence identity.
 
-- [ ] Implement default-off config validation and idempotent revision-aware config commands.
-- [ ] Implement civil-time next-slot calculation, DST gap/overlap policy and inclusive 60-minute deadline.
-- [ ] Implement atomic consume, one snooze and disable using stored action tokens; recheck open session/break within claim transaction.
-- [ ] Keep schedule/delivery local; expose focusInvitations through LumaStorage and include local tables in replacement/reset cleanup.
-- [ ] Source-review replay, concurrent claims, stale generation and no catch-up behavior; record unverified handoff.
+- [x] Implement default-off config validation and idempotent revision-aware config commands.
+- [x] Implement civil-time next-slot calculation, DST gap/overlap policy and inclusive 60-minute deadline.
+- [x] Implement atomic consume, one snooze and disable using stored action tokens; recheck open session/break within claim transaction.
+- [x] Keep schedule/delivery local; expose focusInvitations through LumaStorage and include local tables in replacement/reset cleanup.
+- [x] Source-review replay, concurrent claims, stale generation and no catch-up behavior; record unverified handoff.
 
 **Deferred proof:** Q02/Q03; E06/E07/E09.
 

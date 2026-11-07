@@ -19,6 +19,7 @@ import com.luma.lifeos.data.focus.FocusSessionEntity
 import com.luma.lifeos.data.focus.FocusStorageStateEntity
 import com.luma.lifeos.data.focus.FocusGoalSettingsEntity
 import com.luma.lifeos.data.focus.FocusInvitationDeliveryEntity
+import com.luma.lifeos.data.focus.FocusInvitationDao
 import com.luma.lifeos.data.focus.FocusInvitationSettingsEntity
 import com.luma.lifeos.data.focus.FocusGoalVersionEntity
 import com.luma.lifeos.data.focus.FocusProductCommandReceiptEntity
@@ -86,6 +87,7 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun widgets(): WidgetDao
     abstract fun focus(): FocusDao
     abstract fun focusProducts(): FocusProductDao
+    abstract fun focusInvitations(): FocusInvitationDao
 
     companion object {
         const val VERSION = 15

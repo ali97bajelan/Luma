@@ -3,6 +3,8 @@ package com.luma.lifeos.data
 import com.luma.lifeos.domain.repository.PlaceRepository
 import com.luma.lifeos.data.repository.RoomPlaceRepository
 import android.net.Uri
+import android.os.SystemClock
+import android.provider.Settings
 import java.io.File
 import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.data.repository.RoomPhotoRepository
@@ -36,6 +38,8 @@ import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.data.focus.RoomFocusProductRepository
+import com.luma.lifeos.data.focus.RoomFocusInvitationRepository
+import com.luma.lifeos.domain.focus.FocusInvitationRepository
 
 /** One database per process, owned by the application composition root. */
 class LumaStorage(context: Context) {
@@ -67,6 +71,20 @@ class LumaStorage(context: Context) {
     val widgets: WidgetStore = RoomWidgetStore(database)
     val focus: FocusRepository = RoomFocusRepository(database)
     val focusProducts: FocusProductRepository = RoomFocusProductRepository(database)
+    val focusInvitations: FocusInvitationRepository = RoomFocusInvitationRepository(database) { breakState ->
+        val bootId = runCatching {
+            Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT).toString()
+        }.getOrNull()
+        if (bootId == null || breakState.bootId == null) {
+            true
+        } else if (bootId != breakState.bootId) {
+            false
+        } else {
+            val elapsed = SystemClock.elapsedRealtime()
+            elapsed < breakState.startedElapsedMillis ||
+                elapsed - breakState.startedElapsedMillis < breakState.durationMillis
+        }
+    }
     val places: PlaceRepository = RoomPlaceRepository(database)
     val people: PersonRepository = RoomPersonRepository(database)
     val events = RoomEventStore(database)

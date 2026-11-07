@@ -17,6 +17,7 @@ data class FocusInvitationConfig(
     init {
         require(revision >= 0) { "Invitation revision cannot be negative" }
         require(!enabled || weekdays.isNotEmpty()) { "Enabled invitations require at least one weekday" }
+        require((time.second == 0) && (time.nano == 0)) { "Invitation time must use whole minutes" }
     }
 }
 
@@ -35,16 +36,30 @@ data class FocusInvitationSlot(
 /** Local-only, generation-aware reminder persistence. Implementations claim actions atomically. */
 interface FocusInvitationRepository {
     fun observeConfig(): Flow<FocusInvitationConfig>
+    fun observeGeneration(): Flow<UUID>
+    suspend fun currentGeneration(): UUID
 
+    /**
+     * The config carries the revision observed by the caller; an applied change advances it once.
+     * Reusing a command ID with a different payload is rejected.
+     */
     suspend fun saveConfig(
         config: FocusInvitationConfig,
         expectedRevision: Long,
         context: FocusProductContext,
     ): FocusProductResult
 
+    /** Validates and persists a slot before a platform one-shot alarm is scheduled. */
+    suspend fun ensureScheduled(slot: FocusInvitationSlot): Boolean
+
+    /** Consumes an ineligible occurrence, such as one suppressed by quiet hours. */
+    suspend fun skip(slot: FocusInvitationSlot, now: Instant): Boolean
+
+    /** Claims an eligible occurrence at most once and stores its local action token. */
     suspend fun consume(slot: FocusInvitationSlot, now: Instant): Boolean
+    suspend fun actionToken(slot: FocusInvitationSlot): String?
+    suspend fun snoozedSlot(slot: FocusInvitationSlot): FocusInvitationSlot?
 
     suspend fun snooze(slot: FocusInvitationSlot, now: Instant, token: String): Boolean
-
     suspend fun disable(slot: FocusInvitationSlot, token: String): Boolean
 }

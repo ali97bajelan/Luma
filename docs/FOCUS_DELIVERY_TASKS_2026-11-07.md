@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD04 SOURCE COMPLETE — UNVERIFIED; FD05–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD05 SOURCE COMPLETE — UNVERIFIED; FD06–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -20,7 +20,7 @@ No per-task QA gate blocks a later source task once its source dependencies exis
 
 This new index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. Source versions inspected: **Room 14, archive 11**, proposed additions **Room 15/archive 12**. Existing app flavor: **production**, debug ID suffix **.qa**. Recheck these at FD01; old plan reservations and variant assumptions are obsolete.
 
-The planning package changed documentation only when created. FD01–FD03 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
+The planning package changed documentation only when created. FD01–FD05 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
 
 ## Implementation task ledger
 
@@ -45,7 +45,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD02 source complete — UNVERIFIED
 - [x] FD03 source complete — UNVERIFIED
 - [x] FD04 source complete — UNVERIFIED
-- [ ] FD05 source complete
+- [x] FD05 source complete — UNVERIFIED
 - [ ] FD06 source complete
 - [ ] FD07 source complete
 - [ ] FD08 source complete
@@ -95,6 +95,21 @@ The checkboxes below track current source delivery only; source completion is se
 - Ruling: `LumaApplication` now supplies the protected Focus repository to `FocusCoordinator`, so Start and writes are checked at the repository boundary as well as through UI access state. Generic timer actions retain a narrowly scoped fallback for the current open session. This boundary is needed to close races between lock changes and commands. Task deletion is also guarded for both sections because Room detaches linked Focus rows as part of task deletion. If either guard proves too broad, Q02/Q03 will identify the affected write paths and E08 will validate locked timer controls.
 - Source review covered durable origin classification after unlink/delete, mixed-section grants, filtering before paging, mixed-report suppression, tag label privacy, post-suspension draft publication, active timer controls and relock presentation. Tests, builds, schema generation, lint and device/emulator checks were NOT RUN in this task, as required by Phase I.
 - Later proof: Q02/Q03 and E03/E08/E09/E11.
+
+### FD05 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED.
+- Changed source: new `core/domain/.../focus/FocusInvitationRules.kt`, `core/data/.../focus/FocusInvitationDao.kt`, and `RoomFocusInvitationRepository.kt`; modified `core/domain/.../focus/FocusInvitations.kt`, `core/data/.../db/LumaDatabase.kt`, `LumaStorage.kt`, and `backup/RoomBackupService.kt`.
+- Implemented: default-off config with whole-minute validation; revision-checked, receipt-backed config writes; civil-time scheduling with first-valid-time DST-gap handling and earlier-offset overlap handling; inclusive 60-minute delivery windows; one local-date occurrence row; atomic skip/claim, open-session/break eligibility recheck, one snooze, local action-token access, and disable with revision advancement.
+- Interfaces: exposed `focusInvitations` through `LumaStorage`; added generation observation/access, occurrence preparation, quiet-hour skip, trusted token lookup and snoozed-slot lookup for FD06. Config writes carry the observed revision and increment it once when values change.
+- Persistence/privacy: uses the FD01 Room 15 tables and existing generation/receipt authority; no schema-version bump or archive projection. Restore clears invitation deliveries, rotates generation and resets the local schedule to disabled 09:00 defaults.
+- Ruling: extended the initial repository contract with slot preparation, skip and token lookup methods because FD06 needs durable alarm identity, explicit quiet-hour consumption and locally stored action tokens. Cost if wrong: a wider invitation interface for FD06 to maintain.
+- Ruling: restore resets invitation settings to disabled defaults instead of retaining an enabled local schedule, so restore reconciliation cannot reactivate reminders. Cost if wrong: users must reselect their invitation days and time after restore.
+- Source review covered revision replay/payload mismatch, concurrent claim serialization, one-snooze state transition, deadline boundaries, stale generation/revision rejection, current-zone revalidation, claim-time session/break checks, and replacement cleanup. Tests, builds, schema generation, lint and device/emulator checks were NOT RUN as required by Phase I.
+- Final review: fresh read-only review found no FD05 source-level blockers; alarm, notification, permission, quiet-hours and navigation integration are deferred to FD06.
+- Final: Ruling: platform delivery remains owned by FD06 because FD05 owns invitation rules and persistence — cost if wrong: reminders stay incomplete until FD06.
+- Final: Ruling: tests, builds and schema generation remain deferred to Phase Q as the plan requires — cost if wrong: integration defects may remain undetected until Q.
+- Later proof: Q02/Q03; E06/E07/E09.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

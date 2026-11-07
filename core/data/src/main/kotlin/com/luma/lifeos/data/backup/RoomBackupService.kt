@@ -284,6 +284,15 @@ class RoomBackupService(private val context: Context, private val database: Luma
         sqlite.execSQL("DELETE FROM focus_break_runtime")
         sqlite.execSQL("DELETE FROM focus_command_receipt")
         sqlite.execSQL("DELETE FROM focus_product_command_receipt")
+        sqlite.execSQL("DELETE FROM focus_invitation_delivery")
+        sqlite.execSQL(
+            """UPDATE focus_invitation_settings
+               SET enabled = 0,
+                   revision = CASE WHEN revision = 9223372036854775807 THEN 0 ELSE revision + 1 END,
+                   weekday_mask = 0,
+                   minute_of_day = 540
+               WHERE singleton_id = 1""",
+        )
         sqlite.execSQL("DELETE FROM focus_tag_alias")
         sqlite.execSQL("UPDATE focus_tag_catalog_state SET revision = 0 WHERE singleton_id = 1")
         sqlite.execSQL("DELETE FROM focus_deleted_session")
