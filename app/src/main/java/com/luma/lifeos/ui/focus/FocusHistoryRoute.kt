@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.ui.common.LumaCard
+import com.luma.lifeos.focus.FocusViewModel
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
@@ -74,7 +75,11 @@ internal fun FocusHistoryRoute(
     onBack: () -> Unit,
     onRepeatSession: (UUID) -> Unit = {},
     productRepository: FocusProductRepository? = null,
+    focusViewModel: FocusViewModel? = null,
+    canAccessTaskActions: Boolean = false,
 ) {
+    val focusScreenState = focusViewModel?.state?.collectAsStateWithLifecycle()
+    val taskCompletionState = focusScreenState?.value?.taskCompletion ?: FocusTaskCompletionState()
     val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, databaseGenerationFlow, productRepository) {
         viewModelFactory {
             initializer {
@@ -106,6 +111,9 @@ internal fun FocusHistoryRoute(
             state = state,
             repository = repository,
             productRepository = productRepository,
+            focusViewModel = focusViewModel,
+            taskCompletionState = taskCompletionState,
+            canAccessTaskActions = canAccessTaskActions,
             isFocusReadable = isFocusReadable,
             range = range,
             zone = zone,
@@ -128,6 +136,9 @@ private fun FocusHistoryScreen(
     state: FocusHistoryUiState,
     repository: FocusRepository,
     productRepository: FocusProductRepository?,
+    focusViewModel: FocusViewModel?,
+    taskCompletionState: FocusTaskCompletionState,
+    canAccessTaskActions: Boolean,
     isFocusReadable: Boolean,
     range: TimeRange?,
     zone: ZoneId,
@@ -219,6 +230,9 @@ private fun FocusHistoryScreen(
                                 row = row,
                                 repository = repository,
                                 productRepository = productRepository,
+                                focusViewModel = focusViewModel,
+                                taskCompletionState = taskCompletionState,
+                                canAccessTaskActions = canAccessTaskActions,
                                 generation = state.databaseGeneration,
                                 isFocusReadable = isFocusReadable,
                                 range = range,
@@ -340,6 +354,9 @@ private fun FocusHistoryItem(
     row: FocusHistoryRow,
     repository: FocusRepository,
     productRepository: FocusProductRepository?,
+    focusViewModel: FocusViewModel?,
+    taskCompletionState: FocusTaskCompletionState,
+    canAccessTaskActions: Boolean,
     generation: UUID?,
     isFocusReadable: Boolean,
     range: TimeRange?,
@@ -424,6 +441,20 @@ private fun FocusHistoryItem(
                     isFocusReadable = isFocusReadable,
                     onSaved = onReflectionSaved,
                 )
+                if (focusViewModel != null) {
+                    FocusTaskCompletionAction(
+                        session = row.session,
+                        generation = generation,
+                        state = taskCompletionState,
+                        canAccessTaskActions = canAccessTaskActions,
+                        onSessionChanged = focusViewModel::syncTaskCompletionSession,
+                        onMarkComplete = focusViewModel::markTaskComplete,
+                        onRetryCompletion = focusViewModel::retryTaskCompletion,
+                        onUnlinkTask = focusViewModel::unlinkTask,
+                        onRetryUnlink = focusViewModel::retryTaskUnlink,
+                        onChanged = onReflectionSaved,
+                    )
+                }
                 FocusReflectionEditor(
                     session = row.session,
                     repository = repository,

@@ -77,6 +77,54 @@ class RoomFocusProductRepository(
     override fun observeTaskFocusMillis(taskId: UUID): Flow<Long> =
         focusDao.observeTaskFocusMillis(taskId.toString())
 
+    override suspend fun unlinkTask(
+        sessionId: UUID,
+        expectedRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult {
+        if (expectedRevision < 0) {
+            return FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+        }
+        val payload = "unlink-task|$sessionId|$expectedRevision"
+        return safely {
+            database.withTransaction {
+                val generation = ensureGeneration().generationId
+                if (generation != context.generation.toString()) {
+                    return@withTransaction FocusProductResult.SessionConflict(actualRevision = null)
+                }
+                val replay = replay(context, generation, payload)
+                if (replay != null) return@withTransaction replay
+
+                val session = focusDao.session(sessionId.toString())
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+                if (session.revision != expectedRevision) {
+                    return@withTransaction FocusProductResult.SessionConflict(session.revision)
+                }
+                if (session.state !in TERMINAL_STATES || session.openSlot != null ||
+                    session.taskId == null || !session.taskOrigin
+                ) {
+                    return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+                }
+                val nextSessionRevision = nextRevision(session.revision)
+                    ?: return@withTransaction FocusProductResult.Invalid(FocusProductInvalidReason.INVALID_SESSION_EDIT)
+                val now = maxOf(
+                    clock.instant(),
+                    java.time.Instant.ofEpochSecond(session.updatedAtSeconds, session.updatedAtNanos.toLong()),
+                )
+                check(focusDao.updateSession(
+                    session.copy(
+                        taskId = null,
+                        revision = nextSessionRevision,
+                        updatedAtSeconds = now.epochSecond,
+                        updatedAtNanos = now.nano,
+                    ),
+                ) == 1)
+                insertReceipt(generation, context, payload)
+                FocusProductResult.Applied
+            }
+        }
+    }
+
     /** Metadata edits preserve taskId and taskOrigin; those fields are not user-editable here. */
     override suspend fun updateSessionMetadata(
         sessionId: UUID,

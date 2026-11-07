@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD02 SOURCE COMPLETE — UNVERIFIED; FD03–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD03 SOURCE COMPLETE — UNVERIFIED; FD04–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -20,7 +20,7 @@ No per-task QA gate blocks a later source task once its source dependencies exis
 
 This new index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. Source versions inspected: **Room 14, archive 11**, proposed additions **Room 15/archive 12**. Existing app flavor: **production**, debug ID suffix **.qa**. Recheck these at FD01; old plan reservations and variant assumptions are obsolete.
 
-Generating this package changes documentation only. Application implementation, test execution, emulator use and release were not performed.
+The planning package changed documentation only when created. FD01–FD03 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
 
 ## Implementation task ledger
 
@@ -43,7 +43,7 @@ The checkboxes below track current source delivery only; source completion is se
 
 - [x] FD01 source complete — UNVERIFIED
 - [x] FD02 source complete — UNVERIFIED
-- [ ] FD03 source complete
+- [x] FD03 source complete — UNVERIFIED
 - [ ] FD04 source complete
 - [ ] FD05 source complete
 - [ ] FD06 source complete
@@ -74,6 +74,16 @@ The checkboxes below track current source delivery only; source completion is se
 - Ruling: FD02's original file map omitted `FocusScreen.kt`, `AppDestinations.kt`, `ProtectedCatalogRepositories.kt`, `ProtectedAggregateRepositories.kt` and localized resources. Added these for reachable setup controls, route registration, guarded task/aggregate reads and EN/FR/FA UI. Cost if this scope is wrong: a few additional integration files in the task-linked Focus surface.
 - Source review covered SQL wildcard escaping and page ordering, count/page transaction scope, stale picker/task loads, permission checks around reads and Start, callback defaults, Save Continue failure behavior, and terminal-session-only totals. Tests, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
 - Later proof: Q02 and E02/E08.
+
+### FD03 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED.
+- Changed source: `core/domain/.../focus/FocusGoals.kt`; `core/data/.../focus/FocusDao.kt`, `RoomFocusProductRepository.kt`; `core/data/.../repository/RoomTodoRepository.kt`; new `app/.../ui/focus/FocusTaskCompletionState.kt` and `FocusTaskCompletionAction.kt`; `app/.../focus/FocusViewModel.kt`, `app/.../ui/focus/FocusHistoryRoute.kt`, and `LifeOsApp.kt`.
+- Implemented: revision-paired task completion after eligible saved USER_STOP/TARGET_REACHED sessions; distinct missing/completed/conflict/I/O states; retained immutable completion revisions for ambiguous retries; terminal unlink through a generation-scoped product receipt; task deletion detaches every linked session in its transaction, advances session/runtime revisions, and preserves task origin. Room invalidation updates linked totals after unlink or deletion.
+- Interfaces: `FocusProductRepository.unlinkTask(sessionId, expectedRevision, context)` and `PendingFocusTaskCompletion(taskId, expectedRevision, nextRevision, generation)`.
+- Ruling: rendered completion/unlink actions in expanded terminal history detail and delegated mutations to `FocusViewModel`; this matches the spec's terminal-detail entry point and keeps Stop separate. Cost if wrong: users must open a saved history detail to complete a task until FD08 adds the action to the completion hierarchy.
+- Source review covered eligibility, task/session revision checks, immutable retry identity, generation/access invalidation, product receipt replay, provenance preservation and running-runtime revision coordination. Tests, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
+- Later proof: Q02/Q03 and E02/E03/E09.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

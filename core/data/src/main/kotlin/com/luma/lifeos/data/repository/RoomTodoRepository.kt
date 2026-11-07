@@ -143,6 +143,36 @@ class RoomTodoRepository(
             val key = id.toString()
             val existing = dao.find(key) ?: return@withTransaction
             if (existing.revisionToken != expectedRevision.toString()) throw TodoConflictException(id)
+
+            val focusDao = database.focus()
+            val now = clock.instant()
+            for (session in focusDao.sessionsForTask(key)) {
+                val nextSessionRevision = Math.addExact(session.revision, 1L)
+                val updatedAt = maxOf(
+                    now,
+                    java.time.Instant.ofEpochSecond(session.updatedAtSeconds, session.updatedAtNanos.toLong()),
+                )
+                check(focusDao.updateSession(
+                    session.copy(
+                        taskId = null,
+                        revision = nextSessionRevision,
+                        updatedAtSeconds = updatedAt.epochSecond,
+                        updatedAtNanos = updatedAt.nano,
+                    ),
+                ) == 1) { "Focus session changed while its task link was being removed" }
+
+                if (session.openSlot != null && session.state == "RUNNING") {
+                    val runtime = focusDao.runtime()
+                        ?: throw IllegalStateException("Running focus session has no runtime")
+                    check(runtime.sessionId == session.id && runtime.revision == session.revision) {
+                        "Running focus session and runtime revisions diverged"
+                    }
+                    check(focusDao.updateRuntime(runtime.copy(revision = nextSessionRevision)) == 1) {
+                        "Focus runtime changed while its task link was being removed"
+                    }
+                }
+            }
+
             if (dao.delete(key, expectedRevision.toString()) != 1) throw TodoConflictException(id)
         }
     }

@@ -277,9 +277,17 @@ fun LifeOsApp(
     }
     val navController = rememberNavController()
     val focusViewModel = if (focusRuntime == null) null else {
-        val focusFactory = remember(focusRuntime, focusRepository, todos) {
+        val focusFactory = remember(focusRuntime, focusRepository, todos, focusProductRepository) {
             viewModelFactory {
-                initializer { FocusViewModel(focusRuntime, focusRepository, createSavedStateHandle(), todos) }
+                initializer {
+                    FocusViewModel(
+                        focusRuntime,
+                        focusRepository,
+                        createSavedStateHandle(),
+                        todos,
+                        focusProductRepository,
+                    )
+                }
             }
         }
         viewModel<FocusViewModel>(factory = focusFactory)
@@ -438,6 +446,16 @@ fun LifeOsApp(
     ) == AccessDecision.Allow
     LaunchedEffect(focusViewModel, protectedTasksReadable) {
         focusViewModel?.setTaskContentAccessAllowed(protectedTasksReadable)
+    }
+    val protectedFocusTaskActionsAllowed = appLockCoordinator == null || lockSnapshot.decide(
+        LockRequest(
+            LockOperation.UPDATE,
+            setOf(LockSection.FOCUS, LockSection.TASKS),
+            LockContentClassification.CLASSIFIED,
+        ),
+    ) == AccessDecision.Allow
+    LaunchedEffect(focusViewModel, protectedFocusTaskActionsAllowed) {
+        focusViewModel?.setTaskActionAccessAllowed(protectedFocusTaskActionsAllowed)
     }
     val protectedHabitsReadable = appLockCoordinator == null || lockSnapshot.decide(
         LockRequest(LockOperation.READ, setOf(LockSection.HABITS), LockContentClassification.CLASSIFIED),
@@ -1324,6 +1342,9 @@ fun LifeOsApp(
                 FocusHistoryRoute(
                     repository = focusRepository,
                     productRepository = focusProductRepository,
+                    focusViewModel = focusViewModel,
+                    canAccessTaskActions = protectedFocusReadable && protectedTasksReadable &&
+                        protectedFocusTaskActionsAllowed,
                     range = range,
                     zone = historyZone,
                     isFocusReadable = FocusPrivateSurface.HISTORY in visibleFocusSurfaces,

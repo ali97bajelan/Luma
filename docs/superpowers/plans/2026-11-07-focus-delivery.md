@@ -89,16 +89,16 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Depends on:** FD02. **Spec:** R03.
 
-**Files:** create A/ui/focus/FocusTaskCompletionState.kt and FocusTaskCompletionAction.kt. Modify C/focus/RoomFocusProductRepository.kt, FocusDao.kt; C/repository/RoomTodoRepository.kt; A/focus/FocusViewModel.kt; A/ui/focus/FocusHistoryRoute.kt, FocusSessionMetadataEditor.kt.
+**Files:** create A/ui/focus/FocusTaskCompletionState.kt and FocusTaskCompletionAction.kt. Modify D/focus/FocusGoals.kt; C/focus/RoomFocusProductRepository.kt, FocusDao.kt; C/repository/RoomTodoRepository.kt; A/focus/FocusViewModel.kt; A/ui/focus/FocusHistoryRoute.kt and A/ui/LifeOsApp.kt.
 
 **Consumes:** current TodoRepository.setCompleted UUID revisions. **Produces:** PendingFocusTaskCompletion as specified; FocusProductRepository.unlinkTask(sessionId, expectedRevision, context): FocusProductResult.
 
-- [ ] Capture task ID, expected/next UUID revision and generation separately from the saved timer operation.
-- [ ] Offer completion only after eligible terminal save; handle missing/already completed/conflict/I/O independently.
-- [ ] Add explicit terminal unlink with a product receipt, preserving taskOrigin, timer and runs.
-- [ ] Coordinate task deletion and affected Focus/runtime revision updates in its transaction, maintaining ON DELETE SET NULL fallback.
-- [ ] Invalidate linked totals and pending completion drafts; retain immutable operations across ambiguous retries.
-- [ ] Source-review that no completion path replays Stop and no unlink/deletion clears provenance; record unverified handoff.
+- [x] Capture task ID, expected/next UUID revision and generation separately from the saved timer operation.
+- [x] Offer completion only after eligible terminal save; handle missing/already completed/conflict/I/O independently.
+- [x] Add explicit terminal unlink with a product receipt, preserving taskOrigin, timer and runs.
+- [x] Coordinate task deletion and affected Focus/runtime revision updates in its transaction, maintaining ON DELETE SET NULL fallback.
+- [x] Invalidate linked totals and pending completion drafts; retain immutable operations across ambiguous retries.
+- [x] Source-review that no completion path replays Stop and no unlink/deletion clears provenance; record unverified handoff.
 
 **Deferred proof:** Q02/Q03; E02/E03/E09.
 

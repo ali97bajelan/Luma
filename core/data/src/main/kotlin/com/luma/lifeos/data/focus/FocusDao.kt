@@ -74,6 +74,9 @@ interface FocusDao {
     """)
     fun observeTaskFocusMillis(taskId: String): Flow<Long>
 
+    @Query("SELECT * FROM focus_session WHERE task_id = :taskId ORDER BY id")
+    suspend fun sessionsForTask(taskId: String): List<FocusSessionEntity>
+
     @Query("SELECT * FROM focus_session WHERE id = :sessionId LIMIT 1")
     suspend fun session(sessionId: String): FocusSessionEntity?
 

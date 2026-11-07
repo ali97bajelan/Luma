@@ -164,6 +164,12 @@ interface FocusProductRepository {
     fun observeTagCatalog(): Flow<FocusTagCatalog>
     /** Sum of credited runs from linked terminal sessions; open time is never included. */
     fun observeTaskFocusMillis(taskId: UUID): Flow<Long>
+    /** Explicitly removes a task link from a saved terminal session without changing its origin. */
+    suspend fun unlinkTask(
+        sessionId: UUID,
+        expectedRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult
     suspend fun updateSessionMetadata(
         sessionId: UUID,
         expectedRevision: Long,
