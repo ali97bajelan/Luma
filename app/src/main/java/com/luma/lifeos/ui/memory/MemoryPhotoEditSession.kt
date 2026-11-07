@@ -19,14 +19,14 @@ internal enum class MemoryPhotoRetryStage { IMPORT, TRANSFORM, ATTACH }
 internal enum class MemoryPhotoEditError { IMPORT, TRANSFORM, ATTACH, ACCESS, RESTORE }
 
 internal sealed interface MemoryPhotoEditState {
-    internal data object Idle : MemoryPhotoEditState
-    internal data class Importing(
+    data object Idle : MemoryPhotoEditState
+    data class Importing(
         val operationId: UUID,
         val stagingLeaseId: UUID,
         val sourceId: UUID,
         val sourceUri: String,
     ) : MemoryPhotoEditState
-    internal data class Editing(
+    data class Editing(
         val operationId: UUID,
         val stagingLeaseId: UUID,
         val source: PhotoAttachment,
@@ -34,7 +34,7 @@ internal sealed interface MemoryPhotoEditState {
         val outputId: UUID? = null,
         val output: PhotoAttachment? = null,
     ) : MemoryPhotoEditState
-    internal data class Applying(
+    data class Applying(
         val operationId: UUID,
         val stagingLeaseId: UUID,
         val source: PhotoAttachment,
@@ -44,7 +44,7 @@ internal sealed interface MemoryPhotoEditState {
         val output: PhotoAttachment? = null,
         val attaching: Boolean = false,
     ) : MemoryPhotoEditState
-    internal data class Failed(
+    data class Failed(
         val operationId: UUID,
         val stagingLeaseId: UUID,
         val sourceId: UUID,
