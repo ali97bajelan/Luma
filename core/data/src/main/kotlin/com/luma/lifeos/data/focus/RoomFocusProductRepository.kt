@@ -74,6 +74,9 @@ class RoomFocusProductRepository(
         })
     }.flowOn(Dispatchers.IO)
 
+    override fun observeTaskFocusMillis(taskId: UUID): Flow<Long> =
+        focusDao.observeTaskFocusMillis(taskId.toString())
+
     /** Metadata edits preserve taskId and taskOrigin; those fields are not user-editable here. */
     override suspend fun updateSessionMetadata(
         sessionId: UUID,

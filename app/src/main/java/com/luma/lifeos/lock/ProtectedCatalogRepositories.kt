@@ -49,6 +49,11 @@ class ProtectedTodoRepository(
         else TodoPage(emptyList(), 0)
     }
 
+    override suspend fun searchOpen(query: String, offset: Int, limit: Int): TodoPage =
+        gateway.readValue(taskListRead(), { delegate.searchOpen(query, offset, limit) }) { page, _ ->
+            page.copy(items = immutableProjectionList(page.items))
+        } ?: TodoPage(emptyList(), 0)
+
     override suspend fun get(id: UUID): TodoTask? = gateway.readValue(taskRead(id), { delegate.get(id) }) { value, _ -> value }
     override suspend fun create(id: UUID, initialRevision: UUID, input: TodoInput) =
         gateway.commit(LockOperation.CREATE, setOf(LockSection.TASKS), id.toString()) {
@@ -69,6 +74,10 @@ class ProtectedTodoRepository(
 
     private fun taskRead(id: UUID) = LockRequest(
         LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED, objectId = id.toString(),
+    )
+
+    private fun taskListRead() = LockRequest(
+        LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED,
     )
 }
 

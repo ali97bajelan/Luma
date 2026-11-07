@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01 SOURCE COMPLETE — UNVERIFIED; FD02–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD02 SOURCE COMPLETE — UNVERIFIED; FD03–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -42,7 +42,7 @@ The checkboxes below track current source delivery only; source completion is se
 | FD12 | P0 | README/archive docs and accurate source-complete handoff | FD01–FD11 | R1 documentation/release confidence | FD-A09; Q05/Q06 |
 
 - [x] FD01 source complete — UNVERIFIED
-- [ ] FD02 source complete
+- [x] FD02 source complete — UNVERIFIED
 - [ ] FD03 source complete
 - [ ] FD04 source complete
 - [ ] FD05 source complete
@@ -63,6 +63,17 @@ The checkboxes below track current source delivery only; source completion is se
 - Ruling: added the nullable task foreign-key column using `ALTER TABLE` instead of rebuilding `focus_session`. Migration 9→10 already adds the tag foreign key this way; the nullable reference preserves existing rows and child/runtime relationships. Cost if wrong: migration/schema validation can fail; Q03/E09 own that proof.
 - Source review covered model/entity mappings, Start receipt identity and replay, migration order, archive defaults, task references and invitation exclusion from the portable table inventory. Tests, builds, schema generation, lint and device/emulator checks were NOT RUN in this task, as required by Phase I.
 - Later proof: Q02/Q03 and E02/E09.
+
+### FD02 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED.
+- Changed source: `core/domain/.../todo/TodoRepository.kt`; `core/data/.../todo/TodoDao.kt`, `repository/RoomTodoRepository.kt`; `core/domain/.../focus/FocusGoals.kt`, `core/data/.../focus/FocusDao.kt`, `RoomFocusProductRepository.kt`; `app/.../ui/focus/FocusTaskPicker.kt` (new), `FocusTaskPickerState.kt` (new), `FocusSetupState.kt`, `FocusScreen.kt`, `FocusRoute.kt`, `app/.../focus/FocusViewModel.kt`, `app/.../ui/LifeOsApp.kt`, `AppDestinations.kt`, `app/.../lock/ProtectedCatalogRepositories.kt`, `ProtectedAggregateRepositories.kt`, `ui/todo/TodoEditorRoute.kt`, `TodoEditorScreen.kt`; localized EN/FR/FA strings.
+- Implemented: escaped literal open-task search/count with a transactional count/page snapshot, stable created-at/ID descending order and a 50-row cap; picker paging/loading/error/empty handling with cancellation and request identity; saved-task Focus entry with Save/Discard/Cancel behavior; editable task-name setup and Start-time task-selection conflict handling; terminal linked Focus totals that exclude open sessions.
+- Interfaces: `TodoRepository.searchOpen(query, offset, limit = 50)`, `FocusProductRepository.observeTaskFocusMillis(taskId)`, and `FocusViewModel.focusOnTask(taskId)` / `clearTaskSelection()`.
+- Privacy and navigation: task search is routed through the protected task repository; task picker, task-origin Focus and linked totals require both TASKS and FOCUS; task-origin presentation is redacted and setup title/draft content is cleared on either lock while the persisted origin survives unlink.
+- Ruling: FD02's original file map omitted `FocusScreen.kt`, `AppDestinations.kt`, `ProtectedCatalogRepositories.kt`, `ProtectedAggregateRepositories.kt` and localized resources. Added these for reachable setup controls, route registration, guarded task/aggregate reads and EN/FR/FA UI. Cost if this scope is wrong: a few additional integration files in the task-linked Focus surface.
+- Source review covered SQL wildcard escaping and page ordering, count/page transaction scope, stale picker/task loads, permission checks around reads and Start, callback defaults, Save Continue failure behavior, and terminal-session-only totals. Tests, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
+- Later proof: Q02 and E02/E08.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

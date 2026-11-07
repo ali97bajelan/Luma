@@ -157,6 +157,7 @@ import com.luma.lifeos.focus.FocusRuntimeState
 import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.focus.FocusViewModel
 import com.luma.lifeos.ui.focus.FocusRoute
+import com.luma.lifeos.ui.focus.FocusTaskPickerRoute
 import com.luma.lifeos.ui.focus.FocusHistoryRoute
 import com.luma.lifeos.ui.focus.FocusPrivateSurface
 import com.luma.lifeos.ui.focus.visibleFocusPrivateSurfaces
@@ -276,8 +277,10 @@ fun LifeOsApp(
     }
     val navController = rememberNavController()
     val focusViewModel = if (focusRuntime == null) null else {
-        val focusFactory = remember(focusRuntime, focusRepository) {
-            viewModelFactory { initializer { FocusViewModel(focusRuntime, focusRepository, createSavedStateHandle()) } }
+        val focusFactory = remember(focusRuntime, focusRepository, todos) {
+            viewModelFactory {
+                initializer { FocusViewModel(focusRuntime, focusRepository, createSavedStateHandle(), todos) }
+            }
         }
         viewModel<FocusViewModel>(factory = focusFactory)
     }
@@ -433,6 +436,9 @@ fun LifeOsApp(
     val protectedTasksReadable = appLockCoordinator == null || lockSnapshot.decide(
         LockRequest(LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED),
     ) == AccessDecision.Allow
+    LaunchedEffect(focusViewModel, protectedTasksReadable) {
+        focusViewModel?.setTaskContentAccessAllowed(protectedTasksReadable)
+    }
     val protectedHabitsReadable = appLockCoordinator == null || lockSnapshot.decide(
         LockRequest(LockOperation.READ, setOf(LockSection.HABITS), LockContentClassification.CLASSIFIED),
     ) == AccessDecision.Allow
@@ -449,7 +455,8 @@ fun LifeOsApp(
     }
     val previousBackStackEntry = navController.previousBackStackEntry
     val lockContext = remember(currentRoute, backStackEntry, previousBackStackEntry,
-        lockSnapshot.activeBrowseContext, classifiedEventSections.value, capturing, widgetQuickCapture) {
+        lockSnapshot.activeBrowseContext, classifiedEventSections.value, capturing, widgetQuickCapture,
+        focusState.taskOriginSelected) {
         appLockBrowseContext(
             currentRoute,
             backStackEntry,
@@ -457,6 +464,7 @@ fun LifeOsApp(
             lockSnapshot.activeBrowseContext,
             classifiedEventSections.value,
             capturing || widgetQuickCapture,
+            focusState.taskOriginSelected,
         )
     }
     val lockRequest = remember(lockContext) {
@@ -1141,6 +1149,9 @@ fun LifeOsApp(
                             }
                         },
                         onOpenPendingDestination = ::openPendingFocusDestination,
+                        onOpenTaskPicker = if (todos != null) ({
+                            navController.navigate(AppRoutes.FOCUS_TASK_PICKER)
+                        }) else null,
                     )
                 }
             }
@@ -1212,7 +1223,38 @@ fun LifeOsApp(
                             }
                         },
                         restoreGeneration = todoRestoreGeneration,
+                        focusProductRepository = focusProductRepository.takeIf {
+                            protectedFocusReadable && protectedTasksReadable
+                        },
+                        onFocusTask = if (
+                            focusViewModel != null && protectedFocusReadable && protectedTasksReadable
+                        ) { selectedTaskId, result ->
+                            if (navController.currentDestination?.route == AppRoutes.TASK_EDITOR) {
+                                if (result != null) {
+                                    navController.previousBackStackEntry?.savedStateHandle?.set(
+                                        TODO_ACTION_RESULT_KEY,
+                                        result.encodeActionResult(),
+                                    )
+                                }
+                                focusViewModel.focusOnTask(selectedTaskId)
+                                navController.navigate(AppRoutes.FOCUS) {
+                                    popUpTo(AppRoutes.TASK_EDITOR) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        } else null,
                         requestDelete = requestDelete,
+                    )
+                }
+                composable(AppRoutes.FOCUS_TASK_PICKER) {
+                    FocusTaskPickerRoute(
+                        repository = todos,
+                        isAuthorized = protectedTasksReadable && protectedFocusReadable && !appLockGateVisible,
+                        onBack = { navController.popBackStack() },
+                        onSelectTask = { taskId ->
+                            focusViewModel?.focusOnTask(taskId)
+                            navController.popBackStack()
+                        },
                     )
                 }
             }
@@ -1699,6 +1741,9 @@ fun LifeOsApp(
                 hasPendingDestination = focusNavigationGuard.pendingDestination != null,
                 onBack = {},
                 onOpenPendingDestination = ::openPendingFocusDestination,
+                onOpenTaskPicker = if (todos != null) ({
+                    navController.navigate(AppRoutes.FOCUS_TASK_PICKER)
+                }) else null,
             )
         }
     }
@@ -1900,6 +1945,7 @@ private fun appLockBrowseContext(
     previousContext: LockBrowseContext?,
     classifiedEventSections: Set<LockSection>?,
     restrictedCapture: Boolean,
+    focusTaskOrigin: Boolean = false,
 ): LockBrowseContext {
     val destination = route ?: AppRoutes.TODAY
     val eventId = entry?.arguments?.getString("eventId")
@@ -1911,7 +1957,10 @@ private fun appLockBrowseContext(
             setOf(LockSection.HABITS)
         AppRoutes.TASKS, AppRoutes.TASK_EDITOR -> setOf(LockSection.TASKS)
         AppRoutes.MEMORIES -> setOf(LockSection.MEMORIES)
-        AppRoutes.FOCUS, AppRoutes.FOCUS_HISTORY, "settings_focus" -> setOf(LockSection.FOCUS)
+        AppRoutes.FOCUS_TASK_PICKER -> setOf(LockSection.TASKS, LockSection.FOCUS)
+        AppRoutes.FOCUS -> if (focusTaskOrigin) setOf(LockSection.TASKS, LockSection.FOCUS)
+            else setOf(LockSection.FOCUS)
+        AppRoutes.FOCUS_HISTORY, "settings_focus" -> setOf(LockSection.FOCUS)
         AppRoutes.PEOPLE, "places" -> emptySet()
         "person?personId={personId}", "person_detail/{personId}" -> setOf(LockSection.PEOPLE)
         "place?placeId={placeId}" -> emptySet()
@@ -1939,7 +1988,7 @@ private fun appLockBrowseContext(
     val nestedContent = destination in setOf(
         "memory?eventId={eventId}&initialTime={initialTime}", "journal_detail/{eventId}",
         "journal?eventId={eventId}&initialTime={initialTime}", "event_detail/{eventId}",
-        "mood?eventId={eventId}&initialTime={initialTime}", AppRoutes.TASK_EDITOR,
+        "mood?eventId={eventId}&initialTime={initialTime}", AppRoutes.TASK_EDITOR, AppRoutes.FOCUS_TASK_PICKER,
         "habit_editor?habitId={habitId}", "habit_detail/{habitId}/{date}?logId={logId}",
         "person?personId={personId}", "person_detail/{personId}",
         "place?placeId={placeId}", "place_detail/{placeId}", AppRoutes.FOCUS_HISTORY,
@@ -1959,7 +2008,7 @@ private fun appLockBrowseContext(
         "mood?eventId={eventId}&initialTime={initialTime}", "entry_share/{eventId}/{kind}" -> "entries"
         "habit_editor?habitId={habitId}", "habit_detail/{habitId}/{date}?logId={logId}" -> AppRoutes.HABITS
         AppRoutes.TASK_EDITOR -> AppRoutes.TASKS
-        AppRoutes.FOCUS_HISTORY -> AppRoutes.FOCUS
+        AppRoutes.FOCUS_HISTORY, AppRoutes.FOCUS_TASK_PICKER -> AppRoutes.FOCUS
         "person?personId={personId}", "person_detail/{personId}" -> AppRoutes.PEOPLE
         else -> destination
     }

@@ -34,6 +34,7 @@ internal fun FocusRoute(
     hasPendingDestination: Boolean,
     onBack: () -> Unit,
     onOpenPendingDestination: () -> Unit,
+    onOpenTaskPicker: (() -> Unit)? = null,
     focusRepository: FocusRepository? = null,
     focusProductRepository: FocusProductRepository? = null,
 ) {
@@ -103,6 +104,8 @@ internal fun FocusRoute(
         onLaunchApp = viewModel::launchSelectedApp,
         onOpenPendingDestination = onOpenPendingDestination,
         onOpenHistory = onOpenHistory,
+        onOpenTaskPicker = onOpenTaskPicker,
+        onClearTaskSelection = viewModel::clearTaskSelection,
         onTerminalSessionMissing = { sessionId, generation ->
             if (viewModel.dismissMissingTerminalSession(sessionId, generation)) onBack()
         },

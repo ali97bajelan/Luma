@@ -35,6 +35,12 @@ data class FocusSetupState(
     val repeatLoadFailed: Boolean = false,
     val repeatNeedsName: Boolean = false,
     val repeatNextStep: String? = null,
+    val selectedTaskId: UUID? = null,
+    val selectedTaskTitle: String? = null,
+    val taskOrigin: Boolean = false,
+    val taskSelectionLoading: Boolean = false,
+    val taskSelectionConflict: Boolean = false,
+    val taskSelectionRequestId: UUID? = null,
 ) {
     val isRepeatDraft: Boolean get() = repeatSourceSessionId != null && !repeatLoading && !repeatLoadFailed
 
@@ -48,12 +54,21 @@ data class FocusSetupState(
                     ?: return null
             }
             return runCatching {
-                normalizeFocusStartInput(FocusStartInput(name, tag.takeIf(String::isNotEmpty), timer))
+                normalizeFocusStartInput(
+                    FocusStartInput(
+                        name = name,
+                        tagName = tag.takeIf(String::isNotEmpty),
+                        timer = timer,
+                        taskId = selectedTaskId,
+                        taskOrigin = taskOrigin,
+                    ),
+                )
             }.getOrNull()
         }
 
     val canStart: Boolean
-        get() = normalizedInput != null && capturedStart == null && !unresolvedStartPending
+        get() = normalizedInput != null && capturedStart == null && !unresolvedStartPending &&
+            !taskSelectionLoading && !taskSelectionConflict
 }
 
 fun focusTerminalRequestKey(sessionId: UUID, generation: UUID?): String =
@@ -101,6 +116,17 @@ sealed interface FocusSetupEvent {
         val nextStep: String?,
         val generation: UUID,
     ) : FocusSetupEvent
+    data class TaskSelectionRequested(val taskId: UUID, val requestId: UUID) : FocusSetupEvent
+    data class TaskSelectionLoaded(
+        val taskId: UUID,
+        val requestId: UUID,
+        val title: String?,
+        val isOpen: Boolean,
+    ) : FocusSetupEvent
+    data class TaskSelectionLoadFailed(val taskId: UUID, val requestId: UUID) : FocusSetupEvent
+    data object TaskSelectionConflict : FocusSetupEvent
+    data object TaskSelectionCleared : FocusSetupEvent
+    data object TaskContentLocked : FocusSetupEvent
     data class RepeatLoadFailed(val requestId: UUID) : FocusSetupEvent
     data object StartAnotherRequested : FocusSetupEvent
     data class StartCaptured(val input: FocusStartInput) : FocusSetupEvent
@@ -151,6 +177,67 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         startFailure = null,
         unresolvedStartPending = false,
     )
+    is FocusSetupEvent.TaskSelectionRequested -> state.copy(
+        name = "",
+        selectedTaskId = event.taskId,
+        selectedTaskTitle = null,
+        taskOrigin = true,
+        taskSelectionLoading = true,
+        taskSelectionConflict = false,
+        taskSelectionRequestId = event.requestId,
+        capturedStart = null,
+        startFailure = null,
+        unresolvedStartPending = false,
+        repeatSourceSessionId = null,
+        repeatRequestId = null,
+        repeatLoading = false,
+        repeatLoadFailed = false,
+        repeatNeedsName = false,
+        repeatNextStep = null,
+    )
+    is FocusSetupEvent.TaskSelectionLoaded -> if (
+        state.selectedTaskId != event.taskId || state.taskSelectionRequestId != event.requestId
+    ) state else state.copy(
+        name = event.title.orEmpty(),
+        selectedTaskTitle = event.title,
+        taskSelectionLoading = false,
+        taskSelectionConflict = !event.isOpen,
+        taskSelectionRequestId = null,
+    )
+    is FocusSetupEvent.TaskSelectionLoadFailed -> if (
+        state.selectedTaskId != event.taskId || state.taskSelectionRequestId != event.requestId
+    ) state else state.copy(
+        taskSelectionLoading = false,
+        taskSelectionConflict = true,
+        taskSelectionRequestId = null,
+    )
+    FocusSetupEvent.TaskSelectionConflict -> state.copy(
+        taskSelectionLoading = false,
+        taskSelectionConflict = true,
+        taskSelectionRequestId = null,
+        capturedStart = null,
+        startFailure = null,
+        unresolvedStartPending = false,
+    )
+    FocusSetupEvent.TaskSelectionCleared -> state.copy(
+        selectedTaskId = null,
+        selectedTaskTitle = null,
+        taskSelectionLoading = false,
+        taskSelectionConflict = false,
+        taskSelectionRequestId = null,
+        taskOrigin = true,
+    )
+    FocusSetupEvent.TaskContentLocked -> if (!state.taskOrigin) state else state.copy(
+        name = "",
+        tag = "",
+        selectedTaskTitle = null,
+        taskSelectionLoading = false,
+        taskSelectionConflict = false,
+        taskSelectionRequestId = null,
+        capturedStart = null,
+        startFailure = null,
+        unresolvedStartPending = state.unresolvedStartPending || state.capturedStart != null,
+    )
     is FocusSetupEvent.PrefillRequested -> if (
         state.databaseGeneration != event.generation || state.repeatSourceSessionId != event.sessionId ||
             state.repeatRequestId != event.requestId
@@ -164,6 +251,11 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         repeatLoadFailed = false,
         repeatNeedsName = event.input.name.isBlank(),
         repeatNextStep = event.nextStep,
+        selectedTaskId = null,
+        selectedTaskTitle = null,
+        taskSelectionLoading = false,
+        taskSelectionConflict = false,
+        taskSelectionRequestId = null,
         capturedStart = null,
         startFailure = null,
         unresolvedStartPending = false,
@@ -184,6 +276,12 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         repeatLoadFailed = false,
         repeatNeedsName = false,
         repeatNextStep = null,
+        selectedTaskId = null,
+        selectedTaskTitle = null,
+        taskOrigin = false,
+        taskSelectionLoading = false,
+        taskSelectionConflict = false,
+        taskSelectionRequestId = null,
         capturedStart = null,
         startFailure = null,
         unresolvedStartPending = false,
@@ -206,6 +304,12 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
             repeatLoadFailed = false,
             repeatNeedsName = false,
             repeatNextStep = null,
+            selectedTaskId = null,
+            selectedTaskTitle = null,
+            taskOrigin = false,
+            taskSelectionLoading = false,
+            taskSelectionConflict = false,
+            taskSelectionRequestId = null,
         )
     } else {
         state.copy(databaseGeneration = event.value)
@@ -240,6 +344,12 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         repeatLoadFailed = false,
         repeatNeedsName = false,
         repeatNextStep = null,
+        selectedTaskId = null,
+        selectedTaskTitle = null,
+        taskOrigin = false,
+        taskSelectionLoading = false,
+        taskSelectionConflict = false,
+        taskSelectionRequestId = null,
     )
     FocusSetupEvent.StartOutcomeReconciled -> state.copy(
         capturedStart = null,
@@ -249,6 +359,10 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.PrivateContentLocked -> state.copy(
         name = "",
         tag = "",
+        selectedTaskTitle = null,
+        taskSelectionLoading = false,
+        taskSelectionConflict = false,
+        taskSelectionRequestId = null,
         timerMode = FocusTimerMode.COUNT_UP,
         timedMinutesText = "25",
         unresolvedStartPending = state.unresolvedStartPending || state.capturedStart != null,
@@ -276,6 +390,9 @@ fun encodeFocusSetupState(state: FocusSetupState): Map<String, Any?> = mapOf(
     KEY_REPEAT_FAILED to state.repeatLoadFailed,
     KEY_REPEAT_NEEDS_NAME to state.repeatNeedsName,
     KEY_REPEAT_NEXT_STEP to state.repeatNextStep,
+    KEY_TASK_ID to state.selectedTaskId?.toString(),
+    KEY_TASK_TITLE to state.selectedTaskTitle,
+    KEY_TASK_ORIGIN to state.taskOrigin,
 )
 
 /** Restore user drafts and selection while using the current local date after process recreation. */
@@ -309,6 +426,11 @@ fun restoreFocusSetupState(
         repeatLoadFailed = saved[KEY_REPEAT_FAILED] as? Boolean ?: false,
         repeatNeedsName = saved[KEY_REPEAT_NEEDS_NAME] as? Boolean ?: false,
         repeatNextStep = saved[KEY_REPEAT_NEXT_STEP] as? String,
+        selectedTaskId = (saved[KEY_TASK_ID] as? String)?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()
+        },
+        selectedTaskTitle = saved[KEY_TASK_TITLE] as? String,
+        taskOrigin = saved[KEY_TASK_ORIGIN] as? Boolean == true || saved[KEY_TASK_ID] is String,
     )
 }
 
@@ -368,3 +490,6 @@ private const val KEY_REPEAT_SOURCE = "focus.setup.repeat_source"
 private const val KEY_REPEAT_FAILED = "focus.setup.repeat_failed"
 private const val KEY_REPEAT_NEEDS_NAME = "focus.setup.repeat_needs_name"
 private const val KEY_REPEAT_NEXT_STEP = "focus.setup.repeat_next_step"
+private const val KEY_TASK_ID = "focus.setup.task_id"
+private const val KEY_TASK_TITLE = "focus.setup.task_title"
+private const val KEY_TASK_ORIGIN = "focus.setup.task_origin"

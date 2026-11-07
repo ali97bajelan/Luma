@@ -15,6 +15,7 @@ import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusTimerMode
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
+import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.ui.focus.FocusInsightsState
 import com.luma.lifeos.ui.focus.FocusPrivateSurface
 import com.luma.lifeos.ui.focus.FocusPeriod
@@ -63,6 +64,7 @@ data class FocusScreenState(
     val insights: FocusInsightsState = FocusInsightsState.Unselected,
     val tagSuggestions: List<FocusTag> = emptyList(),
     val focusContentReadable: Boolean = false,
+    val taskOriginSelected: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,6 +72,7 @@ class FocusViewModel(
     private val runtime: FocusRuntime,
     private val repository: FocusRepository?,
     private val savedStateHandle: SavedStateHandle,
+    private val todos: TodoRepository? = null,
 ) : ViewModel() {
     private sealed interface PendingOperation {
         data class Start(
@@ -107,14 +110,21 @@ class FocusViewModel(
     private val insightState = MutableStateFlow<FocusInsightsState>(FocusInsightsState.Unselected)
     private val tagSuggestions = MutableStateFlow(FocusTagSuggestionsSnapshot(null, emptyList()))
     private val privateContentAccess = MutableStateFlow(false)
+    private val taskContentAccess = MutableStateFlow(false)
     private var privateContentAccessResolved = false
+    private var taskContentAccessResolved = false
     private val insightRetry = MutableStateFlow(0)
     private var pendingOperation: PendingOperation? = null
     private var pendingShortcutPackage: String? = null
 
+    private val contentAccess = combine(privateContentAccess, taskContentAccess) { canReadFocus, canReadTasks ->
+        canReadFocus to canReadTasks
+    }
+
     val state: StateFlow<FocusScreenState> = combine(
-        runtime.state, local, insightState, tagSuggestions, privateContentAccess,
-    ) { runtimeState, localState, insights, suggestions, canReadFocus ->
+        runtime.state, local, insightState, tagSuggestions, contentAccess,
+    ) { runtimeState, localState, insights, suggestions, access ->
+        val (canReadFocus, canReadTasks) = access
         val visibleSurfaces = visibleFocusPrivateSurfaces(canReadFocus)
         val canReadFocusSurface = FocusPrivateSurface.FOCUS in visibleSurfaces
         val canReadInsights = FocusPrivateSurface.INSIGHTS in visibleSurfaces
@@ -131,8 +141,13 @@ class FocusViewModel(
             runtime = runtimeState.copy(
                 session = runtimeState.session?.let { session ->
                     session.copy(
-                        metadata = focusMetadataForPresentation(session.metadata, canReadFocusSurface),
-                        reflection = if (canReadFocusSurface) session.reflection else FocusReflection(),
+                        metadata = focusMetadataForPresentation(
+                            session.metadata,
+                            canReadFocusSurface && (!session.taskOrigin || canReadTasks),
+                        ),
+                        reflection = if (canReadFocusSurface && (!session.taskOrigin || canReadTasks)) {
+                            session.reflection
+                        } else FocusReflection(),
                     )
                 },
                 emergencyMarkerSaved = localState.emergencyMarkerSaved ?: runtimeState.emergencyMarkerSaved,
@@ -144,10 +159,13 @@ class FocusViewModel(
             backPromptVisible = localState.backPromptVisible,
             emergencyPromptVisible = localState.emergencyPromptVisible,
             shortcutUnavailable = localState.shortcutUnavailable || runtimeState.shortcutFailed,
-            setup = if (canReadFocusSurface) localState.setup else FocusSetupState(),
+            setup = if (canReadFocusSurface && (!localState.setup.taskOrigin || canReadTasks)) {
+                localState.setup
+            } else FocusSetupState(),
             insights = presentation.state,
             tagSuggestions = presentation.tagSuggestions,
             focusContentReadable = canReadFocusSurface,
+            taskOriginSelected = localState.setup.taskOrigin || runtimeState.session?.taskOrigin == true,
         )
     }.stateIn(
         viewModelScope,
@@ -155,14 +173,19 @@ class FocusViewModel(
         FocusScreenState(
             runtime = runtime.state.value.copy(
                 session = runtime.state.value.session?.let { session ->
+                    val canReadSessionContent = privateContentAccess.value &&
+                        (!session.taskOrigin || taskContentAccess.value)
                     session.copy(
-                        metadata = focusMetadataForPresentation(session.metadata, privateContentAccess.value),
-                        reflection = if (privateContentAccess.value) session.reflection else FocusReflection(),
+                        metadata = focusMetadataForPresentation(session.metadata, canReadSessionContent),
+                        reflection = if (canReadSessionContent) session.reflection else FocusReflection(),
                     )
                 },
             ),
-            setup = if (privateContentAccess.value) local.value.setup else FocusSetupState(),
+            setup = if (privateContentAccess.value &&
+                (!local.value.setup.taskOrigin || taskContentAccess.value)
+            ) local.value.setup else FocusSetupState(),
             focusContentReadable = privateContentAccess.value,
+            taskOriginSelected = local.value.setup.taskOrigin || runtime.state.value.session?.taskOrigin == true,
         ),
     )
 
@@ -243,6 +266,76 @@ class FocusViewModel(
             updateSetup(FocusSetupEvent.PrivateContentLocked)
             insightState.value = FocusInsightsState.Unselected
             tagSuggestions.value = FocusTagSuggestionsSnapshot(null, emptyList())
+        } else {
+            reloadSelectedTaskIfNeeded()
+        }
+    }
+
+    fun setTaskContentAccessAllowed(allowed: Boolean) {
+        if (taskContentAccessResolved && taskContentAccess.value == allowed) return
+        taskContentAccessResolved = true
+        taskContentAccess.value = allowed
+        if (!allowed) {
+            updateSetup(FocusSetupEvent.TaskContentLocked)
+        } else {
+            reloadSelectedTaskIfNeeded()
+        }
+    }
+
+    fun focusOnTask(taskId: UUID) {
+        if (!privateContentAccess.value || !taskContentAccess.value || local.value.busy ||
+            local.value.setup.repeatLoading || pendingOperation is PendingOperation.Start ||
+            runtime.state.value.session?.state in setOf(FocusState.RUNNING, FocusState.PAUSED)
+        ) return
+        val generation = runtime.state.value.databaseGeneration ?: return
+        val requestId = UUID.randomUUID()
+        updateSetup(FocusSetupEvent.TaskSelectionRequested(taskId, requestId))
+        loadTaskSelection(taskId, requestId, generation)
+    }
+
+    fun clearTaskSelection() {
+        if (!privateContentAccess.value || !taskContentAccess.value || local.value.busy) return
+        updateSetup(FocusSetupEvent.TaskSelectionCleared)
+    }
+
+    private fun reloadSelectedTaskIfNeeded() {
+        if (!privateContentAccess.value || !taskContentAccess.value) return
+        val setup = local.value.setup
+        if (setup.selectedTaskId == null || setup.selectedTaskTitle != null || setup.taskSelectionLoading) return
+        val generation = runtime.state.value.databaseGeneration ?: return
+        val requestId = UUID.randomUUID()
+        updateSetup(FocusSetupEvent.TaskSelectionRequested(setup.selectedTaskId, requestId))
+        loadTaskSelection(setup.selectedTaskId, requestId, generation)
+    }
+
+    private fun loadTaskSelection(taskId: UUID, requestId: UUID, generation: UUID) {
+        val taskRepository = todos
+        if (taskRepository == null) {
+            updateSetup(FocusSetupEvent.TaskSelectionLoadFailed(taskId, requestId))
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val task = taskRepository.get(taskId)
+                if (!privateContentAccess.value || !taskContentAccess.value ||
+                    runtime.state.value.databaseGeneration != generation
+                ) return@launch
+                updateSetup(
+                    FocusSetupEvent.TaskSelectionLoaded(
+                        taskId = taskId,
+                        requestId = requestId,
+                        title = task?.title,
+                        isOpen = task != null && !task.isCompleted,
+                    ),
+                )
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (privateContentAccess.value && taskContentAccess.value &&
+                    runtime.state.value.databaseGeneration == generation
+                ) {
+                    updateSetup(FocusSetupEvent.TaskSelectionLoadFailed(taskId, requestId))
+                }
+            }
         }
     }
 
@@ -348,6 +441,7 @@ class FocusViewModel(
         }
         if (!local.value.setup.canStart) return
         if (local.value.setup.normalizedInput != normalized) return
+        if (local.value.setup.taskOrigin && (!privateContentAccess.value || !taskContentAccess.value)) return
         val attempt = runtime.captureUserOperationAttempt() ?: return reportUnavailableAttempt()
         updateSetup(FocusSetupEvent.StartCaptured(normalized))
         if (local.value.setup.capturedStart != normalized) return
@@ -413,9 +507,21 @@ class FocusViewModel(
                     )
                 }
                 when (result) {
+                    is FocusWriteResult.Conflict -> {
+                        pendingOperation = null
+                        if (operation is PendingOperation.Start) {
+                            updateSetup(
+                                if (result.reason == com.luma.lifeos.domain.focus.FocusConflictReason.TASK_SELECTION) {
+                                    FocusSetupEvent.TaskSelectionConflict
+                                } else {
+                                    FocusSetupEvent.StartOutcomeReconciled
+                                },
+                            )
+                        }
+                        local.update { it.copy(busy = false, operationFailed = false) }
+                    }
                     is FocusWriteResult.Applied,
                     is FocusWriteResult.AlreadyApplied,
-                    is FocusWriteResult.Conflict,
                     is FocusWriteResult.RecoveryRequired -> {
                         pendingOperation = null
                         if (operation is PendingOperation.Start) {

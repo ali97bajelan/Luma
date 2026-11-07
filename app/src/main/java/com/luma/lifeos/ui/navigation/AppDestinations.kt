@@ -13,6 +13,7 @@ internal object AppRoutes {
     const val MORE = "more"
     const val MEMORIES = "memories"
     const val FOCUS = "focus"
+    const val FOCUS_TASK_PICKER = "focus_task_picker"
     const val FOCUS_HISTORY = "focus_history?start={start}&through={through}&zone={zone}"
     const val TASKS = "tasks"
     const val TASK_EDITOR = "task_editor?taskId={taskId}&dueDate={dueDate}"

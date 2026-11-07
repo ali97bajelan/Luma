@@ -162,6 +162,8 @@ interface FocusProductRepository {
         context: FocusProductContext,
     ): FocusProductResult
     fun observeTagCatalog(): Flow<FocusTagCatalog>
+    /** Sum of credited runs from linked terminal sessions; open time is never included. */
+    fun observeTaskFocusMillis(taskId: UUID): Flow<Long>
     suspend fun updateSessionMetadata(
         sessionId: UUID,
         expectedRevision: Long,

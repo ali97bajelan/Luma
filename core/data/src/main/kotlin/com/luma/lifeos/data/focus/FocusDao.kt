@@ -66,6 +66,14 @@ interface FocusDao {
         ORDER BY t.normalized_name ASC, t.id ASC""")
     suspend fun tags(): List<FocusTagEntity>
 
+    @Query("""
+        SELECT COALESCE(SUM(r.credited_millis), 0)
+        FROM focus_session AS s
+        INNER JOIN focus_run AS r ON r.session_id = s.id
+        WHERE s.task_id = :taskId AND s.state IN ('FINISHED', 'INTERRUPTED')
+    """)
+    fun observeTaskFocusMillis(taskId: String): Flow<Long>
+
     @Query("SELECT * FROM focus_session WHERE id = :sessionId LIMIT 1")
     suspend fun session(sessionId: String): FocusSessionEntity?
 

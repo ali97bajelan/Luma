@@ -98,6 +98,24 @@ interface TodoDao {
     """)
     suspend fun widgetTodayRow(taskId: String, date: String): WidgetTodoRow?
 
+    @Query("""
+        SELECT COUNT(*) FROM todo_task
+        WHERE completed_at IS NULL
+          AND (:escapedQuery = '' OR title LIKE '%' || :escapedQuery || '%' ESCAPE '\')
+    """)
+    suspend fun countOpenSearch(escapedQuery: String): Int
+
+    @Query("""
+        SELECT id AS task_id, title, note, due_date, completed_at, created_at, updated_at,
+            revision_token, 0 AS total_count, due_time_minutes
+        FROM todo_task
+        WHERE completed_at IS NULL
+          AND (:escapedQuery = '' OR title LIKE '%' || :escapedQuery || '%' ESCAPE '\')
+        ORDER BY created_at DESC, id DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    suspend fun searchOpenPage(escapedQuery: String, offset: Int, limit: Int): List<TodoPageRow>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: TodoEntity)
 

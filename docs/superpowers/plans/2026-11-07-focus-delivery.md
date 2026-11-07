@@ -72,16 +72,16 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Depends on:** FD01. **Spec:** R02–03.
 
-**Files:** modify D/todo/TodoRepository.kt; C/todo/TodoDao.kt; C/repository/RoomTodoRepository.kt; C/focus/FocusDao.kt, RoomFocusProductRepository.kt; A/ui/todo/TodoEditorRoute.kt, TodoEditorScreen.kt, TodoEditorViewModel.kt; A/focus/FocusViewModel.kt; A/ui/focus/FocusSetupState.kt, FocusRoute.kt; A/ui/LifeOsApp.kt. Create A/ui/focus/FocusTaskPicker.kt and FocusTaskPickerState.kt.
+**Files:** modify D/todo/TodoRepository.kt; C/todo/TodoDao.kt; C/repository/RoomTodoRepository.kt; D/focus/FocusGoals.kt; C/focus/FocusDao.kt, RoomFocusProductRepository.kt; A/ui/todo/TodoEditorRoute.kt, TodoEditorScreen.kt; A/focus/FocusViewModel.kt; A/ui/focus/FocusSetupState.kt, FocusRoute.kt, FocusScreen.kt; A/ui/LifeOsApp.kt, AppDestinations.kt; A/lock/ProtectedCatalogRepositories.kt, ProtectedAggregateRepositories.kt; R/values/strings.xml, values-fr/strings.xml, values-fa/strings.xml. Create A/ui/focus/FocusTaskPicker.kt and FocusTaskPickerState.kt.
 
 **Consumes:** FD01 task-aware input. **Produces:** searchOpen(query: String, offset: Int, limit: Int = 50): TodoPage; observeTaskFocusMillis(taskId: UUID): Flow<Long>; FocusViewModel.focusOnTask(taskId: UUID), clearTaskSelection().
 
-- [ ] Implement literal open-task search/count with escaped wildcards, max 50 and stable created-at/ID descending order.
-- [ ] Add picker query/page/loading/error/empty state; cancellation and request identity prevent stale results.
-- [ ] Add saved-open-task Focus action and Save/Discard/Cancel handling for unsaved edits; save failures do not navigate.
-- [ ] Load current task into editable setup, mark origin, preserve overlong title as invalid and surface missing/completed task conflict at Start.
-- [ ] Add observed terminal linked totals to task detail; exclude open time from saved total.
-- [ ] Source-review all call sites/default callbacks and protected navigation; record unverified handoff.
+- [x] Implement literal open-task search/count with escaped wildcards, max 50 and stable created-at/ID descending order.
+- [x] Add picker query/page/loading/error/empty state; cancellation and request identity prevent stale results.
+- [x] Add saved-open-task Focus action and Save/Discard/Cancel handling for unsaved edits; save failures do not navigate.
+- [x] Load current task into editable setup, mark origin, preserve overlong title as invalid and surface missing/completed task conflict at Start.
+- [x] Add observed terminal linked totals to task detail; exclude open time from saved total.
+- [x] Source-review all call sites/default callbacks and protected navigation; record unverified handoff.
 
 **Deferred proof:** Q02; E02/E08.
 

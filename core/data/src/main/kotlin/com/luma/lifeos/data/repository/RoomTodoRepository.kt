@@ -5,6 +5,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.todo.TodoDao
 import com.luma.lifeos.data.todo.toDomain
 import com.luma.lifeos.data.todo.toEntity
+import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoConflictException
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoMissingException
@@ -43,6 +44,19 @@ class RoomTodoRepository(
                 items = pageRows.mapNotNull { it.toEntityOrNull()?.toDomain() },
                 total = pageRows.firstOrNull()?.totalCount ?: 0,
             )
+        }
+    }
+
+    override suspend fun searchOpen(query: String, offset: Int, limit: Int): TodoPage {
+        require(offset >= 0) { "Task search offset cannot be negative" }
+        require(limit > 0) { "Task search page size must be positive" }
+        val escapedQuery = query.trim().escapeLikeWildcards()
+        val boundedLimit = minOf(limit, TODO_DEFAULT_PAGE_SIZE)
+        return database.withTransaction {
+            val total = dao.countOpenSearch(escapedQuery)
+            val items = dao.searchOpenPage(escapedQuery, offset, boundedLimit)
+                .mapNotNull { it.toEntityOrNull()?.toDomain() }
+            TodoPage(items = items, total = total)
         }
     }
 
@@ -130,6 +144,13 @@ class RoomTodoRepository(
             val existing = dao.find(key) ?: return@withTransaction
             if (existing.revisionToken != expectedRevision.toString()) throw TodoConflictException(id)
             if (dao.delete(key, expectedRevision.toString()) != 1) throw TodoConflictException(id)
+        }
+    }
+
+    private fun String.escapeLikeWildcards(): String = buildString(length) {
+        for (character in this@escapeLikeWildcards) {
+            if (character == '\\' || character == '%' || character == '_') append('\\')
+            append(character)
         }
     }
 

@@ -479,6 +479,12 @@ class ProtectedFocusProductRepository(
             else FocusGoalState.DISABLED
         }
 
+    override fun observeTaskFocusMillis(taskId: UUID): Flow<Long> =
+        combine(delegate.observeTaskFocusMillis(taskId), gateway.snapshot) { total, state ->
+            if (state.decide(focusTaskRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow) total
+            else 0L
+        }
+
     override fun observeTagCatalog(): Flow<FocusTagCatalog> =
         combine(delegate.observeTagCatalog(), gateway.snapshot) { catalog, state ->
             if (state.decide(focusProductRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow) catalog
@@ -554,6 +560,10 @@ class ProtectedFocusProductRepository(
 
     private fun focusProductRead() = LockRequest(
         LockOperation.READ, setOf(LockSection.FOCUS), LockContentClassification.CLASSIFIED,
+    )
+
+    private fun focusTaskRead() = LockRequest(
+        LockOperation.READ, setOf(LockSection.FOCUS, LockSection.TASKS), LockContentClassification.CLASSIFIED,
     )
 }
 

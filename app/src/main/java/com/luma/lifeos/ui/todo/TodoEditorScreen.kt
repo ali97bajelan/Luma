@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.todo
 
+import android.text.format.DateUtils
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
 import androidx.activity.compose.BackHandler
@@ -94,8 +95,12 @@ fun TodoEditorScreen(
     onConfirmDelete: () -> Unit,
     onCancelDelete: () -> Unit,
     onDueTime: (LocalTime?) -> Unit = {},
+    linkedFocusMillis: Long? = null,
+    onFocusTask: (() -> Unit)? = null,
+    onSaveAndFocusTask: (() -> Unit)? = null,
 ) {
     var discarding by rememberSaveable { mutableStateOf(false) }
+    var focusConfirmation by rememberSaveable { mutableStateOf(false) }
     var reloadConfirmation by rememberSaveable { mutableStateOf(false) }
     var pickingDate by rememberSaveable { mutableStateOf(false) }
     var pickingTime by remember { mutableStateOf(false) }
@@ -110,6 +115,8 @@ fun TodoEditorScreen(
     val canEdit = state.ready && !state.busy && !state.finished && !state.conflict && !state.missing &&
         state.pendingAction != "complete" && state.pendingAction != "reopen" && state.pendingAction != "delete"
     val readOnly = !canEdit
+    val canFocusTask = state.ready && state.editing && !state.taskCompleted && !state.busy &&
+        !state.finished && !state.conflict && !state.missing && state.pendingAction == null
 
     fun close() {
         if (state.busy) return
@@ -418,10 +425,52 @@ fun TodoEditorScreen(
                             )
                         }
                     }
+                    linkedFocusMillis?.let { millis ->
+                        Text(
+                            stringResource(R.string.todo_focus_total, DateUtils.formatElapsedTime(millis / 1_000L)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.testTag("todo_editor_focus_total"),
+                        )
+                    }
+                    if (canFocusTask && onFocusTask != null && onSaveAndFocusTask != null) {
+                        OutlinedButton(
+                            onClick = { if (state.dirty) focusConfirmation = true else onFocusTask() },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                                .testTag("todo_editor_focus_task"),
+                        ) { Text(stringResource(R.string.todo_focus_action)) }
+                    }
                 }
                 Spacer(Modifier.heightIn(min = 4.dp))
             }
         }
+    }
+
+    if (focusConfirmation && onFocusTask != null && onSaveAndFocusTask != null) {
+        LumaAlertDialog(
+            onDismissRequest = { focusConfirmation = false },
+            modifier = Modifier.testTag("todo_editor_focus_confirmation"),
+            title = { Text(stringResource(R.string.todo_focus_unsaved_title)) },
+            text = { Text(stringResource(R.string.todo_focus_unsaved_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = { focusConfirmation = false; onSaveAndFocusTask() },
+                    enabled = canEdit,
+                    modifier = Modifier.testTag("todo_editor_focus_save_continue"),
+                ) { Text(stringResource(R.string.todo_focus_save_continue)) }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.End) {
+                    TextButton(
+                        onClick = { focusConfirmation = false; onFocusTask() },
+                        modifier = Modifier.testTag("todo_editor_focus_discard_continue"),
+                    ) { Text(stringResource(R.string.todo_focus_discard_continue)) }
+                    TextButton(
+                        onClick = { focusConfirmation = false },
+                        modifier = Modifier.testTag("todo_editor_focus_cancel"),
+                    ) { Text(stringResource(R.string.cancel)) }
+                }
+            },
+        )
     }
 
     if (state.deleteConfirmationRequested) {

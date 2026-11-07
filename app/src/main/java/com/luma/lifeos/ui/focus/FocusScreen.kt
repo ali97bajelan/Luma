@@ -77,6 +77,8 @@ internal fun FocusScreen(
     onLaunchApp: (String) -> Unit,
     onOpenPendingDestination: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenTaskPicker: (() -> Unit)? = null,
+    onClearTaskSelection: () -> Unit = {},
     onTimerModeChange: (FocusTimerMode) -> Unit = {},
     onTimedMinutesChange: (String) -> Unit = {},
     onStartBreak: (Int) -> Unit = {},
@@ -219,6 +221,8 @@ internal fun FocusScreen(
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenHistory = onOpenHistory,
+                    onOpenTaskPicker = onOpenTaskPicker,
+                    onClearTaskSelection = onClearTaskSelection,
                 )
             }
         }
@@ -291,6 +295,8 @@ private fun SetupContent(
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenTaskPicker: (() -> Unit)?,
+    onClearTaskSelection: () -> Unit,
 ) {
     val setup = state.setup
     val metadataValid = runCatching {
@@ -318,6 +324,37 @@ private fun SetupContent(
     }
     setup.repeatNextStep?.let { nextStep ->
         Text(stringResource(R.string.focus_repeat_next_step, nextStep), modifier = Modifier.testTag("focus_repeat_next_step"))
+    }
+    if (onOpenTaskPicker != null) {
+        OutlinedButton(
+            onClick = onOpenTaskPicker,
+            enabled = fieldsEnabled,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_choose_task"),
+        ) { Text(stringResource(R.string.focus_choose_task)) }
+    }
+    if (setup.selectedTaskId != null) {
+        Text(
+            stringResource(R.string.focus_task_selected, setup.selectedTaskTitle ?: setup.name),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.testTag("focus_task_selected"),
+        )
+        TextButton(
+            onClick = onClearTaskSelection,
+            enabled = fieldsEnabled,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_remove"),
+        ) { Text(stringResource(R.string.focus_task_remove)) }
+    } else if (setup.taskOrigin) {
+        Text(stringResource(R.string.focus_task_link_removed), modifier = Modifier.testTag("focus_task_link_removed"))
+    }
+    if (setup.taskSelectionLoading) {
+        Text(stringResource(R.string.focus_task_loading), modifier = Modifier.testTag("focus_task_loading"))
+    }
+    if (setup.taskSelectionConflict) {
+        Text(
+            stringResource(R.string.focus_task_selection_conflict),
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.testTag("focus_task_selection_conflict"),
+        )
     }
     OutlinedTextField(
         value = setup.name, onValueChange = onNameChange, label = { Text(stringResource(R.string.focus_name_label)) },
