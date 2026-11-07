@@ -30,6 +30,8 @@ internal fun FocusSettingsRoute(
     isRunning: Boolean,
     onBack: () -> Unit,
     goalRepository: FocusProductRepository? = null,
+    canReadTaskOrigin: Boolean = true,
+    onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -88,5 +90,7 @@ internal fun FocusSettingsRoute(
         },
         onBack = onBack,
         goalRepository = goalRepository,
+        canReadTaskOrigin = canReadTaskOrigin,
+        onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock,
     )
 }

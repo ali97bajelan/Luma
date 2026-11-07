@@ -68,7 +68,11 @@ class ProtectedTodoRepository(
             delegate.setCompleted(id, expectedRevision, nextRevision, completed)
         }
     override suspend fun delete(id: UUID, expectedRevision: UUID) =
-        gateway.commit(LockOperation.DELETE, setOf(LockSection.TASKS), id.toString()) {
+        gateway.commit(
+            LockOperation.DELETE,
+            setOf(LockSection.TASKS, LockSection.FOCUS),
+            id.toString(),
+        ) {
             delegate.delete(id, expectedRevision)
         }
 

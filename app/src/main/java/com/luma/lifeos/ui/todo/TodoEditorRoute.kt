@@ -32,6 +32,8 @@ fun TodoEditorRoute(
     onFocusTask: ((UUID, TodoEditorResult?) -> Unit)? = null,
     restoreGeneration: Int = 0,
     requestDelete: Boolean = false,
+    canDeleteTaskOrigin: Boolean = true,
+    onRequestDeleteUnlock: () -> Unit = {},
 ) {
     val factory = remember(repository, taskId, initialDueDate) {
         viewModelFactory {
@@ -63,8 +65,10 @@ fun TodoEditorRoute(
         }
     }
 
-    LaunchedEffect(state.ready, requestDelete) {
-        if (requestDelete && state.ready) editor.requestDelete()
+    LaunchedEffect(state.ready, requestDelete, canDeleteTaskOrigin) {
+        if (requestDelete && state.ready) {
+            if (canDeleteTaskOrigin) editor.requestDelete() else onRequestDeleteUnlock()
+        }
     }
 
     LaunchedEffect(state.finished) {
@@ -92,6 +96,8 @@ fun TodoEditorRoute(
         onRequestDelete = editor::requestDelete,
         onConfirmDelete = editor::confirmDelete,
         onCancelDelete = editor::cancelDelete,
+        canDeleteTaskOrigin = canDeleteTaskOrigin,
+        onRequestDeleteUnlock = onRequestDeleteUnlock,
         linkedFocusMillis = linkedFocusMillis,
         onFocusTask = taskId?.takeIf { onFocusTask != null }?.let { selectedId ->
             { latestOnFocusTask?.invoke(selectedId, null) }

@@ -3,6 +3,7 @@ package com.luma.lifeos.domain.focus
 import com.luma.lifeos.domain.time.TimeRange
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 const val FOCUS_HISTORY_PAGE_SIZE: Int = 50
@@ -39,6 +40,13 @@ interface FocusRepository {
 
     /** Emits the authoritative RUNNING or PAUSED session, or null after state has loaded. */
     fun observeOpen(): Flow<FocusSession?>
+
+    /** Boolean-only authorization lookup; callers must not expose this as persisted permission. */
+    suspend fun sessionHasTaskOrigin(sessionId: UUID): Boolean {
+        val open = observeOpen().first()
+        return if (open?.id == sessionId) open.taskOrigin
+        else terminalSession(sessionId)?.taskOrigin == true
+    }
 
     /**
      * Start revalidates any selected task in the same transaction that creates the session. A
@@ -85,8 +93,14 @@ interface FocusRepository {
     /** Referenced focus tags ordered by most recent session start, limited to ten suggestions. */
     fun observeTagSuggestions(): Flow<List<FocusTag>>
 
+    /** Task-aware projection; implementations must filter protected references before limiting. */
+    fun observeTagSuggestions(includeTaskOrigin: Boolean): Flow<List<FocusTag>> = observeTagSuggestions()
+
     /** Full catalog for filtering saved history. */
     fun observeTags(): Flow<List<FocusTag>>
+
+    /** Task-aware history catalog projection. */
+    fun observeTags(includeTaskOrigin: Boolean): Flow<List<FocusTag>> = observeTags()
 
     /** Filters are applied before counts and page slicing; ordering is started-descending, id-descending. */
     suspend fun history(

@@ -71,6 +71,8 @@ internal fun FocusHistoryRoute(
     zone: ZoneId,
     isFocusReadable: Boolean,
     privateContentAccessFlow: Flow<Boolean>,
+    taskContentAccessAllowed: Boolean,
+    taskContentAccessFlow: Flow<Boolean>,
     databaseGenerationFlow: Flow<UUID?>,
     onBack: () -> Unit,
     onRepeatSession: (UUID) -> Unit = {},
@@ -80,13 +82,15 @@ internal fun FocusHistoryRoute(
 ) {
     val focusScreenState = focusViewModel?.state?.collectAsStateWithLifecycle()
     val taskCompletionState = focusScreenState?.value?.taskCompletion ?: FocusTaskCompletionState()
-    val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, databaseGenerationFlow, productRepository) {
+    val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, taskContentAccessAllowed, taskContentAccessFlow, databaseGenerationFlow, productRepository) {
         viewModelFactory {
             initializer {
                 FocusHistoryViewModel(
                     repository, range, createSavedStateHandle(),
                     privateContentAccessAllowed = isFocusReadable,
                     privateContentAccessFlow = privateContentAccessFlow,
+                    taskContentAccessAllowed = taskContentAccessAllowed,
+                    taskContentAccessFlow = taskContentAccessFlow,
                     databaseGenerationFlow = databaseGenerationFlow,
                     productRepository = productRepository,
                 )

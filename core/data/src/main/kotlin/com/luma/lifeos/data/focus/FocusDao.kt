@@ -45,6 +45,10 @@ interface FocusDao {
     @Query(
         """SELECT t.* FROM focus_tag AS t
         WHERE EXISTS (SELECT 1 FROM focus_session AS s WHERE s.tag_id = t.id)
+          AND (:includeTaskOrigin OR NOT EXISTS (
+              SELECT 1 FROM focus_session AS protected
+              WHERE protected.tag_id = t.id AND protected.task_origin = 1
+          ))
         ORDER BY
           (SELECT s.started_at_seconds FROM focus_session AS s WHERE s.tag_id = t.id
              ORDER BY s.started_at_seconds DESC, s.started_at_nanos DESC, s.id DESC LIMIT 1) DESC,
@@ -54,12 +58,16 @@ interface FocusDao {
           t.id ASC
         LIMIT 10""",
     )
-    fun observeTagSuggestions(): Flow<List<FocusTagEntity>>
+    fun observeTagSuggestions(includeTaskOrigin: Boolean = true): Flow<List<FocusTagEntity>>
 
     @Query("""SELECT t.* FROM focus_tag AS t
         WHERE EXISTS (SELECT 1 FROM focus_session AS s WHERE s.tag_id = t.id)
+          AND (:includeTaskOrigin OR NOT EXISTS (
+              SELECT 1 FROM focus_session AS protected
+              WHERE protected.tag_id = t.id AND protected.task_origin = 1
+          ))
         ORDER BY t.normalized_name ASC, t.id ASC""")
-    fun observeTags(): Flow<List<FocusTagEntity>>
+    fun observeTags(includeTaskOrigin: Boolean = true): Flow<List<FocusTagEntity>>
 
     @Query("""SELECT t.* FROM focus_tag AS t
         WHERE EXISTS (SELECT 1 FROM focus_session AS s WHERE s.tag_id = t.id)
@@ -214,6 +222,7 @@ interface FocusDao {
     @Query(
         """SELECT * FROM focus_session AS s
         WHERE s.state IN ('FINISHED', 'INTERRUPTED')
+          AND (:includeTaskOrigin OR s.task_origin = 0)
           AND (:startSeconds IS NULL OR EXISTS (
               SELECT 1 FROM focus_run AS r
               WHERE r.session_id = s.id AND r.credited_millis > 0
@@ -230,6 +239,7 @@ interface FocusDao {
         startNanos: Int?,
         endSeconds: Long?,
         endNanos: Int?,
+        includeTaskOrigin: Boolean,
         offset: Int,
         limit: Int,
     ): List<FocusSessionEntity>

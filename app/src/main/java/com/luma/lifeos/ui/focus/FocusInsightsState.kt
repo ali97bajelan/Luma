@@ -44,6 +44,10 @@ sealed interface FocusInsightsState {
     data class Error(val request: FocusInsightsQuery) : FocusInsightsState {
         override val query: FocusInsightsQuery get() = request
     }
+
+    data class NeedsUnlock(val request: FocusInsightsQuery) : FocusInsightsState {
+        override val query: FocusInsightsQuery get() = request
+    }
 }
 
 internal sealed interface FocusInsightsEvent {
@@ -100,13 +104,17 @@ fun observeFocusInsights(
                         ) { current, previous ->
                             FocusInsightsEvent.Loaded(
                                 query,
-                                current,
+                                current.copy(
+                                    requiresTaskAccess = current.requiresTaskAccess || previous.requiresTaskAccess,
+                                ),
                                 compareFocusStatistics(current.asStatistics(), previous.asStatistics()),
                             )
                         }
                     } ?: repository.observeInsights(query.range).let { source ->
                         kotlinx.coroutines.flow.flow {
-                            source.collect { emit(FocusInsightsEvent.Loaded(query, it)) }
+                            source.collect { insights ->
+                                emit(FocusInsightsEvent.Loaded(query, insights))
+                            }
                         }
                     }
                     report.collect { event ->
@@ -129,4 +137,5 @@ private fun FocusInsights.asStatistics() = FocusStatistics(
     totalMillis = totalMillis,
     contributingSessions = sessions,
     interruptedContributors = interruptedContributors,
+    requiresTaskAccess = requiresTaskAccess,
 )

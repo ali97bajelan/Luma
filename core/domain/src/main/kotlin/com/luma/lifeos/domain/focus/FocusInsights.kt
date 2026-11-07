@@ -34,6 +34,8 @@ data class FocusInsights(
     val interruptedContributors: Int,
     val tags: List<FocusTagSummary>,
     val longest: FocusLongest?,
+    /** True when this report includes saved time from task-origin sessions. */
+    val requiresTaskAccess: Boolean = false,
 ) {
     init {
         require(totalMillis >= 0 && sessions >= 0 && averageMillis >= 0)
@@ -106,6 +108,7 @@ private fun calculateFocusInsights(
     var interruptedContributors = 0
     var longestSession: FocusSession? = null
     var longestContribution = 0L
+    var requiresTaskAccess = false
 
     for (session in uniqueSessions) {
         checkActive()
@@ -124,6 +127,7 @@ private fun calculateFocusInsights(
         if (session.state == FocusState.INTERRUPTED) {
             interruptedContributors = Math.addExact(interruptedContributors, 1)
         }
+        if (session.taskOrigin) requiresTaskAccess = true
 
         val priorLongest = longestSession
         if (priorLongest == null || isLongerWinner(session, contribution, priorLongest, longestContribution)) {
@@ -169,6 +173,7 @@ private fun calculateFocusInsights(
         interruptedContributors = interruptedContributors,
         tags = tagRows,
         longest = longestSession?.let { FocusLongest(it, longestContribution) },
+        requiresTaskAccess = requiresTaskAccess,
     )
     checkActive()
     return result

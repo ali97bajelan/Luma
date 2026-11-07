@@ -230,6 +230,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.TaskContentLocked -> if (!state.taskOrigin) state else state.copy(
         name = "",
         tag = "",
+        repeatNextStep = null,
         selectedTaskTitle = null,
         taskSelectionLoading = false,
         taskSelectionConflict = false,
@@ -256,6 +257,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         taskSelectionLoading = false,
         taskSelectionConflict = false,
         taskSelectionRequestId = null,
+        taskOrigin = state.taskOrigin || event.input.taskOrigin,
         capturedStart = null,
         startFailure = null,
         unresolvedStartPending = false,

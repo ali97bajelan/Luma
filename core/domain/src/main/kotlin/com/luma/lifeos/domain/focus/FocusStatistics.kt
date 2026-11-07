@@ -10,6 +10,8 @@ data class FocusStatistics(
     val totalMillis: Long,
     val contributingSessions: Int,
     val interruptedContributors: Int,
+    /** True when any saved contribution belongs to task-origin Focus content. */
+    val requiresTaskAccess: Boolean = false,
 ) {
     init {
         require(totalMillis >= 0)
@@ -64,6 +66,7 @@ fun focusStatistics(sessions: List<FocusSession>, range: TimeRange): FocusStatis
     var totalMillis = 0L
     var contributingSessions = 0
     var interruptedContributors = 0
+    var requiresTaskAccess = false
     for (session in uniqueSessions) {
         val contribution = (runsBySession[session.id].orEmpty()).fold(0L) { subtotal, run ->
             Math.addExact(subtotal, overlapMillis(run, range))
@@ -74,9 +77,15 @@ fun focusStatistics(sessions: List<FocusSession>, range: TimeRange): FocusStatis
             if (session.state == FocusState.INTERRUPTED) {
                 interruptedContributors = Math.addExact(interruptedContributors, 1)
             }
+            if (session.taskOrigin) requiresTaskAccess = true
         }
     }
-    return FocusStatistics(totalMillis, contributingSessions, interruptedContributors)
+    return FocusStatistics(
+        totalMillis = totalMillis,
+        contributingSessions = contributingSessions,
+        interruptedContributors = interruptedContributors,
+        requiresTaskAccess = requiresTaskAccess,
+    )
 }
 
 /** Same overlap policy used for history rows, including a zero result for a noncontributing run. */

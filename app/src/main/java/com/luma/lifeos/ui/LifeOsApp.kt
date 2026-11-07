@@ -414,6 +414,18 @@ fun LifeOsApp(
         appLockUnlockVisible = true
         onLockUnlockRequested()
     }
+    fun requestProtectedFocusUnlock() {
+        val request = LockRequest(
+            LockOperation.READ,
+            setOf(LockSection.FOCUS, LockSection.TASKS),
+            LockContentClassification.CLASSIFIED,
+        )
+        val decision = appLockCoordinator?.requestBrowse(request, null)
+        if (decision is AccessDecision.NeedUnlock ||
+            (decision is AccessDecision.Deny &&
+                decision.reason == com.luma.lifeos.domain.lock.AccessDenial.FRESH_AUTHENTICATION_REQUIRED)
+        ) showAppLockUnlock()
+    }
     val protectedSummaryReadable = appLockCoordinator == null || lockSnapshot.decide(
         LockRequest(
             operation = LockOperation.READ,
@@ -434,6 +446,17 @@ fun LifeOsApp(
         appLockCoordinator?.snapshot?.map { it.decide(focusReadRequest) == AccessDecision.Allow }
             ?: flowOf(true)
     }
+    val focusTaskReadRequest = remember {
+        LockRequest(
+            LockOperation.READ,
+            setOf(LockSection.TASKS),
+            LockContentClassification.CLASSIFIED,
+        )
+    }
+    val focusTaskAccessFlow = remember(appLockCoordinator, focusTaskReadRequest) {
+        appLockCoordinator?.snapshot?.map { it.decide(focusTaskReadRequest) == AccessDecision.Allow }
+            ?: flowOf(true)
+    }
     val focusDatabaseGenerationFlow = remember(focusViewModel) {
         focusViewModel?.state?.map { it.runtime.databaseGeneration } ?: flowOf(null)
     }
@@ -441,9 +464,8 @@ fun LifeOsApp(
     LaunchedEffect(focusViewModel, protectedFocusReadable) {
         focusViewModel?.setPrivateContentAccessAllowed(protectedFocusReadable)
     }
-    val protectedTasksReadable = appLockCoordinator == null || lockSnapshot.decide(
-        LockRequest(LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED),
-    ) == AccessDecision.Allow
+    val protectedTasksReadable = appLockCoordinator == null ||
+        lockSnapshot.decide(focusTaskReadRequest) == AccessDecision.Allow
     LaunchedEffect(focusViewModel, protectedTasksReadable) {
         focusViewModel?.setTaskContentAccessAllowed(protectedTasksReadable)
     }
@@ -500,6 +522,10 @@ fun LifeOsApp(
     val appLockGateVisible = appLockCoordinator != null && when {
         currentRoute in setOf(AppRoutes.RESTRICTED_CAPTURE, AppRoutes.APP_LOCK_SETTINGS, AppRoutes.APP_LOCK_RECOVERY) -> false
         currentRoute == "privacy" && lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY -> false
+        currentRoute == AppRoutes.FOCUS && focusState.runtime.session?.state in setOf(
+            com.luma.lifeos.domain.focus.FocusState.RUNNING,
+            com.luma.lifeos.domain.focus.FocusState.PAUSED,
+        ) -> false
         lockSnapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY -> true
         lockSnapshot.policy?.enabled != true -> false
         else -> lockSnapshot.decide(lockRequest) != AccessDecision.Allow
@@ -1011,6 +1037,7 @@ fun LifeOsApp(
                             summaries = summaries,
                             showProtectedSummary = protectedSummaryReadable,
                             showProtectedFocus = FocusPrivateSurface.TODAY in visibleFocusSurfaces,
+                            canReadTaskOrigin = protectedTasksReadable,
                             integrationAvailability = integrationAvailability,
                             onIntegrations = { navController.navigate("settings_integrations") },
                             habits = habits.takeIf { protectedHabitsReadable },
@@ -1058,6 +1085,7 @@ fun LifeOsApp(
                                 )
                             },
                             onFocusHistory = ::openFocusHistory,
+                            onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
                         )
                         PrimaryDestination.REVIEW -> {
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
@@ -1077,7 +1105,9 @@ fun LifeOsApp(
                                 focusInProgressPaused = focusState.runtime.session?.state ==
                                     com.luma.lifeos.domain.focus.FocusState.PAUSED,
                                 showProtectedFocus = FocusPrivateSurface.REVIEW in visibleFocusSurfaces,
+                                canReadTaskOrigin = protectedTasksReadable,
                                 onFocusHistory = ::openFocusHistory,
+                                onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
                                 onPlanAnotherSession = if (
                                     focusRuntime != null && protectedFocusReadable &&
                                     focusState.runtime.initialized && !focusState.runtime.loading &&
@@ -1170,6 +1200,9 @@ fun LifeOsApp(
                         onOpenTaskPicker = if (todos != null) ({
                             navController.navigate(AppRoutes.FOCUS_TASK_PICKER)
                         }) else null,
+                        onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
+                        protectedFocusReadable = protectedFocusReadable,
+                        protectedTasksReadable = protectedTasksReadable,
                     )
                 }
             }
@@ -1262,6 +1295,8 @@ fun LifeOsApp(
                             }
                         } else null,
                         requestDelete = requestDelete,
+                        canDeleteTaskOrigin = protectedFocusReadable && protectedTasksReadable,
+                        onRequestDeleteUnlock = ::requestProtectedFocusUnlock,
                     )
                 }
                 composable(AppRoutes.FOCUS_TASK_PICKER) {
@@ -1319,6 +1354,8 @@ fun LifeOsApp(
                     allowedFocusApps = settingsAllowedApps,
                     isRunning = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.RUNNING,
                     goalRepository = focusProductRepository,
+                    canReadTaskOrigin = protectedTasksReadable,
+                    onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -1349,6 +1386,8 @@ fun LifeOsApp(
                     zone = historyZone,
                     isFocusReadable = FocusPrivateSurface.HISTORY in visibleFocusSurfaces,
                     privateContentAccessFlow = focusPrivateAccessFlow,
+                    taskContentAccessAllowed = protectedTasksReadable,
+                    taskContentAccessFlow = focusTaskAccessFlow,
                     databaseGenerationFlow = focusDatabaseGenerationFlow,
                     onBack = { navController.popBackStack() },
                     onRepeatSession = { sessionId ->
@@ -1765,6 +1804,9 @@ fun LifeOsApp(
                 onOpenTaskPicker = if (todos != null) ({
                     navController.navigate(AppRoutes.FOCUS_TASK_PICKER)
                 }) else null,
+                onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
+                protectedFocusReadable = protectedFocusReadable,
+                protectedTasksReadable = protectedTasksReadable,
             )
         }
     }

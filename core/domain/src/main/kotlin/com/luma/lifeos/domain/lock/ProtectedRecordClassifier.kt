@@ -2,6 +2,7 @@ package com.luma.lifeos.domain.lock
 
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
+import com.luma.lifeos.domain.focus.FocusSession
 
 /** Classification shared by projections and write guards. Linked People fields are separate. */
 object ProtectedRecordClassifier {
@@ -20,6 +21,11 @@ object ProtectedRecordClassifier {
     /** People names, notes, relationship labels, and links are hidden independently of prose. */
     fun peopleFieldSections(record: LifeEventRecord): Set<LockSection> =
         if (record.people.isEmpty()) emptySet() else setOf(LockSection.PEOPLE)
+
+    /** Focus content keeps task protection after unlink or task deletion. */
+    fun requiredSections(session: FocusSession): Set<LockSection> =
+        if (session.taskOrigin) setOf(LockSection.FOCUS, LockSection.TASKS)
+        else setOf(LockSection.FOCUS)
 
     fun taskSection(): LockSection = LockSection.TASKS
     fun habitSection(): LockSection = LockSection.HABITS

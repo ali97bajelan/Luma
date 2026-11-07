@@ -90,6 +90,8 @@ fun TodayRoute(
     focusInProgressMillis: Long? = null,
     focusInProgressState: FocusState? = null,
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
+    canReadTaskOrigin: Boolean = true,
+    onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
@@ -127,13 +129,15 @@ fun TodayRoute(
         val state by observation.collectAsStateWithLifecycle(initialValue = TodayUiState.Loading)
         val focusReport = if (focusRepository != null && showProtectedFocus) {
             val focusSource = remember(focusRepository) { FocusReportSource(focusRepository) }
-            val focusObservation = remember(focusSource, date, zone, focusRetry) {
-                focusSource.day(TimeRange.forDay(date, zone))
+            val focusObservation = remember(focusSource, date, zone, focusRetry, canReadTaskOrigin) {
+                focusSource.day(TimeRange.forDay(date, zone), canReadTaskOrigin)
             }
             val observed by focusObservation.collectAsStateWithLifecycle(
                 initialValue = FocusReportState.Loading,
             )
-            observed
+            if (!canReadTaskOrigin && observed is FocusReportState.Ready &&
+                observed.value.statistics.requiresTaskAccess
+            ) FocusReportState.NeedsUnlock else observed
         } else null
         val summary = if (summaries != null && showProtectedSummary) {
             val summaryFlow = remember(summaryRetry) { observeDailySummary(summaries, date, zone) }
@@ -157,7 +161,8 @@ fun TodayRoute(
                 deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
                 focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
-                onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory)
+                onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory,
+                onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock)
         } else {
             val habitFactory = remember(habits) {
                 viewModelFactory { initializer { HabitsViewModel(habits, createSavedStateHandle()) } }
@@ -205,7 +210,8 @@ fun TodayRoute(
                 deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
                 focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
-                onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory)
+                onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory,
+                onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock)
         }
     }
 }

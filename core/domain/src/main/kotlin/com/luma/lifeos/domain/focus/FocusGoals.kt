@@ -162,6 +162,10 @@ interface FocusProductRepository {
         context: FocusProductContext,
     ): FocusProductResult
     fun observeTagCatalog(): Flow<FocusTagCatalog>
+    /** Filters labels referenced by task-origin sessions before exposing a catalog. */
+    fun observeTagCatalog(includeTaskOrigin: Boolean): Flow<FocusTagCatalog> = observeTagCatalog()
+    /** Internal authorization hint; it never contains session content. */
+    suspend fun sessionHasTaskOrigin(sessionId: UUID): Boolean = false
     /** Sum of credited runs from linked terminal sessions; open time is never included. */
     fun observeTaskFocusMillis(taskId: UUID): Flow<Long>
     /** Explicitly removes a task link from a saved terminal session without changing its origin. */

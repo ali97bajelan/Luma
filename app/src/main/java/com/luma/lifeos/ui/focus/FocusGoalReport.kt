@@ -24,6 +24,7 @@ sealed interface FocusGoalReportState {
     data object Loading : FocusGoalReportState
     data object Hidden : FocusGoalReportState
     data object Error : FocusGoalReportState
+    data object NeedsUnlock : FocusGoalReportState
     data class Ready(val value: FocusGoalProgress) : FocusGoalReportState
 }
 
@@ -33,6 +34,7 @@ data class FocusGoalProgress(
     val zone: ZoneId,
     val savedMillis: Long,
     val distribution: FocusWeekDistribution,
+    val requiresTaskAccess: Boolean = false,
 )
 
 /** Saved-only goal progress always uses the goal version's captured local week. */
@@ -41,16 +43,20 @@ class FocusGoalReportSource(
     private val productRepository: FocusProductRepository,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun current(now: Instant): Flow<FocusGoalReportState> =
+    fun current(
+        now: Instant,
+        taskContentAccessAllowed: Boolean = true,
+    ): Flow<FocusGoalReportState> =
         productRepository.observeGoals().flatMapLatest { state ->
             val goal = state.activeGoal(now)
                 ?: return@flatMapLatest flowOf(FocusGoalReportState.Hidden)
-            observeGoalWeek(goal, now)
+            observeGoalWeek(goal, now, taskContentAccessAllowed)
         }
 
     private fun observeGoalWeek(
         goal: FocusGoalVersion,
         now: Instant,
+        taskContentAccessAllowed: Boolean,
     ): Flow<FocusGoalReportState> {
         val zone = ZoneId.of(goal.zoneId)
         val monday = now.atZone(zone).toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -61,6 +67,8 @@ class FocusGoalReportSource(
             focusRepository.observeStatistics(TimeRange(start, end))
         }
         return combine(sources) { dailyStatistics ->
+            val requiresTaskAccess = dailyStatistics.any { it.requiresTaskAccess }
+            if (requiresTaskAccess && !taskContentAccessAllowed) return@combine FocusGoalReportState.NeedsUnlock
             val totals = dates.zip(dailyStatistics).associate { (date, statistics) -> date to statistics.totalMillis }
             val savedMillis = dailyStatistics.fold(0L) { total, statistics -> Math.addExact(total, statistics.totalMillis) }
             val ready: FocusGoalReportState = FocusGoalReportState.Ready(
@@ -70,6 +78,7 @@ class FocusGoalReportSource(
                     zone = zone,
                     savedMillis = savedMillis,
                     distribution = focusWeekDistribution(totals),
+                    requiresTaskAccess = requiresTaskAccess,
                 ),
             )
             ready

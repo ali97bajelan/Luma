@@ -57,6 +57,8 @@ internal fun FocusSettingsScreen(
     onToggle: (AllowedFocusApps.App, Boolean) -> Unit,
     onBack: () -> Unit,
     goalRepository: FocusProductRepository? = null,
+    canReadTaskOrigin: Boolean = true,
+    onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
     var search by rememberSaveable { mutableStateOf("") }
     val normalizedSearch = search.trim()
@@ -84,7 +86,11 @@ internal fun FocusSettingsScreen(
         Text(stringResource(R.string.focus_settings_enforcement_limit), style = MaterialTheme.typography.bodyMedium)
         if (goalRepository != null) {
             FocusGoalSettings(goalRepository)
-            FocusTagManager(goalRepository)
+            FocusTagManager(
+                repository = goalRepository,
+                canReadTaskOrigin = canReadTaskOrigin,
+                onRequestUnlock = onRequestProtectedFocusUnlock,
+            )
         }
         if (isRunning) {
             Text(

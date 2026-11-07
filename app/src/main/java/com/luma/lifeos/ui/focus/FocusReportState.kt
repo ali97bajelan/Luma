@@ -18,6 +18,7 @@ sealed interface FocusReportState<out T> {
     data object Loading : FocusReportState<Nothing>
     data class Ready<T>(val value: T) : FocusReportState<T>
     data object Error : FocusReportState<Nothing>
+    data object NeedsUnlock : FocusReportState<Nothing>
 }
 
 data class FocusDayReport(val range: TimeRange, val statistics: FocusStatistics)
@@ -43,10 +44,14 @@ data class FocusWeekReport(
 
 /** Independent streams allow report failures to leave other Today and Review content intact. */
 class FocusReportSource(private val repository: FocusRepository) {
-    fun day(range: TimeRange): Flow<FocusReportState<FocusDayReport>> =
+    fun day(
+        range: TimeRange,
+        taskContentAccessAllowed: Boolean = true,
+    ): Flow<FocusReportState<FocusDayReport>> =
         repository.observeStatistics(range)
             .map<FocusStatistics, FocusReportState<FocusDayReport>> {
-                FocusReportState.Ready(FocusDayReport(range, it))
+                if (it.requiresTaskAccess && !taskContentAccessAllowed) FocusReportState.NeedsUnlock
+                else FocusReportState.Ready(FocusDayReport(range, it))
             }
             .onStart { emit(FocusReportState.Loading) }
             .catch { if (it is CancellationException) throw it else emit(FocusReportState.Error) }
@@ -55,6 +60,7 @@ class FocusReportSource(private val repository: FocusRepository) {
         current: TimeRange,
         previous: TimeRange,
         days: List<FocusWeekDayRequest> = emptyList(),
+        taskContentAccessAllowed: Boolean = true,
     ): Flow<FocusReportState<FocusWeekReport>> {
         val observedDays = days.filter { it.range != null }
         val sources = buildList {
@@ -63,6 +69,9 @@ class FocusReportSource(private val repository: FocusRepository) {
             observedDays.forEach { add(repository.observeStatistics(requireNotNull(it.range))) }
         }
         return combine(sources) { statistics ->
+            if (!taskContentAccessAllowed && statistics.any(FocusStatistics::requiresTaskAccess)) {
+                return@combine FocusReportState.NeedsUnlock
+            }
             val now = statistics[0]
             val before = statistics[1]
             var dayIndex = 2

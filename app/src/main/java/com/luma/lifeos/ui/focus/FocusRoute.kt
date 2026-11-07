@@ -20,6 +20,8 @@ import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.focus.FocusMetadata
+import com.luma.lifeos.domain.focus.FocusReflection
 import com.luma.lifeos.ui.today.rememberCurrentDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
@@ -37,6 +39,9 @@ internal fun FocusRoute(
     onOpenTaskPicker: (() -> Unit)? = null,
     focusRepository: FocusRepository? = null,
     focusProductRepository: FocusProductRepository? = null,
+    onRequestProtectedFocusUnlock: () -> Unit = {},
+    protectedFocusReadable: Boolean = true,
+    protectedTasksReadable: Boolean = true,
 ) {
     val context = LocalContext.current.applicationContext
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -45,6 +50,26 @@ internal fun FocusRoute(
         allowedFocusApps ?: AllowedFocusApps(context)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val presentationState = state.copy(
+        runtime = state.runtime.copy(
+            session = state.runtime.session?.let { session ->
+                if (protectedFocusReadable && (!session.taskOrigin || protectedTasksReadable)) session
+                else session.copy(metadata = FocusMetadata(), reflection = FocusReflection(), taskId = null)
+            },
+        ),
+        setup = if (protectedFocusReadable && (!state.setup.taskOrigin || protectedTasksReadable)) {
+            state.setup
+        } else FocusSetupState(),
+        tagSuggestions = if (protectedFocusReadable && protectedTasksReadable) state.tagSuggestions else emptyList(),
+        taskCompletion = if (protectedFocusReadable && protectedTasksReadable) state.taskCompletion
+            else FocusTaskCompletionState(),
+        insights = when {
+            !protectedFocusReadable -> FocusInsightsState.Unselected
+            !protectedTasksReadable && state.insights is FocusInsightsState.Ready &&
+                state.insights.insights.requiresTaskAccess -> FocusInsightsState.NeedsUnlock(state.insights.request)
+            else -> state.insights
+        },
+    )
     val currentDay by rememberCurrentDay()
     val selectedPackages by resolvedPreferences.allowedPackages.collectAsStateWithLifecycle(
         initialValue = resolvedPreferences.selectedPackages(),
@@ -74,7 +99,7 @@ internal fun FocusRoute(
     }
 
     FocusScreen(
-        state = state,
+        state = presentationState,
         focusRepository = focusRepository,
         focusProductRepository = focusProductRepository,
         allowedApps = discoveredApps.filter { it.packageName in selectedPackages },
@@ -106,6 +131,7 @@ internal fun FocusRoute(
         onOpenHistory = onOpenHistory,
         onOpenTaskPicker = onOpenTaskPicker,
         onClearTaskSelection = viewModel::clearTaskSelection,
+        onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock,
         onTerminalSessionMissing = { sessionId, generation ->
             if (viewModel.dismissMissingTerminalSession(sessionId, generation)) onBack()
         },

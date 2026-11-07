@@ -156,7 +156,13 @@ class FocusViewModel(
         val currentTags = if (canReadFocusSurface) {
             visibleFocusTagSuggestions(runtimeState.databaseGeneration, suggestions)
         } else emptyList()
-        val presentation = focusInsightsPresentation(canReadInsights, selectedQuery, insights, currentTags)
+        val presentation = focusInsightsPresentation(
+            canReadInsights,
+            selectedQuery,
+            insights,
+            currentTags,
+            taskContentAccessAllowed = canReadTasks,
+        )
         FocusScreenState(
             runtime = runtimeState.copy(
                 session = runtimeState.session?.let { session ->
@@ -168,6 +174,9 @@ class FocusViewModel(
                         reflection = if (canReadFocusSurface && (!session.taskOrigin || canReadTasks)) {
                             session.reflection
                         } else FocusReflection(),
+                        taskId = if (canReadFocusSurface && (!session.taskOrigin || canReadTasks)) {
+                            session.taskId
+                        } else null,
                     )
                 },
                 emergencyMarkerSaved = localState.emergencyMarkerSaved ?: runtimeState.emergencyMarkerSaved,
@@ -200,6 +209,7 @@ class FocusViewModel(
                     session.copy(
                         metadata = focusMetadataForPresentation(session.metadata, canReadSessionContent),
                         reflection = if (canReadSessionContent) session.reflection else FocusReflection(),
+                        taskId = if (canReadSessionContent) session.taskId else null,
                     )
                 },
             ),
@@ -301,7 +311,11 @@ class FocusViewModel(
         taskContentAccessResolved = true
         taskContentAccess.value = allowed
         if (!allowed) {
+            val repeatRequestId = local.value.setup.repeatRequestId
             updateSetup(FocusSetupEvent.TaskContentLocked)
+            if (repeatRequestId != null) updateSetup(FocusSetupEvent.RepeatLoadFailed(repeatRequestId))
+            insightState.value = FocusInsightsState.Unselected
+            tagSuggestions.value = FocusTagSuggestionsSnapshot(null, emptyList())
             clearTaskCompletionState()
         } else {
             reloadSelectedTaskIfNeeded()
@@ -731,7 +745,10 @@ class FocusViewModel(
                     updateSetup(FocusSetupEvent.GenerationChanged(generationAfterRead))
                     return@launch
                 }
-                if (!privateContentAccess.value || runtime.state.value.databaseGeneration != generation) {
+                if (!privateContentAccess.value || runtime.state.value.databaseGeneration != generation ||
+                    (source == null && !taskContentAccess.value) ||
+                    (source?.taskOrigin == true && !taskContentAccess.value)
+                ) {
                     return@launch
                 }
                 if (runtime.state.value.session?.state in setOf(FocusState.RUNNING, FocusState.PAUSED)) {
@@ -746,7 +763,13 @@ class FocusViewModel(
                     FocusSetupEvent.PrefillRequested(
                         sessionId = sessionId,
                         requestId = requestId,
-                        input = FocusStartInput(source.metadata.name.orEmpty(), source.metadata.tag?.name, source.timer),
+                        input = FocusStartInput(
+                            source.metadata.name.orEmpty(),
+                            source.metadata.tag?.name,
+                            source.timer,
+                            taskId = source.taskId,
+                            taskOrigin = source.taskOrigin,
+                        ),
                         nextStep = source.reflection.nextStep,
                         generation = generation,
                     ),

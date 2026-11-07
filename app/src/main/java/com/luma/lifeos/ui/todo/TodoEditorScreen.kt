@@ -98,6 +98,8 @@ fun TodoEditorScreen(
     linkedFocusMillis: Long? = null,
     onFocusTask: (() -> Unit)? = null,
     onSaveAndFocusTask: (() -> Unit)? = null,
+    canDeleteTaskOrigin: Boolean = true,
+    onRequestDeleteUnlock: () -> Unit = {},
 ) {
     var discarding by rememberSaveable { mutableStateOf(false) }
     var focusConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -182,10 +184,14 @@ fun TodoEditorScreen(
                     EditorActionRow(
                         secondaryAction = if (state.editing) { actionModifier ->
                             TextButton(
-                                onClick = onRequestDelete,
+                                onClick = if (canDeleteTaskOrigin) onRequestDelete else onRequestDeleteUnlock,
                                 enabled = canEdit && state.pendingAction == null,
-                                modifier = actionModifier.testTag("todo_editor_delete"),
-                            ) { Text(stringResource(R.string.delete)) }
+                                modifier = actionModifier.testTag(
+                                    if (canDeleteTaskOrigin) "todo_editor_delete" else "todo_editor_unlock_delete",
+                                ),
+                            ) {
+                                Text(stringResource(if (canDeleteTaskOrigin) R.string.delete else R.string.app_lock_gate_unlock))
+                            }
                         } else null,
                         primaryAction = { actionModifier ->
                             LumaPrimaryActionButton(
@@ -484,8 +490,15 @@ fun TodoEditorScreen(
             title = { Text(stringResource(R.string.todo_delete_title)) },
             text = { Text(deleteBody) },
             confirmButton = {
-                LumaDestructiveTextButton(onClick = onConfirmDelete, modifier = Modifier.testTag("todo_editor_confirm_delete")) {
-                    Text(stringResource(R.string.delete))
+                if (canDeleteTaskOrigin) {
+                    LumaDestructiveTextButton(onClick = onConfirmDelete, modifier = Modifier.testTag("todo_editor_confirm_delete")) {
+                        Text(stringResource(R.string.delete))
+                    }
+                } else {
+                    TextButton(
+                        onClick = onRequestDeleteUnlock,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_unlock_delete"),
+                    ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
                 }
             },
             dismissButton = {

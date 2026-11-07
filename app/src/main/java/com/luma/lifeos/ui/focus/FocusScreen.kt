@@ -79,6 +79,7 @@ internal fun FocusScreen(
     onOpenHistory: () -> Unit,
     onOpenTaskPicker: (() -> Unit)? = null,
     onClearTaskSelection: () -> Unit = {},
+    onRequestProtectedFocusUnlock: () -> Unit = {},
     onTimerModeChange: (FocusTimerMode) -> Unit = {},
     onTimedMinutesChange: (String) -> Unit = {},
     onStartBreak: (Int) -> Unit = {},
@@ -223,6 +224,7 @@ internal fun FocusScreen(
                     onOpenHistory = onOpenHistory,
                     onOpenTaskPicker = onOpenTaskPicker,
                     onClearTaskSelection = onClearTaskSelection,
+                    onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock,
                 )
             }
         }
@@ -297,6 +299,7 @@ private fun SetupContent(
     onOpenHistory: () -> Unit,
     onOpenTaskPicker: (() -> Unit)?,
     onClearTaskSelection: () -> Unit,
+    onRequestProtectedFocusUnlock: () -> Unit,
 ) {
     val setup = state.setup
     val metadataValid = runCatching {
@@ -436,6 +439,7 @@ private fun SetupContent(
         period = setup.period,
         onPeriodChange = onPeriodChange,
         onRetry = onRetryInsights,
+        onRequestUnlock = onRequestProtectedFocusUnlock,
     )
     OpenHistoryButton(onOpenHistory)
     FailureContent(state, onRetry, onEmergencyExit)

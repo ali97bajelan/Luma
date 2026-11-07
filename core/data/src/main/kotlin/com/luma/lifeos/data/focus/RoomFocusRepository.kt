@@ -486,13 +486,17 @@ class RoomFocusRepository(
             }
             .flowOn(Dispatchers.IO)
 
-    override fun observeTagSuggestions(): Flow<List<FocusTag>> =
-        dao.observeTagSuggestions()
+    override fun observeTagSuggestions(): Flow<List<FocusTag>> = observeTagSuggestions(includeTaskOrigin = true)
+
+    override fun observeTagSuggestions(includeTaskOrigin: Boolean): Flow<List<FocusTag>> =
+        dao.observeTagSuggestions(includeTaskOrigin)
             .map { tags -> tags.map { FocusTag(UUID.fromString(it.id), it.name) } }
             .flowOn(Dispatchers.IO)
 
-    override fun observeTags(): Flow<List<FocusTag>> =
-        dao.observeTags()
+    override fun observeTags(): Flow<List<FocusTag>> = observeTags(includeTaskOrigin = true)
+
+    override fun observeTags(includeTaskOrigin: Boolean): Flow<List<FocusTag>> =
+        dao.observeTags(includeTaskOrigin)
             .map { tags -> tags.map { FocusTag(UUID.fromString(it.id), it.name) } }
             .flowOn(Dispatchers.IO)
 
@@ -514,6 +518,7 @@ class RoomFocusRepository(
                     startNanos = start?.nano,
                     endSeconds = end?.epochSecond,
                     endNanos = end?.nano,
+                    includeTaskOrigin = query.includeTaskOrigin,
                     offset = candidateOffset,
                     limit = FOCUS_HISTORY_FILTER_BATCH_SIZE,
                 )

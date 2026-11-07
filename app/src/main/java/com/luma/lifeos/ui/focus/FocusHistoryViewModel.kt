@@ -33,15 +33,17 @@ class FocusHistoryViewModel(
     private val processInstanceId: UUID = UUID.randomUUID(),
     private var privateContentAccessAllowed: Boolean = true,
     private val privateContentAccessFlow: Flow<Boolean>? = null,
+    private val taskContentAccessFlow: Flow<Boolean>? = null,
+    private var taskContentAccessAllowed: Boolean = true,
     private val databaseGenerationFlow: Flow<UUID?>? = null,
     private val productRepository: FocusProductRepository? = null,
 ) : ViewModel() {
-    private var restoredFilters = restoreFocusHistoryFilterState(
+    private var restoredFilters = if (taskContentAccessAllowed) restoreFocusHistoryFilterState(
         search = savedStateHandle[SEARCH_KEY],
         tagKind = savedStateHandle[TAG_KIND_KEY],
         tagId = savedStateHandle[TAG_ID_KEY],
         offset = savedStateHandle[PAGE_OFFSET_KEY],
-    )
+    ) else FocusHistoryFilterState()
     private val mutableState = MutableStateFlow(
         focusHistoryStateForAccess(FocusHistoryUiState(filters = restoredFilters), privateContentAccessAllowed),
     )
@@ -61,11 +63,17 @@ class FocusHistoryViewModel(
                 accessFlow.distinctUntilChanged().collect(::setPrivateContentAccessAllowed)
             }
         }
+        taskContentAccessFlow?.let { accessFlow ->
+            viewModelScope.launch {
+                accessFlow.distinctUntilChanged().collect(::setTaskContentAccessAllowed)
+            }
+        }
         databaseGenerationFlow?.let { generations ->
             viewModelScope.launch {
                 generations.distinctUntilChanged().collect(::onRuntimeGenerationChanged)
             }
         }
+        if (!taskContentAccessAllowed) persistFilters(mutableState.value.filters)
         if (privateContentAccessAllowed) {
             observeTags()
             load(restoredFilters.offset)
@@ -161,6 +169,23 @@ class FocusHistoryViewModel(
                         if (filters != current.filters) load(0)
                     }
                 }
+        }
+    }
+
+    fun setTaskContentAccessAllowed(allowed: Boolean) {
+        if (taskContentAccessAllowed == allowed) return
+        taskContentAccessAllowed = allowed
+        loadRequest++
+        loadJob?.cancel()
+        tagsJob?.cancel()
+        activeLoadKey = null
+        restoredFilters = FocusHistoryFilterState()
+        val cleared = focusHistoryStateForDatabaseReplacement(mutableState.value)
+        persistFilters(cleared.filters)
+        mutableState.value = cleared
+        if (privateContentAccessAllowed) {
+            observeTags()
+            load(0)
         }
     }
 

@@ -29,6 +29,7 @@ internal fun TodayFocusCard(
     onRetry: () -> Unit,
     onHistory: () -> Unit,
     onFocus: (() -> Unit)?,
+    onRequestUnlock: () -> Unit = {},
 ) {
     LumaCard(Modifier.fillMaxWidth().testTag("today_focus_card")) {
         Column(
@@ -43,6 +44,13 @@ internal fun TodayFocusCard(
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("today_focus_retry")) {
                         Text(stringResource(R.string.retry))
                     }
+                }
+                FocusReportState.NeedsUnlock -> {
+                    Text(stringResource(R.string.app_lock_gate_body))
+                    TextButton(
+                        onClick = onRequestUnlock,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("today_focus_unlock"),
+                    ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
                 }
                 is FocusReportState.Ready -> {
                     Text(

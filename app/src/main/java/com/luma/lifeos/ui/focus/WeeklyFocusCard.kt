@@ -43,6 +43,7 @@ internal fun WeeklyFocusCard(
     onRetry: () -> Unit,
     onCurrentHistory: () -> Unit,
     onPreviousHistory: () -> Unit,
+    onRequestUnlock: () -> Unit = {},
     onDayHistory: ((LocalDate) -> Unit)? = null,
     onPlanAnotherSession: (() -> Unit)? = null,
     goalReport: FocusGoalReportState = FocusGoalReportState.Hidden,
@@ -64,6 +65,13 @@ internal fun WeeklyFocusCard(
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("review_focus_retry")) {
                         Text(stringResource(R.string.retry))
                     }
+                }
+                FocusReportState.NeedsUnlock -> {
+                    Text(stringResource(R.string.app_lock_gate_body))
+                    TextButton(
+                        onClick = onRequestUnlock,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_unlock"),
+                    ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
                 }
                 is FocusReportState.Ready -> {
                     val value = report.value
@@ -102,6 +110,16 @@ internal fun WeeklyFocusCard(
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.testTag("review_focus_goal_error"),
                         )
+                        FocusGoalReportState.NeedsUnlock -> Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(R.string.app_lock_gate_body), modifier = Modifier.weight(1f))
+                            TextButton(
+                                onClick = onRequestUnlock,
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_goal_unlock"),
+                            ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
+                        }
                         is FocusGoalReportState.Ready -> {
                             val goal = goalReport.value
                             val targetMillis = goal.goal.targetMinutes * 60_000L

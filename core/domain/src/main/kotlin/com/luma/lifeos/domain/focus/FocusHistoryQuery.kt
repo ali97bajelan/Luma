@@ -14,4 +14,6 @@ data class FocusHistoryQuery(
     val range: TimeRange?,
     val search: String = "",
     val tag: FocusTagFilter = FocusTagFilter.All,
+    /** Repository facades set this after evaluating current Tasks access. */
+    val includeTaskOrigin: Boolean = true,
 )

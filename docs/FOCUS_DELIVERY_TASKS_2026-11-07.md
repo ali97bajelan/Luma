@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD03 SOURCE COMPLETE — UNVERIFIED; FD04–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD04 SOURCE COMPLETE — UNVERIFIED; FD05–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -44,7 +44,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD01 source complete — UNVERIFIED
 - [x] FD02 source complete — UNVERIFIED
 - [x] FD03 source complete — UNVERIFIED
-- [ ] FD04 source complete
+- [x] FD04 source complete — UNVERIFIED
 - [ ] FD05 source complete
 - [ ] FD06 source complete
 - [ ] FD07 source complete
@@ -84,6 +84,17 @@ The checkboxes below track current source delivery only; source completion is se
 - Ruling: rendered completion/unlink actions in expanded terminal history detail and delegated mutations to `FocusViewModel`; this matches the spec's terminal-detail entry point and keeps Stop separate. Cost if wrong: users must open a saved history detail to complete a task until FD08 adds the action to the completion hierarchy.
 - Source review covered eligibility, task/session revision checks, immutable retry identity, generation/access invalidation, product receipt replay, provenance preservation and running-runtime revision coordination. Tests, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
 - Later proof: Q02/Q03 and E02/E03/E09.
+
+### FD04 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED.
+- Changed source: `core/domain/.../lock/ProtectedRecordClassifier.kt`; Focus domain contracts and projections in `FocusGoals.kt`, `FocusHistoryQuery.kt`, `FocusInsights.kt`, `FocusRepository.kt`, and `FocusStatistics.kt`; `core/data/.../focus/FocusDao.kt`, `RoomFocusProductRepository.kt`, and `RoomFocusRepository.kt`; `app/.../LumaApplication.kt`, `focus/FocusViewModel.kt`, `lock/ProtectedAggregateRepositories.kt`, `lock/ProtectedCatalogRepositories.kt`, `ui/LifeOsApp.kt`, `ui/todo/TodoEditorRoute.kt`, `TodoEditorScreen.kt`, `ui/focus/FocusGoalReport.kt`, `FocusHistoryRoute.kt`, `FocusHistoryViewModel.kt`, `FocusInsightsCard.kt`, `FocusInsightsState.kt`, `FocusReportState.kt`, `FocusRoute.kt`, `FocusScreen.kt`, `FocusSettingsRoute.kt`, `FocusSettingsScreen.kt`, `FocusSetupState.kt`, `FocusTagManager.kt`, `TodayFocusCard.kt`, `WeeklyFocusCard.kt`, `ui/review/WeeklyReviewRoute.kt`, and `ui/today/TodayRoute.kt` / `TodayScreen.kt`.
+- Implemented: persisted `taskOrigin` classifies sessions independently of the current task link or task name; task-origin content reads and edits require both FOCUS and TASKS. The protected Focus repository applies admission at Start and product writes, while generic active-session timer state and Pause/Resume/Stop controls remain available when protected content is locked. The Focus presentation redacts intention, tag, reflection, task ID and completion context on either lock. Repeated-session loads recheck authorization before publishing task-derived drafts.
+- History pages filter task-origin rows before the page limit and total are computed. Tag suggestions and catalogs hide labels referenced by task-origin sessions when TASKS is locked; rename and merge require both sections and stale merge prompts are cleared. Mixed task-origin reports return an unavailable-until-unlock state rather than partial totals, with unlock actions wired from Focus insights, Today, Review, history and Focus settings. Task deletion also requires both section writes because deleting a task detaches its linked Focus rows; the task editor requests unlock when either section is unavailable.
+- Interfaces: added `FocusHistoryQuery.includeTaskOrigin`, task-aware overloads for Focus tag suggestion/catalog flows, and `FocusRepository.sessionHasTaskOrigin` / `FocusProductRepository.sessionHasTaskOrigin` authorization hints. `ProtectedRecordClassifier.requiredSections(session)` centralizes the durable provenance rule.
+- Ruling: `LumaApplication` now supplies the protected Focus repository to `FocusCoordinator`, so Start and writes are checked at the repository boundary as well as through UI access state. Generic timer actions retain a narrowly scoped fallback for the current open session. This boundary is needed to close races between lock changes and commands. Task deletion is also guarded for both sections because Room detaches linked Focus rows as part of task deletion. If either guard proves too broad, Q02/Q03 will identify the affected write paths and E08 will validate locked timer controls.
+- Source review covered durable origin classification after unlink/delete, mixed-section grants, filtering before paging, mixed-report suppression, tag label privacy, post-suspension draft publication, active timer controls and relock presentation. Tests, builds, schema generation, lint and device/emulator checks were NOT RUN in this task, as required by Phase I.
+- Later proof: Q02/Q03 and E03/E08/E09/E11.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

@@ -153,7 +153,7 @@ class LumaApplication : Application() {
     }
     val focusRuntime: FocusRuntime by lazy {
         FocusRuntime(
-            coordinator = FocusCoordinator(storage.focus, AndroidFocusClock(this)),
+            coordinator = FocusCoordinator(protectedFocusRepository, AndroidFocusClock(this)),
             preferences = focusPreferences,
             allowedApps = allowedFocusApps,
             scope = applicationScope,

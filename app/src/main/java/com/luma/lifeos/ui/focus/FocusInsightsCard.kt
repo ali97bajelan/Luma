@@ -33,6 +33,7 @@ internal fun FocusInsightsCard(
     period: FocusPeriod,
     onPeriodChange: (FocusPeriod) -> Unit,
     onRetry: () -> Unit,
+    onRequestUnlock: () -> Unit = {},
 ) {
     var showAllTags by remember(state.query) { mutableStateOf(false) }
     LumaCard(Modifier.fillMaxWidth().testTag("focus_insights_card")) {
@@ -62,6 +63,13 @@ internal fun FocusInsightsCard(
                     TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_retry")) {
                         Text(stringResource(R.string.retry))
                     }
+                }
+                is FocusInsightsState.NeedsUnlock -> {
+                    Text(stringResource(R.string.app_lock_gate_body))
+                    TextButton(
+                        onClick = onRequestUnlock,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_unlock"),
+                    ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
                 }
                 is FocusInsightsState.Ready -> FocusInsightsContent(
                     state.insights,

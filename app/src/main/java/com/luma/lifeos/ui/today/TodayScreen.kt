@@ -98,6 +98,7 @@ fun TodayScreen(
     focusInProgressState: FocusState? = null,
     onFocusReportRetry: () -> Unit = {},
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
+    onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
     var choosingDateFor by rememberSaveable(date) { mutableStateOf<EventType?>(null) }
     var choosingCaptureDate by rememberSaveable(date) { mutableStateOf<String?>(null) }
@@ -134,6 +135,7 @@ fun TodayScreen(
                     onRetry = onFocusReportRetry,
                     onHistory = { onFocusHistory(date, date, zone) },
                     onFocus = focusAction,
+                    onRequestUnlock = onRequestProtectedFocusUnlock,
                 )
             }
             if (focusAction != null && focusReport == null) item(key = "focus") {

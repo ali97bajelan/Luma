@@ -54,14 +54,16 @@ class RoomFocusProductRepository(
         })
     }.flowOn(Dispatchers.IO)
 
-    override fun observeTagCatalog(): Flow<FocusTagCatalog> = flow {
+    override fun observeTagCatalog(): Flow<FocusTagCatalog> = observeTagCatalog(includeTaskOrigin = true)
+
+    override fun observeTagCatalog(includeTaskOrigin: Boolean): Flow<FocusTagCatalog> = flow {
         database.withTransaction {
             ensureGeneration()
             ensureTagCatalogState()
         }
         emitAll(combine(
             dao.observeTagCatalogState(),
-            focusDao.observeTags(),
+            focusDao.observeTags(includeTaskOrigin),
             dao.observeTagAliases(),
             focusDao.observeStorageState(),
         ) { state, tags, aliases, generation ->
@@ -73,6 +75,9 @@ class RoomFocusProductRepository(
             )
         })
     }.flowOn(Dispatchers.IO)
+
+    override suspend fun sessionHasTaskOrigin(sessionId: UUID): Boolean =
+        focusDao.session(sessionId.toString())?.taskOrigin == true
 
     override fun observeTaskFocusMillis(taskId: UUID): Flow<Long> =
         focusDao.observeTaskFocusMillis(taskId.toString())

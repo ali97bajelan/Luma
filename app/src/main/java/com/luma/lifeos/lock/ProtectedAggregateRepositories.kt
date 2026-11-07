@@ -2,6 +2,7 @@ package com.luma.lifeos.lock
 
 import com.luma.lifeos.domain.focus.FocusPage
 import com.luma.lifeos.domain.focus.FocusGoalState
+import com.luma.lifeos.domain.focus.FocusMetadata
 import com.luma.lifeos.domain.focus.FocusGoalVersion
 import com.luma.lifeos.domain.focus.FocusProductContext
 import com.luma.lifeos.domain.focus.FocusProductRepository
@@ -19,6 +20,7 @@ import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusCommand
+import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.model.PhotoAttachment
@@ -39,8 +41,13 @@ import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.lock.ProtectedRecordClassifier
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -467,6 +474,7 @@ class ProtectedPhotoRepository(
 }
 
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProtectedFocusProductRepository(
     private val delegate: FocusProductRepository,
     private val gateway: ProtectedContentGateway,
@@ -485,11 +493,32 @@ class ProtectedFocusProductRepository(
             else 0L
         }
 
-    override fun observeTagCatalog(): Flow<FocusTagCatalog> =
-        combine(delegate.observeTagCatalog(), gateway.snapshot) { catalog, state ->
-            if (state.decide(focusProductRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow) catalog
-            else FocusTagCatalog(revision = 0, tags = emptyList())
+    override fun observeTagCatalog(): Flow<FocusTagCatalog> = observeTagCatalogForCurrentAccess()
+
+    override fun observeTagCatalog(includeTaskOrigin: Boolean): Flow<FocusTagCatalog> =
+        observeTagCatalogForCurrentAccess(includeTaskOrigin)
+
+    private fun observeTagCatalogForCurrentAccess(includeTaskOrigin: Boolean? = null): Flow<FocusTagCatalog> =
+        gateway.snapshot.flatMapLatest { before ->
+            if (!canReadFocus(before)) {
+                flowOf(FocusTagCatalog(revision = 0, tags = emptyList()))
+            } else {
+                val includeTasks = includeTaskOrigin ?: canReadTasks(before)
+                if (includeTasks && !canReadTasks(before)) {
+                    flowOf(FocusTagCatalog(revision = 0, tags = emptyList()))
+                } else {
+                    delegate.observeTagCatalog(includeTasks).map { catalog ->
+                        val after = gateway.snapshot.value
+                        if (gateway.sameAuthorizationEpoch(before, after) && canReadFocus(after) &&
+                            (!includeTasks || canReadTasks(after))
+                        ) catalog else FocusTagCatalog(revision = 0, tags = emptyList())
+                    }
+                }
+            }
         }
+
+    override suspend fun sessionHasTaskOrigin(sessionId: UUID): Boolean =
+        delegate.sessionHasTaskOrigin(sessionId)
 
     override suspend fun saveReflection(
         sessionId: UUID,
@@ -497,7 +526,7 @@ class ProtectedFocusProductRepository(
         reflection: FocusReflection,
         context: FocusProductContext,
     ): FocusProductResult = try {
-        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
+        commitSession(sessionId) {
             delegate.saveReflection(sessionId, expectedRevision, reflection, context)
         }
     } catch (failure: Exception) {
@@ -513,7 +542,7 @@ class ProtectedFocusProductRepository(
         expectedCatalogRevision: Long,
         context: FocusProductContext,
     ): FocusProductResult = try {
-        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
+        commitSession(sessionId) {
             delegate.updateSessionMetadata(sessionId, expectedRevision, name, tagName, expectedCatalogRevision, context)
         }
     } catch (failure: Exception) {
@@ -526,7 +555,10 @@ class ProtectedFocusProductRepository(
         name: String,
         expectedCatalogRevision: Long,
         context: FocusProductContext,
-    ): FocusProductResult = commit(tagId.toString()) {
+    ): FocusProductResult = commit(
+        tagId.toString(),
+        setOf(LockSection.FOCUS, LockSection.TASKS),
+    ) {
         delegate.renameTag(tagId, name, expectedCatalogRevision, context)
     }
 
@@ -535,8 +567,22 @@ class ProtectedFocusProductRepository(
         targetTagId: UUID,
         expectedCatalogRevision: Long,
         context: FocusProductContext,
-    ): FocusProductResult = commit(sourceTagId.toString()) {
+    ): FocusProductResult = commit(
+        sourceTagId.toString(),
+        setOf(LockSection.FOCUS, LockSection.TASKS),
+    ) {
         delegate.mergeTags(sourceTagId, targetTagId, expectedCatalogRevision, context)
+    }
+
+    override suspend fun unlinkTask(
+        sessionId: UUID,
+        expectedRevision: Long,
+        context: FocusProductContext,
+    ): FocusProductResult = commit(
+        sessionId.toString(),
+        setOf(LockSection.FOCUS, LockSection.TASKS),
+    ) {
+        delegate.unlinkTask(sessionId, expectedRevision, context)
     }
 
     override suspend fun scheduleGoal(
@@ -551,12 +597,36 @@ class ProtectedFocusProductRepository(
         context: FocusProductContext,
     ): FocusProductResult = commit { delegate.setGoalsEnabled(enabled, expectedSettingsRevision, context) }
 
-    private suspend fun commit(recordId: String? = null, write: suspend () -> FocusProductResult): FocusProductResult = try {
-        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), recordId, commit = write)
+    private suspend fun commitSession(
+        sessionId: UUID,
+        write: suspend () -> FocusProductResult,
+    ): FocusProductResult {
+        val sections = if (delegate.sessionHasTaskOrigin(sessionId)) {
+            setOf(LockSection.FOCUS, LockSection.TASKS)
+        } else {
+            setOf(LockSection.FOCUS)
+        }
+        return commit(sessionId.toString(), sections, write)
+    }
+
+    private suspend fun commit(
+        recordId: String? = null,
+        sections: Set<LockSection> = setOf(LockSection.FOCUS),
+        write: suspend () -> FocusProductResult,
+    ): FocusProductResult = try {
+        gateway.commit(LockOperation.UPDATE, sections, recordId, commit = write)
     } catch (failure: Exception) {
         if (failure is kotlinx.coroutines.CancellationException) throw failure
         FocusProductResult.Unavailable(FocusProductUnavailableReason("access"))
     }
+
+    private fun canReadFocus(state: com.luma.lifeos.domain.lock.LockSnapshot) =
+        state.decide(focusProductRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow
+
+    private fun canReadTasks(state: com.luma.lifeos.domain.lock.LockSnapshot) =
+        state.decide(LockRequest(
+            LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED,
+        )) == com.luma.lifeos.domain.lock.AccessDecision.Allow
 
     private fun focusProductRead() = LockRequest(
         LockOperation.READ, setOf(LockSection.FOCUS), LockContentClassification.CLASSIFIED,
@@ -567,40 +637,113 @@ class ProtectedFocusProductRepository(
     )
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProtectedFocusRepository(
     private val delegate: FocusRepository,
     private val gateway: ProtectedContentGateway,
 ) : FocusRepository by delegate {
     override fun observeOpen(): Flow<FocusSession?> = combine(delegate.observeOpen(), gateway.snapshot) { session, state ->
-        session.takeIf { canRead(state) }
+        if (session == null) {
+            null
+        } else if (state.decide(
+                LockRequest(
+                    LockOperation.READ,
+                    ProtectedRecordClassifier.requiredSections(session),
+                    LockContentClassification.CLASSIFIED,
+                ),
+            ) != com.luma.lifeos.domain.lock.AccessDecision.Allow
+        ) {
+            session.copy(metadata = FocusMetadata(), reflection = FocusReflection())
+        } else {
+            session
+        }
     }
 
     override fun observeStatistics(range: TimeRange): Flow<FocusStatistics> =
         combine(delegate.observeStatistics(range), gateway.snapshot) { stats, state ->
-            stats.takeIf { canRead(state) } ?: FocusStatistics(0, 0, 0)
+            when {
+                !canRead(state) -> FocusStatistics(0, 0, 0)
+                stats.requiresTaskAccess && !canReadTasks(state) -> FocusStatistics(
+                    0, 0, 0, requiresTaskAccess = true,
+                )
+                else -> stats
+            }
         }
 
-    override fun observeTagSuggestions(): Flow<List<FocusTag>> =
-        combine(delegate.observeTagSuggestions(), gateway.snapshot) { tags, state ->
-            if (canRead(state)) immutableProjectionList(tags) else emptyList()
+    override fun observeInsights(range: TimeRange?): Flow<com.luma.lifeos.domain.focus.FocusInsights> =
+        combine(delegate.observeInsights(range), gateway.snapshot) { insights, state ->
+            when {
+                !canRead(state) -> com.luma.lifeos.domain.focus.FocusInsights.EMPTY
+                insights.requiresTaskAccess && !canReadTasks(state) ->
+                    com.luma.lifeos.domain.focus.FocusInsights.EMPTY.copy(requiresTaskAccess = true)
+                else -> insights
+            }
         }
 
-    override fun observeTags(): Flow<List<FocusTag>> =
-        combine(delegate.observeTags(), gateway.snapshot) { tags, state ->
-            if (canRead(state)) immutableProjectionList(tags) else emptyList()
+    override fun observeTagSuggestions(): Flow<List<FocusTag>> = observeTagSuggestionsForCurrentAccess()
+
+    override fun observeTagSuggestions(includeTaskOrigin: Boolean): Flow<List<FocusTag>> =
+        observeTagSuggestionsForCurrentAccess(includeTaskOrigin)
+
+    private fun observeTagSuggestionsForCurrentAccess(includeTaskOrigin: Boolean? = null): Flow<List<FocusTag>> =
+        gateway.snapshot.flatMapLatest { before ->
+            if (!canRead(before)) {
+                flowOf(emptyList())
+            } else {
+                val includeTasks = includeTaskOrigin ?: canReadTasks(before)
+                delegate.observeTagSuggestions(includeTasks).map { tags ->
+                    val after = gateway.snapshot.value
+                    if (gateway.sameAuthorizationEpoch(before, after) && canRead(after) &&
+                        (!includeTasks || canReadTasks(after))
+                    ) immutableProjectionList(tags) else emptyList()
+                }
+            }
+        }
+
+    override fun observeTags(): Flow<List<FocusTag>> = observeTagsForCurrentAccess()
+
+    override fun observeTags(includeTaskOrigin: Boolean): Flow<List<FocusTag>> =
+        observeTagsForCurrentAccess(includeTaskOrigin)
+
+    private fun observeTagsForCurrentAccess(includeTaskOrigin: Boolean? = null): Flow<List<FocusTag>> =
+        gateway.snapshot.flatMapLatest { before ->
+            if (!canRead(before)) {
+                flowOf(emptyList())
+            } else {
+                val includeTasks = includeTaskOrigin ?: canReadTasks(before)
+                delegate.observeTags(includeTasks).map { tags ->
+                    val after = gateway.snapshot.value
+                    if (gateway.sameAuthorizationEpoch(before, after) && canRead(after) &&
+                        (!includeTasks || canReadTasks(after))
+                    ) immutableProjectionList(tags) else emptyList()
+                }
+            }
         }
 
     override suspend fun history(range: TimeRange?, offset: Int, limit: Int): FocusPage =
-        gateway.readValue(focusRead(), { delegate.history(range, offset, limit) }) { page, _ ->
-            page.copy(rows = immutableProjectionList(page.rows))
-        }
-            ?: FocusPage(emptyList(), offset, 0)
+        history(FocusHistoryQuery(range), offset, limit)
 
-    override suspend fun history(query: FocusHistoryQuery, offset: Int, limit: Int): FocusPage =
-        gateway.readValue(focusRead(), { delegate.history(query, offset, limit) }) { page, _ ->
-            page.copy(rows = immutableProjectionList(page.rows))
+    override suspend fun history(query: FocusHistoryQuery, offset: Int, limit: Int): FocusPage {
+        val before = gateway.snapshot.value
+        if (!canRead(before)) return FocusPage(emptyList(), offset, 0)
+        val includeTasks = canReadTasks(before)
+        val request = if (includeTasks) focusReadWithTasks() else focusRead()
+        if (before.decide(request) != com.luma.lifeos.domain.lock.AccessDecision.Allow) {
+            return FocusPage(emptyList(), offset, 0)
         }
-            ?: FocusPage(emptyList(), offset, 0)
+        val page = delegate.history(query.copy(includeTaskOrigin = includeTasks), offset, limit)
+        val after = gateway.snapshot.value
+        if (!gateway.sameAuthorizationEpoch(before, after) ||
+            after.decide(request) != com.luma.lifeos.domain.lock.AccessDecision.Allow ||
+            canReadTasks(after) != includeTasks
+        ) return FocusPage(emptyList(), offset, 0)
+        return page.copy(rows = immutableProjectionList(page.rows))
+    }
+
+    override suspend fun terminalSession(sessionId: UUID): FocusSession? =
+        gateway.readValue(focusRead(), { delegate.terminalSession(sessionId) }) { session, state ->
+            session?.takeIf { authorizedForSession(state, it) }
+        }
 
     override suspend fun start(
         commandId: UUID,
@@ -608,17 +751,36 @@ class ProtectedFocusRepository(
         input: FocusStartInput,
         sample: FocusTimeSample,
         context: FocusWriteContext,
-    ): FocusWriteResult = gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
-        delegate.start(commandId, sessionId, input, sample, context)
+    ): FocusWriteResult {
+        val sections = if (input.taskOrigin || input.taskId != null) {
+            setOf(LockSection.FOCUS, LockSection.TASKS)
+        } else {
+            setOf(LockSection.FOCUS)
+        }
+        return gateway.commit(LockOperation.UPDATE, sections, sessionId.toString()) {
+            delegate.start(commandId, sessionId, input, sample, context)
+        }
     }
 
-    override suspend fun apply(command: FocusCommand): FocusWriteResult =
-        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), command.sessionId.toString()) {
-            delegate.apply(command)
+    override suspend fun apply(command: FocusCommand): FocusWriteResult {
+        val current = delegate.observeOpen().first()
+        val isCurrentSession = current?.id == command.sessionId
+        val sections = current?.takeIf { isCurrentSession }?.let { ProtectedRecordClassifier.requiredSections(it) }
+            ?: setOf(LockSection.FOCUS)
+        return try {
+            gateway.commit(LockOperation.UPDATE, sections, command.sessionId.toString()) {
+                delegate.apply(command)
+            }
+        } catch (denied: LockActionDeniedException) {
+            if (isCurrentSession && command.action in setOf(FocusAction.PAUSE, FocusAction.RESUME, FocusAction.STOP)) {
+                delegate.apply(command)
+            }
+            else throw denied
         }
+    }
 
     override suspend fun reconcile(sample: FocusTimeSample, context: FocusWriteContext): FocusWriteResult =
-        gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS)) { delegate.reconcile(sample, context) }
+        delegate.reconcile(sample, context)
 
     override suspend fun resolveRecovery(
         sessionId: UUID,
@@ -627,7 +789,11 @@ class ProtectedFocusRepository(
         sample: FocusTimeSample,
         context: FocusWriteContext,
         terminalReason: FocusTerminalReason,
-    ): FocusWriteResult = gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
+    ): FocusWriteResult = gateway.commit(
+        LockOperation.UPDATE,
+        writeSections(sessionId),
+        sessionId.toString(),
+    ) {
         delegate.resolveRecovery(sessionId, expectedRevision, choice, sample, context, terminalReason)
     }
 
@@ -636,15 +802,17 @@ class ProtectedFocusRepository(
         expectedRevision: Long,
         sample: FocusTimeSample,
         context: FocusWriteContext,
-    ): FocusWriteResult = gateway.commit(LockOperation.UPDATE, setOf(LockSection.FOCUS), sessionId.toString()) {
-        delegate.checkpoint(sessionId, expectedRevision, sample, context)
-    }
+    ): FocusWriteResult = delegate.checkpoint(sessionId, expectedRevision, sample, context)
 
     override suspend fun delete(
         sessionId: UUID,
         expectedRevision: Long,
         context: FocusWriteContext,
-    ): FocusWriteResult = gateway.commit(LockOperation.DELETE, setOf(LockSection.FOCUS), sessionId.toString()) {
+    ): FocusWriteResult = gateway.commit(
+        LockOperation.DELETE,
+        writeSections(sessionId),
+        sessionId.toString(),
+    ) {
         delegate.delete(sessionId, expectedRevision, context)
     }
 
@@ -652,15 +820,47 @@ class ProtectedFocusRepository(
         sessionId: UUID,
         expectedRevision: Long,
         context: FocusWriteContext,
-    ): FocusWriteResult = gateway.commit(LockOperation.DELETE, setOf(LockSection.FOCUS), sessionId.toString()) {
+    ): FocusWriteResult = gateway.commit(
+        LockOperation.DELETE,
+        writeSections(sessionId),
+        sessionId.toString(),
+    ) {
         delegate.discardOpen(sessionId, expectedRevision, context)
     }
+
+    private suspend fun writeSections(sessionId: UUID): Set<LockSection> =
+        if (delegate.sessionHasTaskOrigin(sessionId)) {
+            setOf(LockSection.FOCUS, LockSection.TASKS)
+        } else {
+            setOf(LockSection.FOCUS)
+        }
+
+    private fun authorizedForSession(
+        state: com.luma.lifeos.domain.lock.LockSnapshot,
+        session: FocusSession,
+    ): Boolean = state.decide(
+        LockRequest(
+            LockOperation.READ,
+            ProtectedRecordClassifier.requiredSections(session),
+            LockContentClassification.CLASSIFIED,
+        ),
+    ) == com.luma.lifeos.domain.lock.AccessDecision.Allow
 
     private fun canRead(state: com.luma.lifeos.domain.lock.LockSnapshot) =
         state.decide(focusRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow
 
+    private fun canReadTasks(state: com.luma.lifeos.domain.lock.LockSnapshot) =
+        state.decide(LockRequest(
+            LockOperation.READ, setOf(LockSection.TASKS), LockContentClassification.CLASSIFIED,
+        )) == com.luma.lifeos.domain.lock.AccessDecision.Allow
+
     private fun focusRead() = LockRequest(
         LockOperation.READ, setOf(LockSection.FOCUS), LockContentClassification.CLASSIFIED,
+    )
+
+    private fun focusReadWithTasks() = LockRequest(
+        LockOperation.READ, setOf(LockSection.FOCUS, LockSection.TASKS),
+        LockContentClassification.CLASSIFIED,
     )
 }
 

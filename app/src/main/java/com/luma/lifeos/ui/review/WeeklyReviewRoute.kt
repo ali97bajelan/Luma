@@ -59,9 +59,11 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     focusInProgressMillis: Long? = null,
     focusInProgressPaused: Boolean = false,
     showProtectedFocus: Boolean = true,
+    canReadTaskOrigin: Boolean = true,
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
     onPlanAnotherSession: (() -> Unit)? = null,
-    captureBottomClearance: Dp = 0.dp) {
+    captureBottomClearance: Dp = 0.dp,
+    onRequestProtectedFocusUnlock: () -> Unit = {}) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -86,7 +88,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         val state by observation.collectAsStateWithLifecycle(WeeklyReviewState.Loading)
         val focusReport = if (focusRepository != null && showProtectedFocus) {
             val focusSource = remember(focusRepository) { FocusReportSource(focusRepository) }
-            val focusObservation = remember(focusSource, period, focusRetry) {
+            val focusObservation = remember(focusSource, period, focusRetry, canReadTaskOrigin) {
                 focusSource.week(
                     TimeRange(period.current.startInstant(period.zone), period.current.endInstant(period.zone)),
                     TimeRange(period.previous.startInstant(period.zone), period.previous.endInstant(period.zone)),
@@ -101,21 +103,29 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                             available = available,
                         )
                     },
+                    taskContentAccessAllowed = canReadTaskOrigin,
                 )
             }
             val observed by focusObservation.collectAsStateWithLifecycle(
                 initialValue = FocusReportState.Loading,
             )
-            observed
+            if (!canReadTaskOrigin && observed is FocusReportState.Ready &&
+                (observed.value.current.requiresTaskAccess || observed.value.previous.requiresTaskAccess ||
+                    observed.value.days.any { it.statistics?.requiresTaskAccess == true })
+            ) FocusReportState.NeedsUnlock else observed
         } else null
         val focusGoalReport = if (focusRepository != null && focusProductRepository != null && showProtectedFocus) {
             val source = remember(focusRepository, focusProductRepository) {
                 FocusGoalReportSource(focusRepository, focusProductRepository)
             }
             val goalNow = remember(period) { Instant.now() }
-            val goalObservation = remember(source, goalNow) { source.current(goalNow) }
+            val goalObservation = remember(source, goalNow, canReadTaskOrigin) {
+                source.current(goalNow, canReadTaskOrigin)
+            }
             val observed by goalObservation.collectAsStateWithLifecycle(FocusGoalReportState.Loading)
-            observed
+            if (!canReadTaskOrigin && observed is FocusGoalReportState.Ready &&
+                observed.value.requiresTaskAccess
+            ) FocusGoalReportState.NeedsUnlock else observed
         } else FocusGoalReportState.Hidden
         val report = (state as? WeeklyReviewState.Data)?.report
         var habitRetry by remember { mutableIntStateOf(0) }
@@ -192,6 +202,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                                         goalReport = focusGoalReport,
                                         inProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
                                         inProgressPaused = focusInProgressPaused && showProtectedFocus,
+                                        onRequestUnlock = onRequestProtectedFocusUnlock,
                                     )
                                 }
                             }

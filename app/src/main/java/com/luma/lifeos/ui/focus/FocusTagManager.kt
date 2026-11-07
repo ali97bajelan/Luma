@@ -11,11 +11,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -41,18 +42,33 @@ private data class FocusTagMergePrompt(
 )
 
 @Composable
-internal fun FocusTagManager(repository: FocusProductRepository) {
+internal fun FocusTagManager(
+    repository: FocusProductRepository,
+    canReadTaskOrigin: Boolean = true,
+    onRequestUnlock: () -> Unit = {},
+) {
     val catalogFlow = remember(repository) { repository.observeTagCatalog() }
     val catalog by catalogFlow.collectAsStateWithLifecycle(
         initialValue = com.luma.lifeos.domain.focus.FocusTagCatalog(0, emptyList()),
     )
     val scope = rememberCoroutineScope()
+    val latestTaskAccess by rememberUpdatedState(canReadTaskOrigin)
     var mergePrompt by remember { mutableStateOf<FocusTagMergePrompt?>(null) }
     var busyTagId by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
+    LaunchedEffect(catalog, canReadTaskOrigin) {
+        val prompt = mergePrompt
+        if (!canReadTaskOrigin || prompt?.let {
+                it.catalogRevision != catalog.revision ||
+                    it.databaseGeneration != catalog.databaseGeneration ||
+                    catalog.tags.none { tag -> tag.id == it.source.id } ||
+                    catalog.tags.none { tag -> tag.id == it.target.id }
+            } == true
+        ) mergePrompt = null
+    }
 
     fun rename(tag: FocusTag, name: String) {
-        if (busyTagId != null) return
+        if (!canReadTaskOrigin || busyTagId != null) return
         val generation = catalog.databaseGeneration ?: run {
             failed = true
             return
@@ -68,6 +84,11 @@ internal fun FocusTagManager(repository: FocusProductRepository) {
                         catalog.revision,
                         FocusProductContext(UUID.randomUUID(), generation),
                     )
+                }
+                if (!latestTaskAccess) {
+                    mergePrompt = null
+                    failed = false
+                    return@launch
                 }
                 when (result) {
                     FocusProductResult.Applied, FocusProductResult.AlreadyApplied -> Unit
@@ -96,6 +117,13 @@ internal fun FocusTagManager(repository: FocusProductRepository) {
     ) {
         Text(stringResource(R.string.focus_tag_manager_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.focus_tag_manager_explanation), style = MaterialTheme.typography.bodyMedium)
+        if (!canReadTaskOrigin) {
+            Text(stringResource(R.string.app_lock_gate_body))
+            TextButton(
+                onClick = onRequestUnlock,
+                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_tag_manager_unlock"),
+            ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
+        }
         if (catalog.tags.isEmpty()) {
             Text(stringResource(R.string.focus_tag_manager_empty), modifier = Modifier.testTag("focus_tag_manager_empty"))
         } else {
@@ -103,7 +131,7 @@ internal fun FocusTagManager(repository: FocusProductRepository) {
                 FocusTagManagerRow(
                     tag = tag,
                     busy = busyTagId == tag.id.toString(),
-                    enabled = busyTagId == null,
+                    enabled = busyTagId == null && canReadTaskOrigin,
                     onRename = { rename(tag, it) },
                 )
             }
@@ -115,7 +143,11 @@ internal fun FocusTagManager(repository: FocusProductRepository) {
         )
     }
 
-    mergePrompt?.let { prompt ->
+    mergePrompt?.takeIf { prompt ->
+        canReadTaskOrigin && prompt.catalogRevision == catalog.revision &&
+            prompt.databaseGeneration == catalog.databaseGeneration &&
+            catalog.tags.any { it.id == prompt.source.id } && catalog.tags.any { it.id == prompt.target.id }
+    }?.let { prompt ->
         AlertDialog(
             onDismissRequest = { if (busyTagId == null) mergePrompt = null },
             title = { Text(stringResource(R.string.focus_tag_merge_title)) },
@@ -131,14 +163,20 @@ internal fun FocusTagManager(repository: FocusProductRepository) {
                         failed = false
                         scope.launch {
                             try {
-                                when (withContext(Dispatchers.IO) {
+                                val result = withContext(Dispatchers.IO) {
                                     repository.mergeTags(
                                         prompt.source.id,
                                         prompt.target.id,
                                         prompt.catalogRevision,
                                         FocusProductContext(UUID.randomUUID(), prompt.databaseGeneration),
                                     )
-                                }) {
+                                }
+                                if (!latestTaskAccess) {
+                                    mergePrompt = null
+                                    failed = false
+                                    return@launch
+                                }
+                                when (result) {
                                     FocusProductResult.Applied,
                                     FocusProductResult.AlreadyApplied -> mergePrompt = null
                                     is FocusProductResult.TagCatalogConflict -> {
@@ -185,7 +223,7 @@ private fun FocusTagManagerRow(
     enabled: Boolean,
     onRename: (String) -> Unit,
 ) {
-    var name by rememberSaveable(tag.id.toString(), tag.name) { mutableStateOf(tag.name) }
+    var name by remember(tag.id, tag.name) { mutableStateOf(tag.name) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = name,

@@ -37,10 +37,17 @@ fun focusInsightsPresentation(
     selectedQuery: FocusInsightsQuery?,
     observed: FocusInsightsState,
     tagSuggestions: List<FocusTag>,
+    taskContentAccessAllowed: Boolean = true,
 ): FocusInsightsPresentation = if (isFocusReadable) {
+    val visibleState = visibleFocusInsightsState(selectedQuery, observed)
+    val authorizedState = when {
+        !taskContentAccessAllowed && visibleState is FocusInsightsState.Ready &&
+            visibleState.insights.requiresTaskAccess -> FocusInsightsState.NeedsUnlock(visibleState.request)
+        else -> visibleState
+    }
     FocusInsightsPresentation(
         isVisible = true,
-        state = visibleFocusInsightsState(selectedQuery, observed),
+        state = authorizedState,
         tagSuggestions = tagSuggestions,
     )
 } else {
