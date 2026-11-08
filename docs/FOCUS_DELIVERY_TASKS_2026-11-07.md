@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD11 SOURCE COMPLETE — UNVERIFIED; FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Last updated: 2026-11-08 · Status: PLANNING COMPLETE; FD01–FD12 SOURCE COMPLETE — UNVERIFIED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -18,9 +18,9 @@ The user requested implementation-ready documents covering the product review an
 
 No per-task QA gate blocks a later source task once its source dependencies exist. Known validation failures remain in the separate QA backlog. Do not guess fixes or hide possible migration data loss to make a source task appear complete.
 
-This new index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. Source versions inspected: **Room 14, archive 11**, proposed additions **Room 15/archive 12**. Existing app flavor: **production**, debug ID suffix **.qa**. Recheck these at FD01; old plan reservations and variant assumptions are obsolete.
+This index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. FD01 confirmed the Room **14→15** and archive **11→12** reservations. Current source constants are Room `VERSION=15` and archive `CURRENT_BACKUP_SCHEMA_VERSION=12`. The app flavor is **production**, with debug ID suffix **.qa**. Migration/schema validation and release acceptance remain unverified in the separate Q/E phases.
 
-The planning package changed documentation only when created. FD01–FD11 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
+The planning package changed documentation only when created. FD01–FD12 source handoffs are tracked below; the separate QA, build, migration/schema validation, emulator/device checks and release acceptance remain open.
 
 ## Implementation task ledger
 
@@ -52,7 +52,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD09 source complete — UNVERIFIED
 - [x] FD10 source complete — UNVERIFIED
 - [x] FD11 source complete — UNVERIFIED
-- [ ] FD12 source complete
+- [x] FD12 source complete — UNVERIFIED
 
 ### FD01 source handoff
 
@@ -174,7 +174,17 @@ The checkboxes below track current source delivery only; source completion is se
 - Source review: checked restore success/failure cleanup, reset refusal recovery, the in-flight invitation schedule/show race, break end results, cache invalidation, singleton/open-session precedence, access gates and locale resource availability. Tests, fixtures, Gradle/build/lint/schema generation and device/emulator checks were NOT RUN as required by Phase I. Author self-review; fresh reviewer unavailable under the active task instructions.
 - Later proof: Q01–Q05; E01–E12.
 
-Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
+### FD12 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED (2026-11-08).
+- Changed documentation files: `README.md`, `docs/BACKUP_FORMAT.md`, this task ledger, `docs/superpowers/plans/2026-11-07-focus-delivery.md` (FD12 checklist status), and `docs/FOCUS_INSIGHTS_TASKS.md` (additive forward reconciliation). FD01–FD11 source paths remain enumerated in their individual handoffs above; the corresponding source commits are FD01 `81ac448`, FD02 `87f5ced`, FD03 `5f1cad0`, FD04 `37dd6a7`, FD05 `b0d573d`, FD06 `449273c`, FD07 `28c3dcd`, FD08 `834e85b`, FD09 `f0c55a5`, FD10 `8613c33`, and FD11 `d3c2c9c`.
+- Implemented: replaced the obsolete README Focus status with the source/acceptance distinction and links to the delivery package; documented archive 12 task linkage/provenance, legacy defaults, local-only invitations and restore defaults; reconciled each carry-forward row to its forward owner while preserving its dated baseline and evidence; added an additive current-status note to the historic Focus ledger.
+- Version decisions: current source is Room 15/archive 12. Archive 12 keeps the 33-table inventory and adds task link/origin fields; Room 15 adds task link/origin plus local invitation settings/delivery. Invitations and their action tokens remain excluded from archives. The schema migration and archive behavior are not validated by this documentation pass. The prior FD03 commit includes a Room schema 15 JSON file, but its currentness and migration compatibility remain for Q03/E09 to establish.
+- Carry-forward/source review: FD-R01–FD-R09 and FD-A01–FD-A09 are mapped to FD01–FD12 source handoffs and their separate Q/E owners. Existing FI/FM/FX evidence and partial FX04 smoke/cleanup results remain historical; no prior QA result was promoted to final-candidate acceptance. The FD01 commit also contains a three-line Foojay toolchain resolver addition in `settings.gradle.kts`, outside the FD01 file map and the plan's exclusion; FD12 left that already-committed change untouched for Q01 scope review.
+- Known QA backlog, not re-diagnosed here: seeded-journal migration failure versus fixture diagnosis; stale archive table inventory; backup `Long`/`String` casts; stale archive-runner dependency discovery; app instrumentation API drift; direct Room insights invalidation coverage. These remain owned by Q01–Q05/E09/E11 as applicable.
+- Source review covered archive field defaults/reference validation and invitation exclusion, version references, carry-forward owner mapping, all requirement/acceptance links and the distinction between source completion and acceptance. FD12 ran no tests, builds, lint, schema generation, archive checks, instrumentation, emulator/device or release operations. Q01 is the next phase; Q/E acceptance remains open.
+
+Priority represents product/risk value, not permission to reorder source dependencies. Invitations were included to finish previously specified work, even though the review ranks basic usability above adding reminders. FD05/FD06 source is complete but remains unverified pending Q/E; no new reminder/preset expansion is implied.
 
 ## Unfinished past-task reconciliation
 
@@ -191,17 +201,17 @@ Baseline from the existing 7 November ledger; no old source-complete flag means 
 | FI05 setup | Source delivered; Android layout/lifecycle acceptance incomplete | FD07 refines; E01/E10 verify |
 | FI06 history | Source delivered; Room/Compose/access lifecycle acceptance incomplete | FD04/FD11 integrate; E05/E08/E11 |
 | FI07 privacy/resources | Source delivered; Android lock/replacement acceptance incomplete | FD04/FD11; Q05/E08/E09/E10 |
-| FX01 shared foundation | Timer/break/goal/reflection/correction and invitation source delivered; integration proof remains | FD01 + FD05/FD06; integration FD11; Q/E carry regression |
-| FX02 Repeat | Name/tag/timer/next-step source complete; task-copy missing | FD02/FD09 add task-aware discovery; Q/E carry Repeat checks |
-| FX03 task integration | Not started | FD02/FD03/FD04 |
+| FX01 shared foundation | Timer/break/goal/reflection/correction and invitation source delivered; integration proof remains | FD01/FD05/FD06/FD11 handoffs — SOURCE COMPLETE — UNVERIFIED; Q/E carry regression |
+| FX02 Repeat | Name/tag/timer/next-step source complete; task-copy missing | FD02/FD09 handoffs — SOURCE COMPLETE — UNVERIFIED; Q02/E02/E05 carry Repeat checks |
+| FX03 task integration | Not started in the 2026-11-07 baseline | FD02/FD03/FD04 handoffs — SOURCE COMPLETE — UNVERIFIED; Q02/Q03 and E02/E03/E08/E09 prove forward closure |
 | FX04 timed expiry/recovery | Source complete; narrow 7 Nov smoke/cleanup only | Preserve source; Q02/Q03/E04 carry full lifecycle/races |
-| FX05 break | Source complete, unverified | FD08 changes presentation only; Q02/E03/E04 validate |
-| FX06 reflection | Source complete, unverified | FD08/FD09 presentation/context; Q02/Q03/E03/E05 |
-| FX07 goals/distribution | Landed source; overall task partial on shared foundation | FD04/FD11 close dependencies; Q02/Q03/E11 |
-| FX08 invitations | FD05/FD06 source delivered, unverified | Q02/Q04; E06/E07/E08 |
-| FX09 corrections/tag merge | Metadata/tag paths landed; task unlink and dual access pending | FD03/FD04; Q03/E03/E08 |
-| FX10 integrated handoff | Blocked by unfinished dependencies | FD11/FD12 after FD01–FD10 |
-| FX-QA | Not run as integrated final phase | Consolidated Q01–Q06 and E01–E12; all old mandatory cases retained |
+| FX05 break | Source complete, unverified | FD08 handoff changes presentation only; Q02/E03/E04 validate |
+| FX06 reflection | Source complete, unverified | FD08/FD09 handoffs cover presentation/context; Q02/Q03/E03/E05 prove behavior |
+| FX07 goals/distribution | Landed source; overall task partial on shared foundation | FD04/FD11 handoffs — SOURCE COMPLETE — UNVERIFIED; Q02/Q03/E11 prove closure |
+| FX08 invitations | FD05/FD06 handoffs — SOURCE COMPLETE — UNVERIFIED | Q02/Q04; E06/E07/E08 prove behavior |
+| FX09 corrections/tag merge | Metadata/tag paths landed; task unlink and dual access pending in the baseline | FD03/FD04 handoffs — SOURCE COMPLETE — UNVERIFIED; Q03/E03/E08 prove closure |
+| FX10 integrated handoff | Blocked in the 2026-11-07 baseline | FD11/FD12 handoffs — SOURCE COMPLETE — UNVERIFIED; Q01–Q05/E01–E12 remain open |
+| FX-QA | Not run as integrated final phase; prior FX04 targeted smoke/cleanup remains partial only | Consolidated Q01–Q06 and E01–E12; all historic mandatory cases retained |
 
 Do not mark any old task accepted merely because a new task references it. At FD12 add forward links/status reconciliation only; preserve dates/results in historic records.
 

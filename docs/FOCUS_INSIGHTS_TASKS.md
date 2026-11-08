@@ -125,6 +125,10 @@ External pattern check (2026-11-04): TickTick documents [focus timers](https://h
 
 ## Product extension delivery — FP01–FP08
 
+### Forward reconciliation — 2026-11-08
+
+Current source closure and exact forward owners are tracked in the [Focus delivery task ledger](FOCUS_DELIVERY_TASKS_2026-11-07.md): FD01–FD12 are SOURCE COMPLETE — UNVERIFIED, and integrated FX-QA/final Q/E acceptance remain open. This additive note preserves the dated status table, per-task handoffs and partial FX04 smoke/cleanup evidence below without upgrading or rewriting historic results.
+
 Planning date: 2026-11-04 · Status: **FP01, FP03, FP04, FP05 and FP08 SOURCE COMPLETE — UNVERIFIED; FP07 PARTIAL — METADATA/TAG CORRECTION SOURCE COMPLETE, TASK UNLINK PENDING FX03; FX01 PARTIAL; FX07 PARTIAL (FX01 dependency pending); FX03 and FX08 NOT STARTED; FX09 PARTIAL; FX10 BLOCKED — DEPENDENCIES INCOMPLETE; final QA NOT RUN**
 
 [Extension specification](superpowers/specs/2026-11-04-focus-product-extensions-design.md) · [Extension implementation plan](superpowers/plans/2026-11-04-focus-product-extensions.md) · [Separate final QA](feature-roadmap/focus-product-extensions-qa.md)

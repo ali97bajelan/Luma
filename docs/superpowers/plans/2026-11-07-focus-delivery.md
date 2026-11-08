@@ -253,12 +253,12 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Files:** README.md; docs/BACKUP_FORMAT.md; new task ledger/spec/plan; historical docs/FOCUS_INSIGHTS_TASKS.md only for an additive forward link/status reconciliation, never rewriting historic evidence.
 
-- [ ] Replace obsolete README Focus-unimplemented claim with current source/acceptance distinction and link this package.
-- [ ] Document archive 12 portability and local-only invitation data.
-- [ ] Reconcile every carry-forward row, recording exact task/source evidence and preserving existing partial QA history.
-- [ ] Publish list of changed files, actual schema/archive reservations, known migration/backup/instrumentation failures and unexecuted checks.
-- [ ] Complete read-only spec coverage/interface review and mark FD01–FD12 SOURCE COMPLETE — UNVERIFIED.
-- [ ] Hand off to Q01. Do not run tests/build/emulator in this task and do not mark acceptance complete.
+- [x] Replace obsolete README Focus-unimplemented claim with current source/acceptance distinction and link this package.
+- [x] Document archive 12 portability and local-only invitation data.
+- [x] Reconcile every carry-forward row, recording exact task/source evidence and preserving existing partial QA history.
+- [x] Publish list of changed files, actual schema/archive reservations, known migration/backup/instrumentation failures and unexecuted checks.
+- [x] Complete read-only spec coverage/interface review and mark FD01–FD12 SOURCE COMPLETE — UNVERIFIED.
+- [x] Hand off to Q01. Do not run tests/build/emulator in this task and do not mark acceptance complete.
 
 ## Self-review record for this plan
 
