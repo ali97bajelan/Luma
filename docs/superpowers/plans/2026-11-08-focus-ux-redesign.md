@@ -54,11 +54,11 @@ Read the current file before editing; paths/line positions reflect the audit and
 Files: P/ui/focus/FocusScreen.kt; A/ui/focus/FocusScreenTest.kt; R/values{,-fa,-fr}/strings.xml.
 Consumes existing onLeaveAfterAction, onDismissBackPrompt, busy/runtime state; produces corrected presentation around the same callbacks.
 
-- [ ] Inspect the back dialog and current lifecycle/UI test fixtures.
-- [ ] Add/update connected test definitions: leaveActionsHaveDistinctBounds; dismissLeaveKeepsRunning; leaveWaitsForSuccessfulAction. Assert PAUSE or STOP is issued once, navigation waits for success, failure keeps recovery available. Do not execute these yet.
-- [ ] Replace dialog confirm/dismiss slot arrangement with one non-overlapping vertical action group; use the three S03 labels and accessible minimum targets.
-- [ ] Route Back/outside dismissal to keep-focusing callback; retain emergency access on errors.
-- [ ] Compile affected sources; inspect diff for accidental runtime policy changes. Mark I01 implemented, device verification pending.
+- [x] Inspect the back dialog and current lifecycle/UI test fixtures.
+- [x] Add/update connected test definitions: leaveActionsHaveDistinctBounds; dismissLeaveKeepsRunning; leaveWaitsForSuccessfulAction. Assert PAUSE or STOP is issued once, navigation waits for success, failure keeps recovery available. Do not execute these yet.
+- [x] Replace dialog confirm/dismiss slot arrangement with one non-overlapping vertical action group; use the three S03 labels and accessible minimum targets.
+- [x] Route Back/outside dismissal to keep-focusing callback; retain emergency access on errors.
+- [x] Compile affected sources; inspect diff for accidental runtime policy changes. Mark I01 implemented, device verification pending.
 
 ### I02 — Validation and copy contract (S02,S08,S09)
 

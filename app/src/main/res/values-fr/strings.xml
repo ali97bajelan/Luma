@@ -1356,8 +1356,11 @@
     <string name="focus_background_note">Le temps continue lorsque l’écran est éteint ou qu’une autre application est ouverte. Mettez en pause pour arrêter le décompte.</string>
     <string name="focus_pause">Mettre en pause</string>
     <string name="focus_stop">Arrêter</string>
-    <string name="focus_back_title">Rester concentré ?</string>
-    <string name="focus_back_message">Mettez en pause ou arrêtez la session pour quitter cet écran.</string>
+    <string name="focus_back_title">Quitter la session de concentration ?</string>
+    <string name="focus_back_message">Choisissez de mettre la session en pause et de quitter, de la terminer et de l’enregistrer, ou de continuer.</string>
+    <string name="focus_back_pause_leave">Mettre en pause et quitter</string>
+    <string name="focus_back_end_save">Terminer et enregistrer</string>
+    <string name="focus_back_keep_focusing">Continuer la concentration</string>
     <string name="focus_recovery_title">Récupérer la session</string>
     <string name="focus_recovery_body">Luma a été fermé pendant que le minuteur tournait. Choisissez si le temps écoulé depuis le dernier enregistrement doit être inclus.</string>
     <string name="focus_recovery_continue">Continuer en incluant le temps écoulé</string>

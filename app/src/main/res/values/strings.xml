@@ -1335,8 +1335,11 @@
     <string name="focus_background_note">Time continues while your screen is off or another app is open. Pause to stop counting.</string>
     <string name="focus_pause">Pause</string>
     <string name="focus_stop">Stop</string>
-    <string name="focus_back_title">Stay in focus?</string>
-    <string name="focus_back_message">Pause or stop focus to leave this screen.</string>
+    <string name="focus_back_title">Leave focus?</string>
+    <string name="focus_back_message">Choose whether to pause and leave, end and save, or keep focusing.</string>
+    <string name="focus_back_pause_leave">Pause and leave</string>
+    <string name="focus_back_end_save">End and save</string>
+    <string name="focus_back_keep_focusing">Keep focusing</string>
     <string name="focus_recovery_title">Recover focus session</string>
     <string name="focus_recovery_body">Luma was closed while the timer was running. Choose whether to include elapsed time since the last saved checkpoint.</string>
     <string name="focus_recovery_continue">Continue including elapsed time</string>

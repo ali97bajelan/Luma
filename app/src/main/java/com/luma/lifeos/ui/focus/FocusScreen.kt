@@ -296,28 +296,28 @@ internal fun FocusScreen(
 
     if (state.backPromptVisible && runtime.navigationGuarded) {
         LumaAlertDialog(
-            onDismissRequest = {},
+            onDismissRequest = onDismissBackPrompt,
             title = { Text(stringResource(R.string.focus_back_title)) },
             text = { Text(stringResource(R.string.focus_back_message)) },
             confirmButton = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     TextButton(
-                        onClick = {
-                            onLeaveAfterAction(FocusAction.PAUSE)
-                        },
+                        onClick = { onLeaveAfterAction(FocusAction.PAUSE) },
                         enabled = !state.busy && session?.state == FocusState.RUNNING,
-                        modifier = Modifier.fillMaxWidth().testTag("focus_back_pause"),
-                    ) { Text(stringResource(R.string.focus_pause)) }
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_back_pause"),
+                    ) { Text(stringResource(R.string.focus_back_pause_leave)) }
                     TextButton(
                         onClick = { onLeaveAfterAction(FocusAction.STOP) },
                         enabled = !state.busy && session != null && session.state in setOf(FocusState.RUNNING, FocusState.PAUSED),
-                        modifier = Modifier.fillMaxWidth().testTag("focus_back_stop"),
-                    ) { Text(stringResource(R.string.focus_stop)) }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissBackPrompt, modifier = Modifier.testTag("focus_back_stay")) {
-                    Text(stringResource(R.string.cancel))
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_back_stop"),
+                    ) { Text(stringResource(R.string.focus_back_end_save)) }
+                    TextButton(
+                        onClick = onDismissBackPrompt,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_back_stay"),
+                    ) { Text(stringResource(R.string.focus_back_keep_focusing)) }
                 }
             },
             modifier = Modifier.testTag("focus_back_dialog"),
