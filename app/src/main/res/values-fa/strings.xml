@@ -1284,6 +1284,10 @@
     <string name="focus_checkpoint_error">ذخیرهٔ زمان اخیر تمرکز انجام نشد. دوباره تلاش کنید.</string>
     <string name="focus_start">شروع تمرکز</string>
     <string name="focus_name_label">روی چه چیزی کار می‌کنید؟</string>
+    <string name="focus_name_required">الزامی · برای نمونه: خواندن فصل ۳</string>
+    <string name="focus_start_required_name">برای شروع، نام کاری را وارد کنید.</string>
+    <string name="focus_starting">در حال شروع…</string>
+    <string name="focus_start_unresolved">شروع قبلی هنوز در حال بررسی است. آن را دوباره امتحان کنید یا پیش از شروع نشست دیگری منتظر بمانید.</string>
     <string name="focus_name_example">خواندن فصل ۳</string>
     <string name="focus_tag_show">افزودن برچسب (اختیاری)</string>
     <string name="focus_tag_hide">پنهان کردن گزینه‌های برچسب</string>

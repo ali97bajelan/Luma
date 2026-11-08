@@ -26,8 +26,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -49,18 +52,18 @@ internal fun FocusSetupContent(
     onTimerModeChange: (FocusTimerMode) -> Unit,
     onTimedMinutesChange: (String) -> Unit,
     onTimedMinutesBlur: () -> Unit,
-    onSubmitStart: () -> Unit,
     onRepeatSession: (java.util.UUID) -> Unit,
     onOpenTaskPicker: (() -> Unit)?,
     onClearTaskSelection: () -> Unit,
     onRetryRecentWork: () -> Unit,
 ) {
     val setup = state.setup
+    val keyboardController = LocalSoftwareKeyboardController.current
     var retryReplacementSessionId by remember { mutableStateOf<java.util.UUID?>(null) }
     val nameValid = runCatching {
         normalizeFocusStartInput(FocusStartInput(name = setup.name, tagName = null))
     }.isSuccess
-    val tagValid = setup.tag.isBlank() || runCatching {
+    val tagValid = setup.tag.isEmpty() || runCatching {
         normalizeFocusStartInput(FocusStartInput(name = "Focus", tagName = setup.tag))
     }.isSuccess
     val timedMinutesValid = setup.timedMinutesText.toIntOrNull()?.let { it in 1..180 } == true
@@ -125,15 +128,18 @@ internal fun FocusSetupContent(
         value = setup.name,
         onValueChange = onNameChange,
         label = { Text(stringResource(R.string.focus_name_label)) },
-        placeholder = { Text(stringResource(R.string.focus_name_example)) },
         singleLine = true,
         enabled = fieldsEnabled,
         isError = setup.showNameError && !nameValid,
         supportingText = {
-            if (setup.showNameError && !nameValid) Text(stringResource(R.string.focus_name_invalid))
+            if (setup.showNameError && !nameValid) {
+                Text(stringResource(R.string.focus_name_invalid))
+            } else {
+                Text(stringResource(R.string.focus_name_required))
+            }
         },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { onSubmitStart() }),
+        keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() }),
         modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) onNameBlur() }
             .testTag("focus_name"),
     )
@@ -173,7 +179,7 @@ internal fun FocusSetupContent(
             enabled = fieldsEnabled,
             isError = setup.showTimedMinutesError && !timedMinutesValid,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onSubmitStart() }),
+            keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() }),
             supportingText = {
                 if (setup.showTimedMinutesError && !timedMinutesValid) {
                     Text(stringResource(R.string.focus_timed_minutes_invalid))
@@ -209,7 +215,7 @@ internal fun FocusSetupContent(
                 if (setup.showTagError && !tagValid) Text(stringResource(R.string.focus_tag_invalid))
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onSubmitStart() }),
+            keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() }),
             modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) onTagBlur() }
                 .testTag("focus_tag"),
         )
@@ -305,6 +311,27 @@ internal fun FocusSetupStartAction(
 ) {
     val setup = state.setup
     val input = setup.normalizedInput
+    val startEnabled = !state.busy && !setup.repeatLoading && !state.operationFailed &&
+        setup.canStart && input != null
+    val blockingMessageId = setup.startBlockReason?.let { reason ->
+        when (reason) {
+            FocusStartBlockReason.STARTING -> R.string.focus_starting
+            FocusStartBlockReason.UNRESOLVED_START -> R.string.focus_start_unresolved
+            FocusStartBlockReason.PREPARING_REPEAT -> R.string.focus_repeat_loading
+            FocusStartBlockReason.REQUIRED_NAME -> R.string.focus_start_required_name
+            FocusStartBlockReason.INVALID_NAME -> R.string.focus_name_invalid
+            FocusStartBlockReason.TASK_LOADING -> R.string.focus_task_loading
+            FocusStartBlockReason.TASK_CONFLICT -> R.string.focus_task_selection_conflict
+            FocusStartBlockReason.INVALID_DURATION -> R.string.focus_timed_minutes_invalid
+            FocusStartBlockReason.INVALID_TAG -> R.string.focus_tag_invalid
+            FocusStartBlockReason.INVALID_CONFIGURATION -> R.string.focus_setup_invalid
+        }
+    } ?: when {
+        state.busy -> R.string.focus_saving
+        state.operationFailed -> R.string.focus_write_error
+        else -> null
+    }
+    val blockingMessage = blockingMessageId?.let { stringResource(it) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
@@ -319,15 +346,41 @@ internal fun FocusSetupStartAction(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(stringResource(R.string.focus_scope_near_start), style = MaterialTheme.typography.bodySmall)
+            if (!state.busy && blockingMessage != null) {
+                Text(
+                    blockingMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (setup.startBlockReason in setOf(
+                        FocusStartBlockReason.INVALID_NAME,
+                        FocusStartBlockReason.TASK_CONFLICT,
+                        FocusStartBlockReason.INVALID_DURATION,
+                        FocusStartBlockReason.INVALID_TAG,
+                        FocusStartBlockReason.INVALID_CONFIGURATION,
+                    ) || state.operationFailed
+                    ) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag("focus_start_block_reason"),
+                )
+            }
             LumaButton(
                 onClick = {
                     onStartAttempted()
                     input?.let(onStart)
                 },
-                enabled = !state.busy && !setup.repeatLoading && !state.operationFailed && setup.canStart && input != null,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start"),
+                enabled = startEnabled,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start")
+                    .semantics {
+                        if (!startEnabled && blockingMessage != null) {
+                            stateDescription = blockingMessage
+                        }
+                    },
             ) {
-                Text(if (state.busy) stringResource(R.string.focus_saving) else stringResource(R.string.focus_start))
+                Text(
+                    when {
+                        state.busy && setup.capturedStart != null -> stringResource(R.string.focus_starting)
+                        state.busy -> stringResource(R.string.focus_saving)
+                        else -> stringResource(R.string.focus_start)
+                    },
+                )
             }
         }
     }

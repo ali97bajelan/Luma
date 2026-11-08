@@ -256,11 +256,9 @@ internal fun FocusScreen(
                     onTimerModeChange = onTimerModeChange,
                     onTimedMinutesChange = onTimedMinutesChange,
                     onTimedMinutesBlur = onTimedMinutesBlur,
-                    onStartAttempted = onStartAttempted,
                     onPeriodChange = onPeriodChange,
                     onRetryInsights = onRetryInsights,
                     onRetryRecentWork = onRetryRecentWork,
-                    onStart = onStart,
                     onRepeatSession = onRepeatSession,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
@@ -358,11 +356,9 @@ private fun SetupContent(
     onTimerModeChange: (FocusTimerMode) -> Unit,
     onTimedMinutesChange: (String) -> Unit,
     onTimedMinutesBlur: () -> Unit,
-    onStartAttempted: () -> Unit,
     onPeriodChange: (FocusPeriod) -> Unit,
     onRetryInsights: () -> Unit,
     onRetryRecentWork: () -> Unit,
-    onStart: (FocusStartInput) -> Unit,
     onRepeatSession: (java.util.UUID) -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
@@ -382,12 +378,6 @@ private fun SetupContent(
         onTimerModeChange = onTimerModeChange,
         onTimedMinutesChange = onTimedMinutesChange,
         onTimedMinutesBlur = onTimedMinutesBlur,
-        onSubmitStart = {
-            onStartAttempted()
-            if (!state.busy && !setup.repeatLoading && !state.operationFailed && setup.canStart) {
-                setup.normalizedInput?.let(onStart)
-            }
-        },
         onRepeatSession = onRepeatSession,
         onOpenTaskPicker = onOpenTaskPicker,
         onClearTaskSelection = onClearTaskSelection,

@@ -18,7 +18,7 @@ Statuses: [ ] pending; [x] implemented/local-verified (I tasks) or QA-passed wit
 | Status | ID | Deliverable | Priority | Depends on | Spec | Device cases |
 |---|---|---|---|---|---|---|
 | [x] | I01 | Non-overlapping consequence-labeled leave dialog | P0 | — | S03 | Q04,Q12 |
-| [ ] | I02 | Required-input guidance, IME and localized copy | P1 | — | S02,S08,S09 | Q01,Q02,Q12 |
+| [x] | I02 | Required-input guidance, IME and localized copy | P1 | — | S02,S08,S09 | Q01,Q02,Q12 |
 | [ ] | I03 | Preparation hierarchy, timer presets, optional task/tag/recent work | P1 | I02 | S02 | Q01–Q03,Q09 |
 | [ ] | I04 | State-aware Today and History/Settings header wiring in both hosts | P1 | I01,I03 | S01 | Q01,Q04,Q09,Q10 |
 | [ ] | I05 | Running/paused hierarchy, shortcut/help and failure feedback | P1 | I01,I04 | S03,S08 | Q04,Q08,Q10,Q11 |

@@ -16,6 +16,19 @@ enum class FocusPeriod { TODAY, THIS_WEEK, ALL_TIME }
 
 enum class FocusSetupFailure { VALIDATION, IO }
 
+enum class FocusStartBlockReason {
+    STARTING,
+    UNRESOLVED_START,
+    PREPARING_REPEAT,
+    REQUIRED_NAME,
+    INVALID_NAME,
+    TASK_LOADING,
+    TASK_CONFLICT,
+    INVALID_DURATION,
+    INVALID_TAG,
+    INVALID_CONFIGURATION,
+}
+
 /** Editable setup data plus the immutable Start payload while a write may still be ambiguous. */
 data class FocusSetupState(
     val name: String = "",
@@ -75,6 +88,26 @@ data class FocusSetupState(
                     ),
                 )
             }.getOrNull()
+        }
+
+    val startBlockReason: FocusStartBlockReason?
+        get() = when {
+            capturedStart != null && startFailure != FocusSetupFailure.IO -> FocusStartBlockReason.STARTING
+            capturedStart != null || unresolvedStartPending -> FocusStartBlockReason.UNRESOLVED_START
+            repeatLoading -> FocusStartBlockReason.PREPARING_REPEAT
+            name.isBlank() -> FocusStartBlockReason.REQUIRED_NAME
+            runCatching {
+                normalizeFocusStartInput(FocusStartInput(name = name, tagName = null))
+            }.isFailure -> FocusStartBlockReason.INVALID_NAME
+            taskSelectionLoading -> FocusStartBlockReason.TASK_LOADING
+            taskSelectionConflict -> FocusStartBlockReason.TASK_CONFLICT
+            timerMode == FocusTimerMode.TIMED && timedMinutesText.toIntOrNull()?.let { it in 1..180 } != true ->
+                FocusStartBlockReason.INVALID_DURATION
+            tag.isNotEmpty() && runCatching {
+                normalizeFocusStartInput(FocusStartInput(name = "Focus", tagName = tag))
+            }.isFailure -> FocusStartBlockReason.INVALID_TAG
+            normalizedInput == null -> FocusStartBlockReason.INVALID_CONFIGURATION
+            else -> null
         }
 
     val canStart: Boolean

@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.domain.focus.FocusStartInput
+import com.luma.lifeos.domain.focus.FocusTimerMode
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
@@ -25,6 +26,85 @@ class FocusSetupStateTest {
         assertFalse(FocusSetupState(name = " ").canStart)
         assertFalse(FocusSetupState(name = "Read\nchapter").canStart)
         assertFalse(FocusSetupState(name = "Read", tag = "x".repeat(51)).canStart)
+    }
+
+    @Test
+    fun startBlockReasonIdentifiesTheFirstActionableBlocker() {
+        assertEquals(FocusStartBlockReason.REQUIRED_NAME, FocusSetupState().startBlockReason)
+        assertEquals(
+            FocusStartBlockReason.INVALID_NAME,
+            FocusSetupState(name = "Read\nchapter").startBlockReason,
+        )
+        assertEquals(
+            FocusStartBlockReason.TASK_CONFLICT,
+            FocusSetupState(name = "Read", taskSelectionConflict = true).startBlockReason,
+        )
+        assertEquals(
+            FocusStartBlockReason.INVALID_DURATION,
+            FocusSetupState(name = "Read", timerMode = FocusTimerMode.TIMED, timedMinutesText = "0")
+                .startBlockReason,
+        )
+        assertEquals(
+            FocusStartBlockReason.INVALID_TAG,
+            FocusSetupState(name = "Read", tag = "x".repeat(51)).startBlockReason,
+        )
+        assertEquals(
+            FocusStartBlockReason.INVALID_TAG,
+            FocusSetupState(name = "Read", tag = " ").startBlockReason,
+        )
+        assertEquals(
+            FocusStartBlockReason.UNRESOLVED_START,
+            FocusSetupState(name = "", unresolvedStartPending = true).startBlockReason,
+        )
+        assertNull(FocusSetupState(name = "Read").startBlockReason)
+    }
+
+    @Test
+    fun modeSwitchPreservesCustomMinutes() {
+        val custom = FocusSetupState(name = "Read", timerMode = FocusTimerMode.TIMED, timedMinutesText = "42")
+
+        val countUp = reduceFocusSetupState(custom, FocusSetupEvent.TimerModeChanged(FocusTimerMode.COUNT_UP))
+        val timed = reduceFocusSetupState(countUp, FocusSetupEvent.TimerModeChanged(FocusTimerMode.TIMED))
+
+        assertEquals("42", countUp.timedMinutesText)
+        assertEquals("42", timed.timedMinutesText)
+        assertTrue(timed.canStart)
+    }
+
+    @Test
+    fun pendingStartCannotSubmitAgain() {
+        val captured = reduceFocusSetupState(
+            FocusSetupState(name = "Read"),
+            FocusSetupEvent.StartCaptured(FocusStartInput("Read", null)),
+        )
+        val unresolved = reduceFocusSetupState(captured, FocusSetupEvent.StartIoFailed)
+
+        assertFalse(captured.canStart)
+        assertEquals(FocusStartBlockReason.STARTING, captured.startBlockReason)
+        assertFalse(unresolved.canStart)
+        assertEquals(FocusStartBlockReason.UNRESOLVED_START, unresolved.startBlockReason)
+    }
+
+    @Test
+    fun invalidDurationCannotStart() {
+        listOf("0", "181").forEach { invalid ->
+            val setup = FocusSetupState(name = "Read", timerMode = FocusTimerMode.TIMED, timedMinutesText = invalid)
+            assertFalse(setup.canStart)
+            assertEquals(FocusStartBlockReason.INVALID_DURATION, setup.startBlockReason)
+        }
+        listOf("1", "180").forEach { valid ->
+            assertTrue(FocusSetupState(name = "Read", timerMode = FocusTimerMode.TIMED, timedMinutesText = valid).canStart)
+        }
+        assertTrue(FocusSetupState(name = "Read").canStart)
+    }
+
+    @Test
+    fun fieldErrorsRemainHiddenUntilBlurOrAnExplicitAttempt() {
+        val edited = reduceFocusSetupState(FocusSetupState(), FocusSetupEvent.NameChanged(" "))
+
+        assertFalse(edited.showNameError)
+        assertTrue(reduceFocusSetupState(edited, FocusSetupEvent.NameBlurred).showNameError)
+        assertTrue(reduceFocusSetupState(edited, FocusSetupEvent.StartAttempted).showNameError)
     }
 
     @Test

@@ -1283,6 +1283,10 @@
     <string name="focus_checkpoint_error">Recent focus time could not be checkpointed. Retry to save it.</string>
     <string name="focus_start">Start focus</string>
     <string name="focus_name_label">What will you work on?</string>
+    <string name="focus_name_required">Required · e.g. Read chapter 3</string>
+    <string name="focus_start_required_name">Add a work name to start.</string>
+    <string name="focus_starting">Starting…</string>
+    <string name="focus_start_unresolved">A previous start is still being checked. Retry it or wait before starting another session.</string>
     <string name="focus_name_example">Read chapter 3</string>
     <string name="focus_tag_show">Add tag (optional)</string>
     <string name="focus_tag_hide">Hide tag options</string>

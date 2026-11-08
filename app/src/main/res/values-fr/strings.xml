@@ -1304,6 +1304,10 @@
     <string name="focus_checkpoint_error">Le temps récent n’a pas pu être enregistré. Réessayez.</string>
     <string name="focus_start">Démarrer une session</string>
     <string name="focus_name_label">Sur quoi allez-vous travailler ?</string>
+    <string name="focus_name_required">Obligatoire · ex. lire le chapitre 3</string>
+    <string name="focus_start_required_name">Indiquez ce sur quoi vous allez travailler pour commencer.</string>
+    <string name="focus_starting">Démarrage…</string>
+    <string name="focus_start_unresolved">Le démarrage précédent est encore en cours de vérification. Réessayez ou attendez avant de commencer une autre session.</string>
     <string name="focus_name_example">Lire le chapitre 3</string>
     <string name="focus_tag_show">Ajouter une étiquette (facultative)</string>
     <string name="focus_tag_hide">Masquer les options d’étiquette</string>

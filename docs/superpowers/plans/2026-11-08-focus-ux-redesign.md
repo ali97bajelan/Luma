@@ -65,11 +65,14 @@ Consumes existing onLeaveAfterAction, onDismissBackPrompt, busy/runtime state; p
 Files: P/ui/focus/FocusSetupContent.kt, FocusSetupState.kt; U/ui/focus/FocusSetupStateTest.kt; localized strings.
 Consumes normalizedInput/canStart and existing state flags; produces explicit helper/disabled-reason presentation without changing normalization.
 
-- [ ] Inspect domain validation and reducer tests; enumerate current blocking states.
-- [ ] Extend meaningful local tests only where behavior changes: modeSwitchPreservesCustomMinutes; pendingStartCannotSubmitAgain; invalidDurationCannotStart. Assert 0/181 invalid and 1/180 valid, named count-up valid, unresolved write blocked.
-- [ ] Run changed local tests before implementation when adding behavior, recording expected failures; copy-only edits need compilation rather than mirrored tests.
-- [ ] Add initial required helper and adjacent first blocking reason. Field errors retain blur/attempt semantics. IME Done hides keyboard without calling Start.
-- [ ] Localize all new messages in three locales. Run local checks and compile; defer keyboard/reader checks to Q01.
+- [x] Inspect domain validation and reducer tests; enumerate current blocking states.
+- [x] Extend meaningful local tests only where behavior changes: modeSwitchPreservesCustomMinutes; pendingStartCannotSubmitAgain; invalidDurationCannotStart. Assert 0/181 invalid and 1/180 valid, named count-up valid, unresolved write blocked.
+- [x] Run changed local tests before implementation when adding behavior, recording expected failures; copy-only edits need compilation rather than mirrored tests.
+- [x] Add initial required helper and adjacent first blocking reason. Field errors retain blur/attempt semantics. IME Done hides keyboard without calling Start.
+- [x] Localize all new messages in three locales. Run local checks and compile; defer keyboard/reader checks to Q01.
+
+Local verification: python3 scripts/run_focus_setup_tests.py passed (29 tests), and :app:compileProductionDebugKotlin plus :app:assembleProductionDebug passed. The broader :app:testProductionDebugUnitTest remains blocked by existing TodoRepository test fixtures missing searchOpen; :app:lintProductionDebug remains blocked by an existing LocalContextConfigurationRead error in unchanged FocusInvitationSettings.kt:151.
+Final review: minor (deferred): During a retry after an I/O failure, the visible button says “Starting…” while its disabled state description still says the previous start is unresolved.
 
 ### I03 — Preparation, optional context and repeat (S02)
 
