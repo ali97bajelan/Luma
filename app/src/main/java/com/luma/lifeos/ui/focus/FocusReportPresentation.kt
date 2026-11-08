@@ -5,9 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.luma.lifeos.R
+import com.luma.lifeos.domain.focus.FocusSession
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Locale
+
+@Composable
+internal fun focusSessionIntention(session: FocusSession): String =
+    session.metadata.name?.takeIf(String::isNotBlank) ?: stringResource(R.string.focus_session_fallback)
 
 @Composable
 internal fun focusDuration(millis: Long): String {

@@ -7,6 +7,7 @@ import com.luma.lifeos.domain.focus.FOCUS_HISTORY_PAGE_SIZE
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusHistoryRow
 import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusTagFilter
 import com.luma.lifeos.domain.focus.FocusWriteContext
@@ -25,6 +26,23 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+sealed interface FocusHistoryTargetSessionState {
+    val sessionId: UUID?
+
+    data object Hidden : FocusHistoryTargetSessionState {
+        override val sessionId: UUID? = null
+    }
+    data class Loading(override val sessionId: UUID) : FocusHistoryTargetSessionState
+    data class NeedsUnlock(override val sessionId: UUID) : FocusHistoryTargetSessionState
+    data class Missing(override val sessionId: UUID) : FocusHistoryTargetSessionState
+    data class Ready(
+        override val sessionId: UUID,
+        val session: FocusSession,
+        val generation: UUID,
+    ) : FocusHistoryTargetSessionState
+    data class Error(override val sessionId: UUID) : FocusHistoryTargetSessionState
+}
+
 /** Loads bounded history pages and deletes only terminal rows through the repository contract. */
 class FocusHistoryViewModel(
     private val repository: FocusRepository,
@@ -37,6 +55,7 @@ class FocusHistoryViewModel(
     private var taskContentAccessAllowed: Boolean = true,
     private val databaseGenerationFlow: Flow<UUID?>? = null,
     private val productRepository: FocusProductRepository? = null,
+    private val requestedSessionId: UUID? = null,
 ) : ViewModel() {
     private var restoredFilters = if (taskContentAccessAllowed) restoreFocusHistoryFilterState(
         search = savedStateHandle[SEARCH_KEY],
@@ -48,7 +67,18 @@ class FocusHistoryViewModel(
         focusHistoryStateForAccess(FocusHistoryUiState(filters = restoredFilters), privateContentAccessAllowed),
     )
     val state: StateFlow<FocusHistoryUiState> = mutableState.asStateFlow()
+    private val mutableTargetSessionState = MutableStateFlow(
+        when {
+            requestedSessionId == null -> FocusHistoryTargetSessionState.Hidden
+            privateContentAccessAllowed -> FocusHistoryTargetSessionState.Loading(requestedSessionId)
+            else -> FocusHistoryTargetSessionState.NeedsUnlock(requestedSessionId)
+        },
+    )
+    val targetSessionState: StateFlow<FocusHistoryTargetSessionState> =
+        mutableTargetSessionState.asStateFlow()
 
+    private var targetSessionJob: Job? = null
+    private var targetSessionRequest = 0L
     private var loadJob: Job? = null
     private var tagsJob: Job? = null
     private var loadRequest = 0L
@@ -74,7 +104,9 @@ class FocusHistoryViewModel(
             }
         }
         if (!taskContentAccessAllowed) persistFilters(mutableState.value.filters)
-        if (privateContentAccessAllowed) {
+        if (requestedSessionId != null) {
+            if (privateContentAccessAllowed) loadTargetSession()
+        } else if (privateContentAccessAllowed) {
             observeTags()
             load(restoredFilters.offset)
         } else {
@@ -108,6 +140,20 @@ class FocusHistoryViewModel(
         val cleared = focusHistoryStateForDatabaseReplacement(mutableState.value)
         persistFilters(cleared.filters)
         mutableState.value = cleared
+        targetSessionRequest++
+        targetSessionJob?.cancel()
+        if (requestedSessionId != null) {
+            if (!privateContentAccessAllowed) {
+                mutableTargetSessionState.value =
+                    FocusHistoryTargetSessionState.NeedsUnlock(requestedSessionId)
+            } else if (generation != null) {
+                loadTargetSession()
+            } else {
+                mutableTargetSessionState.value =
+                    FocusHistoryTargetSessionState.Loading(requestedSessionId)
+            }
+            return
+        }
         if (privateContentAccessAllowed && generation != null) {
             observeTags()
             load(0)
@@ -126,6 +172,13 @@ class FocusHistoryViewModel(
             restoredFilters = FocusHistoryFilterState()
             persistFilters(hidden.filters)
             mutableState.value = hidden
+            requestedSessionId?.let {
+                targetSessionRequest++
+                targetSessionJob?.cancel()
+                mutableTargetSessionState.value = FocusHistoryTargetSessionState.NeedsUnlock(it)
+            }
+        } else if (requestedSessionId != null) {
+            loadTargetSession()
         } else {
             observeTags()
             load(0)
@@ -176,6 +229,13 @@ class FocusHistoryViewModel(
         if (taskContentAccessAllowed == allowed) return
         taskContentAccessAllowed = allowed
         loadRequest++
+        if (requestedSessionId != null) {
+            targetSessionRequest++
+            targetSessionJob?.cancel()
+            mutableTargetSessionState.value =
+                if (privateContentAccessAllowed) FocusHistoryTargetSessionState.Loading(requestedSessionId)
+                else FocusHistoryTargetSessionState.NeedsUnlock(requestedSessionId)
+        }
         loadJob?.cancel()
         tagsJob?.cancel()
         activeLoadKey = null
@@ -183,18 +243,73 @@ class FocusHistoryViewModel(
         val cleared = focusHistoryStateForDatabaseReplacement(mutableState.value)
         persistFilters(cleared.filters)
         mutableState.value = cleared
-        if (privateContentAccessAllowed) {
+        if (requestedSessionId != null) {
+            if (privateContentAccessAllowed) loadTargetSession()
+        } else if (privateContentAccessAllowed) {
             observeTags()
             load(0)
         }
     }
 
     fun retry() {
-        if (privateContentAccessAllowed) load(mutableState.value.filters.offset)
+        if (!privateContentAccessAllowed) return
+        if (requestedSessionId != null) loadTargetSession()
+        else load(mutableState.value.filters.offset)
     }
 
     fun refresh() {
-        if (privateContentAccessAllowed) load(mutableState.value.filters.offset)
+        if (!privateContentAccessAllowed) return
+        if (requestedSessionId != null) loadTargetSession()
+        else load(mutableState.value.filters.offset)
+    }
+
+    private fun loadTargetSession() {
+        val sessionId = requestedSessionId ?: return
+        targetSessionJob?.cancel()
+        val request = ++targetSessionRequest
+        if (!privateContentAccessAllowed) {
+            mutableTargetSessionState.value = FocusHistoryTargetSessionState.NeedsUnlock(sessionId)
+            return
+        }
+        mutableTargetSessionState.value = FocusHistoryTargetSessionState.Loading(sessionId)
+        targetSessionJob = viewModelScope.launch {
+            try {
+                var attempts = 0
+                while (true) {
+                    if (request != targetSessionRequest || !privateContentAccessAllowed) return@launch
+                    val generation = repository.currentGeneration()
+                    val session = repository.terminalSession(sessionId)
+                    val taskOriginWhenHidden = session?.taskOrigin
+                        ?: if (!taskContentAccessAllowed) repository.sessionHasTaskOrigin(sessionId) else false
+                    if (request != targetSessionRequest || !privateContentAccessAllowed) return@launch
+                    val generationAfterRead = repository.currentGeneration()
+                    if (generation != generationAfterRead) {
+                        attempts = Math.incrementExact(attempts)
+                        if (attempts >= MAX_GENERATION_RETRIES) {
+                            error("Focus database changed repeatedly during target session load")
+                        }
+                        continue
+                    }
+                    knownGeneration = generation
+                    savedStateHandle[GENERATION_KEY] = generation
+                    val requiresTaskUnlock = !taskContentAccessAllowed && taskOriginWhenHidden
+                    mutableTargetSessionState.value = when {
+                        !privateContentAccessAllowed ->
+                            FocusHistoryTargetSessionState.NeedsUnlock(sessionId)
+                        requiresTaskUnlock -> FocusHistoryTargetSessionState.NeedsUnlock(sessionId)
+                        session == null || session.id != sessionId || !session.isTerminal ->
+                            FocusHistoryTargetSessionState.Missing(sessionId)
+                        else -> FocusHistoryTargetSessionState.Ready(sessionId, session, generation)
+                    }
+                    return@launch
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (request == targetSessionRequest) {
+                    mutableTargetSessionState.value = FocusHistoryTargetSessionState.Error(sessionId)
+                }
+            }
+        }
     }
 
     fun search(value: String) {

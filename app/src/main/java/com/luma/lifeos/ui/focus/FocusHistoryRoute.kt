@@ -79,10 +79,22 @@ internal fun FocusHistoryRoute(
     productRepository: FocusProductRepository? = null,
     focusViewModel: FocusViewModel? = null,
     canAccessTaskActions: Boolean = false,
+    requestedSessionId: UUID? = null,
+    onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
     val focusScreenState = focusViewModel?.state?.collectAsStateWithLifecycle()
     val taskCompletionState = focusScreenState?.value?.taskCompletion ?: FocusTaskCompletionState()
-    val factory = remember(repository, range, isFocusReadable, privateContentAccessFlow, taskContentAccessAllowed, taskContentAccessFlow, databaseGenerationFlow, productRepository) {
+    val factory = remember(
+        repository,
+        range,
+        isFocusReadable,
+        privateContentAccessFlow,
+        taskContentAccessAllowed,
+        taskContentAccessFlow,
+        databaseGenerationFlow,
+        productRepository,
+        requestedSessionId,
+    ) {
         viewModelFactory {
             initializer {
                 FocusHistoryViewModel(
@@ -93,12 +105,17 @@ internal fun FocusHistoryRoute(
                     taskContentAccessFlow = taskContentAccessFlow,
                     databaseGenerationFlow = databaseGenerationFlow,
                     productRepository = productRepository,
+                    requestedSessionId = requestedSessionId,
                 )
             }
         }
     }
-    val model = viewModel<FocusHistoryViewModel>(factory = factory)
+    val model = viewModel<FocusHistoryViewModel>(
+        key = "focus-history-${requestedSessionId ?: "all"}",
+        factory = factory,
+    )
     val state by model.state.collectAsStateWithLifecycle()
+    val targetSessionState by model.targetSessionState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(model, isFocusReadable) {
         model.setPrivateContentAccessAllowed(isFocusReadable)
@@ -110,9 +127,16 @@ internal fun FocusHistoryRoute(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    if (FocusPrivateSurface.HISTORY in visibleFocusPrivateSurfaces(isFocusReadable)) {
+    if (
+        requestedSessionId != null ||
+        FocusPrivateSurface.HISTORY in visibleFocusPrivateSurfaces(isFocusReadable)
+    ) {
         FocusHistoryScreen(
             state = state,
+            requestedSessionId = requestedSessionId,
+            targetSessionState = targetSessionState,
+            onRetryTarget = model::retry,
+            onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock,
             repository = repository,
             productRepository = productRepository,
             focusViewModel = focusViewModel,
@@ -138,6 +162,10 @@ internal fun FocusHistoryRoute(
 @Composable
 private fun FocusHistoryScreen(
     state: FocusHistoryUiState,
+    requestedSessionId: UUID?,
+    targetSessionState: FocusHistoryTargetSessionState,
+    onRetryTarget: () -> Unit,
+    onRequestProtectedFocusUnlock: () -> Unit,
     repository: FocusRepository,
     productRepository: FocusProductRepository?,
     focusViewModel: FocusViewModel?,
@@ -155,6 +183,26 @@ private fun FocusHistoryScreen(
     onReflectionSaved: () -> Unit,
     onBack: () -> Unit,
 ) {
+    if (requestedSessionId != null) {
+        FocusHistoryTargetScreen(
+            requestedSessionId = requestedSessionId,
+            state = targetSessionState,
+            repository = repository,
+            productRepository = productRepository,
+            focusViewModel = focusViewModel,
+            taskCompletionState = taskCompletionState,
+            canAccessTaskActions = canAccessTaskActions,
+            isFocusReadable = isFocusReadable,
+            range = range,
+            zone = zone,
+            onRetry = onRetryTarget,
+            onRequestUnlock = onRequestProtectedFocusUnlock,
+            onRepeatSession = onRepeatSession,
+            onRefresh = onReflectionSaved,
+            onBack = onBack,
+        )
+        return
+    }
     var expandedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<FocusHistoryRow?>(null) }
     LaunchedEffect(state.loading) {
@@ -315,6 +363,140 @@ private fun FocusHistoryScreen(
 }
 
 @Composable
+private fun FocusHistoryTargetScreen(
+    requestedSessionId: UUID,
+    state: FocusHistoryTargetSessionState,
+    repository: FocusRepository,
+    productRepository: FocusProductRepository?,
+    focusViewModel: FocusViewModel?,
+    taskCompletionState: FocusTaskCompletionState,
+    canAccessTaskActions: Boolean,
+    isFocusReadable: Boolean,
+    range: TimeRange?,
+    zone: ZoneId,
+    onRetry: () -> Unit,
+    onRequestUnlock: () -> Unit,
+    onRepeatSession: (UUID) -> Unit,
+    onRefresh: () -> Unit,
+    onBack: () -> Unit,
+) {
+    val formatter = remember(zone, Locale.getDefault()) {
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+            .withLocale(Locale.getDefault())
+            .withZone(zone)
+    }
+    AppPageScaffold(
+        title = stringResource(R.string.focus_history_title),
+        navigation = PageNavigation.BACK,
+        onNavigate = onBack,
+        modifier = Modifier.fillMaxSize().testTag("focus_history_target_screen"),
+    ) { pagePadding ->
+        LumaReadingPane(Modifier.fillMaxSize()) {
+            LazyColumn(
+                Modifier.fillMaxSize().padding(pagePadding).testTag("focus_history_target_content"),
+                contentPadding = PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (range != null) item(key = "range") {
+                    Text(
+                        stringResource(
+                            R.string.focus_history_range,
+                            range.start.atZone(zone).toLocalDate().format(localizedDate(FormatStyle.MEDIUM)),
+                            range.endExclusive.minusNanos(1).atZone(zone).toLocalDate()
+                                .format(localizedDate(FormatStyle.MEDIUM)),
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag("focus_history_range"),
+                    )
+                }
+                item(key = "target_session") {
+                    if (state !is FocusHistoryTargetSessionState.Hidden &&
+                        state.sessionId != requestedSessionId
+                    ) {
+                        CircularProgressIndicator(Modifier.testTag("focus_history_target_loading"))
+                    } else {
+                        when (state) {
+                            FocusHistoryTargetSessionState.Hidden,
+                            is FocusHistoryTargetSessionState.Loading,
+                            -> CircularProgressIndicator(Modifier.testTag("focus_history_target_loading"))
+
+                            is FocusHistoryTargetSessionState.NeedsUnlock -> Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(stringResource(R.string.app_lock_gate_body))
+                                TextButton(
+                                    onClick = onRequestUnlock,
+                                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_target_unlock"),
+                                ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
+                            }
+
+                            is FocusHistoryTargetSessionState.Missing -> Text(
+                                stringResource(R.string.focus_recent_work_missing),
+                                modifier = Modifier.testTag("focus_history_target_missing"),
+                            )
+
+                            is FocusHistoryTargetSessionState.Error -> Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                AccessibleFeedback(stringResource(R.string.focus_history_error))
+                                TextButton(
+                                    onClick = onRetry,
+                                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_target_retry"),
+                                ) { Text(stringResource(R.string.retry)) }
+                            }
+
+                            is FocusHistoryTargetSessionState.Ready -> {
+                                val session = state.session
+                                LumaCard(Modifier.fillMaxWidth().testTag("focus_history_target_session")) {
+                                    Column(
+                                        Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Text(
+                                            focusSessionIntention(session),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.testTag("focus_history_target_name"),
+                                        )
+                                        Text(formatter.format(session.startedAt), style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            stringResource(
+                                                if (session.state == FocusState.INTERRUPTED) R.string.focus_interrupted
+                                                else R.string.focus_finished,
+                                            ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                        Text(
+                                            stringResource(
+                                                R.string.focus_history_total,
+                                                focusDuration(session.creditedMillis),
+                                            ),
+                                            modifier = Modifier.testTag("focus_history_target_duration"),
+                                        )
+                                        FocusSessionDetailContent(
+                                            session = session,
+                                            repository = repository,
+                                            productRepository = productRepository,
+                                            focusViewModel = focusViewModel,
+                                            taskCompletionState = taskCompletionState,
+                                            canAccessTaskActions = canAccessTaskActions,
+                                            generation = state.generation,
+                                            isFocusReadable = isFocusReadable,
+                                            zone = zone,
+                                            onRepeat = { onRepeatSession(session.id) },
+                                            onChanged = onRefresh,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun FocusHistoryTagSelector(
     selected: FocusTagFilter,
     tags: List<FocusTag>,
@@ -414,71 +596,21 @@ private fun FocusHistoryItem(
                 }
             }
             if (expanded) {
-                Text(
-                    stringResource(R.string.focus_history_pause_explanation),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                if (row.session.state == FocusState.INTERRUPTED || row.session.recoveredOrUncertain) {
-                    Text(
-                        stringResource(R.string.focus_history_recovered),
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.testTag("focus_history_recovered"),
-                    )
-                }
-                row.session.runs.forEachIndexed { index, run ->
-                    val end = requireNotNull(run.endedAt)
-                    Text(
-                        stringResource(
-                            R.string.focus_history_segment,
-                            index + 1,
-                            formatter.format(run.startedAt),
-                            formatter.format(end),
-                            focusDuration(run.creditedMillis),
-                        ),
-                        modifier = Modifier.testTag("focus_history_segment_$index"),
-                    )
-                }
-                FocusSessionMetadataEditor(
-                    session = row.session,
-                    productRepository = productRepository,
-                    generation = generation,
-                    isFocusReadable = isFocusReadable,
-                    onSaved = onReflectionSaved,
-                )
-                if (focusViewModel != null) {
-                    FocusTaskCompletionAction(
-                        session = row.session,
-                        generation = generation,
-                        state = taskCompletionState,
-                        canAccessTaskActions = canAccessTaskActions,
-                        onSessionChanged = focusViewModel::syncTaskCompletionSession,
-                        onMarkComplete = focusViewModel::markTaskComplete,
-                        onRetryCompletion = focusViewModel::retryTaskCompletion,
-                        onUnlinkTask = focusViewModel::unlinkTask,
-                        onRetryUnlink = focusViewModel::retryTaskUnlink,
-                        onChanged = onReflectionSaved,
-                    )
-                }
-                FocusReflectionEditor(
+                FocusSessionDetailContent(
                     session = row.session,
                     repository = repository,
                     productRepository = productRepository,
+                    focusViewModel = focusViewModel,
+                    taskCompletionState = taskCompletionState,
+                    canAccessTaskActions = canAccessTaskActions,
                     generation = generation,
                     isFocusReadable = isFocusReadable,
-                    onSaved = onReflectionSaved,
+                    zone = zone,
+                    deleting = deleting,
+                    onRepeat = onRepeat,
+                    onDelete = onDelete,
+                    onChanged = onReflectionSaved,
                 )
-                TextButton(
-                    enabled = !deleting,
-                    onClick = onRepeat,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_repeat"),
-                ) { Text(stringResource(R.string.focus_repeat)) }
-                TextButton(
-                    enabled = !deleting,
-                    onClick = onDelete,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_delete"),
-                ) {
-                    Text(stringResource(if (deleting) R.string.focus_saving else R.string.focus_history_delete_action))
-                }
             }
         }
     }

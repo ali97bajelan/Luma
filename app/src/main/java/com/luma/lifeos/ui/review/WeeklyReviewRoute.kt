@@ -17,7 +17,10 @@ import androidx.compose.ui.semantics.semantics
 import com.luma.lifeos.ui.common.DetailsDisclosure
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
@@ -35,6 +38,9 @@ import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.ui.focus.FocusReportSource
 import com.luma.lifeos.ui.focus.FocusWeekDayRequest
+import com.luma.lifeos.ui.focus.FocusReviewContextQuery
+import com.luma.lifeos.ui.focus.FocusReviewContextState
+import com.luma.lifeos.ui.focus.observeFocusReviewContext
 import com.luma.lifeos.ui.focus.FocusReportState
 import com.luma.lifeos.ui.focus.FocusWeekReport
 import com.luma.lifeos.ui.focus.FocusGoalReportSource
@@ -61,6 +67,10 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     showProtectedFocus: Boolean = true,
     canReadTaskOrigin: Boolean = true,
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
+    onFocusSessionDetail: (UUID, LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _, _ -> },
+    focusContentAccessFlow: Flow<Boolean> = flowOf(showProtectedFocus),
+    taskContentAccessFlow: Flow<Boolean> = flowOf(canReadTaskOrigin),
+    databaseGenerationFlow: Flow<UUID?>? = null,
     onPlanAnotherSession: (() -> Unit)? = null,
     captureBottomClearance: Dp = 0.dp,
     onRequestProtectedFocusUnlock: () -> Unit = {}) {
@@ -68,6 +78,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
     var focusRetry by remember { mutableIntStateOf(0) }
+    var focusContextRetry by remember { mutableIntStateOf(0) }
     val period = reviewPeriod(restoredReviewDate(selected, today), today, zone)
     val weekKey = "${period.current.start}|${period.zone.id}"
     val listState = rememberLazyListState()
@@ -114,6 +125,47 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                     observed.value.days.any { it.statistics?.requiresTaskAccess == true })
             ) FocusReportState.NeedsUnlock else observed
         } else null
+        val focusRecentContext = if (
+            focusRepository != null &&
+            showProtectedFocus &&
+            state is WeeklyReviewState.Data &&
+            focusReport is FocusReportState.Ready &&
+            databaseGenerationFlow != null
+        ) {
+            val generationFlow = requireNotNull(databaseGenerationFlow)
+            val contextQueries = remember(
+                focusReport,
+                focusContentAccessFlow,
+                taskContentAccessFlow,
+                generationFlow,
+                focusContextRetry,
+            ) {
+                combine(
+                    flowOf(focusReport),
+                    focusContentAccessFlow,
+                    taskContentAccessFlow,
+                    generationFlow,
+                ) { reportState, focusReadable, tasksReadable, generation ->
+                    if (!focusReadable || generation == null) {
+                        null
+                    } else {
+                        FocusReviewContextQuery(
+                            range = reportState.value.currentRange,
+                            generation = generation,
+                            includeTaskOrigin = tasksReadable,
+                            retry = focusContextRetry,
+                        )
+                    }
+                }.distinctUntilChanged()
+            }
+            val contextObservation = remember(focusRepository, contextQueries) {
+                observeFocusReviewContext(focusRepository, contextQueries)
+            }
+            val observed by contextObservation.collectAsStateWithLifecycle(
+                FocusReviewContextState.Hidden,
+            )
+            observed
+        } else FocusReviewContextState.Hidden
         val focusGoalReport = if (focusRepository != null && focusProductRepository != null && showProtectedFocus) {
             val source = remember(focusRepository, focusProductRepository) {
                 FocusGoalReportSource(focusRepository, focusProductRepository)
@@ -203,6 +255,16 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                                         inProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
                                         inProgressPaused = focusInProgressPaused && showProtectedFocus,
                                         onRequestUnlock = onRequestProtectedFocusUnlock,
+                                        recentContext = focusRecentContext,
+                                        onRetryRecentContext = { focusContextRetry++ },
+                                        onViewSession = { sessionId ->
+                                            onFocusSessionDetail(
+                                                sessionId,
+                                                period.current.start,
+                                                period.current.through,
+                                                period.zone,
+                                            )
+                                        },
                                     )
                                 }
                             }

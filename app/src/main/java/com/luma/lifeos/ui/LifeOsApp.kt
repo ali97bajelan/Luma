@@ -796,9 +796,15 @@ fun LifeOsApp(
         }
         navController.navigate("habit_editor" + (habitId?.let { "?habitId=$it" } ?: ""))
     }
-    fun openFocusHistory(start: LocalDate, through: LocalDate, zone: ZoneId) {
+    fun openFocusHistory(
+        start: LocalDate,
+        through: LocalDate,
+        zone: ZoneId,
+        requestedSessionId: UUID? = null,
+    ) {
+        val sessionArgument = requestedSessionId?.let { "&session=$it" }.orEmpty()
         navController.navigate(
-            "${AppRoutes.FOCUS_HISTORY.substringBefore('?')}?start=$start&through=$through&zone=${Uri.encode(zone.id)}",
+            "${AppRoutes.FOCUS_HISTORY.substringBefore('?')}?start=$start&through=$through&zone=${Uri.encode(zone.id)}$sessionArgument",
         )
     }
     fun openHabitsDate(date: LocalDate?) {
@@ -1113,6 +1119,12 @@ fun LifeOsApp(
                                 showProtectedFocus = FocusPrivateSurface.REVIEW in visibleFocusSurfaces,
                                 canReadTaskOrigin = protectedTasksReadable,
                                 onFocusHistory = ::openFocusHistory,
+                                onFocusSessionDetail = { sessionId, start, through, zone ->
+                                    openFocusHistory(start, through, zone, sessionId)
+                                },
+                                focusContentAccessFlow = focusPrivateAccessFlow,
+                                taskContentAccessFlow = focusTaskAccessFlow,
+                                databaseGenerationFlow = focusDatabaseGenerationFlow,
                                 onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
                                 onPlanAnotherSession = if (
                                     focusRuntime != null && protectedFocusReadable &&
@@ -1372,7 +1384,7 @@ fun LifeOsApp(
             }
             if (focusRepository != null) composable(
                 AppRoutes.FOCUS_HISTORY,
-                arguments = listOf("start", "through", "zone").map { name ->
+                arguments = listOf("start", "through", "zone", "session").map { name ->
                     navArgument(name) { type = NavType.StringType; defaultValue = "" }
                 },
             ) { entry ->
@@ -1387,6 +1399,8 @@ fun LifeOsApp(
                         rangeThrough.plusDays(1).atStartOfDay(historyZone).toInstant(),
                     )
                 } else null
+                val requestedSessionId = args.getString("session")?.takeIf(String::isNotBlank)
+                    ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 FocusHistoryRoute(
                     repository = focusRepository,
                     productRepository = focusProductRepository,
@@ -1401,6 +1415,8 @@ fun LifeOsApp(
                     taskContentAccessFlow = focusTaskAccessFlow,
                     databaseGenerationFlow = focusDatabaseGenerationFlow,
                     onBack = { navController.popBackStack() },
+                    requestedSessionId = requestedSessionId,
+                    onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
                     onRepeatSession = { sessionId ->
                         focusViewModel?.repeatSession(sessionId)
                         if (!navController.popBackStack(AppRoutes.FOCUS, inclusive = false)) {

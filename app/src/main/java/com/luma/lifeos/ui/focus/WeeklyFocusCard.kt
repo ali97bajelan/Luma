@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusComparisonStatus
 import com.luma.lifeos.domain.focus.focusWeekDistribution
+import java.util.UUID
 import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.domain.review.ReviewPeriod
 import java.time.LocalDate
@@ -49,6 +50,9 @@ internal fun WeeklyFocusCard(
     goalReport: FocusGoalReportState = FocusGoalReportState.Hidden,
     inProgressMillis: Long? = null,
     inProgressPaused: Boolean = false,
+    recentContext: FocusReviewContextState = FocusReviewContextState.Hidden,
+    onRetryRecentContext: () -> Unit = {},
+    onViewSession: (UUID) -> Unit = {},
 ) {
     LumaCard(Modifier.fillMaxWidth().testTag("review_focus_card")) {
         Column(
@@ -56,7 +60,11 @@ internal fun WeeklyFocusCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(stringResource(R.string.focus_week_title), style = MaterialTheme.typography.titleLarge)
-            when (report) {
+            val visibleReport = if (
+                report is FocusReportState.Ready &&
+                recentContext is FocusReviewContextState.NeedsUnlock
+            ) FocusReportState.NeedsUnlock else report
+            when (visibleReport) {
                 FocusReportState.Loading -> androidx.compose.material3.CircularProgressIndicator(
                     Modifier.testTag("review_focus_loading"),
                 )
@@ -74,7 +82,7 @@ internal fun WeeklyFocusCard(
                     ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
                 }
                 is FocusReportState.Ready -> {
-                    val value = report.value
+                    val value = visibleReport.value
                     val dailyTotals = value.days.asSequence()
                         .filter { it.date in period.current.start..period.current.through }
                         .mapNotNull { day -> day.statistics?.let { day.date to it.totalMillis } }
@@ -254,6 +262,12 @@ internal fun WeeklyFocusCard(
                         focusContributorCount(value.current.contributingSessions),
                         style = MaterialTheme.typography.bodySmall,
                     )
+                    FocusReviewContextItem(
+                        state = recentContext,
+                        onRetry = onRetryRecentContext,
+                        onViewSession = onViewSession,
+                        onRequestUnlock = onRequestUnlock,
+                    )
                     Text(
                         stringResource(
                             R.string.focus_week_previous_period,
@@ -313,6 +327,92 @@ internal fun WeeklyFocusCard(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FocusReviewContextItem(
+    state: FocusReviewContextState,
+    onRetry: () -> Unit,
+    onViewSession: (UUID) -> Unit,
+    onRequestUnlock: () -> Unit,
+) {
+    when (state) {
+        FocusReviewContextState.Hidden,
+        is FocusReviewContextState.Empty,
+        -> Unit
+
+        is FocusReviewContextState.Loading -> {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    stringResource(R.string.focus_review_latest_work),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.testTag("review_focus_recent_context"),
+                )
+                Text(
+                    stringResource(R.string.focus_recent_work_loading),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+
+        is FocusReviewContextState.Error -> {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    stringResource(R.string.focus_review_latest_work),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.focus_review_context_error),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("review_focus_recent_context_error"),
+                )
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_recent_context_retry"),
+                ) { Text(stringResource(R.string.retry)) }
+            }
+        }
+
+        is FocusReviewContextState.NeedsUnlock -> {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    stringResource(R.string.focus_review_latest_work),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(stringResource(R.string.app_lock_gate_body), style = MaterialTheme.typography.bodySmall)
+                TextButton(
+                    onClick = onRequestUnlock,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_recent_context_unlock"),
+                ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
+            }
+        }
+
+        is FocusReviewContextState.Ready -> {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    stringResource(R.string.focus_review_latest_work),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.testTag("review_focus_recent_context"),
+                )
+                Text(
+                    focusSessionIntention(state.session),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.testTag("review_focus_recent_context_name"),
+                )
+                state.session.reflection.nextStep?.takeIf(String::isNotBlank)?.let { nextStep ->
+                    Text(stringResource(R.string.focus_reflection_saved_next_step, nextStep))
+                }
+                TextButton(
+                    onClick = { onViewSession(state.session.id) },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_recent_context_view"),
+                ) { Text(stringResource(R.string.focus_review_view_session)) }
             }
         }
     }

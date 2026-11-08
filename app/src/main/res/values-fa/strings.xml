@@ -1480,6 +1480,9 @@
     <string name="focus_review_no_activity">در این دوره فعالیتی برای تمرکز ثبت نشده است.</string>
     <string name="focus_review_day_history_action">دیدن نشست‌های تمرکز در %1$s</string>
     <string name="focus_review_plan_another">برنامه‌ریزی نشست دیگر</string>
+    <string name="focus_review_latest_work">آخرین کار در این دوره</string>
+    <string name="focus_review_view_session">دیدن نشست</string>
+    <string name="focus_review_context_error">بارگذاری آخرین کار ممکن نشد.</string>
     <string name="focus_no_change">نسبت به دورهٔ پیشین تغییری ندارد.</string>
     <string name="focus_increase_from_empty">%1$s افزایش نسبت به دوره‌ای بدون زمان تمرکز ثبت‌شده.</string>
     <string name="focus_previous_period_empty">در دورهٔ پیشین زمانی ثبت نشده است؛ بنابراین درصد نمایش داده نمی‌شود.</string>

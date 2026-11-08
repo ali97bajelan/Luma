@@ -2,14 +2,20 @@ package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.domain.focus.FocusComparison
 import com.luma.lifeos.domain.focus.FocusRepository
+import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.compareFocusStatistics
 import com.luma.lifeos.domain.time.TimeRange
 import java.time.LocalDate
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
@@ -41,6 +47,63 @@ data class FocusWeekReport(
     val comparison: FocusComparison,
     val days: List<FocusWeekDayReport> = emptyList(),
 )
+
+data class FocusReviewContextQuery(
+    val range: TimeRange,
+    val generation: UUID,
+    val includeTaskOrigin: Boolean,
+    val retry: Int,
+)
+
+sealed interface FocusReviewContextState {
+    data object Hidden : FocusReviewContextState
+    data class Loading(val query: FocusReviewContextQuery) : FocusReviewContextState
+    data class Empty(val query: FocusReviewContextQuery) : FocusReviewContextState
+    data class NeedsUnlock(val query: FocusReviewContextQuery) : FocusReviewContextState
+    data class Ready(
+        val query: FocusReviewContextQuery,
+        val session: FocusSession,
+    ) : FocusReviewContextState
+    data class Error(val query: FocusReviewContextQuery) : FocusReviewContextState
+}
+
+/** Observes the single in-range candidate only while its report and authorization scope are current. */
+@OptIn(ExperimentalCoroutinesApi::class)
+fun observeFocusReviewContext(
+    repository: FocusRepository,
+    queries: Flow<FocusReviewContextQuery?>,
+): Flow<FocusReviewContextState> = flow {
+    queries.flatMapLatest { query ->
+        if (query == null) {
+            flowOf<FocusReviewContextState>(FocusReviewContextState.Hidden)
+        } else {
+            flow<FocusReviewContextState> {
+                emit(FocusReviewContextState.Loading(query))
+                if (repository.currentGeneration() != query.generation) {
+                    emit(FocusReviewContextState.Hidden)
+                    return@flow
+                }
+                repository.observeRecentTerminal(query.range, query.includeTaskOrigin).collect { session ->
+                    val generation = repository.currentGeneration()
+                    emit(
+                        when {
+                            generation != query.generation -> FocusReviewContextState.Hidden
+                            session == null -> FocusReviewContextState.Empty(query)
+                            !session.isTerminal || session.creditedMillis <= 0L ->
+                                FocusReviewContextState.Empty(query)
+                            session.taskOrigin && !query.includeTaskOrigin ->
+                                FocusReviewContextState.NeedsUnlock(query)
+                            else -> FocusReviewContextState.Ready(query, session)
+                        },
+                    )
+                }
+            }.catch { failure ->
+                if (failure is CancellationException) throw failure
+                emit(FocusReviewContextState.Error(query))
+            }
+        }
+    }.collect { emit(it) }
+}
 
 /** Independent streams allow report failures to leave other Today and Review content intact. */
 class FocusReportSource(private val repository: FocusRepository) {

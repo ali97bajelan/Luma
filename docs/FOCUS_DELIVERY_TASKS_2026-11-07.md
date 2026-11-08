@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD09 SOURCE COMPLETE — UNVERIFIED; FD10–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD10 SOURCE COMPLETE — UNVERIFIED; FD11–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -20,7 +20,7 @@ No per-task QA gate blocks a later source task once its source dependencies exis
 
 This new index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. Source versions inspected: **Room 14, archive 11**, proposed additions **Room 15/archive 12**. Existing app flavor: **production**, debug ID suffix **.qa**. Recheck these at FD01; old plan reservations and variant assumptions are obsolete.
 
-The planning package changed documentation only when created. FD01–FD09 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
+The planning package changed documentation only when created. FD01–FD10 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
 
 ## Implementation task ledger
 
@@ -50,7 +50,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD07 source complete — UNVERIFIED
 - [x] FD08 source complete — UNVERIFIED
 - [x] FD09 source complete — UNVERIFIED
-- [ ] FD10 source complete
+- [x] FD10 source complete — UNVERIFIED
 - [ ] FD11 source complete
 - [ ] FD12 source complete
 
@@ -152,6 +152,14 @@ The checkboxes below track current source delivery only; source completion is se
 - Ruling: extended the FD09 file map with the protected Focus repository wrapper and EN/FR/FA resources because recent task-origin data needs an authorization boundary and all new user-facing copy must be localized. Cost if wrong: one repository integration file and three locale files beyond the listed FD09 map.
 - Source review covered SQL eligibility/order/privacy-before-limit and whole-millisecond overlap selection, Room invalidation tables, lock and generation clearing, no SavedStateHandle candidate cache, both draft-replacement paths, sticky missing-source and deletion/repeat races, task revalidation, and no auto-start. Read-only review findings were fixed in source. Tests, fixtures, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
 - Later proof: Q02/Q03; E05/E08/E09.
+
+### FD10 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED (2026-11-08).
+- Changed source: app/.../ui/focus/WeeklyFocusCard.kt, FocusReportState.kt, FocusReportPresentation.kt, FocusHistoryRoute.kt, FocusHistoryViewModel.kt, new FocusSessionDetailContent.kt; app/.../ui/review/WeeklyReviewRoute.kt, ui/LifeOsApp.kt, ui/navigation/AppDestinations.kt; EN/FR/FA strings.
+- Implemented: Weekly Review now observes one authorized recent terminal session using the current report's displayed range, existing positive-run-overlap query and current database generation. The row shows the authorized intention, optional next step and View session; optional query failure has its own Retry state while report totals remain available. View session passes only the ID through the existing history route; the target screen reloads it by terminalSession(id) and shares history's correction, task-completion, reflection and Repeat controls. Missing, Focus-locked and task-locked states clear the targeted content and provide the corresponding missing/unlock UI. Ordinary history paging remains unchanged.
+- Source review covered partial/current report range and viewing-zone navigation, candidate range/eligibility/privacy ownership in FD09, mixed-report suppression, query retry isolation, target-session authorization and generation changes, indexed identity reload, missing-source behavior, and both history/detail route paths. Tests, fixtures, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
+- Later proof: Q02/Q03; E05/E11.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

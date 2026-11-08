@@ -220,11 +220,13 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Consumes:** FD09 range-aware candidate flow. **Produces:** Latest work in this period row and protected View session route.
 
-- [ ] Use the displayed report range/viewing zone, with positive run overlap, not global latest or started-at filtering.
-- [ ] Add one authorized intention/next-step row and View session. Extend FocusHistoryRoute with requestedSessionId: UUID? = null and an internal session query argument; load via existing indexed terminalSession(id), share extracted detail content and show missing/unlock states without scanning pages. Update every route call site with safe defaults.
-- [ ] Suppress context with mixed protected report state; keep empty/error distinct and totals usable on optional query failure.
-- [ ] Preserve distribution/goals/Plan another session semantics; add no new aggregate/time logic.
-- [ ] Source-review current/previous-period headings and all navigation paths; record unverified handoff.
+- [x] Use the displayed report range/viewing zone, with positive run overlap, not global latest or started-at filtering.
+- [x] Add one authorized intention/next-step row and View session. Extend FocusHistoryRoute with requestedSessionId: UUID? = null and an internal session query argument; load via existing indexed terminalSession(id), share extracted detail content and show missing/unlock states without scanning pages. Update every route call site with safe defaults.
+- [x] Suppress context with mixed protected report state; keep empty/error distinct and totals usable on optional query failure.
+- [x] Preserve distribution/goals/Plan another session semantics; add no new aggregate/time logic.
+- [x] Source-review current/previous-period headings and all navigation paths; record unverified handoff.
+
+**Source handoff:** SOURCE COMPLETE — UNVERIFIED (2026-11-08). Tests, fixtures, builds, schema generation, lint and device/emulator checks remain deferred to Phase Q/E.
 
 **Deferred proof:** Q02/Q03; E05/E11.
 
