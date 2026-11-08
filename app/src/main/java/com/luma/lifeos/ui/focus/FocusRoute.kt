@@ -109,6 +109,14 @@ internal fun FocusRoute(
         setup = if (protectedFocusReadable && (!state.setup.taskOrigin || protectedTasksReadable)) {
             state.setup
         } else FocusSetupState(),
+        recentWork = state.recentWork.takeIf { recent ->
+            val query = recent.query
+            protectedFocusReadable && query != null &&
+                query.generation == state.runtime.databaseGeneration &&
+                query.includeTaskOrigin == protectedTasksReadable &&
+                (recent !is FocusRecentWorkState.Ready ||
+                    !recent.session.taskOrigin || protectedTasksReadable)
+        } ?: FocusRecentWorkState.Hidden,
         tagSuggestions = if (protectedFocusReadable && protectedTasksReadable) state.tagSuggestions else emptyList(),
         taskCompletion = if (protectedFocusReadable && protectedTasksReadable) state.taskCompletion
             else FocusTaskCompletionState(),
@@ -173,6 +181,7 @@ internal fun FocusRoute(
         onEndBreak = viewModel::endBreak,
         onPeriodChange = viewModel::changePeriod,
         onRetryInsights = viewModel::retryInsights,
+        onRetryRecentWork = viewModel::retryRecentWork,
         onAction = { action -> viewModel.act(action) },
         onLeaveAfterAction = { action -> viewModel.act(action, onSuccess = onBack) },
         onResolveRecovery = viewModel::resolveRecovery,

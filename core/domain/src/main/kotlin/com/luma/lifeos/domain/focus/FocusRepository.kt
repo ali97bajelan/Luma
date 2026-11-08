@@ -41,6 +41,15 @@ interface FocusRepository {
     /** Emits the authoritative RUNNING or PAUSED session, or null after state has loaded. */
     fun observeOpen(): Flow<FocusSession?>
 
+    /**
+     * Observes the latest terminal session with positive saved credit. Privacy filtering is applied
+     * before selecting the single row; a non-null range uses positive credited-run overlap.
+     */
+    fun observeRecentTerminal(
+        range: TimeRange?,
+        includeTaskOrigin: Boolean,
+    ): Flow<FocusSession?> = flowOf(null)
+
     /** Boolean-only authorization lookup; callers must not expose this as persisted permission. */
     suspend fun sessionHasTaskOrigin(sessionId: UUID): Boolean {
         val open = observeOpen().first()

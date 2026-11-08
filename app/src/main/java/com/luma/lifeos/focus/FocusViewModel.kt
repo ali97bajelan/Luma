@@ -33,6 +33,9 @@ import com.luma.lifeos.ui.focus.FocusTaskUnlinkPhase
 import com.luma.lifeos.ui.focus.PendingFocusTaskCompletion
 import com.luma.lifeos.ui.focus.PendingFocusTaskUnlink
 import com.luma.lifeos.ui.focus.FocusTagSuggestionsSnapshot
+import com.luma.lifeos.ui.focus.FocusRecentWorkQuery
+import com.luma.lifeos.ui.focus.FocusRecentWorkState
+import com.luma.lifeos.ui.focus.observeFocusRecentWork
 import com.luma.lifeos.ui.focus.encodeFocusSetupState
 import com.luma.lifeos.ui.focus.focusMetadataForPresentation
 import com.luma.lifeos.ui.focus.focusInsightsPresentation
@@ -78,6 +81,7 @@ data class FocusScreenState(
     val taskOriginSelected: Boolean = false,
     val taskActionsAllowed: Boolean = false,
     val taskCompletion: FocusTaskCompletionState = FocusTaskCompletionState(),
+    val recentWork: FocusRecentWorkState = FocusRecentWorkState.Hidden,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -123,6 +127,8 @@ class FocusViewModel(
 
     private val local = MutableStateFlow(LocalState(setup = restoreSetupState(savedStateHandle)))
     private val insightState = MutableStateFlow<FocusInsightsState>(FocusInsightsState.Unselected)
+    private val recentWorkState = MutableStateFlow<FocusRecentWorkState>(FocusRecentWorkState.Hidden)
+    private val recentWorkRetry = MutableStateFlow(0)
     private val tagSuggestions = MutableStateFlow(FocusTagSuggestionsSnapshot(null, emptyList()))
     private val privateContentAccess = MutableStateFlow(false)
     private val taskContentAccess = MutableStateFlow(false)
@@ -141,7 +147,7 @@ class FocusViewModel(
         Triple(canReadFocus, canReadTasks, canManageLinkedTaskActions)
     }
 
-    val state: StateFlow<FocusScreenState> = combine(
+    private val baseState: StateFlow<FocusScreenState> = combine(
         runtime.state, local, insightState, tagSuggestions, contentAccess,
     ) { runtimeState, localState, insights, suggestions, access ->
         val (canReadFocus, canReadTasks, canManageLinkedTaskActions) = access
@@ -223,12 +229,33 @@ class FocusViewModel(
         ),
     )
 
+    val state: StateFlow<FocusScreenState> = combine(
+        baseState,
+        recentWorkState,
+        privateContentAccess,
+        taskContentAccess,
+    ) { base, recentWork, canReadFocus, canReadTasks ->
+        val query = recentWork.query
+        val setupIsEligible = base.runtime.initialized && !base.runtime.loading && !base.runtime.loadFailed &&
+            !base.runtime.recoveryRequired &&
+            base.runtime.session?.state !in setOf(FocusState.RUNNING, FocusState.PAUSED) &&
+            !base.busy && base.setup.capturedStart == null && !base.setup.unresolvedStartPending
+        val visibleRecentWork = if (
+            !canReadFocus || !setupIsEligible || query == null ||
+            query.generation != base.runtime.databaseGeneration ||
+            query.includeTaskOrigin != canReadTasks ||
+            (recentWork is FocusRecentWorkState.Ready && recentWork.session.taskOrigin && !canReadTasks)
+        ) FocusRecentWorkState.Hidden else recentWork
+        base.copy(recentWork = visibleRecentWork)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, baseState.value)
+
     init {
         viewModelScope.launch {
             runtime.state.map { it.databaseGeneration }.filterNotNull().distinctUntilChanged().collect { generation ->
                 val previous = local.value.setup.databaseGeneration
                 if (previous != null && previous != generation) {
                     pendingOperation = null
+                    recentWorkState.value = FocusRecentWorkState.Hidden
                     local.update { it.copy(operationFailed = false, taskCompletion = FocusTaskCompletionState()) }
                 }
                 updateSetup(FocusSetupEvent.GenerationChanged(generation))
@@ -290,6 +317,36 @@ class FocusViewModel(
                 }
             }
         }
+        repository?.let { focusRepository ->
+            val recentQueries = combine(
+                runtime.state,
+                local,
+                privateContentAccess,
+                taskContentAccess,
+                recentWorkRetry,
+            ) { runtimeState, localState, canReadFocus, canReadTasks, retry ->
+                val sessionIsOpen = runtimeState.session?.state in setOf(FocusState.RUNNING, FocusState.PAUSED)
+                val setupIsEligible = canReadFocus && runtimeState.initialized &&
+                    !runtimeState.loading && !runtimeState.loadFailed &&
+                    !runtimeState.recoveryRequired && !sessionIsOpen && !localState.busy &&
+                    localState.setup.capturedStart == null && !localState.setup.unresolvedStartPending
+                val generation = runtimeState.databaseGeneration
+                if (setupIsEligible && generation != null) {
+                    FocusRecentWorkQuery(generation, canReadTasks, retry)
+                } else null
+            }.distinctUntilChanged()
+            viewModelScope.launch {
+                observeFocusRecentWork(focusRepository, recentQueries).collect { observed ->
+                    val missing = (recentWorkState.value as? FocusRecentWorkState.Missing)?.takeIf {
+                        privateContentAccess.value &&
+                            taskContentAccess.value == it.request.includeTaskOrigin &&
+                            runtime.state.value.databaseGeneration == it.request.generation &&
+                            (observed is FocusRecentWorkState.Hidden || observed.query == it.request)
+                    }
+                    recentWorkState.value = missing ?: observed
+                }
+            }
+        }
     }
 
     fun setPrivateContentAccessAllowed(allowed: Boolean) {
@@ -300,6 +357,7 @@ class FocusViewModel(
             updateSetup(FocusSetupEvent.PrivateContentLocked)
             clearTaskCompletionState()
             insightState.value = FocusInsightsState.Unselected
+            recentWorkState.value = FocusRecentWorkState.Hidden
             tagSuggestions.value = FocusTagSuggestionsSnapshot(null, emptyList())
         } else {
             reloadSelectedTaskIfNeeded()
@@ -315,6 +373,7 @@ class FocusViewModel(
             updateSetup(FocusSetupEvent.TaskContentLocked)
             if (repeatRequestId != null) updateSetup(FocusSetupEvent.RepeatLoadFailed(repeatRequestId))
             insightState.value = FocusInsightsState.Unselected
+            recentWorkState.value = FocusRecentWorkState.Hidden
             tagSuggestions.value = FocusTagSuggestionsSnapshot(null, emptyList())
             clearTaskCompletionState()
         } else {
@@ -736,6 +795,11 @@ class FocusViewModel(
         ) return
         val generation = runtime.state.value.databaseGeneration ?: return
         if (runtime.state.value.session?.state in setOf(FocusState.RUNNING, FocusState.PAUSED)) return
+        val selectedRecentSource = (recentWorkState.value as? FocusRecentWorkState.Ready)
+            ?.takeIf {
+                it.session.id == sessionId && it.request.generation == generation &&
+                    it.request.includeTaskOrigin == taskContentAccess.value
+            }
         val requestId = UUID.randomUUID()
         updateSetup(FocusSetupEvent.RepeatRequested(sessionId, requestId))
         viewModelScope.launch {
@@ -751,10 +815,11 @@ class FocusViewModel(
                     updateSetup(FocusSetupEvent.GenerationChanged(generationAfterRead))
                     return@launch
                 }
-                if (!privateContentAccess.value || runtime.state.value.databaseGeneration != generation ||
-                    (source == null && !taskContentAccess.value) ||
-                    (source?.taskOrigin == true && !taskContentAccess.value)
-                ) {
+                if (!privateContentAccess.value || runtime.state.value.databaseGeneration != generation) {
+                    return@launch
+                }
+                if (source?.taskOrigin == true && !taskContentAccess.value) {
+                    updateSetup(FocusSetupEvent.RepeatLoadFailed(requestId))
                     return@launch
                 }
                 if (runtime.state.value.session?.state in setOf(FocusState.RUNNING, FocusState.PAUSED)) {
@@ -762,9 +827,44 @@ class FocusViewModel(
                     return@launch
                 }
                 if (source == null || !source.isTerminal) {
-                    updateSetup(FocusSetupEvent.RepeatLoadFailed(requestId))
+                    val missingRecentSource = selectedRecentSource?.takeIf {
+                        privateContentAccess.value && runtime.state.value.databaseGeneration == generation &&
+                            taskContentAccess.value == it.request.includeTaskOrigin &&
+                            (!it.session.taskOrigin || taskContentAccess.value)
+                    }
+                    if (missingRecentSource != null) {
+                        recentWorkState.value = FocusRecentWorkState.Missing(missingRecentSource.request, sessionId)
+                        updateSetup(FocusSetupEvent.RepeatSourceMissing(requestId))
+                    } else {
+                        updateSetup(FocusSetupEvent.RepeatLoadFailed(requestId))
+                    }
                     return@launch
                 }
+
+                var copiedTaskId = source.taskId
+                var copiedTaskTitle: String? = null
+                val sourceTaskId = source.taskId
+                if (sourceTaskId != null) {
+                    if (!source.taskOrigin || !taskContentAccess.value) {
+                        updateSetup(FocusSetupEvent.RepeatLoadFailed(requestId))
+                        return@launch
+                    }
+                    val task = todos?.get(sourceTaskId)
+                    val generationAfterTaskRead = focusRepository.currentGeneration()
+                    if (generationAfterTaskRead != generation) {
+                        updateSetup(FocusSetupEvent.GenerationChanged(generationAfterTaskRead))
+                        return@launch
+                    }
+                    if (!privateContentAccess.value || !taskContentAccess.value ||
+                        runtime.state.value.databaseGeneration != generation
+                    ) return@launch
+                    if (task == null || task.isCompleted) {
+                        copiedTaskId = null
+                    } else {
+                        copiedTaskTitle = task.title
+                    }
+                }
+
                 updateSetup(
                     FocusSetupEvent.PrefillRequested(
                         sessionId = sessionId,
@@ -773,11 +873,12 @@ class FocusViewModel(
                             source.metadata.name.orEmpty(),
                             source.metadata.tag?.name,
                             source.timer,
-                            taskId = source.taskId,
+                            taskId = copiedTaskId,
                             taskOrigin = source.taskOrigin,
                         ),
                         nextStep = source.reflection.nextStep,
                         generation = generation,
+                        taskTitle = copiedTaskTitle,
                     ),
                 )
             } catch (failure: Exception) {
@@ -795,6 +896,12 @@ class FocusViewModel(
         FocusSetupEvent.ViewingContextChanged(date, zone.id),
     )
     fun retryInsights() { insightRetry.update { it + 1 } }
+    fun retryRecentWork() {
+        if (recentWorkState.value is FocusRecentWorkState.Missing) {
+            recentWorkState.value = FocusRecentWorkState.Hidden
+        }
+        recentWorkRetry.update { it + 1 }
+    }
 
     private fun updateSetup(event: FocusSetupEvent) {
         val next = reduceFocusSetupState(local.value.setup, event)

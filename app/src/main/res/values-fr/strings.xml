@@ -1375,6 +1375,14 @@
     <string name="focus_repeat_error">Impossible de charger cette session pour la répéter.</string>
     <string name="focus_repeat_legacy_name">Ajoutez un nom à cette session avant de la démarrer.</string>
     <string name="focus_repeat_next_step">Prochaine étape précédente : %1$s</string>
+    <string name="focus_recent_work">Travail récent</string>
+    <string name="focus_recent_work_loading">Recherche du travail récent…</string>
+    <string name="focus_recent_work_error">Impossible de charger le travail récent.</string>
+    <string name="focus_recent_work_missing">Cette session n’est plus disponible.</string>
+    <string name="focus_recent_interrupted">Session interrompue</string>
+    <string name="focus_recent_replace_title">Remplacer cette configuration Focus ?</string>
+    <string name="focus_recent_replace_body">Répéter ce travail remplacera la configuration saisie. Vous pourrez démarrer la session répétée quand vous le souhaitez.</string>
+    <string name="focus_recent_replace_setup">Remplacer la configuration</string>
     <string name="focus_reflection_prompt">Souhaitez-vous noter comment s’est passée cette session ?</string>
     <string name="focus_reflection_title">Bilan de la session</string>
     <string name="focus_reflection_outcome_label">Comment cela s’est-il passé ? (facultatif)</string>

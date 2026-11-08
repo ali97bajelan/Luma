@@ -201,12 +201,14 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Produces:** observeRecentTerminal(range: TimeRange?, includeTaskOrigin: Boolean): Flow<FocusSession?> with R08 order/eligibility; one in-memory recent-work state.
 
-- [ ] Implement query with positive saved credit, terminal state, ended-at/ID descending and privacy filter before LIMIT 1; no scan of all history.
-- [ ] Implement optional positive-run-overlap range restriction for FD10 using existing half-open boundaries.
-- [ ] Observe query only while eligible; guard requests by access and generation; distinguish loading/empty/error without stale title.
-- [ ] Render one card after Start, with optional next step and authoritative Repeat reload.
-- [ ] Confirm before replacing a dirty draft; handle removed/invalid source and task changes without auto-start.
-- [ ] Source-review invalidation dependencies, no SavedStateHandle record caching and no hidden counts; record unverified handoff.
+- [x] Implement query with positive saved credit, terminal state, ended-at/ID descending and privacy filter before LIMIT 1; no scan of all history.
+- [x] Implement optional positive-run-overlap range restriction for FD10 using half-open boundaries and the existing whole-millisecond contribution rule.
+- [x] Observe query only while eligible; guard requests by access and generation; distinguish loading/empty/missing/error without stale title.
+- [x] Render one card after Start, with optional next step and authoritative Repeat reload.
+- [x] Confirm before replacing a dirty draft from both card Repeat and failed-repeat Retry; handle removed/invalid source and task changes without auto-start.
+- [x] Source-review invalidation dependencies, no SavedStateHandle record caching and no hidden counts; record unverified handoff.
+
+**Source handoff:** SOURCE COMPLETE — UNVERIFIED (2026-11-08). Tests, fixtures, builds, schema generation, lint and device/emulator checks remain deferred to Phase Q/E.
 
 **Deferred proof:** Q02/Q03; E05/E08/E09.
 

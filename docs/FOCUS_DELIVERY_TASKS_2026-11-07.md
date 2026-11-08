@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD08 SOURCE COMPLETE — UNVERIFIED; FD09–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD09 SOURCE COMPLETE — UNVERIFIED; FD10–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -20,7 +20,7 @@ No per-task QA gate blocks a later source task once its source dependencies exis
 
 This new index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. Source versions inspected: **Room 14, archive 11**, proposed additions **Room 15/archive 12**. Existing app flavor: **production**, debug ID suffix **.qa**. Recheck these at FD01; old plan reservations and variant assumptions are obsolete.
 
-The planning package changed documentation only when created. FD01–FD07 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
+The planning package changed documentation only when created. FD01–FD09 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
 
 ## Implementation task ledger
 
@@ -49,7 +49,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD06 source complete — UNVERIFIED
 - [x] FD07 source complete — UNVERIFIED
 - [x] FD08 source complete — UNVERIFIED
-- [ ] FD09 source complete
+- [x] FD09 source complete — UNVERIFIED
 - [ ] FD10 source complete
 - [ ] FD11 source complete
 - [ ] FD12 source complete
@@ -142,6 +142,16 @@ The checkboxes below track current source delivery only; source completion is se
 - Ruling: added the existing task-completion action to the completion surface while retaining it in history detail — the FD08 plan requires terminal task completion and both entry points reuse the same revision/generation-checked ViewModel contract — cost if wrong: the action is available in two terminal-detail locations.
 - Source review covered terminal-reason mapping, Done reachability and ordering, protected context/reflection re-read, 1–60 input handling, no-start behavior during active breaks, retained reflection retries, task-action eligibility and unlink state. Tests, fixtures, builds, schema generation, lint and device/emulator checks were NOT RUN as required by Phase I.
 - Later proof: Q02/Q05; E03/E04/E10.
+
+### FD09 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED (2026-11-08).
+- Changed source: core/domain/.../focus/FocusRepository.kt; core/data/.../focus/FocusDao.kt and RoomFocusRepository.kt; app/.../lock/ProtectedAggregateRepositories.kt; app/.../focus/FocusViewModel.kt; app/.../ui/focus/FocusSetupState.kt, FocusSetupContent.kt, FocusScreen.kt, FocusRoute.kt, new FocusRecentWorkState.kt and FocusRecentWorkCard.kt; EN/FR/FA strings.
+- Implemented: a Room flow selects at most one positive-credit terminal session, orders by ended time then ID, filters task-origin rows before the limit, and supports half-open range selection whose whole-millisecond contribution matches the existing statistics rule for FD10. The protected repository rechecks Focus/Tasks authorization; the ViewModel observes only for initialized idle setup, scopes requests to grants and database generation, and keeps recent-session objects in memory only. Loading, empty, hidden, missing, ready and error are distinct; a selected missing source remains visible until Retry or its authorization/generation scope changes.
+- Repeat: the card shows the authorized intention/fallback, optional next step, and interrupted label. It calls the existing ID-based terminal reload and never starts automatically. Dirty setup requires Replace setup / Cancel from both the card and failed-repeat Retry. Repeat revalidates a linked task: an open task remains linked, while a missing/completed task clears the link and retains task origin with the existing explanation; Start still revalidates transactionally.
+- Ruling: extended the FD09 file map with the protected Focus repository wrapper and EN/FR/FA resources because recent task-origin data needs an authorization boundary and all new user-facing copy must be localized. Cost if wrong: one repository integration file and three locale files beyond the listed FD09 map.
+- Source review covered SQL eligibility/order/privacy-before-limit and whole-millisecond overlap selection, Room invalidation tables, lock and generation clearing, no SavedStateHandle candidate cache, both draft-replacement paths, sticky missing-source and deletion/repeat races, task revalidation, and no auto-start. Read-only review findings were fixed in source. Tests, fixtures, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
+- Later proof: Q02/Q03; E05/E08/E09.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

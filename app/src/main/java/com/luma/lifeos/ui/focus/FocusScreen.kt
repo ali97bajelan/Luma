@@ -96,6 +96,7 @@ internal fun FocusScreen(
     showInvitationDraftConfirmation: Boolean = false,
     onConfirmInvitationDraftReplacement: () -> Unit = {},
     onDismissInvitationDraftReplacement: () -> Unit = {},
+    onRetryRecentWork: () -> Unit = {},
 ) {
     val runtime = state.runtime
     val session = runtime.session
@@ -258,6 +259,7 @@ internal fun FocusScreen(
                     onStartAttempted = onStartAttempted,
                     onPeriodChange = onPeriodChange,
                     onRetryInsights = onRetryInsights,
+                    onRetryRecentWork = onRetryRecentWork,
                     onStart = onStart,
                     onRepeatSession = onRepeatSession,
                     onRetry = onRetry,
@@ -359,6 +361,7 @@ private fun SetupContent(
     onStartAttempted: () -> Unit,
     onPeriodChange: (FocusPeriod) -> Unit,
     onRetryInsights: () -> Unit,
+    onRetryRecentWork: () -> Unit,
     onStart: (FocusStartInput) -> Unit,
     onRepeatSession: (java.util.UUID) -> Unit,
     onRetry: () -> Unit,
@@ -388,6 +391,7 @@ private fun SetupContent(
         onRepeatSession = onRepeatSession,
         onOpenTaskPicker = onOpenTaskPicker,
         onClearTaskSelection = onClearTaskSelection,
+        onRetryRecentWork = onRetryRecentWork,
     )
     FocusInsightsCard(
         state = state.insights,

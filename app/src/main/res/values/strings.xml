@@ -1354,6 +1354,14 @@
     <string name="focus_repeat_error">Could not load this session to repeat it.</string>
     <string name="focus_repeat_legacy_name">Add a name for this session before starting.</string>
     <string name="focus_repeat_next_step">Previous next step: %1$s</string>
+    <string name="focus_recent_work">Recent work</string>
+    <string name="focus_recent_work_loading">Looking for recent work…</string>
+    <string name="focus_recent_work_error">Recent work could not be loaded.</string>
+    <string name="focus_recent_work_missing">This session is no longer available.</string>
+    <string name="focus_recent_interrupted">Session interrupted</string>
+    <string name="focus_recent_replace_title">Replace this Focus setup?</string>
+    <string name="focus_recent_replace_body">Repeating recent work replaces the setup you entered. You can start the repeated session when you are ready.</string>
+    <string name="focus_recent_replace_setup">Replace setup</string>
     <string name="focus_reflection_prompt">Would you like to note how this session went?</string>
     <string name="focus_reflection_title">Session reflection</string>
     <string name="focus_reflection_outcome_label">How did it go? (optional)</string>

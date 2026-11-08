@@ -53,8 +53,10 @@ internal fun FocusSetupContent(
     onRepeatSession: (java.util.UUID) -> Unit,
     onOpenTaskPicker: (() -> Unit)?,
     onClearTaskSelection: () -> Unit,
+    onRetryRecentWork: () -> Unit,
 ) {
     val setup = state.setup
+    var retryReplacementSessionId by remember { mutableStateOf<java.util.UUID?>(null) }
     val nameValid = runCatching {
         normalizeFocusStartInput(FocusStartInput(name = setup.name, tagName = null))
     }.isSuccess
@@ -69,11 +71,15 @@ internal fun FocusSetupContent(
     if (setup.repeatLoading) {
         Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
     }
-    if (setup.repeatLoadFailed) {
+    val missingRecentSource = state.recentWork as? FocusRecentWorkState.Missing
+    if (setup.repeatLoadFailed && missingRecentSource?.sessionId != setup.repeatSourceSessionId) {
         Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
         setup.repeatSourceSessionId?.let { sourceId ->
             TextButton(
-                onClick = { onRepeatSession(sourceId) },
+                onClick = {
+                    if (setup.hasUserAuthoredDraft) retryReplacementSessionId = sourceId
+                    else onRepeatSession(sourceId)
+                },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_repeat_retry"),
             ) { Text(stringResource(R.string.retry)) }
         }
@@ -226,6 +232,38 @@ internal fun FocusSetupContent(
     }
     if (setup.startFailure == FocusSetupFailure.VALIDATION) {
         Text(stringResource(R.string.focus_setup_invalid), color = MaterialTheme.colorScheme.error)
+    }
+
+    FocusRecentWorkCard(
+        state = state.recentWork,
+        hasUserAuthoredDraft = setup.hasUserAuthoredDraft,
+        canRepeat = !state.busy && !state.operationFailed && !setup.repeatLoading &&
+            setup.capturedStart == null && !setup.unresolvedStartPending,
+        onRepeatSession = onRepeatSession,
+        onRetry = onRetryRecentWork,
+    )
+
+    retryReplacementSessionId?.let { sourceId ->
+        AlertDialog(
+            onDismissRequest = { retryReplacementSessionId = null },
+            title = { Text(stringResource(R.string.focus_recent_replace_title)) },
+            text = { Text(stringResource(R.string.focus_recent_replace_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        retryReplacementSessionId = null
+                        onRepeatSession(sourceId)
+                    },
+                    modifier = Modifier.testTag("focus_repeat_retry_replace_confirm"),
+                ) { Text(stringResource(R.string.focus_recent_replace_setup)) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { retryReplacementSessionId = null },
+                    modifier = Modifier.testTag("focus_repeat_retry_replace_cancel"),
+                ) { Text(stringResource(R.string.cancel)) }
+            },
+        )
     }
 
     if (showTagPicker) {

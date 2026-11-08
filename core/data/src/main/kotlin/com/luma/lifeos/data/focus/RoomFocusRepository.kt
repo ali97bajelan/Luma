@@ -77,6 +77,20 @@ class RoomFocusRepository(
 
     override fun observeOpen(): Flow<FocusSession?> = dao.observeOpenSession().map { it?.toDomain() }
 
+    override fun observeRecentTerminal(range: TimeRange?, includeTaskOrigin: Boolean): Flow<FocusSession?> =
+        dao.observeRecentTerminal(
+            rangeStartSeconds = range?.start?.epochSecond,
+            rangeStartNanos = range?.start?.nano,
+            rangeEndSeconds = range?.endExclusive?.epochSecond,
+            rangeEndNanos = range?.endExclusive?.nano,
+            includeTaskOrigin = includeTaskOrigin,
+        ).map { snapshot ->
+            snapshot?.toDomain()?.takeIf { session ->
+                session.isTerminal && session.creditedMillis > 0L &&
+                    (includeTaskOrigin || !session.taskOrigin)
+            }
+        }
+
     override fun observeBreak(): Flow<FocusBreakRecord?> = dao.observeBreakRuntime().map { it?.toDomain() }
 
     override suspend fun currentBreak(): FocusBreakRecord? = dao.breakRuntime()?.toDomain()

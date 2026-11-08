@@ -1355,6 +1355,14 @@
     <string name="focus_repeat_error">بارگذاری این نشست برای تکرار ممکن نشد.</string>
     <string name="focus_repeat_legacy_name">پیش از شروع، برای این نشست نامی وارد کنید.</string>
     <string name="focus_repeat_next_step">گام بعدی قبلی: %1$s</string>
+    <string name="focus_recent_work">کار اخیر</string>
+    <string name="focus_recent_work_loading">در حال جست‌وجوی کار اخیر…</string>
+    <string name="focus_recent_work_error">بارگذاری کار اخیر ممکن نشد.</string>
+    <string name="focus_recent_work_missing">این نشست دیگر در دسترس نیست.</string>
+    <string name="focus_recent_interrupted">نشست ناتمام ماند</string>
+    <string name="focus_recent_replace_title">این تنظیم تمرکز جایگزین شود؟</string>
+    <string name="focus_recent_replace_body">تکرار کار اخیر، تنظیماتی را که وارد کرده‌اید جایگزین می‌کند. هر زمان آماده بودید می‌توانید نشست تکرارشده را شروع کنید.</string>
+    <string name="focus_recent_replace_setup">جایگزینی تنظیمات</string>
     <string name="focus_reflection_prompt">مایلید یادداشت کنید این نشست چطور پیش رفت؟</string>
     <string name="focus_reflection_title">بازتاب نشست</string>
     <string name="focus_reflection_outcome_label">چطور پیش رفت؟ (اختیاری)</string>

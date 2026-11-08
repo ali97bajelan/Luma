@@ -659,6 +659,24 @@ class ProtectedFocusRepository(
         }
     }
 
+    override fun observeRecentTerminal(
+        range: TimeRange?,
+        includeTaskOrigin: Boolean,
+    ): Flow<FocusSession?> = gateway.snapshot.flatMapLatest { before ->
+        if (!canRead(before)) {
+            flowOf(null)
+        } else {
+            val includeTasks = includeTaskOrigin && canReadTasks(before)
+            delegate.observeRecentTerminal(range, includeTasks).map { session ->
+                val after = gateway.snapshot.value
+                if (gateway.sameAuthorizationEpoch(before, after) && canRead(after) &&
+                    (!includeTasks || canReadTasks(after)) &&
+                    (session == null || includeTasks || !session.taskOrigin)
+                ) session else null
+            }
+        }
+    }
+
     override fun observeStatistics(range: TimeRange): Flow<FocusStatistics> =
         combine(delegate.observeStatistics(range), gateway.snapshot) { stats, state ->
             when {

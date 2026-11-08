@@ -43,6 +43,61 @@ interface FocusDao {
     fun observeTerminalSessions(): Flow<List<FocusSessionWithRuns>>
 
     @Query(
+        """SELECT s.* FROM focus_session AS s
+        WHERE s.state IN ('FINISHED', 'INTERRUPTED')
+          AND s.ended_at_seconds IS NOT NULL
+          AND s.ended_at_nanos IS NOT NULL
+          AND (:includeTaskOrigin OR s.task_origin = 0)
+          AND EXISTS (
+              SELECT 1 FROM focus_run AS credited
+              WHERE credited.session_id = s.id AND credited.credited_millis > 0
+          )
+          AND (:rangeStartSeconds IS NULL OR EXISTS (
+              SELECT 1 FROM focus_run AS r
+              WHERE r.session_id = s.id AND r.credited_millis > 0
+                AND (r.started_at_seconds < :rangeEndSeconds
+                     OR (r.started_at_seconds = :rangeEndSeconds AND r.started_at_nanos < :rangeEndNanos))
+                AND (r.ended_at_seconds > :rangeStartSeconds
+                     OR (r.ended_at_seconds = :rangeStartSeconds AND r.ended_at_nanos > :rangeStartNanos))
+                AND (
+                    CASE
+                        WHEN r.ended_at_seconds < :rangeEndSeconds
+                             OR (r.ended_at_seconds = :rangeEndSeconds AND r.ended_at_nanos <= :rangeEndNanos)
+                        THEN r.credited_millis
+                        ELSE (
+                            (:rangeEndSeconds - r.started_at_seconds
+                                - CASE WHEN :rangeEndNanos < r.started_at_nanos THEN 1 ELSE 0 END) * 1000
+                            + (:rangeEndNanos - r.started_at_nanos
+                                + CASE WHEN :rangeEndNanos < r.started_at_nanos THEN 1000000000 ELSE 0 END) / 1000000
+                        )
+                    END
+                ) > (
+                    CASE
+                        WHEN r.started_at_seconds > :rangeStartSeconds
+                             OR (r.started_at_seconds = :rangeStartSeconds AND r.started_at_nanos >= :rangeStartNanos)
+                        THEN 0
+                        ELSE (
+                            (:rangeStartSeconds - r.started_at_seconds
+                                - CASE WHEN :rangeStartNanos < r.started_at_nanos THEN 1 ELSE 0 END) * 1000
+                            + (:rangeStartNanos - r.started_at_nanos
+                                + CASE WHEN :rangeStartNanos < r.started_at_nanos THEN 1000000000 ELSE 0 END) / 1000000
+                        )
+                    END
+                )
+          ))
+        ORDER BY s.ended_at_seconds DESC, s.ended_at_nanos DESC, s.id DESC
+        LIMIT 1""",
+    )
+    @Transaction
+    fun observeRecentTerminal(
+        rangeStartSeconds: Long?,
+        rangeStartNanos: Int?,
+        rangeEndSeconds: Long?,
+        rangeEndNanos: Int?,
+        includeTaskOrigin: Boolean,
+    ): Flow<FocusSessionWithRuns?>
+
+    @Query(
         """SELECT t.* FROM focus_tag AS t
         WHERE EXISTS (SELECT 1 FROM focus_session AS s WHERE s.tag_id = t.id)
           AND (:includeTaskOrigin OR NOT EXISTS (
