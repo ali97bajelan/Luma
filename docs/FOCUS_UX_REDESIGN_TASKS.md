@@ -19,7 +19,7 @@ Statuses: [ ] pending; [x] implemented/local-verified (I tasks) or QA-passed wit
 |---|---|---|---|---|---|---|
 | [x] | I01 | Non-overlapping consequence-labeled leave dialog | P0 | — | S03 | Q04,Q12 |
 | [x] | I02 | Required-input guidance, IME and localized copy | P1 | — | S02,S08,S09 | Q01,Q02,Q12 |
-| [ ] | I03 | Preparation hierarchy, timer presets, optional task/tag/recent work | P1 | I02 | S02 | Q01–Q03,Q09 |
+| [x] | I03 | Preparation hierarchy, timer presets, optional task/tag/recent work | P1 | I02 | S02 | Q01–Q03,Q09 |
 | [ ] | I04 | State-aware Today and History/Settings header wiring in both hosts | P1 | I01,I03 | S01 | Q01,Q04,Q09,Q10 |
 | [ ] | I05 | Running/paused hierarchy, shortcut/help and failure feedback | P1 | I01,I04 | S03,S08 | Q04,Q08,Q10,Q11 |
 | [ ] | I06 | Single-primary completion, reflection and explicit task actions | P1 | I02,I05 | S04 | Q05,Q09,Q11 |
@@ -27,6 +27,8 @@ Statuses: [ ] pending; [x] implemented/local-verified (I tasks) or QA-passed wit
 | [ ] | I08 | Inline progress, compact history and disclosed run details | P2 | I03,I04,I06 | S06 | Q07,Q09,Q11 |
 | [ ] | I09 | Grouped settings, goal/reminder/tag/shortcut status and recovery | P2 | I04 | S07,S08 | Q08–Q11 |
 | [ ] | I10 | Cross-surface accessibility/localization integration and local verification | P1 | I01–I09 | S01–S09 | Q01–Q12 |
+
+I03 local verification: FocusSetupStateTest passed (18/18) and :app:assembleProductionDebug passed. Broader JVM suites, Android test source compilation and lint currently report failures outside I03; emulator/connected execution remains deferred to QA01.
 
 ### Implementation gate G1
 

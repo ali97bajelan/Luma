@@ -39,6 +39,7 @@ data class FocusSetupState(
     val tagTouched: Boolean = false,
     val timedMinutesEditedSinceBlur: Boolean = false,
     val timedMinutesTouched: Boolean = false,
+    val timerConfigEditedDuringRepeatLoad: Boolean = false,
     val startAttempted: Boolean = false,
     val tagAreaExpanded: Boolean = false,
     val timerMode: FocusTimerMode = FocusTimerMode.COUNT_UP,
@@ -223,6 +224,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     )
     is FocusSetupEvent.TimerModeChanged -> state.copy(
         timerMode = event.value,
+        timerConfigEditedDuringRepeatLoad = state.timerConfigEditedDuringRepeatLoad || state.repeatLoading,
         startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
     )
     is FocusSetupEvent.TimedMinutesChanged -> state.copy(
@@ -230,6 +232,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
             Character.digit(character, 10).takeIf { it >= 0 }?.digitToChar()
         }.take(3).joinToString(""),
         timedMinutesEditedSinceBlur = true,
+        timerConfigEditedDuringRepeatLoad = state.timerConfigEditedDuringRepeatLoad || state.repeatLoading,
         startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
     )
     FocusSetupEvent.NameBlurred -> state.copy(
@@ -260,6 +263,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         tagTouched = false,
         timedMinutesEditedSinceBlur = false,
         timedMinutesTouched = false,
+        timerConfigEditedDuringRepeatLoad = false,
         startAttempted = false,
         tagAreaExpanded = false,
         timerMode = FocusTimerMode.COUNT_UP,
@@ -308,14 +312,17 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     )
     is FocusSetupEvent.TaskSelectionLoaded -> if (
         state.selectedTaskId != event.taskId || state.taskSelectionRequestId != event.requestId
-    ) state else state.copy(
-        name = event.title.orEmpty(),
-        nameTouched = !isValidFocusName(event.title.orEmpty()),
-        selectedTaskTitle = event.title,
-        taskSelectionLoading = false,
-        taskSelectionConflict = !event.isOpen,
-        taskSelectionRequestId = null,
-    )
+    ) state else {
+        val preserveName = state.nameEditedSinceBlur || state.nameTouched
+        state.copy(
+            name = if (preserveName) state.name else event.title.orEmpty(),
+            nameTouched = if (preserveName) state.nameTouched else !isValidFocusName(event.title.orEmpty()),
+            selectedTaskTitle = event.title,
+            taskSelectionLoading = false,
+            taskSelectionConflict = !event.isOpen,
+            taskSelectionRequestId = null,
+        )
+    }
     is FocusSetupEvent.TaskSelectionLoadFailed -> if (
         state.selectedTaskId != event.taskId || state.taskSelectionRequestId != event.requestId
     ) state else state.copy(
@@ -362,34 +369,43 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     is FocusSetupEvent.PrefillRequested -> if (
         state.databaseGeneration != event.generation || state.repeatSourceSessionId != event.sessionId ||
             state.repeatRequestId != event.requestId
-    ) state else state.copy(
-        name = event.input.name,
-        tag = event.input.tagName.orEmpty(),
-        nameEditedSinceBlur = false,
-        nameTouched = !isValidFocusName(event.input.name),
-        tagEditedSinceBlur = false,
-        tagTouched = !isValidFocusTag(event.input.tagName),
-        timedMinutesEditedSinceBlur = false,
-        timedMinutesTouched = !isValidFocusTimer(event.input.timer),
-        startAttempted = false,
-        tagAreaExpanded = false,
-        timerMode = event.input.timer.mode,
-        timedMinutesText = event.input.timer.targetMillis?.div(MILLIS_PER_MINUTE)?.toString() ?: "25",
-        repeatLoading = false,
-        repeatRequestId = null,
-        repeatLoadFailed = false,
-        repeatNeedsName = event.input.name.isBlank(),
-        repeatNextStep = event.nextStep,
-        selectedTaskId = event.input.taskId,
-        selectedTaskTitle = event.taskTitle,
-        taskSelectionLoading = false,
-        taskSelectionConflict = false,
-        taskSelectionRequestId = null,
-        taskOrigin = event.input.taskOrigin,
-        capturedStart = null,
-        startFailure = null,
-        unresolvedStartPending = false,
-    )
+    ) state else {
+        val preserveName = state.nameEditedSinceBlur || state.nameTouched
+        val preserveTag = state.tagEditedSinceBlur || state.tagTouched
+        val preserveTimer = state.timerConfigEditedDuringRepeatLoad ||
+            state.timedMinutesEditedSinceBlur || state.timedMinutesTouched
+        state.copy(
+            name = if (preserveName) state.name else event.input.name,
+            tag = if (preserveTag) state.tag else event.input.tagName.orEmpty(),
+            nameEditedSinceBlur = state.nameEditedSinceBlur.takeIf { preserveName } ?: false,
+            nameTouched = if (preserveName) state.nameTouched else !isValidFocusName(event.input.name),
+            tagEditedSinceBlur = state.tagEditedSinceBlur.takeIf { preserveTag } ?: false,
+            tagTouched = if (preserveTag) state.tagTouched else !isValidFocusTag(event.input.tagName),
+            timedMinutesEditedSinceBlur = state.timedMinutesEditedSinceBlur.takeIf { preserveTimer } ?: false,
+            timedMinutesTouched = if (preserveTimer) state.timedMinutesTouched
+                else !isValidFocusTimer(event.input.timer),
+            timerConfigEditedDuringRepeatLoad = false,
+            startAttempted = false,
+            tagAreaExpanded = false,
+            timerMode = if (preserveTimer) state.timerMode else event.input.timer.mode,
+            timedMinutesText = if (preserveTimer) state.timedMinutesText
+                else event.input.timer.targetMillis?.div(MILLIS_PER_MINUTE)?.toString() ?: "25",
+            repeatLoading = false,
+            repeatRequestId = null,
+            repeatLoadFailed = false,
+            repeatNeedsName = if (preserveName) state.name.isBlank() else event.input.name.isBlank(),
+            repeatNextStep = event.nextStep,
+            selectedTaskId = event.input.taskId,
+            selectedTaskTitle = event.taskTitle,
+            taskSelectionLoading = false,
+            taskSelectionConflict = false,
+            taskSelectionRequestId = null,
+            taskOrigin = event.input.taskOrigin,
+            capturedStart = null,
+            startFailure = null,
+            unresolvedStartPending = false,
+        )
+    }
     is FocusSetupEvent.RepeatSourceMissing -> if (state.repeatRequestId == event.requestId) state.copy(
         repeatSourceSessionId = null,
         repeatRequestId = null,
@@ -418,6 +434,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         tagTouched = false,
         timedMinutesEditedSinceBlur = false,
         timedMinutesTouched = false,
+        timerConfigEditedDuringRepeatLoad = false,
         startAttempted = false,
         tagAreaExpanded = false,
         timerMode = FocusTimerMode.COUNT_UP,
@@ -500,6 +517,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         tagTouched = false,
         timedMinutesEditedSinceBlur = false,
         timedMinutesTouched = false,
+        timerConfigEditedDuringRepeatLoad = false,
         startAttempted = false,
         tagAreaExpanded = false,
         timerMode = FocusTimerMode.COUNT_UP,

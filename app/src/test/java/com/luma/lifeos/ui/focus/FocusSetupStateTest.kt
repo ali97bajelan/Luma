@@ -285,6 +285,74 @@ class FocusSetupStateTest {
         ))
     }
 
+    @Test
+    fun delayedTaskSelectionDoesNotReplaceAnEditedName() {
+        val taskId = uuid(21)
+        val requestId = uuid(22)
+        val requested = reduceFocusSetupState(
+            FocusSetupState(),
+            FocusSetupEvent.TaskSelectionRequested(taskId, requestId),
+        )
+        val edited = reduceFocusSetupState(requested, FocusSetupEvent.NameChanged("My own session"))
+
+        val loaded = reduceFocusSetupState(
+            edited,
+            FocusSetupEvent.TaskSelectionLoaded(
+                taskId = taskId,
+                requestId = requestId,
+                title = "Task title",
+                isOpen = true,
+            ),
+        )
+
+        assertEquals("My own session", loaded.name)
+        assertEquals("Task title", loaded.selectedTaskTitle)
+        assertFalse(loaded.taskSelectionLoading)
+    }
+
+    @Test
+    fun delayedRepeatResultPreservesAuthoredSetupFields() {
+        val generation = uuid(23)
+        val sessionId = uuid(24)
+        val requestId = uuid(25)
+        val requested = reduceFocusSetupState(
+            FocusSetupState(databaseGeneration = generation),
+            FocusSetupEvent.RepeatRequested(sessionId, requestId),
+        )
+        val edited = reduceFocusSetupState(
+            reduceFocusSetupState(
+                reduceFocusSetupState(
+                    reduceFocusSetupState(requested, FocusSetupEvent.NameChanged("My own session")),
+                    FocusSetupEvent.TagChanged("Personal"),
+                ),
+                FocusSetupEvent.TimerModeChanged(FocusTimerMode.TIMED),
+            ),
+            FocusSetupEvent.TimedMinutesChanged("42"),
+        )
+
+        val loaded = reduceFocusSetupState(
+            edited,
+            FocusSetupEvent.PrefillRequested(
+                sessionId = sessionId,
+                requestId = requestId,
+                input = FocusStartInput(
+                    name = "Previous session",
+                    tagName = "Old tag",
+                    timer = com.luma.lifeos.domain.focus.FocusTimerConfig.timed(15),
+                ),
+                nextStep = "Review notes",
+                generation = generation,
+            ),
+        )
+
+        assertEquals("My own session", loaded.name)
+        assertEquals("Personal", loaded.tag)
+        assertEquals(FocusTimerMode.TIMED, loaded.timerMode)
+        assertEquals("42", loaded.timedMinutesText)
+        assertFalse(loaded.repeatLoading)
+        assertNull(loaded.repeatRequestId)
+    }
+
     private fun durationMillis(range: com.luma.lifeos.domain.time.TimeRange?): Long {
         assertTrue(range != null)
         return java.time.Duration.between(range!!.start, range.endExclusive).toMillis()

@@ -47,8 +47,8 @@ internal fun FocusRecentWorkCard(
             modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_loading"),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                 Text(stringResource(R.string.focus_recent_work_loading))
@@ -59,8 +59,8 @@ internal fun FocusRecentWorkCard(
             modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_missing"),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                 Text(stringResource(R.string.focus_recent_work_missing))
@@ -75,8 +75,8 @@ internal fun FocusRecentWorkCard(
             modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_error"),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                 Text(stringResource(R.string.focus_recent_work_error), color = MaterialTheme.colorScheme.error)
@@ -93,8 +93,8 @@ internal fun FocusRecentWorkCard(
                 modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_card"),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                     Text(
@@ -119,8 +119,8 @@ internal fun FocusRecentWorkCard(
                         },
                         enabled = canRepeat,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .testTag("focus_recent_work_repeat"),
-                    ) { Text(stringResource(R.string.focus_repeat)) }
+                            .testTag("focus_recent_work_use_settings"),
+                    ) { Text(stringResource(R.string.focus_recent_use_settings)) }
                 }
             }
         }

@@ -113,6 +113,11 @@ class TodoRestoreInvalidationTest {
 
         override fun observeToday(date: LocalDate, limit: Int): Flow<TodoPage> = flowOf(TodoPage(emptyList(), 0))
 
+        override suspend fun searchOpen(query: String, offset: Int, limit: Int): TodoPage {
+            val matching = listOf(current).filter { !it.isCompleted && it.title.contains(query, ignoreCase = true) }
+            return TodoPage(matching.drop(offset).take(limit), matching.size)
+        }
+
         override suspend fun get(id: UUID): TodoTask? {
             loads++
             return current.takeIf { it.id == id }

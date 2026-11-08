@@ -79,12 +79,14 @@ Final review: minor (deferred): During a retry after an I/O failure, the visible
 Files: P/ui/focus/FocusSetupContent.kt, FocusRecentWorkCard.kt, FocusTaskPicker.kt, FocusSetupState.kt; P/focus/FocusViewModel.kt only if needed; U/ui/focus/FocusSetupStateTest.kt; A/ui/focus/FocusScreenTest.kt.
 Consumes I02 guidance, existing change callbacks/task selection/repeat; produces reordered setup using the same start payload.
 
-- [ ] Reorder fields per S02; retain persistent bottom action and inset handling.
-- [ ] Consolidate timer controls: Count up/Timed selection; timed-only presets 15/25/50; Custom focuses duration; switching mode never resets authored duration.
-- [ ] Put optional task selection after name; selected task shows Change/Remove. Preserve missing/locked/loading/search/no-match/pagination states and draft return.
-- [ ] Keep tags optional; compact recent work, rename repeat presentation to Use settings, preserve replacement/legacy/missing-source guidance.
-- [ ] Add local reducer regressions where required for delayed task/repeat result not overwriting new edits. Run local tests.
-- [ ] Define connected cases for preset selection, task return and repeat confirmation; compile only. Do not run emulator.
+- [x] Reorder fields per S02; retain persistent bottom action and inset handling.
+- [x] Consolidate timer controls: Count up/Timed selection; timed-only presets 15/25/50; Custom focuses duration; switching mode never resets authored duration.
+- [x] Put optional task selection after name; selected task shows Change/Remove. Preserve missing/locked/loading/search/no-match/pagination states and draft return.
+- [x] Keep tags optional; compact recent work, rename repeat presentation to Use settings, preserve replacement/legacy/missing-source guidance.
+- [x] Add local reducer regressions for delayed task/repeat results; FocusSetupStateTest passes.
+- [x] Define connected cases for preset selection, task return and repeat confirmation; compile only. No emulator tests run.
+
+I03 verification note: FocusSetupStateTest passed (18/18) and :app:assembleProductionDebug passed. The broader JVM suites, Android test source compilation and lint currently report failures outside I03.
 
 ### I04 — Entry points and secondary destinations (S01)
 

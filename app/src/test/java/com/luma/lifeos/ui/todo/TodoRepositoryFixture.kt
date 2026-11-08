@@ -76,6 +76,12 @@ internal class TodoRepositoryFixture(initial: List<TodoTask> = emptyList()) : To
         }
     }
 
+    override suspend fun searchOpen(query: String, offset: Int, limit: Int): TodoPage {
+        val matching = rows.value.values.filter { !it.isCompleted && it.title.contains(query, ignoreCase = true) }
+            .sortedWith(openTodoTaskComparator)
+        return TodoPage(matching.drop(offset).take(limit), matching.size)
+    }
+
     override suspend fun get(id: UUID): TodoTask? {
         getCalls += id
         getFailure?.let { failure ->

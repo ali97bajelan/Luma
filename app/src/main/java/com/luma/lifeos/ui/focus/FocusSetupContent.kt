@@ -20,11 +20,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -59,6 +62,8 @@ internal fun FocusSetupContent(
 ) {
     val setup = state.setup
     val keyboardController = LocalSoftwareKeyboardController.current
+    val durationFocusRequester = remember { FocusRequester() }
+    var requestDurationFocus by remember { mutableStateOf(value = false) }
     var retryReplacementSessionId by remember { mutableStateOf<java.util.UUID?>(null) }
     val nameValid = runCatching {
         normalizeFocusStartInput(FocusStartInput(name = setup.name, tagName = null))
@@ -70,60 +75,15 @@ internal fun FocusSetupContent(
     val fieldsEnabled = !state.busy && !setup.repeatLoading
     var showTagPicker by remember { mutableStateOf(false) }
 
-    Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
-    if (setup.repeatLoading) {
-        Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
-    }
-    val missingRecentSource = state.recentWork as? FocusRecentWorkState.Missing
-    if (setup.repeatLoadFailed && missingRecentSource?.sessionId != setup.repeatSourceSessionId) {
-        Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
-        setup.repeatSourceSessionId?.let { sourceId ->
-            TextButton(
-                onClick = {
-                    if (setup.hasUserAuthoredDraft) retryReplacementSessionId = sourceId
-                    else onRepeatSession(sourceId)
-                },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_repeat_retry"),
-            ) { Text(stringResource(R.string.retry)) }
+    LaunchedEffect(setup.timerMode, requestDurationFocus) {
+        if (requestDurationFocus && setup.timerMode == FocusTimerMode.TIMED) {
+            durationFocusRequester.requestFocus()
+            keyboardController?.show()
+            requestDurationFocus = false
         }
     }
-    if (setup.repeatNeedsName) {
-        Text(stringResource(R.string.focus_repeat_legacy_name), modifier = Modifier.testTag("focus_repeat_legacy_name"))
-    }
-    setup.repeatNextStep?.let { nextStep ->
-        Text(stringResource(R.string.focus_repeat_next_step, nextStep), modifier = Modifier.testTag("focus_repeat_next_step"))
-    }
-    if (onOpenTaskPicker != null) {
-        OutlinedButton(
-            onClick = onOpenTaskPicker,
-            enabled = fieldsEnabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_choose_task"),
-        ) { Text(stringResource(R.string.focus_choose_task)) }
-    }
-    if (setup.selectedTaskId != null) {
-        Text(
-            stringResource(R.string.focus_task_selected, setup.selectedTaskTitle ?: setup.name),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.testTag("focus_task_selected"),
-        )
-        TextButton(
-            onClick = onClearTaskSelection,
-            enabled = fieldsEnabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_remove"),
-        ) { Text(stringResource(R.string.focus_task_remove)) }
-    } else if (setup.taskOrigin) {
-        Text(stringResource(R.string.focus_task_link_removed), modifier = Modifier.testTag("focus_task_link_removed"))
-    }
-    if (setup.taskSelectionLoading) {
-        Text(stringResource(R.string.focus_task_loading), modifier = Modifier.testTag("focus_task_loading"))
-    }
-    if (setup.taskSelectionConflict) {
-        Text(
-            stringResource(R.string.focus_task_selection_conflict),
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.testTag("focus_task_selection_conflict"),
-        )
-    }
+
+    Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
     OutlinedTextField(
         value = setup.name,
         onValueChange = onNameChange,
@@ -143,6 +103,50 @@ internal fun FocusSetupContent(
         modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) onNameBlur() }
             .testTag("focus_name"),
     )
+
+    if (setup.selectedTaskId != null) {
+        setup.selectedTaskTitle?.let { taskTitle ->
+            Text(
+                stringResource(R.string.focus_task_selected, taskTitle),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("focus_task_selected"),
+            )
+        }
+        if (onOpenTaskPicker != null) {
+            TextButton(
+                onClick = onOpenTaskPicker,
+                enabled = fieldsEnabled,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_change"),
+            ) { Text(stringResource(R.string.focus_task_change)) }
+        }
+        TextButton(
+            onClick = onClearTaskSelection,
+            enabled = fieldsEnabled,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_remove"),
+        ) { Text(stringResource(R.string.focus_task_remove)) }
+    } else {
+        if (onOpenTaskPicker != null) {
+            OutlinedButton(
+                onClick = onOpenTaskPicker,
+                enabled = fieldsEnabled,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_choose_task"),
+            ) { Text(stringResource(R.string.focus_choose_task)) }
+        }
+        if (setup.taskOrigin) {
+            Text(stringResource(R.string.focus_task_link_removed), modifier = Modifier.testTag("focus_task_link_removed"))
+        }
+    }
+    if (setup.taskSelectionLoading) {
+        Text(stringResource(R.string.focus_task_loading), modifier = Modifier.testTag("focus_task_loading"))
+    }
+    if (setup.taskSelectionConflict) {
+        Text(
+            stringResource(R.string.focus_task_selection_conflict),
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.testTag("focus_task_selection_conflict"),
+        )
+    }
+
     Text(stringResource(R.string.focus_timer_mode_label), style = MaterialTheme.typography.titleSmall)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -161,16 +165,38 @@ internal fun FocusSetupContent(
                 label = { Text(stringResource(R.string.focus_timer_mode_timed)) },
             )
         }
-        TextButton(
+    }
+    if (setup.timerMode == FocusTimerMode.COUNT_UP) {
+        Text(stringResource(R.string.focus_count_up_support), style = MaterialTheme.typography.bodyMedium)
+    } else {
+        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(15, 25, 50).forEach { minutes ->
+                val label = when (minutes) {
+                    15 -> R.string.focus_preset_15_minutes
+                    25 -> R.string.focus_25_minute_shortcut
+                    else -> R.string.focus_preset_50_minutes
+                }
+                FilterChip(
+                    selected = setup.timedMinutesText == minutes.toString(),
+                    onClick = {
+                        onTimerModeChange(FocusTimerMode.TIMED)
+                        onTimedMinutesChange(minutes.toString())
+                    },
+                    enabled = fieldsEnabled,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                        .testTag("focus_preset_$minutes"),
+                    label = { Text(stringResource(label)) },
+                )
+            }
+        }
+        OutlinedButton(
             onClick = {
                 onTimerModeChange(FocusTimerMode.TIMED)
-                onTimedMinutesChange("25")
+                requestDurationFocus = true
             },
             enabled = fieldsEnabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_25_minute_shortcut"),
-        ) { Text(stringResource(R.string.focus_25_minute_shortcut)) }
-    }
-    if (setup.timerMode == FocusTimerMode.TIMED) {
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_custom_duration"),
+        ) { Text(stringResource(R.string.focus_preset_custom)) }
         OutlinedTextField(
             value = setup.timedMinutesText,
             onValueChange = onTimedMinutesChange,
@@ -185,7 +211,8 @@ internal fun FocusSetupContent(
                     Text(stringResource(R.string.focus_timed_minutes_invalid))
                 }
             },
-            modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) onTimedMinutesBlur() }
+            modifier = Modifier.fillMaxWidth().focusRequester(durationFocusRequester)
+                .onFocusChanged { if (!it.isFocused) onTimedMinutesBlur() }
                 .testTag("focus_timed_minutes"),
         )
         Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
@@ -238,6 +265,28 @@ internal fun FocusSetupContent(
     }
     if (setup.startFailure == FocusSetupFailure.VALIDATION) {
         Text(stringResource(R.string.focus_setup_invalid), color = MaterialTheme.colorScheme.error)
+    }
+    if (setup.repeatLoading) {
+        Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
+    }
+    val missingRecentSource = state.recentWork as? FocusRecentWorkState.Missing
+    if (setup.repeatLoadFailed && missingRecentSource?.sessionId != setup.repeatSourceSessionId) {
+        Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
+        setup.repeatSourceSessionId?.let { sourceId ->
+            TextButton(
+                onClick = {
+                    if (setup.hasUserAuthoredDraft) retryReplacementSessionId = sourceId
+                    else onRepeatSession(sourceId)
+                },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_repeat_retry"),
+            ) { Text(stringResource(R.string.retry)) }
+        }
+    }
+    if (setup.repeatNeedsName) {
+        Text(stringResource(R.string.focus_repeat_legacy_name), modifier = Modifier.testTag("focus_repeat_legacy_name"))
+    }
+    setup.repeatNextStep?.let { nextStep ->
+        Text(stringResource(R.string.focus_repeat_next_step, nextStep), modifier = Modifier.testTag("focus_repeat_next_step"))
     }
 
     FocusRecentWorkCard(
