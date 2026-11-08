@@ -1300,9 +1300,17 @@
     <string name="focus_25_minute_shortcut">انتخاب ۲۵ دقیقه</string>
     <string name="focus_remaining_label">زمان باقی‌مانده</string>
     <string name="focus_target_reached">هدف زمان تمرکز رسید و نشست ذخیره شد</string>
+    <string name="focus_terminal_target_reached">هدف رسید</string>
+    <string name="focus_terminal_interrupted">نشست قطع شد</string>
+    <string name="focus_stopped_before_target">پیش از رسیدن به هدف متوقف شد</string>
+    <string name="focus_count_up_ended">نشست پایان یافت</string>
+    <string name="focus_saved_duration">مدت ذخیره‌شده: %1$s</string>
     <string name="focus_alert_limitations">اعلان‌های پس‌زمینه تضمین‌شده نیستند و ممکن است با تأخیر برسند یا در دسترس نباشند. زمان‌سنج همچنان کار می‌کند.</string>
     <string name="focus_break_minutes_label">مدت استراحت به دقیقه</string>
     <string name="focus_break_minutes_invalid">عدد صحیحی بین ۱ تا ۶۰ دقیقه وارد کنید.</string>
+    <string name="focus_break_take_five">گرفتن ۵ دقیقه استراحت</string>
+    <string name="focus_break_customize">تنظیم مدت استراحت</string>
+    <string name="focus_break_custom_title">تنظیم استراحت</string>
     <string name="focus_start_break">شروع استراحت</string>
     <string name="focus_break_remaining">%1$s تا پایان استراحت</string>
     <string name="focus_break_expired">زمان استراحت تمام شد</string>
@@ -1354,6 +1362,7 @@
     <string name="focus_reflection_next_step_hint">اختیاری · %1$d از ۲۸۰ نویسه</string>
     <string name="focus_reflection_saved_next_step">گام بعدی: %1$s</string>
     <string name="focus_reflection_add">افزودن بازتاب</string>
+    <string name="focus_reflection_add_outcome_or_step">افزودن نتیجه یا گام بعدی</string>
     <string name="focus_reflection_edit">ویرایش بازتاب</string>
     <string name="focus_reflection_save">ذخیرهٔ بازتاب</string>
     <string name="focus_reflection_skip">رد کردن</string>

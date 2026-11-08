@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD07 SOURCE COMPLETE — UNVERIFIED; FD08–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD08 SOURCE COMPLETE — UNVERIFIED; FD09–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -48,7 +48,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD05 source complete — UNVERIFIED
 - [x] FD06 source complete — UNVERIFIED
 - [x] FD07 source complete — UNVERIFIED
-- [ ] FD08 source complete
+- [x] FD08 source complete — UNVERIFIED
 - [ ] FD09 source complete
 - [ ] FD10 source complete
 - [ ] FD11 source complete
@@ -131,6 +131,17 @@ The checkboxes below track current source delivery only; source completion is se
 - Source review covered untouched validation, invalid task/Repeat prefill, reducer and restore resets, stale-generation clearing, immutable Start gating, three/ten-item tag bounds, accessibility targets, IME/system inset behavior, unchanged timer defaults and settings scope copy. Tests, fixtures, builds, schema generation, lint and device/emulator checks were NOT RUN as required by Phase I.
 - Final review: author self-review; delegation was disabled by the active task instructions.
 - Later proof: Q02/Q05; E01/E10.
+
+### FD08 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED (2026-11-08).
+- Changed source: new `app/.../ui/focus/FocusCompletionContent.kt`; modified `FocusScreen.kt`, `FocusReflectionEditor.kt`, `FocusRoute.kt`, `FocusTaskCompletionAction.kt`; EN/FR/FA strings.
+- Implemented: extracted the terminal composition and ordered terminal-specific status, authorized session context, saved duration and enabled Done before auxiliary actions. Target-reached, timed early Stop, count-up end and interruption receive distinct copy. Added an immediate five-minute break and a custom 1–60 minute dialog with its own Start/Cancel; the existing running-break countdown/End control remains the only break control while a break is active. Empty reflection stays collapsed; saved reflection remains summarized with Edit and keeps its existing independent save/retry operation. Task completion and unlink actions are now reachable in the terminal hierarchy below reflection, alongside Repeat, Start another, History and pending destination.
+- Interfaces/privacy: wired existing FocusViewModel task-completion and unlink methods through FocusRoute/FocusScreen. Passed current task-content readability into completion so the reflection editor does not reload task-origin text when TASKS is locked; task actions also require current Focus and TASKS readability in addition to the ViewModel grant.
+- Review follow-up: an independent read-only review found that a stale ViewModel permission could briefly show “Task link removed” during relock. The current access gate now suppresses task actions immediately; this fix received source-only review, with tests/builds deferred under Phase I.
+- Ruling: added the existing task-completion action to the completion surface while retaining it in history detail — the FD08 plan requires terminal task completion and both entry points reuse the same revision/generation-checked ViewModel contract — cost if wrong: the action is available in two terminal-detail locations.
+- Source review covered terminal-reason mapping, Done reachability and ordering, protected context/reflection re-read, 1–60 input handling, no-start behavior during active breaks, retained reflection retries, task-action eligibility and unlink state. Tests, fixtures, builds, schema generation, lint and device/emulator checks were NOT RUN as required by Phase I.
+- Later proof: Q02/Q05; E03/E04/E10.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

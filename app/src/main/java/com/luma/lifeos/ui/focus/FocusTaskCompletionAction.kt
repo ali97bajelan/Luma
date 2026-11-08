@@ -45,6 +45,10 @@ internal fun FocusTaskCompletionAction(
     }
     val currentGeneration = generation ?: return
     val stateMatches = state.matches(session.id, session.revision, taskId, currentGeneration)
+    if (stateMatches && state.unlinkPhase == FocusTaskUnlinkPhase.UNLINKED) {
+        Text(stringResource(R.string.focus_task_link_removed), modifier = Modifier.testTag("focus_task_link_removed"))
+        return
+    }
     val visibleState = if (stateMatches) state else FocusTaskCompletionState(
         sessionId = session.id,
         sessionRevision = session.revision,

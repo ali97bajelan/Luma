@@ -151,6 +151,7 @@ internal fun FocusRoute(
         state = presentationState,
         focusRepository = focusRepository,
         focusProductRepository = focusProductRepository,
+        taskContentReadable = protectedTasksReadable,
         allowedApps = discoveredApps.filter { it.packageName in selectedPackages },
         hasPendingDestination = hasPendingDestination,
         onBack = onBack,
@@ -189,6 +190,11 @@ internal fun FocusRoute(
         onTerminalSessionMissing = { sessionId, generation ->
             if (viewModel.dismissMissingTerminalSession(sessionId, generation)) onBack()
         },
+        onTaskSessionChanged = viewModel::syncTaskCompletionSession,
+        onMarkTaskComplete = viewModel::markTaskComplete,
+        onRetryTaskCompletion = viewModel::retryTaskCompletion,
+        onUnlinkTask = viewModel::unlinkTask,
+        onRetryTaskUnlink = viewModel::retryTaskUnlink,
         showInvitationDraftConfirmation = showInvitationDraftConfirmation,
         onConfirmInvitationDraftReplacement = {
             viewModel.startAnother()

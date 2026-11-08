@@ -182,12 +182,14 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Produces:** durable saved status, reachable Done, explicit 5-minute/custom break and collapsed reflection.
 
-- [ ] Extract terminal composition and distinguish target reached/early Stop/count-up end/interrupted.
-- [ ] Place saved duration and Done before auxiliary forms; preserve authorized context and generic locked state.
-- [ ] Add explicit five-minute action and custom 1–60 minute dialog; running break shows End/countdown.
-- [ ] Collapse empty reflection; show saved summary/Edit; retain independent save/retry behavior.
-- [ ] Place task completion, Repeat/new/history/pending destination in secondary hierarchy.
-- [ ] Source-review leaving/skipping/cancelling cannot mutate credit or strand Done; preserve deleted-session cleanup; record unverified handoff.
+- [x] Extract terminal composition and distinguish target reached/early Stop/count-up end/interrupted.
+- [x] Place saved duration and Done before auxiliary forms; preserve authorized context and generic locked state.
+- [x] Add explicit five-minute action and custom 1–60 minute dialog; running break shows End/countdown.
+- [x] Collapse empty reflection; show saved summary/Edit; retain independent save/retry behavior.
+- [x] Place task completion, Repeat/new/history/pending destination in secondary hierarchy.
+- [x] Source-review leaving/skipping/cancelling cannot mutate credit or strand Done; preserve deleted-session cleanup; record unverified handoff.
+
+**Source handoff:** SOURCE COMPLETE — UNVERIFIED (2026-11-08). Tests, fixtures, builds, schema generation, lint and device/emulator checks remain deferred to Phase Q/E.
 
 **Deferred proof:** Q02/Q05; E03/E04/E10.
 

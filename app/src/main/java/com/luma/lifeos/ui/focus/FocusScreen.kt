@@ -13,13 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.input.KeyboardType
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
@@ -89,7 +86,13 @@ internal fun FocusScreen(
     onEndBreak: () -> Unit = {},
     focusRepository: FocusRepository? = null,
     focusProductRepository: FocusProductRepository? = null,
+    taskContentReadable: Boolean = true,
     onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit = { _, _ -> },
+    onTaskSessionChanged: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit = { _, _, _, _ -> },
+    onMarkTaskComplete: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit = { _, _, _, _ -> },
+    onRetryTaskCompletion: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit = { _, _, _, _ -> },
+    onUnlinkTask: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit = { _, _, _, _ -> },
+    onRetryTaskUnlink: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit = { _, _, _, _ -> },
     showInvitationDraftConfirmation: Boolean = false,
     onConfirmInvitationDraftReplacement: () -> Unit = {},
     onDismissInvitationDraftReplacement: () -> Unit = {},
@@ -138,7 +141,7 @@ internal fun FocusScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (runtime.breakState != FocusBreakState.Idle) {
+            if (runtime.breakState != FocusBreakState.Idle && !showTerminal) {
                 FocusBreakCountdown(
                     state = runtime.breakState,
                     busy = state.breakBusy,
@@ -193,6 +196,7 @@ internal fun FocusScreen(
                     session = session,
                     focusRepository = focusRepository,
                     focusProductRepository = focusProductRepository,
+                    taskContentReadable = taskContentReadable,
                     interrupted = false,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
@@ -202,6 +206,12 @@ internal fun FocusScreen(
                     },
                     onRepeatSession = onRepeatSession,
                     onStartBreak = onStartBreak,
+                    onEndBreak = onEndBreak,
+                    onTaskSessionChanged = onTaskSessionChanged,
+                    onMarkTaskComplete = onMarkTaskComplete,
+                    onRetryTaskCompletion = onRetryTaskCompletion,
+                    onUnlinkTask = onUnlinkTask,
+                    onRetryTaskUnlink = onRetryTaskUnlink,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
@@ -213,6 +223,7 @@ internal fun FocusScreen(
                     session = session,
                     focusRepository = focusRepository,
                     focusProductRepository = focusProductRepository,
+                    taskContentReadable = taskContentReadable,
                     interrupted = true,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
@@ -222,6 +233,12 @@ internal fun FocusScreen(
                     },
                     onRepeatSession = onRepeatSession,
                     onStartBreak = onStartBreak,
+                    onEndBreak = onEndBreak,
+                    onTaskSessionChanged = onTaskSessionChanged,
+                    onMarkTaskComplete = onMarkTaskComplete,
+                    onRetryTaskCompletion = onRetryTaskCompletion,
+                    onUnlinkTask = onUnlinkTask,
+                    onRetryTaskUnlink = onRetryTaskUnlink,
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
@@ -547,96 +564,53 @@ private fun TerminalContent(
     session: FocusSession,
     focusRepository: FocusRepository?,
     focusProductRepository: FocusProductRepository?,
+    taskContentReadable: Boolean,
     interrupted: Boolean,
     hasPendingDestination: Boolean,
     onBack: () -> Unit,
     onStartAnother: () -> Unit,
     onRepeatSession: (java.util.UUID) -> Unit,
     onStartBreak: (Int) -> Unit,
+    onEndBreak: () -> Unit,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenPendingDestination: () -> Unit,
     onOpenHistory: () -> Unit,
     onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit,
+    onTaskSessionChanged: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit,
+    onMarkTaskComplete: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
+    onRetryTaskCompletion: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
+    onUnlinkTask: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
+    onRetryTaskUnlink: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
 ) {
-    val title = when {
-        interrupted -> R.string.focus_interrupted
-        session.terminalReason == com.luma.lifeos.domain.focus.FocusTerminalReason.TARGET_REACHED -> R.string.focus_target_reached
-        else -> R.string.focus_finished
-    }
-    Text(
-        stringResource(title),
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.testTag(if (interrupted) "focus_interrupted" else "focus_finished"),
+    FocusCompletionContent(
+        state = state,
+        session = session,
+        focusRepository = focusRepository,
+        focusProductRepository = focusProductRepository,
+        taskContentReadable = taskContentReadable,
+        interrupted = interrupted,
+        hasPendingDestination = hasPendingDestination,
+        onDone = onBack,
+        onStartAnother = onStartAnother,
+        onRepeatSession = onRepeatSession,
+        onStartBreak = onStartBreak,
+        onEndBreak = onEndBreak,
+        onRetry = onRetry,
+        onEmergencyExit = onEmergencyExit,
+        onOpenPendingDestination = onOpenPendingDestination,
+        onOpenHistory = onOpenHistory,
+        onTerminalSessionMissing = onTerminalSessionMissing,
+        onTaskSessionChanged = onTaskSessionChanged,
+        onMarkTaskComplete = onMarkTaskComplete,
+        onRetryTaskCompletion = onRetryTaskCompletion,
+        onUnlinkTask = onUnlinkTask,
+        onRetryTaskUnlink = onRetryTaskUnlink,
     )
-    SessionMetadata(session)
-    Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall)
-    focusRepository?.let { repository ->
-        FocusReflectionEditor(
-            session = session,
-            repository = repository,
-            productRepository = focusProductRepository,
-            generation = state.runtime.databaseGeneration,
-            isFocusReadable = state.focusContentReadable,
-            showWhenEmpty = true,
-            onSessionMissing = onTerminalSessionMissing,
-        )
-    }
-    if (interrupted) Text(stringResource(R.string.focus_interrupted_gap))
-    if (state.runtime.breakState == FocusBreakState.Idle) {
-        var breakMinutes by rememberSaveable(session.id.toString()) { mutableStateOf("5") }
-        val duration = breakMinutes.toIntOrNull()?.takeIf { it in 1..60 }
-        OutlinedTextField(
-            value = breakMinutes,
-            onValueChange = { value ->
-                breakMinutes = value.mapNotNull { character ->
-                    Character.digit(character, 10).takeIf { it >= 0 }?.digitToChar()
-                }.take(2).joinToString("")
-            },
-            label = { Text(stringResource(R.string.focus_break_minutes_label)) },
-            singleLine = true,
-            enabled = !state.breakBusy,
-            isError = duration == null,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            supportingText = { if (duration == null) Text(stringResource(R.string.focus_break_minutes_invalid)) },
-            modifier = Modifier.fillMaxWidth().testTag("focus_break_minutes"),
-        )
-        Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
-        LumaButton(
-            onClick = { duration?.let(onStartBreak) },
-            enabled = !state.breakBusy && duration != null,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_break"),
-        ) { Text(stringResource(R.string.focus_start_break)) }
-        if (state.breakOperationFailed) {
-            Text(stringResource(R.string.focus_break_operation_error), color = MaterialTheme.colorScheme.error)
-        }
-    }
-    val repeatId = state.setup.repeatSourceSessionId ?: session.id
-    if (state.setup.repeatLoading) {
-        Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
-    }
-    if (state.setup.repeatLoadFailed) {
-        Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
-    }
-    OutlinedButton(
-        onClick = { onRepeatSession(repeatId) },
-        enabled = !state.busy && !state.setup.repeatLoading,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_repeat"),
-    ) { Text(stringResource(R.string.focus_repeat)) }
-    LumaButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done")) {
-        Text(stringResource(R.string.focus_done))
-    }
-    OutlinedButton(onClick = onStartAnother, enabled = !state.busy,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_another")) {
-        Text(stringResource(R.string.focus_start_another))
-    }
-    OpenHistoryButton(onOpenHistory)
-    if (hasPendingDestination) PendingDestinationButton(onOpenPendingDestination = onOpenPendingDestination)
-    FailureContent(state, onRetry, onEmergencyExit)
 }
 
 @Composable
-private fun FocusBreakCountdown(
+internal fun FocusBreakCountdown(
     state: FocusBreakState,
     busy: Boolean,
     onEndBreak: () -> Unit,
@@ -673,7 +647,7 @@ private fun PendingDestinationButton(enabled: Boolean = true, onOpenPendingDesti
 }
 
 @Composable
-private fun FailureContent(
+internal fun FailureContent(
     state: FocusScreenState,
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,

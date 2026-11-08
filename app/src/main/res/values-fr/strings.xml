@@ -1320,9 +1320,17 @@
     <string name="focus_25_minute_shortcut">Choisir 25 minutes</string>
     <string name="focus_remaining_label">Temps restant</string>
     <string name="focus_target_reached">Objectif de concentration atteint et session enregistrée</string>
+    <string name="focus_terminal_target_reached">Objectif atteint</string>
+    <string name="focus_terminal_interrupted">Session interrompue</string>
+    <string name="focus_stopped_before_target">Arrêt avant l’objectif</string>
+    <string name="focus_count_up_ended">Session terminée</string>
+    <string name="focus_saved_duration">Durée enregistrée : %1$s</string>
     <string name="focus_alert_limitations">Les alertes en arrière-plan sont indicatives et peuvent être retardées ou indisponibles. Le minuteur reste utilisable.</string>
     <string name="focus_break_minutes_label">Durée de la pause en minutes</string>
     <string name="focus_break_minutes_invalid">Saisissez un nombre entier de 1 à 60 minutes.</string>
+    <string name="focus_break_take_five">Prendre une pause de 5 minutes</string>
+    <string name="focus_break_customize">Personnaliser la pause</string>
+    <string name="focus_break_custom_title">Personnaliser la pause</string>
     <string name="focus_start_break">Démarrer la pause</string>
     <string name="focus_break_remaining">%1$s restantes</string>
     <string name="focus_break_expired">La pause est terminée</string>
@@ -1374,6 +1382,7 @@
     <string name="focus_reflection_next_step_hint">Facultatif · %1$d sur 280 caractères</string>
     <string name="focus_reflection_saved_next_step">Prochaine étape : %1$s</string>
     <string name="focus_reflection_add">Ajouter un bilan</string>
+    <string name="focus_reflection_add_outcome_or_step">Ajouter un résultat ou une prochaine étape</string>
     <string name="focus_reflection_edit">Modifier le bilan</string>
     <string name="focus_reflection_save">Enregistrer le bilan</string>
     <string name="focus_reflection_skip">Ignorer</string>

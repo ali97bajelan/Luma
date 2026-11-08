@@ -269,7 +269,7 @@ internal fun FocusReflectionEditor(
                 TextButton(
                     onClick = { editing = true },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_add"),
-                ) { Text(stringResource(R.string.focus_reflection_add)) }
+                ) { Text(stringResource(R.string.focus_reflection_add_outcome_or_step)) }
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("focus_reflection_summary")) {

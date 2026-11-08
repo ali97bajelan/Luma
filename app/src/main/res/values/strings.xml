@@ -1299,9 +1299,17 @@
     <string name="focus_25_minute_shortcut">Use 25 minutes</string>
     <string name="focus_remaining_label">Time left</string>
     <string name="focus_target_reached">Focus target reached and session saved</string>
+    <string name="focus_terminal_target_reached">Target reached</string>
+    <string name="focus_terminal_interrupted">Session interrupted</string>
+    <string name="focus_stopped_before_target">Stopped before target</string>
+    <string name="focus_count_up_ended">Session ended</string>
+    <string name="focus_saved_duration">Saved duration: %1$s</string>
     <string name="focus_alert_limitations">Background alerts are best effort and may be delayed or unavailable. The timer still works.</string>
     <string name="focus_break_minutes_label">Break duration in minutes</string>
     <string name="focus_break_minutes_invalid">Enter a whole number from 1 to 60 minutes.</string>
+    <string name="focus_break_take_five">Take a 5-minute break</string>
+    <string name="focus_break_customize">Customize break</string>
+    <string name="focus_break_custom_title">Customize break</string>
     <string name="focus_start_break">Start break</string>
     <string name="focus_break_remaining">%1$s left in break</string>
     <string name="focus_break_expired">Break time is up</string>
@@ -1353,6 +1361,7 @@
     <string name="focus_reflection_next_step_hint">Optional · %1$d of 280 characters</string>
     <string name="focus_reflection_saved_next_step">Next step: %1$s</string>
     <string name="focus_reflection_add">Add a reflection</string>
+    <string name="focus_reflection_add_outcome_or_step">Add outcome or next step</string>
     <string name="focus_reflection_edit">Edit reflection</string>
     <string name="focus_reflection_save">Save reflection</string>
     <string name="focus_reflection_skip">Skip</string>
