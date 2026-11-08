@@ -121,7 +121,7 @@ internal fun FocusSettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                stringResource(R.string.focus_settings_available_apps),
+                stringResource(R.string.focus_shortcuts),
                 modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleMedium,
             )

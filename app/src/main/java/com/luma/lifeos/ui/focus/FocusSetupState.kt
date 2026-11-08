@@ -20,6 +20,14 @@ enum class FocusSetupFailure { VALIDATION, IO }
 data class FocusSetupState(
     val name: String = "",
     val tag: String = "",
+    val nameEditedSinceBlur: Boolean = false,
+    val nameTouched: Boolean = false,
+    val tagEditedSinceBlur: Boolean = false,
+    val tagTouched: Boolean = false,
+    val timedMinutesEditedSinceBlur: Boolean = false,
+    val timedMinutesTouched: Boolean = false,
+    val startAttempted: Boolean = false,
+    val tagAreaExpanded: Boolean = false,
     val timerMode: FocusTimerMode = FocusTimerMode.COUNT_UP,
     val timedMinutesText: String = "25",
     val period: FocusPeriod = FocusPeriod.TODAY,
@@ -43,6 +51,9 @@ data class FocusSetupState(
     val taskSelectionRequestId: UUID? = null,
 ) {
     val isRepeatDraft: Boolean get() = repeatSourceSessionId != null && !repeatLoading && !repeatLoadFailed
+    val showNameError: Boolean get() = nameTouched || startAttempted
+    val showTagError: Boolean get() = tagTouched || startAttempted
+    val showTimedMinutesError: Boolean get() = timedMinutesTouched || startAttempted
 
     val normalizedInput: FocusStartInput?
         get() {
@@ -105,6 +116,11 @@ sealed interface FocusSetupEvent {
     data class TagChanged(val value: String) : FocusSetupEvent
     data class TimerModeChanged(val value: FocusTimerMode) : FocusSetupEvent
     data class TimedMinutesChanged(val value: String) : FocusSetupEvent
+    data object NameBlurred : FocusSetupEvent
+    data object TagBlurred : FocusSetupEvent
+    data object TimedMinutesBlurred : FocusSetupEvent
+    data class TagAreaExpandedChanged(val expanded: Boolean) : FocusSetupEvent
+    data object StartAttempted : FocusSetupEvent
     data class PeriodChanged(val value: FocusPeriod) : FocusSetupEvent
     data class ViewingContextChanged(val date: LocalDate, val zoneId: String) : FocusSetupEvent
     data class GenerationChanged(val value: UUID) : FocusSetupEvent
@@ -137,14 +153,27 @@ sealed interface FocusSetupEvent {
     data object PrivateContentLocked : FocusSetupEvent
 }
 
+private fun isValidFocusName(value: String): Boolean =
+    runCatching { normalizeFocusStartInput(FocusStartInput(name = value, tagName = null)) }.isSuccess
+
+private fun isValidFocusTag(value: String?): Boolean =
+    value.isNullOrBlank() || runCatching {
+        normalizeFocusStartInput(FocusStartInput(name = "Focus", tagName = value))
+    }.isSuccess
+
+private fun isValidFocusTimer(value: FocusTimerConfig): Boolean =
+    runCatching { normalizeFocusStartInput(FocusStartInput(name = "Focus", tagName = null, timer = value)) }.isSuccess
+
 fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): FocusSetupState = when (event) {
     is FocusSetupEvent.NameChanged -> state.copy(
         name = event.value,
+        nameEditedSinceBlur = true,
         repeatNeedsName = state.repeatNeedsName && event.value.isBlank(),
         startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
     )
     is FocusSetupEvent.TagChanged -> state.copy(
         tag = event.value,
+        tagEditedSinceBlur = true,
         startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
     )
     is FocusSetupEvent.TimerModeChanged -> state.copy(
@@ -155,8 +184,23 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         timedMinutesText = event.value.mapNotNull { character ->
             Character.digit(character, 10).takeIf { it >= 0 }?.digitToChar()
         }.take(3).joinToString(""),
+        timedMinutesEditedSinceBlur = true,
         startFailure = state.startFailure.takeUnless { it == FocusSetupFailure.VALIDATION },
     )
+    FocusSetupEvent.NameBlurred -> state.copy(
+        nameTouched = state.nameTouched || state.nameEditedSinceBlur,
+        nameEditedSinceBlur = false,
+    )
+    FocusSetupEvent.TagBlurred -> state.copy(
+        tagTouched = state.tagTouched || state.tagEditedSinceBlur,
+        tagEditedSinceBlur = false,
+    )
+    FocusSetupEvent.TimedMinutesBlurred -> state.copy(
+        timedMinutesTouched = state.timedMinutesTouched || state.timedMinutesEditedSinceBlur,
+        timedMinutesEditedSinceBlur = false,
+    )
+    is FocusSetupEvent.TagAreaExpandedChanged -> state.copy(tagAreaExpanded = event.expanded)
+    FocusSetupEvent.StartAttempted -> state.copy(startAttempted = true)
     is FocusSetupEvent.PeriodChanged -> state.copy(period = event.value)
     is FocusSetupEvent.ViewingContextChanged -> {
         require(runCatching { ZoneId.of(event.zoneId) }.isSuccess) { "Unknown time zone" }
@@ -165,6 +209,14 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     is FocusSetupEvent.RepeatRequested -> state.copy(
         name = "",
         tag = "",
+        nameEditedSinceBlur = false,
+        nameTouched = false,
+        tagEditedSinceBlur = false,
+        tagTouched = false,
+        timedMinutesEditedSinceBlur = false,
+        timedMinutesTouched = false,
+        startAttempted = false,
+        tagAreaExpanded = false,
         timerMode = FocusTimerMode.COUNT_UP,
         timedMinutesText = "25",
         repeatSourceSessionId = event.sessionId,
@@ -179,6 +231,14 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     )
     is FocusSetupEvent.TaskSelectionRequested -> state.copy(
         name = "",
+        nameEditedSinceBlur = false,
+        nameTouched = false,
+        tagEditedSinceBlur = false,
+        tagTouched = false,
+        timedMinutesEditedSinceBlur = false,
+        timedMinutesTouched = false,
+        startAttempted = false,
+        tagAreaExpanded = false,
         selectedTaskId = event.taskId,
         selectedTaskTitle = null,
         taskOrigin = true,
@@ -199,6 +259,7 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         state.selectedTaskId != event.taskId || state.taskSelectionRequestId != event.requestId
     ) state else state.copy(
         name = event.title.orEmpty(),
+        nameTouched = !isValidFocusName(event.title.orEmpty()),
         selectedTaskTitle = event.title,
         taskSelectionLoading = false,
         taskSelectionConflict = !event.isOpen,
@@ -235,6 +296,14 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         taskSelectionLoading = false,
         taskSelectionConflict = false,
         taskSelectionRequestId = null,
+        nameEditedSinceBlur = false,
+        nameTouched = false,
+        tagEditedSinceBlur = false,
+        tagTouched = false,
+        timedMinutesEditedSinceBlur = false,
+        timedMinutesTouched = false,
+        startAttempted = false,
+        tagAreaExpanded = false,
         capturedStart = null,
         startFailure = null,
         unresolvedStartPending = state.unresolvedStartPending || state.capturedStart != null,
@@ -245,6 +314,14 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     ) state else state.copy(
         name = event.input.name,
         tag = event.input.tagName.orEmpty(),
+        nameEditedSinceBlur = false,
+        nameTouched = !isValidFocusName(event.input.name),
+        tagEditedSinceBlur = false,
+        tagTouched = !isValidFocusTag(event.input.tagName),
+        timedMinutesEditedSinceBlur = false,
+        timedMinutesTouched = !isValidFocusTimer(event.input.timer),
+        startAttempted = false,
+        tagAreaExpanded = false,
         timerMode = event.input.timer.mode,
         timedMinutesText = event.input.timer.targetMillis?.div(MILLIS_PER_MINUTE)?.toString() ?: "25",
         repeatLoading = false,
@@ -270,6 +347,14 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.StartAnotherRequested -> state.copy(
         name = "",
         tag = "",
+        nameEditedSinceBlur = false,
+        nameTouched = false,
+        tagEditedSinceBlur = false,
+        tagTouched = false,
+        timedMinutesEditedSinceBlur = false,
+        timedMinutesTouched = false,
+        startAttempted = false,
+        tagAreaExpanded = false,
         timerMode = FocusTimerMode.COUNT_UP,
         timedMinutesText = "25",
         repeatSourceSessionId = null,
@@ -289,11 +374,19 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         unresolvedStartPending = false,
     )
     is FocusSetupEvent.GenerationChanged -> if (
-        state.databaseGeneration != null && state.databaseGeneration != event.value
+        state.databaseGeneration != event.value
     ) {
         state.copy(
             name = "",
             tag = "",
+            nameEditedSinceBlur = false,
+            nameTouched = false,
+            tagEditedSinceBlur = false,
+            tagTouched = false,
+            timedMinutesEditedSinceBlur = false,
+            timedMinutesTouched = false,
+            startAttempted = false,
+            tagAreaExpanded = false,
             timerMode = FocusTimerMode.COUNT_UP,
             timedMinutesText = "25",
             databaseGeneration = event.value,
@@ -331,10 +424,19 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
         capturedStart = null,
         startFailure = FocusSetupFailure.VALIDATION,
         unresolvedStartPending = false,
+        startAttempted = true,
     )
     FocusSetupEvent.StartSucceeded -> state.copy(
         name = "",
         tag = "",
+        nameEditedSinceBlur = false,
+        nameTouched = false,
+        tagEditedSinceBlur = false,
+        tagTouched = false,
+        timedMinutesEditedSinceBlur = false,
+        timedMinutesTouched = false,
+        startAttempted = false,
+        tagAreaExpanded = false,
         timerMode = FocusTimerMode.COUNT_UP,
         timedMinutesText = "25",
         capturedStart = null,
@@ -361,6 +463,14 @@ fun reduceFocusSetupState(state: FocusSetupState, event: FocusSetupEvent): Focus
     FocusSetupEvent.PrivateContentLocked -> state.copy(
         name = "",
         tag = "",
+        nameEditedSinceBlur = false,
+        nameTouched = false,
+        tagEditedSinceBlur = false,
+        tagTouched = false,
+        timedMinutesEditedSinceBlur = false,
+        timedMinutesTouched = false,
+        startAttempted = false,
+        tagAreaExpanded = false,
         selectedTaskTitle = null,
         taskSelectionLoading = false,
         taskSelectionConflict = false,
@@ -395,6 +505,14 @@ fun encodeFocusSetupState(state: FocusSetupState): Map<String, Any?> = mapOf(
     KEY_TASK_ID to state.selectedTaskId?.toString(),
     KEY_TASK_TITLE to state.selectedTaskTitle,
     KEY_TASK_ORIGIN to state.taskOrigin,
+    KEY_NAME_EDITED to state.nameEditedSinceBlur,
+    KEY_NAME_TOUCHED to state.nameTouched,
+    KEY_TAG_EDITED to state.tagEditedSinceBlur,
+    KEY_TAG_TOUCHED to state.tagTouched,
+    KEY_TIMER_EDITED to state.timedMinutesEditedSinceBlur,
+    KEY_TIMER_TOUCHED to state.timedMinutesTouched,
+    KEY_START_ATTEMPTED to state.startAttempted,
+    KEY_TAG_EXPANDED to state.tagAreaExpanded,
 )
 
 /** Restore user drafts and selection while using the current local date after process recreation. */
@@ -411,6 +529,14 @@ fun restoreFocusSetupState(
     return FocusSetupState(
         name = saved[KEY_NAME] as? String ?: "",
         tag = saved[KEY_TAG] as? String ?: "",
+        nameEditedSinceBlur = saved[KEY_NAME_EDITED] as? Boolean ?: false,
+        nameTouched = saved[KEY_NAME_TOUCHED] as? Boolean ?: false,
+        tagEditedSinceBlur = saved[KEY_TAG_EDITED] as? Boolean ?: false,
+        tagTouched = saved[KEY_TAG_TOUCHED] as? Boolean ?: false,
+        timedMinutesEditedSinceBlur = saved[KEY_TIMER_EDITED] as? Boolean ?: false,
+        timedMinutesTouched = saved[KEY_TIMER_TOUCHED] as? Boolean ?: false,
+        startAttempted = saved[KEY_START_ATTEMPTED] as? Boolean ?: false,
+        tagAreaExpanded = saved[KEY_TAG_EXPANDED] as? Boolean ?: false,
         timerMode = (saved[KEY_TIMER_MODE] as? String)?.let { value ->
             FocusTimerMode.entries.firstOrNull { it.name == value }
         } ?: FocusTimerMode.COUNT_UP,
@@ -495,3 +621,11 @@ private const val KEY_REPEAT_NEXT_STEP = "focus.setup.repeat_next_step"
 private const val KEY_TASK_ID = "focus.setup.task_id"
 private const val KEY_TASK_TITLE = "focus.setup.task_title"
 private const val KEY_TASK_ORIGIN = "focus.setup.task_origin"
+private const val KEY_NAME_EDITED = "focus.setup.name_edited"
+private const val KEY_NAME_TOUCHED = "focus.setup.name_touched"
+private const val KEY_TAG_EDITED = "focus.setup.tag_edited"
+private const val KEY_TAG_TOUCHED = "focus.setup.tag_touched"
+private const val KEY_TIMER_EDITED = "focus.setup.timer_edited"
+private const val KEY_TIMER_TOUCHED = "focus.setup.timer_touched"
+private const val KEY_START_ATTEMPTED = "focus.setup.start_attempted"
+private const val KEY_TAG_EXPANDED = "focus.setup.tag_expanded"

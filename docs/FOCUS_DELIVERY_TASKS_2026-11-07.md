@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD06 SOURCE COMPLETE — UNVERIFIED; FD07–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD07 SOURCE COMPLETE — UNVERIFIED; FD08–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -20,7 +20,7 @@ No per-task QA gate blocks a later source task once its source dependencies exis
 
 This new index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. Source versions inspected: **Room 14, archive 11**, proposed additions **Room 15/archive 12**. Existing app flavor: **production**, debug ID suffix **.qa**. Recheck these at FD01; old plan reservations and variant assumptions are obsolete.
 
-The planning package changed documentation only when created. FD01–FD05 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
+The planning package changed documentation only when created. FD01–FD07 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
 
 ## Implementation task ledger
 
@@ -47,7 +47,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD04 source complete — UNVERIFIED
 - [x] FD05 source complete — UNVERIFIED
 - [x] FD06 source complete — UNVERIFIED
-- [ ] FD07 source complete
+- [x] FD07 source complete — UNVERIFIED
 - [ ] FD08 source complete
 - [ ] FD09 source complete
 - [ ] FD10 source complete
@@ -120,6 +120,17 @@ The checkboxes below track current source delivery only; source completion is se
 - Ruling: Focus invitations use an independent platform registry and PendingIntent/notification identity namespace. Generic reminder cancellation now targets tracked task/habit IDs only, so a task or habit reset cannot cancel Focus invitation alarms. Cost if wrong: duplicate registry and cancellation plumbing across reminder kinds.
 - Source review covered explicit/non-exported receiver boundaries, stale generation/revision/token handling, one-shot cancellation, quiet-hour and permission skips, generic notification content, session preservation and draft replacement. Tests, builds, lint, schema generation and device/emulator checks were NOT RUN in this task, as required by Phase I.
 - Later proof: Q02/Q04; E06/E07/E08.
+
+### FD07 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED (2026-11-08).
+- Changed source: new app/.../ui/focus/FocusSetupContent.kt; modified ui/focus/FocusSetupState.kt, FocusScreen.kt, FocusRoute.kt, focus/FocusViewModel.kt, ui/focus/FocusSettingsScreen.kt, ui/common/AppPageScaffold.kt; EN/FR/FA strings.
+- Implemented: per-field touched and attempted state stored with the setup draft; neutral validation until an edited field blurs, Start/IME submission is attempted, or a task/Repeat prefill is invalid; interaction state resets on success, new draft, access loss and generation change. Extracted setup content uses the intention label/example, preserves Count-up and the existing 1–180 minute timed range, and keeps the 25-minute choice visible. Tags are collapsed by default, show at most three recent suggestions, and open an accessible picker capped at ten. Start remains gated by the existing normalized input, busy/unresolved state, Repeat load and operation state; it now lives in an inset-aware persistent action area with concise scope copy. Settings retain the fuller profile/enforcement explanation and delayed-alert guidance, and label the app choices “App shortcuts” in all locales.
+- Interfaces: added reducer events for blur, attempted Start and tag disclosure; encoded the corresponding flags with SavedStateHandle; wired them through FocusViewModel, FocusRoute and FocusScreen. Added an optional bottomBar slot to AppPageScaffold, preserving existing call defaults.
+- Ruling: added the shared scaffold slot to anchor Start above IME/system insets while keeping other pages source-compatible. Cost if wrong: a shared page scaffold API now carries a slot used by Focus setup.
+- Source review covered untouched validation, invalid task/Repeat prefill, reducer and restore resets, stale-generation clearing, immutable Start gating, three/ten-item tag bounds, accessibility targets, IME/system inset behavior, unchanged timer defaults and settings scope copy. Tests, fixtures, builds, schema generation, lint and device/emulator checks were NOT RUN as required by Phase I.
+- Final review: author self-review; delegation was disabled by the active task instructions.
+- Later proof: Q02/Q05; E01/E10.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 

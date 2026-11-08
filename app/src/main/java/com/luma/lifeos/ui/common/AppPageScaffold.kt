@@ -39,6 +39,7 @@ fun AppPageScaffold(
     headerTag: String = "page_header",
     titleTag: String = "page_title",
     navigationTag: String = if (navigation == PageNavigation.CLOSE) "page_close" else "page_back",
+    bottomBar: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     require((navigation == PageNavigation.NONE) == (onNavigate == null)) {
@@ -59,6 +60,7 @@ fun AppPageScaffold(
                 navigationTag = navigationTag,
             )
         },
+        bottomBar = bottomBar,
         content = content,
     )
 }

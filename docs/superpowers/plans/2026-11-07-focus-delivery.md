@@ -163,12 +163,14 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Produces:** neutral untouched validation, bounded optional tag area and accessible primary action.
 
-- [ ] Add touched/attempted state to the retained setup reducer; clear it with success/new draft/relock/new generation; surface invalid prefills explicitly.
-- [ ] Extract setup content, apply intention label/example and preserve all existing start gating/immutable retry behavior.
-- [ ] Add compact tag disclosure, three visible suggestions and View tags with existing ten-item suggestion bound.
-- [ ] Put Start above recent work/insights/history in an IME-aware action area; keep scroll/large-font fallbacks.
-- [ ] Apply concise background/access scope copy and App shortcuts naming in all three locales.
-- [ ] Source-review no new timer defaults, no silent names and no report failure disabling controls; record unverified handoff.
+- [x] Add touched/attempted state to the retained setup reducer; clear it with success/new draft/relock/new generation; surface invalid prefills explicitly.
+- [x] Extract setup content, apply intention label/example and preserve all existing start gating/immutable retry behavior.
+- [x] Add compact tag disclosure, three visible suggestions and View tags with existing ten-item suggestion bound.
+- [x] Put Start above recent work/insights/history in an IME-aware action area; keep scroll/large-font fallbacks.
+- [x] Apply concise background/access scope copy and App shortcuts naming in all three locales.
+- [x] Source-review no new timer defaults, no silent names and no report failure disabling controls; record unverified handoff.
+
+**Source handoff:** SOURCE COMPLETE — UNVERIFIED (2026-11-08). Tests, fixtures, builds, schema generation, lint and device/emulator checks remain deferred to Phase Q/E.
 
 **Deferred proof:** Q02/Q05; E01/E10.
 

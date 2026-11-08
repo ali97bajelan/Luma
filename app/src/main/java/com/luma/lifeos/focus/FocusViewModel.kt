@@ -694,9 +694,15 @@ class FocusViewModel(
     }
 
     fun changeName(value: String) = updateSetup(FocusSetupEvent.NameChanged(value))
+    fun blurName() = updateSetup(FocusSetupEvent.NameBlurred)
     fun changeTag(value: String) = updateSetup(FocusSetupEvent.TagChanged(value))
+    fun blurTag() = updateSetup(FocusSetupEvent.TagBlurred)
+    fun setTagAreaExpanded(expanded: Boolean) =
+        updateSetup(FocusSetupEvent.TagAreaExpandedChanged(expanded))
     fun changeTimerMode(value: FocusTimerMode) = updateSetup(FocusSetupEvent.TimerModeChanged(value))
     fun changeTimedMinutes(value: String) = updateSetup(FocusSetupEvent.TimedMinutesChanged(value))
+    fun blurTimedMinutes() = updateSetup(FocusSetupEvent.TimedMinutesBlurred)
+    fun attemptStart() = updateSetup(FocusSetupEvent.StartAttempted)
     fun startAnother() = updateSetup(FocusSetupEvent.StartAnotherRequested)
 
     fun dismissMissingTerminalSession(sessionId: UUID, generation: UUID): Boolean {

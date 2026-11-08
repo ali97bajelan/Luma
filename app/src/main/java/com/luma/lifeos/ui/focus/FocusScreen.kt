@@ -17,7 +17,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -45,7 +44,6 @@ import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimerMode
 import com.luma.lifeos.focus.FocusBreakState
-import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.ui.common.AppPageScaffold
@@ -82,6 +80,11 @@ internal fun FocusScreen(
     onRequestProtectedFocusUnlock: () -> Unit = {},
     onTimerModeChange: (FocusTimerMode) -> Unit = {},
     onTimedMinutesChange: (String) -> Unit = {},
+    onNameBlur: () -> Unit = {},
+    onTagBlur: () -> Unit = {},
+    onTagAreaExpandedChange: (Boolean) -> Unit = {},
+    onTimedMinutesBlur: () -> Unit = {},
+    onStartAttempted: () -> Unit = {},
     onStartBreak: (Int) -> Unit = {},
     onEndBreak: () -> Unit = {},
     focusRepository: FocusRepository? = null,
@@ -97,6 +100,10 @@ internal fun FocusScreen(
     val showTerminal = session?.let {
         shouldShowFocusTerminal(it.id, setupRequestedForSession, state.setup.databaseGeneration)
     } == true && !state.setup.isRepeatDraft
+    val showSetupAction = !runtime.loading && !runtime.loadFailed &&
+        !(runtime.recoveryRequired && session != null) &&
+        session?.state !in setOf(FocusState.RUNNING, FocusState.PAUSED) &&
+        !(session?.state in setOf(FocusState.FINISHED, FocusState.INTERRUPTED) && showTerminal)
     BackHandler {
         when {
             runtime.navigationGuarded -> onShowBackPrompt()
@@ -116,6 +123,15 @@ internal fun FocusScreen(
             }
         },
         modifier = Modifier.fillMaxSize().testTag("focus_screen"),
+        bottomBar = {
+            if (showSetupAction) {
+                FocusSetupStartAction(
+                    state = state,
+                    onStartAttempted = onStartAttempted,
+                    onStart = onStart,
+                )
+            }
+        },
     ) { pagePadding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(pagePadding).verticalScroll(rememberScrollState())
@@ -215,9 +231,14 @@ internal fun FocusScreen(
                 else -> SetupContent(
                     state = state,
                     onNameChange = onNameChange,
+                    onNameBlur = onNameBlur,
                     onTagChange = onTagChange,
+                    onTagBlur = onTagBlur,
+                    onTagAreaExpandedChange = onTagAreaExpandedChange,
                     onTimerModeChange = onTimerModeChange,
                     onTimedMinutesChange = onTimedMinutesChange,
+                    onTimedMinutesBlur = onTimedMinutesBlur,
+                    onStartAttempted = onStartAttempted,
                     onPeriodChange = onPeriodChange,
                     onRetryInsights = onRetryInsights,
                     onStart = onStart,
@@ -311,9 +332,14 @@ internal fun FocusScreen(
 private fun SetupContent(
     state: FocusScreenState,
     onNameChange: (String) -> Unit,
+    onNameBlur: () -> Unit,
     onTagChange: (String) -> Unit,
+    onTagBlur: () -> Unit,
+    onTagAreaExpandedChange: (Boolean) -> Unit,
     onTimerModeChange: (FocusTimerMode) -> Unit,
     onTimedMinutesChange: (String) -> Unit,
+    onTimedMinutesBlur: () -> Unit,
+    onStartAttempted: () -> Unit,
     onPeriodChange: (FocusPeriod) -> Unit,
     onRetryInsights: () -> Unit,
     onStart: (FocusStartInput) -> Unit,
@@ -326,138 +352,26 @@ private fun SetupContent(
     onRequestProtectedFocusUnlock: () -> Unit,
 ) {
     val setup = state.setup
-    val metadataValid = runCatching {
-        normalizeFocusStartInput(FocusStartInput(setup.name, setup.tag.takeIf(String::isNotEmpty)))
-    }.isSuccess
-    val nameValid = runCatching { normalizeFocusStartInput(FocusStartInput(setup.name, null)) }.isSuccess
-    val input = setup.normalizedInput
-    val tagInvalid = nameValid && setup.tag.isNotEmpty() && !metadataValid
-    val fieldsEnabled = !state.busy && !setup.repeatLoading
-    Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
-    if (setup.repeatLoading) {
-        Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
-    }
-    if (setup.repeatLoadFailed) {
-        Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
-        setup.repeatSourceSessionId?.let { sourceId ->
-            TextButton(
-                onClick = { onRepeatSession(sourceId) },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_repeat_retry"),
-            ) { Text(stringResource(R.string.retry)) }
-        }
-    }
-    if (setup.repeatNeedsName) {
-        Text(stringResource(R.string.focus_repeat_legacy_name), modifier = Modifier.testTag("focus_repeat_legacy_name"))
-    }
-    setup.repeatNextStep?.let { nextStep ->
-        Text(stringResource(R.string.focus_repeat_next_step, nextStep), modifier = Modifier.testTag("focus_repeat_next_step"))
-    }
-    if (onOpenTaskPicker != null) {
-        OutlinedButton(
-            onClick = onOpenTaskPicker,
-            enabled = fieldsEnabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_choose_task"),
-        ) { Text(stringResource(R.string.focus_choose_task)) }
-    }
-    if (setup.selectedTaskId != null) {
-        Text(
-            stringResource(R.string.focus_task_selected, setup.selectedTaskTitle ?: setup.name),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.testTag("focus_task_selected"),
-        )
-        TextButton(
-            onClick = onClearTaskSelection,
-            enabled = fieldsEnabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_remove"),
-        ) { Text(stringResource(R.string.focus_task_remove)) }
-    } else if (setup.taskOrigin) {
-        Text(stringResource(R.string.focus_task_link_removed), modifier = Modifier.testTag("focus_task_link_removed"))
-    }
-    if (setup.taskSelectionLoading) {
-        Text(stringResource(R.string.focus_task_loading), modifier = Modifier.testTag("focus_task_loading"))
-    }
-    if (setup.taskSelectionConflict) {
-        Text(
-            stringResource(R.string.focus_task_selection_conflict),
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.testTag("focus_task_selection_conflict"),
-        )
-    }
-    OutlinedTextField(
-        value = setup.name, onValueChange = onNameChange, label = { Text(stringResource(R.string.focus_name_label)) },
-        singleLine = true, enabled = fieldsEnabled, isError = !nameValid,
-        supportingText = { if (!nameValid) Text(stringResource(R.string.focus_name_invalid)) },
-        modifier = Modifier.fillMaxWidth().testTag("focus_name"),
+    FocusSetupContent(
+        state = state,
+        onNameChange = onNameChange,
+        onNameBlur = onNameBlur,
+        onTagChange = onTagChange,
+        onTagBlur = onTagBlur,
+        onTagAreaExpandedChange = onTagAreaExpandedChange,
+        onTimerModeChange = onTimerModeChange,
+        onTimedMinutesChange = onTimedMinutesChange,
+        onTimedMinutesBlur = onTimedMinutesBlur,
+        onSubmitStart = {
+            onStartAttempted()
+            if (!state.busy && !setup.repeatLoading && !state.operationFailed && setup.canStart) {
+                setup.normalizedInput?.let(onStart)
+            }
+        },
+        onRepeatSession = onRepeatSession,
+        onOpenTaskPicker = onOpenTaskPicker,
+        onClearTaskSelection = onClearTaskSelection,
     )
-    OutlinedTextField(
-        value = setup.tag, onValueChange = onTagChange, label = { Text(stringResource(R.string.focus_tag_label)) },
-        singleLine = true, enabled = fieldsEnabled, isError = tagInvalid,
-        supportingText = { if (tagInvalid) Text(stringResource(R.string.focus_tag_invalid)) },
-        modifier = Modifier.fillMaxWidth().testTag("focus_tag"),
-    )
-    Text(stringResource(R.string.focus_timer_mode_label), style = MaterialTheme.typography.titleSmall)
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        FilterChip(
-            selected = setup.timerMode == FocusTimerMode.COUNT_UP,
-            onClick = { onTimerModeChange(FocusTimerMode.COUNT_UP) },
-            enabled = fieldsEnabled,
-            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_mode_count_up"),
-            label = { Text(stringResource(R.string.focus_timer_mode_count_up)) },
-        )
-        FilterChip(
-            selected = setup.timerMode == FocusTimerMode.TIMED,
-            onClick = { onTimerModeChange(FocusTimerMode.TIMED) },
-            enabled = fieldsEnabled,
-            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_mode_timed"),
-            label = { Text(stringResource(R.string.focus_timer_mode_timed)) },
-        )
-    }
-    if (setup.timerMode == FocusTimerMode.TIMED) {
-        OutlinedTextField(
-            value = setup.timedMinutesText,
-            onValueChange = onTimedMinutesChange,
-            label = { Text(stringResource(R.string.focus_timed_minutes_label)) },
-            singleLine = true,
-            enabled = fieldsEnabled,
-            isError = setup.timedMinutesText.toIntOrNull()?.let { it !in 1..180 } != false,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            supportingText = {
-                if (setup.timedMinutesText.toIntOrNull()?.let { it in 1..180 } != true) {
-                    Text(stringResource(R.string.focus_timed_minutes_invalid))
-                }
-            },
-            modifier = Modifier.fillMaxWidth().testTag("focus_timed_minutes"),
-        )
-        TextButton(
-            onClick = {
-                onTimerModeChange(FocusTimerMode.TIMED)
-                onTimedMinutesChange("25")
-            },
-            enabled = fieldsEnabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_25_minute_shortcut"),
-        ) { Text(stringResource(R.string.focus_25_minute_shortcut)) }
-        Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
-    }
-    if (state.tagSuggestions.isNotEmpty()) {
-        Text(stringResource(R.string.focus_tag_suggestions), style = MaterialTheme.typography.titleSmall)
-        state.tagSuggestions.forEach { suggestion ->
-            TextButton(
-                onClick = { onTagChange(suggestion.name) },
-                enabled = fieldsEnabled,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_tag_suggestion_${suggestion.id}"),
-            ) { Text(suggestion.name) }
-        }
-    }
-    if (setup.startFailure == FocusSetupFailure.VALIDATION) {
-        Text(stringResource(R.string.focus_setup_invalid), color = MaterialTheme.colorScheme.error)
-    }
-    LumaButton(
-        onClick = { input?.let(onStart) },
-        enabled = !state.busy && !setup.repeatLoading && !state.operationFailed && setup.canStart && input != null,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start"),
-    ) {
-        Text(if (state.busy) stringResource(R.string.focus_saving) else stringResource(R.string.focus_start))
-    }
     FocusInsightsCard(
         state = state.insights,
         period = setup.period,
