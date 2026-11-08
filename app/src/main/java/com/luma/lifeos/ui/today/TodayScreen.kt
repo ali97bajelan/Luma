@@ -13,7 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.OutlinedButton
+import com.luma.lifeos.ui.common.LumaButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
@@ -43,6 +43,7 @@ import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.TodayHabitsCard
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.ui.focus.todayFocusActionLabel
 import com.luma.lifeos.ui.focus.FocusDayReport
 import com.luma.lifeos.ui.focus.FocusReportState
 import com.luma.lifeos.ui.focus.TodayFocusCard
@@ -139,11 +140,11 @@ fun TodayScreen(
                 )
             }
             if (focusAction != null && focusReport == null) item(key = "focus") {
-                OutlinedButton(
+                if (focusPaused) Text(stringResource(R.string.today_focus_paused))
+                LumaButton(
                     onClick = focusAction,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("today_focus"),
-                ) { Text(stringResource(R.string.today_focus_action)) }
-                if (focusPaused) Text(stringResource(R.string.today_focus_paused))
+                ) { Text(stringResource(todayFocusActionLabel(focusInProgressState))) }
             }
             habitsState?.let { item(key = "habits") {
                 TodayHabitsCard(it, date, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,

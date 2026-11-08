@@ -1433,7 +1433,9 @@
     <string name="focus_settings_unavailable_app">این برنامه دیگر در دسترس نیست.</string>
     <string name="focus_settings_remove">حذف</string>
     <string name="focus_settings_save_error">ذخیرهٔ انتخاب برنامه‌ها ممکن نشد. دوباره تلاش کنید.</string>
-    <string name="today_focus_action">شروع یا ادامهٔ تمرکز</string>
+    <string name="today_focus_action">شروع تمرکز</string>
+    <string name="today_focus_return_running">بازگشت به زمان‌سنج</string>
+    <string name="today_focus_return_paused">بازگشت به نشست مکث‌شده</string>
     <string name="today_focus_paused">تمرکز مکث شده است. هر زمان خواستید آن را ادامه دهید.</string>
     <string name="more_focus_description">شروع، ادامه یا توقف نشست تمرکز.</string>
     <string name="more_focus_paused_description">نشست تمرکز شما مکث شده است. هر زمان خواستید ادامه دهید.</string>

@@ -109,8 +109,57 @@ class FocusScreenTest {
         compose.onNodeWithTag("focus_pause").assertIsDisplayed()
         compose.onNodeWithTag("focus_stop").assertIsDisplayed()
         compose.onNodeWithTag("focus_history_open").assertDoesNotExist()
+        compose.onNodeWithTag("focus_settings_open").assertDoesNotExist()
         compose.onNodeWithTag("focus_emergency_exit").assertIsDisplayed().performClick()
         compose.runOnIdle { assertTrue(requested) }
+    }
+
+    @Test fun recoveryScreenHidesHistoryAndSettingsDestinations() {
+        val session = createFocusSession(
+            sessionId = UUID.fromString("20000000-0000-0000-0000-000000000009"),
+            commandId = UUID.fromString("20000000-0000-0000-0000-000000000010"),
+            sample = FocusTimeSample(Instant.parse("2026-10-30T12:00:00Z"), 10_000, "boot-a"),
+        )
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusScreen(
+                    state = FocusScreenState(
+                        runtime = FocusRuntimeState(
+                            initialized = true,
+                            loading = false,
+                            session = session,
+                            recoveryRequired = true,
+                        ),
+                    ),
+                    allowedApps = emptyList(),
+                    hasPendingDestination = false,
+                    onBack = {},
+                    onShowBackPrompt = {},
+                    onDismissBackPrompt = {},
+                    onStart = { _ -> },
+                    onNameChange = {},
+                    onTagChange = {},
+                    onPeriodChange = {},
+                    onRetryInsights = {},
+                    onAction = {},
+                    onLeaveAfterAction = {},
+                    onResolveRecovery = {},
+                    onRetry = {},
+                    onRetryInitialization = {},
+                    onEmergencyExit = {},
+                    onDismissEmergencyExit = {},
+                    onConfirmEmergencyExit = {},
+                    onLaunchApp = {},
+                    onOpenPendingDestination = {},
+                    onOpenHistory = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag("focus_recovery_continue").assertIsDisplayed()
+        compose.onNodeWithTag("focus_history_open").assertDoesNotExist()
+        compose.onNodeWithTag("focus_settings_open").assertDoesNotExist()
     }
 
     @Test fun unavailableShortcutOffersRetryWithoutLeavingTheRunningScreen() {
@@ -157,8 +206,9 @@ class FocusScreenTest {
         compose.runOnIdle { assertTrue(retried) }
     }
 
-    @Test fun idleFocusScreenCanOpenAllSessionHistory() {
+    @Test fun idleFocusScreenCanOpenHistoryAndSettings() {
         var requested = false
+        var settingsRequested = false
         compose.setContent {
             LifeOsTheme {
                 FocusScreen(
@@ -184,12 +234,17 @@ class FocusScreenTest {
                     onLaunchApp = {},
                     onOpenPendingDestination = {},
                     onOpenHistory = { requested = true },
+                    onOpenSettings = { settingsRequested = true },
                 )
             }
         }
 
         compose.onNodeWithTag("focus_history_open").assertIsDisplayed().performClick()
-        compose.runOnIdle { assertTrue(requested) }
+        compose.onNodeWithTag("focus_settings_open").assertIsDisplayed().performClick()
+        compose.runOnIdle {
+            assertTrue(requested)
+            assertTrue(settingsRequested)
+        }
     }
 
     @Test fun leaveActionsHaveDistinctBounds() {

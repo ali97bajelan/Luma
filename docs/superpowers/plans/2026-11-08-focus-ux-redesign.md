@@ -90,14 +90,16 @@ I03 verification note: FocusSetupStateTest passed (18/18) and :app:assembleProdu
 
 ### I04 — Entry points and secondary destinations (S01)
 
-Files: P/ui/focus/TodayFocusCard.kt, FocusRoute.kt, FocusScreen.kt; P/ui/LifeOsApp.kt; A/AppNavigationTest.kt, A/ui/focus/FocusScreenTest.kt; strings.
+Files: P/ui/focus/TodayFocusCard.kt, FocusRoute.kt, FocusScreen.kt; P/ui/LifeOsApp.kt; A/AppNavigationTest.kt, A/ui/focus/FocusScreenTest.kt, FocusLifecycleTest.kt, FocusReportsTest.kt; U/ui/focus/TodayFocusActionTest.kt; strings.
 Produces onOpenSettings: () -> Unit contract consumed by I09.
 
-- [ ] Trace existing settings destination and gates in LifeOsApp.kt; use semantic usages to locate both FocusRoute calls.
-- [ ] Wire new Settings callback through both hosts; add labeled History/Settings actions or narrow-width overflow on preparation.
-- [ ] Keep running/recovery destination guards; history/header shortcuts must not bypass them.
-- [ ] Make Today CTA state-aware using S01 labels; keep saved and active credit separate and day-scoped history intact.
-- [ ] Define connected navigation cases for both hosts, canceled unlock, active session and pending destination. Compile; review both call sites.
+- [x] Trace existing settings destination and gates in LifeOsApp.kt; use semantic usages to locate both FocusRoute calls.
+- [x] Wire new Settings callback through both hosts; add labeled History/Settings actions or narrow-width overflow on preparation.
+- [x] Keep running/recovery destination guards; history/header shortcuts must not bypass them.
+- [x] Make Today CTA state-aware using S01 labels; keep saved and active credit separate and day-scoped history intact.
+- [x] Define connected cases for normal-host Settings/draft restoration, canceled Focus-section unlock, active session, pending destination and guarded recovery state. Verify both FocusRoute call sites; source-review the gated overlay host, which renders only loading/guarded/recovery states.
+
+I04 verification note: TodayFocusActionTest passed (3/3) and :app:compileProductionDebugKotlin passed. Android-test source compilation is blocked by existing errors in LocalLockStoreTest/LockCredentialIntegrationTest, TodoEditorFlowTest, FocusReportsTest fixtures and WidgetRendererAcceptanceTest; none were reported in the I04-specific tests. Defined coverage includes normal-host Settings/draft restoration, canceled selected-Focus unlock, active and pending-destination guards, and recovery-state destination suppression. Both FocusRoute call sites were checked; the separate gated overlay host is source-verified because it renders only loading/guarded/recovery states. No connected tests ran; device verification remains deferred to QA01.
 
 ### I05 — Running, paused, help and failure presentation (S03,S08)
 

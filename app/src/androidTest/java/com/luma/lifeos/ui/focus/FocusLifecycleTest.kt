@@ -3,10 +3,13 @@ package com.luma.lifeos.ui.focus
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import com.luma.lifeos.MainActivity
 import com.luma.lifeos.widget.WidgetIntents
 import org.junit.Rule
@@ -22,12 +25,17 @@ class FocusLifecycleTest {
 
         compose.activityRule.scenario.recreate()
         awaitTag("focus_pause")
+        compose.onNodeWithTag("focus_settings_open").assertDoesNotExist()
+        compose.onNodeWithTag("focus_history_open").assertDoesNotExist()
         compose.activityRule.scenario.onActivity { activity ->
             activity.onBackPressedDispatcher.onBackPressed()
         }
         awaitTag("focus_back_dialog")
         compose.onNodeWithTag("focus_back_pause").performClick()
         awaitTag("today_focus_open")
+        compose.onNodeWithTag("today_focus_open").assertTextEquals(
+            compose.activity.getString(com.luma.lifeos.R.string.today_focus_return_paused),
+        )
         compose.onNodeWithTag("today_focus_open").assertIsDisplayed().performClick()
         awaitTag("focus_resume")
         compose.onNodeWithTag("focus_resume").performClick()
@@ -44,6 +52,7 @@ class FocusLifecycleTest {
         awaitTag("more_focus")
         compose.onNodeWithTag("more_focus").performClick()
         startOrRestartSession()
+        compose.onNodeWithTag("focus_settings_open").assertDoesNotExist()
 
         val externalWidgetIntent = Intent(compose.activity, MainActivity::class.java).apply {
             action = WidgetIntents.ACTION_NAVIGATION
@@ -55,12 +64,17 @@ class FocusLifecycleTest {
             activity.setIntent(originalIntent)
         }
         awaitTag("focus_open_pending_destination")
+        compose.onNodeWithTag("focus_settings_open").assertDoesNotExist()
+        compose.onNodeWithTag("focus_history_open").assertDoesNotExist()
         compose.onNodeWithTag("focus_pause").performClick()
         awaitTag("focus_resume")
         compose.onNodeWithTag("focus_open_pending_destination").assertIsDisplayed().performClick()
         awaitTag("screen_today")
 
         awaitTag("today_focus_open")
+        compose.onNodeWithTag("today_focus_open").assertTextEquals(
+            compose.activity.getString(com.luma.lifeos.R.string.today_focus_return_paused),
+        )
         compose.onNodeWithTag("today_focus_open").performClick()
         awaitTag("focus_resume")
         compose.onNodeWithTag("focus_resume").performClick()
@@ -105,14 +119,17 @@ class FocusLifecycleTest {
 
     private fun startOrRestartSession() {
         compose.waitUntil(10_000) {
-            listOf("focus_start", "focus_start_another", "focus_finished", "focus_interrupted")
+            listOf("focus_pause", "focus_name", "focus_start_another")
                 .any { compose.onAllNodesWithTag(it).fetchSemanticsNodes().isNotEmpty() }
         }
-        when {
-            compose.onAllNodesWithTag("focus_start").fetchSemanticsNodes().isNotEmpty() ->
-                compose.onNodeWithTag("focus_start").performClick()
-            else -> compose.onNodeWithTag("focus_start_another").performClick()
+        if (compose.onAllNodesWithTag("focus_pause").fetchSemanticsNodes().isNotEmpty()) return
+        if (compose.onAllNodesWithTag("focus_start_another").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithTag("focus_start_another").performClick()
         }
+        awaitTag("focus_name")
+        compose.onNodeWithTag("focus_name").performTextClearance()
+        compose.onNodeWithTag("focus_name").performTextInput("Lifecycle focus")
+        compose.onNodeWithTag("focus_start").performClick()
         awaitTag("focus_pause")
     }
 }

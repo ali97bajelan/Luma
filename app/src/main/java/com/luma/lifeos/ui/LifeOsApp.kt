@@ -1208,6 +1208,9 @@ fun LifeOsApp(
                         onOpenHistory = {
                             navController.navigate(AppRoutes.FOCUS_HISTORY.substringBefore('?'))
                         },
+                        onOpenSettings = {
+                            navController.navigate("settings_focus") { launchSingleTop = true }
+                        },
                         hasPendingDestination = focusNavigationGuard.pendingDestination != null,
                         onBack = {
                             if (!navController.popBackStack()) {
@@ -1848,6 +1851,9 @@ fun LifeOsApp(
                 allowedFocusApps = allowedFocusApps,
                 onOpenHistory = {
                     navController.navigate(AppRoutes.FOCUS_HISTORY.substringBefore('?'))
+                },
+                onOpenSettings = {
+                    navController.navigate("settings_focus") { launchSingleTop = true }
                 },
                 hasPendingDestination = focusNavigationGuard.pendingDestination != null,
                 onBack = {},

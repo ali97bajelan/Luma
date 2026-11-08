@@ -72,6 +72,7 @@ internal fun FocusScreen(
     onLaunchApp: (String) -> Unit,
     onOpenPendingDestination: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenSettings: () -> Unit = {},
     onOpenTaskPicker: (() -> Unit)? = null,
     onClearTaskSelection: () -> Unit = {},
     onRequestProtectedFocusUnlock: () -> Unit = {},
@@ -263,6 +264,11 @@ internal fun FocusScreen(
                     onRetry = onRetry,
                     onEmergencyExit = onEmergencyExit,
                     onOpenHistory = onOpenHistory,
+                    onOpenSettings = onOpenSettings,
+                    canOpenSecondaryDestinations = !runtime.navigationGuarded &&
+                        !runtime.recoveryRequired && !state.busy &&
+                        !state.setup.unresolvedStartPending && state.setup.capturedStart == null &&
+                        !hasPendingDestination,
                     onOpenTaskPicker = onOpenTaskPicker,
                     onClearTaskSelection = onClearTaskSelection,
                     onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock,
@@ -363,11 +369,16 @@ private fun SetupContent(
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenSettings: () -> Unit,
+    canOpenSecondaryDestinations: Boolean,
     onOpenTaskPicker: (() -> Unit)?,
     onClearTaskSelection: () -> Unit,
     onRequestProtectedFocusUnlock: () -> Unit,
 ) {
     val setup = state.setup
+    if (canOpenSecondaryDestinations) {
+        FocusDestinationActions(onOpenHistory = onOpenHistory, onOpenSettings = onOpenSettings)
+    }
     FocusSetupContent(
         state = state,
         onNameChange = onNameChange,
@@ -390,8 +401,28 @@ private fun SetupContent(
         onRetry = onRetryInsights,
         onRequestUnlock = onRequestProtectedFocusUnlock,
     )
-    OpenHistoryButton(onOpenHistory)
     FailureContent(state, onRetry, onEmergencyExit)
+}
+
+@Composable
+private fun FocusDestinationActions(
+    onOpenHistory: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TextButton(
+            onClick = onOpenHistory,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_history_open"),
+        ) {
+            Text(stringResource(R.string.focus_open_history))
+        }
+        TextButton(
+            onClick = onOpenSettings,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_settings_open"),
+        ) {
+            Text(stringResource(R.string.settings))
+        }
+    }
 }
 
 @Composable

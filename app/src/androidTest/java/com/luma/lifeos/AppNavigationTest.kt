@@ -4,7 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import com.luma.lifeos.domain.lock.LockCoverage
 import com.luma.lifeos.domain.lock.LockPolicy
+import com.luma.lifeos.domain.lock.LockSection
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.JournalInput
 import com.luma.lifeos.domain.model.PersonInput
@@ -25,6 +27,7 @@ import org.junit.Assert.assertTrue
 import com.luma.lifeos.widget.WidgetIntents
 import com.luma.lifeos.lock.AndroidLockCrypto
 import com.luma.lifeos.lock.CredentialResult
+import com.luma.lifeos.lock.LockCredentialType
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)
@@ -250,7 +253,42 @@ class AppNavigationTest {
         }
     }
 
-    private fun enableWholeAppLockForTest(application: LumaApplication) = runBlocking {
+    @Test fun focusSettingsDestinationStaysGatedAfterUnlockIsCancelled() {
+        val application = compose.activity.application as LumaApplication
+        resetAppLockForTest(application)
+        try {
+            enableWholeAppLockForTest(
+                application,
+                LockPolicy(
+                    enabled = true,
+                    coverage = LockCoverage.SELECTED,
+                    sections = setOf(LockSection.FOCUS),
+                ),
+            )
+            compose.onNodeWithTag("nav_more").performClick()
+            compose.onNodeWithTag("more_settings").performClick()
+            compose.onNodeWithTag("settings_focus").performScrollTo().performClick()
+
+            val gateTitle = compose.activity.getString(R.string.app_lock_gate_title)
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithText(gateTitle).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("focus_settings_screen").assertDoesNotExist()
+            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_gate_unlock)).performClick()
+            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_unlock_title)).assertIsDisplayed()
+            compose.onNodeWithText(compose.activity.getString(R.string.cancel)).performClick()
+
+            compose.onNodeWithText(gateTitle).assertIsDisplayed()
+            compose.onNodeWithTag("focus_settings_screen").assertDoesNotExist()
+        } finally {
+            resetAppLockForTest(application)
+        }
+    }
+
+    private fun enableWholeAppLockForTest(
+        application: LumaApplication,
+        policy: LockPolicy = LockPolicy(enabled = true),
+    ) = runBlocking {
         val credentials = application.lockCredentialService
         val preparation = credentials.prepareRecovery()
         val displayedCode = preparation.takeCodeForDisplay()
@@ -259,7 +297,7 @@ class AppNavigationTest {
             val confirmation = credentials.confirmRecovery(preparation)
             assertEquals(
                 CredentialResult.Success(),
-                credentials.enable(password, LockPolicy(enabled = true), confirmation),
+                credentials.enable(password, LockCredentialType.PASSWORD, policy, confirmation),
             )
         } finally {
             displayedCode.fill('\u0000')
@@ -290,6 +328,29 @@ class AppNavigationTest {
         compose.onNodeWithTag("day_today").performClick()
         compose.onNodeWithTag("day_selected", useUnmergedTree = true).assertTextEquals(
             LocalDate.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
+    }
+
+    @Test fun focusPreparationOpensExistingSettingsAndRestoresDraft() {
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_focus").performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("focus_name").fetchSemanticsNodes().isNotEmpty() ||
+                compose.onAllNodesWithTag("focus_start_another").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (compose.onAllNodesWithTag("focus_name").fetchSemanticsNodes().isEmpty()) {
+            compose.onNodeWithTag("focus_start_another").performClick()
+        }
+        awaitTag("focus_name")
+        compose.onNodeWithTag("focus_name").performTextInput("Keep this draft")
+
+        compose.onNodeWithTag("focus_settings_open").performClick()
+        awaitTag("focus_settings_screen")
+
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.onBackPressedDispatcher.onBackPressed()
+        }
+        awaitTag("focus_screen")
+        compose.onNodeWithTag("focus_name").assertTextEquals("Keep this draft")
     }
 
     private fun awaitTag(tag: String) {

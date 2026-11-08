@@ -1,16 +1,15 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaButton
 import com.luma.lifeos.ui.common.LumaCard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,6 +19,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusState
+
+internal fun todayFocusActionLabel(state: FocusState?): Int = when (state) {
+    FocusState.RUNNING -> R.string.today_focus_return_running
+    FocusState.PAUSED -> R.string.today_focus_return_paused
+    else -> R.string.today_focus_action
+}
 
 @Composable
 internal fun TodayFocusCard(
@@ -70,9 +75,6 @@ internal fun TodayFocusCard(
                             modifier = Modifier.testTag("today_focus_interrupted"),
                         )
                     }
-                    TextButton(onClick = onHistory, modifier = Modifier.testTag("today_focus_history")) {
-                        Text(stringResource(R.string.focus_view_day_history))
-                    }
                 }
             }
             if (inProgressMillis != null && inProgressState != null) {
@@ -86,12 +88,20 @@ internal fun TodayFocusCard(
                     modifier = Modifier.testTag("today_focus_in_progress"),
                 )
             }
-            if (onFocus != null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
+            if (onFocus != null) {
+                LumaButton(
                     onClick = onFocus,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("today_focus_open"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_focus_open"),
                 ) {
-                    Text(stringResource(R.string.today_focus_action))
+                    Text(stringResource(todayFocusActionLabel(inProgressState)))
+                }
+            }
+            if (report is FocusReportState.Ready) {
+                TextButton(
+                    onClick = onHistory,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_focus_history"),
+                ) {
+                    Text(stringResource(R.string.focus_view_day_history))
                 }
             }
         }

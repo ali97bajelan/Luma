@@ -74,6 +74,7 @@ class FocusReportsTest {
         compose.onNodeWithTag("today_focus_interrupted")
             .assertTextContains("1 interrupted session contributed.", substring = true)
         compose.onNodeWithTag("today_focus_in_progress").assertTextContains("30:00", substring = true)
+        compose.onNodeWithTag("today_focus_open").assertTextContains("Return to timer")
         compose.onNodeWithTag("today_focus_history").performClick()
         compose.onNodeWithTag("today_focus_open").performClick()
         assertEquals(1, openedHistory)

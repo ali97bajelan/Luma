@@ -1432,7 +1432,9 @@
     <string name="focus_settings_unavailable_app">This app is no longer available.</string>
     <string name="focus_settings_remove">Remove</string>
     <string name="focus_settings_save_error">Your app choices could not be saved. Try again.</string>
-    <string name="today_focus_action">Start or resume focus</string>
+    <string name="today_focus_action">Start focus</string>
+    <string name="today_focus_return_running">Return to timer</string>
+    <string name="today_focus_return_paused">Return to paused session</string>
     <string name="today_focus_paused">Focus is paused. Resume it whenever you’re ready.</string>
     <string name="more_focus_description">Start, resume, or stop a focus session.</string>
     <string name="more_focus_paused_description">Your focus session is paused. Resume it when you’re ready.</string>
