@@ -33,6 +33,7 @@ private const val RECONCILE_WORK = "luma-reminder-reconcile"
 fun enqueueReminderReconciliation(context: Context) {
     val request = OneTimeWorkRequestBuilder<ReminderWorker>().setInputData(workDataOf("reconcile" to true)).build()
     WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(RECONCILE_WORK, ExistingWorkPolicy.REPLACE, request)
+    enqueueFocusInvitationReconciliation(context)
 }
 
 internal fun enqueueReminderEvent(context: Context, event: ReminderEvent) {

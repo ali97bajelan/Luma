@@ -1686,4 +1686,24 @@
         <item quantity="one">Temps de concentration enregistré sur %1$d jour</item>
         <item quantity="other">Temps de concentration enregistré sur %1$d jours</item>
     </plurals>
+    <string name="focus_invitation_settings_heading">Invitations de concentration</string>
+    <string name="focus_invitation_settings_intro">Un rappel local peut vous proposer de commencer. Il ne démarre jamais une session à votre place.</string>
+    <string name="focus_invitation_enable">Activer les invitations</string>
+    <string name="focus_invitation_enable_hint">Un rappel les jours choisis. Désactivé par défaut.</string>
+    <string name="focus_invitation_weekdays">Jours</string>
+    <string name="focus_invitation_weekday_required">Choisissez au moins un jour pour activer les invitations.</string>
+    <string name="focus_invitation_time">Heure du rappel</string>
+    <string name="focus_invitation_quiet_hours_hint">Les heures calmes globales peuvent ignorer un rappel sans désactiver ce programme.</string>
+    <string name="focus_invitation_notifications_allowed">Les notifications sont autorisées.</string>
+    <string name="focus_invitation_notifications_blocked">Les notifications sont bloquées. Focus reste utilisable sans alertes.</string>
+    <string name="focus_invitation_allow_notifications">Autoriser les notifications</string>
+    <string name="focus_invitation_save_error">Impossible d’enregistrer les invitations. Réessayez.</string>
+    <string name="focus_invitation_notification_title">Prêt pour une session de concentration ?</string>
+    <string name="focus_invitation_notification_body">Ouvrez Luma quand vous êtes prêt. Aucune session ne démarre automatiquement.</string>
+    <string name="focus_invitation_snooze">Répéter dans 10 minutes</string>
+    <string name="focus_invitation_disable">Désactiver les invitations</string>
+    <string name="focus_invitation_replace_draft_title">Remplacer cette configuration Focus ?</string>
+    <string name="focus_invitation_replace_draft_body">Le rappel ouvre une configuration vide. Votre brouillon actuel sera effacé.</string>
+    <string name="focus_invitation_replace_setup">Remplacer la configuration</string>
+    <string name="focus_invitation_keep_draft">Garder le brouillon</string>
 </resources>

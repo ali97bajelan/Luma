@@ -19,6 +19,8 @@ import com.luma.lifeos.focus.FocusViewModel
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusInvitationRepository
+import com.luma.lifeos.reminders.FocusInvitationOpenRequest
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusMetadata
 import com.luma.lifeos.domain.focus.FocusReflection
@@ -42,6 +44,9 @@ internal fun FocusRoute(
     onRequestProtectedFocusUnlock: () -> Unit = {},
     protectedFocusReadable: Boolean = true,
     protectedTasksReadable: Boolean = true,
+    invitationRepository: FocusInvitationRepository? = null,
+    invitationOpenRequest: FocusInvitationOpenRequest? = null,
+    onInvitationOpenHandled: () -> Unit = {},
 ) {
     val context = LocalContext.current.applicationContext
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -50,6 +55,50 @@ internal fun FocusRoute(
         allowedFocusApps ?: AllowedFocusApps(context)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var handledInvitationToken by remember { mutableStateOf<String?>(null) }
+    var showInvitationDraftConfirmation by remember { mutableStateOf(false) }
+    LaunchedEffect(
+        invitationOpenRequest?.token,
+        state.runtime.session?.state,
+        state.runtime.recoveryRequired,
+        state.runtime.breakState,
+        state.runtime.initialized,
+        state.runtime.loading,
+        state.runtime.loadFailed,
+        state.setup,
+        protectedFocusReadable,
+        protectedTasksReadable,
+    ) {
+        val request = invitationOpenRequest ?: return@LaunchedEffect
+        if (handledInvitationToken == request.token) return@LaunchedEffect
+        if (!state.runtime.initialized || state.runtime.loading || state.runtime.loadFailed) return@LaunchedEffect
+        val existingWorkIsOpen =
+            state.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.RUNNING ||
+                state.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.PAUSED ||
+                state.runtime.recoveryRequired ||
+                state.runtime.breakState != com.luma.lifeos.focus.FocusBreakState.Idle
+        if (existingWorkIsOpen) {
+            handledInvitationToken = request.token
+            onInvitationOpenHandled()
+            return@LaunchedEffect
+        }
+        if (!protectedFocusReadable || (state.setup.taskOrigin && !protectedTasksReadable)) return@LaunchedEffect
+        val storedToken = withContext(Dispatchers.IO) {
+            invitationRepository?.actionToken(request.slot)
+        }
+        if (storedToken != request.token) {
+            handledInvitationToken = request.token
+            onInvitationOpenHandled()
+            return@LaunchedEffect
+        }
+        if (state.setup.hasInvitationDraft()) {
+            showInvitationDraftConfirmation = true
+        } else {
+            viewModel.startAnother()
+            handledInvitationToken = request.token
+            onInvitationOpenHandled()
+        }
+    }
     val presentationState = state.copy(
         runtime = state.runtime.copy(
             session = state.runtime.session?.let { session ->
@@ -135,5 +184,25 @@ internal fun FocusRoute(
         onTerminalSessionMissing = { sessionId, generation ->
             if (viewModel.dismissMissingTerminalSession(sessionId, generation)) onBack()
         },
+        showInvitationDraftConfirmation = showInvitationDraftConfirmation,
+        onConfirmInvitationDraftReplacement = {
+            viewModel.startAnother()
+            showInvitationDraftConfirmation = false
+            invitationOpenRequest?.token?.let { handledInvitationToken = it }
+            onInvitationOpenHandled()
+        },
+        onDismissInvitationDraftReplacement = {
+            showInvitationDraftConfirmation = false
+            invitationOpenRequest?.token?.let { handledInvitationToken = it }
+            onInvitationOpenHandled()
+        },
     )
 }
+
+private fun FocusSetupState.hasInvitationDraft(): Boolean =
+    name.isNotEmpty() || tag.isNotEmpty() ||
+        timerMode != com.luma.lifeos.domain.focus.FocusTimerMode.COUNT_UP ||
+        timedMinutesText != "25" || repeatSourceSessionId != null ||
+        selectedTaskId != null || taskOrigin || taskSelectionLoading ||
+        taskSelectionConflict || capturedStart != null || unresolvedStartPending
+

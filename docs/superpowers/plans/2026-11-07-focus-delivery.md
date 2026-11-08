@@ -144,12 +144,14 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Consumes:** FD05 repository and existing quiet-hours/notification permission helpers. **Produces:** namespaced reconciliation, generic notification/actions and protected empty-setup navigation.
 
-- [ ] Add off-by-default weekday/time settings with contextual optional notification permission/status.
-- [ ] Wire inexact one-shot alarms, work reconciliation and all R05 system/settings events without changing task/habit identities.
-- [ ] Post generic Open/Snooze/Disable only after atomic claim; validate tokens, explicit component and current schedule.
-- [ ] Route Open through lock/navigation guards; preserve any open session and confirm dirty-draft replacement.
-- [ ] Cancel only Focus invitation work/actions on disable or replacement; denied permissions leave manual Focus usable.
-- [ ] Source-review receiver exposure, cancellation namespacing, duplicate actions and private-text absence; record unverified handoff.
+- [x] Add off-by-default weekday/time settings with contextual optional notification permission/status.
+- [x] Wire inexact one-shot alarms, work reconciliation and all R05 system/settings events without changing task/habit identities.
+- [x] Post generic Open/Snooze/Disable only after atomic claim; validate tokens, explicit component and current schedule.
+- [x] Route Open through lock/navigation guards; preserve any open session and confirm dirty-draft replacement.
+- [x] Cancel only Focus invitation work/actions on disable or replacement; denied permissions leave manual Focus usable.
+- [x] Source-review receiver exposure, cancellation namespacing, duplicate actions and private-text absence; record unverified handoff.
+
+**Source handoff:** SOURCE COMPLETE — UNVERIFIED (2026-11-08). Tests, builds, lint, schema generation and device/emulator checks remain deferred to Phase Q/E.
 
 **Deferred proof:** Q02/Q04; E06/E07/E08.
 

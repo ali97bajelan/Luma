@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD05 SOURCE COMPLETE — UNVERIFIED; FD06–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD06 SOURCE COMPLETE — UNVERIFIED; FD07–FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -46,7 +46,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD03 source complete — UNVERIFIED
 - [x] FD04 source complete — UNVERIFIED
 - [x] FD05 source complete — UNVERIFIED
-- [ ] FD06 source complete
+- [x] FD06 source complete — UNVERIFIED
 - [ ] FD07 source complete
 - [ ] FD08 source complete
 - [ ] FD09 source complete
@@ -111,6 +111,16 @@ The checkboxes below track current source delivery only; source completion is se
 - Final: Ruling: tests, builds and schema generation remain deferred to Phase Q as the plan requires — cost if wrong: integration defects may remain undetected until Q.
 - Later proof: Q02/Q03; E06/E07/E09.
 
+### FD06 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED.
+- Changed source: new `app/.../reminders/FocusInvitationPlatform.kt`, `FocusInvitationWork.kt`, and `ui/focus/FocusInvitationSettings.kt`; modified `reminders/ReminderIntents.kt`, `ReminderWork.kt`, `ReminderPlatform.kt`; `ui/focus/FocusSettingsRoute.kt`, `FocusSettingsScreen.kt`, `FocusRoute.kt`, `FocusScreen.kt`; `ui/LifeOsApp.kt`, `MainActivity.kt`, `app/src/main/AndroidManifest.xml`; and EN/FR/FA localized strings.
+- Implemented: default-off weekday/time settings with a weekday requirement, existing notification permission/status and shared quiet-hours behavior; inexact one-shot alarm scheduling and reconciliation; generic Open/Snooze/Disable notification actions with explicit private components, schedule/token validation and atomic repository operations; protected Open navigation into Focus setup without starting; preservation of an open session and confirmation before replacing a dirty draft; reconciliation after schedule changes, app/settings resume and the existing boot/package/time/timezone hooks.
+- Interfaces: `enqueueFocusInvitationReconciliation(context)` owns Focus invitation work; `enqueueReminderReconciliation(context)` now delegates to it. Open intents carry only the slot identity and local action token; UI validation checks current repository state and access before navigation.
+- Ruling: Focus invitations use an independent platform registry and PendingIntent/notification identity namespace. Generic reminder cancellation now targets tracked task/habit IDs only, so a task or habit reset cannot cancel Focus invitation alarms. Cost if wrong: duplicate registry and cancellation plumbing across reminder kinds.
+- Source review covered explicit/non-exported receiver boundaries, stale generation/revision/token handling, one-shot cancellation, quiet-hour and permission skips, generic notification content, session preservation and draft replacement. Tests, builds, lint, schema generation and device/emulator checks were NOT RUN in this task, as required by Phase I.
+- Later proof: Q02/Q04; E06/E07/E08.
+
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 
 ## Unfinished past-task reconciliation
@@ -128,14 +138,14 @@ Baseline from the existing 7 November ledger; no old source-complete flag means 
 | FI05 setup | Source delivered; Android layout/lifecycle acceptance incomplete | FD07 refines; E01/E10 verify |
 | FI06 history | Source delivered; Room/Compose/access lifecycle acceptance incomplete | FD04/FD11 integrate; E05/E08/E11 |
 | FI07 privacy/resources | Source delivered; Android lock/replacement acceptance incomplete | FD04/FD11; Q05/E08/E09/E10 |
-| FX01 shared foundation | Timer/break/goal/reflection/correction parts present; task/reminder foundation incomplete | FD01 + FD05; integration FD11 |
+| FX01 shared foundation | Timer/break/goal/reflection/correction and invitation source delivered; integration proof remains | FD01 + FD05/FD06; integration FD11; Q/E carry regression |
 | FX02 Repeat | Name/tag/timer/next-step source complete; task-copy missing | FD02/FD09 add task-aware discovery; Q/E carry Repeat checks |
 | FX03 task integration | Not started | FD02/FD03/FD04 |
 | FX04 timed expiry/recovery | Source complete; narrow 7 Nov smoke/cleanup only | Preserve source; Q02/Q03/E04 carry full lifecycle/races |
 | FX05 break | Source complete, unverified | FD08 changes presentation only; Q02/E03/E04 validate |
 | FX06 reflection | Source complete, unverified | FD08/FD09 presentation/context; Q02/Q03/E03/E05 |
 | FX07 goals/distribution | Landed source; overall task partial on shared foundation | FD04/FD11 close dependencies; Q02/Q03/E11 |
-| FX08 invitations | Not started | FD05/FD06 |
+| FX08 invitations | FD05/FD06 source delivered, unverified | Q02/Q04; E06/E07/E08 |
 | FX09 corrections/tag merge | Metadata/tag paths landed; task unlink and dual access pending | FD03/FD04; Q03/E03/E08 |
 | FX10 integrated handoff | Blocked by unfinished dependencies | FD11/FD12 after FD01–FD10 |
 | FX-QA | Not run as integrated final phase | Consolidated Q01–Q06 and E01–E12; all old mandatory cases retained |

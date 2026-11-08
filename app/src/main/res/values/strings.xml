@@ -1663,4 +1663,24 @@
         <item quantity="one">Recorded focus time on %1$d day</item>
         <item quantity="other">Recorded focus time on %1$d days</item>
     </plurals>
+    <string name="focus_invitation_settings_heading">Focus invitations</string>
+    <string name="focus_invitation_settings_intro">A local reminder can invite you to begin. It never starts a session for you.</string>
+    <string name="focus_invitation_enable">Enable invitations</string>
+    <string name="focus_invitation_enable_hint">One reminder on selected weekdays. Disabled by default.</string>
+    <string name="focus_invitation_weekdays">Days</string>
+    <string name="focus_invitation_weekday_required">Choose at least one day to enable invitations.</string>
+    <string name="focus_invitation_time">Reminder time</string>
+    <string name="focus_invitation_quiet_hours_hint">Global quiet hours can skip an invitation without disabling this schedule.</string>
+    <string name="focus_invitation_notifications_allowed">Notifications are allowed.</string>
+    <string name="focus_invitation_notifications_blocked">Notifications are blocked. Focus still works without alerts.</string>
+    <string name="focus_invitation_allow_notifications">Allow notifications</string>
+    <string name="focus_invitation_save_error">Could not save invitation settings. Try again.</string>
+    <string name="focus_invitation_notification_title">Ready for a focus session?</string>
+    <string name="focus_invitation_notification_body">Open Luma when you are ready. Nothing starts automatically.</string>
+    <string name="focus_invitation_snooze">Snooze 10 minutes</string>
+    <string name="focus_invitation_disable">Turn off invitations</string>
+    <string name="focus_invitation_replace_draft_title">Replace this Focus setup?</string>
+    <string name="focus_invitation_replace_draft_body">The reminder opens an empty setup. Your current draft will be cleared.</string>
+    <string name="focus_invitation_replace_setup">Replace setup</string>
+    <string name="focus_invitation_keep_draft">Keep draft</string>
 </resources>

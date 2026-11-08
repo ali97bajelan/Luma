@@ -43,6 +43,8 @@ import com.luma.lifeos.R
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.displayName
 import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusInvitationRepository
+import com.luma.lifeos.reminders.ReminderPreferences
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 
 @Composable
@@ -57,6 +59,8 @@ internal fun FocusSettingsScreen(
     onToggle: (AllowedFocusApps.App, Boolean) -> Unit,
     onBack: () -> Unit,
     goalRepository: FocusProductRepository? = null,
+    invitationRepository: FocusInvitationRepository? = null,
+    reminderPreferences: ReminderPreferences? = null,
     canReadTaskOrigin: Boolean = true,
     onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
@@ -78,6 +82,9 @@ internal fun FocusSettingsScreen(
         screenTag = "focus_settings_screen",
     ) {
         Text(stringResource(R.string.focus_settings_intro), style = MaterialTheme.typography.bodyLarge)
+        if (invitationRepository != null) {
+            FocusInvitationSettings(invitationRepository, reminderPreferences)
+        }
         Text(
             stringResource(R.string.focus_settings_profile_scope),
             modifier = Modifier.testTag("focus_settings_scope"),

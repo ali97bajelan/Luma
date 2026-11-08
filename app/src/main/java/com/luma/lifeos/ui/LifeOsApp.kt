@@ -135,6 +135,8 @@ import com.luma.lifeos.ui.integrations.IntegrationAvailabilityViewModel
 import com.luma.lifeos.domain.habit.HabitReminderRepository
 import com.luma.lifeos.reminders.ReminderOpenRequest
 import com.luma.lifeos.reminders.ReminderActionRequest
+import com.luma.lifeos.reminders.FocusInvitationOpenRequest
+import com.luma.lifeos.domain.focus.FocusInvitationRepository
 import com.luma.lifeos.reminders.ReminderPreferences
 import com.luma.lifeos.reminders.enqueueReminderAction
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
@@ -240,6 +242,9 @@ fun LifeOsApp(
     onReminderLaunchConsumed: () -> Unit = {},
     reminderAction: ReminderActionRequest? = null,
     onReminderActionConsumed: () -> Unit = {},
+    focusInvitationRepository: FocusInvitationRepository? = null,
+    focusInvitationLaunch: FocusInvitationOpenRequest? = null,
+    onFocusInvitationLaunchConsumed: () -> Unit = {},
     focusRuntime: FocusRuntime? = null,
     focusPreferences: FocusPreferences? = null,
     allowedFocusApps: AllowedFocusApps? = null,
@@ -405,6 +410,7 @@ fun LifeOsApp(
     var pendingCaptureResume by remember { mutableStateOf<((OperationProof) -> Unit)?>(null) }
     var pendingWidgetLaunchForUnlock by remember { mutableStateOf<UUID?>(null) }
     var pendingReminderLaunchForUnlock by remember { mutableStateOf<String?>(null) }
+    var focusInvitationOpenToHandle by remember { mutableStateOf<FocusInvitationOpenRequest?>(null) }
     var pendingWidgetAction by remember { mutableStateOf<PendingWidgetActionConfirmation?>(null) }
     var showWidgetActionConfirmation by remember { mutableStateOf(false) }
     var pendingReminderAction by remember { mutableStateOf<PendingReminderActionConfirmation?>(null) }
@@ -1197,6 +1203,9 @@ fun LifeOsApp(
                             }
                         },
                         onOpenPendingDestination = ::openPendingFocusDestination,
+                        invitationRepository = focusInvitationRepository,
+                        invitationOpenRequest = focusInvitationOpenToHandle,
+                        onInvitationOpenHandled = { focusInvitationOpenToHandle = null },
                         onOpenTaskPicker = if (todos != null) ({
                             navController.navigate(AppRoutes.FOCUS_TASK_PICKER)
                         }) else null,
@@ -1354,6 +1363,8 @@ fun LifeOsApp(
                     allowedFocusApps = settingsAllowedApps,
                     isRunning = focusState.runtime.session?.state == com.luma.lifeos.domain.focus.FocusState.RUNNING,
                     goalRepository = focusProductRepository,
+                    invitationRepository = focusInvitationRepository,
+                    reminderPreferences = reminderPreferences,
                     canReadTaskOrigin = protectedTasksReadable,
                     onRequestProtectedFocusUnlock = ::requestProtectedFocusUnlock,
                     onBack = { navController.popBackStack() },
@@ -1743,6 +1754,30 @@ fun LifeOsApp(
             }
             onReminderLaunchConsumed()
         }
+        LaunchedEffect(
+            focusInvitationLaunch?.token,
+            focusInvitationRepository,
+            focusState.runtime.loading,
+            focusState.runtime.loadFailed,
+            lockSnapshot.loadStatus,
+        ) {
+            val request = focusInvitationLaunch ?: return@LaunchedEffect
+            if (focusRuntime != null && (focusState.runtime.loading ||
+                    (focusState.runtime.loadFailed && !focusState.runtime.emergencyExitConfirmed))) return@LaunchedEffect
+            if (lockSnapshot.loadStatus == LockLoadStatus.UNKNOWN) return@LaunchedEffect
+            if (lockSnapshot.loadStatus == LockLoadStatus.ERROR) {
+                onFocusInvitationLaunchConsumed()
+                return@LaunchedEffect
+            }
+            val storedToken = focusInvitationRepository?.actionToken(request.slot)
+            if (storedToken != request.token) {
+                onFocusInvitationLaunchConsumed()
+                return@LaunchedEffect
+            }
+            focusInvitationOpenToHandle = request
+            navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
+            onFocusInvitationLaunchConsumed()
+        }
         TodoActionFeedbackHost(backStackEntry, todos, snackbarHostState, todoRestoreGeneration)
         BackupDepartureFeedbackHost(backStackEntry, snackbarHostState, BackupDepartureSession.id)
     }
@@ -1801,6 +1836,9 @@ fun LifeOsApp(
                 hasPendingDestination = focusNavigationGuard.pendingDestination != null,
                 onBack = {},
                 onOpenPendingDestination = ::openPendingFocusDestination,
+                invitationRepository = focusInvitationRepository,
+                invitationOpenRequest = focusInvitationOpenToHandle,
+                onInvitationOpenHandled = { focusInvitationOpenToHandle = null },
                 onOpenTaskPicker = if (todos != null) ({
                     navController.navigate(AppRoutes.FOCUS_TASK_PICKER)
                 }) else null,

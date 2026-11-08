@@ -20,6 +20,8 @@ import com.luma.lifeos.reminders.ReminderOpenRequest
 import com.luma.lifeos.reminders.ReminderPreferences
 import com.luma.lifeos.reminders.reminderOpenRequest
 import com.luma.lifeos.reminders.ReminderActionRequest
+import com.luma.lifeos.reminders.FocusInvitationOpenRequest
+import com.luma.lifeos.reminders.focusInvitationOpenRequest
 import com.luma.lifeos.reminders.reminderActionRequest
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
 import kotlinx.coroutines.launch
@@ -28,6 +30,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var widgetLaunches: WidgetLaunchViewModel
     private var reminderLaunch by mutableStateOf<ReminderOpenRequest?>(null)
     private var reminderAction by mutableStateOf<ReminderActionRequest?>(null)
+    private var focusInvitationLaunch by mutableStateOf<FocusInvitationOpenRequest?>(null)
     private var widgetAction by mutableStateOf<WidgetActionRequest?>(null)
 
     override fun attachBaseContext(newBase: android.content.Context) {
@@ -41,6 +44,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) {
             reminderAction = reminderActionRequest(intent)
             reminderLaunch = if (reminderAction == null) reminderOpenRequest(intent) else null
+            focusInvitationLaunch = focusInvitationOpenRequest(intent)
         }
         if (savedInstanceState == null) widgetAction = WidgetIntents.decodePendingMutation(intent)
         enableEdgeToEdge()
@@ -72,6 +76,9 @@ class MainActivity : ComponentActivity() {
                     calendar = luma.protectedCalendar,
                     habitReminders = storage.habitReminders,
                     reminderPreferences = ReminderPreferences(this@MainActivity),
+                    focusInvitationRepository = storage.focusInvitations,
+                    focusInvitationLaunch = focusInvitationLaunch,
+                    onFocusInvitationLaunchConsumed = { focusInvitationLaunch = null },
                     focusRuntime = luma.focusRuntime,
                     focusRepository = luma.protectedFocusRepository,
                     focusProductRepository = luma.protectedFocusProductRepository,
@@ -110,6 +117,7 @@ class MainActivity : ComponentActivity() {
         enqueueWidgetLaunch(intent)
         reminderAction = reminderActionRequest(intent)
         reminderLaunch = if (reminderAction == null) reminderOpenRequest(intent) else null
+        focusInvitationLaunch = focusInvitationOpenRequest(intent)
         widgetAction = WidgetIntents.decodePendingMutation(intent)
     }
 

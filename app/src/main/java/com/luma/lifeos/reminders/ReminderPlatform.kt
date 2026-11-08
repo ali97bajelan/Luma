@@ -55,17 +55,17 @@ internal class ReminderPlatform(private val context: Context) {
 
     fun cancelAlarmsExcept(desired: Set<String>) {
         val registered = registry.getStringSet(KEY_ALARMS, emptySet()).orEmpty().toSet()
-        registered.filterNot(desired::contains).forEach { identity ->
+        val otherNamespaces = registered.filterNot(::isTaskOrHabitIdentity).toSet()
+        registered.filter { isTaskOrHabitIdentity(it) && it !in desired }.forEach { identity ->
             val (kind, id) = identity.split(':', limit = 2)
             runCatching { alarms.cancel(broadcastPendingIntent(context, emptyReminderEvent(kind, id), "DELIVER")) }
         }
-        registry.edit().putStringSet(KEY_ALARMS, desired).apply()
+        registry.edit().putStringSet(KEY_ALARMS, otherNamespaces + desired).apply()
     }
 
     fun cancelAll() {
         cancelAlarmsExcept(emptySet())
-        notifications.cancelAll()
-        registry.edit().putStringSet(KEY_NOTIFICATIONS, emptySet()).apply()
+        cancelNotificationsExcept(emptyMap(), cancelAll = true)
     }
 
     fun cancelNotificationsExcept(
@@ -186,6 +186,9 @@ internal fun taskActionName(action: String): TaskReminderAction? = when (action)
 }
 
 private fun reminderIdentity(event: ReminderEvent) = "${event.kind}:${event.id}"
+
+private fun isTaskOrHabitIdentity(identity: String): Boolean =
+    identity.startsWith("$KIND_HABIT:") || identity.startsWith("$KIND_TASK:")
 
 private fun emptyReminderEvent(kind: String, id: String): ReminderEvent {
     val parsed = java.util.UUID.fromString(id)

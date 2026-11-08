@@ -16,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusPreferences
 import com.luma.lifeos.domain.focus.FocusProductRepository
+import com.luma.lifeos.domain.focus.FocusInvitationRepository
+import com.luma.lifeos.reminders.ReminderPreferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,6 +32,8 @@ internal fun FocusSettingsRoute(
     isRunning: Boolean,
     onBack: () -> Unit,
     goalRepository: FocusProductRepository? = null,
+    invitationRepository: FocusInvitationRepository? = null,
+    reminderPreferences: ReminderPreferences? = null,
     canReadTaskOrigin: Boolean = true,
     onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
@@ -90,6 +94,8 @@ internal fun FocusSettingsRoute(
         },
         onBack = onBack,
         goalRepository = goalRepository,
+        invitationRepository = invitationRepository,
+        reminderPreferences = reminderPreferences,
         canReadTaskOrigin = canReadTaskOrigin,
         onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock,
     )

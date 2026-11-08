@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.work.Data
 import com.luma.lifeos.MainActivity
 import com.luma.lifeos.domain.habit.ReminderSlot
+import com.luma.lifeos.domain.focus.FocusInvitationSlot
 import com.luma.lifeos.domain.todo.TaskReminderSlot
 import java.time.Instant
 import java.time.LocalDate
@@ -26,6 +27,13 @@ internal const val EXTRA_TOKEN = "reminder_token"
 internal const val KIND_HABIT = "habit"
 internal const val KIND_TASK = "task"
 internal const val ACTION_EXTERNAL_REMINDER = "com.luma.lifeos.reminders.ACTION_EXTERNAL"
+internal const val ACTION_FOCUS_INVITATION_OPEN = "com.luma.lifeos.focus.invitation.OPEN"
+internal const val EXTRA_FOCUS_INVITATION_ACTION = "focus_invitation_action"
+internal const val EXTRA_FOCUS_INVITATION_GENERATION = "focus_invitation_generation"
+internal const val EXTRA_FOCUS_INVITATION_REVISION = "focus_invitation_revision"
+internal const val EXTRA_FOCUS_INVITATION_DATE = "focus_invitation_date"
+internal const val EXTRA_FOCUS_INVITATION_DUE_AT = "focus_invitation_due_at"
+internal const val EXTRA_FOCUS_INVITATION_TOKEN = "focus_invitation_token"
 
 internal data class ReminderEvent(
     val kind: String,
@@ -212,3 +220,100 @@ data class ReminderOpenRequest(val kind: String, val id: UUID, val date: LocalDa
 
 private fun stableRequestCode(kind: String, id: UUID, operation: String): Int = "$kind:$id:$operation".hashCode()
 private fun identityUri(kind: String, id: UUID, operation: String): Uri = Uri.parse("luma://reminder/$kind/$id/$operation")
+
+internal data class FocusInvitationRequest(
+    val slot: FocusInvitationSlot,
+    val action: String,
+    val token: String? = null,
+) {
+    fun toData(): Data = Data.Builder()
+        .putString(EXTRA_FOCUS_INVITATION_ACTION, action)
+        .putString(EXTRA_FOCUS_INVITATION_GENERATION, slot.generation.toString())
+        .putLong(EXTRA_FOCUS_INVITATION_REVISION, slot.scheduleRevision)
+        .putString(EXTRA_FOCUS_INVITATION_DATE, slot.date.toString())
+        .putLong(EXTRA_FOCUS_INVITATION_DUE_AT, slot.dueAt.toEpochMilli())
+        .putString(EXTRA_FOCUS_INVITATION_TOKEN, token)
+        .build()
+
+    fun toIntent(context: Context): Intent {
+        val target = when (action) {
+            "DELIVER" -> FocusInvitationAlarmReceiver::class.java
+            "SNOOZE", "DISABLE" -> FocusInvitationActionReceiver::class.java
+            "OPEN" -> MainActivity::class.java
+            else -> return Intent()
+        }
+        return Intent(context, target).apply {
+            this.action = if (this@FocusInvitationRequest.action == "OPEN") ACTION_FOCUS_INVITATION_OPEN
+                else "com.luma.lifeos.focus.invitation.${this@FocusInvitationRequest.action}"
+            data = this@FocusInvitationRequest.identityUri()
+            putExtra(EXTRA_FOCUS_INVITATION_ACTION, this@FocusInvitationRequest.action)
+            putExtra(EXTRA_FOCUS_INVITATION_GENERATION, slot.generation.toString())
+            putExtra(EXTRA_FOCUS_INVITATION_REVISION, slot.scheduleRevision)
+            putExtra(EXTRA_FOCUS_INVITATION_DATE, slot.date.toString())
+            putExtra(EXTRA_FOCUS_INVITATION_DUE_AT, slot.dueAt.toEpochMilli())
+            token?.let { putExtra(EXTRA_FOCUS_INVITATION_TOKEN, it) }
+            if (action == "OPEN") {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+        }
+    }
+
+    private fun identityUri(): Uri = Uri.parse(
+        "luma://focus-invitation/${slot.generation}/${slot.scheduleRevision}/${slot.date}/${slot.dueAt.toEpochMilli()}/$action/${token.orEmpty()}",
+    )
+}
+
+data class FocusInvitationOpenRequest(
+    val slot: FocusInvitationSlot,
+    val token: String,
+)
+
+internal fun focusInvitationRequestFrom(data: Data): FocusInvitationRequest? = runCatching {
+    val action = requireNotNull(data.getString(EXTRA_FOCUS_INVITATION_ACTION))
+    val token = data.getString(EXTRA_FOCUS_INVITATION_TOKEN)
+    require(action in setOf("DELIVER", "SNOOZE", "DISABLE", "OPEN"))
+    require(if (action == "DELIVER") token == null else !token.isNullOrBlank())
+    FocusInvitationRequest(
+        slot = FocusInvitationSlot(
+            generation = UUID.fromString(requireNotNull(data.getString(EXTRA_FOCUS_INVITATION_GENERATION))),
+            scheduleRevision = data.getLong(EXTRA_FOCUS_INVITATION_REVISION, -1L),
+            date = LocalDate.parse(requireNotNull(data.getString(EXTRA_FOCUS_INVITATION_DATE))),
+            dueAt = Instant.ofEpochMilli(data.getLong(EXTRA_FOCUS_INVITATION_DUE_AT, Long.MIN_VALUE)),
+        ),
+        action = action,
+        token = token,
+    ).also { require(it.slot.scheduleRevision >= 0 && it.slot.dueAt.toEpochMilli() != Long.MIN_VALUE) }
+}.getOrNull()
+
+internal fun focusInvitationRequestFrom(
+    intent: Intent,
+    expectedComponent: String? = null,
+): FocusInvitationRequest? = runCatching {
+    if (expectedComponent != null && intent.component?.className != expectedComponent) return null
+    val request = focusInvitationRequestFrom(
+        Data.Builder()
+            .putString(EXTRA_FOCUS_INVITATION_ACTION, intent.getStringExtra(EXTRA_FOCUS_INVITATION_ACTION))
+            .putString(EXTRA_FOCUS_INVITATION_GENERATION, intent.getStringExtra(EXTRA_FOCUS_INVITATION_GENERATION))
+            .putLong(EXTRA_FOCUS_INVITATION_REVISION, intent.getLongExtra(EXTRA_FOCUS_INVITATION_REVISION, -1L))
+            .putString(EXTRA_FOCUS_INVITATION_DATE, intent.getStringExtra(EXTRA_FOCUS_INVITATION_DATE))
+            .putLong(EXTRA_FOCUS_INVITATION_DUE_AT, intent.getLongExtra(EXTRA_FOCUS_INVITATION_DUE_AT, Long.MIN_VALUE))
+            .putString(EXTRA_FOCUS_INVITATION_TOKEN, intent.getStringExtra(EXTRA_FOCUS_INVITATION_TOKEN))
+            .build(),
+    ) ?: return null
+    val expectedAction = if (request.action == "OPEN") ACTION_FOCUS_INVITATION_OPEN
+        else "com.luma.lifeos.focus.invitation.${request.action}"
+    if (intent.action != expectedAction || intent.data?.toString() != request.identityUriString()) return null
+    request
+}.getOrNull()
+
+internal fun focusInvitationOpenRequest(intent: Intent): FocusInvitationOpenRequest? {
+    if (intent.component?.className != MainActivity::class.java.name ||
+        intent.action != ACTION_FOCUS_INVITATION_OPEN
+    ) return null
+    val request = focusInvitationRequestFrom(intent) ?: return null
+    if (request.action != "OPEN" || request.token.isNullOrBlank()) return null
+    return FocusInvitationOpenRequest(request.slot, request.token)
+}
+
+private fun FocusInvitationRequest.identityUriString(): String =
+    "luma://focus-invitation/${slot.generation}/${slot.scheduleRevision}/${slot.date}/${slot.dueAt.toEpochMilli()}/$action/${token.orEmpty()}"

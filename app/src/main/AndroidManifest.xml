@@ -122,6 +122,12 @@
             android:name=".reminders.ReminderActionReceiver"
             android:exported="false" />
         <receiver
+            android:name=".reminders.FocusInvitationAlarmReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".reminders.FocusInvitationActionReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".focus.FocusExpiryReceiver"
             android:exported="false" />
         <receiver

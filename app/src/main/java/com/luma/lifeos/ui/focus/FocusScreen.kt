@@ -87,6 +87,9 @@ internal fun FocusScreen(
     focusRepository: FocusRepository? = null,
     focusProductRepository: FocusProductRepository? = null,
     onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit = { _, _ -> },
+    showInvitationDraftConfirmation: Boolean = false,
+    onConfirmInvitationDraftReplacement: () -> Unit = {},
+    onDismissInvitationDraftReplacement: () -> Unit = {},
 ) {
     val runtime = state.runtime
     val session = runtime.session
@@ -228,6 +231,27 @@ internal fun FocusScreen(
                 )
             }
         }
+    }
+
+    if (showInvitationDraftConfirmation) {
+        LumaAlertDialog(
+            onDismissRequest = onDismissInvitationDraftReplacement,
+            title = { Text(stringResource(R.string.focus_invitation_replace_draft_title)) },
+            text = { Text(stringResource(R.string.focus_invitation_replace_draft_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = onConfirmInvitationDraftReplacement,
+                    modifier = Modifier.testTag("focus_invitation_replace_confirm"),
+                ) { Text(stringResource(R.string.focus_invitation_replace_setup)) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = onDismissInvitationDraftReplacement,
+                    modifier = Modifier.testTag("focus_invitation_keep_draft"),
+                ) { Text(stringResource(R.string.focus_invitation_keep_draft)) }
+            },
+            modifier = Modifier.testTag("focus_invitation_replace_dialog"),
+        )
     }
 
     if (state.backPromptVisible && runtime.navigationGuarded) {
