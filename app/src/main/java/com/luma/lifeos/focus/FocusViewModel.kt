@@ -251,6 +251,31 @@ class FocusViewModel(
 
     init {
         viewModelScope.launch {
+            runtime.state.map { it.databaseReplacementInProgress }.distinctUntilChanged().collect { replacing ->
+                if (!replacing) return@collect
+                pendingOperation = null
+                pendingShortcutPackage = null
+                updateSetup(FocusSetupEvent.StartAnotherRequested)
+                insightState.value = FocusInsightsState.Unselected
+                recentWorkState.value = FocusRecentWorkState.Hidden
+                recentWorkRetry.value = 0
+                tagSuggestions.value = FocusTagSuggestionsSnapshot(null, emptyList())
+                local.update {
+                    it.copy(
+                        busy = false,
+                        breakBusy = false,
+                        breakOperationFailed = false,
+                        operationFailed = false,
+                        backPromptVisible = false,
+                        emergencyPromptVisible = false,
+                        emergencyMarkerSaved = null,
+                        shortcutUnavailable = false,
+                        taskCompletion = FocusTaskCompletionState(),
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
             runtime.state.map { it.databaseGeneration }.filterNotNull().distinctUntilChanged().collect { generation ->
                 val previous = local.value.setup.databaseGeneration
                 if (previous != null && previous != generation) {
@@ -677,6 +702,7 @@ class FocusViewModel(
 
     private fun canPerformTaskActions(generation: UUID): Boolean =
         privateContentAccess.value && taskContentAccess.value && taskActionAccess.value &&
+            !runtime.state.value.databaseReplacementInProgress &&
             runtime.state.value.databaseGeneration == generation
 
     private fun setTaskCompletionPhase(phase: FocusTaskCompletionPhase, clearPending: Boolean) {

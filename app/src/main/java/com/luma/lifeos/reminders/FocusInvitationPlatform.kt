@@ -11,7 +11,7 @@ import java.time.Instant
 import java.util.UUID
 
 /** Platform delivery dedicated to Focus invitations; it never touches task or habit reminder identities. */
-internal class FocusInvitationPlatform(private val context: Context) {
+class FocusInvitationPlatform(private val context: Context) {
     private val alarms = context.getSystemService(AlarmManager::class.java)
     private val notifications = NotificationManagerCompat.from(context)
     private val registry = context.getSharedPreferences("focus_invitation_platform", Context.MODE_PRIVATE)
@@ -19,6 +19,7 @@ internal class FocusInvitationPlatform(private val context: Context) {
     fun schedule(slot: FocusInvitationSlot) {
         val intent = FocusInvitationRequest(slot, "DELIVER").toIntent(context)
         synchronized(REGISTRY_LOCK) {
+            if (quiesced) return@synchronized
             val slots = registry.getStringSet(KEY_ALARMS, emptySet()).orEmpty().toMutableSet()
             slots += slotIdentity(slot)
             registry.edit().putStringSet(KEY_ALARMS, slots).commit()
@@ -38,14 +39,28 @@ internal class FocusInvitationPlatform(private val context: Context) {
     fun cancelAlarmsExcept(desired: Set<String>) {
         synchronized(REGISTRY_LOCK) {
             val registered = registry.getStringSet(KEY_ALARMS, emptySet()).orEmpty().toSet()
-            registered.filterNot(desired::contains).forEach { identity ->
+            val keep = desired.takeUnless { quiesced }.orEmpty()
+            registered.filterNot(keep::contains).forEach { identity ->
                 parseSlotIdentity(identity)?.let { slot ->
                     alarms.cancel(alarmPendingIntent(slot))
                 }
             }
-            registry.edit().putStringSet(KEY_ALARMS, desired).commit()
+            registry.edit().putStringSet(KEY_ALARMS, keep).commit()
         }
     }
+
+    fun quiesceForReplacement() {
+        synchronized(REGISTRY_LOCK) { quiesced = true }
+        cancelAll()
+    }
+
+    fun resumeAfterQuiescence() {
+        cancelAll()
+        synchronized(REGISTRY_LOCK) { quiesced = false }
+        enqueueFocusInvitationReconciliation(context)
+    }
+
+    fun isQuiesced(): Boolean = synchronized(REGISTRY_LOCK) { quiesced }
 
     fun cancelAll() {
         cancelAlarmsExcept(emptySet())
@@ -134,15 +149,16 @@ internal class FocusInvitationPlatform(private val context: Context) {
             )
         val identity = slotIdentity(slot)
         synchronized(REGISTRY_LOCK) {
+            if (quiesced) return
             val entries = notificationEntries().toMutableSet()
             entries.removeAll { it.substringBefore('|') == identity }
             entries += "$identity|${slot.dueAt.toEpochMilli()}"
             registry.edit().putStringSet(KEY_NOTIFICATIONS, entries).commit()
-        }
-        try {
-            notifications.notify(notificationTag(identity), 0, builder.build())
-        } catch (_: SecurityException) {
-            // Permission or channel access may be revoked after the preflight check.
+            try {
+                notifications.notify(notificationTag(identity), 0, builder.build())
+            } catch (_: SecurityException) {
+                // Permission or channel access may be revoked after the preflight check.
+            }
         }
     }
 
@@ -180,5 +196,6 @@ internal class FocusInvitationPlatform(private val context: Context) {
         const val KEY_ALARMS = "scheduled_slots"
         const val KEY_NOTIFICATIONS = "notification_slots"
         val REGISTRY_LOCK = Any()
+        @Volatile var quiesced = false
     }
 }

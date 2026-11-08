@@ -28,6 +28,7 @@ import com.luma.lifeos.integration.usage.UsageWorkScheduler
 import com.luma.lifeos.usage.UsageWorker
 import com.luma.lifeos.ui.theme.THEME_KEY
 import com.luma.lifeos.widget.WidgetRefreshCoordinator
+import com.luma.lifeos.reminders.FocusInvitationPlatform
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -143,6 +144,7 @@ class LumaApplication : Application() {
     val focusPreferences: FocusPreferences by lazy { FocusPreferences(this) }
     val allowedFocusApps: AllowedFocusApps by lazy { AllowedFocusApps(this) }
     val focusExpiryPlatform: FocusExpiryPlatform by lazy { FocusExpiryPlatform(this) }
+    private val focusInvitationPlatform: FocusInvitationPlatform by lazy { FocusInvitationPlatform(this) }
     val focusBreakRuntime: FocusBreakRuntime by lazy {
         FocusBreakRuntime(
             repository = storage.focus,
@@ -159,6 +161,7 @@ class LumaApplication : Application() {
             scope = applicationScope,
             expiryPlatform = focusExpiryPlatform,
             breakRuntime = focusBreakRuntime,
+            invitationPlatform = focusInvitationPlatform,
         )
     }
     val moodDraftStore: FileMoodDraftStore by lazy { FileMoodDraftStore(this) }

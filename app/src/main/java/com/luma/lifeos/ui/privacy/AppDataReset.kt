@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.Settings
 import com.luma.lifeos.focus.FocusRuntime
 import com.luma.lifeos.reminders.ReminderPlatform
+import com.luma.lifeos.reminders.enqueueReminderReconciliation
 
 /** External OS boundary. True means request accepted, never independently confirmed erasure. */
 fun interface AppDataReset {
@@ -19,13 +20,17 @@ class AndroidAppDataReset(context: Context, private val focusRuntime: FocusRunti
     private val application = context.applicationContext
     override suspend fun requestReset(): Boolean {
         return try {
-            focusRuntime?.prepareForAppDataReset()
+            if (focusRuntime?.prepareForAppDataReset() == false) return false
             ReminderPlatform(application).cancelAll()
             val accepted = application.getSystemService(ActivityManager::class.java)?.clearApplicationUserData() ?: false
-            if (!accepted) focusRuntime?.resumeAfterAppDataResetFailure()
+            if (!accepted) {
+                focusRuntime?.resumeAfterAppDataResetFailure()
+                enqueueReminderReconciliation(application)
+            }
             accepted
         } catch (failure: Exception) {
             focusRuntime?.resumeAfterAppDataResetFailure()
+            enqueueReminderReconciliation(application)
             throw failure
         }
     }

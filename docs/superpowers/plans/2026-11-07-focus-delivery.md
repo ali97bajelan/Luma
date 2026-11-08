@@ -236,12 +236,14 @@ Although some tasks could be independent, use this sequence to stabilize shared 
 
 **Files:** A/ui/LifeOsApp.kt, A/focus/FocusRuntime.kt, FocusViewModel.kt, FocusExpiryPlatform.kt, FocusBreakRuntime.kt; A/ui/privacy/AppDataReset.kt; A/ui/backup/BackupViewModel.kt; C/backup/RoomBackupService.kt; C/LumaStorage.kt; changed localized resources.
 
-- [ ] Connect restore/reset quiescing to invitation cancellation, break termination and all new caches/action tokens.
-- [ ] Audit every Focus entry (Today, More, Tasks, Review, history, reminder, pending destination) for singleton/open-session precedence and current access.
-- [ ] Reconcile full FX01/FX07/FX09/FX10 contracts; retain landed timer/reflection/goals/correction behavior.
-- [ ] Complete three-locale copy, semantics, logical ordering and source-level IME/inset composition.
-- [ ] Record source map and residual concerns for QA; do not claim layout/runtime validation.
-- [ ] Mark source handoff only after dependencies exist and all call sites are wired.
+- [x] Connect restore/reset quiescing to invitation cancellation, break termination and all new caches/action tokens.
+- [x] Audit every Focus entry (Today, More, Tasks, Review, history, reminder, pending destination) for singleton/open-session precedence and current access.
+- [x] Reconcile full FX01/FX07/FX09/FX10 contracts; retain landed timer/reflection/goals/correction behavior.
+- [x] Complete three-locale copy, semantics, logical ordering and source-level IME/inset composition.
+- [x] Record source map and residual concerns for QA; do not claim layout/runtime validation.
+- [x] Mark source handoff only after dependencies exist and all call sites are wired.
+
+**Source handoff:** SOURCE COMPLETE — UNVERIFIED (2026-11-08). Restore and reset now quiesce invitation delivery and clear Focus ViewModel caches; unsuccessful break termination prevents replacement. Route/access and locale source review found dependencies wired. Tests/builds/schema generation/lint/device checks remain deferred to Phase Q/E; see the task ledger for changed files, interface decisions and rulings.
 
 **Deferred proof:** Q01–05; E01–12.
 

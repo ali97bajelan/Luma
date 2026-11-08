@@ -11,6 +11,7 @@ import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusUnavailableReason
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.remainingFocusMillis
+import com.luma.lifeos.reminders.FocusInvitationPlatform
 import java.util.IdentityHashMap
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -45,6 +46,7 @@ data class FocusRuntimeState(
     val emergencyExitConfirmed: Boolean = false,
     val databaseGeneration: UUID? = null,
     val breakState: FocusBreakState = FocusBreakState.Idle,
+    val databaseReplacementInProgress: Boolean = false,
 ) {
     val guardReleased: Boolean
         get() = session?.let { emergencyExitSessionId == it.id }
@@ -64,6 +66,7 @@ class FocusRuntime(
     private val scope: CoroutineScope,
     private val expiryPlatform: FocusExpiryPlatform? = null,
     val breakRuntime: FocusBreakRuntime? = null,
+    private val invitationPlatform: FocusInvitationPlatform? = null,
 ) {
     private val mutableState = MutableStateFlow(FocusRuntimeState())
     val state: StateFlow<FocusRuntimeState> = mutableState.asStateFlow()
@@ -116,6 +119,7 @@ class FocusRuntime(
     }
 
     fun retryInitialization() {
+        initializeJob?.cancel()
         mutableState.update {
             it.copy(
                 initialized = false,
@@ -591,11 +595,15 @@ class FocusRuntime(
             if (!finished) return@withLock false
         }
 
-        breakRuntime?.end()
+        if (breakRuntime != null && !breakRuntime.end()) return@withLock false
+        initializeJob?.cancel()
+        initializeJob = null
+        invitationPlatform?.quiesceForReplacement()
         mutableState.value.databaseGeneration?.let { generation ->
             session?.let { expiryPlatform?.cancelFocus(it.id, generation) }
         }
         scheduledFocusAlarm = null
+        operationAttempts.clear()
 
         databaseReplacementInProgress = true
         checkpointJob?.cancel()
@@ -607,7 +615,7 @@ class FocusRuntime(
             it.copy(initialized = false, loading = true, loadFailed = false, session = null,
                 recoveryRequired = false, writeFailed = false, checkpointFailed = false,
                 emergencyExitSessionId = null, emergencyMarkerSaved = null, emergencyExitConfirmed = false,
-                databaseGeneration = null)
+                databaseGeneration = null, databaseReplacementInProgress = true, breakState = FocusBreakState.Idle)
         }
         true
     }
@@ -615,30 +623,43 @@ class FocusRuntime(
     /** Re-reads the replacement database whether restore committed or failed. */
     fun finishDatabaseReplacement() {
         databaseReplacementInProgress = false
+        mutableState.update { it.copy(databaseReplacementInProgress = false) }
+        invitationPlatform?.resumeAfterQuiescence()
         retryInitialization()
     }
 
     /** Quiesces focus actions before Android clears the entire app sandbox. */
-    suspend fun prepareForAppDataReset() = operationMutex.withLock {
-        breakRuntime?.end()
+    suspend fun prepareForAppDataReset(): Boolean = operationMutex.withLock {
+        if (writesBlocked()) return@withLock false
+        if (breakRuntime != null && !breakRuntime.end()) return@withLock false
+        initializeJob?.cancel()
+        initializeJob = null
+        invitationPlatform?.quiesceForReplacement()
         mutableState.value.session?.let { session ->
             mutableState.value.databaseGeneration?.let { expiryPlatform?.cancelFocus(session.id, it) }
         }
         scheduledFocusAlarm = null
+        operationAttempts.clear()
         appDataResetInProgress = true
         checkpointJob?.cancel()
         checkpointJob = null
         observerJob?.cancel()
         observerJob = null
         mutableState.update {
-            it.copy(initialized = false, loading = true, loadFailed = false,
-                writeFailed = false, checkpointFailed = false, databaseGeneration = null)
+            it.copy(initialized = false, loading = true, loadFailed = false, session = null,
+                recoveryRequired = false, displayedMillis = 0, writeFailed = false, checkpointFailed = false,
+                emergencyExitSessionId = null, emergencyMarkerSaved = null, emergencyExitConfirmed = false,
+                databaseGeneration = null, databaseReplacementInProgress = true,
+                breakState = FocusBreakState.Idle)
         }
+        true
     }
 
     /** Reconciles the retained database if Android refuses to start the full reset. */
     fun resumeAfterAppDataResetFailure() {
         appDataResetInProgress = false
+        mutableState.update { it.copy(databaseReplacementInProgress = false) }
+        invitationPlatform?.resumeAfterQuiescence()
         retryInitialization()
     }
 

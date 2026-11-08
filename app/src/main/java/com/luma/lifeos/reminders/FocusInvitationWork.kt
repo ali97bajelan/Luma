@@ -54,20 +54,24 @@ class FocusInvitationWorker(context: Context, parameters: WorkerParameters) :
         val storage = LumaStorage(applicationContext)
         val repository = storage.focusInvitations
         val platform = FocusInvitationPlatform(applicationContext)
-        val action = inputData.getString(EXTRA_FOCUS_INVITATION_ACTION)
-        if (action == null) {
-            reconcile(repository, platform)
+        if (platform.isQuiesced()) {
+            Result.success()
         } else {
-            val request = focusInvitationRequestFrom(inputData)
-            if (request != null) {
-                when (request.action) {
-                    "DELIVER" -> deliver(repository, platform, request)
-                    "SNOOZE" -> snooze(repository, platform, request)
-                    "DISABLE" -> disable(repository, platform, request)
+            val action = inputData.getString(EXTRA_FOCUS_INVITATION_ACTION)
+            if (action == null) {
+                reconcile(repository, platform)
+            } else {
+                val request = focusInvitationRequestFrom(inputData)
+                if (request != null) {
+                    when (request.action) {
+                        "DELIVER" -> deliver(repository, platform, request)
+                        "SNOOZE" -> snooze(repository, platform, request)
+                        "DISABLE" -> disable(repository, platform, request)
+                    }
                 }
             }
+            Result.success()
         }
-        Result.success()
     } catch (cancelled: CancellationException) {
         throw cancelled
     } catch (_: SecurityException) {

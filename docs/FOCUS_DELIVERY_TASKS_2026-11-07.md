@@ -1,6 +1,6 @@
 # Focus delivery — tasks and execution index
 
-Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD10 SOURCE COMPLETE — UNVERIFIED; FD11–FD12 NOT STARTED; Q/E NOT RUN.
+Date: 2026-11-07 · Status: PLANNING COMPLETE; FD01–FD11 SOURCE COMPLETE — UNVERIFIED; FD12 NOT STARTED; Q/E NOT RUN.
 
 **Start here:** [Implementation plan](superpowers/plans/2026-11-07-focus-delivery.md) · [Specification](superpowers/specs/2026-11-07-focus-delivery-design.md)
 **After implementation:** [QA plan](feature-roadmap/focus-delivery-qa-2026-11-07.md) · [Emulator/device plan](feature-roadmap/focus-delivery-emulator-2026-11-07.md)
@@ -20,7 +20,7 @@ No per-task QA gate blocks a later source task once its source dependencies exis
 
 This new index consolidates unfinished work without resetting historic evidence or implying already-landed source must be rebuilt. Source versions inspected: **Room 14, archive 11**, proposed additions **Room 15/archive 12**. Existing app flavor: **production**, debug ID suffix **.qa**. Recheck these at FD01; old plan reservations and variant assumptions are obsolete.
 
-The planning package changed documentation only when created. FD01–FD10 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
+The planning package changed documentation only when created. FD01–FD11 source delivery is tracked below; QA, builds, emulator/device checks and release remain unperformed.
 
 ## Implementation task ledger
 
@@ -51,7 +51,7 @@ The checkboxes below track current source delivery only; source completion is se
 - [x] FD08 source complete — UNVERIFIED
 - [x] FD09 source complete — UNVERIFIED
 - [x] FD10 source complete — UNVERIFIED
-- [ ] FD11 source complete
+- [x] FD11 source complete — UNVERIFIED
 - [ ] FD12 source complete
 
 ### FD01 source handoff
@@ -160,6 +160,19 @@ The checkboxes below track current source delivery only; source completion is se
 - Implemented: Weekly Review now observes one authorized recent terminal session using the current report's displayed range, existing positive-run-overlap query and current database generation. The row shows the authorized intention, optional next step and View session; optional query failure has its own Retry state while report totals remain available. View session passes only the ID through the existing history route; the target screen reloads it by terminalSession(id) and shares history's correction, task-completion, reflection and Repeat controls. Missing, Focus-locked and task-locked states clear the targeted content and provide the corresponding missing/unlock UI. Ordinary history paging remains unchanged.
 - Source review covered partial/current report range and viewing-zone navigation, candidate range/eligibility/privacy ownership in FD09, mixed-report suppression, query retry isolation, target-session authorization and generation changes, indexed identity reload, missing-source behavior, and both history/detail route paths. Tests, fixtures, builds, lint, schema generation and device/emulator checks were NOT RUN as required by Phase I.
 - Later proof: Q02/Q03; E05/E11.
+
+### FD11 source handoff
+
+- Status: SOURCE COMPLETE — UNVERIFIED (2026-11-08).
+- Changed source: app/.../focus/FocusRuntime.kt, FocusViewModel.kt, LumaApplication.kt, ui/privacy/AppDataReset.kt, reminders/FocusInvitationPlatform.kt and FocusInvitationWork.kt.
+- Implemented: restore and app-data reset now quiesce Focus invitation delivery, cancel its alarms/notifications, and block in-flight scheduling/posting until replacement completes. Failed restore/reset resumes delivery and reconciliation. Local breaks must terminate successfully before reset or replacement proceeds. Runtime replacement clears operation attempts and initialization work; the Focus ViewModel clears its saved setup, action retries, recent-work result, insights, tags and task completion state when replacement starts. The restore service already deletes invitation delivery/action-token rows, restores the disabled local schedule defaults, and rotates the database generation.
+- Interfaces: added a database-replacement-in-progress flag to FocusRuntimeState; injected the existing platform delivery into FocusRuntime; prepareForAppDataReset now returns whether quiescing succeeded.
+- Entry/source review: Today, More, task editor/picker, Review, history/detail, invitation launch and pending-destination routes continue through the single Focus runtime/ViewModel. Reviewed open-session precedence, invitation token revalidation, current FOCUS/TASKS gates, generation-scoped history/recent queries, and EN/FR/FA Focus resources. Existing setup/completion ordering and IME/inset composition remain source-level only.
+- Ruling: extended the FD11 file map to include FocusInvitationPlatform and FocusInvitationWork, with a process-local delivery gate shared by restore and reset — the existing database generation protects stored actions but cannot stop an already-running worker from scheduling or posting during replacement — cost if wrong: Focus runtime now coordinates directly with the invitation platform lifecycle.
+- Ruling: abort data reset or replacement when a persisted break cannot be ended — clearing/replacing storage with a live break would leave stale runtime work — cost if wrong: a temporary storage failure can require the user to retry reset/restore.
+- Ruling: expose replacement-in-progress in FocusRuntimeState and clear ViewModel private state at that transition — generation changes occur only after restore commits, leaving a window where old draft/retry data could remain cached — cost if wrong: one lifecycle-only flag is added to the runtime state API.
+- Source review: checked restore success/failure cleanup, reset refusal recovery, the in-flight invitation schedule/show race, break end results, cache invalidation, singleton/open-session precedence, access gates and locale resource availability. Tests, fixtures, Gradle/build/lint/schema generation and device/emulator checks were NOT RUN as required by Phase I. Author self-review; fresh reviewer unavailable under the active task instructions.
+- Later proof: Q01–Q05; E01–E12.
 
 Priority represents product/risk value, not permission to reorder source dependencies. Invitations are included because they are unfinished previously specified work, even though the new review ranks basic usability above adding reminders. No new reminder/preset expansion is implied.
 
