@@ -99,6 +99,7 @@ internal fun FocusRoute(
             onInvitationOpenHandled()
         }
     }
+    val currentInsights = state.insights
     val presentationState = state.copy(
         runtime = state.runtime.copy(
             session = state.runtime.session?.let { session ->
@@ -122,9 +123,9 @@ internal fun FocusRoute(
             else FocusTaskCompletionState(),
         insights = when {
             !protectedFocusReadable -> FocusInsightsState.Unselected
-            !protectedTasksReadable && state.insights is FocusInsightsState.Ready &&
-                state.insights.insights.requiresTaskAccess -> FocusInsightsState.NeedsUnlock(state.insights.request)
-            else -> state.insights
+            !protectedTasksReadable && currentInsights is FocusInsightsState.Ready &&
+                currentInsights.insights.requiresTaskAccess -> FocusInsightsState.NeedsUnlock(currentInsights.request)
+            else -> currentInsights
         },
     )
     val currentDay by rememberCurrentDay()

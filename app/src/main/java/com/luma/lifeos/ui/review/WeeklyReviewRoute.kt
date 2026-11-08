@@ -120,10 +120,11 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             val observed by focusObservation.collectAsStateWithLifecycle(
                 initialValue = FocusReportState.Loading,
             )
-            if (!canReadTaskOrigin && observed is FocusReportState.Ready &&
-                (observed.value.current.requiresTaskAccess || observed.value.previous.requiresTaskAccess ||
-                    observed.value.days.any { it.statistics?.requiresTaskAccess == true })
-            ) FocusReportState.NeedsUnlock else observed
+            val currentReport = observed
+            if (!canReadTaskOrigin && currentReport is FocusReportState.Ready &&
+                (currentReport.value.current.requiresTaskAccess || currentReport.value.previous.requiresTaskAccess ||
+                    currentReport.value.days.any { it.statistics?.requiresTaskAccess == true })
+            ) FocusReportState.NeedsUnlock else currentReport
         } else null
         val focusRecentContext = if (
             focusRepository != null &&
@@ -175,9 +176,10 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 source.current(goalNow, canReadTaskOrigin)
             }
             val observed by goalObservation.collectAsStateWithLifecycle(FocusGoalReportState.Loading)
-            if (!canReadTaskOrigin && observed is FocusGoalReportState.Ready &&
-                observed.value.requiresTaskAccess
-            ) FocusGoalReportState.NeedsUnlock else observed
+            val currentGoalReport = observed
+            if (!canReadTaskOrigin && currentGoalReport is FocusGoalReportState.Ready &&
+                currentGoalReport.value.requiresTaskAccess
+            ) FocusGoalReportState.NeedsUnlock else currentGoalReport
         } else FocusGoalReportState.Hidden
         val report = (state as? WeeklyReviewState.Data)?.report
         var habitRetry by remember { mutableIntStateOf(0) }

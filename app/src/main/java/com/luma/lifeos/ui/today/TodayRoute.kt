@@ -135,9 +135,10 @@ fun TodayRoute(
             val observed by focusObservation.collectAsStateWithLifecycle(
                 initialValue = FocusReportState.Loading,
             )
-            if (!canReadTaskOrigin && observed is FocusReportState.Ready &&
-                observed.value.statistics.requiresTaskAccess
-            ) FocusReportState.NeedsUnlock else observed
+            val currentReport = observed
+            if (!canReadTaskOrigin && currentReport is FocusReportState.Ready &&
+                currentReport.value.statistics.requiresTaskAccess
+            ) FocusReportState.NeedsUnlock else currentReport
         } else null
         val summary = if (summaries != null && showProtectedSummary) {
             val summaryFlow = remember(summaryRetry) { observeDailySummary(summaries, date, zone) }
