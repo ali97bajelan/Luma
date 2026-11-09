@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
@@ -24,9 +25,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.luma.lifeos.ui.common.LumaOutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -174,8 +175,8 @@ internal fun FocusScreen(
                 .wrapContentWidth(Alignment.CenterHorizontally)
                 .widthIn(max = 720.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = LumaUi.PageGutter, vertical = LumaUi.SectionGap),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
         ) {
             if (runtime.breakState != FocusBreakState.Idle && !showTerminal) {
                 FocusBreakCountdown(
@@ -192,7 +193,7 @@ internal fun FocusScreen(
                         stringResource(R.string.focus_loading_message),
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     )
-                    TextButton(
+                    LumaTextButton(
                         onClick = onEmergencyExit,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("focus_emergency_exit"),
@@ -209,7 +210,7 @@ internal fun FocusScreen(
                     LumaButton(onClick = onRetryInitialization, modifier = Modifier.testTag("focus_retry_load")) {
                         Text(stringResource(R.string.retry))
                     }
-                    TextButton(
+                    LumaTextButton(
                         onClick = onEmergencyExit,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("focus_emergency_exit"),
@@ -342,13 +343,13 @@ internal fun FocusScreen(
             title = { Text(stringResource(R.string.focus_invitation_replace_draft_title)) },
             text = { Text(stringResource(R.string.focus_invitation_replace_draft_body)) },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = onConfirmInvitationDraftReplacement,
                     modifier = Modifier.testTag("focus_invitation_replace_confirm"),
                 ) { Text(stringResource(R.string.focus_invitation_replace_setup)) }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = onDismissInvitationDraftReplacement,
                     modifier = Modifier.testTag("focus_invitation_keep_draft"),
                 ) { Text(stringResource(R.string.focus_invitation_keep_draft)) }
@@ -365,19 +366,19 @@ internal fun FocusScreen(
             confirmButton = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 ) {
-                    TextButton(
+                    LumaTextButton(
                         onClick = { onLeaveAfterAction(FocusAction.PAUSE) },
                         enabled = !state.busy && session?.state == FocusState.RUNNING,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_back_pause"),
                     ) { Text(stringResource(R.string.focus_back_pause_leave)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = { onLeaveAfterAction(FocusAction.STOP) },
                         enabled = !state.busy && session != null && session.state in setOf(FocusState.RUNNING, FocusState.PAUSED),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_back_stop"),
                     ) { Text(stringResource(R.string.focus_back_end_save)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = onDismissBackPrompt,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_back_stay"),
                     ) { Text(stringResource(R.string.focus_back_keep_focusing)) }
@@ -398,12 +399,12 @@ internal fun FocusScreen(
             title = { Text(stringResource(R.string.focus_emergency_exit)) },
             text = { Text(stringResource(warning)) },
             confirmButton = {
-                TextButton(onClick = onConfirmEmergencyExit, modifier = Modifier.testTag("focus_emergency_confirm")) {
+                LumaTextButton(onClick = onConfirmEmergencyExit, modifier = Modifier.testTag("focus_emergency_confirm")) {
                     Text(stringResource(R.string.focus_exit_now))
                 }
             },
             dismissButton = {
-                TextButton(onClick = onDismissEmergencyExit) { Text(stringResource(R.string.cancel)) }
+                LumaTextButton(onClick = onDismissEmergencyExit) { Text(stringResource(R.string.cancel)) }
             },
             modifier = Modifier.testTag("focus_emergency_dialog"),
         )
@@ -415,7 +416,7 @@ internal fun FocusScreen(
             title = { Text(stringResource(R.string.focus_break_replace_start_title)) },
             text = { Text(stringResource(R.string.focus_break_replace_start_message)) },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         val input = pendingBreakStart
                         pendingBreakStart = null
@@ -428,7 +429,7 @@ internal fun FocusScreen(
                 }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = { pendingBreakStart = null },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_break_replace_cancel"),
                 ) {
@@ -498,14 +499,14 @@ private fun FocusDestinationActions(
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextButton(
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+        LumaTextButton(
             onClick = onOpenHistory,
             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_history_open"),
         ) {
             Text(stringResource(R.string.focus_open_history))
         }
-        TextButton(
+        LumaTextButton(
             onClick = onOpenSettings,
             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_settings_open"),
         ) {
@@ -516,7 +517,7 @@ private fun FocusDestinationActions(
 
 @Composable
 private fun OpenHistoryButton(onOpenHistory: () -> Unit) {
-    TextButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth().testTag("focus_history_open")) {
+    LumaTextButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth().testTag("focus_history_open")) {
         Text(stringResource(R.string.focus_open_history))
     }
 }
@@ -553,7 +554,7 @@ private fun FocusSectionToggle(
     val description = stringResource(
         if (expanded) R.string.focus_expanded else R.string.focus_collapsed,
     )
-    TextButton(
+    LumaTextButton(
         onClick = onToggle,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
             .semantics { stateDescription = description }
@@ -582,7 +583,7 @@ private fun FocusHelpDisclosure(
             style = MaterialTheme.typography.bodyMedium,
         )
         if (!hasFailure) {
-            TextButton(
+            LumaTextButton(
                 onClick = onEmergencyExit,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .testTag("focus_emergency_exit_help"),
@@ -599,12 +600,12 @@ private fun ResponsiveFocusActionPair(
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         if ((maxWidth < 480.dp) || (fontScale >= 1.5f)) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 first(Modifier.fillMaxWidth())
                 second(Modifier.fillMaxWidth())
             }
         } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 first(Modifier.weight(1f))
                 second(Modifier.weight(1f))
             }
@@ -668,7 +669,7 @@ private fun RunningContent(
             ) { Text(stringResource(R.string.focus_pause)) }
         },
         second = { modifier ->
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = { onAction(FocusAction.STOP) },
                 enabled = !state.busy,
                 modifier = modifier.heightIn(min = 52.dp).testTag("focus_stop"),
@@ -684,7 +685,7 @@ private fun RunningContent(
         )
         if (shortcutsExpanded) {
             allowedApps.forEach { app ->
-                OutlinedButton(
+                LumaOutlinedButton(
                     onClick = { onLaunchApp(app.packageName) },
                     enabled = !state.busy,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
@@ -692,7 +693,7 @@ private fun RunningContent(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         app.icon?.let { icon ->
@@ -779,7 +780,7 @@ private fun PausedContent(
             ) { Text(stringResource(R.string.focus_resume)) }
         },
         second = { modifier ->
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = { onAction(FocusAction.STOP) },
                 enabled = !state.busy,
                 modifier = modifier.heightIn(min = 52.dp).testTag("focus_stop"),
@@ -841,11 +842,11 @@ private fun RecoveryContent(
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_recovery_continue")) {
         Text(stringResource(R.string.focus_recovery_continue))
     }
-    OutlinedButton(onClick = { onResolveRecovery(FocusRecoveryChoice.END_AT_CHECKPOINT) }, enabled = !busy,
+    LumaOutlinedButton(onClick = { onResolveRecovery(FocusRecoveryChoice.END_AT_CHECKPOINT) }, enabled = !busy,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_recovery_end")) {
         Text(stringResource(R.string.focus_recovery_end))
     }
-    TextButton(
+    LumaTextButton(
         onClick = onEmergencyExit,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
     ) {
@@ -915,7 +916,7 @@ internal fun FocusBreakCountdown(
 ) {
     if (state == FocusBreakState.Idle) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().testTag("focus_break_panel")) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap), modifier = Modifier.fillMaxWidth().testTag("focus_break_panel")) {
         val expired = state is FocusBreakState.Expired
         Text(
             stringResource(if (expired) R.string.focus_break_expired else R.string.focus_break_heading),
@@ -948,7 +949,7 @@ internal fun FocusBreakCountdown(
                 Text(stringResource(R.string.focus_end_break))
             }
         } else {
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = onEndBreak,
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_end_break"),
@@ -994,11 +995,11 @@ internal fun FailureContent(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                     .testTag("focus_write_error"),
             )
-            TextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
+            LumaTextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
                 Text(stringResource(R.string.retry))
             }
             if (showEmergencyAction) {
-                TextButton(
+                LumaTextButton(
                     onClick = onEmergencyExit,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
                 ) { Text(stringResource(R.string.focus_emergency_exit)) }
@@ -1011,11 +1012,11 @@ internal fun FailureContent(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                     .testTag("focus_checkpoint_error"),
             )
-            TextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
+            LumaTextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
                 Text(stringResource(R.string.retry))
             }
             if (showEmergencyAction) {
-                TextButton(
+                LumaTextButton(
                     onClick = onEmergencyExit,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
                 ) { Text(stringResource(R.string.focus_emergency_exit)) }
@@ -1033,19 +1034,19 @@ internal fun FailureContent(
                     .testTag("focus_app_unavailable"),
             )
             Text(stringResource(R.string.focus_shortcut_manage_hint), style = MaterialTheme.typography.bodyMedium)
-            TextButton(
+            LumaTextButton(
                 onClick = onRetry,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_retry_shortcut"),
             ) { Text(stringResource(R.string.retry)) }
             if (onManageShortcuts != null) {
-                TextButton(
+                LumaTextButton(
                     onClick = onManageShortcuts,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_manage_shortcuts"),
                 ) { Text(stringResource(R.string.focus_manage_shortcuts)) }
             }
             if (showEmergencyAction) {
-                TextButton(
+                LumaTextButton(
                     onClick = onEmergencyExit,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
                 ) { Text(stringResource(R.string.focus_emergency_exit)) }

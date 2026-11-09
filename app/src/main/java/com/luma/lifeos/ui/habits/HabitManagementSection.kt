@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +9,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,34 +35,34 @@ internal fun HabitManagementSection(
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val expansionState = stringResource(if (expanded) R.string.habit_manage_expanded else R.string.habit_manage_collapsed)
-    Column(Modifier.fillMaxWidth().testTag("habit_management_section"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        TextButton(
+    Column(Modifier.fillMaxWidth().testTag("habit_management_section"), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
+        LumaTextButton(
             onClick = { expanded = !expanded },
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                 .semantics { stateDescription = expansionState }
                 .testTag("habit_manage"),
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 Text(stringResource(R.string.habit_manage), modifier = Modifier.weight(1f))
                 Text(stringResource(if (expanded) R.string.habit_manage_hide else R.string.habit_manage_show))
             }
         }
         if (expanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 if (!futureStart && lifecycle != HabitLifecycle.ARCHIVED) {
                     val resume = lifecycle == HabitLifecycle.PAUSED
-                    TextButton(
+                    LumaTextButton(
                         onClick = { onLifecycle(if (resume) HabitLifecycle.ACTIVE else HabitLifecycle.PAUSED) },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_pause_resume"),
                     ) { Text(stringResource(if (resume) R.string.habit_resume else R.string.habit_pause)) }
                 }
                 if (lifecycle != HabitLifecycle.ARCHIVED) {
-                    TextButton(onClick = { onLifecycle(HabitLifecycle.ARCHIVED) },
+                    LumaTextButton(onClick = { onLifecycle(HabitLifecycle.ARCHIVED) },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_archive")) {
                         Text(stringResource(R.string.habit_archive))
                     }
                 }
-                TextButton(
+                LumaTextButton(
                     onClick = onDelete,
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_delete"),
@@ -70,7 +71,7 @@ internal fun HabitManagementSection(
                     Text(stringResource(if (error.outcomeUnknown) R.string.habit_delete_outcome_unknown
                         else R.string.habit_delete_error), color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.testTag("habit_delete_error"))
-                    TextButton(onClick = onRetryDelete, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    LumaTextButton(onClick = onRetryDelete, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                         .testTag("habit_retry_delete")) { Text(stringResource(R.string.retry)) }
                 }
             }

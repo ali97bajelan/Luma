@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaCard
 
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +13,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,7 +63,7 @@ fun LazyListScope.habitHistoryItems(
             modifier = Modifier.testTag("habit_history_error"))
     }
     if (total > logs.size || historyError) item(key = "habit_history_load_more") {
-        TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        LumaTextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
             .testTag("habit_history_load_more")) { Text(stringResource(R.string.habit_load_older)) }
     }
 }
@@ -77,11 +78,11 @@ internal fun HabitSelectedLogArrival(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.fillMaxWidth().testTag("habit_target_arrival"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier.fillMaxWidth().testTag("habit_target_arrival"), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         when (status) {
             HabitTargetStatus.NONE -> Unit
             HabitTargetStatus.LOADING -> Row(verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 androidx.compose.material3.CircularProgressIndicator(Modifier.heightIn(min = 24.dp).testTag("habit_target_loading"))
                 Text(stringResource(R.string.habit_target_loading))
             }
@@ -94,7 +95,7 @@ internal fun HabitSelectedLogArrival(
             HabitTargetStatus.ERROR -> {
                 Text(stringResource(R.string.habit_target_error), color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.testTag("habit_target_error"))
-                TextButton(onClick = onRetry, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                LumaTextButton(onClick = onRetry, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .testTag("habit_retry_target")) { Text(stringResource(R.string.habit_retry_action)) }
             }
         }
@@ -129,11 +130,11 @@ private fun HabitLogCard(
                 } ?: stringResource(R.string.habit_time_not_recorded))
                 val recorded = displayTime.dateTime(FormatStyle.MEDIUM).withZone(screenZone).format(log.recordedAt)
                 Text(stringResource(R.string.habit_recorded_at, recorded), style = MaterialTheme.typography.bodySmall)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { onEdit(log) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                    LumaTextButton(onClick = { onEdit(log) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                         .testTag("habit_edit_log_${log.id}")) { Text(stringResource(R.string.habit_edit_log)) }
-                    TextButton(onClick = { confirmingDelete = true }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                    LumaTextButton(onClick = { confirmingDelete = true }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                         .testTag("habit_delete_log_${log.id}")) { Text(stringResource(R.string.habit_delete_log)) }
                 }
             }
@@ -146,5 +147,5 @@ private fun HabitLogCard(
             modifier = Modifier.testTag("habit_confirm_delete_log_${log.id}")) {
             Text(stringResource(R.string.habit_delete_log))
         } },
-        dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { LumaTextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } })
 }

@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
@@ -14,7 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -82,17 +83,17 @@ fun AppLockGate(
                 modifier = Modifier.padding(top = 20.dp),
             ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
             if (addNewEntryAvailable) {
-                TextButton(onClick = onAddNewEntry, modifier = Modifier.padding(top = 4.dp)) {
+                LumaTextButton(onClick = onAddNewEntry, modifier = Modifier.padding(top = 4.dp)) {
                     Text(stringResource(R.string.restricted_capture_add_new_entry))
                 }
             }
             if (appLockSettingsAvailable) {
-                TextButton(onClick = onAppLockSettings, modifier = Modifier.padding(top = 4.dp)) {
+                LumaTextButton(onClick = onAppLockSettings, modifier = Modifier.padding(top = 4.dp)) {
                     Text(stringResource(R.string.app_lock_gate_settings))
                 }
             }
             if (focusEmergencyAvailable) {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         onRequestFocusEmergencyExit()
                         requestingFocusExit = true
@@ -112,14 +113,14 @@ fun AppLockGate(
             title = { Text(stringResource(R.string.app_lock_focus_emergency_title)) },
             text = { Text(stringResource(R.string.app_lock_focus_emergency_body)) },
             confirmButton = {
-                TextButton(onClick = {
+                LumaTextButton(onClick = {
                     confirmingFocusExit = false
                     requestingFocusExit = false
                     onConfirmFocusEmergencyExit()
                 }) { Text(stringResource(R.string.app_lock_focus_emergency_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = {
+                LumaTextButton(onClick = {
                     confirmingFocusExit = false
                     requestingFocusExit = false
                     onCancelFocusEmergencyExit()
@@ -258,7 +259,7 @@ fun AppLockUnlockDialog(
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             ) {
                 Text(stringResource(com.luma.lifeos.R.string.app_lock_unlock_body))
                 when (val loaded = descriptorResult) {
@@ -279,17 +280,17 @@ fun AppLockUnlockDialog(
                         )
                 }
                 error?.let { com.luma.lifeos.ui.common.AccessibleFeedback(it, Modifier.testTag("app_lock_unlock_error")) }
-                TextButton(enabled = !busy, onClick = { editorState?.clear(); onForgotPassword() },
+                LumaTextButton(enabled = !busy, onClick = { editorState?.clear(); onForgotPassword() },
                     modifier = Modifier.testTag("app_lock_forgot_password")) {
                     Text(stringResource(com.luma.lifeos.R.string.app_lock_forgot_password))
                 }
             }
         },
-        confirmButton = { TextButton(enabled = !busy && !cancelled && editorState?.isComplete == true, onClick = ::submit,
+        confirmButton = { LumaTextButton(enabled = !busy && !cancelled && editorState?.isComplete == true, onClick = ::submit,
             modifier = Modifier.testTag("app_lock_unlock_submit")) {
             Text(stringResource(com.luma.lifeos.R.string.app_lock_unlock_action))
         } },
-        dismissButton = { TextButton(enabled = !busy, onClick = ::cancelPrompt) {
+        dismissButton = { LumaTextButton(enabled = !busy, onClick = ::cancelPrompt) {
             Text(stringResource(com.luma.lifeos.R.string.cancel))
         } },
     )

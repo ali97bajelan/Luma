@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.theme.onPrimaryFixed
@@ -32,7 +32,7 @@ internal fun PrimaryNavigationBar(
 ) {
     BoxWithConstraints(modifier = modifier) {
         val fontScale = LocalDensity.current.fontScale
-        val compactLabels = maxWidth < 360.dp && fontScale >= 1.2f
+        val compactLabels = (maxWidth < 360.dp) && (fontScale >= 1.2f)
         NavigationBar(
             modifier = Modifier.fillMaxWidth().testTag("primary_navigation"),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -46,8 +46,11 @@ internal fun PrimaryNavigationBar(
                     selected = selectedRoute == destination.route,
                     onClick = { onNavigate(destination.route) },
                     icon = {
-                        Icon(painterResource(destination.icon), contentDescription = null,
-                            modifier = Modifier.size(LumaUi.IconSize))
+                        Icon(
+                            painter = painterResource(destination.icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(LumaUi.IconSize),
+                        )
                     },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.onPrimaryFixed,
@@ -57,14 +60,7 @@ internal fun PrimaryNavigationBar(
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),
                     label = {
-                        val labelStyle = if (fontScale >= 2f) {
-                            MaterialTheme.typography.labelMedium.copy(
-                                fontSize = 10.sp,
-                                lineHeight = 12.sp,
-                            )
-                        } else {
-                            MaterialTheme.typography.labelMedium
-                        }
+                        val labelStyle = MaterialTheme.typography.labelMedium
                         Text(
                             // Keep the visible tab concise at large text sizes; semantics retains its full name.
                             text = stringResource(

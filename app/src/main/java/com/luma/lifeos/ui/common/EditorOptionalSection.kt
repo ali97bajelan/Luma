@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -36,7 +36,7 @@ internal fun EditorOptionalSection(
     )
     LumaSectionSurface(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth()) {
-            TextButton(
+            LumaTextButton(
                 onClick = { onExpandedChange(!expanded) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .semantics { heading(); stateDescription = disclosureState }.testTag(tag),
@@ -49,7 +49,7 @@ internal fun EditorOptionalSection(
                 if (!expanded) summary?.invoke()
             }
             if (expanded) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                     content()
                 }
             }
@@ -65,12 +65,12 @@ internal fun EditorActionRow(
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val availableWidth = maxWidth
         if (maxWidth < 360.dp || LocalDensity.current.fontScale >= 1.5f) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 secondaryAction?.invoke(Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight))
                 primaryAction(Modifier.fillMaxWidth().heightIn(min = LumaUi.PrimaryActionHeight))
             }
         } else {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 secondaryAction?.invoke(Modifier.widthIn(max = availableWidth * 0.45f)
                     .heightIn(min = LumaUi.MinTouchTargetHeight))
                 primaryAction(Modifier.weight(1f).heightIn(min = LumaUi.PrimaryActionHeight))

@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.common
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -25,6 +26,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
@@ -110,6 +112,51 @@ internal fun LumaButton(
             contentColor = scheme.onPrimary,
         ),
         elevation = null,
+        contentPadding = contentPadding,
+        content = content,
+    )
+}
+
+@Composable
+internal fun LumaOutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = CircleShape,
+    colors: ButtonColors? = null,
+    border: BorderStroke? = null,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = ButtonDefaults.ContentPadding,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+        enabled = enabled,
+        shape = shape,
+        colors = colors ?: ButtonDefaults.outlinedButtonColors(),
+        border = border ?: BorderStroke(1.dp, if (enabled) scheme.outline else scheme.onSurface.copy(alpha = 0.12f)),
+        contentPadding = contentPadding,
+        content = content,
+    )
+}
+
+@Composable
+internal fun LumaTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = CircleShape,
+    colors: ButtonColors? = null,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = ButtonDefaults.TextButtonContentPadding,
+    content: @Composable RowScope.() -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+        enabled = enabled,
+        shape = shape,
+        colors = colors ?: ButtonDefaults.textButtonColors(),
         contentPadding = contentPadding,
         content = content,
     )
@@ -536,7 +583,7 @@ private fun SectionActionButton(
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
-    TextButton(
+    LumaTextButton(
         onClick = onClick,
         modifier = modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
     ) {

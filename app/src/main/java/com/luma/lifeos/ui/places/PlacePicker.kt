@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui.places
 
+import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaInputChip
 
 import androidx.compose.foundation.layout.*
@@ -11,7 +14,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Place
@@ -40,11 +43,11 @@ fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
             label = { Text(if (place != null) stringResource(R.string.place_remove, place.name)
                 else stringResource(if (state is PlacesState.Data) R.string.place_unavailable else R.string.place_selected_loading)) })
     } else Text(stringResource(R.string.place_none), style = MaterialTheme.typography.bodySmall)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextButton(enabled = enabled, onClick = { expanded = !expanded }, modifier = Modifier.testTag("place_picker")) {
+    Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+        LumaTextButton(enabled = enabled, onClick = { expanded = !expanded }, modifier = Modifier.testTag("place_picker")) {
             Text(stringResource(if (expanded) R.string.places_hide else R.string.place_choose))
         }
-        TextButton(enabled = enabled, onClick = onCreate, modifier = Modifier.testTag("place_picker_create")) {
+        LumaTextButton(enabled = enabled, onClick = onCreate, modifier = Modifier.testTag("place_picker_create")) {
             Text(stringResource(R.string.place_create))
         }
     }
@@ -54,7 +57,7 @@ fun PlacePicker(repository: PlaceRepository, selected: UUID?, enabled: Boolean,
             PlacesState.Loading -> CircularProgressIndicator()
             PlacesState.Error -> {
                 AccessibleFeedback(stringResource(R.string.places_load_error), Modifier.testTag("place_picker_error"))
-                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
             is PlacesState.Data -> {
                 if (catalog.isEmpty()) Text(stringResource(R.string.places_empty))

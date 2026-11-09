@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,10 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.luma.lifeos.ui.common.LumaOutlinedButton
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -141,7 +142,7 @@ internal fun FocusCompletionContent(
         ) {
             Text(stringResource(R.string.focus_done))
         }
-        OutlinedButton(
+        LumaOutlinedButton(
             onClick = { requestNavigation { onRepeatSession(repeatId) } },
             enabled = !state.busy && !state.setup.repeatLoading,
             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
@@ -190,7 +191,7 @@ internal fun FocusCompletionContent(
     }
 
     if (breakRunning) {
-        TextButton(
+        LumaTextButton(
             onClick = { requestNavigation(onDone) },
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_done"),
         ) {
@@ -206,7 +207,7 @@ internal fun FocusCompletionContent(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         modifier = Modifier.fillMaxWidth().testTag("focus_follow_up_group"),
     ) {
         Text(stringResource(R.string.focus_follow_up_title), style = MaterialTheme.typography.titleMedium)
@@ -261,7 +262,7 @@ internal fun FocusCompletionContent(
             )
         }
         if (!breakExpired) {
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = { requestNavigation { onRepeatSession(repeatId) } },
                 enabled = !state.busy && !state.setup.repeatLoading,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_repeat"),
@@ -269,14 +270,14 @@ internal fun FocusCompletionContent(
                 Text(stringResource(R.string.focus_use_session_settings))
             }
         }
-        OutlinedButton(
+        LumaOutlinedButton(
             onClick = { requestNavigation(onStartAnother) },
             enabled = !state.busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_another"),
         ) {
             Text(stringResource(R.string.focus_start_another))
         }
-        TextButton(
+        LumaTextButton(
             onClick = { requestNavigation(onOpenHistory) },
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_history_open"),
         ) {
@@ -284,7 +285,7 @@ internal fun FocusCompletionContent(
         }
         if (hasPendingDestination) {
             Text(stringResource(R.string.focus_pending_destination))
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = { requestNavigation(onOpenPendingDestination) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_open_pending_destination"),
             ) {
@@ -300,8 +301,8 @@ internal fun FocusCompletionContent(
             title = { Text(stringResource(R.string.focus_reflection_unsaved_title)) },
             text = { Text(stringResource(R.string.focus_reflection_unsaved_message)) },
             confirmButton = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
+                    LumaTextButton(
                         onClick = {
                             if (!reflectionNavigation.isSaving) {
                                 showReflectionLeaveDialog = false
@@ -317,7 +318,7 @@ internal fun FocusCompletionContent(
                     ) {
                         Text(stringResource(R.string.focus_reflection_save_and_leave))
                     }
-                    TextButton(
+                    LumaTextButton(
                         onClick = {
                             reflectionNavigation.discard()
                             finishPendingNavigation()
@@ -331,7 +332,7 @@ internal fun FocusCompletionContent(
                 }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = ::keepEditing,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_keep_editing"),
                 ) {
@@ -355,11 +356,11 @@ private fun BreakActions(
     var customMinutesAttempted by rememberSaveable(sessionId.toString()) { mutableStateOf(false) }
     val customDuration = customMinutes.toIntOrNull()?.takeIf { it in 1..60 }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         val breakOptionsState = stringResource(
             if (showBreakOptions) R.string.focus_disclosure_expanded else R.string.focus_disclosure_collapsed,
         )
-        OutlinedButton(
+        LumaOutlinedButton(
             onClick = { showBreakOptions = !showBreakOptions },
             enabled = !busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -371,14 +372,14 @@ private fun BreakActions(
         if (showBreakOptions) {
             Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.focus_break_default_label), style = MaterialTheme.typography.bodyMedium)
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = { onStartBreak(5) },
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_five_minute_break"),
             ) {
                 Text(stringResource(R.string.focus_break_take_five))
             }
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = {
                     customMinutesAttempted = false
                     showCustomizeDialog = true
@@ -396,8 +397,8 @@ private fun BreakActions(
             onDismissRequest = { showCustomizeDialog = false },
             title = { Text(stringResource(R.string.focus_break_custom_title)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    OutlinedTextField(
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
+                    LumaOutlinedTextField(
                         value = customMinutes,
                         onValueChange = { value ->
                             customMinutes = value.mapNotNull { character ->
@@ -416,7 +417,7 @@ private fun BreakActions(
                 }
             },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         val duration = customDuration
                         if (duration == null) {
@@ -433,7 +434,7 @@ private fun BreakActions(
                 }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = { showCustomizeDialog = false },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_custom_break_cancel"),
                 ) {

@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +42,7 @@ fun EmptyStateCard(
                 Text(stringResource(body), style = MaterialTheme.typography.bodyLarge)
                 if (actionLabel != null && onAction != null) {
                     val actionModifier = if (actionTag == null) Modifier else Modifier.testTag(actionTag)
-                    TextButton(
+                    LumaTextButton(
                         onClick = onAction,
                         modifier = actionModifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
                         contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),

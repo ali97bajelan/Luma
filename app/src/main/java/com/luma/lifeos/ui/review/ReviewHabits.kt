@@ -17,7 +17,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +85,7 @@ internal fun ReviewHabits(
             ReviewHabitsState.Loading -> CircularProgressIndicator(Modifier.testTag("review_habits_loading"))
             ReviewHabitsState.Error -> {
                 AccessibleFeedback(stringResource(R.string.review_error))
-                TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("review_habits_retry")) {
+                LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("review_habits_retry")) {
                     Text(stringResource(R.string.retry))
                 }
             }
@@ -154,7 +154,7 @@ private fun HabitReviewRow(
     ) {
         Column(
             Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             Text(row.habit.name, style = MaterialTheme.typography.titleMedium)
             if (row.current == null) {
@@ -191,7 +191,7 @@ private fun HabitReviewRow(
             }
 
             if (!row.current?.days.isNullOrEmpty()) {
-                TextButton(
+                LumaTextButton(
                     onClick = { detailsExpanded = !detailsExpanded },
                     modifier = Modifier.heightIn(min = 48.dp).semantics {
                         stateDescription = stateDescriptionText
@@ -204,7 +204,7 @@ private fun HabitReviewRow(
                 }
             }
 
-            TextButton(
+            LumaTextButton(
                 onClick = { onHabit(row.habit.id, historyDate) },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("review_habits_open_${row.habit.id}"),
             ) {
@@ -217,9 +217,9 @@ private fun HabitReviewRow(
 @Composable
 private fun HabitWeekStrip(slots: List<HabitWeekSlot>, habitId: UUID) {
     val rows = if (LocalDensity.current.fontScale >= 1.5f) listOf(slots.take(4), slots.drop(4)) else listOf(slots)
-    Column(Modifier.fillMaxWidth().testTag("review_habit_week_${habitId}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(Modifier.fillMaxWidth().testTag("review_habit_week_${habitId}"), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
         rows.forEachIndexed { index, row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 row.forEach { slot -> HabitWeekSlotCell(slot, habitId, Modifier.weight(1f)) }
                 if (rows.size > 1 && index == 1) Spacer(Modifier.weight((4 - row.size).toFloat()))
             }
@@ -309,7 +309,7 @@ private fun HabitReviewDay(day: HabitDay, row: HabitWeekComparisonRow, onHabit: 
             stringResource(R.string.habit_remaining_skipped),
             style = MaterialTheme.typography.bodySmall,
         )
-        TextButton(
+        LumaTextButton(
             onClick = { onHabit(row.habit.id, day.date) },
             modifier = Modifier.heightIn(min = 48.dp).testTag("review_habit_open_${row.habit.id}_${day.date}"),
         ) {

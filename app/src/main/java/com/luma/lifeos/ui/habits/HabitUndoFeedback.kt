@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaCard
 
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -89,7 +90,7 @@ fun HabitUndoStatusFeedback(
 
     Column(
         modifier = modifier.fillMaxWidth().heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
     ) {
         pending.forEach { log ->
             UndoStatusCard(log, state.habitNameFor(log), pending = true, onRetry = onRetry)
@@ -110,14 +111,14 @@ private fun UndoStatusCard(
     LumaCard(Modifier.fillMaxWidth().testTag("habit_undo_feedback_${log.id}")) {
         Column(
             Modifier.fillMaxWidth().padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             habitName?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
             if (pending) {
                 Row(
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 ) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                     AccessibleFeedback(
@@ -128,7 +129,7 @@ private fun UndoStatusCard(
                 }
             } else {
                 AccessibleFeedback(stringResource(R.string.habit_undo_failed), isError = true)
-                TextButton(
+                LumaTextButton(
                     onClick = { onRetry(log.id) },
                     modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp)
                         .testTag("habit_undo_retry_${log.id}"),

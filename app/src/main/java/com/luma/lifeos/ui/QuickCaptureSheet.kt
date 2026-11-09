@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaFilterChip
 
 import com.luma.lifeos.ui.common.LumaModalBottomSheet
@@ -20,7 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,11 +61,11 @@ fun QuickCaptureSheet(
         Column(
             Modifier.fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(horizontal = LumaUi.PageGutter, vertical = LumaUi.SectionGap)
                 .testTag("capture_sheet"),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Text(
                         stringResource(R.string.quick_capture),
@@ -82,13 +83,13 @@ fun QuickCaptureSheet(
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 Text(stringResource(R.string.capture_record_section), style = MaterialTheme.typography.titleSmall)
                 if (browsedDate != null) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     ) {
                         LumaFilterChip(
                             selected = !useBrowsedDate,
@@ -126,7 +127,7 @@ fun QuickCaptureSheet(
             }
 
             onHabit?.let { action ->
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     Text(stringResource(R.string.habit_title), style = MaterialTheme.typography.titleSmall)
                     LumaChoiceRow(
                         title = stringResource(R.string.capture_habit),
@@ -142,8 +143,8 @@ fun QuickCaptureSheet(
                 onScheduledTask?.let { callback -> { callback(dueDate) } }
             }
             (scheduledTaskAction ?: onTask)?.let { action ->
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         Text(stringResource(R.string.capture_task_section), style = MaterialTheme.typography.titleSmall)
                         if (scheduledTaskAction != null && taskDueDate != null) {
                             Text(
@@ -167,7 +168,7 @@ fun QuickCaptureSheet(
                 }
             }
 
-            TextButton(
+            LumaTextButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                 modifier = Modifier.heightIn(min = 48.dp).testTag("capture_close"),

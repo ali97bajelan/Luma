@@ -32,8 +32,8 @@ internal fun TodayCaptureActions(
     val colors = MaterialTheme.colorScheme
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
     ) {
         listOf(EventType.MOOD to R.string.today_capture_mood, EventType.MEMORY to R.string.today_capture_memory)
             .forEach { (type, label) ->

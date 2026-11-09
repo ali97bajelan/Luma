@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.photos
 
+import com.luma.lifeos.ui.common.LumaUi
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.view.WindowManager
@@ -15,7 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,14 +99,14 @@ internal fun PhotoEditScreen(
             BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                 val previewHeight = (maxHeight * 0.42f).coerceIn(180.dp, 340.dp)
                 Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = LumaUi.PageGutter, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 ) {
                     Text(stringResource(R.string.memory_photo_edit_title), style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.semantics { heading() })
                     if (failure != null) {
                         AccessibleFeedback(stringResource(failure.messageResource()), Modifier.testTag("photo_edit_error"))
-                        TextButton(onClick = onRetry, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        LumaTextButton(onClick = onRetry, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("photo_edit_retry")) {
                             Text(stringResource(R.string.photo_edit_retry))
                         }
@@ -125,12 +126,12 @@ internal fun PhotoEditScreen(
                         onCrop = onCrop,
                         onRetry = { retry++ },
                     )
-                    TextButton(
+                    LumaTextButton(
                         onClick = onRotate,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("photo_edit_rotate"),
                     ) { Text(stringResource(R.string.photo_edit_rotate)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = onReset,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("photo_edit_reset"),
@@ -159,15 +160,15 @@ internal fun PhotoEditScreen(
                         summary = cropSummary,
                         tag = "photo_crop_bottom",
                     ) { onCrop(PhotoCropGeometry.moveEdge(edit.crop, PhotoCropGeometry.Edge.BOTTOM, it)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = onApply,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("photo_edit_apply"),
                     ) { Text(stringResource(R.string.photo_edit_apply)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = onKeepOriginal,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("photo_edit_keep_original"),
                     ) { Text(stringResource(R.string.photo_edit_keep_original)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = onCancel,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("photo_edit_cancel"),
                     ) { Text(stringResource(R.string.photo_edit_cancel)) }
@@ -245,10 +246,10 @@ private fun PhotoCropPreview(
             loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
             bitmap == null -> Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             ) {
                 Text(stringResource(R.string.photo_edit_preview_unavailable))
-                TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_edit_preview_retry")) {
+                LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_edit_preview_retry")) {
                     Text(stringResource(R.string.retry))
                 }
             }

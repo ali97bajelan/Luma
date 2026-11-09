@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
@@ -106,7 +110,7 @@ fun PrivacySettingsRoute(
         onDismissRequest = { resetAuthUnavailable = false },
         title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
         text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
-        confirmButton = { TextButton(onClick = { resetAuthUnavailable = false }) {
+        confirmButton = { LumaTextButton(onClick = { resetAuthUnavailable = false }) {
             Text(stringResource(R.string.cancel))
         } },
     )
@@ -115,7 +119,7 @@ fun PrivacySettingsRoute(
 /** Shared with the native Health Connect rationale; contains no actions or database access. */
 @Composable
 fun PrivacyPolicyContent(accessAction: (@Composable () -> Unit)? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
         PrivacySection(R.string.privacy_storage_heading, R.string.privacy_local_storage, "privacy_local_storage")
         PrivacySection(R.string.privacy_access_heading, R.string.privacy_optional_access, "privacy_optional_access") {
             accessAction?.invoke()
@@ -128,7 +132,7 @@ fun PrivacyPolicyContent(accessAction: (@Composable () -> Unit)? = null) {
 private fun PrivacySection(@StringRes heading: Int, @StringRes description: Int, tag: String,
     content: @Composable ColumnScope.() -> Unit = {}) {
     LumaSectionSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Text(stringResource(heading), style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() })
             Text(stringResource(description), modifier = Modifier.testTag(tag))
@@ -152,16 +156,16 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
     ) { pagePadding ->
       LumaReadingPane(Modifier.fillMaxSize().padding(pagePadding)) {
        Column(Modifier.fillMaxSize().testTag("screen_privacy")
-          .verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+          .verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
         PrivacyPolicyContent {
-            TextButton(onClick = onAppSettings, enabled = !state.busy, modifier = Modifier.testTag("privacy_app_settings")) {
+            LumaTextButton(onClick = onAppSettings, enabled = !state.busy, modifier = Modifier.testTag("privacy_app_settings")) {
                 Text(stringResource(R.string.privacy_app_settings))
             }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.privacy_settings_missing), Modifier.testTag("privacy_settings_missing"))
         }
         LumaSectionSurface {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 Text(stringResource(R.string.privacy_delete_section), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { heading() })
                 Text(stringResource(R.string.privacy_delete_description))
@@ -187,10 +191,10 @@ internal fun PrivacySettingsContent(state: PrivacyUiState, onBack: () -> Unit,
     if (state.confirming) LumaAlertDialog(onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.privacy_delete_title)) },
         text = { Text(stringResource(R.string.privacy_delete_warning)) },
-        confirmButton = { TextButton(onClick = onConfirm, modifier = Modifier.testTag("privacy_confirm")) {
+        confirmButton = { LumaTextButton(onClick = onConfirm, modifier = Modifier.testTag("privacy_confirm")) {
             Text(stringResource(R.string.privacy_delete_confirm), color = MaterialTheme.colorScheme.error)
         } },
-        dismissButton = { TextButton(onClick = onCancel, modifier = Modifier.testTag("privacy_cancel")) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { LumaTextButton(onClick = onCancel, modifier = Modifier.testTag("privacy_cancel")) { Text(stringResource(R.string.cancel)) } })
 }
 
 @Composable
@@ -198,12 +202,12 @@ internal fun PermissionExplanationDialog(@StringRes title: Int, @StringRes body:
     onContinue: () -> Unit, onCancel: () -> Unit) {
     LumaAlertDialog(onDismissRequest = onCancel,
         title = { Text(stringResource(title)) },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        text = { Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
             Text(stringResource(body))
             Text(stringResource(R.string.integration_permission_retention))
         } },
-        confirmButton = { TextButton(onClick = onContinue, modifier = Modifier.testTag("permission_continue")) {
+        confirmButton = { LumaTextButton(onClick = onContinue, modifier = Modifier.testTag("permission_continue")) {
             Text(stringResource(R.string.permission_continue))
         } },
-        dismissButton = { TextButton(onClick = onCancel, modifier = Modifier.testTag("permission_cancel")) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { LumaTextButton(onClick = onCancel, modifier = Modifier.testTag("permission_cancel")) { Text(stringResource(R.string.cancel)) } })
 }

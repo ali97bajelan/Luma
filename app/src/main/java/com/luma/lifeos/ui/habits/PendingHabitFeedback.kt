@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -34,12 +35,12 @@ internal fun PendingHabitFeedback(
             style = MaterialTheme.typography.bodySmall)
         Text(stringResource(if (pending.error == null) R.string.habit_log_saving else R.string.habit_log_failed),
             style = MaterialTheme.typography.bodySmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { onOpenDate(pending.input.date) },
+        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+            LumaTextButton(onClick = { onOpenDate(pending.input.date) },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("habit_pending_open_${pending.id}")) {
                 Text(stringResource(R.string.habit_pending_open_date))
             }
-            if (pending.error != null) TextButton(onClick = onRetry,
+            if (pending.error != null) LumaTextButton(onClick = onRetry,
                 modifier = Modifier.heightIn(min = 48.dp).testTag(retryTag)) {
                 Text(stringResource(R.string.habit_retry_action))
             }

@@ -38,10 +38,10 @@ fun HabitTimelineCard(item: TimelineFeedItem.Habit, screenZone: ZoneId, onOpen: 
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(stringResource(R.string.habit_title), modifier = Modifier.weight(1f),

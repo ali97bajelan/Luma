@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.timeline
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import android.app.Activity
 import android.content.Context
 import androidx.activity.compose.BackHandler
@@ -7,13 +9,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.*
@@ -182,14 +185,14 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
         },
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
-            .testTag("event_detail_content"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter)
+            .testTag("event_detail_content"), verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 when (val current = state) {
                     EventDetailState.Loading -> CircularProgressIndicator()
                     EventDetailState.Missing -> Text(stringResource(R.string.event_missing), modifier = Modifier.testTag("event_missing"))
                     EventDetailState.Error -> {
                         AccessibleFeedback(stringResource(R.string.event_detail_error), Modifier.testTag("event_detail_error"))
-                        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                        LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
                     is EventDetailState.Data -> {
                         val record = current.record
@@ -198,7 +201,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                             record.event.type == EventType.MEMORY && record.memory != null -> com.luma.lifeos.sharing.EntryShareKind.MEMORY
                             else -> null
                         }
-                        if (shareKind != null) TextButton(onClick = { onShare(shareKind) }) { Text(stringResource(R.string.share_action)) }
+                        if (shareKind != null) LumaTextButton(onClick = { onShare(shareKind) }) { Text(stringResource(R.string.share_action)) }
                         LumaSectionSurface(modifier = Modifier.testTag("event_detail_record")) {
                             val groupedUsageDetails = record.appUsage != null
                             if (!groupedUsageDetails) {
@@ -228,7 +231,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                                 record.photos,
                                 onOpen = if (canOpenPhotos) ::openPhoto else null,
                             )
-                            if (record.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("event_promote")) {
+                            if (record.canPromoteToMemory) LumaTextButton(onClick = onMemory, modifier = Modifier.testTag("event_promote")) {
                                 Text(stringResource(if (record.memory == null) R.string.memory_promote else R.string.memory_edit))
                             }
                         }

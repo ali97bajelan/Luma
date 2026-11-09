@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
 import androidx.compose.foundation.layout.Arrangement
@@ -7,7 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -136,7 +137,7 @@ fun LockSensitiveActionDialog(
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             ) {
                 Text(stringResource(R.string.app_lock_sensitive_body, purposeLabel(pending.purpose)))
                 when (val result = descriptorResult) {
@@ -160,13 +161,13 @@ fun LockSensitiveActionDialog(
             }
         },
         confirmButton = {
-            TextButton(enabled = !busy && !authorized && editorState?.isComplete == true, onClick = ::submit,
+            LumaTextButton(enabled = !busy && !authorized && editorState?.isComplete == true, onClick = ::submit,
                 modifier = Modifier.testTag("app_lock_sensitive_submit")) {
                 Text(stringResource(R.string.app_lock_unlock_action))
             }
         },
         dismissButton = {
-            TextButton(enabled = !busy, onClick = ::cancel) { Text(stringResource(R.string.cancel)) }
+            LumaTextButton(enabled = !busy, onClick = ::cancel) { Text(stringResource(R.string.cancel)) }
         },
     )
 }

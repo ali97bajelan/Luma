@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.todo
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +14,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,7 +96,7 @@ internal fun TodoRow(
         Row(
             Modifier.fillMaxWidth().padding(horizontal = if (compact) 8.dp else 0.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             Checkbox(
                 checked = task.isCompleted,
@@ -105,14 +106,14 @@ internal fun TodoRow(
                     contentDescription = checkboxAccessDescription
                 }.testTag("todo_status_${task.id}"),
             )
-            TextButton(
+            LumaTextButton(
                 onClick = onOpen,
                 enabled = canOpen,
                 modifier = Modifier.weight(1f).heightIn(min = 56.dp).focusRequester(focusRequester)
                     .semantics { contentDescription = accessDescription }
                     .testTag("todo_open_${task.id}"),
             ) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     Text(task.title, style = MaterialTheme.typography.bodyLarge)
                     secondary?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     originalDue?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
@@ -122,7 +123,7 @@ internal fun TodoRow(
         if (pending || error != null) {
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = if (compact) 8.dp else 0.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
             ) {
                 Text(
                     stringResource(
@@ -148,7 +149,7 @@ internal fun TodoRow(
                     }
                 } else if (error == TodoListRowError.CONFLICT || error == TodoListRowError.MISSING) {
                     if (error == TodoListRowError.CONFLICT) {
-                        TextButton(
+                        LumaTextButton(
                             onClick = onOpen,
                             enabled = canOpen,
                             modifier = Modifier.heightIn(min = 48.dp).testTag("todo_feedback_open_${task.id}"),
@@ -156,7 +157,7 @@ internal fun TodoRow(
                             Text(stringResource(R.string.todo_status_open))
                         }
                     }
-                    TextButton(onClick = onDismissError, modifier = Modifier.heightIn(min = 48.dp).testTag("todo_dismiss_${task.id}")) {
+                    LumaTextButton(onClick = onDismissError, modifier = Modifier.heightIn(min = 48.dp).testTag("todo_dismiss_${task.id}")) {
                         Text(stringResource(R.string.todo_feedback_dismiss))
                     }
                 }
@@ -174,7 +175,7 @@ internal fun TodoRow(
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                 content = rowContent,
             )
         }

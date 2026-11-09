@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.places
 
+import com.luma.lifeos.ui.common.LumaUi
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.activity.compose.BackHandler
@@ -72,7 +76,7 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
             "place_cancel", !state.busy, ::close)
     }, bottomBar = {
         LumaReadingPane(Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxWidth().imePadding().padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 when (state.error) {
                     PlaceEditorError.SAVE -> AccessibleFeedback(stringResource(R.string.place_save_error), Modifier.testTag("place_action_error"))
                     PlaceEditorError.DELETE -> AccessibleFeedback(stringResource(R.string.place_delete_error), Modifier.testTag("place_action_error"))
@@ -80,7 +84,7 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
                 }
                 EditorActionRow(
                     secondaryAction = if (state.editing) { actionModifier ->
-                        TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("place_delete")) {
+                        LumaTextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("place_delete")) {
                             Text(stringResource(R.string.delete))
                         }
                     } else null,
@@ -95,8 +99,8 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
         }
     }) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 if (state.loading) CircularProgressIndicator()
                 state.error?.let { error ->
                     val message = stringResource(when (error) {
@@ -108,7 +112,7 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
                     if (error == PlaceEditorError.LOAD || (error == PlaceEditorError.TEXT && state.textErrors.isEmpty())) {
                         AccessibleFeedback(message, Modifier.testTag("place_error"))
                     }
-                    if (error == PlaceEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                    if (error == PlaceEditorError.LOAD) LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
                 val nameError = if (PlaceTextField.NAME in state.textErrors)
                     stringResource(R.string.editor_text_limit_error, NumberFormat.getIntegerInstance().format(PlaceTextLimits.NAME)) else null
@@ -133,10 +137,10 @@ fun PlaceEditorScreen(state: PlaceEditorState, onCancel: () -> Unit, onSave: () 
         text = { Text(stringResource(R.string.place_delete_body)) },
         confirmButton = { LumaDestructiveTextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("place_confirm_delete")) {
             Text(stringResource(R.string.delete)) } },
-        dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { LumaTextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } })
     if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.place_discard_title)) },
         text = { Text(stringResource(R.string.place_discard_body)) },
-        confirmButton = { TextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
-        dismissButton = { TextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
+        confirmButton = { LumaTextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
+        dismissButton = { LumaTextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
 }

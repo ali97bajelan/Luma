@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.mood
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import com.luma.lifeos.ui.common.LumaFilterChip
 
 import androidx.activity.compose.BackHandler
@@ -20,7 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
@@ -33,7 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -128,12 +130,12 @@ fun MoodEditorScreen(
                     }
                     actionError?.let { AccessibleFeedback(it, Modifier.testTag("mood_error")) }
                     if (onShare != null && state.editing) {
-                        TextButton(onClick = onShare, enabled = shareEnabled) { Text(stringResource(R.string.share_action)) }
+                        LumaTextButton(onClick = onShare, enabled = shareEnabled) { Text(stringResource(R.string.share_action)) }
                         if (!shareEnabled) AccessibleFeedback(stringResource(R.string.share_save_first), isError = false)
                     }
                     EditorActionRow(
                         secondaryAction = if (editing) { actionModifier ->
-                            TextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,
+                            LumaTextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,
                                 onClick = { deleting = true }, modifier = actionModifier.testTag("mood_delete")) {
                                 Text(stringResource(if (state.deleteRecovery == MoodDeleteRecovery.STILL_PRESENT)
                                     R.string.mood_delete_retry else R.string.delete))
@@ -150,8 +152,8 @@ fun MoodEditorScreen(
         },
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 val showRecoveryContent = !state.ready &&
                     (state.hasRestoredDraft || state.deleteRecovery in setOf(
                         MoodDeleteRecovery.STATUS_UNKNOWN,
@@ -173,7 +175,7 @@ fun MoodEditorScreen(
                 }
                 if (state.error == MoodEditorError.LOAD && !state.hasRestoredDraft) {
                     AccessibleFeedback(stringResource(R.string.mood_load_error), Modifier.testTag("mood_error"))
-                    TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+                    LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(stringResource(R.string.retry))
                     }
                 }
@@ -188,21 +190,21 @@ fun MoodEditorScreen(
                             Modifier.testTag("mood_recovery_message"))
                     }
                     if (state.error == MoodEditorError.LOAD && state.deleteRecovery != MoodDeleteRecovery.INTENT_MISMATCH) {
-                        TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_recovery_retry")) {
+                        LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_recovery_retry")) {
                             Text(stringResource(R.string.retry))
                         }
                     }
                     if (state.deleteRecovery == MoodDeleteRecovery.STATUS_UNKNOWN) {
-                        TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_delete_check_retry")) {
+                        LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_delete_check_retry")) {
                             Text(stringResource(R.string.retry))
                         }
                     }
                     if (state.deleteRecovery == MoodDeleteRecovery.COMPLETION_PENDING) {
-                        TextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_delete_completion_retry")) {
+                        LumaTextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_delete_completion_retry")) {
                             Text(stringResource(R.string.mood_delete_completion_retry))
                         }
                     } else if (state.error == MoodEditorError.DRAFT_STORAGE && state.hasRestoredDraft) {
-                        TextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_draft_retry")) {
+                        LumaTextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_draft_retry")) {
                             Text(stringResource(R.string.mood_draft_retry))
                         }
                     }
@@ -210,9 +212,9 @@ fun MoodEditorScreen(
                 }
                 if (state.draftStorageError && !showRecoveryContent &&
                     state.deleteRecovery != MoodDeleteRecovery.COMPLETION_PENDING) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         AccessibleFeedback(stringResource(R.string.mood_draft_save_error), Modifier.weight(1f).testTag("mood_draft_storage_error"))
-                        TextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_draft_retry")) {
+                        LumaTextButton(onClick = onRetryDraft, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_draft_retry")) {
                             Text(stringResource(R.string.mood_draft_retry))
                         }
                     }
@@ -223,19 +225,19 @@ fun MoodEditorScreen(
                         modifier = Modifier.fillMaxWidth().testTag("mood_note_recovery_preview"))
                 }
                 if (state.ready) {
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.GroupGap)) {
                         CaptureTimestampRow(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                             Text(stringResource(R.string.mood_question), style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.semantics { heading() }.testTag("mood_question"))
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                                 Text(stringResource(R.string.mood_very_low), style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.weight(1f))
                                 Text(stringResource(R.string.mood_great), style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.End,
                                     modifier = Modifier.weight(1f))
                             }
-                            Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                                 val colors = MaterialTheme.colorScheme
                                 (1..5).forEach { score ->
                                     val description = stringResource(R.string.mood_choice, score, stringResource(moodScoreLabel(score)))
@@ -250,7 +252,7 @@ fun MoodEditorScreen(
                                             )
                                             .semantics { contentDescription = description }
                                             .testTag("mood_score_$score"),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = MaterialTheme.shapes.medium,
                                         color = when {
                                             selected -> colors.primary
                                             enabled -> colors.surfaceContainerLowest
@@ -283,13 +285,13 @@ fun MoodEditorScreen(
                             }
                         }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             Text(stringResource(R.string.mood_emotions), style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.semantics { heading() }.testTag("mood_emotions"))
                             Text(stringResource(R.string.mood_emotions_hint), style = MaterialTheme.typography.bodySmall)
                             FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 state.emotions.forEach { emotion ->
@@ -319,11 +321,11 @@ fun MoodEditorScreen(
                         }
 
                         LumaSectionSurface {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                                 val disclosureState = stringResource(
                                     if (more) R.string.review_details_expanded else R.string.review_details_collapsed,
                                 )
-                                TextButton(onClick = { more = !more }, enabled = !state.busy,
+                                LumaTextButton(onClick = { more = !more }, enabled = !state.busy,
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("mood_more")
                                         .semantics { heading(); stateDescription = disclosureState }) {
                                     Text(
@@ -336,7 +338,7 @@ fun MoodEditorScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (more) {
-                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                                     OptionalScale(stringResource(R.string.mood_energy), "energy", state.draft.energy, enabled, onEnergy)
                                     OptionalScale(stringResource(R.string.mood_stress), "stress", state.draft.stress, enabled, onStress)
                                     LumaOutlinedTextField(value = state.draft.note, onValueChange = onNote, enabled = enabled,
@@ -361,14 +363,14 @@ fun MoodEditorScreen(
         text = { Text(stringResource(R.string.mood_delete_body)) },
         confirmButton = { LumaDestructiveTextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("mood_confirm_delete")) {
             Text(stringResource(R.string.delete)) } },
-        dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { LumaTextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } },
     )
     if (discarding) LumaAlertDialog(
         onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.mood_discard_title)) },
         text = { Text(stringResource(R.string.mood_discard_body)) },
-        confirmButton = { TextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
-        dismissButton = { TextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } },
+        confirmButton = { LumaTextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
+        dismissButton = { LumaTextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } },
     )
 }
 
@@ -421,15 +423,15 @@ private fun OptionalScale(label: String, tag: String, value: Int?, enabled: Bool
     Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
     ) {
         (1..5).forEach { score ->
             val description = stringResource(R.string.mood_scale_description, label, score)
             LumaFilterChip(selected = value == score, enabled = enabled, onClick = { onValue(if (score == value) null else score) },
                 modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
                     .testTag("mood_${tag}_$score").semantics { contentDescription = description },
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 label = { Text(NumberFormat.getIntegerInstance().format(score)) })
         }
     }

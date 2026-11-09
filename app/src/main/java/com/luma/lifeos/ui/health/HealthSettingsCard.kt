@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui.health
 
+import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import android.content.ActivityNotFoundException
@@ -14,7 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
+
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,7 +49,7 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
     val contract = remember { PermissionController.createRequestPermissionResultContract() }
     val permissions = rememberLauncherForActivityResult(contract) { vm.refresh(); onRefreshAccess() }
     LumaSectionSurface(Modifier.testTag("health_card")) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
             Text(stringResource(R.string.health_title), style = MaterialTheme.typography.titleLarge)
             val canToggle = !state.loading && (!state.busy || state.current.enabled) &&
                 currentAvailability.enabled != null && !currentAvailability.configurationFailed
@@ -108,10 +111,10 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
                     AccessibleFeedback(stringResource(R.string.health_error), Modifier.testTag("health_import_error"), isError = true)
                 }
             }
-            TextButton(onClick = { settingsMissing = !openHealthSettings(context) }, modifier = Modifier.testTag("health_manage")) {
+            LumaTextButton(onClick = { settingsMissing = !openHealthSettings(context) }, modifier = Modifier.testTag("health_manage")) {
                 Text(stringResource(R.string.health_manage))
             }
-            TextButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
+            LumaTextButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                 modifier = Modifier.testTag("health_refresh")) { Text(stringResource(R.string.health_refresh)) }
             if (settingsMissing) AccessibleFeedback(stringResource(R.string.health_settings_missing), Modifier.testTag("health_settings_missing"))
             state.errors.values.sortedBy { it.operation.ordinal }.forEach { error ->
@@ -131,11 +134,11 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
                 if (operation != IntegrationSettingsOperation.IMPORT ||
                     currentAvailability.access != IntegrationAccessState.ALLOWED) {
                     key(error.requestId) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                             AccessibleFeedback(stringResource(message),
                                 Modifier.testTag("health_${operation.name.lowercase()}_error"))
                             if (operation != IntegrationSettingsOperation.IMPORT) {
-                                TextButton(onClick = retry, enabled = !state.busy,
+                                LumaTextButton(onClick = retry, enabled = !state.busy,
                                     modifier = Modifier.testTag("health_${operation.name.lowercase()}_retry")) {
                                     Text(stringResource(R.string.retry))
                                 }

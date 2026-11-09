@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.memory
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.activity.compose.BackHandler
@@ -19,7 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -173,13 +174,13 @@ internal fun MemoryLibraryRoute(
                 state = listState,
                 modifier = Modifier.fillMaxSize().testTag("memory_library_list"),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             ) {
                 item(key = "memory-library-add") {
                     LumaButton(
                         onClick = onRecordMemory,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("memory_library_add"),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+                        contentPadding = PaddingValues(horizontal = LumaUi.PageGutter, vertical = 14.dp),
                     ) {
                         Text(stringResource(R.string.memory_capture), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
@@ -190,7 +191,7 @@ internal fun MemoryLibraryRoute(
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                         ) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(36.dp).semantics {
@@ -202,20 +203,20 @@ internal fun MemoryLibraryRoute(
                         }
                     }
                     MemoryLibraryUiState.Empty -> item(key = "memory-library-empty") {
-                        Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             Text(stringResource(R.string.memory_library_empty), style = MaterialTheme.typography.titleMedium)
                             Text(stringResource(R.string.memory_library_empty_description),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     MemoryLibraryUiState.InitialError -> item(key = "memory-library-error") {
-                        Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             Text(stringResource(R.string.memory_library_error),
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                             Text(stringResource(R.string.memory_library_error_description),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            TextButton(
+                            LumaTextButton(
                                 onClick = holder::retry,
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("memory_library_retry"),
                             ) { Text(stringResource(R.string.retry)) }
@@ -249,14 +250,14 @@ internal fun MemoryLibraryRoute(
                                 if (current.observationError) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                                     ) {
                                         Text(stringResource(R.string.memory_library_error),
                                             color = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                                         Text(stringResource(R.string.memory_library_error_description),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        TextButton(
+                                        LumaTextButton(
                                             onClick = holder::retry,
                                             modifier = Modifier.heightIn(min = 48.dp)
                                                 .testTag("memory_library_observation_retry"),
@@ -275,19 +276,19 @@ internal fun MemoryLibraryRoute(
                                             .testTag("memory_library_load_older"),
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                                             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                                             Text(stringResource(R.string.memory_library_loading_older), maxLines = 2)
                                         }
                                     }
                                     MemoryOlderLoadState.Error -> Column(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                                     ) {
                                         Text(stringResource(R.string.memory_library_older_error),
                                             color = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                                        TextButton(
+                                        LumaTextButton(
                                             onClick = holder::retry,
                                             modifier = Modifier.heightIn(min = 48.dp)
                                                 .testTag("memory_library_older_retry"),
@@ -359,13 +360,13 @@ private fun MemoryLibraryCard(
             },
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             ) {
                 Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (preview.isNotBlank()) {

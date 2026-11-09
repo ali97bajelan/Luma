@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import android.app.TimePickerDialog
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
@@ -8,11 +9,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FilterChip
+import com.luma.lifeos.ui.common.LumaFilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -180,7 +181,7 @@ internal fun FocusInvitationSettings(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().testTag("focus_invitation_settings"),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         ) {
             Text(stringResource(R.string.focus_invitation_settings_intro), style = MaterialTheme.typography.bodyMedium)
             if (preferences?.quietHours()?.enabled == true) {
@@ -222,7 +223,7 @@ internal fun FocusInvitationSettings(
                     rowDays.forEach { day ->
                         val selected = day in draft.weekdays
                         val short = day.getDisplayName(TextStyle.SHORT, locale)
-                        FilterChip(
+                        LumaFilterChip(
                             selected = selected,
                             enabled = !busy,
                             onClick = {
@@ -252,7 +253,7 @@ internal fun FocusInvitationSettings(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(stringResource(R.string.focus_invitation_time), Modifier.weight(1f))
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         TimePickerDialog(
                             context,

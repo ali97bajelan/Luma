@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +10,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,14 +50,14 @@ internal fun ReviewOverviewMemory(
     ) {
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
             verticalAlignment = Alignment.Top,
         ) {
             Icon(
                 painterResource(R.drawable.ic_bookmark_outline),
                 contentDescription = null,
             )
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 LumaSectionHeader(title = stringResource(R.string.review_latest_memory))
                 LatestMemoryContent(report, repository, onEvent)
             }
@@ -96,7 +97,7 @@ private fun LatestMemoryContent(
         ReviewSourcesState.Loading -> CircularProgressIndicator(Modifier.testTag("review_overview_memory_loading"))
         ReviewSourcesState.Error -> {
             AccessibleFeedback(stringResource(R.string.review_error))
-            TextButton(
+            LumaTextButton(
                 onClick = { retry++ },
                 modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_overview_memory_retry"),
             ) {
@@ -114,7 +115,7 @@ private fun LatestMemoryContent(
             } else {
                 val date = row.event.occurredAt.atZone(report.period.zone)
                     .format(displayTime.dateTime(FormatStyle.MEDIUM))
-                TextButton(
+                LumaTextButton(
                     onClick = { onEvent(row) },
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),
                     modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)

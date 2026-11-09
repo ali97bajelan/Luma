@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
 import androidx.activity.compose.BackHandler
@@ -12,7 +13,7 @@ import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -72,8 +73,8 @@ internal fun HabitLogCorrectionDialog(
         onDismissRequest = { if (!busy) onRequestClose() },
         title = { Text(stringResource(R.string.habit_log_correction)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                LumaTextButton(
                     enabled = !busy,
                     onClick = ::openDate,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -85,7 +86,7 @@ internal fun HabitLogCorrectionDialog(
                 dateError?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_correction_date_error"))
                 }
-                TextButton(
+                LumaTextButton(
                     enabled = !busy,
                     onClick = ::openTime,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -96,7 +97,7 @@ internal fun HabitLogCorrectionDialog(
                         ?: stringResource(R.string.habit_correction_no_time)
                     Text("${stringResource(R.string.habit_correction_time)} · $value")
                 }
-                TextButton(
+                LumaTextButton(
                     enabled = !busy,
                     onClick = { onTime(null) },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_correction_no_time"),
@@ -110,7 +111,7 @@ internal fun HabitLogCorrectionDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            LumaTextButton(
                 enabled = !busy && error != HabitCorrectionError.MISSING,
                 onClick = onSave,
                 modifier = Modifier.testTag("habit_save_correction"),
@@ -123,7 +124,7 @@ internal fun HabitLogCorrectionDialog(
             }
         },
         dismissButton = {
-            TextButton(enabled = !busy, onClick = onRequestClose, modifier = Modifier.testTag("habit_cancel_correction")) {
+            LumaTextButton(enabled = !busy, onClick = onRequestClose, modifier = Modifier.testTag("habit_cancel_correction")) {
                 Text(stringResource(R.string.cancel))
             }
         },
@@ -137,14 +138,14 @@ internal fun HabitLogCorrectionDialog(
         LumaDatePickerDialog(
             onDismissRequest = ::closeDate,
             confirmButton = {
-                TextButton(enabled = date.selectedDateMillis != null, onClick = {
+                LumaTextButton(enabled = date.selectedDateMillis != null, onClick = {
                     date.selectedDateMillis?.let { onDate(pickerDate(it)) }
                     closeDate()
                 }, modifier = Modifier.testTag("habit_correction_select_date")) {
                     Text(stringResource(R.string.select_date))
                 }
             },
-            dismissButton = { TextButton(onClick = ::closeDate) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { LumaTextButton(onClick = ::closeDate) { Text(stringResource(R.string.cancel)) } },
             modifier = Modifier.testTag("habit_correction_date_picker"),
         ) { DatePicker(state = date) }
     }
@@ -156,14 +157,14 @@ internal fun HabitLogCorrectionDialog(
             title = { Text(stringResource(R.string.habit_correction_time)) },
             text = { TimeInput(state = time, modifier = Modifier.testTag("habit_correction_time_picker")) },
             confirmButton = {
-                TextButton(onClick = {
+                LumaTextButton(onClick = {
                     onTime(LocalTime.of(time.hour, time.minute))
                     closeTime()
                 }, modifier = Modifier.testTag("habit_correction_select_time")) {
                     Text(stringResource(R.string.select_time))
                 }
             },
-            dismissButton = { TextButton(onClick = ::closeTime) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { LumaTextButton(onClick = ::closeTime) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }

@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaOutlinedTextField
@@ -19,7 +21,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -245,8 +247,8 @@ fun AppLockRecoveryRoute(
         titleTag = "app_lock_recovery_heading", navigationTag = "app_lock_recovery_back",
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
-                .testTag("screen_app_lock_recovery"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter)
+                .testTag("screen_app_lock_recovery"), verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                 Text(stringResource(R.string.app_lock_recovery_body))
                 if (snapshot.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
                     snapshot.policy?.enabled != true
@@ -261,7 +263,7 @@ fun AppLockRecoveryRoute(
                         visualTransformation = if (revealRecoveryCode) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth().testTag("app_lock_recovery_input"),
-                        trailingIcon = { TextButton(enabled = !busy, onClick = { revealRecoveryCode = !revealRecoveryCode }) {
+                        trailingIcon = { LumaTextButton(enabled = !busy, onClick = { revealRecoveryCode = !revealRecoveryCode }) {
                             Text(stringResource(if (revealRecoveryCode) R.string.app_lock_recovery_code_hide else R.string.app_lock_recovery_code_show))
                         } },
                     )
@@ -279,7 +281,7 @@ fun AppLockRecoveryRoute(
                         onClick = ::beginRecovery, modifier = Modifier.testTag("app_lock_recovery_continue")) {
                         Text(stringResource(R.string.app_lock_recovery_continue))
                     }
-                    TextButton(enabled = !busy, onClick = { eraseDialogStep = 1 },
+                    LumaTextButton(enabled = !busy, onClick = { eraseDialogStep = 1 },
                         modifier = Modifier.testTag("app_lock_forgot_no_code")) {
                         Text(stringResource(R.string.app_lock_no_recovery_code))
                     }
@@ -287,10 +289,10 @@ fun AppLockRecoveryRoute(
                     Text(stringResource(R.string.app_lock_recovery_replacement_body),
                         style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
                     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-                        Text(replacementCode.orEmpty(), Modifier.fillMaxWidth().padding(16.dp)
+                        Text(replacementCode.orEmpty(), Modifier.fillMaxWidth().padding(LumaUi.SectionPadding)
                             .testTag("app_lock_recovery_replacement_code"), style = MaterialTheme.typography.titleMedium)
                     }
-                    TextButton(enabled = !busy, onClick = { clipboard.setText(AnnotatedString(replacementCode.orEmpty())) },
+                    LumaTextButton(enabled = !busy, onClick = { clipboard.setText(AnnotatedString(replacementCode.orEmpty())) },
                         modifier = Modifier.testTag("app_lock_recovery_copy_new")) {
                         Text(stringResource(R.string.app_lock_recovery_copy))
                     }
@@ -302,7 +304,7 @@ fun AppLockRecoveryRoute(
                         modifier = Modifier.testTag("app_lock_recovery_finish")) {
                         Text(stringResource(R.string.app_lock_recovery_finish))
                     }
-                    TextButton(enabled = !busy, onClick = { cancelPreparation(); clearSecrets(); onBack() }) {
+                    LumaTextButton(enabled = !busy, onClick = { cancelPreparation(); clearSecrets(); onBack() }) {
                         Text(stringResource(R.string.cancel))
                     }
                 }
@@ -315,16 +317,16 @@ fun AppLockRecoveryRoute(
         onDismissRequest = { eraseDialogStep = 0 },
         title = { Text(stringResource(R.string.app_lock_erase_title)) },
         text = { Text(stringResource(R.string.app_lock_erase_warning)) },
-        confirmButton = { TextButton(onClick = { eraseDialogStep = 2 }, modifier = Modifier.testTag("app_lock_erase_first_confirm")) {
+        confirmButton = { LumaTextButton(onClick = { eraseDialogStep = 2 }, modifier = Modifier.testTag("app_lock_erase_first_confirm")) {
             Text(stringResource(R.string.app_lock_erase_continue))
         } },
-        dismissButton = { TextButton(onClick = { eraseDialogStep = 0 }) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { LumaTextButton(onClick = { eraseDialogStep = 0 }) { Text(stringResource(R.string.cancel)) } },
     )
     if (eraseDialogStep == 2) LumaAlertDialog(
         onDismissRequest = { eraseDialogStep = 0 },
         title = { Text(stringResource(R.string.app_lock_erase_final_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 Text(stringResource(R.string.app_lock_erase_final_warning))
                 if (onForgottenResetConfirmed == null) {
                     AccessibleFeedback(stringResource(R.string.app_lock_erase_unavailable),
@@ -332,11 +334,11 @@ fun AppLockRecoveryRoute(
                 }
             }
         },
-        confirmButton = { TextButton(enabled = onForgottenResetConfirmed != null,
+        confirmButton = { LumaTextButton(enabled = onForgottenResetConfirmed != null,
             onClick = { eraseDialogStep = 0; onForgottenResetConfirmed?.invoke() },
             modifier = Modifier.testTag("app_lock_erase_final_confirm")) {
             Text(stringResource(R.string.app_lock_erase_final_confirm))
         } },
-        dismissButton = { TextButton(onClick = { eraseDialogStep = 0 }) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { LumaTextButton(onClick = { eraseDialogStep = 0 }) { Text(stringResource(R.string.cancel)) } },
     )
 }

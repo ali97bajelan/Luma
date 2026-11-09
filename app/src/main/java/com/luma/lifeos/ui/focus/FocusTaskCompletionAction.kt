@@ -1,12 +1,13 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
@@ -79,7 +80,7 @@ internal fun FocusTaskCompletionAction(
         ) onChanged()
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap), modifier = Modifier.fillMaxWidth()) {
         if (completionEligible) {
             when (visibleState.completionPhase) {
                 FocusTaskCompletionPhase.COMPLETED ->
@@ -109,7 +110,7 @@ internal fun FocusTaskCompletionAction(
             if (visibleState.completionPhase != FocusTaskCompletionPhase.COMPLETED &&
                 visibleState.completionPhase != FocusTaskCompletionPhase.MISSING
             ) {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         if (visibleState.pendingCompletion != null) {
                             onRetryCompletion(session.id, session.revision, taskId, currentGeneration)
@@ -148,7 +149,7 @@ internal fun FocusTaskCompletionAction(
             )
         }
         if (visibleState.unlinkPhase != FocusTaskUnlinkPhase.UNLINKED) {
-            TextButton(
+            LumaTextButton(
                 onClick = {
                     if (visibleState.pendingUnlink != null) {
                         onRetryUnlink(session.id, session.revision, taskId, currentGeneration)

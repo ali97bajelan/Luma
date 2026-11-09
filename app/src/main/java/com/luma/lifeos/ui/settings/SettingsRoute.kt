@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.settings
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.annotation.DrawableRes
@@ -34,8 +36,8 @@ fun SettingsRoute(backupAvailable: Boolean, privacyAvailable: Boolean, integrati
     ) { pagePadding ->
       LumaReadingPane(Modifier.fillMaxSize().padding(pagePadding)) {
        Column(Modifier.fillMaxSize().testTag("screen_settings")
-            .verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            .verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
             Text(stringResource(R.string.settings_hub_description))
             if (appLockAvailable) SettingsRow(R.string.app_lock_settings_title, R.string.app_lock_privacy_description,
                 "settings_app_lock", R.drawable.ic_settings_lock, onAppLock)
@@ -81,7 +83,7 @@ fun SettingsSectionPage(@StringRes title: Int, onBack: () -> Unit,
       LumaReadingPane(Modifier.fillMaxSize().padding(pagePadding)) {
        Column(Modifier.fillMaxSize().testTag(screenTag).verticalScroll(rememberScrollState())
             .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap), content = content)
       }
     }
 }

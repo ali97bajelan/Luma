@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
@@ -13,14 +14,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -119,7 +120,7 @@ internal fun FocusSettingsScreen(
             summary = shortcutsSummary,
             sectionTag = "focus_settings_shortcuts",
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 Text(stringResource(R.string.focus_settings_intro), style = MaterialTheme.typography.bodyLarge)
                 Text(
                     stringResource(R.string.focus_settings_profile_scope),
@@ -150,7 +151,7 @@ internal fun FocusSettingsScreen(
                         modifier = Modifier.semantics { heading() },
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    TextButton(
+                    LumaTextButton(
                         onClick = onRefresh,
                         modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp)
                             .testTag("focus_settings_refresh"),
@@ -201,14 +202,14 @@ internal fun FocusSettingsScreen(
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                                 .testTag("focus_settings_unavailable_$packageName"),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(stringResource(R.string.focus_settings_unavailable_app))
                                 Text(packageName, style = MaterialTheme.typography.bodySmall)
                             }
-                            TextButton(
+                            LumaTextButton(
                                 onClick = {
                                     onToggle(AllowedFocusApps.App(packageName, packageName), false)
                                 },
@@ -265,7 +266,7 @@ internal fun FocusSettingsDisclosure(
         if (expanded) R.string.focus_disclosure_expanded else R.string.focus_disclosure_collapsed,
     )
     Column(modifier = Modifier.fillMaxWidth().testTag(sectionTag)) {
-        TextButton(
+        LumaTextButton(
             onClick = { expanded = !expanded },
             modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
                 .testTag("${sectionTag}_toggle")
@@ -314,7 +315,7 @@ private fun AppChoiceRow(
             .testTag("focus_settings_app_${app.packageName}")
             .toggleable(value = selected, enabled = enabled, role = Role.Checkbox, onValueChange = onToggle)
             .padding(vertical = 4.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AppIcon(app.icon, app.label)
@@ -341,7 +342,7 @@ private fun AppIcon(icon: Drawable?, label: String) {
     } else {
         Surface(
             modifier = Modifier.size(40.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.secondaryContainer,
         ) {
             Box(contentAlignment = Alignment.Center) {

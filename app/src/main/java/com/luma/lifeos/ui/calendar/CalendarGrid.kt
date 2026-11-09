@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.calendar
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -90,7 +91,7 @@ internal fun CalendarGrid(
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val stacked = maxWidth < 500.dp || fontScale >= 1.5f
             if (stacked) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     Text(
                         monthLabel,
                         style = MaterialTheme.typography.titleLarge,
@@ -98,7 +99,7 @@ internal fun CalendarGrid(
                         modifier = Modifier.semantics { stateDescription = monthLabel }
                             .testTag("calendar_month_label"),
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         CalendarModeControl(state.mode, onSetMode, Modifier.fillMaxWidth())
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             CalendarPeriodButtons(state.mode, canPrevious, canNext, onMovePeriod)
@@ -185,7 +186,7 @@ private fun CalendarMarkerSourceStatus(
         ) {
             Text(stringResource(errorMessage), Modifier.weight(1f), color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
-            androidx.compose.material3.TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+            com.luma.lifeos.ui.common.LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.retry))
             }
         }
@@ -410,7 +411,7 @@ private fun MarkerDot(kind: CalendarMarkerKind, color: androidx.compose.ui.graph
 private fun CalendarMarkerLegend() {
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LegendItem(CalendarMarkerKind.TASK, MaterialTheme.colorScheme.primary, R.string.calendar_legend_tasks)

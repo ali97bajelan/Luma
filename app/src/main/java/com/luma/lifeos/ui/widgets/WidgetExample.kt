@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.widgets
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +32,7 @@ internal fun WidgetExample(kind: WidgetKind) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = 48.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(
@@ -73,7 +74,7 @@ internal fun WidgetExample(kind: WidgetKind) {
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 48.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     ) {
                         Text(stringResource(name), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         Text(stringResource(action), style = MaterialTheme.typography.labelLarge)

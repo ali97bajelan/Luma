@@ -25,7 +25,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.domain.habit.HabitDay
@@ -78,7 +78,7 @@ internal fun HabitProgressContent(day: HabitDay) {
     val progressText = stringResource(R.string.habit_progress, count, formattedTarget)
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         modifier = Modifier.fillMaxWidth()
             .semantics {
                 contentDescription = description
@@ -88,7 +88,7 @@ internal fun HabitProgressContent(day: HabitDay) {
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(progressText, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,

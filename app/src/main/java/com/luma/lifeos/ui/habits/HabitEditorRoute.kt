@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
 import com.luma.lifeos.ui.common.LumaFilterChip
@@ -29,11 +30,11 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.OutlinedButton
+import com.luma.lifeos.ui.common.LumaOutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -134,7 +135,7 @@ fun HabitEditorScreen(
                                 ?: R.string.habit_save_error
                         }
                         Text(stringResource(message), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_editor_error"))
-                        if (error == HabitEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                        if (error == HabitEditorError.LOAD) LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                     }
                     EditorActionRow { actionModifier ->
                         LumaPrimaryActionButton(
@@ -151,11 +152,11 @@ fun HabitEditorScreen(
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
+                    .padding(horizontal = LumaUi.PageGutter, vertical = LumaUi.SectionGap),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.GroupGap),
             ) {
                 if (state.loading) androidx.compose.material3.CircularProgressIndicator()
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     val nameError = state.fieldError?.takeIf {
                         it == HabitEditorFieldError.NAME_REQUIRED || it == HabitEditorFieldError.NAME_TOO_LONG
                     }?.let { stringResource(habitFieldErrorMessage(it)) }
@@ -238,10 +239,10 @@ fun HabitEditorScreen(
                             .testTag("habit_target"),
                     )
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     val startError = state.fieldError?.takeIf { it == HabitEditorFieldError.START_IN_PAST }
                         ?.let { stringResource(habitFieldErrorMessage(it)) }
-                    OutlinedButton(
+                    LumaOutlinedButton(
                         onClick = { choosingStart = true },
                         enabled = enabled && !state.editing,
                         shape = CircleShape,
@@ -260,7 +261,7 @@ fun HabitEditorScreen(
                         Text(it, color = colors.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                     Text(
                         stringResource(R.string.habit_weekdays),
                         style = MaterialTheme.typography.headlineSmall,
@@ -269,8 +270,8 @@ fun HabitEditorScreen(
                     Text(stringResource(R.string.habit_schedule_presets), style = MaterialTheme.typography.labelLarge)
                     val selectedPreset = schedulePreset(state.draft.weekdays)
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                         modifier = Modifier.testTag("habit_schedule_presets"),
                     ) {
                         HabitSchedulePreset.entries.forEach { preset ->
@@ -296,8 +297,8 @@ fun HabitEditorScreen(
                     val weekdaysError = state.fieldError?.takeIf { it == HabitEditorFieldError.WEEKDAYS_REQUIRED }
                         ?.let { stringResource(habitFieldErrorMessage(it)) }
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                         modifier = Modifier.semantics { weekdaysError?.let(::error) }.testTag("habit_weekdays"),
                     ) {
                         DayOfWeek.entries.forEach { day ->
@@ -334,7 +335,7 @@ fun HabitEditorScreen(
                             modifier = Modifier.testTag("habit_weekdays_error"))
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     state.effectiveDate?.let { effective ->
                         val futureStart = effective.isAfter(LocalDate.now(state.trackingZone ?: deviceZone))
                         val message = if (state.editing && !futureStart) R.string.habit_effective_tomorrow else R.string.habit_effective_start
@@ -350,12 +351,12 @@ fun HabitEditorScreen(
         LumaDatePickerDialog(
             onDismissRequest = { choosingStart = false },
             confirmButton = {
-            TextButton(enabled = picker.selectedDateMillis != null, onClick = {
+            LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { onStart(pickerLocalDate(it)) }
                 choosingStart = false
             }) { Text(stringResource(R.string.select_date)) }
             },
-            dismissButton = { TextButton(onClick = { choosingStart = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { LumaTextButton(onClick = { choosingStart = false }) { Text(stringResource(R.string.cancel)) } },
         ) {
             DatePicker(state = picker)
         }
@@ -363,8 +364,8 @@ fun HabitEditorScreen(
     if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.habit_discard_title)) },
         text = { Text(stringResource(R.string.habit_discard_body)) },
-        confirmButton = { TextButton(onClick = { discarding = false; onBack() }) { Text(stringResource(R.string.discard)) } },
-        dismissButton = { TextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
+        confirmButton = { LumaTextButton(onClick = { discarding = false; onBack() }) { Text(stringResource(R.string.discard)) } },
+        dismissButton = { LumaTextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
 }
 
 @StringRes

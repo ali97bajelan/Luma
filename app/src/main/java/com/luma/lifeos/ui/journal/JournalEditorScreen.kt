@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.journal
 
+import com.luma.lifeos.ui.common.LumaUi
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaInputChip
 
 import com.luma.lifeos.ui.common.LumaFilterChip
@@ -27,7 +31,7 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
+
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Tag
 import com.luma.lifeos.domain.model.JournalTextLimits
@@ -126,7 +130,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                 actionError?.let { AccessibleFeedback(it, Modifier.testTag("journal_error")) }
                 EditorActionRow(
                     secondaryAction = if (state.editing) { actionModifier ->
-                        TextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("journal_delete")) {
+                        LumaTextButton(enabled = enabled, onClick = { deleting = true }, modifier = actionModifier.testTag("journal_delete")) {
                             Text(stringResource(R.string.delete))
                         }
                     } else null,
@@ -141,8 +145,8 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
         }
     }) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 if (state.loading) CircularProgressIndicator()
                 state.error?.let { error ->
                     val message = stringResource(when (error) {
@@ -160,7 +164,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                         else -> true
                     }
                     if (showBodyError) AccessibleFeedback(message, Modifier.testTag("journal_error"))
-                    if (error == JournalEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                    if (error == JournalEditorError.LOAD) LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
                 if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled,
                     state.error == JournalEditorError.TIME, onTime)
@@ -211,14 +215,14 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                             }
                         },
                     ) {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             state.draft.tagNames.forEach { name ->
                                 LumaInputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
                                     label = { Text(stringResource(R.string.journal_remove_tag, name)) })
                             }
                         }
                         val tagFeedback = if (tagError || JournalTextField.TAG in state.textErrors) stringResource(R.string.journal_tag_size_error) else null
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             LumaOutlinedTextField(value = tagText, onValueChange = {
                                 val (updatedText, hasError) = reduceJournalTagInput(tagText, tagError, it)
                                 tagText = updatedText
@@ -233,11 +237,11 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                                 label = { Text(stringResource(R.string.journal_tag_name)) },
                                 modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester)
                                     .semantics { tagFeedback?.let { error(it) } }.testTag("journal_tag_input"))
-                            TextButton(enabled = enabled && tagText.isNotBlank(), onClick = {
+                            LumaTextButton(enabled = enabled && tagText.isNotBlank(), onClick = {
                                 addPendingTag()
                             }, modifier = Modifier.testTag("journal_add_tag")) { Text(stringResource(R.string.add)) }
                         }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }.forEach { tag ->
                                 LumaFilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) }, label = { Text(tag.name) })
                             }
@@ -245,7 +249,7 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
                     }
                 }
                 val disclosureState = stringResource(if (more) R.string.review_details_expanded else R.string.review_details_collapsed)
-                TextButton(onClick = { more = !more }, enabled = enabled && contextExpansionInitialized,
+                LumaTextButton(onClick = { more = !more }, enabled = enabled && contextExpansionInitialized,
                     modifier = Modifier.testTag("journal_more").semantics { stateDescription = disclosureState }) {
                     Text(stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details))
                 }
@@ -265,10 +269,10 @@ fun JournalEditorScreen(state: JournalEditorState, onCancel: () -> Unit, onSave:
         text = { Text(stringResource(R.string.journal_delete_body)) },
         confirmButton = { LumaDestructiveTextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("journal_confirm_delete")) {
             Text(stringResource(R.string.delete)) } },
-        dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { LumaTextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } })
     if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.journal_discard_title)) },
         text = { Text(stringResource(R.string.journal_discard_body)) },
-        confirmButton = { TextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
-        dismissButton = { TextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
+        confirmButton = { LumaTextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
+        dismissButton = { LumaTextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
 }

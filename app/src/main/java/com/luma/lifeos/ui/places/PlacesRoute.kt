@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.places
 
+import com.luma.lifeos.ui.common.LumaUi
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.activity.compose.BackHandler
@@ -57,13 +61,13 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
     val observation = remember(repository, retry) { observePlaces(repository) }
     val state by observation.collectAsStateWithLifecycle(PlacesState.Loading)
     val empty = (state as? PlacesState.Data)?.places?.isEmpty() == true
-    LazyColumn(modifier.fillMaxSize().testTag("screen_places"), contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyColumn(modifier.fillMaxSize().testTag("screen_places"), contentPadding = PaddingValues(LumaUi.PageGutter),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
         item {
             LumaSectionSurface {
              Column(Modifier.testTag(if (state is PlacesState.Data) "places_ready" else "places_header"),
-                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (onBack != null) TextButton(onClick = onBack, modifier = Modifier.testTag("places_back")) { Text(stringResource(R.string.back)) }
+                 verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                if (onBack != null) LumaTextButton(onClick = onBack, modifier = Modifier.testTag("places_back")) { Text(stringResource(R.string.back)) }
                 Text(stringResource(R.string.places_intro))
                 LumaOutlinedTextField(value = activeQuery, onValueChange = updateQuery,
                     label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
@@ -76,7 +80,7 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
             PlacesState.Loading -> item { CircularProgressIndicator() }
             PlacesState.Error -> item {
                 Text(stringResource(R.string.places_load_error), color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
             is PlacesState.Data -> {
                 if (current.places.isEmpty()) item {
@@ -89,11 +93,11 @@ fun PlacesListContent(repository: PlaceRepository, onCreate: () -> Unit, onPlace
                 }
                 items(filteredPlaces, key = { it.id.toString() }) { place ->
                     LumaClickableListSurface(onClick = { onPlace(place.id) }, modifier = Modifier.testTag("place_${place.id}")) {
-                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        Row(Modifier.fillMaxWidth().padding(LumaUi.SectionPadding), horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Icon(painterResource(R.drawable.ic_nav_places), contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                                 Text(place.name, style = MaterialTheme.typography.titleMedium)
                                 place.note?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
                             }
@@ -131,14 +135,14 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
         },
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(Modifier.fillMaxSize().testTag("place_detail_content"), contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            LazyColumn(Modifier.fillMaxSize().testTag("place_detail_content"), contentPadding = PaddingValues(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                 when (val current = state) {
                     PlaceHistoryState.Loading -> item { CircularProgressIndicator() }
                     PlaceHistoryState.Missing -> item { Text(stringResource(R.string.place_missing), modifier = Modifier.testTag("place_detail_missing")) }
                     PlaceHistoryState.Error -> item {
                         Text(stringResource(R.string.places_load_error), color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                        LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
                     is PlaceHistoryState.Data -> {
                         val events = current.history.events.sortedWith(
@@ -162,7 +166,7 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
                         }
                         items(events, key = { it.event.id.toString() }) { record ->
                             Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                                 Text(record.event.occurredAt.atZone(zone)
                                     .format(displayTime.dateTime(FormatStyle.MEDIUM)),
                                     style = MaterialTheme.typography.labelMedium,

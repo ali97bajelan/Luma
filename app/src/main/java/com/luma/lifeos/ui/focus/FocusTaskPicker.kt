@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,10 +13,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.luma.lifeos.ui.common.LumaOutlinedButton
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -87,13 +88,13 @@ internal fun FocusTaskPickerRoute(
         modifier = Modifier.fillMaxSize().testTag("focus_task_picker"),
     ) { pagePadding ->
         Column(
-            Modifier.fillMaxSize().padding(pagePadding).padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxSize().padding(pagePadding).padding(horizontal = LumaUi.PageGutter, vertical = LumaUi.SectionGap),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
         ) {
             if (!isAuthorized) {
                 Text(stringResource(R.string.focus_task_picker_access_needed))
             } else {
-                OutlinedTextField(
+                LumaOutlinedTextField(
                     value = query,
                     onValueChange = { value ->
                         query = value
@@ -115,14 +116,14 @@ internal fun FocusTaskPickerRoute(
                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                                 .testTag("focus_task_picker_error"),
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             if (visibleState.hasPrevious) {
-                                TextButton(
+                                LumaTextButton(
                                     onClick = { offset = (offset - TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(0) },
                                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_previous"),
                                 ) { Text(stringResource(R.string.focus_task_picker_previous)) }
                             }
-                            TextButton(
+                            LumaTextButton(
                                 onClick = { retry += 1 },
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_retry"),
                             ) { Text(stringResource(R.string.retry)) }
@@ -137,7 +138,7 @@ internal fun FocusTaskPickerRoute(
                             modifier = Modifier.testTag("focus_task_picker_empty"),
                         )
                         if (visibleState.hasPrevious) {
-                            TextButton(
+                            LumaTextButton(
                                 onClick = { offset = (offset - TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(0) },
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_previous"),
                             ) { Text(stringResource(R.string.focus_task_picker_previous)) }
@@ -158,10 +159,10 @@ internal fun FocusTaskPickerRoute(
                         )
                         LazyColumn(
                             Modifier.weight(1f).fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                         ) {
                             items(page.items, key = { it.id.toString() }) { task ->
-                                OutlinedButton(
+                                LumaOutlinedButton(
                                     onClick = { onSelectTask(task.id) },
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
                                         .testTag("focus_task_picker_item_${task.id}"),
@@ -174,12 +175,12 @@ internal fun FocusTaskPickerRoute(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            TextButton(
+                            LumaTextButton(
                                 onClick = { offset = (offset - TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(0) },
                                 enabled = visibleState.hasPrevious,
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_previous"),
                             ) { Text(stringResource(R.string.focus_task_picker_previous)) }
-                            TextButton(
+                            LumaTextButton(
                                 onClick = { offset += TODO_DEFAULT_PAGE_SIZE },
                                 enabled = visibleState.hasNext,
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_next"),

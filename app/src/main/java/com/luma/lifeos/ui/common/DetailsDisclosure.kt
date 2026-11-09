@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,11 +23,11 @@ fun DetailsDisclosure(@StringRes title: Int, tag: String, content: @Composable (
     var expanded by rememberSaveable { mutableStateOf(false) }
     val state = stringResource(if (expanded) R.string.review_details_expanded else R.string.review_details_collapsed)
     Column {
-        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag(tag)
+        LumaTextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag(tag)
             .semantics { stateDescription = state }) {
             Text(if (expanded) stringResource(R.string.review_hide_details, stringResource(title))
                 else stringResource(title))
         }
-        if (expanded) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
+        if (expanded) Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) { content() }
     }
 }

@@ -1,5 +1,10 @@
 package com.luma.lifeos.ui.backup
 
+import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaOutlinedButton
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
@@ -290,7 +295,7 @@ fun BackupSettingsCard(
             text = { Text(stringResource(R.string.backup_paused_focus_message)) },
             confirmButton = {
                 Column {
-                    TextButton(
+                    LumaTextButton(
                         onClick = {
                             showPausedExportDisclosure = false
                             if (currentSessionIsPaused) requestSensitiveStep(
@@ -299,7 +304,7 @@ fun BackupSettingsCard(
                         },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("backup_stop_focus_export"),
                     ) { Text(stringResource(R.string.backup_stop_focus_export)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = {
                             showPausedExportDisclosure = false
                             val sessionId = openFocusSession?.id
@@ -309,7 +314,7 @@ fun BackupSettingsCard(
                         },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("backup_exclude_paused_focus"),
                     ) { Text(stringResource(R.string.backup_exclude_paused_focus)) }
-                    TextButton(onClick = { showPausedExportDisclosure = false },
+                    LumaTextButton(onClick = { showPausedExportDisclosure = false },
                         modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(stringResource(R.string.cancel))
                     }
@@ -329,7 +334,7 @@ fun BackupSettingsCard(
             title = { Text(stringResource(title)) },
             text = { Text(stringResource(message)) },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         scope.launch {
                             val departure = vm.cancelAndAwait()
@@ -349,7 +354,7 @@ fun BackupSettingsCard(
                 }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = { leavePromptFor = null },
                     enabled = !cancelling,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("backup_stay"),
@@ -364,7 +369,7 @@ fun BackupSettingsCard(
             title = { Text(stringResource(R.string.backup_restore_in_progress_title)) },
             text = { Text(stringResource(R.string.backup_restore_in_progress_message)) },
             confirmButton = {
-                TextButton(onClick = { showRestoreInProgress = false }, modifier = Modifier.heightIn(min = 48.dp)) {
+                LumaTextButton(onClick = { showRestoreInProgress = false }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.backup_stay))
                 }
             },
@@ -377,18 +382,18 @@ fun BackupSettingsCard(
         text = { Text(stringResource(R.string.backup_restore_lock_choice_body)) },
         confirmButton = {
             Column {
-                TextButton(onClick = {
+                LumaTextButton(onClick = {
                     showRestoreProtectionChoice = false
                     restoreWithoutProtectionConfirmed = true
                     onAppLockSetup()
                 }) { Text(stringResource(R.string.backup_restore_setup_lock)) }
-                TextButton(onClick = {
+                LumaTextButton(onClick = {
                     showRestoreProtectionChoice = false
                     restoreWithoutProtectionConfirmed = false
                 }) { Text(stringResource(R.string.backup_restore_without_lock)) }
             }
         },
-        dismissButton = { TextButton(onClick = { showRestoreProtectionChoice = false }) {
+        dismissButton = { LumaTextButton(onClick = { showRestoreProtectionChoice = false }) {
             Text(stringResource(R.string.cancel))
         } },
     )
@@ -416,7 +421,7 @@ fun BackupSettingsCard(
         onDismissRequest = { sensitiveError = false },
         title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
         text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
-        confirmButton = { TextButton(onClick = { sensitiveError = false }) { Text(stringResource(R.string.cancel)) } },
+        confirmButton = { LumaTextButton(onClick = { sensitiveError = false }) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -434,7 +439,7 @@ internal fun BackupCardContent(
 ) {
     val displayTime = rememberDisplayTimePolicy()
     LumaSectionSurface(Modifier.testTag("backup_settings")) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
             Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.backup_description))
             Text(stringResource(R.string.backup_private))
@@ -446,7 +451,7 @@ internal fun BackupCardContent(
                 modifier = Modifier.testTag("backup_export")) {
                 Text(stringResource(R.string.backup_export))
             }
-            OutlinedButton(onClick = onRestore, enabled = !state.busy && state.preview == null,
+            LumaOutlinedButton(onClick = onRestore, enabled = !state.busy && state.preview == null,
                 modifier = Modifier.testTag("backup_choose")) {
                 Text(stringResource(R.string.backup_choose))
             }
@@ -479,7 +484,7 @@ internal fun BackupCardContent(
                             .heightIn(max = maxHeight * 0.42f)
                             .verticalScroll(rememberScrollState())
                             .testTag("backup_warning_scroll"),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                     ) {
                         Text(stringResource(R.string.backup_preview,
                             NumberFormat.getIntegerInstance().format(preview.eventCount),
@@ -499,23 +504,23 @@ internal fun BackupCardContent(
             confirmButton = {
                 if (openFocusSession != null) {
                     Column {
-                        TextButton(onClick = { onConfirmRestore(false) },
+                        LumaTextButton(onClick = { onConfirmRestore(false) },
                             enabled = !restoreActionInProgress,
                             modifier = Modifier.heightIn(min = 48.dp).testTag("backup_stop_focus_replace")) {
                             Text(stringResource(R.string.backup_stop_focus_replace))
                         }
-                        TextButton(onClick = { onConfirmRestore(true) },
+                        LumaTextButton(onClick = { onConfirmRestore(true) },
                             enabled = !restoreActionInProgress,
                             modifier = Modifier.heightIn(min = 48.dp).testTag("backup_discard_focus_replace")) {
                             Text(stringResource(R.string.backup_discard_focus_replace))
                         }
-                        TextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
+                        LumaTextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
                             modifier = Modifier.heightIn(min = 48.dp).testTag("backup_cancel")) {
                             Text(stringResource(R.string.cancel))
                         }
                     }
                 } else {
-                    TextButton(onClick = { onConfirmRestore(null) }, enabled = !restoreActionInProgress,
+                    LumaTextButton(onClick = { onConfirmRestore(null) }, enabled = !restoreActionInProgress,
                         modifier = Modifier.heightIn(min = 48.dp)
                         .testTag("backup_confirm")) {
                         Text(stringResource(R.string.backup_replace))
@@ -524,7 +529,7 @@ internal fun BackupCardContent(
             },
             dismissButton = if (openFocusSession == null) {
                 {
-                    TextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
+                    LumaTextButton(onClick = onCancelRestore, enabled = !restoreActionInProgress,
                         modifier = Modifier.heightIn(min = 48.dp)
                             .testTag("backup_cancel")) {
                         Text(stringResource(R.string.cancel))

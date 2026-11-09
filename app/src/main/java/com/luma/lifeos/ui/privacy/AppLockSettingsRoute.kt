@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
 import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
@@ -28,7 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -533,7 +534,7 @@ fun AppLockSettingsRoute(
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
                 Modifier.fillMaxSize().verticalScroll(settingsScrollState)
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(horizontal = LumaUi.PageGutter, vertical = LumaUi.SectionGap)
                     .testTag("screen_app_lock_settings"),
                 verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
@@ -545,10 +546,10 @@ fun AppLockSettingsRoute(
                         style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
                     Text(stringResource(R.string.app_lock_recovery_code_body))
                     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-                        Text(recoveryDisplay.orEmpty(), Modifier.fillMaxWidth().padding(16.dp)
+                        Text(recoveryDisplay.orEmpty(), Modifier.fillMaxWidth().padding(LumaUi.SectionPadding)
                             .testTag("app_lock_recovery_code"), style = MaterialTheme.typography.titleMedium)
                     }
-                    TextButton(enabled = !busy, onClick = { clipboard.setText(AnnotatedString(recoveryDisplay.orEmpty())) },
+                    LumaTextButton(enabled = !busy, onClick = { clipboard.setText(AnnotatedString(recoveryDisplay.orEmpty())) },
                         modifier = Modifier.testTag("app_lock_recovery_copy")) {
                         Text(stringResource(R.string.app_lock_recovery_copy))
                     }
@@ -561,7 +562,7 @@ fun AppLockSettingsRoute(
                         modifier = Modifier.testTag("app_lock_recovery_confirm")) {
                         Text(stringResource(R.string.app_lock_recovery_continue))
                     }
-                    TextButton(enabled = !busy, onClick = { cancelPendingRecovery(); clearSecrets(); onBack() }) {
+                    LumaTextButton(enabled = !busy, onClick = { cancelPendingRecovery(); clearSecrets(); onBack() }) {
                         Text(stringResource(R.string.cancel))
                     }
                 } else if (storedPolicy.enabled && !opened) {
@@ -586,13 +587,13 @@ fun AppLockSettingsRoute(
                         modifier = Modifier.testTag("app_lock_settings_auth")) {
                         Text(stringResource(R.string.app_lock_unlock_settings))
                     }
-                    TextButton(enabled = !busy, onClick = {
+                    LumaTextButton(enabled = !busy, onClick = {
                         clearSecrets()
                         onForgotPassword()
                     }, modifier = Modifier.testTag("app_lock_settings_forgot_password")) {
                         Text(stringResource(R.string.app_lock_forgot_password))
                     }
-                    TextButton(onClick = onBack, enabled = !busy) { Text(stringResource(R.string.cancel)) }
+                    LumaTextButton(onClick = onBack, enabled = !busy) { Text(stringResource(R.string.cancel)) }
                 } else if (!storedPolicy.enabled) {
                     Text(stringResource(R.string.app_lock_setup_body))
                     PolicyControls(policy, enabled = !busy, onPolicy = { policy = it })
@@ -709,15 +710,15 @@ fun AppLockSettingsRoute(
                         modifier = Modifier.fillMaxWidth().height(52.dp).testTag("app_lock_save_policy")) {
                         Text(stringResource(R.string.app_lock_save_policy))
                     }
-                    TextButton(enabled = !busy, onClick = { action = LockSettingsAction.RECOVERY },
+                    LumaTextButton(enabled = !busy, onClick = { action = LockSettingsAction.RECOVERY },
                         modifier = Modifier.testTag("app_lock_replace_recovery")) {
                         Text(stringResource(R.string.app_lock_replace_recovery))
                     }
-                    TextButton(enabled = !busy, onClick = { action = LockSettingsAction.DISABLE },
+                    LumaTextButton(enabled = !busy, onClick = { action = LockSettingsAction.DISABLE },
                         modifier = Modifier.testTag("app_lock_disable")) {
                         Text(stringResource(R.string.app_lock_disable))
                     }
-                    TextButton(enabled = !busy, onClick = { coordinator.lockNow(); onBack() },
+                    LumaTextButton(enabled = !busy, onClick = { coordinator.lockNow(); onBack() },
                         modifier = Modifier.testTag("app_lock_lock_now")) {
                         Text(stringResource(R.string.app_lock_lock_now))
                     }
@@ -740,7 +741,7 @@ fun AppLockSettingsRoute(
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 ) {
                     if (selected != LockSettingsAction.PASSWORD) {
                         when (descriptorResult) {
@@ -769,14 +770,14 @@ fun AppLockSettingsRoute(
                     }
                 }
             },
-            confirmButton = { TextButton(enabled =
+            confirmButton = { LumaTextButton(enabled =
                 (selected == LockSettingsAction.PASSWORD || actionEditor?.isComplete == true) &&
                     (selected != LockSettingsAction.PASSWORD ||
                         (passwordChangeProof != null && replacementEditor.isComplete)) && !busy,
                 onClick = ::submitAction, modifier = Modifier.testTag("app_lock_action_confirm")) {
                 Text(stringResource(R.string.app_lock_confirm_action))
             } },
-            dismissButton = { TextButton(enabled = !busy, onClick = { action = null; clearSecrets() }) {
+            dismissButton = { LumaTextButton(enabled = !busy, onClick = { action = null; clearSecrets() }) {
                 Text(stringResource(R.string.cancel))
             } },
         )
@@ -787,7 +788,7 @@ fun AppLockSettingsRoute(
 @Composable
 private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (LockPolicy) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Text(
                 stringResource(R.string.app_lock_coverage),
                 style = MaterialTheme.typography.titleMedium,
@@ -799,7 +800,7 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.padding(horizontal = LumaUi.PageGutter, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     LockPolicyChoice(
@@ -809,7 +810,7 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
                         onClick = { onPolicy(policy.copy(coverage = LockCoverage.WHOLE_APP, sections = emptySet())) },
                         testTag = "app_lock_coverage_whole",
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         LockPolicyChoice(
                             selected = policy.coverage == LockCoverage.SELECTED,
                             enabled = enabled,
@@ -823,8 +824,8 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
                         if (policy.coverage == LockCoverage.SELECTED) {
                             FlowRow(
                                 modifier = Modifier.padding(start = 44.dp, bottom = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                             ) {
                                 LockSection.entries.filterNot { it == LockSection.JOURNAL }.forEach { section ->
                                     val selected = section in policy.sections
@@ -855,7 +856,7 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Text(
                 stringResource(R.string.app_lock_relock),
                 style = MaterialTheme.typography.titleMedium,
@@ -867,7 +868,7 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.padding(horizontal = LumaUi.PageGutter, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     RelockMode.entries.forEach { mode ->

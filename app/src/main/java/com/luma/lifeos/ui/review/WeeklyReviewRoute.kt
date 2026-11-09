@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
 import androidx.compose.foundation.layout.*
@@ -7,6 +8,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -223,7 +225,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
             LumaReadingPane(Modifier.fillMaxSize()) {
                 LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"), state = if (report == null) placeholderListState else listState,
                     contentPadding = PaddingValues(start = 20.dp, top = 24.dp, end = 20.dp, bottom = captureBottomClearance),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                     item(key = "heading") {
                         ReviewHeader(period,
                             onPrevious = { selected = period.current.start.minusWeeks(1).toString() },
@@ -234,7 +236,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         WeeklyReviewState.Loading -> item(key = "loading") { CircularProgressIndicator() }
                         WeeklyReviewState.Error -> item(key = "error") {
                             AccessibleFeedback(stringResource(R.string.review_error))
-                            TextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_retry")) { Text(stringResource(R.string.retry)) }
+                            LumaTextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_retry")) { Text(stringResource(R.string.retry)) }
                         }
                         is WeeklyReviewState.Data -> {
                             val report = current.report
@@ -282,7 +284,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                             }
                         }
                         if (empty) item(key = "empty") {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                                 Text(stringResource(R.string.review_empty), modifier = Modifier.testTag("review_empty"))
                                 if (b.records > 0) Text(
                                     stringResource(R.string.review_empty_previous, reviewNumber(b.records)),
@@ -297,7 +299,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         item(key = "memories") {
                             ReviewSection(R.string.review_memories, R.drawable.ic_bookmark_outline, "memories") {
                                 MemoryHighlights(repository, period, onEvent, onMemory)
-                                if (a.memories > 0) TextButton(onClick = { onSources(period.current, ReviewMetric(ReviewMetricKind.MEMORIES)) },
+                                if (a.memories > 0) LumaTextButton(onClick = { onSources(period.current, ReviewMetric(ReviewMetricKind.MEMORIES)) },
                                     modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.review_all_memories)) }
                             }
                         }
@@ -335,10 +337,10 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 override fun isSelectableYear(year: Int) = year <= today.year
             })
         LumaDatePickerDialog(onDismissRequest = { picking = false },
-            confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
+            confirmButton = { LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { selected = minOf(pickerDate(it), today).toString() }; picking = false
             }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.select_date)) } },
-            dismissButton = { TextButton(onClick = { picking = false }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
+            dismissButton = { LumaTextButton(onClick = { picking = false }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
     }
 }
 
@@ -358,7 +360,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         explanation = R.string.review_mood_explanation) {
         if (report.current.mood == null && report.previous.mood == null) {
             ReviewEmpty(R.string.metric_no_check_ins_week, "review_mood_empty")
-            TextButton(onClick = onCheckIn, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_mood_checkin")) {
+            LumaTextButton(onClick = onCheckIn, modifier = Modifier.defaultMinSize(minHeight = 48.dp).testTag("review_mood_checkin")) {
                 Text(stringResource(R.string.review_checkin_action))
             }
         } else ReviewValueGroup {
@@ -386,7 +388,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 report.current.moodDays.filter { it.mood != null }.forEach { day ->
                     Text(day.date.format(format))
                     Text(reviewScale(day.mood?.score, stringResource(R.string.metric_no_check_ins_week)))
-                    TextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) },
+                    LumaTextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) },
                         modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                         Text(stringResource(R.string.review_view_sources))
                     }
@@ -417,7 +419,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                 reviewChange(a.toDouble(), b.toDouble()), "${kind.name.lowercase()}_${name.name.id}",
                 if (a > 0) ({ onSources(period.current, metric) }) else null,
                 if (b > 0) ({ onSources(period.previous, metric) }) else null)
-            onDetails?.let { TextButton(onClick = { it(name.name.id) }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+            onDetails?.let { LumaTextButton(onClick = { it(name.name.id) }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                 Text(stringResource(R.string.review_catalog_detail))
             } }
         }
@@ -433,7 +435,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         ReviewSourcesState.Loading -> CircularProgressIndicator()
         ReviewSourcesState.Error -> {
             AccessibleFeedback(stringResource(R.string.review_error))
-            TextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.retry)) }
+            LumaTextButton(onClick = { retry++ }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.retry)) }
         }
         is ReviewSourcesState.Data -> {
             if (current.page.records.isEmpty()) ReviewEmpty(R.string.review_memory_empty_short, "review_memories_empty")

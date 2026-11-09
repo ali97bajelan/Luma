@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.timeline
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
@@ -10,6 +11,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -83,20 +85,20 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
         }
         LumaReadingPane(modifier = Modifier.fillMaxSize()) {
             LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("screen_timeline"),
-                contentPadding = PaddingValues(start = 20.dp, top = 24.dp, end = 20.dp, bottom = captureBottomClearance),
+                contentPadding = PaddingValues(start = LumaUi.PageGutter, top = 24.dp, end = LumaUi.PageGutter, bottom = captureBottomClearance),
             ) {
                 item(key = "header") {
                     Column(
                         modifier = Modifier.padding(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     ) {
                         TimelinePageHeader(onSearch)
                         LumaSectionSurface(modifier = Modifier.testTag("timeline_date_ribbon")) {
                             DayNavigation(date, onSelectDate, onToday)
                             FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                             ) {
                                 if (state.loaded) Text(entryLogCounts(state.eventCount, state.habitLogCount),
                                     style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("timeline_counts"))
@@ -126,7 +128,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                 if (state.error != null) item(key = "error") {
                     Column(Modifier.testTag("timeline_error").padding(bottom = 16.dp)) {
                         AccessibleFeedback(stringResource(R.string.timeline_error), Modifier.testTag("timeline_error_message"))
-                        TextButton(onClick = pager::retry) { Text(stringResource(R.string.retry)) }
+                        LumaTextButton(onClick = pager::retry) { Text(stringResource(R.string.retry)) }
                     }
                 }
                 if (state.loaded && state.items.isEmpty()) item(key = "empty") {
@@ -136,7 +138,7 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     }
                 }
                 if (state.canLoadEarlier) item(key = "later") {
-                    TextButton(enabled = !state.busy, onClick = pager::loadEarlier,
+                    LumaTextButton(enabled = !state.busy, onClick = pager::loadEarlier,
                         modifier = Modifier.padding(bottom = 16.dp).testTag("timeline_later")) {
                         Text(stringResource(R.string.timeline_later))
                     }
@@ -167,13 +169,13 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                     }
                 }
                 if (state.busy && state.loaded) item(key = "busy") {
-                    Box(Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().padding(vertical = LumaUi.SectionGap), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
                 if (state.canLoadLater) item(key = "earlier") {
-                    TextButton(enabled = !state.busy, onClick = pager::loadLater,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 16.dp).testTag("timeline_earlier")) {
+                    LumaTextButton(enabled = !state.busy, onClick = pager::loadLater,
+                        modifier = Modifier.padding(top = LumaUi.SectionGap, bottom = 16.dp).testTag("timeline_earlier")) {
                         Text(stringResource(R.string.timeline_earlier))
                     }
                 }
@@ -215,7 +217,7 @@ private fun TimelineRailItem(
                     }
                 }
                 .padding(bottom = if (index < itemCount - 1) 16.dp else 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             verticalAlignment = Alignment.Top,
         ) {
             Box(
@@ -264,15 +266,15 @@ private fun TimelinePageHeader(onSearch: (() -> Unit)?) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 AppSectionHeading(stringResource(R.string.timeline),
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                TextButton(onClick = onSearch, modifier = Modifier.heightIn(min = 48.dp).testTag("timeline_search")) {
+                LumaTextButton(onClick = onSearch, modifier = Modifier.heightIn(min = 48.dp).testTag("timeline_search")) {
                     Text(stringResource(R.string.search_entries_title))
                 }
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 AppSectionHeading(stringResource(R.string.timeline), style = MaterialTheme.typography.titleLarge)
                 onSearch?.let {
-                    TextButton(onClick = it, modifier = Modifier.heightIn(min = 48.dp).testTag("timeline_search")) {
+                    LumaTextButton(onClick = it, modifier = Modifier.heightIn(min = 48.dp).testTag("timeline_search")) {
                         Text(stringResource(R.string.search_entries_title))
                     }
                 }

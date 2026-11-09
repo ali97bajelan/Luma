@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaCard
 
 import androidx.compose.foundation.clickable
@@ -17,7 +18,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -60,7 +61,7 @@ internal fun WeeklyFocusCard(
 ) {
     LumaCard(Modifier.fillMaxWidth().testTag("review_focus_card")) {
         Column(
-            Modifier.fillMaxWidth().padding(16.dp),
+            Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
@@ -82,13 +83,13 @@ internal fun WeeklyFocusCard(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     )
-                    TextButton(onClick = onRetry, modifier = Modifier.testTag("review_focus_retry")) {
+                    LumaTextButton(onClick = onRetry, modifier = Modifier.testTag("review_focus_retry")) {
                         Text(stringResource(R.string.retry))
                     }
                 }
                 FocusReportState.NeedsUnlock -> {
                     Text(stringResource(R.string.app_lock_gate_body))
-                    TextButton(
+                    LumaTextButton(
                         onClick = onRequestUnlock,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_unlock"),
                     ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -132,11 +133,11 @@ internal fun WeeklyFocusCard(
                                 .testTag("review_focus_goal_error"),
                         )
                         FocusGoalReportState.NeedsUnlock -> Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(stringResource(R.string.app_lock_gate_body), modifier = Modifier.weight(1f))
-                            TextButton(
+                            LumaTextButton(
                                 onClick = onRequestUnlock,
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_goal_unlock"),
                             ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -242,7 +243,7 @@ internal fun WeeklyFocusCard(
                                         },
                                     ),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                                 ) {
                                     val dayLabel = day.date.format(
                                         DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
@@ -322,16 +323,16 @@ internal fun WeeklyFocusCard(
                     if (value.comparison.status == FocusComparisonStatus.PREVIOUS_PERIOD_EMPTY) {
                         Text(stringResource(R.string.focus_previous_period_empty))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = onCurrentHistory, modifier = Modifier.testTag("review_focus_current_history")) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                        LumaTextButton(onClick = onCurrentHistory, modifier = Modifier.testTag("review_focus_current_history")) {
                             Text(stringResource(R.string.focus_view_current_sources))
                         }
-                        TextButton(onClick = onPreviousHistory, modifier = Modifier.testTag("review_focus_previous_history")) {
+                        LumaTextButton(onClick = onPreviousHistory, modifier = Modifier.testTag("review_focus_previous_history")) {
                             Text(stringResource(R.string.focus_view_previous_sources))
                         }
                     }
                     onPlanAnotherSession?.let { onPlan ->
-                        TextButton(
+                        LumaTextButton(
                             onClick = onPlan,
                             modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                                 .testTag("review_focus_plan_another"),
@@ -359,7 +360,7 @@ private fun FocusReviewContextItem(
 
         is FocusReviewContextState.Loading -> {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Text(
                     stringResource(R.string.focus_review_latest_work),
                     style = MaterialTheme.typography.titleSmall,
@@ -374,7 +375,7 @@ private fun FocusReviewContextItem(
 
         is FocusReviewContextState.Error -> {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Text(
                     stringResource(R.string.focus_review_latest_work),
                     style = MaterialTheme.typography.titleSmall,
@@ -385,7 +386,7 @@ private fun FocusReviewContextItem(
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                         .testTag("review_focus_recent_context_error"),
                 )
-                TextButton(
+                LumaTextButton(
                     onClick = onRetry,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_recent_context_retry"),
                 ) { Text(stringResource(R.string.retry)) }
@@ -394,13 +395,13 @@ private fun FocusReviewContextItem(
 
         is FocusReviewContextState.NeedsUnlock -> {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Text(
                     stringResource(R.string.focus_review_latest_work),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(stringResource(R.string.app_lock_gate_body), style = MaterialTheme.typography.bodySmall)
-                TextButton(
+                LumaTextButton(
                     onClick = onRequestUnlock,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_recent_context_unlock"),
                 ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -409,7 +410,7 @@ private fun FocusReviewContextItem(
 
         is FocusReviewContextState.Ready -> {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Text(
                     stringResource(R.string.focus_review_latest_work),
                     style = MaterialTheme.typography.titleSmall,
@@ -423,7 +424,7 @@ private fun FocusReviewContextItem(
                 state.session.reflection.nextStep?.takeIf(String::isNotBlank)?.let { nextStep ->
                     Text(stringResource(R.string.focus_reflection_saved_next_step, nextStep))
                 }
-                TextButton(
+                LumaTextButton(
                     onClick = { onViewSession(state.session.id) },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("review_focus_recent_context_view"),
                 ) { Text(stringResource(R.string.focus_review_view_session)) }

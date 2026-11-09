@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui.memory
 
+import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,7 +44,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
          Box(Modifier.fillMaxSize()) {
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = captureBottomClearance),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                 item {
                     AppSectionHeading(stringResource(R.string.memory_review_heading), style = MaterialTheme.typography.headlineLarge)
                     Text(stringResource(R.string.memory_review_intro))
@@ -53,11 +56,11 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                     MemoryReviewState.Empty -> item { Text(stringResource(R.string.memory_review_empty)) }
                     MemoryReviewState.Error -> item {
                         Text(stringResource(R.string.memory_review_error), color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                        LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
                     is MemoryReviewState.Data -> items(current.records, key = { it.event.id.toString() }) { record ->
                         LumaListSurface {
-                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                                 record.memory?.let { MemoryStatus(it) }
                                 LinkedPeople(record.people)
                                 LinkedPlace(record.place)
@@ -76,7 +79,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                                 }
                                 if (record.canPromoteToMemory ||
                                     (record.event.type == EventType.MEMORY && record.event.isEditable && record.memory != null)) {
-                                    TextButton(onClick = { onMemory(record.event.id) }) { Text(stringResource(R.string.memory_edit)) }
+                                    LumaTextButton(onClick = { onMemory(record.event.id) }) { Text(stringResource(R.string.memory_edit)) }
                                 }
                             }
                         }

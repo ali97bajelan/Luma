@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.journal
 
+import com.luma.lifeos.ui.common.LumaUi
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,7 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -67,16 +71,16 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
         },
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
-            .testTag("journal_detail_content"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter)
+            .testTag("journal_detail_content"), verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                 if (loading) CircularProgressIndicator()
                 if (failed) {
                     Text(stringResource(R.string.journal_load_error), color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                    LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
                 if (!loading) record?.let { entry ->
                     val journal = requireNotNull(entry.journal)
-                    if (entry.memory != null) TextButton(onClick = onShare) { Text(stringResource(R.string.share_action)) }
+                    if (entry.memory != null) LumaTextButton(onClick = onShare) { Text(stringResource(R.string.share_action)) }
                     Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
                     Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM)))
                     if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
@@ -90,7 +94,7 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
                         MemoryStatus(it)
                         it.note?.let { note -> Text(note) }
                     }
-                    if (entry.canPromoteToMemory) TextButton(onClick = onMemory, modifier = Modifier.testTag("journal_memory")) {
+                    if (entry.canPromoteToMemory) LumaTextButton(onClick = onMemory, modifier = Modifier.testTag("journal_memory")) {
                         Text(stringResource(if (entry.memory == null) R.string.memory_promote else R.string.memory_edit))
                     }
                     PhotoGallery(photos, entry.photos)

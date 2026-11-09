@@ -1,7 +1,7 @@
 package com.luma.lifeos.ui.common
 
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -24,12 +24,12 @@ internal fun CaptureDateChoice(
         title = { Text(stringResource(R.string.today_capture_when)) },
         text = { Text(stringResource(R.string.capture_add_to_date, formattedDate)) },
         confirmButton = {
-            TextButton(onClick = onSelectedDate, modifier = Modifier.testTag("today_capture_selected_date")) {
+            LumaTextButton(onClick = onSelectedDate, modifier = Modifier.testTag("today_capture_selected_date")) {
                 Text(stringResource(R.string.capture_add_to_date, formattedDate))
             }
         },
         dismissButton = {
-            TextButton(onClick = onNow, modifier = Modifier.testTag("today_capture_now")) {
+            LumaTextButton(onClick = onNow, modifier = Modifier.testTag("today_capture_now")) {
                 Text(stringResource(R.string.capture_use_now))
             }
         },

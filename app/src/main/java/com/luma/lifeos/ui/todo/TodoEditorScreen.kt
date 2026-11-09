@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.todo
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import android.text.format.DateUtils
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
@@ -21,6 +23,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -30,11 +33,11 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.luma.lifeos.ui.common.LumaOutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -173,7 +176,7 @@ fun TodoEditorScreen(
                             },
                         )
                         AccessibleFeedback(message, Modifier.testTag("todo_editor_action_error"))
-                        TextButton(
+                        LumaTextButton(
                             onClick = onRetry,
                             enabled = !state.busy,
                             modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_retry"),
@@ -183,7 +186,7 @@ fun TodoEditorScreen(
                     }
                     EditorActionRow(
                         secondaryAction = if (state.editing) { actionModifier ->
-                            TextButton(
+                            LumaTextButton(
                                 onClick = if (canDeleteTaskOrigin) onRequestDelete else onRequestDeleteUnlock,
                                 enabled = canEdit && state.pendingAction == null,
                                 modifier = actionModifier.testTag(
@@ -216,18 +219,18 @@ fun TodoEditorScreen(
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.GroupGap),
             ) {
                 if (state.loading) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                         CircularProgressIndicator()
                         Text(stringResource(R.string.todo_loading), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 if (state.conflict) {
                     AccessibleFeedback(stringResource(R.string.todo_conflict), Modifier.testTag("todo_editor_conflict"))
-                    TextButton(
+                    LumaTextButton(
                         onClick = {
                             if (state.dirty && !state.canRetryConfirmedReload) reloadConfirmation = true else onReload()
                         },
@@ -289,10 +292,10 @@ fun TodoEditorScreen(
                     val formatted = date.format(displayTime.date(FormatStyle.LONG))
                     if (date == LocalDate.now()) stringResource(R.string.todo_due_today, formatted) else formatted
                 } ?: stringResource(R.string.todo_no_date)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     Surface(
                         modifier = Modifier.fillMaxWidth().testTag("todo_editor_due_date_card"),
-                        shape = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(LumaUi.SectionRadius),
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
                         border = BorderStroke(
                             1.dp,
@@ -301,8 +304,8 @@ fun TodoEditorScreen(
                         ),
                     ) {
                         Column(
-                            Modifier.fillMaxWidth().padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                         ) {
                             Text(
                                 stringResource(R.string.todo_due_date_label),
@@ -322,7 +325,7 @@ fun TodoEditorScreen(
                                 Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.End,
                             ) {
-                                TextButton(
+                                LumaTextButton(
                                     onClick = {
                                         pickerStartDate = (state.draft.dueDate ?: LocalDate.now()).toString()
                                         pickingDate = true
@@ -332,7 +335,7 @@ fun TodoEditorScreen(
                                         .testTag("todo_editor_change_due_date"),
                                 ) { Text(stringResource(R.string.todo_change_date)) }
                                 if (state.draft.dueDate != null) {
-                                    TextButton(
+                                    LumaTextButton(
                                         onClick = { onDueDate(null) },
                                         enabled = canEdit,
                                         modifier = Modifier.heightIn(min = 48.dp)
@@ -351,7 +354,7 @@ fun TodoEditorScreen(
                 if (state.draft.dueDate != null) {
                     Column(
                         Modifier.fillMaxWidth().testTag("todo_editor_due_time_row"),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     ) {
                         Text(
                             stringResource(R.string.todo_due_time_label),
@@ -376,7 +379,7 @@ fun TodoEditorScreen(
                             horizontalAlignment = Alignment.End,
                             verticalArrangement = Arrangement.spacedBy(0.dp),
                         ) {
-                            TextButton(
+                            LumaTextButton(
                                 onClick = {
                                     timePickerSession = UUID.randomUUID().toString()
                                     pickingTime = true
@@ -389,7 +392,7 @@ fun TodoEditorScreen(
                                 Text(stringResource(if (state.draft.dueTime == null) R.string.todo_add_time else R.string.todo_change_time))
                             }
                             if (state.draft.dueTime != null) {
-                                TextButton(
+                                LumaTextButton(
                                     onClick = { onDueTime(null) },
                                     enabled = canEdit,
                                     modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_clear_due_time"),
@@ -410,13 +413,13 @@ fun TodoEditorScreen(
                 }
 
                 if (state.editing) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         Text(
                             stringResource(if (state.taskCompleted) R.string.todo_status_completed else R.string.todo_status_open),
                             style = MaterialTheme.typography.labelLarge,
                         )
                         val statusEnabled = canEdit && !state.dirty && state.pendingAction == null
-                        OutlinedButton(
+                        LumaOutlinedButton(
                             onClick = { onSetCompleted(!state.taskCompleted) },
                             enabled = statusEnabled,
                             modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_status"),
@@ -439,7 +442,7 @@ fun TodoEditorScreen(
                         )
                     }
                     if (canFocusTask && onFocusTask != null && onSaveAndFocusTask != null) {
-                        OutlinedButton(
+                        LumaOutlinedButton(
                             onClick = { if (state.dirty) focusConfirmation = true else onFocusTask() },
                             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
                                 .testTag("todo_editor_focus_task"),
@@ -458,7 +461,7 @@ fun TodoEditorScreen(
             title = { Text(stringResource(R.string.todo_focus_unsaved_title)) },
             text = { Text(stringResource(R.string.todo_focus_unsaved_body)) },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = { focusConfirmation = false; onSaveAndFocusTask() },
                     enabled = canEdit,
                     modifier = Modifier.testTag("todo_editor_focus_save_continue"),
@@ -466,11 +469,11 @@ fun TodoEditorScreen(
             },
             dismissButton = {
                 Row(horizontalArrangement = Arrangement.End) {
-                    TextButton(
+                    LumaTextButton(
                         onClick = { focusConfirmation = false; onFocusTask() },
                         modifier = Modifier.testTag("todo_editor_focus_discard_continue"),
                     ) { Text(stringResource(R.string.todo_focus_discard_continue)) }
-                    TextButton(
+                    LumaTextButton(
                         onClick = { focusConfirmation = false },
                         modifier = Modifier.testTag("todo_editor_focus_cancel"),
                     ) { Text(stringResource(R.string.cancel)) }
@@ -495,14 +498,14 @@ fun TodoEditorScreen(
                         Text(stringResource(R.string.delete))
                     }
                 } else {
-                    TextButton(
+                    LumaTextButton(
                         onClick = onRequestDeleteUnlock,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_unlock_delete"),
                     ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
                 }
             },
             dismissButton = {
-                TextButton(onClick = onCancelDelete) { Text(stringResource(R.string.cancel)) }
+                LumaTextButton(onClick = onCancelDelete) { Text(stringResource(R.string.cancel)) }
             },
         )
     }
@@ -514,12 +517,12 @@ fun TodoEditorScreen(
             title = { Text(stringResource(R.string.todo_discard_title)) },
             text = { Text(stringResource(R.string.todo_discard_body)) },
             confirmButton = {
-                TextButton(onClick = { discarding = false; onClose() }, modifier = Modifier.testTag("todo_editor_confirm_discard")) {
+                LumaTextButton(onClick = { discarding = false; onClose() }, modifier = Modifier.testTag("todo_editor_confirm_discard")) {
                     Text(stringResource(R.string.discard))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) }
+                LumaTextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) }
             },
         )
     }
@@ -531,12 +534,12 @@ fun TodoEditorScreen(
             title = { Text(stringResource(R.string.todo_reload_title)) },
             text = { Text(stringResource(R.string.todo_reload_dirty_body)) },
             confirmButton = {
-                TextButton(onClick = { reloadConfirmation = false; onReload() }, modifier = Modifier.testTag("todo_editor_confirm_reload")) {
+                LumaTextButton(onClick = { reloadConfirmation = false; onReload() }, modifier = Modifier.testTag("todo_editor_confirm_reload")) {
                     Text(stringResource(R.string.todo_reload_latest))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { reloadConfirmation = false }) { Text(stringResource(R.string.keep_editing)) }
+                LumaTextButton(onClick = { reloadConfirmation = false }) { Text(stringResource(R.string.keep_editing)) }
             },
         )
     }
@@ -551,7 +554,7 @@ fun TodoEditorScreen(
             onDismissRequest = { pickingDate = false },
             modifier = Modifier.testTag("todo_editor_date_dialog"),
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     enabled = picker.selectedDateMillis != null,
                     onClick = {
                         picker.selectedDateMillis?.let { onDueDate(pickerDate(it)) }
@@ -561,7 +564,7 @@ fun TodoEditorScreen(
                 ) { Text(stringResource(R.string.select_date)) }
             },
             dismissButton = {
-                TextButton(onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) }
+                LumaTextButton(onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) }
             },
         ) { DatePicker(state = picker) }
     }
@@ -580,7 +583,7 @@ fun TodoEditorScreen(
                 title = { Text(stringResource(R.string.todo_due_time_label)) },
                 text = { TimeInput(state = picker, modifier = Modifier.testTag("todo_editor_time_input")) },
                 confirmButton = {
-                    TextButton(
+                    LumaTextButton(
                         enabled = validTime && canEdit,
                         onClick = {
                             if (validTime && canEdit) {
@@ -592,7 +595,7 @@ fun TodoEditorScreen(
                     ) { Text(stringResource(R.string.select_time)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pickingTime = false }) { Text(stringResource(R.string.cancel)) }
+                    LumaTextButton(onClick = { pickingTime = false }) { Text(stringResource(R.string.cancel)) }
                 },
             )
         }

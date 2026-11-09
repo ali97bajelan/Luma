@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,9 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -176,7 +177,7 @@ internal fun FocusSessionMetadataEditor(
     }
 
     if (!editing) {
-        TextButton(
+        LumaTextButton(
             onClick = { editing = true },
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_session_metadata_edit"),
         ) { Text(stringResource(R.string.focus_session_metadata_edit)) }
@@ -184,11 +185,11 @@ internal fun FocusSessionMetadataEditor(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         modifier = Modifier.fillMaxWidth().testTag("focus_session_metadata_editor"),
     ) {
         Text(stringResource(R.string.focus_session_metadata_title), style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(
+        LumaOutlinedTextField(
             value = name,
             onValueChange = { value ->
                 if (value.codePointCount(0, value.length) <= 120) {
@@ -203,7 +204,7 @@ internal fun FocusSessionMetadataEditor(
             isError = rejected,
             modifier = Modifier.fillMaxWidth().testTag("focus_session_name_edit"),
         )
-        OutlinedTextField(
+        LumaOutlinedTextField(
             value = tag,
             onValueChange = { value ->
                 if (value.length <= 50) {
@@ -225,7 +226,7 @@ internal fun FocusSessionMetadataEditor(
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             LumaButton(
                 onClick = { submit() },
                 enabled = !saving && !rejected && (
@@ -237,13 +238,13 @@ internal fun FocusSessionMetadataEditor(
                 else Text(stringResource(R.string.focus_session_metadata_save))
             }
             if (pending != null && saveError) {
-                TextButton(
+                LumaTextButton(
                     onClick = { submit(pending) },
                     enabled = !saving,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_session_metadata_retry"),
                 ) { Text(stringResource(R.string.retry)) }
             }
-            TextButton(
+            LumaTextButton(
                 onClick = {
                     name = session.metadata.name.orEmpty()
                     tag = session.metadata.tag?.name.orEmpty()

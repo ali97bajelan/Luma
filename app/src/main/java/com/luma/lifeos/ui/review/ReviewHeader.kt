@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
 import com.luma.lifeos.ui.theme.primaryFixed
@@ -52,7 +54,7 @@ internal fun ReviewHeader(
     val fullRange = stringResource(R.string.memory_review_range,
         period.current.start.format(format), period.current.through.format(format))
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.review_weekly_title), style = MaterialTheme.typography.headlineMedium.copy(hyphens = Hyphens.Auto),
                 fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f)
@@ -71,9 +73,9 @@ internal fun ReviewHeader(
                     onClick = onPrevious, modifier = Modifier.testTag("review_previous")) {
                     Icon(painterResource(R.drawable.ic_chevron), stringResource(R.string.review_previous_week))
                 }
-                TextButton(onClick = onPick, shape = MaterialTheme.shapes.medium, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                LumaTextButton(onClick = onPick, shape = MaterialTheme.shapes.medium, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     .testTag("review_picker").semantics { contentDescription = fullRange }) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         Text(range, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                         if (period.partial) Surface(shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.primaryFixed,
@@ -89,10 +91,10 @@ internal fun ReviewHeader(
             }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Text(stringResource(R.string.review_compare_short, comparison), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f).testTag("review_comparison"))
-            if (!period.partial) TextButton(onClick = onThisWeek, modifier = Modifier.heightIn(min = 48.dp).testTag("review_this_week")) {
+            if (!period.partial) LumaTextButton(onClick = onThisWeek, modifier = Modifier.heightIn(min = 48.dp).testTag("review_this_week")) {
                 Text(stringResource(R.string.review_this_week))
             }
         }
@@ -103,7 +105,7 @@ internal fun ReviewHeader(
         title = { Text(stringResource(R.string.review_about)) },
         text = {
             Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                 Text(stringResource(R.string.review_saved_explanation))
                 Text(stringResource(R.string.review_comparison_range, period.previous.start.format(format),
                     period.previous.through.format(format), stringResource(R.string.review_local_time)))
@@ -112,7 +114,7 @@ internal fun ReviewHeader(
             }
         },
         confirmButton = {
-            TextButton(onClick = { about = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("review_about_close")) {
+            LumaTextButton(onClick = { about = false }, modifier = Modifier.heightIn(min = 48.dp).testTag("review_about_close")) {
                 Text(stringResource(R.string.health_close))
             }
         },

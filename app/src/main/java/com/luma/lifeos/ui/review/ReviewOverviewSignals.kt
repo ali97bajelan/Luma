@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -87,7 +87,7 @@ internal fun ReviewOverviewSignals(
             absence = if (activity == null) MetricAbsence.NO_SAVED_DATA else null,
         )
         activity?.total?.let { total ->
-            TextButton(
+            LumaTextButton(
                 onClick = {
                     onSources(
                         report.period.current,
@@ -113,7 +113,7 @@ internal fun ReviewOverviewSignals(
                         modifier = Modifier.testTag("review_overview_usage_access_secondary"),
                     )
                 }
-                TextButton(
+                LumaTextButton(
                     onClick = onIntegrations,
                     modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                         .testTag("review_overview_integrations"),

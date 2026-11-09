@@ -1965,7 +1965,7 @@ fun LifeOsApp(
             title = { Text(stringResource(R.string.app_lock_action_confirm_title)) },
             text = { Text(stringResource(R.string.app_lock_action_confirm_body)) },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                com.luma.lifeos.ui.common.LumaTextButton(onClick = {
                     val dispatcher = protectedActionDispatcher
                     val accepted = dispatcher != null && dispatcher.confirm(actionToConfirm.ticket) &&
                         dispatcher.consumeForDispatch(actionToConfirm.ticket)
@@ -1977,7 +1977,7 @@ fun LifeOsApp(
                 }) { Text(stringResource(R.string.app_lock_action_confirm)) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                com.luma.lifeos.ui.common.LumaTextButton(onClick = {
                     pendingWidgetAction = null
                     showWidgetActionConfirmation = false
                     appLockCoordinator?.cancelPendingNavigation()
@@ -1998,7 +1998,7 @@ fun LifeOsApp(
             title = { Text(stringResource(R.string.app_lock_action_confirm_title)) },
             text = { Text(stringResource(R.string.app_lock_action_confirm_body)) },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                com.luma.lifeos.ui.common.LumaTextButton(onClick = {
                     val dispatcher = protectedActionDispatcher
                     val accepted = dispatcher != null && dispatcher.confirm(reminderActionToConfirm.ticket) &&
                         dispatcher.consumeForDispatch(reminderActionToConfirm.ticket)
@@ -2010,7 +2010,7 @@ fun LifeOsApp(
                 }) { Text(stringResource(R.string.app_lock_action_confirm)) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = {
+                com.luma.lifeos.ui.common.LumaTextButton(onClick = {
                     pendingReminderAction = null
                     showReminderActionConfirmation = false
                     appLockCoordinator?.cancelPendingNavigation()
@@ -2023,7 +2023,7 @@ fun LifeOsApp(
         onDismissRequest = { widgetActionError = false },
         title = { Text(stringResource(R.string.app_lock_error_unavailable)) },
         text = { Text(stringResource(R.string.app_lock_error_unavailable)) },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = { widgetActionError = false }) {
+        confirmButton = { com.luma.lifeos.ui.common.LumaTextButton(onClick = { widgetActionError = false }) {
             Text(stringResource(R.string.cancel))
         } },
     )

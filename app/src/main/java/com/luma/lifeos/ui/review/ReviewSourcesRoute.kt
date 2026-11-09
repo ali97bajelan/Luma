@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -47,8 +49,8 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
     var retry by remember { mutableIntStateOf(0) }
     val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
     LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review_sources")) {
-     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TextButton(onClick = onBack, modifier = Modifier.testTag("review_sources_back")) { Text(stringResource(R.string.back)) }
+     Column(Modifier.fillMaxSize().padding(horizontal = LumaUi.PageGutter)) {
+        LumaTextButton(onClick = onBack, modifier = Modifier.testTag("review_sources_back")) { Text(stringResource(R.string.back)) }
         AppSectionHeading(stringResource(R.string.review_source_heading))
         LumaSectionSurface {
             Text(stringResource(metric.kind.label()), style = MaterialTheme.typography.titleMedium)
@@ -60,12 +62,12 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
             val flow = remember(repository) { observeReviewSources(repository, dates, zone, metric, offset) }
             val state by flow.collectAsStateWithLifecycle(ReviewSourcesState.Loading)
             LazyColumn(Modifier.weight(1f).testTag("review_source_list"), contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 when (val current = state) {
                     ReviewSourcesState.Loading -> item { CircularProgressIndicator() }
                     ReviewSourcesState.Error -> item {
                         AccessibleFeedback(stringResource(R.string.review_error))
-                        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                        LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
                     is ReviewSourcesState.Data -> {
                         val page = current.page
@@ -76,7 +78,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                                 modifier = Modifier.testTag("review_source_order"))
                         }
                         if (page.records.isEmpty()) item { Text(stringResource(R.string.review_no_sources)) }
-                        if (page.offset > 0) item { TextButton(onClick = { offset = maxOf(0, page.offset - 50) }, modifier = Modifier.testTag("review_source_previous")) { Text(stringResource(R.string.review_source_previous_page)) } }
+                        if (page.offset > 0) item { LumaTextButton(onClick = { offset = maxOf(0, page.offset - 50) }, modifier = Modifier.testTag("review_source_previous")) { Text(stringResource(R.string.review_source_previous_page)) } }
                         items(page.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { row ->
                             Column {
                                 Text(row.event.occurredAt.atZone(zone).toLocalDate().format(format),
@@ -88,7 +90,7 @@ fun ReviewSourcesRoute(repository: WeeklyReviewRepository, dates: ReviewDates, z
                             }
                         }
                         if (page.offset + page.records.size < page.totalCount) item {
-                            TextButton(onClick = { offset = page.offset + 50 }, modifier = Modifier.testTag("review_source_next")) { Text(stringResource(R.string.review_source_next_page)) }
+                            LumaTextButton(onClick = { offset = page.offset + 50 }, modifier = Modifier.testTag("review_source_next")) { Text(stringResource(R.string.review_source_next_page)) }
                         }
                     }
                 }

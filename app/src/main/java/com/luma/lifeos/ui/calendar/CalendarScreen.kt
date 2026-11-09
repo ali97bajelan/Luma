@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.calendar
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +13,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +76,7 @@ internal fun CalendarScreen(
         headerTag = "calendar_header",
         titleTag = "calendar_title",
         actions = {
-            TextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_today")) {
+            LumaTextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_today")) {
                 Text(stringResource(R.string.today), maxLines = 1)
             }
         },
@@ -86,7 +87,7 @@ internal fun CalendarScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize().testTag("calendar_content"),
                     contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = bottomClearance),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
                 ) {
                     item(key = "calendar_subtitle") {
                         Text(

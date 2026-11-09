@@ -1,9 +1,11 @@
 package com.luma.lifeos.ui.timeline
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -29,13 +31,13 @@ fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () ->
         val stackActions = maxWidth < 320.dp || LocalDensity.current.fontScale >= 1.5f
         val dateText = date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
         if (stackActions) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(enabled = date != LocalDate.MIN, onClick = { onSelect(date.minusDays(1)) },
                         modifier = Modifier.testTag("day_previous")) {
                         Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.previous_day))
                     }
-                    TextButton(
+                    LumaTextButton(
                         onClick = { picking = true },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("day_picker"),
                     ) {
@@ -48,7 +50,7 @@ fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () ->
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("day_today")) {
+                    LumaTextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("day_today")) {
                         Text(stringResource(R.string.today), maxLines = 1)
                     }
                 }
@@ -59,12 +61,12 @@ fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () ->
                     modifier = Modifier.testTag("day_previous")) {
                     Icon(painterResource(R.drawable.ic_chevron), contentDescription = stringResource(R.string.previous_day))
                 }
-                TextButton(onClick = { picking = true },
+                LumaTextButton(onClick = { picking = true },
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("day_picker")) {
                     Text(dateText, modifier = Modifier.testTag("day_selected"), maxLines = 1,
                         overflow = TextOverflow.Ellipsis)
                 }
-                TextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("day_today")) {
+                LumaTextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("day_today")) {
                     Text(stringResource(R.string.today), maxLines = 1)
                 }
                 IconButton(enabled = date != LocalDate.MAX, onClick = { onSelect(date.plusDays(1)) },
@@ -77,10 +79,10 @@ fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () ->
     if (picking) {
         val picker = rememberDatePickerState(initialSelectedDateMillis = pickerMillis(date), yearRange = minOf(1900, date.year)..maxOf(2100, date.year))
         LumaDatePickerDialog(modifier = Modifier.testTag("date_picker_dialog"), onDismissRequest = { picking = false },
-            confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
+            confirmButton = { LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { onSelect(pickerDate(it)) }; picking = false
             }) { Text(stringResource(R.string.select_date)) } },
-            dismissButton = { TextButton(onClick = { picking = false }) { Text(stringResource(R.string.cancel)) } }) {
+            dismissButton = { LumaTextButton(onClick = { picking = false }) { Text(stringResource(R.string.cancel)) } }) {
             DatePicker(state = picker)
         }
     }

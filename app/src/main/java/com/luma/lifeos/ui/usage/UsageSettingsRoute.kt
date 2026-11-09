@@ -1,10 +1,12 @@
 package com.luma.lifeos.ui.usage
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -12,7 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -42,7 +44,7 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
     var showAccessExplanation by rememberSaveable { mutableStateOf(false) }
     var settingsMissing by rememberSaveable { mutableStateOf(false) }
     LumaSectionSurface(Modifier.testTag("usage_integration_card")) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
             Text(stringResource(R.string.usage_title), style = MaterialTheme.typography.titleLarge)
             val currentAvailability = availability.usage
             val canToggle = !state.loading && (!state.busy || state.current.enabled) &&
@@ -104,7 +106,7 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
                     style = MaterialTheme.typography.bodySmall)
             }
             if (currentAvailability.access == IntegrationAccessState.ALLOWED && currentAvailability.enabled == true) {
-                TextButton(onClick = { showAccessExplanation = true }, modifier = Modifier.testTag("usage_access")) {
+                LumaTextButton(onClick = { showAccessExplanation = true }, modifier = Modifier.testTag("usage_access")) {
                     Text(stringResource(R.string.usage_manage_access))
                 }
             }
@@ -126,11 +128,11 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
                 if (operation != IntegrationSettingsOperation.IMPORT ||
                     currentAvailability.access != IntegrationAccessState.ALLOWED) {
                     key(error.requestId) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                             AccessibleFeedback(stringResource(message),
                                 Modifier.testTag("usage_${operation.name.lowercase()}_error"))
                             if (operation != IntegrationSettingsOperation.IMPORT) {
-                                TextButton(onClick = retry, enabled = !state.busy,
+                                LumaTextButton(onClick = retry, enabled = !state.busy,
                                     modifier = Modifier.testTag("usage_${operation.name.lowercase()}_retry")) {
                                     Text(stringResource(R.string.retry))
                                 }
@@ -139,7 +141,7 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
                     }
                 }
             }
-            TextButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
+            LumaTextButton(onClick = { vm.refresh(); onRefreshAccess() }, enabled = !state.busy,
                 modifier = Modifier.testTag("usage_refresh")) { Text(stringResource(R.string.usage_refresh)) }
             DetailsDisclosure(R.string.usage_title, "usage_details") {
                 Text(stringResource(R.string.usage_access_explanation))

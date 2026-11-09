@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.compose.foundation.clickable
@@ -23,7 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -90,12 +91,12 @@ fun HabitsScreen(
             TopAppBar(title = { Text(stringResource(R.string.habit_title),
                 style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() }) }, navigationIcon = {
                 onBack?.let { back ->
-                    TextButton(onClick = back, modifier = Modifier.testTag("habits_back")) {
+                    LumaTextButton(onClick = back, modifier = Modifier.testTag("habits_back")) {
                         Text(stringResource(R.string.back))
                     }
                 }
             }, actions = {
-                TextButton(onClick = onCreate, modifier = Modifier.testTag("habit_create")) {
+                LumaTextButton(onClick = onCreate, modifier = Modifier.testTag("habit_create")) {
                     Text(stringResource(R.string.habit_add))
                 }
             }, windowInsets = WindowInsets(0, 0, 0, 0))
@@ -107,7 +108,7 @@ fun HabitsScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                 ) {
                     item { DayNavigation(selectedDate, onSelectDate, onToday) }
                     item(key = "habit_undo_status") {
@@ -118,20 +119,20 @@ fun HabitsScreen(
                         )
                     }
                     if (state.loading || (state.date != date && state.error == null)) item {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             CircularProgressIndicator(Modifier.testTag("habits_loading"))
                             Text(stringResource(R.string.habit_loading))
                         }
                     }
                     if (state.error == HabitUiError.LOAD) item {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("habits_error")) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap), modifier = Modifier.testTag("habits_error")) {
                             Text(stringResource(R.string.habit_load_error))
-                            TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                            LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                         }
                     }
                     if (!state.loading && state.loadedDate == date && rows.isEmpty() && state.error == null) item {
                         LumaSectionSurface(Modifier.testTag("habits_empty")) {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                                 Text(stringResource(R.string.habit_empty_heading), style = MaterialTheme.typography.titleLarge)
                                 Text(stringResource(R.string.habit_empty_body))
                                 LumaButton(onClick = onCreate, modifier = Modifier.heightIn(min = 48.dp)) {
@@ -146,10 +147,10 @@ fun HabitsScreen(
                                 modifier = Modifier.testTag("habits_scheduled_heading"))
                         }
                         if (groups.scheduled.isEmpty()) item {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("habits_none_scheduled")) {
+                            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap), modifier = Modifier.testTag("habits_none_scheduled")) {
                                 Text(stringResource(R.string.habit_no_scheduled))
                                 if (selectedDate != trackingDate) {
-                                    TextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("habits_today")) {
+                                    LumaTextButton(onClick = onToday, modifier = Modifier.heightIn(min = 48.dp).testTag("habits_today")) {
                                         Text(stringResource(R.string.today))
                                     }
                                 }
@@ -173,7 +174,7 @@ fun HabitsScreen(
                                 val expansionDescription = stringResource(
                                     if (isExpanded) R.string.habit_other_expanded else R.string.habit_other_collapsed,
                                 )
-                                TextButton(enabled = !forceOtherOpen, onClick = { otherExpanded = !otherExpanded },
+                                LumaTextButton(enabled = !forceOtherOpen, onClick = { otherExpanded = !otherExpanded },
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                                         .semantics { stateDescription = expansionDescription }
                                         .testTag("habit_other_toggle")) {
@@ -250,12 +251,12 @@ internal fun HabitRow(
             val stackAction = maxWidth < minimumInlineWidth || LocalDensity.current.fontScale >= 1.5f
             if (showLog && !stackAction) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, Modifier.weight(1f))
                     HabitLogTarget(row, onLog, logLabel)
                 }
             } else {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, Modifier.fillMaxWidth())
                     if (showLog) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -280,7 +281,7 @@ internal fun HabitRow(
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 content = rowContent,
             )
         }
@@ -315,7 +316,7 @@ private fun HabitOpenTarget(
             ).testTag("habit_open_${day.habit.id}").semantics(mergeDescendants = true) {
                 contentDescription = accessibilityLabel
             }.padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             Text(day.habit.name, style = MaterialTheme.typography.titleMedium)
             HabitProgressContent(day)

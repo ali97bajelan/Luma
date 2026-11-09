@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.calendar
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaFilterChip
 
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -75,7 +76,7 @@ internal fun CalendarAgenda(
     onMemory: (com.luma.lifeos.domain.model.EventId) -> Unit,
     onAddMemory: (LocalDate) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
         CalendarDateRibbon(state, displayTime)
         CalendarAgendaFilters(state, displayTime.locale, onFilter)
         if (state.overdueCount is CalendarDataState.Error) {
@@ -139,7 +140,7 @@ private fun CalendarDateRibbon(state: CalendarUiState, displayTime: DisplayTimeP
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() },
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             CalendarCountPill(
                 count = state.exactTaskCount,
                 plurals = R.plurals.calendar_tasks_count,
@@ -193,7 +194,7 @@ private fun CalendarAgendaFilters(
 ) {
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CalendarFilter.entries.forEach { filter ->
@@ -251,7 +252,7 @@ private fun CalendarTasksSection(
             onAction = { onAddTask(state.selectedDate) },
             actionModifier = Modifier.heightIn(min = 48.dp).testTag("calendar_add_task"),
         )
-        TextButton(
+        LumaTextButton(
             onClick = onAllTasks,
             modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp).testTag("calendar_all_tasks"),
         ) { Text(stringResource(R.string.calendar_view_all_tasks)) }
@@ -267,7 +268,7 @@ private fun CalendarTasksSection(
                 if (taskPage.value.items.isEmpty()) {
                     Text(stringResource(R.string.calendar_tasks_empty), modifier = Modifier.testTag("calendar_tasks_empty"))
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         taskPage.value.items.forEach { task ->
                             key(task.id) {
                                 CalendarTaskRow(
@@ -286,7 +287,7 @@ private fun CalendarTasksSection(
                     }
                 }
                 if (state.loadingMore) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                         Text(stringResource(R.string.calendar_tasks_loading_more))
                     }
@@ -297,7 +298,7 @@ private fun CalendarTasksSection(
                         tag = "calendar_tasks_more_error",
                     )
                 } else if (taskPage.value.items.size < taskPage.value.total) {
-                    TextButton(
+                    LumaTextButton(
                         onClick = onLoadMore,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("calendar_tasks_load_more"),
                     ) { Text(stringResource(R.string.calendar_load_more)) }
@@ -308,7 +309,7 @@ private fun CalendarTasksSection(
         val offPageIntents = actions.pendingIntents.values.filter { it.taskId !in visibleIds }
         val offPageFeedback = actions.rowFeedback.filterKeys { it !in visibleIds && it !in actions.pendingIntents }
         if (offPageIntents.isNotEmpty() || offPageFeedback.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("calendar_task_recovery")) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap), modifier = Modifier.testTag("calendar_task_recovery")) {
                 Text(
                     stringResource(R.string.todo_today_task_feedback),
                     style = MaterialTheme.typography.titleSmall,
@@ -389,7 +390,7 @@ private fun CalendarTaskRow(
         Row(
             Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             Checkbox(
                 checked = task.isCompleted,
@@ -400,7 +401,7 @@ private fun CalendarTaskRow(
                 }.testTag("calendar_task_complete_${task.id}"),
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                TextButton(
+                LumaTextButton(
                     onClick = onOpen,
                     enabled = rowError != TodoListRowError.MISSING,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).focusRequester(taskFocus)
@@ -409,7 +410,7 @@ private fun CalendarTaskRow(
                                 .joinToString(separator)
                         }.testTag("calendar_task_open_${task.id}"),
                 ) {
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.Start) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap), horizontalAlignment = Alignment.Start) {
                         Text(task.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Surface(
                         color = if (dueDate.isBefore(today)) MaterialTheme.colorScheme.errorContainer
@@ -446,16 +447,16 @@ private fun CalendarTaskRow(
                             color = if (rowError == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                         )
                     if (rowError == TodoListRowError.FAILED) {
-                        TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+                        LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
                             Text(stringResource(R.string.todo_retry_action))
                         }
                     } else if (rowError == TodoListRowError.CONFLICT || rowError == TodoListRowError.MISSING) {
                         if (rowError == TodoListRowError.CONFLICT) {
-                            TextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
+                            LumaTextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
                                 Text(stringResource(R.string.todo_status_open))
                             }
                         }
-                        TextButton(onClick = onDismissError, modifier = Modifier.heightIn(min = 48.dp)) {
+                        LumaTextButton(onClick = onDismissError, modifier = Modifier.heightIn(min = 48.dp)) {
                             Text(stringResource(R.string.todo_feedback_dismiss))
                         }
                     }
@@ -527,7 +528,7 @@ private fun CalendarMemoriesSection(
                 if (memories.value.items.isEmpty()) {
                     Text(stringResource(R.string.calendar_memories_empty), modifier = Modifier.testTag("calendar_memories_empty"))
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         memories.value.items.forEach { memory ->
                             key(memory.id) {
                                 Surface(
@@ -536,7 +537,7 @@ private fun CalendarMemoriesSection(
                                     color = MaterialTheme.colorScheme.surfaceContainer,
                                     shape = MaterialTheme.shapes.medium,
                                 ) {
-                                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                                         Text(
                                             memory.title?.takeIf(String::isNotBlank) ?: stringResource(R.string.calendar_memory_default_title),
                                             style = MaterialTheme.typography.titleSmall,
@@ -562,7 +563,7 @@ private fun CalendarMemoriesSection(
                         { onRetry(CalendarSource.MEMORIES) },
                         "calendar_memories_more_error",
                     )
-                    memories.value.items.size < memories.value.total -> TextButton(
+                    memories.value.items.size < memories.value.total -> LumaTextButton(
                         onClick = onLoadMore,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("calendar_memories_load_more"),
                     ) { Text(stringResource(R.string.calendar_load_more)) }
@@ -577,7 +578,7 @@ private fun CalendarSourceLoading(message: Int, tag: String) {
     Row(
         Modifier.fillMaxWidth().testTag(tag),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
     ) {
         CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
         Text(stringResource(message))
@@ -586,9 +587,9 @@ private fun CalendarSourceLoading(message: Int, tag: String) {
 
 @Composable
 private fun CalendarSourceError(message: Int, onRetry: () -> Unit, tag: String) {
-    Column(Modifier.fillMaxWidth().testTag(tag), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(Modifier.fillMaxWidth().testTag(tag), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
         Text(stringResource(message), color = MaterialTheme.colorScheme.error)
-        TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+        LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
             Text(stringResource(R.string.retry))
         }
     }

@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.compose.foundation.rememberScrollState
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -76,7 +77,7 @@ fun TodayHabitsCard(
         }
         if (state.error == HabitUiError.LOAD) {
             Text(stringResource(R.string.habit_load_error), color = MaterialTheme.colorScheme.error)
-            TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+            LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.retry))
             }
         }
@@ -95,7 +96,7 @@ fun TodayHabitsCard(
                 Column(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp)
                         .verticalScroll(rememberScrollState()).testTag("today_habits_scroll"),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                 ) {
                     visible.forEach { row ->
                         HabitRow(row, state.pendingLogs.filter {

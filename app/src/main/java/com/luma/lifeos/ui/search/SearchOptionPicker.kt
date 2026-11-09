@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -36,14 +38,14 @@ internal fun SearchOptionPicker(title: String, options: List<SearchOption>, sele
     val visible = remember(all, text) { all.filter { it.name.contains(text.trim(), ignoreCase = true) } }
     LumaAlertDialog(onDismissRequest = onDone, title = { Text(title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 LumaOutlinedTextField(value = text, onValueChange = { text = it.take(200) }, singleLine = true,
                     label = { Text(stringResource(R.string.search_options_hint)) }, modifier = Modifier.fillMaxWidth().testTag("search_option_text"))
-                TextButton(onClick = onClear) { Text(stringResource(R.string.search_clear_selection)) }
+                LumaTextButton(onClick = onClear) { Text(stringResource(R.string.search_clear_selection)) }
                 if (loading) CircularProgressIndicator()
                 if (error) {
                     AccessibleFeedback(stringResource(R.string.search_options_error))
-                    TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                    LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
                 if (!loading && visible.isEmpty()) Text(stringResource(R.string.search_no_options))
                 LazyColumn(Modifier.heightIn(max = 320.dp).testTag("search_options_list")) {
@@ -58,12 +60,12 @@ internal fun SearchOptionPicker(title: String, options: List<SearchOption>, sele
                                 .background(
                                     color = if (checked) MaterialTheme.colorScheme.surfaceContainerHigh
                                         else MaterialTheme.colorScheme.surfaceContainerLow,
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(LumaUi.ChoiceRadius),
                                 )
                                 .then(selection)
                                 .testTag("search_option_${option.id}")
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                         ) {
                             if (single) RadioButton(selected = checked, onClick = null)
@@ -74,5 +76,5 @@ internal fun SearchOptionPicker(title: String, options: List<SearchOption>, sele
                 }
                 if (!single) Text(stringResource(R.string.search_selection_count, selected.size), style = MaterialTheme.typography.bodySmall)
             }
-        }, confirmButton = { TextButton(onClick = onDone, modifier = Modifier.testTag("search_options_done")) { Text(stringResource(R.string.search_done)) } })
+        }, confirmButton = { LumaTextButton(onClick = onDone, modifier = Modifier.testTag("search_options_done")) { Text(stringResource(R.string.search_done)) } })
 }

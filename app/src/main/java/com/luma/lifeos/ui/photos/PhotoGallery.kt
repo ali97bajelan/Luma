@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui.photos
 
+import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,16 +43,16 @@ fun PhotoEditor(repository: PhotoRepository, photos: List<PhotoAttachment>, enab
     onImport: (String) -> Unit, onRemove: (UUID) -> Unit, onRetry: () -> Unit, importFailed: Boolean,
     operationFailed: Boolean = false) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let { onImport(it.toString()) } }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         Text(stringResource(R.string.photos), style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() }.testTag("photo_heading"))
         Text(stringResource(R.string.photo_limits), style = MaterialTheme.typography.bodySmall)
-        TextButton(enabled = enabled && photos.size < PhotoLimits.COUNT, onClick = {
+        LumaTextButton(enabled = enabled && photos.size < PhotoLimits.COUNT, onClick = {
             picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
         }, modifier = Modifier.testTag("photo_add")) { Text(stringResource(R.string.photo_add)) }
         if (importFailed) {
             AccessibleFeedback(stringResource(R.string.photo_error), Modifier.testTag("photo_import_error"))
-            TextButton(enabled = enabled, onClick = onRetry, modifier = Modifier.testTag("photo_retry_import")) {
+            LumaTextButton(enabled = enabled, onClick = onRetry, modifier = Modifier.testTag("photo_retry_import")) {
                 Text(stringResource(R.string.photo_retry_import))
             }
         } else if (operationFailed) {
@@ -63,11 +66,11 @@ fun PhotoEditor(repository: PhotoRepository, photos: List<PhotoAttachment>, enab
 fun PhotoGallery(repository: PhotoRepository, photos: List<PhotoAttachment>, enabled: Boolean = true,
     onRemove: ((UUID) -> Unit)? = null, onOpen: ((UUID) -> Unit)? = null,
     readScope: PhotoReadScope? = null, accessEpoch: Any? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
         photos.forEachIndexed { index, photo ->
             key(photo.id) {
                 LumaListSurface(Modifier.testTag("photo_card_${photo.id}")) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         PhotoPreview(
                             repository,
                             photo,
@@ -78,7 +81,7 @@ fun PhotoGallery(repository: PhotoRepository, photos: List<PhotoAttachment>, ena
                             accessEpoch = accessEpoch,
                         )
                         onRemove?.let { remove ->
-                            TextButton(enabled = enabled, onClick = { remove(photo.id) }, modifier = Modifier.testTag("photo_remove_${photo.id}")) {
+                            LumaTextButton(enabled = enabled, onClick = { remove(photo.id) }, modifier = Modifier.testTag("photo_remove_${photo.id}")) {
                                 Text(stringResource(R.string.photo_remove))
                             }
                         }
@@ -152,7 +155,7 @@ private fun PhotoPreview(
             )
         } ?: Column(Modifier.testTag("photo_unavailable_${photo.id}")) {
             AccessibleFeedback(stringResource(R.string.photo_unavailable), Modifier.testTag("photo_preview_error"))
-            TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+            LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
         }
     }
 }

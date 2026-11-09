@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,14 +14,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaFilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.luma.lifeos.ui.common.LumaOutlinedButton
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -94,7 +95,7 @@ internal fun FocusSetupContent(
         style = MaterialTheme.typography.bodyLarge,
         modifier = Modifier.semantics { heading() },
     )
-    OutlinedTextField(
+    LumaOutlinedTextField(
         value = setup.name,
         onValueChange = onNameChange,
         label = { Text(stringResource(R.string.focus_name_label)) },
@@ -123,20 +124,20 @@ internal fun FocusSetupContent(
             )
         }
         if (onOpenTaskPicker != null) {
-            TextButton(
+            LumaTextButton(
                 onClick = onOpenTaskPicker,
                 enabled = fieldsEnabled,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_change"),
             ) { Text(stringResource(R.string.focus_task_change)) }
         }
-        TextButton(
+        LumaTextButton(
             onClick = onClearTaskSelection,
             enabled = fieldsEnabled,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_remove"),
         ) { Text(stringResource(R.string.focus_task_remove)) }
     } else {
         if (onOpenTaskPicker != null) {
-            OutlinedButton(
+            LumaOutlinedButton(
                 onClick = onOpenTaskPicker,
                 enabled = fieldsEnabled,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_choose_task"),
@@ -158,16 +159,16 @@ internal fun FocusSetupContent(
     }
 
     Text(stringResource(R.string.focus_timer_mode_label), style = MaterialTheme.typography.titleSmall)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            FilterChip(
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
+            LumaFilterChip(
                 selected = setup.timerMode == FocusTimerMode.COUNT_UP,
                 onClick = { onTimerModeChange(FocusTimerMode.COUNT_UP) },
                 enabled = fieldsEnabled,
                 modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("focus_mode_count_up"),
                 label = { Text(stringResource(R.string.focus_timer_mode_count_up)) },
             )
-            FilterChip(
+            LumaFilterChip(
                 selected = setup.timerMode == FocusTimerMode.TIMED,
                 onClick = { onTimerModeChange(FocusTimerMode.TIMED) },
                 enabled = fieldsEnabled,
@@ -179,14 +180,14 @@ internal fun FocusSetupContent(
     if (setup.timerMode == FocusTimerMode.COUNT_UP) {
         Text(stringResource(R.string.focus_count_up_support), style = MaterialTheme.typography.bodyMedium)
     } else {
-        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             listOf(15, 25, 50).forEach { minutes ->
                 val label = when (minutes) {
                     15 -> R.string.focus_preset_15_minutes
                     25 -> R.string.focus_25_minute_shortcut
                     else -> R.string.focus_preset_50_minutes
                 }
-                FilterChip(
+                LumaFilterChip(
                     selected = setup.timedMinutesText == minutes.toString(),
                     onClick = {
                         onTimerModeChange(FocusTimerMode.TIMED)
@@ -199,7 +200,7 @@ internal fun FocusSetupContent(
                 )
             }
         }
-        OutlinedButton(
+        LumaOutlinedButton(
             onClick = {
                 onTimerModeChange(FocusTimerMode.TIMED)
                 requestDurationFocus = true
@@ -207,7 +208,7 @@ internal fun FocusSetupContent(
             enabled = fieldsEnabled,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_custom_duration"),
         ) { Text(stringResource(R.string.focus_preset_custom)) }
-        OutlinedTextField(
+        LumaOutlinedTextField(
             value = setup.timedMinutesText,
             onValueChange = onTimedMinutesChange,
             label = { Text(stringResource(R.string.focus_timed_minutes_label)) },
@@ -238,7 +239,7 @@ internal fun FocusSetupContent(
     val tagDisclosureState = stringResource(
         if (setup.tagAreaExpanded) R.string.focus_expanded else R.string.focus_collapsed,
     )
-    OutlinedButton(
+    LumaOutlinedButton(
         onClick = { onTagAreaExpandedChange(!setup.tagAreaExpanded) },
         enabled = fieldsEnabled,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -246,7 +247,7 @@ internal fun FocusSetupContent(
             .testTag("focus_tag_disclosure"),
     ) { Text(tagDisclosureLabel) }
     if (setup.tagAreaExpanded) {
-        OutlinedTextField(
+        LumaOutlinedTextField(
             value = setup.tag,
             onValueChange = onTagChange,
             label = { Text(stringResource(R.string.focus_tag_label)) },
@@ -264,14 +265,14 @@ internal fun FocusSetupContent(
         if (state.tagSuggestions.isNotEmpty()) {
             Text(stringResource(R.string.focus_tag_suggestions), style = MaterialTheme.typography.titleSmall)
             state.tagSuggestions.take(3).forEach { suggestion ->
-                TextButton(
+                LumaTextButton(
                     onClick = { onTagChange(suggestion.name) },
                     enabled = fieldsEnabled,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                         .testTag("focus_tag_suggestion_${suggestion.id}"),
                 ) { Text(suggestion.name) }
             }
-            TextButton(
+            LumaTextButton(
                 onClick = { showTagPicker = true },
                 enabled = fieldsEnabled,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_view_tags"),
@@ -288,7 +289,7 @@ internal fun FocusSetupContent(
     if (setup.repeatLoadFailed && missingRecentSource?.sessionId != setup.repeatSourceSessionId) {
         Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
         setup.repeatSourceSessionId?.let { sourceId ->
-            TextButton(
+            LumaTextButton(
                 onClick = {
                     if (setup.hasUserAuthoredDraft) retryReplacementSessionId = sourceId
                     else onRepeatSession(sourceId)
@@ -314,12 +315,12 @@ internal fun FocusSetupContent(
     )
 
     retryReplacementSessionId?.let { sourceId ->
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { retryReplacementSessionId = null },
             title = { Text(stringResource(R.string.focus_recent_replace_title)) },
             text = { Text(stringResource(R.string.focus_recent_replace_body)) },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         retryReplacementSessionId = null
                         onRepeatSession(sourceId)
@@ -328,7 +329,7 @@ internal fun FocusSetupContent(
                 ) { Text(stringResource(R.string.focus_recent_replace_setup)) }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = { retryReplacementSessionId = null },
                     modifier = Modifier.testTag("focus_repeat_retry_replace_cancel"),
                 ) { Text(stringResource(R.string.cancel)) }
@@ -338,16 +339,16 @@ internal fun FocusSetupContent(
 
     if (showTagPicker) {
         val tags = state.tagSuggestions.take(10)
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { showTagPicker = false },
             title = { Text(stringResource(R.string.focus_tag_picker_title)) },
             text = {
                 Column(
                     modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                 ) {
                     tags.forEach { suggestion ->
-                        TextButton(
+                        LumaTextButton(
                             onClick = {
                                 onTagChange(suggestion.name)
                                 showTagPicker = false
@@ -359,7 +360,7 @@ internal fun FocusSetupContent(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showTagPicker = false }) {
+                LumaTextButton(onClick = { showTagPicker = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
@@ -409,9 +410,9 @@ internal fun FocusSetupStartAction(
                 .widthIn(max = 720.dp)
                 .imePadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(horizontal = LumaUi.PageGutter, vertical = 12.dp)
                 .testTag("focus_start_action"),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         ) {
             Text(stringResource(R.string.focus_scope_near_start), style = MaterialTheme.typography.bodySmall)
             if (!state.busy && blockingMessage != null) {

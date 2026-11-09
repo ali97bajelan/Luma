@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -264,7 +265,7 @@ fun LockCredentialInput(
                 ),
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {
-                    TextButton(enabled = enabled, onClick = state::toggleReveal) {
+                    LumaTextButton(enabled = enabled, onClick = state::toggleReveal) {
                         Text(stringResource(if (state.revealed) R.string.app_lock_credential_hide else R.string.app_lock_credential_show))
                     }
                 },
@@ -280,7 +281,7 @@ fun LockCredentialEnrollment(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         Text(stringResource(state.type.helpResource()), style = MaterialTheme.typography.bodySmall)
         if (state.type == LockCredentialType.PATTERN) {
             val confirmingPattern = state.hasEntry
@@ -308,7 +309,7 @@ fun LockCredentialEnrollment(
             if (state.isComplete) Text(stringResource(R.string.app_lock_pattern_ready))
             if (state.patternMismatch) {
                 AccessibleFeedback(stringResource(R.string.app_lock_error_credential_mismatch))
-                TextButton(enabled = enabled, onClick = state::clear) {
+                LumaTextButton(enabled = enabled, onClick = state::clear) {
                     Text(stringResource(R.string.app_lock_pattern_retry))
                 }
             }
@@ -346,7 +347,7 @@ private fun CredentialTextInput(
         ),
         modifier = Modifier.fillMaxWidth(),
         trailingIcon = {
-            TextButton(enabled = enabled, onClick = state::toggleReveal) {
+            LumaTextButton(enabled = enabled, onClick = state::toggleReveal) {
                 Text(stringResource(if (state.revealed) R.string.app_lock_credential_hide else R.string.app_lock_credential_show))
             }
         },

@@ -18,7 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -83,17 +83,17 @@ fun CaptureTimestampRow(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(
+            LumaTextButton(
                 enabled = enabled,
                 onClick = { dialogOpen = true },
                 modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("capture_timestamp_value"),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
@@ -105,7 +105,7 @@ fun CaptureTimestampRow(
                     Text(dateText, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 }
             }
-            TextButton(
+            LumaTextButton(
                 enabled = enabled,
                 onClick = { dialogOpen = true },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("capture_timestamp_change"),
@@ -137,7 +137,7 @@ fun CaptureTimestampRow(
                 Column(
                     modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState())
                         .testTag("capture_timestamp_dialog"),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 ) {
                     Text(stringResource(R.string.capture_timestamp_date), style = MaterialTheme.typography.titleSmall)
                     DatePicker(
@@ -147,7 +147,7 @@ fun CaptureTimestampRow(
                     )
                     Text(stringResource(R.string.capture_timestamp_time), style = MaterialTheme.typography.titleSmall)
                     TimeInput(state = time, modifier = Modifier.testTag("capture_timestamp_time_input"))
-                    TextButton(
+                    LumaTextButton(
                         onClick = { timezoneExpanded = !timezoneExpanded },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("capture_timezone_toggle"),
                     ) { Text(stringResource(R.string.capture_timezone)) }
@@ -163,7 +163,7 @@ fun CaptureTimestampRow(
                 }
             },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         val selected = captureTimestampForSelection(
                             current.toLocalDateTime(), selectedDate, time.hour, time.minute,
@@ -174,7 +174,7 @@ fun CaptureTimestampRow(
                 ) { Text(stringResource(R.string.capture_timestamp_done)) }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = { dialogOpen = false },
                     modifier = Modifier.testTag("capture_timestamp_cancel"),
                 ) { Text(stringResource(R.string.cancel)) }

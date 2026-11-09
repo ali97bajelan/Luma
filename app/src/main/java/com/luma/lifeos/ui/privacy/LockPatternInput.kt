@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,7 +18,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -83,7 +84,7 @@ internal fun LockPatternInput(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
     ) {
         BoxWithConstraints(Modifier.fillMaxWidth().wrapContentSize(Alignment.Center)) {
             val dimension = maxWidth.coerceAtMost(288.dp).coerceAtLeast(176.dp)
@@ -196,13 +197,13 @@ internal fun LockPatternInput(
             }
         }
         if (tooShort) AccessibleFeedback(stringResource(R.string.app_lock_pattern_too_short))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(enabled = enabled, onClick = {
+        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap), verticalAlignment = Alignment.CenterVertically) {
+            LumaTextButton(enabled = enabled, onClick = {
                 nodes = emptyList()
                 tooShort = false
                 currentOnCleared()
             }) { Text(stringResource(R.string.app_lock_pattern_clear)) }
-            TextButton(enabled = enabled && nodes.size >= 4, onClick = {
+            LumaTextButton(enabled = enabled && nodes.size >= 4, onClick = {
                 val encoded = LockPatternRules.encode(nodes)
                 if (encoded == null) {
                     tooShort = true

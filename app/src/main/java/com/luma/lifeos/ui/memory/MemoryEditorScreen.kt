@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.memory
 
+import com.luma.lifeos.ui.common.LumaUi
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaFilterChip
 import com.luma.lifeos.ui.common.LumaInputChip
 
@@ -126,12 +130,12 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 }
                 actionError?.let { AccessibleFeedback(it, Modifier.testTag("memory_action_error")) }
                 if (onShare != null && state.editing) {
-                    TextButton(onClick = onShare, enabled = shareEnabled && !photoOperationActive) { Text(stringResource(R.string.share_action)) }
+                    LumaTextButton(onClick = onShare, enabled = shareEnabled && !photoOperationActive) { Text(stringResource(R.string.share_action)) }
                     if (!shareEnabled) AccessibleFeedback(stringResource(R.string.share_save_first), isError = false)
                 }
                 EditorActionRow(
                     secondaryAction = if (state.editing) { actionModifier ->
-                        TextButton(enabled = enabled, onClick = { removing = true }, modifier = actionModifier.testTag("memory_remove")) {
+                        LumaTextButton(enabled = enabled, onClick = { removing = true }, modifier = actionModifier.testTag("memory_remove")) {
                             Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark))
                         }
                     } else null,
@@ -145,8 +149,8 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
         }
     }) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.GroupGap)) {
                 if (state.loading) CircularProgressIndicator()
                 state.error?.let { error ->
                     val message = stringResource(when (error) {
@@ -164,7 +168,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         else -> true
                     }
                     if (showBodyError) AccessibleFeedback(message, Modifier.testTag("memory_error"))
-                    if (error == MemoryEditorError.LOAD) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                    if (error == MemoryEditorError.LOAD) LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
                 if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled && state.direct,
                     state.error == MemoryEditorError.TIME, onTime)
@@ -221,14 +225,14 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                             }
                         },
                     ) {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             state.draft.tagNames.forEach { name ->
                                 LumaInputChip(selected = true, enabled = enabled, onClick = { onRemoveTag(name) },
                                     label = { Text(stringResource(R.string.memory_remove_tag, name)) })
                             }
                         }
                         val tagFeedback = if (tagError) stringResource(R.string.memory_tag_size_error) else null
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             LumaOutlinedTextField(value = tagText, onValueChange = {
                                 when {
                                     it.length > MemoryTextLimits.TAG -> tagError = true
@@ -244,10 +248,10 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                                 label = { Text(stringResource(R.string.memory_tag_name)) },
                                 modifier = Modifier.weight(1f).bringIntoViewRequester(tagInputBringIntoViewRequester)
                                     .semantics { tagFeedback?.let { error(it) } }.testTag("memory_tag_input"))
-                            TextButton(enabled = enabled && tagText.isNotBlank(), onClick = { addPendingTag() },
+                            LumaTextButton(enabled = enabled && tagText.isNotBlank(), onClick = { addPendingTag() },
                                 modifier = Modifier.testTag("memory_add_tag")) { Text(stringResource(R.string.add)) }
                         }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             state.tags.filter { tag -> state.draft.tagNames.none { Tag.normalize(it) == Tag.normalize(tag.name) } }
                                 .forEach { tag ->
                                     LumaFilterChip(selected = false, enabled = enabled, onClick = { onAddTag(tag.name) },
@@ -276,7 +280,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         },
                     ) {
                         Text(stringResource(R.string.mood_scale_hint), style = MaterialTheme.typography.bodySmall)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             (1..5).forEach { value ->
                                 val description = stringResource(R.string.memory_importance_value, value)
                                 LumaFilterChip(selected = state.draft.importance == value, enabled = enabled,
@@ -292,7 +296,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     val disclosureState = stringResource(
                         if (more) R.string.review_details_expanded else R.string.review_details_collapsed,
                     )
-                    TextButton(
+                    LumaTextButton(
                         onClick = { more = !more },
                         enabled = enabled && contextExpansionInitialized,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -307,7 +311,7 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
                     if (more) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                         ) {
                             peopleContent()
                             placeContent()
@@ -325,9 +329,9 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
         text = { Text(stringResource(if (state.direct) R.string.memory_delete_body else R.string.memory_unmark_body)) },
         confirmButton = { LumaDestructiveTextButton(onClick = { removing = false; onRemove() }, modifier = Modifier.testTag("memory_confirm_remove")) {
             Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark)) } },
-        dismissButton = { TextButton(onClick = { removing = false }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { LumaTextButton(onClick = { removing = false }) { Text(stringResource(R.string.cancel)) } })
     if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.mood_discard_title)) }, text = { Text(stringResource(R.string.mood_discard_body)) },
-        confirmButton = { TextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
-        dismissButton = { TextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
+        confirmButton = { LumaTextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },
+        dismissButton = { LumaTextButton(onClick = { discarding = false }) { Text(stringResource(R.string.keep_editing)) } })
 }

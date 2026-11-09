@@ -21,7 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +45,7 @@ import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.ui.common.LumaListSurface
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.todoBucket
@@ -99,7 +100,7 @@ fun TodoListScreen(
                 onNavigate = onBack,
                 navigationTag = "todo_list_back",
                 actions = {
-                    TextButton(
+                    LumaTextButton(
                         onClick = onAddTask,
                         modifier = Modifier.heightIn(min = 48.dp).focusRequester(addFocusRequester)
                             .testTag("todo_list_add"),
@@ -112,10 +113,10 @@ fun TodoListScreen(
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
          Column(
-            Modifier.fillMaxSize().padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            Modifier.fillMaxSize().padding(horizontal = LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
          ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 LumaFilterChip(
                     selected = !state.completed,
                     onClick = { onSelectCompleted(false) },
@@ -145,7 +146,7 @@ fun TodoListScreen(
                         Modifier.weight(1f),
                         color = MaterialTheme.colorScheme.error,
                     )
-                    TextButton(
+                    LumaTextButton(
                         onClick = onRetryLoad,
                         enabled = !state.refreshing,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("todo_list_retry_refresh"),
@@ -157,7 +158,7 @@ fun TodoListScreen(
             if (state.loading || state.refreshing) {
                 Row(
                     Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     CircularProgressIndicator(Modifier.heightIn(min = 24.dp), strokeWidth = 2.dp)
@@ -291,7 +292,7 @@ fun TodoListScreen(
                         if (state.dataFresh && state.page.items.isEmpty()) {
                             item(key = "empty") {
                                 LumaSectionSurface(Modifier.testTag("todo_list_empty")) {
-                                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                                         Text(
                                             stringResource(
                                                 if (state.completed) R.string.todo_list_empty_completed
@@ -300,7 +301,7 @@ fun TodoListScreen(
                                             style = MaterialTheme.typography.titleMedium,
                                         )
                                         if (state.completed) {
-                                            TextButton(
+                                            LumaTextButton(
                                                 onClick = { onSelectCompleted(false) },
                                                 modifier = Modifier.heightIn(min = 48.dp),
                                             ) {
@@ -418,7 +419,7 @@ fun TodoListScreen(
                             state.page.items.size < state.page.total
                         ) {
                             item(key = "load_more") {
-                                TextButton(
+                                LumaTextButton(
                                     onClick = onLoadMore,
                                     enabled = !state.loadingMore,
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -461,7 +462,7 @@ private fun TodoPendingActionCard(
     onOpen: () -> Unit,
 ) {
     LumaListSurface(Modifier.testTag("todo_pending_${intent.taskId}")) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
             Text(intent.title, style = MaterialTheme.typography.bodyLarge)
             Text(
                 stringResource(
@@ -475,11 +476,11 @@ private fun TodoPendingActionCard(
                 color = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
             )
             if (!pending) {
-                TextButton(onClick = onRetry, enabled = retryEnabled, modifier = Modifier.heightIn(min = 48.dp)) {
+                LumaTextButton(onClick = onRetry, enabled = retryEnabled, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.todo_retry_action))
                 }
                 if (error == TodoListRowError.CONFLICT) {
-                    TextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
+                    LumaTextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(stringResource(R.string.todo_status_open))
                     }
                 }
@@ -497,7 +498,7 @@ private fun TodoTerminalRowErrorCard(
     onDismiss: () -> Unit,
 ) {
     LumaListSurface(Modifier.testTag("todo_row_error_$taskId")) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(
                 stringResource(
@@ -507,11 +508,11 @@ private fun TodoTerminalRowErrorCard(
                 color = MaterialTheme.colorScheme.error,
             )
             if (error == TodoListRowError.CONFLICT) {
-                TextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
+                LumaTextButton(onClick = onOpen, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.todo_status_open))
                 }
             }
-            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+            LumaTextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.todo_feedback_dismiss))
             }
         }
@@ -521,9 +522,9 @@ private fun TodoTerminalRowErrorCard(
 @Composable
 private fun TodoListErrorCard(message: Int, onRetry: () -> Unit, retryTag: String) {
     LumaSectionSurface {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Text(stringResource(message), color = MaterialTheme.colorScheme.error)
-            TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag(retryTag)) {
+            LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag(retryTag)) {
                 Text(stringResource(R.string.retry))
             }
         }

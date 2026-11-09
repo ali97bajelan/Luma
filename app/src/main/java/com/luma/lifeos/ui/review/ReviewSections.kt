@@ -18,7 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -89,7 +89,7 @@ internal fun ReviewSectionNavigation(
     ) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             Row(
                 Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
@@ -105,7 +105,7 @@ internal fun ReviewSectionNavigation(
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                TextButton(
+                LumaTextButton(
                     onClick = { onSection("overview") },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_action"),
                 ) {
@@ -115,8 +115,8 @@ internal fun ReviewSectionNavigation(
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val compact = maxWidth < 320.dp || LocalDensity.current.fontScale >= 1.5f
                 if (compact) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        TextButton(
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
+                        LumaTextButton(
                             onClick = { showSections = true },
                             modifier = Modifier.heightIn(min = 48.dp).testTag("review_sections_open"),
                         ) {
@@ -127,10 +127,10 @@ internal fun ReviewSectionNavigation(
                 } else {
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
-                        TextButton(
+                        LumaTextButton(
                             onClick = { showSections = true },
                             modifier = Modifier.heightIn(min = 48.dp).testTag("review_sections_open"),
                         ) {
@@ -153,7 +153,7 @@ internal fun ReviewSectionNavigation(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     sections.forEach { destination ->
-                        TextButton(
+                        LumaTextButton(
                             onClick = {
                                 showSections = false
                                 onSection(destination.key)
@@ -167,7 +167,7 @@ internal fun ReviewSectionNavigation(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showSections = false }, modifier = Modifier.heightIn(min = 48.dp)) {
+                LumaTextButton(onClick = { showSections = false }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.health_close))
                 }
             },
@@ -185,7 +185,7 @@ private fun SectionShortcuts(
 ) {
     Row(
         modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
     ) {
         shortcuts.forEach { destination ->
             LumaFilterChip(

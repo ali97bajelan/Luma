@@ -1,9 +1,12 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -49,10 +52,10 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
         val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
         val format = displayTime.dateTime(FormatStyle.SHORT)
         LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review_usage")) {
-         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 24.dp, 20.dp, 100.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(LumaUi.PageGutter, 24.dp, LumaUi.PageGutter, 100.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
             item {
-                TextButton(onClick = onBack, modifier = Modifier.testTag("review_usage_back")) { Text(stringResource(R.string.back)) }
+                LumaTextButton(onClick = onBack, modifier = Modifier.testTag("review_usage_back")) { Text(stringResource(R.string.back)) }
                 AppSectionHeading(stringResource(R.string.review_saved_usage))
                 LumaSectionSurface {
                     Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
@@ -66,7 +69,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                 UsageDayState.Loading -> item { CircularProgressIndicator() }
                 UsageDayState.Error -> item {
                     AccessibleFeedback(stringResource(R.string.review_error))
-                    TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                    LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                 }
                 UsageDayState.Empty -> item { Text(stringResource(R.string.usage_daily_empty)) }
                 is UsageDayState.Data -> {
@@ -84,7 +87,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                     }
                     items(current.report.apps, key = { "app:${it.packageName}" }) { app ->
                         LumaListSurface {
-                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                         Column(Modifier.padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                             Text(app.appLabel ?: app.packageName)
                             if (app.appLabel != null) Text(app.packageName, style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -94,7 +97,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                     }
                     items(current.report.sessions, key = { it.identity }) { session ->
                         LumaListSurface(Modifier.testTag("review_usage_session_${session.identity}")) {
-                            Column(Modifier.padding(16.dp)) {
+                            Column(Modifier.padding(LumaUi.SectionPadding)) {
                                 Text(session.appLabel ?: session.packageName)
                                 Text(stringResource(R.string.usage_session_times, session.start.atZone(zone).format(format), session.end.atZone(zone).format(format)))
                                 Text(reviewDuration(session.durationMillis, stringResource(R.string.review_usage_app_missing)))

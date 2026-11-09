@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -7,7 +8,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -53,7 +54,7 @@ internal fun ReviewOverview(
     val current = report.current
     Column(
         Modifier.fillMaxWidth().testTag("review_overview"),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
     ) {
         LumaSectionSurface(modifier = Modifier.testTag("review_overview_personal")) {
             LumaSectionHeader(
@@ -80,7 +81,7 @@ internal fun ReviewOverview(
                 detail = samples,
             )
             if (mood == null) {
-                TextButton(onClick = onCheckIn, modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_checkin")) {
+                LumaTextButton(onClick = onCheckIn, modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_checkin")) {
                     Text(stringResource(R.string.review_checkin_action))
                 }
             }
@@ -117,7 +118,7 @@ private fun ReviewHabitsOverviewMetric(state: ReviewHabitsState?, onHabits: () -
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     Column(
         Modifier.fillMaxWidth().testTag("review_overview_habits"),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
     ) {
         Text(
             stringResource(R.string.review_habits_overview_title),
@@ -136,7 +137,7 @@ private fun ReviewHabitsOverviewMetric(state: ReviewHabitsState?, onHabits: () -
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        TextButton(
+        LumaTextButton(
             onClick = onHabits,
             modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_habits_open"),
         ) {
@@ -158,7 +159,7 @@ internal fun ReviewOverviewMetric(
     val unavailable = absence != null
     Column(
         modifier.semantics(mergeDescendants = true) {}.testTag(tag),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(

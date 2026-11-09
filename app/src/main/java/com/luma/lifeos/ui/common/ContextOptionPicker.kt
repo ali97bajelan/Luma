@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +75,7 @@ fun ContextOptionPicker(
         title = { Text(title, style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.semantics { heading() }) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 LumaOutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -85,8 +85,8 @@ fun ContextOptionPicker(
                     modifier = Modifier.fillMaxWidth().testTag("context_search"),
                 )
                 if (selected.isNotEmpty()) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         selectedOptions.forEach { (id, option) ->
                             LumaInputChip(
                                 selected = true,
@@ -108,7 +108,7 @@ fun ContextOptionPicker(
                         }
                     }
                 }
-                TextButton(enabled = enabled && selected.isNotEmpty(), onClick = { workingIds = emptySet() },
+                LumaTextButton(enabled = enabled && selected.isNotEmpty(), onClick = { workingIds = emptySet() },
                     modifier = Modifier.align(Alignment.End).testTag("context_clear")) {
                     Text(stringResource(R.string.search_clear_selection))
                 }
@@ -120,7 +120,7 @@ fun ContextOptionPicker(
                     Text(stringResource(R.string.search_no_options), modifier = Modifier.testTag("context_no_results"))
                 } else {
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         items(filtered, key = { it.id.toString() }) { option ->
                             val checked = option.id in selected
                             val canChange = enabled && (checked || selected.size < maxSelections)
@@ -149,16 +149,16 @@ fun ContextOptionPicker(
             }
         },
         confirmButton = {
-            TextButton(enabled = enabled, onClick = { apply(); onDismiss() },
+            LumaTextButton(enabled = enabled, onClick = { apply(); onDismiss() },
                 modifier = Modifier.testTag("context_done")) { Text(stringResource(R.string.search_done)) }
         },
         dismissButton = {
             FlowRow(horizontalArrangement = Arrangement.End, verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                TextButton(enabled = enabled, onClick = { apply(); onDismiss(); onCreate() },
+                LumaTextButton(enabled = enabled, onClick = { apply(); onDismiss(); onCreate() },
                     modifier = Modifier.testTag("context_create")) {
                     Text(stringResource(R.string.context_new))
                 }
-                TextButton(onClick = onDismiss, modifier = Modifier.testTag("context_cancel")) {
+                LumaTextButton(onClick = onDismiss, modifier = Modifier.testTag("context_cancel")) {
                     Text(stringResource(R.string.cancel))
                 }
             }

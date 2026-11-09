@@ -1,5 +1,9 @@
 package com.luma.lifeos.ui.people
 
+import com.luma.lifeos.ui.common.LumaUi
+
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.activity.compose.BackHandler
@@ -80,11 +84,11 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
     val empty = (state as? PeopleState.Data)?.people?.isEmpty() == true
     LazyColumn(modifier.fillMaxSize().testTag("screen_people"),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
         item {
             LumaSectionSurface {
              Column(Modifier.testTag(if (state is PeopleState.Data) "people_ready" else "people_header"),
-                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                 verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                 Text(stringResource(R.string.people_intro))
                 LumaOutlinedTextField(value = query, onValueChange = onQueryChange,
                     label = { Text(stringResource(R.string.search_options_hint)) }, singleLine = true,
@@ -97,7 +101,7 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
             PeopleState.Loading -> item { CircularProgressIndicator() }
             PeopleState.Error -> item {
                 Text(stringResource(R.string.people_load_error), color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
             is PeopleState.Data -> {
                 if (current.people.isEmpty()) item {
@@ -110,11 +114,11 @@ private fun PeopleListContent(repository: PersonRepository, onCreate: () -> Unit
                 }
                 items(filteredPeople, key = { it.id.toString() }) { person ->
                     LumaClickableListSurface(onClick = { onPerson(person.id) }, modifier = Modifier.testTag("person_${person.id}")) {
-                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        Row(Modifier.fillMaxWidth().padding(LumaUi.SectionPadding), horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Icon(painterResource(R.drawable.ic_nav_people), contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                                 Text(person.name, style = MaterialTheme.typography.titleMedium)
                                 person.note?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
                             }
@@ -151,14 +155,14 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
         },
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(Modifier.fillMaxSize().testTag("person_detail_content"), contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            LazyColumn(Modifier.fillMaxSize().testTag("person_detail_content"), contentPadding = PaddingValues(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                 when (val current = state) {
                     PersonHistoryState.Loading -> item { CircularProgressIndicator() }
                     PersonHistoryState.Missing -> item { Text(stringResource(R.string.person_missing)) }
                     PersonHistoryState.Error -> item {
                         Text(stringResource(R.string.people_load_error), color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                        LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
                     }
                     is PersonHistoryState.Data -> {
                         val events = current.history.events.sortedWith(
@@ -177,7 +181,7 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                         }
                         items(events, key = { it.event.id.toString() }) { record ->
                             LumaListSurface(Modifier.testTag("person_event_${record.event.id}")) {
-                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                                     Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
                                         .format(displayTime.dateTime(FormatStyle.MEDIUM)),
                                         style = MaterialTheme.typography.labelMedium,
@@ -198,7 +202,7 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                                     LinkedPeople(record.people)
                                     LinkedPlace(record.place)
                                     PhotoCount(record.photos.size)
-                                    TextButton(onClick = { onEvent(record) }) { Text(stringResource(R.string.person_open_event)) }
+                                    LumaTextButton(onClick = { onEvent(record) }) { Text(stringResource(R.string.person_open_event)) }
                                 }
                             }
                         }

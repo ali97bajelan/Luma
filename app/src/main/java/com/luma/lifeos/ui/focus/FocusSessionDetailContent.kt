@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -87,13 +87,13 @@ internal fun FocusSessionDetailContent(
             isFocusReadable = isFocusReadable,
             onSaved = onChanged,
         )
-        TextButton(
+        LumaTextButton(
             enabled = !deleting,
             onClick = onRepeat,
             modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_repeat"),
         ) { Text(stringResource(R.string.focus_repeat)) }
         onDelete?.let { delete ->
-            TextButton(
+            LumaTextButton(
                 enabled = !deleting,
                 onClick = delete,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_delete"),
@@ -101,7 +101,7 @@ internal fun FocusSessionDetailContent(
                 Text(stringResource(if (deleting) R.string.focus_saving else R.string.focus_history_delete_action))
             }
         }
-        TextButton(
+        LumaTextButton(
             onClick = { breakdownExpanded = !breakdownExpanded },
             modifier = Modifier.heightIn(min = 48.dp)
                 .semantics { stateDescription = breakdownStateDescription }

@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.memory
 
+import com.luma.lifeos.ui.common.LumaUi
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -10,7 +11,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -76,11 +77,11 @@ internal fun MemoryPhotoEditor(
     var viewerAttempt by rememberSaveable { mutableIntStateOf(0) }
 
     val canEditPhotos = enabled && photoState is MemoryPhotoEditState.Idle && !pickerActive
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         Text(stringResource(R.string.photos), style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() }.testTag("photo_heading"))
         Text(stringResource(R.string.photo_limits), style = MaterialTheme.typography.bodySmall)
-        TextButton(
+        LumaTextButton(
             enabled = canEditPhotos && photos.size < PhotoLimits.COUNT,
             onClick = {
                 if (!pickerActive && photoState is MemoryPhotoEditState.Idle) {
@@ -216,7 +217,7 @@ private fun PhotoEditProgressDialog(message: Int, canCancel: Boolean = true, onC
         dismissOnBackPress = canCancel) {
         CircularProgressIndicator()
         Text(stringResource(message), style = MaterialTheme.typography.titleMedium)
-        if (canCancel) TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_edit_cancel")) {
+        if (canCancel) LumaTextButton(onClick = onCancel, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_edit_cancel")) {
             Text(stringResource(R.string.photo_edit_cancel))
         }
     }
@@ -233,14 +234,14 @@ private fun PhotoImportFailureDialog(
     BackHandler { onCancel() }
     SecurePhotoDialog(onDismiss = onCancel, contentTag = "memory_photo_edit") {
         Text(stringResource(error.messageResource()), style = MaterialTheme.typography.titleMedium)
-        if (canRetry) TextButton(onClick = onRetry, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("photo_edit_retry")) {
+        if (canRetry) LumaTextButton(onClick = onRetry, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("photo_edit_retry")) {
             Text(stringResource(R.string.photo_edit_retry))
         }
-        TextButton(onClick = onSelectAgain, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        LumaTextButton(onClick = onSelectAgain, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
             .testTag("photo_edit_select_again")) {
             Text(stringResource(R.string.photo_edit_select_again))
         }
-        TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("photo_edit_cancel")) {
+        LumaTextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("photo_edit_cancel")) {
             Text(stringResource(R.string.photo_edit_cancel))
         }
     }
@@ -271,7 +272,7 @@ private fun SecurePhotoDialog(
             Column(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap, Alignment.CenterVertically),
                 content = content,
             )
         }

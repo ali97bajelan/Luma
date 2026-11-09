@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.review
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
@@ -36,7 +37,7 @@ internal fun ReviewValueGroup(content: @Composable ColumnScope.() -> Unit) {
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
             content = content,
         )
     }
@@ -47,12 +48,12 @@ internal fun ReviewValue(label: String, current: String, previous: String, chang
     onCurrent: (() -> Unit)? = null, onPrevious: (() -> Unit)? = null,
     currentUnavailable: Boolean = false, previousUnavailable: Boolean = false) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
         Text(label, style = MaterialTheme.typography.titleMedium)
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val stack = maxWidth < 280.dp || LocalDensity.current.fontScale >= 1.5f
             if (stack) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     ReviewPeriodValue(
                         stringResource(R.string.review_current_period), current, currentUnavailable,
                         Modifier.fillMaxWidth(), "review_metric_$tag",
@@ -63,7 +64,7 @@ internal fun ReviewValue(label: String, current: String, previous: String, chang
                     )
                 }
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     ReviewPeriodValue(
                         stringResource(R.string.review_current_period), current, currentUnavailable,
                         Modifier.weight(1f), "review_metric_$tag",
@@ -112,7 +113,7 @@ private fun ReviewPeriodValue(
     ) {
         Column(
             Modifier.fillMaxWidth().padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             Text(period, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
@@ -133,7 +134,7 @@ private fun ReviewSourcesControl(label: String, tag: String,
         var expanded by remember { mutableStateOf(false) }
         val state = stringResource(if (expanded) R.string.review_details_expanded else R.string.review_details_collapsed)
         Box {
-            TextButton(onClick = { expanded = true }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+            LumaTextButton(onClick = { expanded = true }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                 .testTag("review_sources_menu_$tag")
                 .semantics { contentDescription = "$label · $sources"; stateDescription = state }) { Text(sources) }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -146,7 +147,7 @@ private fun ReviewSourcesControl(label: String, tag: String,
     } else if (onCurrent != null || onPrevious != null) {
         val action = if (onCurrent != null) stringResource(R.string.review_view_sources)
             else stringResource(R.string.review_view_previous_sources)
-        TextButton(onClick = onCurrent ?: onPrevious!!,
+        LumaTextButton(onClick = onCurrent ?: onPrevious!!,
             modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                 .testTag(if (onCurrent != null) "review_sources_$tag" else "review_previous_sources_$tag")
                 .semantics { contentDescription = "$label · $action" }) { Text(action) }

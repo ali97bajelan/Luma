@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 import com.luma.lifeos.ui.common.LumaCard
 
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -42,8 +43,8 @@ internal fun TodayFocusCard(
 ) {
     LumaCard(Modifier.fillMaxWidth().testTag("today_focus_card")) {
         Column(
-            Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         ) {
             Text(
                 stringResource(R.string.focus_today_title),
@@ -58,13 +59,13 @@ internal fun TodayFocusCard(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     )
-                    TextButton(onClick = onRetry, modifier = Modifier.testTag("today_focus_retry")) {
+                    LumaTextButton(onClick = onRetry, modifier = Modifier.testTag("today_focus_retry")) {
                         Text(stringResource(R.string.retry))
                     }
                 }
                 FocusReportState.NeedsUnlock -> {
                     Text(stringResource(R.string.app_lock_gate_body))
-                    TextButton(
+                    LumaTextButton(
                         onClick = onRequestUnlock,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("today_focus_unlock"),
                     ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -109,7 +110,7 @@ internal fun TodayFocusCard(
                 }
             }
             if (report is FocusReportState.Ready) {
-                TextButton(
+                LumaTextButton(
                     onClick = onHistory,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_focus_history"),
                 ) {

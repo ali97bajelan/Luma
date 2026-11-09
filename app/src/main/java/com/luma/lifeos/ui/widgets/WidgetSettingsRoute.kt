@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.widgets
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import android.app.PendingIntent
@@ -31,7 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -165,7 +166,7 @@ fun WidgetSettingsRoute(widgetStore: WidgetStore?, onBack: () -> Unit) {
 @Composable
 private fun ProviderCard(kind: WidgetKind, title: Int, description: Int, onAdd: () -> Unit) {
     LumaListSurface {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(description), style = MaterialTheme.typography.bodyMedium)
             WidgetExample(kind)
@@ -180,8 +181,8 @@ private fun ProviderCard(kind: WidgetKind, title: Int, description: Int, onAdd: 
 private fun InstanceCard(instance: WidgetInstance, ordinal: Int?, onConfigure: () -> Unit) {
     LumaListSurface {
         Row(
-            Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val title = stringResource(if (instance.kind == WidgetKind.HABITS) R.string.widget_habits_title else R.string.widget_tasks_title)

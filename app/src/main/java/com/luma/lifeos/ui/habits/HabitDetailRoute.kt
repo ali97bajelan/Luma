@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.habits
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import androidx.activity.compose.BackHandler
@@ -21,7 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -267,12 +269,12 @@ fun HabitDetailScreen(
             onEdit = onEdit.takeIf { canEditHabit })
     }) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("habit_detail_list"), contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("habit_detail_list"), contentPadding = PaddingValues(LumaUi.PageGutter),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 if (detail?.loading == true) item { CircularProgressIndicator(Modifier.testTag("habit_detail_loading")) }
                 if (detail?.error == HabitUiError.LOAD || state.error == HabitUiError.LOAD) item {
                     Text(stringResource(R.string.habit_load_error), color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                    LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
                 if (detail != null && habit != null) {
                     if (targetLogId != null) item(key = "habit_target_arrival_$targetLogId") {
@@ -320,14 +322,14 @@ fun HabitDetailScreen(
                             description = stringResource(R.string.reminder_habit_description),
                             modifier = Modifier.testTag("habit_detail_reminder"),
                         )
-                        TextButton(onClick = onReminderTimeClick, enabled = canEditHabit,
+                        LumaTextButton(onClick = onReminderTimeClick, enabled = canEditHabit,
                             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_detail_reminder_time")) {
                             val timeText = LocalTime.of(reminderMinute / 60, reminderMinute % 60)
                                 .format(java.time.format.DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
                             Text("${stringResource(R.string.reminder_habit_time)} · $timeText")
                         }
                         if (reminderEnabled || reminderStatus == R.string.reminder_save_failed) {
-                            Text(stringResource(reminderStatus), modifier = Modifier.padding(horizontal = 16.dp))
+                            Text(stringResource(reminderStatus), modifier = Modifier.padding(horizontal = LumaUi.SectionPadding))
                         }
                     }
                     item(key = "habit_detail_undo_feedback") {
@@ -344,7 +346,7 @@ fun HabitDetailScreen(
                         }
                     }
                     if (canSkip) item {
-                        TextButton(onClick = if (day?.skipRemaining == true) onResumeToday else onSkip,
+                        LumaTextButton(onClick = if (day?.skipRemaining == true) onResumeToday else onSkip,
                             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_skip_remaining")) {
                             Text(stringResource(if (day?.skipRemaining == true) R.string.habit_resume_today else R.string.habit_skip_remaining))
                         }
@@ -370,7 +372,7 @@ fun HabitDetailScreen(
                                     pendingSchedule.effectiveFrom.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
                                     modifier = Modifier.testTag("habit_pending_effective_date"))
                                 val isFutureInitial = futureStart && pendingSchedule.effectiveFrom == habit.start
-                                if (!isFutureInitial) TextButton(onClick = onCancelPending,
+                                if (!isFutureInitial) LumaTextButton(onClick = onCancelPending,
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_cancel_pending")) {
                                     Text(stringResource(R.string.habit_cancel_pending))
                                 }
@@ -398,7 +400,7 @@ fun HabitDetailScreen(
         title = { Text(stringResource(R.string.habit_delete_title)) }, text = { Text(stringResource(R.string.habit_delete_body)) },
         confirmButton = { LumaDestructiveTextButton(onClick = { confirmingDelete = false; onDeleteHabit() },
             modifier = Modifier.testTag("habit_confirm_delete")) { Text(stringResource(R.string.habit_delete)) } },
-        dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } })
+        dismissButton = { LumaTextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } })
     detail?.correction?.let { correction ->
         HabitLogCorrectionDialog(
             draft = correction,
@@ -413,10 +415,10 @@ fun HabitDetailScreen(
     }
     if (confirmingDiscard) LumaAlertDialog(onDismissRequest = { confirmingDiscard = false },
         title = { Text(stringResource(R.string.habit_correction_discard_title)) }, text = { Text(stringResource(R.string.habit_correction_discard_body)) },
-        confirmButton = { TextButton(enabled = detail?.correctionBusy != true,
+        confirmButton = { LumaTextButton(enabled = detail?.correctionBusy != true,
             onClick = { confirmingDiscard = false; onCancelCorrection() }, modifier = Modifier.testTag("habit_discard_correction")) {
             Text(stringResource(R.string.discard))
-        } }, dismissButton = { TextButton(onClick = { confirmingDiscard = false }) {
+        } }, dismissButton = { LumaTextButton(onClick = { confirmingDiscard = false }) {
             Text(stringResource(R.string.keep_editing))
         } })
 }

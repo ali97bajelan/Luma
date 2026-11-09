@@ -1,10 +1,11 @@
 package com.luma.lifeos.ui.timeline
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +34,7 @@ internal fun TimelineViewOptions(
     )
 
     Column(modifier = modifier) {
-        TextButton(
+        LumaTextButton(
             onClick = { onExpandedChange(!expanded) },
             modifier = Modifier.heightIn(min = 48.dp)
                 .testTag("timeline_view_options")
@@ -48,7 +49,7 @@ internal fun TimelineViewOptions(
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                     val stackSwitch = maxWidth < 320.dp || LocalDensity.current.fontScale >= 1.5f
                     if (stackSwitch) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                             Text(usageSwitchLabel, style = MaterialTheme.typography.bodyLarge)
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                 TimelineAppUsageSwitch(

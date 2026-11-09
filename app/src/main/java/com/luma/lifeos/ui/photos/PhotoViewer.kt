@@ -10,10 +10,11 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,14 +27,16 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -47,6 +50,7 @@ import com.luma.lifeos.domain.model.PhotoReadScope
 import com.luma.lifeos.domain.model.PhotoWorkingLimits
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import com.luma.lifeos.ui.common.LumaUi
 import java.util.UUID
 import kotlin.math.max
 import kotlin.math.min
@@ -118,7 +122,11 @@ fun PhotoViewer(
                             .testTag("photo_viewer_close")
                             .semantics { contentDescription = closeDescription },
                     ) {
-                        Text("×", fontSize = 28.sp, modifier = Modifier.clearAndSetSemantics {})
+                        Icon(
+                            painter = painterResource(R.drawable.ic_close),
+                            contentDescription = null,
+                            modifier = Modifier.size(LumaUi.IconSize),
+                        )
                     }
                     Text(
                         text = if (selectedIndex >= 0) {
@@ -218,7 +226,7 @@ fun PhotoViewer(
                     when {
                         !photosReady -> Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                         ) {
                             CircularProgressIndicator()
                             Text(stringResource(R.string.photo_viewer_loading))
@@ -229,7 +237,7 @@ fun PhotoViewer(
                         )
                         !accessReady || (loading && bitmap == null) -> Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                         ) {
                             CircularProgressIndicator()
                             Text(stringResource(R.string.photo_viewer_loading))
@@ -382,16 +390,16 @@ private fun PhotoUnavailable(onRetry: () -> Unit, onDismiss: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
     ) {
         AccessibleFeedback(
             stringResource(R.string.photo_viewer_unavailable),
             Modifier.testTag("photo_viewer_unavailable"),
         )
-        TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_viewer_retry")) {
+        LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_viewer_retry")) {
             Text(stringResource(R.string.photo_viewer_retry))
         }
-        TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_viewer_close_unavailable")) {
+        LumaTextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp).testTag("photo_viewer_close_unavailable")) {
             Text(stringResource(R.string.photo_viewer_close))
         }
     }

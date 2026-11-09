@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.search
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
@@ -7,6 +8,7 @@ import com.luma.lifeos.ui.common.LumaAlertDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -34,7 +36,7 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
     if (picking == null && datePicking == null) {
         LumaAlertDialog(onDismissRequest = onDone, title = { Text(stringResource(R.string.search_filters)) },
             text = {
-                LazyColumn(Modifier.heightIn(max = 450.dp).testTag("search_filter_panel"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyColumn(Modifier.heightIn(max = 450.dp).testTag("search_filter_panel"), verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                     item {
                         Text(stringResource(R.string.search_filters_help), style = MaterialTheme.typography.bodySmall)
                         SearchDate(stringResource(R.string.search_from), input.from, "search_from", state.invalidDates,
@@ -48,7 +50,7 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
                     item { SelectionButton(stringResource(R.string.people), "search_people", state.options.people, input.personIds) { picking = "people" } }
                     item { SelectionButton(stringResource(R.string.places), "search_places", state.options.places, setOfNotNull(input.placeId)) { picking = "places" } }
                 }
-            }, confirmButton = { TextButton(onClick = onDone, modifier = Modifier.testTag("search_filters_done")) { Text(stringResource(R.string.search_done)) } })
+            }, confirmButton = { LumaTextButton(onClick = onDone, modifier = Modifier.testTag("search_filters_done")) { Text(stringResource(R.string.search_done)) } })
     }
     picking?.let { kind ->
         val choices = when (kind) { "tags" -> state.options.tags; "people" -> state.options.people; else -> state.options.places }
@@ -65,25 +67,25 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
         val selected = (if (side == "from") input.from else input.through) ?: LocalDate.now(state.zone)
         val picker = rememberDatePickerState(initialSelectedDateMillis = pickerMillis(selected), yearRange = minOf(1900, selected.year)..maxOf(2100, selected.year))
         LumaDatePickerDialog(onDismissRequest = { datePicking = null }, modifier = Modifier.testTag("search_date_dialog"),
-            confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
+            confirmButton = { LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
                 picker.selectedDateMillis?.let { if (side == "from") vm.setFrom(pickerDate(it)) else vm.setThrough(pickerDate(it)) }
                 datePicking = null
             }) { Text(stringResource(R.string.select_date)) } },
-            dismissButton = { TextButton(onClick = { datePicking = null }) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
+            dismissButton = { LumaTextButton(onClick = { datePicking = null }) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
     }
 }
 
 @Composable
 private fun SearchDate(label: String, date: LocalDate?, tag: String, invalid: Boolean, onPick: () -> Unit, onClear: () -> Unit) {
     LumaListSurface {
-     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
         Text(label, style = MaterialTheme.typography.labelLarge)
         val invalidMessage = if (invalid) stringResource(R.string.search_invalid_dates) else null
-        TextButton(onClick = onPick, modifier = Modifier.heightIn(min = 48.dp)
+        LumaTextButton(onClick = onPick, modifier = Modifier.heightIn(min = 48.dp)
             .semantics { invalidMessage?.let { error(it) } }.testTag(tag)) {
             Text(date?.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)) ?: stringResource(R.string.search_any_date))
         }
-        if (date != null) TextButton(onClick = onClear, modifier = Modifier.heightIn(min = 48.dp).testTag("${tag}_clear")) {
+        if (date != null) LumaTextButton(onClick = onClear, modifier = Modifier.heightIn(min = 48.dp).testTag("${tag}_clear")) {
             Text(stringResource(R.string.search_clear_date, label))
         }
      }
@@ -95,8 +97,8 @@ private fun SelectionButton(label: String, tag: String, options: List<SearchOpti
     val unknown = stringResource(R.string.search_unavailable)
     val names = selected.take(3).map { id -> options.find { it.id == id }?.name ?: "$unknown (${id.toString().take(8)})" }
     LumaListSurface {
-     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).testTag(tag)) { Text(stringResource(R.string.search_category, label, selected.size)) }
+     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
+        LumaTextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).testTag(tag)) { Text(stringResource(R.string.search_category, label, selected.size)) }
         if (names.isNotEmpty()) Text(names.joinToString(", "), style = MaterialTheme.typography.bodySmall, maxLines = 3)
      }
     }

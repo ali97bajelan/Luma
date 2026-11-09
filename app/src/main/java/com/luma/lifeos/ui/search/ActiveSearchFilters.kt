@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.search
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaAssistChip
 
 import com.luma.lifeos.domain.search.SearchOption
@@ -69,8 +70,8 @@ internal fun ActiveSearchFilters(state: SearchState, onRemove: (SearchFilterKey)
         if (state.invalidDates) AccessibleFeedback(stringResource(R.string.search_invalid_dates),
             Modifier.testTag("search_invalid_dates"))
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         ) {
             filters.forEach { filter ->
                 val category = stringResource(filter.key.kind.categoryResource())

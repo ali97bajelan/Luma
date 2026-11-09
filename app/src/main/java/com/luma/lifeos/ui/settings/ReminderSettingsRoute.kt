@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.settings
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import android.app.TimePickerDialog
@@ -39,7 +40,7 @@ fun ReminderSettingsRoute(preferences: ReminderPreferences, onBack: () -> Unit) 
     SettingsSectionPage(R.string.reminder_settings_title, onBack, screenTag = "screen_settings_reminders") {
         Text(stringResource(R.string.reminder_settings_intro))
         Column(Modifier.fillMaxWidth().testTag("reminder_notification_access"),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Text(stringResource(R.string.reminder_notification_access), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(if (notificationAccess.granted) R.string.reminder_notifications_allowed
                 else R.string.reminder_status_blocked), Modifier.testTag("reminder_notification_access_status"))

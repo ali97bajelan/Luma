@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -9,10 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import com.luma.lifeos.ui.common.LumaFilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,7 +54,7 @@ internal fun FocusInsightsCard(
 
     LumaCard(Modifier.fillMaxWidth().testTag("focus_insights_card")) {
         Column(
-            Modifier.fillMaxWidth().padding(16.dp),
+            Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
@@ -91,7 +92,7 @@ internal fun FocusInsightsCard(
                 if (progressExpanded) R.string.focus_disclosure_expanded
                 else R.string.focus_disclosure_collapsed,
             )
-            TextButton(
+            LumaTextButton(
                 onClick = { progressExpanded = !progressExpanded },
                 modifier = Modifier.heightIn(min = 48.dp)
                     .semantics { stateDescription = progressStateDescription }
@@ -116,9 +117,9 @@ internal fun FocusInsightsCard(
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.semantics { heading() },
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         FocusPeriod.entries.forEach { option ->
-                            FilterChip(
+                            LumaFilterChip(
                                 selected = period == option,
                                 onClick = { onPeriodChange(option) },
                                 label = { Text(stringResource(option.labelResource())) },
@@ -138,14 +139,14 @@ internal fun FocusInsightsCard(
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                             )
-                            TextButton(
+                            LumaTextButton(
                                 onClick = onRetry,
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_retry"),
                             ) { Text(stringResource(R.string.retry)) }
                         }
                         is FocusInsightsState.NeedsUnlock -> {
                             Text(stringResource(R.string.app_lock_gate_body))
-                            TextButton(
+                            LumaTextButton(
                                 onClick = onRequestUnlock,
                                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_unlock"),
                             ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -222,7 +223,7 @@ private fun FocusInsightsContent(
             FocusTagRow(tag, index)
         }
         if (insights.tags.size > 5) {
-            TextButton(
+            LumaTextButton(
                 onClick = { onShowAllTags(!showAllTags) },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_toggle_tags"),
             ) {

@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.review
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,12 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+
 import androidx.annotation.StringRes
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AccessibleFeedback
@@ -34,10 +35,10 @@ internal fun ReviewProviderUnavailableRoute(
     LumaReadingPane(Modifier.fillMaxSize().testTag(screenTag)) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = LumaUi.PageGutter, vertical = LumaUi.SectionGap),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
         ) {
-            TextButton(onClick = onBack, modifier = Modifier.testTag(backTag)) {
+            LumaTextButton(onClick = onBack, modifier = Modifier.testTag(backTag)) {
                 Text(stringResource(R.string.back))
             }
             AppSectionHeading(stringResource(title))

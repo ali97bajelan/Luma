@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.privacy
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaOutlinedTextField
@@ -30,7 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -410,9 +412,9 @@ fun RestrictedCaptureRoute(
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter)
                     .testTag("restricted_capture_screen"),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
             ) {
                 if (state.loading || state.busy && state.session == null) CircularProgressIndicator()
                 else if (state.saved) {
@@ -443,7 +445,7 @@ fun RestrictedCaptureRoute(
                             showChevron = true,
                         )
                     }
-                    TextButton(onClick = onBack, modifier = Modifier.testTag("restricted_capture_exit")) {
+                    LumaTextButton(onClick = onBack, modifier = Modifier.testTag("restricted_capture_exit")) {
                         Text(stringResource(R.string.cancel))
                     }
                 } else {
@@ -451,14 +453,14 @@ fun RestrictedCaptureRoute(
                     Text(stringResource(R.string.restricted_capture_private_notice), style = MaterialTheme.typography.bodyMedium)
                     CaptureFields(draft, !state.busy, vm::setField)
                     if (draft.kind in setOf(CaptureKind.MEMORY, CaptureKind.JOURNAL)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(enabled = !state.busy && draft.photos.size < 20, onClick = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                            LumaTextButton(enabled = !state.busy && draft.photos.size < 20, onClick = {
                                 vm.setPickerActive(true)
                                 picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
                             }, modifier = Modifier.testTag("restricted_capture_add_photo")) {
                                 Text(stringResource(R.string.restricted_capture_choose_photo))
                             }
-                            TextButton(enabled = !state.busy && draft.photos.size < 20, onClick = {
+                            LumaTextButton(enabled = !state.busy && draft.photos.size < 20, onClick = {
                                 val directory = File(context.cacheDir, "restricted-capture").apply { mkdirs() }
                                 val file = File(directory, "${UUID.randomUUID()}.jpg")
                                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.restricted_capture.fileprovider", file)
@@ -471,7 +473,7 @@ fun RestrictedCaptureRoute(
                             }
                         }
                         if (draft.photos.isNotEmpty()) {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                                 draft.photos.forEachIndexed { index, photo ->
                                     RestrictedCapturePhoto(vm, photo, index, !state.busy) { vm.removePhoto(photo.id) }
                                 }
@@ -487,7 +489,7 @@ fun RestrictedCaptureRoute(
                         }
                         AccessibleFeedback(stringResource(resource), Modifier.testTag("restricted_capture_error"))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                         LumaButton(enabled = !state.busy, onClick = {
                             vm.save(ZoneId.systemDefault()) { kind, eventId ->
                                 if (kind == CaptureKind.MEMORY) eventId?.let(onMemorySaved)
@@ -496,7 +498,7 @@ fun RestrictedCaptureRoute(
                             modifier = Modifier.testTag("restricted_capture_save")) {
                             Text(stringResource(R.string.save))
                         }
-                        TextButton(enabled = !state.busy, onClick = vm::requestDiscard,
+                        LumaTextButton(enabled = !state.busy, onClick = vm::requestDiscard,
                             modifier = Modifier.testTag("restricted_capture_cancel")) {
                             Text(stringResource(R.string.cancel))
                         }
@@ -512,10 +514,10 @@ fun RestrictedCaptureRoute(
         onDismissRequest = vm::dismissDiscard,
         title = { Text(stringResource(R.string.restricted_capture_discard_title)) },
         text = { Text(stringResource(R.string.restricted_capture_discard_body)) },
-        confirmButton = { TextButton(onClick = { vm.discard(onBack) }, modifier = Modifier.testTag("restricted_capture_discard_confirm")) {
+        confirmButton = { LumaTextButton(onClick = { vm.discard(onBack) }, modifier = Modifier.testTag("restricted_capture_discard_confirm")) {
             Text(stringResource(R.string.restricted_capture_discard))
         } },
-        dismissButton = { TextButton(onClick = vm::dismissDiscard) { Text(stringResource(R.string.keep_editing)) } },
+        dismissButton = { LumaTextButton(onClick = vm::dismissDiscard) { Text(stringResource(R.string.keep_editing)) } },
     )
 }
 
@@ -555,7 +557,7 @@ private fun CaptureFields(draft: CaptureDraft, enabled: Boolean, change: (String
             CaptureField(R.string.restricted_capture_habit_start, "start", values, enabled, change, singleLine = true)
             CaptureField(R.string.restricted_capture_habit_target, "target", values, enabled, change, singleLine = true)
             Text(stringResource(R.string.restricted_capture_weekdays), style = MaterialTheme.typography.titleSmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 java.time.DayOfWeek.entries.forEach { day ->
                     val code = day.value.toString()
                     val selected = code in values["weekdays"].orEmpty().split(',')
@@ -593,11 +595,11 @@ private fun RestrictedCapturePhoto(vm: RestrictedCaptureViewModel, photo: PhotoA
     var bitmap by remember(vm, photo.id) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(vm, photo.id) { bitmap = vm.preview(photo.id) }
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             bitmap?.let { Image(it, contentDescription = stringResource(R.string.photo_number, index + 1),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 240.dp)) }
                 ?: Text(stringResource(R.string.restricted_capture_photo_added))
-            TextButton(enabled = enabled, onClick = onRemove, modifier = Modifier.testTag("restricted_capture_remove_photo_${photo.id}")) {
+            LumaTextButton(enabled = enabled, onClick = onRemove, modifier = Modifier.testTag("restricted_capture_remove_photo_${photo.id}")) {
                 Text(stringResource(R.string.photo_remove))
             }
         }

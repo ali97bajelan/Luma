@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.todo
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +12,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -59,18 +60,18 @@ fun TodayTasksCard(
         when (state) {
             TodayTasksState.Loading -> Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             ) {
                 CircularProgressIndicator(Modifier.heightIn(min = 24.dp), strokeWidth = 2.dp)
                 Text(stringResource(R.string.todo_list_loading), modifier = Modifier.testTag("today_tasks_loading"))
             }
-            TodayTasksState.Error -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TodayTasksState.Error -> Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Text(
                     stringResource(R.string.todo_list_load_error),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.testTag("today_tasks_error"),
                 )
-                TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_retry")) {
+                LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_retry")) {
                     Text(stringResource(R.string.retry))
                 }
             }
@@ -146,7 +147,7 @@ fun TodayTasksCard(
             Column(
                 Modifier.fillMaxWidth().heightIn(max = 240.dp).verticalScroll(rememberScrollState())
                     .testTag("today_tasks_feedback_scroll"),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             ) {
                 offPreviewIntents.forEach { intent ->
                     val feedback = actions.rowFeedback[intent.taskId]
@@ -177,7 +178,7 @@ fun TodayTasksCard(
                 }
             }
         }
-        TextButton(
+        LumaTextButton(
             onClick = onAddTask,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_tasks_add"),
         ) {
@@ -200,7 +201,7 @@ internal fun TodayTaskRecoverySummary(
 ) {
     Column(
         Modifier.fillMaxWidth().testTag("today_task_feedback_$taskId"),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
         Text(
@@ -228,7 +229,7 @@ internal fun TodayTaskRecoverySummary(
         if (retryEnabled || error == TodoListRowError.CONFLICT || error == TodoListRowError.MISSING) {
             Column(Modifier.fillMaxWidth()) {
                 if (retryEnabled) {
-                    TextButton(
+                    LumaTextButton(
                         onClick = onRetry,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("today_task_feedback_retry_$taskId"),
@@ -237,7 +238,7 @@ internal fun TodayTaskRecoverySummary(
                     }
                 }
                 if (error == TodoListRowError.CONFLICT) {
-                    TextButton(
+                    LumaTextButton(
                         onClick = onOpen,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("today_task_feedback_open_$taskId"),
@@ -246,7 +247,7 @@ internal fun TodayTaskRecoverySummary(
                     }
                 }
                 if (error == TodoListRowError.CONFLICT || error == TodoListRowError.MISSING) {
-                    TextButton(
+                    LumaTextButton(
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .testTag("today_task_feedback_dismiss_$taskId"),

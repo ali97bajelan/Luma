@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.theme
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -19,7 +20,7 @@ fun ThemeSettingsCard() {
     val preferences = rememberThemePreferences()
     val selectedTheme = rememberAppTheme(preferences)
     LumaSectionSurface(Modifier.testTag("theme_settings")) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             Text(stringResource(R.string.theme_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.theme_description), style = MaterialTheme.typography.bodyMedium)
             Column(Modifier.selectableGroup()) {
@@ -31,7 +32,7 @@ fun ThemeSettingsCard() {
                                 onClick = { preferences.edit().putString(THEME_KEY, theme.preferenceValue).apply() })
                             .padding(horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
                     ) {
                         RadioButton(selected = selectedTheme == theme, onClick = null)
                         Text(stringResource(when (theme) {

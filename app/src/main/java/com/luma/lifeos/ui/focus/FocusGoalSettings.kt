@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,10 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.FilterChip
+import com.luma.lifeos.ui.common.LumaFilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
@@ -132,7 +133,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("focus_goal_settings"),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         ) {
             Text(stringResource(R.string.focus_goal_intro), style = MaterialTheme.typography.bodyMedium)
             Text(
@@ -160,10 +161,10 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
         )
         Text(stringResource(R.string.focus_goal_days_heading), style = MaterialTheme.typography.labelLarge)
         DayOfWeek.values().toList().chunked(4).forEach { days ->
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 days.forEach { day ->
                     val selected = weekdayMask and (1 shl (day.value - 1)) != 0
-                    FilterChip(
+                    LumaFilterChip(
                         selected = selected,
                         enabled = !busy,
                         onClick = {
@@ -186,7 +187,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
         }
         Text(stringResource(R.string.focus_goal_zone, selectedZoneId), style = MaterialTheme.typography.bodySmall)
         if (selectedZoneId != deviceZone.id) {
-            TextButton(
+            LumaTextButton(
                 onClick = {
                     selectedZoneId = deviceZone.id
                     pending = null
@@ -248,11 +249,11 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                     .testTag("focus_goal_save_error"),
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(
+        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+            LumaTextButton(
                 enabled = !busy,
                 onClick = {
-                    if (busy) return@TextButton
+                    if (busy) return@LumaTextButton
                     saveSucceeded = false
                     scope.launch {
                         if (busy) return@launch
@@ -336,10 +337,10 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_goal_save"),
             ) { Text(stringResource(R.string.focus_goal_save)) }
             if (goals.enabled) {
-                TextButton(
+                LumaTextButton(
                     enabled = !busy,
                     onClick = {
-                        if (busy) return@TextButton
+                        if (busy) return@LumaTextButton
                         saveSucceeded = false
                         scope.launch {
                             if (busy) return@launch

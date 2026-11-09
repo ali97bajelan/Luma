@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.todo
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
 import com.luma.lifeos.ui.common.LumaCard
@@ -14,7 +15,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -170,7 +171,7 @@ fun TodoActionFeedbackCard(
     LumaCard(Modifier.fillMaxWidth().testTag("todo_completion_feedback")) {
         Column(
             Modifier.fillMaxWidth().padding(12.dp).semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         ) {
             Text(stringResource(if (result.completed) R.string.todo_completed_feedback else R.string.todo_reopened_feedback))
             if (failed) {
@@ -185,7 +186,7 @@ fun TodoActionFeedbackCard(
                         Text(stringResource(if (busy) R.string.todo_undoing else R.string.todo_undo))
                     }
                 }
-                TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp).testTag("todo_feedback_dismiss")) {
+                LumaTextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp).testTag("todo_feedback_dismiss")) {
                     Text(stringResource(R.string.todo_feedback_dismiss))
                 }
             }

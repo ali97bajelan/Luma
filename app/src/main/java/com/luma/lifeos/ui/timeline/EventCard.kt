@@ -46,10 +46,10 @@ fun EventCard(record: LifeEventRecord, zone: ZoneId, onOpen: () -> Unit,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(contentSpacing)) {
+        Column(Modifier.fillMaxWidth().padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(contentSpacing)) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(stringResource(event.type.label()), modifier = Modifier.weight(1f),
@@ -146,7 +146,7 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
             val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
             LumaCard(Modifier.fillMaxWidth().testTag("event_usage_detail"),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.fillMaxWidth().padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     Text(usage.appLabel ?: usage.packageName, style = MaterialTheme.typography.titleMedium)
                     Text(appUsageDuration(usage.durationMillis), style = MaterialTheme.typography.titleLarge)
                     Text(stringResource(R.string.usage_exact_duration, exactDuration(usage.durationMillis)),

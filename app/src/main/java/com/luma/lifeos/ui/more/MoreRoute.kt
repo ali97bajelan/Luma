@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.more
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.LumaChoiceRow
@@ -35,8 +37,8 @@ internal fun MoreRoute(
             modifier = Modifier.fillMaxSize().padding(pagePadding).testTag("screen_more"),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
             ) {
                 onFocus?.let { action ->
                     MoreEntry(

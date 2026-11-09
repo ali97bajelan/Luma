@@ -1,5 +1,7 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
+
 import com.luma.lifeos.ui.common.LumaCard
 import com.luma.lifeos.focus.FocusViewModel
 
@@ -21,9 +23,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -165,11 +167,11 @@ internal fun FocusHistoryRoute(
             modifier = Modifier.fillMaxSize().testTag("focus_history_locked_screen"),
         ) { pagePadding ->
             Column(
-                Modifier.fillMaxSize().padding(pagePadding).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                Modifier.fillMaxSize().padding(pagePadding).padding(LumaUi.PageGutter),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
             ) {
                 Text(stringResource(R.string.app_lock_gate_body), modifier = Modifier.testTag("focus_history_locked"))
-                TextButton(
+                LumaTextButton(
                     onClick = onRequestProtectedFocusUnlock,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_unlock"),
                 ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -239,7 +241,7 @@ private fun FocusHistoryScreen(
                 state = listState,
                 modifier = Modifier.fillMaxSize().padding(pagePadding).testTag("focus_history_list"),
                 contentPadding = PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
             ) {
                 if (range != null) item(key = "range") {
                     Text(
@@ -254,9 +256,9 @@ private fun FocusHistoryScreen(
                     )
                 }
                 item(key = "filters") {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         Text(stringResource(R.string.focus_history_filters_title), style = MaterialTheme.typography.titleMedium)
-                        OutlinedTextField(
+                        LumaOutlinedTextField(
                             value = state.filters.search,
                             onValueChange = onSearch,
                             label = { Text(stringResource(R.string.focus_history_search_label)) },
@@ -278,9 +280,9 @@ private fun FocusHistoryScreen(
                         CircularProgressIndicator(Modifier.testTag("focus_history_loading"))
                     }
                     state.loadFailed -> item(key = "error") {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                             AccessibleFeedback(stringResource(R.string.focus_history_error))
-                            TextButton(onClick = onRetry, modifier = Modifier.testTag("focus_history_retry")) {
+                            LumaTextButton(onClick = onRetry, modifier = Modifier.testTag("focus_history_retry")) {
                                 Text(stringResource(R.string.retry))
                             }
                         }
@@ -322,9 +324,9 @@ private fun FocusHistoryScreen(
                             )
                         }
                         if (state.deletionFailed) item(key = "delete_error") {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                                 AccessibleFeedback(stringResource(R.string.focus_history_delete_failed))
-                                TextButton(onClick = onRetry, modifier = Modifier.testTag("focus_history_delete_retry")) {
+                                LumaTextButton(onClick = onRetry, modifier = Modifier.testTag("focus_history_delete_retry")) {
                                     Text(stringResource(R.string.retry))
                                 }
                             }
@@ -334,7 +336,7 @@ private fun FocusHistoryScreen(
                                 Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                TextButton(
+                                LumaTextButton(
                                     enabled = page.offset > 0,
                                     onClick = { onPage((page.offset - FOCUS_HISTORY_PAGE_SIZE).coerceAtLeast(0)) },
                                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_previous"),
@@ -345,7 +347,7 @@ private fun FocusHistoryScreen(
                                     stringResource(R.string.focus_history_page, pageNumber, pageCount),
                                     modifier = Modifier.padding(top = 14.dp).testTag("focus_history_page"),
                                 )
-                                TextButton(
+                                LumaTextButton(
                                     enabled = page.offset + page.rows.size < page.total,
                                     onClick = { onPage(page.offset + FOCUS_HISTORY_PAGE_SIZE) },
                                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_next"),
@@ -371,7 +373,7 @@ private fun FocusHistoryScreen(
                 )
             },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     enabled = state.deletingSessionId == null,
                     onClick = {
                         deleteTarget = null
@@ -381,7 +383,7 @@ private fun FocusHistoryScreen(
                 ) { Text(stringResource(R.string.focus_history_delete_action)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }, modifier = Modifier.testTag("focus_history_delete_cancel")) {
+                LumaTextButton(onClick = { deleteTarget = null }, modifier = Modifier.testTag("focus_history_delete_cancel")) {
                     Text(stringResource(R.string.cancel))
                 }
             },
@@ -423,7 +425,7 @@ private fun FocusHistoryTargetScreen(
             LazyColumn(
                 Modifier.fillMaxSize().padding(pagePadding).testTag("focus_history_target_content"),
                 contentPadding = PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),
             ) {
                 if (range != null) item(key = "range") {
                     Text(
@@ -449,10 +451,10 @@ private fun FocusHistoryTargetScreen(
                             -> CircularProgressIndicator(Modifier.testTag("focus_history_target_loading"))
 
                             is FocusHistoryTargetSessionState.NeedsUnlock -> Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                             ) {
                                 Text(stringResource(R.string.app_lock_gate_body))
-                                TextButton(
+                                LumaTextButton(
                                     onClick = onRequestUnlock,
                                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_target_unlock"),
                                 ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -464,10 +466,10 @@ private fun FocusHistoryTargetScreen(
                             )
 
                             is FocusHistoryTargetSessionState.Error -> Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                             ) {
                                 AccessibleFeedback(stringResource(R.string.focus_history_error))
-                                TextButton(
+                                LumaTextButton(
                                     onClick = onRetry,
                                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_target_retry"),
                                 ) { Text(stringResource(R.string.retry)) }
@@ -538,7 +540,7 @@ private fun FocusHistoryTagSelector(
             ?: stringResource(R.string.focus_history_tag_selected)
     }
     Box {
-        TextButton(
+        LumaTextButton(
             onClick = { expanded = true },
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_history_tag_filter"),
         ) {
@@ -591,9 +593,9 @@ private fun FocusHistoryItem(
     LumaCard(Modifier.fillMaxWidth().testTag("focus_history_row_${row.session.id}")) {
         Column(
             Modifier.fillMaxWidth().padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
-            TextButton(
+            LumaTextButton(
                 onClick = onOpen,
                 modifier = Modifier.fillMaxWidth()
                     .semantics { stateDescription = expansionStateDescription }

@@ -1,15 +1,16 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.AlertDialog
+import com.luma.lifeos.ui.common.LumaAlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -138,7 +139,7 @@ internal fun FocusTagManager(
             Text(stringResource(R.string.focus_tag_manager_explanation), style = MaterialTheme.typography.bodyMedium)
             if (!canReadTaskOrigin) {
                 Text(stringResource(R.string.app_lock_gate_body))
-                TextButton(
+                LumaTextButton(
                     onClick = onRequestUnlock,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_tag_manager_unlock"),
                 ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
@@ -170,17 +171,17 @@ internal fun FocusTagManager(
             prompt.databaseGeneration == catalog.databaseGeneration &&
             catalog.tags.any { it.id == prompt.source.id } && catalog.tags.any { it.id == prompt.target.id }
     }?.let { prompt ->
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { if (busyTagId == null) mergePrompt = null },
             title = { Text(stringResource(R.string.focus_tag_merge_title)) },
             text = {
                 Text(stringResource(R.string.focus_tag_merge_confirm, prompt.source.name, prompt.target.name))
             },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     enabled = busyTagId == null,
                     onClick = {
-                        if (busyTagId != null) return@TextButton
+                        if (busyTagId != null) return@LumaTextButton
                         busyTagId = prompt.source.id.toString()
                         failed = false
                         scope.launch {
@@ -227,7 +228,7 @@ internal fun FocusTagManager(
                 ) { Text(stringResource(R.string.focus_tag_merge_action)) }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     enabled = busyTagId == null,
                     onClick = { mergePrompt = null },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_tag_merge_cancel"),
@@ -246,8 +247,8 @@ private fun FocusTagManagerRow(
     onRename: (String) -> Unit,
 ) {
     var name by rememberSaveable(tag.id, tag.name) { mutableStateOf(tag.name) }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap), modifier = Modifier.fillMaxWidth()) {
+        LumaOutlinedTextField(
             value = name,
             onValueChange = { if (it.length <= 50) name = it },
             label = { Text(stringResource(R.string.focus_tag_manager_name)) },
@@ -256,7 +257,7 @@ private fun FocusTagManagerRow(
             modifier = Modifier.fillMaxWidth().testTag("focus_tag_name_${tag.id}"),
         )
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-            TextButton(
+            LumaTextButton(
                 onClick = { onRename(name) },
                 enabled = enabled && !busy && name != tag.name,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_tag_rename_${tag.id}"),

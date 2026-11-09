@@ -1,16 +1,18 @@
 package com.luma.lifeos.ui.summary
 
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaCard
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.usage.APP_USAGE_DISPLAY_THRESHOLD_MILLIS
 import com.luma.lifeos.domain.summary.ScaleTotal
@@ -42,13 +44,13 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
             AppSectionHeading(stringResource(R.string.summary_heading), style = MaterialTheme.typography.headlineSmall)
             when (state) {
                 DailySummaryState.Loading -> CircularProgressIndicator(Modifier.testTag("daily_summary_loading"))
                 DailySummaryState.Error -> {
                     AccessibleFeedback(stringResource(R.string.summary_error), Modifier.testTag("daily_summary_error"))
-                    TextButton(onClick = onRetry, modifier = Modifier.testTag("daily_summary_retry")) { Text(stringResource(R.string.retry)) }
+                    LumaTextButton(onClick = onRetry, modifier = Modifier.testTag("daily_summary_retry")) { Text(stringResource(R.string.retry)) }
                 }
                 is DailySummaryState.Data -> {
                     val summary = state.summary
@@ -58,7 +60,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                     if (mood != null) ScaleLine(stringResource(R.string.summary_mood), mood.score, "summary_mood")
                     else {
                         Text(stringResource(R.string.metric_no_check_ins_day), modifier = Modifier.testTag("summary_mood_empty"))
-                        TextButton(onClick = { onCheckIn(summary.date) }, modifier = Modifier.testTag("summary_check_in")) {
+                        LumaTextButton(onClick = { onCheckIn(summary.date) }, modifier = Modifier.testTag("summary_check_in")) {
                             Text(stringResource(R.string.summary_checkin_action))
                         }
                     }
@@ -74,7 +76,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                             style = MaterialTheme.typography.bodyMedium)
                         if (availability.usage.needsAccessSecondary()) Text(stringResource(R.string.integration_access_also_needed),
                             modifier = Modifier.testTag("summary_usage_access_secondary"), style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = onIntegrations, modifier = Modifier.testTag("summary_usage_integrations")) {
+                        LumaTextButton(onClick = onIntegrations, modifier = Modifier.testTag("summary_usage_integrations")) {
                             Text(stringResource(R.string.metric_integrations_action))
                         }
                     } else Text(stringResource(R.string.summary_usage_value, appUsageDuration(usage.totalMillis), displayedApps.size),
@@ -106,7 +108,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                         if (usage != null) {
                             displayedApps.forEach { app ->
                                 Row(Modifier.fillMaxWidth().testTag("summary_usage_app_${app.packageName}"),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap), verticalAlignment = Alignment.CenterVertically) {
                                     Text(app.appLabel ?: app.packageName, style = MaterialTheme.typography.bodyMedium,
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f).testTag("summary_usage_label_${app.packageName}"))
@@ -123,7 +125,7 @@ fun DailySummaryCard(state: DailySummaryState, onRetry: () -> Unit, habitLogCoun
                         if (activity == null) {
                             Text(stringResource(MetricAbsence.NO_SAVED_DATA.label(MetricPeriod.GENERIC)),
                                 modifier = Modifier.testTag("summary_activity_unavailable"), style = MaterialTheme.typography.bodySmall)
-                            TextButton(onClick = onIntegrations, modifier = Modifier.testTag("summary_activity_integrations")) {
+                            LumaTextButton(onClick = onIntegrations, modifier = Modifier.testTag("summary_activity_integrations")) {
                                 Text(stringResource(R.string.metric_integrations_action))
                             }
                         }

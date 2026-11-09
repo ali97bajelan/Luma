@@ -1,17 +1,18 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.FilterChip
+import com.luma.lifeos.ui.common.LumaFilterChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.luma.lifeos.ui.common.LumaOutlinedButton
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -333,7 +334,7 @@ internal fun FocusReflectionEditor(
     }
     if (authorityError) {
         Text(stringResource(R.string.focus_reflection_load_error), color = MaterialTheme.colorScheme.error)
-        TextButton(
+        LumaTextButton(
             onClick = { authorityRetry++ },
             modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_load_retry"),
         ) { Text(stringResource(R.string.retry)) }
@@ -352,7 +353,7 @@ internal fun FocusReflectionEditor(
         if (reflection.isEmpty) {
             if (showWhenEmpty) {
                 Text(stringResource(R.string.focus_reflection_prompt), style = MaterialTheme.typography.titleMedium)
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         savedAnnouncement = false
                         editing = true
@@ -360,7 +361,7 @@ internal fun FocusReflectionEditor(
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_add"),
                 ) { Text(stringResource(R.string.focus_reflection_add)) }
             } else {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         savedAnnouncement = false
                         editing = true
@@ -369,11 +370,11 @@ internal fun FocusReflectionEditor(
                 ) { Text(stringResource(R.string.focus_reflection_add_outcome_or_step)) }
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("focus_reflection_summary")) {
+            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap), modifier = Modifier.testTag("focus_reflection_summary")) {
                 reflection.outcome?.let { Text(stringResource(it.labelResource())) }
                 reflection.nextStep?.let { Text(stringResource(R.string.focus_reflection_saved_next_step, it)) }
             }
-            TextButton(
+            LumaTextButton(
                 onClick = {
                     savedAnnouncement = false
                     editing = true
@@ -384,7 +385,7 @@ internal fun FocusReflectionEditor(
         return
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("focus_reflection_editor")) {
+    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap), modifier = Modifier.testTag("focus_reflection_editor")) {
         if (showWhenEmpty) {
             Text(stringResource(R.string.focus_reflection_prompt), style = MaterialTheme.typography.titleMedium)
         } else {
@@ -397,7 +398,7 @@ internal fun FocusReflectionEditor(
             FocusOutcome.GOT_INTERRUPTED to R.string.focus_outcome_interrupted,
         )
         outcomes.forEach { (value, label) ->
-            FilterChip(
+            LumaFilterChip(
                 selected = outcome == value,
                 onClick = { updateDraft(newOutcome = if (outcome == value) null else value) },
                 label = { Text(stringResource(label)) },
@@ -405,7 +406,7 @@ internal fun FocusReflectionEditor(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
             )
         }
-        OutlinedTextField(
+        LumaOutlinedTextField(
             value = nextStep,
             onValueChange = { value ->
                 val count = value.codePointCount(0, value.length)
@@ -441,20 +442,20 @@ internal fun FocusReflectionEditor(
                     .testTag("focus_reflection_save_error"),
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
+        Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+            LumaOutlinedButton(
                 onClick = { save() },
                 enabled = !saving && !inputRejected,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_save"),
             ) { Text(stringResource(if (saving) R.string.focus_saving else R.string.focus_reflection_save)) }
             if (pending != null && saveError) {
-                TextButton(
+                LumaTextButton(
                     onClick = { save(pending) },
                     enabled = !saving,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_retry"),
                 ) { Text(stringResource(R.string.retry)) }
             }
-            TextButton(
+            LumaTextButton(
                 onClick = { discardDraft() },
                 enabled = !saving,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_skip"),

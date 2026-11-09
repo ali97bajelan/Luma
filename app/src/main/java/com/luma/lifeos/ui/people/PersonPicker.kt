@@ -1,5 +1,8 @@
 package com.luma.lifeos.ui.people
 
+import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaTextButton
+
 import com.luma.lifeos.ui.common.LumaInputChip
 
 import androidx.compose.foundation.layout.*
@@ -11,7 +14,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.Person
@@ -34,7 +37,7 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
     val catalog = (state as? PeopleState.Data)?.people.orEmpty()
     Text(stringResource(R.string.people), style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.semantics { heading() }.testTag("people_heading"))
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         selected.forEach { id ->
             val person = catalog.firstOrNull { it.id == id }
             LumaInputChip(selected = true, enabled = enabled, onClick = { onToggle(id) },
@@ -43,11 +46,11 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
                     else stringResource(if (state is PeopleState.Data) R.string.person_unavailable else R.string.person_selected_loading)) })
         }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextButton(enabled = enabled, onClick = { expanded = !expanded }, modifier = Modifier.testTag("people_picker")) {
+    Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+        LumaTextButton(enabled = enabled, onClick = { expanded = !expanded }, modifier = Modifier.testTag("people_picker")) {
             Text(stringResource(if (expanded) R.string.people_hide else R.string.people_choose))
         }
-        TextButton(enabled = enabled, onClick = onCreate, modifier = Modifier.testTag("people_picker_create")) {
+        LumaTextButton(enabled = enabled, onClick = onCreate, modifier = Modifier.testTag("people_picker_create")) {
             Text(stringResource(R.string.person_create))
         }
     }
@@ -57,7 +60,7 @@ fun PersonPicker(repository: PersonRepository, selected: Set<UUID>, enabled: Boo
             PeopleState.Loading -> CircularProgressIndicator()
             PeopleState.Error -> {
                 AccessibleFeedback(stringResource(R.string.people_load_error), Modifier.testTag("people_picker_error"))
-                TextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                LumaTextButton(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
             }
             is PeopleState.Data -> {
                 if (catalog.isEmpty()) Text(stringResource(R.string.people_empty))

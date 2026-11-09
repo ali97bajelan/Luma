@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppSectionHeading
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.timeline.EventCard
 import java.time.ZoneId
 import java.time.format.FormatStyle
@@ -50,8 +52,8 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
     val count = state.input.activeFilterCount
     val hasCriteria = state.input.text.isNotBlank() || count > 0
     LumaReadingPane(Modifier.fillMaxSize().testTag("screen_search")) {
-     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+     Column(Modifier.fillMaxSize().padding(horizontal = LumaUi.PageGutter)) {
+        LumaTextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         AppSectionHeading(stringResource(R.string.search_entries_title), style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.testTag("search_title"))
         LumaSectionSurface {
@@ -61,10 +63,10 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                     { Text(stringResource(R.string.search_text_help, state.input.text.length), Modifier.testTag("search_text_limit")) }
                 } else null,
                 modifier = Modifier.fillMaxWidth().testTag("search_text"))
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) { Text(stringResource(R.string.search_filter_count, count)) }
-                TextButton(onClick = vm::clearFilters, enabled = count > 0, modifier = Modifier.testTag("search_reset_filters")) { Text(stringResource(R.string.search_reset_filters)) }
-                TextButton(onClick = vm::clear, enabled = state.input.text.isNotEmpty() || count > 0,
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                LumaTextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) { Text(stringResource(R.string.search_filter_count, count)) }
+                LumaTextButton(onClick = vm::clearFilters, enabled = count > 0, modifier = Modifier.testTag("search_reset_filters")) { Text(stringResource(R.string.search_reset_filters)) }
+                LumaTextButton(onClick = vm::clear, enabled = state.input.text.isNotEmpty() || count > 0,
                     modifier = Modifier.testTag("search_clear")) { Text(stringResource(R.string.search_clear)) }
             }
             if (state.loaded && hasCriteria) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
@@ -79,7 +81,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 if (state.loaded) list.scrollToItem(0)
             }
             LazyColumn(state = list, modifier = Modifier.weight(1f).testTag("search_results_list"),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                 item(key = "scope_help") {
                     Text(stringResource(R.string.search_scope_help), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().testTag("search_scope_help"))
@@ -89,7 +91,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 if (state.error) item(key = "error") {
                     Column(Modifier.testTag("search_error")) {
                         AccessibleFeedback(stringResource(R.string.search_error))
-                        TextButton(onClick = vm::retry) { Text(stringResource(R.string.retry)) }
+                        LumaTextButton(onClick = vm::retry) { Text(stringResource(R.string.retry)) }
                     }
                 }
                 if (state.loaded && !state.loading && !state.error) {
@@ -104,7 +106,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                     }
                 }
                 if (state.canLoadEarlier) item(key = "earlier") {
-                    TextButton(enabled = !state.loading, onClick = vm::loadEarlier, modifier = Modifier.testTag("search_earlier")) { Text(stringResource(R.string.search_earlier)) }
+                    LumaTextButton(enabled = !state.loading, onClick = vm::loadEarlier, modifier = Modifier.testTag("search_earlier")) { Text(stringResource(R.string.search_earlier)) }
                 }
                 items(state.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { record ->
                     Column {
@@ -114,7 +116,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                     }
                 }
                 if (state.canLoadLater) item(key = "later") {
-                    TextButton(enabled = !state.loading, onClick = vm::loadLater, modifier = Modifier.testTag("search_later")) { Text(stringResource(R.string.search_later)) }
+                    LumaTextButton(enabled = !state.loading, onClick = vm::loadLater, modifier = Modifier.testTag("search_later")) { Text(stringResource(R.string.search_later)) }
                 }
             }
         }

@@ -1,7 +1,7 @@
 package com.luma.lifeos.ui.common
 
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -34,7 +34,7 @@ fun DetailTopBar(
         modifier = modifier,
         actions = {
             if (onEdit != null) {
-                TextButton(
+                LumaTextButton(
                     onClick = onEdit,
                     modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                         .semantics { contentDescription = requireNotNull(editLabel) }

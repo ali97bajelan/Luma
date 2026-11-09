@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -64,7 +65,7 @@ internal fun ReviewSection(
                 .verticalScroll(rememberScrollState()).testTag(explanationTag))
         },
         confirmButton = {
-            TextButton(onClick = { about = false }, modifier = Modifier.testTag("${infoTag}_close")) {
+            LumaTextButton(onClick = { about = false }, modifier = Modifier.testTag("${infoTag}_close")) {
                 Text(stringResource(R.string.health_close))
             }
         },

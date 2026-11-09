@@ -2,6 +2,7 @@ package com.luma.lifeos.ui.review
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -50,7 +51,7 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit,
             ReviewEmpty(absence.label(MetricPeriod.WEEK), "review_usage_unavailable")
             if (availability.usage.needsAccessSecondary()) Text(stringResource(R.string.integration_access_also_needed),
                 Modifier.testTag("review_usage_access_secondary"), style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = onIntegrations, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+            LumaTextButton(onClick = onIntegrations, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                 .testTag("review_usage_integrations")) { Text(stringResource(R.string.metric_integrations_action)) }
         }
         if (a != null || b != null) DetailsDisclosure(R.string.review_coverage_details, "review_usage_coverage_details") {
@@ -79,7 +80,7 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit,
         if (a?.days.orEmpty().isNotEmpty() || b?.days.orEmpty().isNotEmpty()) DetailsDisclosure(R.string.review_daily_evidence, "review_usage_daily_details") {
             val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
             (a?.days.orEmpty() + b?.days.orEmpty()).sortedBy { it.date }.forEach { day ->
-                TextButton(onClick = { onUsage(day.date) }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                LumaTextButton(onClick = { onUsage(day.date) }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                     .testTag("review_usage_date_${day.date}")) {
                     Text(stringResource(R.string.review_usage_date, day.date.format(format),
                         reviewDuration(day.totalMillis.takeUnless { day.apps.isEmpty() && day.history == UsageHistory.PARTIAL },
@@ -106,7 +107,7 @@ internal fun ReviewActivities(report: WeeklyReview, onSources: (ReviewDates, Rev
         val current = report.current.activities; val previous = report.previous.activities
         if (current.isEmpty() && previous.isEmpty()) {
             ReviewEmpty(R.string.metric_no_saved_measurements, "review_activity_unavailable")
-            TextButton(onClick = onIntegrations, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+            LumaTextButton(onClick = onIntegrations, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                 .testTag("review_activity_integrations")) { Text(stringResource(R.string.metric_integrations_action)) }
         }
         fun key(row: ReviewActivity) = ReviewActivityKey(row.total.type, row.total.unit, row.total.source)

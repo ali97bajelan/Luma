@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.today
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import com.luma.lifeos.ui.common.LumaButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,11 +116,11 @@ fun TodayScreen(
     LumaReadingPane(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag(screenTag),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(start = LumaUi.PageGutter, end = LumaUi.PageGutter, top = LumaUi.SectionGap, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap),
         ) {
             item(key = "header") {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.headlineMedium)
                     DayNavigation(date, onSelectDate, onToday)
                     if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
@@ -165,7 +166,7 @@ fun TodayScreen(
                 )
             } }
             item(key = "recent_entries") {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     AppSectionHeading(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.testTag("today_recent_entries"))
                     if (state is TodayUiState.Data || state == TodayUiState.Empty) {
@@ -176,7 +177,7 @@ fun TodayScreen(
             }
             when (state) {
                 TodayUiState.Loading -> item(key = "loading") {
-                    Column(Modifier.testTag("today_loading"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.testTag("today_loading"), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         CircularProgressIndicator()
                         Text(stringResource(R.string.today_loading))
                     }
@@ -186,9 +187,9 @@ fun TodayScreen(
                         modifier = Modifier.testTag("today_empty"))
                 }
                 TodayUiState.Error -> item(key = "error") {
-                    Column(Modifier.testTag("today_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.testTag("today_error"), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                         AccessibleFeedback(stringResource(R.string.today_error), Modifier.testTag("today_error_message"))
-                        TextButton(onClick = onRetry, modifier = Modifier.testTag("today_retry")) {
+                        LumaTextButton(onClick = onRetry, modifier = Modifier.testTag("today_retry")) {
                             Text(stringResource(R.string.retry))
                         }
                     }

@@ -1,15 +1,16 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
+import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,40 +47,40 @@ internal fun FocusRecentWorkCard(
         is FocusRecentWorkState.Empty,
         -> Unit
 
-        is FocusRecentWorkState.Loading -> Card(
+        is FocusRecentWorkState.Loading -> LumaCard(
             modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_loading"),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
             ) {
                 Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                 Text(stringResource(R.string.focus_recent_work_loading))
             }
         }
 
-        is FocusRecentWorkState.Missing -> Card(
+        is FocusRecentWorkState.Missing -> LumaCard(
             modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_missing"),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
             ) {
                 Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                 Text(stringResource(R.string.focus_recent_work_missing))
-                TextButton(
+                LumaTextButton(
                     onClick = onRetry,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_recent_work_retry"),
                 ) { Text(stringResource(R.string.retry)) }
             }
         }
 
-        is FocusRecentWorkState.Error -> Card(
+        is FocusRecentWorkState.Error -> LumaCard(
             modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_error"),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
             ) {
                 Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                 Text(
@@ -87,7 +88,7 @@ internal fun FocusRecentWorkCard(
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
-                TextButton(
+                LumaTextButton(
                     onClick = onRetry,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_recent_work_retry"),
                 ) { Text(stringResource(R.string.retry)) }
@@ -96,12 +97,12 @@ internal fun FocusRecentWorkCard(
 
         is FocusRecentWorkState.Ready -> {
             val (_, session) = state
-            Card(
+            LumaCard(
                 modifier = Modifier.fillMaxWidth().testTag("focus_recent_work_card"),
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                 ) {
                     Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
                     Text(
@@ -119,7 +120,7 @@ internal fun FocusRecentWorkCard(
                     session.reflection.nextStep?.takeIf(String::isNotBlank)?.let { nextStep ->
                         Text(stringResource(R.string.focus_reflection_saved_next_step, nextStep))
                     }
-                    TextButton(
+                    LumaTextButton(
                         onClick = {
                             if (hasUserAuthoredDraft) replacementSessionId = session.id
                             else onRepeatSession(session.id)
@@ -134,12 +135,12 @@ internal fun FocusRecentWorkCard(
     }
 
     replacementSessionId?.let { sessionId ->
-        AlertDialog(
+        LumaAlertDialog(
             onDismissRequest = { replacementSessionId = null },
             title = { Text(stringResource(R.string.focus_recent_replace_title)) },
             text = { Text(stringResource(R.string.focus_recent_replace_body)) },
             confirmButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = {
                         replacementSessionId = null
                         onRepeatSession(sessionId)
@@ -148,7 +149,7 @@ internal fun FocusRecentWorkCard(
                 ) { Text(stringResource(R.string.focus_recent_replace_setup)) }
             },
             dismissButton = {
-                TextButton(
+                LumaTextButton(
                     onClick = { replacementSessionId = null },
                     modifier = Modifier.testTag("focus_recent_replace_cancel"),
                 ) { Text(stringResource(R.string.cancel)) }
