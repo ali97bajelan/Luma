@@ -1341,6 +1341,13 @@
     <string name="focus_alert_limitations">Les alertes en arrière-plan sont indicatives et peuvent être retardées ou indisponibles. Le minuteur reste utilisable.</string>
     <string name="focus_break_minutes_label">Durée de la pause en minutes</string>
     <string name="focus_break_minutes_invalid">Saisissez un nombre entier de 1 à 60 minutes.</string>
+    <string name="focus_break_heading">Pause</string>
+    <string name="focus_break_continues_when_leave">La pause continue lorsque vous quittez cette page.</string>
+    <string name="focus_break_default_label">Par défaut : 5 minutes</string>
+    <string name="focus_break_replace_start_title">Terminer la pause et démarrer une session ?</string>
+    <string name="focus_break_replace_start_message">Le démarrage d’une session de concentration mettra fin à cette pause. Votre session enregistrée reste conservée.</string>
+    <string name="focus_break_replace_start_confirm">Terminer la pause et démarrer</string>
+    <string name="focus_break_use_previous_settings">Réutiliser les paramètres précédents</string>
     <string name="focus_break_take_five">Prendre une pause de 5 minutes</string>
     <string name="focus_break_customize">Personnaliser la pause</string>
     <string name="focus_break_custom_title">Personnaliser la pause</string>

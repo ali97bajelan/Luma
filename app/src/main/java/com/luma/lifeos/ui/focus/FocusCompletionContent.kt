@@ -21,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -110,6 +112,38 @@ internal fun FocusCompletionContent(
         session.timer.mode == FocusTimerMode.TIMED -> R.string.focus_stopped_before_target
         else -> R.string.focus_count_up_ended
     }
+    val repeatId = state.setup.repeatSourceSessionId ?: session.id
+    val breakRunning = state.runtime.breakState is FocusBreakState.Running
+    val breakExpired = state.runtime.breakState is FocusBreakState.Expired
+
+    if (breakRunning) {
+        FocusBreakCountdown(
+            state = state.runtime.breakState,
+            busy = state.breakBusy,
+            onEndBreak = onEndBreak,
+        )
+    }
+    if (breakExpired) {
+        Text(
+            stringResource(R.string.focus_break_expired),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.fillMaxWidth().semantics { heading() }.testTag("focus_break_expired"),
+        )
+        LumaButton(
+            onClick = { requestNavigation(onDone) },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done"),
+        ) {
+            Text(stringResource(R.string.focus_done))
+        }
+        OutlinedButton(
+            onClick = { requestNavigation { onRepeatSession(repeatId) } },
+            enabled = !state.busy && !state.setup.repeatLoading,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                .testTag("focus_break_use_previous_settings"),
+        ) {
+            Text(stringResource(R.string.focus_break_use_previous_settings))
+        }
+    }
     Text(
         stringResource(R.string.focus_finished),
         style = MaterialTheme.typography.titleLarge,
@@ -126,11 +160,13 @@ internal fun FocusCompletionContent(
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.testTag("focus_session_name"),
         )
-        Text(
-            session.metadata.tag?.name ?: stringResource(R.string.focus_tag_untagged),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.testTag("focus_session_tag"),
-        )
+        if (!breakRunning) {
+            Text(
+                session.metadata.tag?.name ?: stringResource(R.string.focus_tag_untagged),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("focus_session_tag"),
+            )
+        }
     }
     Text(
         stringResource(
@@ -144,11 +180,20 @@ internal fun FocusCompletionContent(
         Text(stringResource(R.string.focus_interrupted_gap))
     }
 
-    LumaButton(
-        onClick = { requestNavigation(onDone) },
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done"),
-    ) {
-        Text(stringResource(R.string.focus_done))
+    if (breakRunning) {
+        TextButton(
+            onClick = { requestNavigation(onDone) },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_done"),
+        ) {
+            Text(stringResource(R.string.focus_done))
+        }
+    } else if (!breakExpired) {
+        LumaButton(
+            onClick = { requestNavigation(onDone) },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done"),
+        ) {
+            Text(stringResource(R.string.focus_done))
+        }
     }
 
     Column(
@@ -156,13 +201,7 @@ internal fun FocusCompletionContent(
         modifier = Modifier.fillMaxWidth().testTag("focus_follow_up_group"),
     ) {
         Text(stringResource(R.string.focus_follow_up_title), style = MaterialTheme.typography.titleMedium)
-        if (state.runtime.breakState != FocusBreakState.Idle) {
-            FocusBreakCountdown(
-                state = state.runtime.breakState,
-                busy = state.breakBusy,
-                onEndBreak = onEndBreak,
-            )
-        } else {
+        if (state.runtime.breakState == FocusBreakState.Idle) {
             BreakActions(
                 sessionId = session.id,
                 busy = state.breakBusy,
@@ -198,19 +237,20 @@ internal fun FocusCompletionContent(
             onChanged = {},
         )
 
-        val repeatId = state.setup.repeatSourceSessionId ?: session.id
         if (state.setup.repeatLoading) {
             Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
         }
         if (state.setup.repeatLoadFailed) {
             Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
         }
-        OutlinedButton(
-            onClick = { requestNavigation { onRepeatSession(repeatId) } },
-            enabled = !state.busy && !state.setup.repeatLoading,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_repeat"),
-        ) {
-            Text(stringResource(R.string.focus_use_session_settings))
+        if (!breakExpired) {
+            OutlinedButton(
+                onClick = { requestNavigation { onRepeatSession(repeatId) } },
+                enabled = !state.busy && !state.setup.repeatLoading,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_repeat"),
+            ) {
+                Text(stringResource(R.string.focus_use_session_settings))
+            }
         }
         OutlinedButton(
             onClick = { requestNavigation(onStartAnother) },
@@ -308,6 +348,7 @@ private fun BreakActions(
         }
         if (showBreakOptions) {
             Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.focus_break_default_label), style = MaterialTheme.typography.bodyMedium)
             OutlinedButton(
                 onClick = { onStartBreak(5) },
                 enabled = !busy,

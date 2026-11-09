@@ -130,11 +130,13 @@ I06 verification note: Android Studio inspections reported no errors in the chan
 
 Files: P/ui/focus/FocusCompletionContent.kt, FocusScreen.kt; P/focus/FocusBreakRuntime.kt only if presentation needs require it; A/ui/focus/FocusLifecycleTest.kt, A/focus/FocusRuntimeRecoveryTest.kt.
 
-- [ ] Promote active Break heading/countdown and End break above saved summary; communicate leave behavior.
-- [ ] Group five-minute/default/custom choice and retain 1–60 input validation.
-- [ ] Present expired break with Done and Use previous settings; preserve no-auto-start invariant.
-- [ ] Inspect existing runtime start-during-break rule, expose its consequence before committing an incompatible action, and retain that rule.
-- [ ] Define deterministic connected tests for expiry away, leave/return, end/custom invalid input and session start during break. Compile; run applicable local timing tests only.
+- [x] Promote active Break heading/countdown and End break above saved summary; communicate leave behavior.
+- [x] Group five-minute/default/custom choice and retain 1–60 input validation.
+- [x] Present expired break with Done and Use previous settings; preserve no-auto-start invariant.
+- [x] Inspect existing runtime start-during-break rule, expose its consequence before committing an incompatible action, and retain that rule.
+- [x] Define deterministic connected tests for expiry away, leave/return, end/custom invalid input and session start during break. Compile; run applicable local timing tests only.
+
+I07 verification note: IDE inspections reported no errors in changed production or Android-test sources. The requested Gradle build stopped at `:app:compileProductionDebugAndroidTestKotlin` on existing lock, todo and widget test errors; no errors were reported from I07 sources. Connected tests were not run; device verification remains deferred to QA01.
 
 ### I08 — Inline progress and history details (S06)
 

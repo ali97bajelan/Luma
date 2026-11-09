@@ -122,6 +122,7 @@ internal fun FocusScreen(
         session?.id?.toString(),
         runtime.databaseGeneration?.toString(),
     ) { mutableStateOf(false) }
+    var pendingBreakStart by remember { mutableStateOf<FocusStartInput?>(null) }
     val showTerminal = session?.let {
         shouldShowFocusTerminal(it.id, setupRequestedForSession, state.setup.databaseGeneration)
     } == true && !state.setup.isRepeatDraft
@@ -137,6 +138,13 @@ internal fun FocusScreen(
             else -> onBack()
         }
     }
+    fun requestStart(input: FocusStartInput) {
+        if (runtime.breakState != FocusBreakState.Idle) {
+            pendingBreakStart = input
+        } else {
+            onStart(input)
+        }
+    }
 
     BackHandler { navigateBack() }
 
@@ -150,7 +158,7 @@ internal fun FocusScreen(
                 FocusSetupStartAction(
                     state = state,
                     onStartAttempted = onStartAttempted,
-                    onStart = onStart,
+                    onStart = ::requestStart,
                 )
             }
         },
@@ -165,6 +173,7 @@ internal fun FocusScreen(
                     state = runtime.breakState,
                     busy = state.breakBusy,
                     onEndBreak = onEndBreak,
+                    primaryEnd = false,
                 )
             }
             when {
@@ -373,6 +382,36 @@ internal fun FocusScreen(
                 TextButton(onClick = onDismissEmergencyExit) { Text(stringResource(R.string.cancel)) }
             },
             modifier = Modifier.testTag("focus_emergency_dialog"),
+        )
+    }
+
+    pendingBreakStart?.let {
+        LumaAlertDialog(
+            onDismissRequest = { pendingBreakStart = null },
+            title = { Text(stringResource(R.string.focus_break_replace_start_title)) },
+            text = { Text(stringResource(R.string.focus_break_replace_start_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val input = pendingBreakStart
+                        pendingBreakStart = null
+                        if (input != null) onStart(input)
+                    },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        .testTag("focus_break_replace_confirm"),
+                ) {
+                    Text(stringResource(R.string.focus_break_replace_start_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { pendingBreakStart = null },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_break_replace_cancel"),
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            modifier = Modifier.testTag("focus_break_replace_dialog"),
         )
     }
 }
@@ -791,26 +830,49 @@ internal fun FocusBreakCountdown(
     state: FocusBreakState,
     busy: Boolean,
     onEndBreak: () -> Unit,
+    primaryEnd: Boolean = true,
 ) {
-    when (state) {
-        FocusBreakState.Idle -> Unit
-        is FocusBreakState.Running -> Text(
-            stringResource(R.string.focus_break_remaining, DateUtils.formatElapsedTime((state.remainingMillis + 999L) / 1_000L)),
-            modifier = Modifier.fillMaxWidth().testTag("focus_break_countdown"),
+    if (state == FocusBreakState.Idle) return
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().testTag("focus_break_panel")) {
+        val expired = state is FocusBreakState.Expired
+        Text(
+            stringResource(if (expired) R.string.focus_break_expired else R.string.focus_break_heading),
             style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.fillMaxWidth().semantics { heading() }
+                .testTag(if (expired) "focus_break_expired" else "focus_break_heading"),
         )
-        is FocusBreakState.Expired -> Text(
-            stringResource(R.string.focus_break_expired),
-            modifier = Modifier.fillMaxWidth().testTag("focus_break_expired"),
-            style = MaterialTheme.typography.titleLarge,
-        )
-    }
-    if (state != FocusBreakState.Idle) {
-        OutlinedButton(
-            onClick = onEndBreak,
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_end_break"),
-        ) { Text(stringResource(R.string.focus_end_break)) }
+        if (state is FocusBreakState.Running) {
+            Text(
+                stringResource(
+                    R.string.focus_break_remaining,
+                    DateUtils.formatElapsedTime((state.remainingMillis + 999L) / 1_000L),
+                ),
+                modifier = Modifier.fillMaxWidth().testTag("focus_break_countdown"),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                stringResource(R.string.focus_break_continues_when_leave),
+                modifier = Modifier.fillMaxWidth().testTag("focus_break_leave_note"),
+            )
+        }
+        if (primaryEnd) {
+            LumaButton(
+                onClick = onEndBreak,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_end_break"),
+            ) {
+                Text(stringResource(R.string.focus_end_break))
+            }
+        } else {
+            OutlinedButton(
+                onClick = onEndBreak,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_end_break"),
+            ) {
+                Text(stringResource(R.string.focus_end_break))
+            }
+        }
     }
 }
 

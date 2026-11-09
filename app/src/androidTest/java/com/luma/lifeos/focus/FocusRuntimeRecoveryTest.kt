@@ -129,6 +129,48 @@ class FocusRuntimeRecoveryTest {
         }
     }
 
+    @Test fun explicitFocusStartReplacesTheCurrentBreakAtomically() = runBlocking {
+        val (repository, preferences, context) = dependencies()
+        val application = context.applicationContext as LumaApplication
+        repository.currentBreak()?.let { record ->
+            repository.endBreak(record.revision, record.databaseGeneration)
+        }
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val runtime = newRuntime(
+            repository = repository,
+            preferences = preferences,
+            context = context,
+            scope = scope,
+            breakRuntime = application.focusBreakRuntime,
+        )
+        try {
+            runtime.initialize()
+            awaitInitialized(runtime)
+            assertNull(repository.observeOpen().first())
+
+            val first = runtime.start(UUID.randomUUID(), UUID.randomUUID(), FocusStartInput("Before break", null))
+            assertTrue(first is FocusWriteResult.Applied)
+            val firstSession = requireNotNull(runtime.state.value.session)
+            val stopped = runtime.act(UUID.randomUUID(), firstSession, FocusAction.STOP)
+            assertTrue(stopped is FocusWriteResult.Applied)
+
+            assertTrue(runtime.startBreak(5))
+            assertNotNull(repository.currentBreak())
+
+            val next = runtime.start(UUID.randomUUID(), UUID.randomUUID(), FocusStartInput("After break", null))
+            assertTrue(next is FocusWriteResult.Applied)
+            assertEquals(FocusState.RUNNING, runtime.state.value.session?.state)
+            assertNull(repository.currentBreak())
+            application.focusBreakRuntime.state.first { it == FocusBreakState.Idle }
+        } finally {
+            runtime.state.value.session
+                ?.takeIf { it.state == FocusState.RUNNING || it.state == FocusState.PAUSED }
+                ?.let { runtime.act(UUID.randomUUID(), it, FocusAction.STOP) }
+            application.focusBreakRuntime.end()
+            scope.cancel()
+        }
+    }
+
     private fun dependencies(): Triple<FocusRepository, FocusPreferences, Context> {
         val context = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
         val application = context as LumaApplication
@@ -140,6 +182,7 @@ class FocusRuntimeRecoveryTest {
         preferences: FocusPreferences,
         context: Context,
         scope: CoroutineScope,
+        breakRuntime: FocusBreakRuntime? = null,
     ) = FocusRuntime(
         coordinator = FocusCoordinator(
             repository = repository,
@@ -149,6 +192,7 @@ class FocusRuntimeRecoveryTest {
         preferences = preferences,
         allowedApps = AllowedFocusApps(context),
         scope = scope,
+        breakRuntime = breakRuntime,
     )
 
     private suspend fun awaitInitialized(runtime: FocusRuntime): FocusRuntimeState = withTimeout(10_000) {
