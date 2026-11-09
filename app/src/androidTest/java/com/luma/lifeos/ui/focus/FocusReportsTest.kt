@@ -38,6 +38,7 @@ import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.focus.FocusRuntimeState
 import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.ui.theme.LifeOsTheme
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -52,6 +53,88 @@ import org.junit.Test
 
 class FocusReportsTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun pendingGoalIsShownAsScheduledUntilItsEffectiveMonday() {
+        val effectiveMonday = LocalDate.of(2099, 1, 5)
+        val goal = FocusGoalVersion(
+            id = UUID.randomUUID(),
+            revision = 1,
+            effectiveMonday = effectiveMonday,
+            zoneId = "UTC",
+            targetMinutes = 300,
+            preferredDays = setOf(DayOfWeek.MONDAY),
+        )
+        val state = FocusGoalState(
+            enabled = true,
+            settingsRevision = 1,
+            visibleFromMonday = effectiveMonday,
+            visibleFromZoneId = "UTC",
+            versions = listOf(goal),
+        )
+        val repository = EmptyFocusProductRepository(GENERATION, goalState = state)
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusGoalSettings(repository)
+            }
+        }
+
+        compose.onNodeWithTag("focus_settings_goals_toggle").assertTextContains("Starts Monday")
+        compose.onNodeWithTag("focus_settings_goals_toggle").performClick()
+        compose.onNodeWithTag("focus_goal_status").assertTextContains("Starts Monday")
+        compose.onNodeWithTag("focus_goal_target").assertTextContains("300")
+    }
+
+    @Test fun protectedTagLabelsStayHiddenWhenTaskOriginAccessIsLocked() {
+        val tag = FocusTag(UUID.randomUUID(), "Private tag")
+        val repository = EmptyFocusProductRepository(
+            GENERATION,
+            tagCatalog = FocusTagCatalog(1, listOf(tag), databaseGeneration = GENERATION),
+        )
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusTagManager(repository, canReadTaskOrigin = false)
+            }
+        }
+
+        compose.onNodeWithTag("focus_settings_tags_toggle").assertTextContains("Unlock to review saved tags")
+        compose.onNodeWithTag("focus_settings_tags_toggle").performClick()
+        compose.onNodeWithTag("focus_tag_manager_unlock").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(false, repository.lastIncludeTaskOrigin) }
+        assertEquals(
+            0,
+            compose.onAllNodesWithTag("focus_tag_name_${tag.id}").fetchSemanticsNodes().size,
+        )
+    }
+
+    @Test fun tagCatalogConflictKeepsTheEditedNameVisibleAndRecoverable() {
+        val tag = FocusTag(UUID.randomUUID(), "Work")
+        val initialCatalog = FocusTagCatalog(1, listOf(tag), databaseGeneration = GENERATION)
+        val conflictingCatalog = FocusTagCatalog(2, listOf(tag), databaseGeneration = GENERATION)
+        val repository = EmptyFocusProductRepository(
+            GENERATION,
+            tagCatalog = initialCatalog,
+            renameResult = FocusProductResult.TagCatalogConflict(conflictingCatalog),
+        )
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusTagManager(repository)
+            }
+        }
+
+        compose.onNodeWithTag("focus_settings_tags_toggle").performClick()
+        compose.onNodeWithTag("focus_tag_name_${tag.id}").performTextInput(" updated")
+        compose.onNodeWithTag("focus_tag_rename_${tag.id}").performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("focus_tag_manager_error").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("focus_settings_tags_toggle").performClick()
+        compose.onNodeWithTag("focus_settings_tags_toggle").assertTextContains("tag list changed")
+        compose.onNodeWithTag("focus_settings_tags_toggle").performClick()
+        compose.onNodeWithTag("focus_tag_name_${tag.id}").assertTextContains("Work updated")
+    }
 
     @Test fun todaySeparatesSavedTotalsFromTheOpenSessionAndOpensDayHistory() {
         var openedHistory = 0
@@ -490,9 +573,17 @@ class FocusReportsTest {
         }
     }
 
-    private class EmptyFocusProductRepository(private val generation: UUID) : FocusProductRepository {
+    private class EmptyFocusProductRepository(
+        private val generation: UUID,
+        private val goalState: FocusGoalState = FocusGoalState.DISABLED,
+        private val tagCatalog: FocusTagCatalog = FocusTagCatalog(0, emptyList(), databaseGeneration = generation),
+        private val renameResult: FocusProductResult = FocusProductResult.Unavailable(),
+    ) : FocusProductRepository {
+        var lastIncludeTaskOrigin: Boolean? = null
+            private set
+
         override suspend fun currentGeneration(): UUID = generation
-        override fun observeGoals() = flowOf(FocusGoalState.DISABLED)
+        override fun observeGoals() = flowOf(goalState)
         override fun observeTaskFocusMillis(taskId: UUID) = flowOf(0L)
         override suspend fun unlinkTask(
             sessionId: UUID,
@@ -505,7 +596,11 @@ class FocusReportsTest {
             reflection: com.luma.lifeos.domain.focus.FocusReflection,
             context: FocusProductContext,
         ): FocusProductResult = error("Not used by this test")
-        override fun observeTagCatalog() = flowOf(FocusTagCatalog(0, emptyList(), databaseGeneration = generation))
+        override fun observeTagCatalog() = flowOf(tagCatalog)
+        override fun observeTagCatalog(includeTaskOrigin: Boolean): Flow<FocusTagCatalog> {
+            lastIncludeTaskOrigin = includeTaskOrigin
+            return flowOf(if (includeTaskOrigin) tagCatalog else tagCatalog.copy(tags = emptyList()))
+        }
         override suspend fun updateSessionMetadata(
             sessionId: UUID,
             expectedRevision: Long,
@@ -519,7 +614,7 @@ class FocusReportsTest {
             name: String,
             expectedCatalogRevision: Long,
             context: FocusProductContext,
-        ): FocusProductResult = error("Not used by this test")
+        ): FocusProductResult = renameResult
         override suspend fun mergeTags(
             sourceTagId: UUID,
             targetTagId: UUID,

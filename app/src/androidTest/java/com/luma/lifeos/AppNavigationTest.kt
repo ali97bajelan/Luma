@@ -7,6 +7,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.luma.lifeos.domain.lock.LockCoverage
 import com.luma.lifeos.domain.lock.LockPolicy
 import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.focus.FocusInvitationSlot
+import com.luma.lifeos.reminders.FocusInvitationRequest
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.JournalInput
 import com.luma.lifeos.domain.model.PersonInput
@@ -351,6 +353,39 @@ class AppNavigationTest {
         }
         awaitTag("focus_screen")
         compose.onNodeWithTag("focus_name").assertTextEquals("Keep this draft")
+    }
+
+    @Test fun staleReminderTokenDoesNotReplaceTheAuthoredFocusDraft() {
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_focus").performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("focus_name").fetchSemanticsNodes().isNotEmpty() ||
+                compose.onAllNodesWithTag("focus_start_another").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (compose.onAllNodesWithTag("focus_name").fetchSemanticsNodes().isEmpty()) {
+            compose.onNodeWithTag("focus_start_another").performClick()
+        }
+        awaitTag("focus_name")
+        val authoredDraft = "Keep draft after stale reminder"
+        compose.onNodeWithTag("focus_name").performTextInput(authoredDraft)
+
+        val staleRequest = FocusInvitationRequest(
+            slot = FocusInvitationSlot(
+                generation = UUID.randomUUID(),
+                scheduleRevision = 1,
+                date = LocalDate.now(),
+                dueAt = Instant.now(),
+            ),
+            action = "OPEN",
+            token = UUID.randomUUID().toString(),
+        ).toIntent(compose.activity)
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.startActivity(staleRequest.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("focus_name").assertTextEquals(authoredDraft)
+        compose.onNodeWithTag("focus_invitation_replace_dialog").assertDoesNotExist()
     }
 
     private fun awaitTag(tag: String) {

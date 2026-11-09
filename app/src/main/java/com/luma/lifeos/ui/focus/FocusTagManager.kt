@@ -15,12 +15,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
@@ -47,7 +49,9 @@ internal fun FocusTagManager(
     canReadTaskOrigin: Boolean = true,
     onRequestUnlock: () -> Unit = {},
 ) {
-    val catalogFlow = remember(repository) { repository.observeTagCatalog() }
+    val catalogFlow = remember(repository, canReadTaskOrigin) {
+        repository.observeTagCatalog(includeTaskOrigin = canReadTaskOrigin)
+    }
     val catalog by catalogFlow.collectAsStateWithLifecycle(
         initialValue = com.luma.lifeos.domain.focus.FocusTagCatalog(0, emptyList()),
     )
@@ -111,38 +115,50 @@ internal fun FocusTagManager(
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().testTag("focus_tag_manager"),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(stringResource(R.string.focus_tag_manager_title), style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(R.string.focus_tag_manager_explanation), style = MaterialTheme.typography.bodyMedium)
-        if (!canReadTaskOrigin) {
-            Text(stringResource(R.string.app_lock_gate_body))
-            TextButton(
-                onClick = onRequestUnlock,
-                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_tag_manager_unlock"),
-            ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
-        }
-        if (catalog.tags.isEmpty()) {
-            Text(stringResource(R.string.focus_tag_manager_empty), modifier = Modifier.testTag("focus_tag_manager_empty"))
-        } else {
-            catalog.tags.forEach { tag ->
-                FocusTagManagerRow(
-                    tag = tag,
-                    busy = busyTagId == tag.id.toString(),
-                    enabled = busyTagId == null && canReadTaskOrigin,
-                    onRename = { rename(tag, it) },
-                )
-            }
-        }
-        if (failed) Text(
-            stringResource(R.string.focus_tag_manager_error),
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.testTag("focus_tag_manager_error"),
-        )
+    val tagSummary = when {
+        !canReadTaskOrigin -> stringResource(R.string.focus_tag_manager_locked_summary)
+        failed -> stringResource(R.string.focus_tag_manager_error)
+        catalog.tags.isEmpty() -> stringResource(R.string.focus_tag_manager_empty)
+        else -> pluralStringResource(R.plurals.focus_tag_manager_count, catalog.tags.size, catalog.tags.size)
     }
-
+    FocusSettingsDisclosure(
+        title = stringResource(R.string.focus_tag_manager_title),
+        summary = tagSummary,
+        sectionTag = "focus_settings_tags",
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().testTag("focus_tag_manager"),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(stringResource(R.string.focus_tag_manager_explanation), style = MaterialTheme.typography.bodyMedium)
+            if (!canReadTaskOrigin) {
+                Text(stringResource(R.string.app_lock_gate_body))
+                TextButton(
+                    onClick = onRequestUnlock,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_tag_manager_unlock"),
+                ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
+            }
+            if (canReadTaskOrigin) {
+                if (catalog.tags.isEmpty()) {
+                    Text(stringResource(R.string.focus_tag_manager_empty), modifier = Modifier.testTag("focus_tag_manager_empty"))
+                } else {
+                    catalog.tags.forEach { tag ->
+                        FocusTagManagerRow(
+                            tag = tag,
+                            busy = busyTagId == tag.id.toString(),
+                            enabled = busyTagId == null,
+                            onRename = { rename(tag, it) },
+                        )
+                    }
+                }
+            }
+            if (failed) Text(
+                stringResource(R.string.focus_tag_manager_error),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.testTag("focus_tag_manager_error"),
+            )
+        }
+    }
     mergePrompt?.takeIf { prompt ->
         canReadTaskOrigin && prompt.catalogRevision == catalog.revision &&
             prompt.databaseGeneration == catalog.databaseGeneration &&
@@ -223,7 +239,7 @@ private fun FocusTagManagerRow(
     enabled: Boolean,
     onRename: (String) -> Unit,
 ) {
-    var name by remember(tag.id, tag.name) { mutableStateOf(tag.name) }
+    var name by rememberSaveable(tag.id, tag.name) { mutableStateOf(tag.name) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = name,

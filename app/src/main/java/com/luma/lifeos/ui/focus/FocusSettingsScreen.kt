@@ -1,7 +1,5 @@
 package com.luma.lifeos.ui.focus
 
-import com.luma.lifeos.ui.common.LumaOutlinedTextField
-
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
@@ -14,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
@@ -27,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,15 +36,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.domain.focus.FocusInvitationRepository
+import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.displayName
-import com.luma.lifeos.domain.focus.FocusProductRepository
-import com.luma.lifeos.domain.focus.FocusInvitationRepository
 import com.luma.lifeos.reminders.ReminderPreferences
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 
 @Composable
@@ -75,22 +76,33 @@ internal fun FocusSettingsScreen(
     val unavailablePackages = if (loading || discoveryFailed) emptyList() else {
         (selectedPackages - apps.map { it.packageName }.toSet()).sorted()
     }
+    val shortcutsSummary = when {
+        writeFailed -> stringResource(R.string.focus_settings_save_error)
+        loading -> stringResource(R.string.focus_settings_shortcuts_loading)
+        discoveryFailed -> stringResource(R.string.focus_settings_discovery_error)
+        isRunning && selectedPackages.isEmpty() ->
+            stringResource(R.string.focus_settings_shortcuts_running_empty)
+        selectedPackages.isEmpty() -> stringResource(R.string.focus_settings_empty_selection)
+        isRunning -> stringResource(
+            R.string.focus_settings_shortcuts_running_summary,
+            selectedPackages.size,
+            unavailablePackages.size,
+        )
+        else -> stringResource(
+            R.string.focus_settings_shortcuts_summary,
+            selectedPackages.size,
+            unavailablePackages.size,
+        )
+    }
 
     SettingsSectionPage(
         title = R.string.focus_settings_title,
         onBack = onBack,
         screenTag = "focus_settings_screen",
     ) {
-        Text(stringResource(R.string.focus_settings_intro), style = MaterialTheme.typography.bodyLarge)
         if (invitationRepository != null) {
             FocusInvitationSettings(invitationRepository, reminderPreferences)
         }
-        Text(
-            stringResource(R.string.focus_settings_profile_scope),
-            modifier = Modifier.testTag("focus_settings_scope"),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Text(stringResource(R.string.focus_settings_enforcement_limit), style = MaterialTheme.typography.bodyMedium)
         if (goalRepository != null) {
             FocusGoalSettings(goalRepository)
             FocusTagManager(
@@ -99,101 +111,163 @@ internal fun FocusSettingsScreen(
                 onRequestUnlock = onRequestProtectedFocusUnlock,
             )
         }
-        if (isRunning) {
-            Text(
-                stringResource(R.string.focus_settings_running),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_settings_running"),
-            )
-        }
-        LumaOutlinedTextField(
-            value = search,
-            onValueChange = { search = it },
-            label = { Text(stringResource(R.string.focus_settings_search)) },
-            modifier = Modifier.fillMaxWidth().testTag("focus_settings_search"),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            enabled = !isRunning,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        FocusSettingsDisclosure(
+            title = stringResource(R.string.focus_shortcuts),
+            summary = shortcutsSummary,
+            sectionTag = "focus_settings_shortcuts",
         ) {
-            Text(
-                stringResource(R.string.focus_shortcuts),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
-            )
-            TextButton(onClick = onRefresh, modifier = Modifier.testTag("focus_settings_refresh")) {
-                Text(stringResource(R.string.focus_settings_refresh))
-            }
-        }
-        if (loading) {
-            CircularProgressIndicator(modifier = Modifier.testTag("focus_settings_loading"))
-        } else if (discoveryFailed) {
-            Text(
-                stringResource(R.string.focus_settings_discovery_error),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_settings_discovery_error"),
-            )
-        } else if (filteredApps.isEmpty()) {
-            Text(
-                stringResource(if (normalizedSearch.isEmpty()) R.string.focus_settings_no_apps else R.string.focus_settings_no_results),
-                modifier = Modifier.testTag("focus_settings_no_apps"),
-            )
-        } else {
-            filteredApps.forEach { app ->
-                val selected = app.packageName in selectedPackages
-                AppChoiceRow(
-                    app = app,
-                    allApps = apps,
-                    selected = selected,
-                    enabled = !isRunning,
-                    onToggle = { onToggle(app, it) },
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.focus_settings_intro), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    stringResource(R.string.focus_settings_profile_scope),
+                    modifier = Modifier.testTag("focus_settings_scope"),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
-            }
-        }
-        if (selectedPackages.isEmpty()) {
-            Text(
-                stringResource(R.string.focus_settings_empty_selection),
-                modifier = Modifier.testTag("focus_settings_empty_selection"),
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        if (unavailablePackages.isNotEmpty()) {
-            Text(
-                stringResource(R.string.focus_settings_unavailable_heading),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
-            )
-            unavailablePackages.forEach { packageName ->
+                Text(stringResource(R.string.focus_settings_enforcement_limit), style = MaterialTheme.typography.bodyMedium)
+                if (isRunning) {
+                    Text(
+                        stringResource(R.string.focus_settings_running),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("focus_settings_running"),
+                    )
+                }
+                LumaOutlinedTextField(
+                    value = search,
+                    onValueChange = { search = it },
+                    label = { Text(stringResource(R.string.focus_settings_search)) },
+                    modifier = Modifier.fillMaxWidth().testTag("focus_settings_search"),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    enabled = !isRunning,
+                )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                        .testTag("focus_settings_unavailable_$packageName"),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.focus_settings_unavailable_app))
-                        Text(packageName, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        stringResource(R.string.focus_settings_available_apps),
+                        modifier = Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    TextButton(onClick = onRefresh, modifier = Modifier.testTag("focus_settings_refresh")) {
+                        Text(stringResource(R.string.focus_settings_refresh))
                     }
-                    TextButton(
-                        onClick = {
-                            onToggle(AllowedFocusApps.App(packageName, packageName), false)
-                        },
-                        enabled = !isRunning,
-                        modifier = Modifier.testTag("focus_settings_remove_$packageName"),
-                    ) { Text(stringResource(R.string.focus_settings_remove)) }
+                }
+                if (loading) {
+                    CircularProgressIndicator(modifier = Modifier.testTag("focus_settings_loading"))
+                } else if (discoveryFailed) {
+                    Text(
+                        stringResource(R.string.focus_settings_discovery_error),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("focus_settings_discovery_error"),
+                    )
+                } else if (filteredApps.isEmpty()) {
+                    Text(
+                        stringResource(if (normalizedSearch.isEmpty()) R.string.focus_settings_no_apps else R.string.focus_settings_no_results),
+                        modifier = Modifier.testTag("focus_settings_no_apps"),
+                    )
+                } else {
+                    filteredApps.forEach { app ->
+                        val selected = app.packageName in selectedPackages
+                        AppChoiceRow(
+                            app = app,
+                            allApps = apps,
+                            selected = selected,
+                            enabled = !isRunning,
+                            onToggle = { onToggle(app, it) },
+                        )
+                    }
+                }
+                if (selectedPackages.isEmpty()) {
+                    Text(
+                        stringResource(R.string.focus_settings_empty_selection),
+                        modifier = Modifier.testTag("focus_settings_empty_selection"),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                if (unavailablePackages.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.focus_settings_unavailable_heading),
+                        modifier = Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    unavailablePackages.forEach { packageName ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                .testTag("focus_settings_unavailable_$packageName"),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.focus_settings_unavailable_app))
+                                Text(packageName, style = MaterialTheme.typography.bodySmall)
+                            }
+                            TextButton(
+                                onClick = {
+                                    onToggle(AllowedFocusApps.App(packageName, packageName), false)
+                                },
+                                enabled = !isRunning,
+                                modifier = Modifier.testTag("focus_settings_remove_$packageName"),
+                            ) { Text(stringResource(R.string.focus_settings_remove)) }
+                        }
+                    }
+                }
+                if (writeFailed) {
+                    Text(
+                        stringResource(R.string.focus_settings_save_error),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("focus_settings_save_error"),
+                    )
                 }
             }
         }
-        if (writeFailed) {
+    }
+}
+
+@Composable
+internal fun FocusSettingsDisclosure(
+    title: String,
+    summary: String,
+    sectionTag: String,
+    content: @Composable () -> Unit,
+) {
+    var expanded by rememberSaveable(sectionTag) { mutableStateOf(false) }
+    val contentStateHolder = rememberSaveableStateHolder()
+    val expansionDescription = stringResource(
+        if (expanded) R.string.focus_disclosure_expanded else R.string.focus_disclosure_collapsed,
+    )
+    Column(modifier = Modifier.fillMaxWidth().testTag(sectionTag)) {
+        TextButton(
+            onClick = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+                .testTag("${sectionTag}_toggle")
+                .semantics { stateDescription = expansionDescription },
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    title,
+                    modifier = Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(summary, style = MaterialTheme.typography.bodySmall)
+            }
             Text(
-                stringResource(R.string.focus_settings_save_error),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_settings_save_error"),
+                stringResource(if (expanded) R.string.focus_settings_collapse else R.string.focus_settings_expand),
+                style = MaterialTheme.typography.labelLarge,
             )
+        }
+        if (expanded) {
+            contentStateHolder.SaveableStateProvider(sectionTag) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().testTag("${sectionTag}_content"),
+                ) {
+                    content()
+                }
+            }
         }
     }
 }

@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -82,8 +81,25 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
     var pending by remember { mutableStateOf<PendingGoalWrite?>(null) }
     var busy by remember { mutableStateOf(false) }
     var writeFailed by remember { mutableStateOf(false) }
+    var saveSucceeded by rememberSaveable { mutableStateOf(false) }
+    var savedEnabled by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var inputInvalid by remember { mutableStateOf(false) }
     var pendingEffectiveMonday by remember { mutableStateOf<String?>(null) }
+
+    val now = Instant.now()
+    val activeGoal = goals.activeGoal(now)
+    val pendingGoal = goals.pendingGoal(now)
+    val pendingDate = pendingGoal?.effectiveMonday?.format(localizedDate(FormatStyle.MEDIUM))
+    val goalSummary = when {
+        writeFailed -> stringResource(R.string.focus_goal_save_error)
+        busy -> stringResource(R.string.focus_goal_save_pending)
+        goals.enabled && pendingGoal != null && activeGoal == null ->
+            stringResource(R.string.focus_goal_pending_activation, pendingDate.orEmpty())
+        goals.enabled && pendingGoal != null ->
+            stringResource(R.string.focus_goal_pending_change, pendingDate.orEmpty())
+        activeGoal != null -> stringResource(R.string.focus_goal_enabled)
+        else -> stringResource(R.string.focus_goal_disabled)
+    }
 
     LaunchedEffect(goals.settingsRevision) {
         val now = Instant.now()
@@ -103,21 +119,21 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
         writeFailed = false
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("focus_goal_settings"),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    FocusSettingsDisclosure(
+        title = stringResource(R.string.focus_goal_title),
+        summary = goalSummary,
+        sectionTag = "focus_settings_goals",
     ) {
-        Text(
-            stringResource(R.string.focus_goal_title),
-            modifier = Modifier.semantics { heading() },
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Text(stringResource(R.string.focus_goal_intro), style = MaterialTheme.typography.bodyMedium)
-        Text(
-            stringResource(if (goals.enabled) R.string.focus_goal_enabled else R.string.focus_goal_disabled),
-            modifier = Modifier.testTag("focus_goal_status"),
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("focus_goal_settings"),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(stringResource(R.string.focus_goal_intro), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                goalSummary,
+                modifier = Modifier.testTag("focus_goal_status"),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         LumaOutlinedTextField(
             value = targetText,
             onValueChange = {
@@ -127,6 +143,8 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                 pending = null
                 pendingEffectiveMonday = null
                 inputInvalid = false
+                writeFailed = false
+                saveSucceeded = false
             },
             label = { Text(stringResource(R.string.focus_goal_target_label)) },
             modifier = Modifier.fillMaxWidth().testTag("focus_goal_target"),
@@ -148,6 +166,8 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                             pending = null
                             pendingEffectiveMonday = null
                             inputInvalid = false
+                            writeFailed = false
+                            saveSucceeded = false
                         },
                         label = { Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp)
@@ -166,6 +186,8 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                     pending = null
                     pendingEffectiveMonday = null
                     inputInvalid = false
+                    writeFailed = false
+                    saveSucceeded = false
                 },
                 enabled = !busy,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_goal_use_device_zone"),
@@ -185,6 +207,25 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+        if (busy) {
+            Text(
+                stringResource(R.string.focus_goal_save_pending),
+                modifier = Modifier.testTag("focus_goal_save_pending"),
+            )
+        }
+        if (saveSucceeded) {
+            val savedPendingGoal = goals.pendingGoal(Instant.now())
+            Text(
+                if (savedEnabled == false) stringResource(R.string.focus_goal_saved_disabled)
+                else if (savedPendingGoal != null) {
+                    stringResource(
+                        R.string.focus_goal_saved_pending,
+                        savedPendingGoal.effectiveMonday.format(localizedDate(FormatStyle.MEDIUM)),
+                    )
+                } else stringResource(R.string.focus_goal_saved_active),
+                modifier = Modifier.testTag("focus_goal_saved_status"),
+            )
+        }
         if (inputInvalid) {
             Text(stringResource(R.string.focus_goal_invalid), color = MaterialTheme.colorScheme.error)
         }
@@ -197,6 +238,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                 enabled = !busy,
                 onClick = {
                     if (busy) return@TextButton
+                    saveSucceeded = false
                     scope.launch {
                         if (busy) return@launch
                         busy = true
@@ -241,6 +283,8 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                                 FocusProductResult.Applied, FocusProductResult.AlreadyApplied -> {
                                     pending = null
                                     writeFailed = false
+                                    saveSucceeded = true
+                                    savedEnabled = true
                                 }
                                 is FocusProductResult.Conflict -> {
                                     pending = null
@@ -281,6 +325,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                     enabled = !busy,
                     onClick = {
                         if (busy) return@TextButton
+                        saveSucceeded = false
                         scope.launch {
                             if (busy) return@launch
                             busy = true
@@ -301,6 +346,9 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                                     FocusProductResult.Applied, FocusProductResult.AlreadyApplied -> {
                                         pending = null
                                         pendingEffectiveMonday = null
+                                        writeFailed = false
+                                        saveSucceeded = true
+                                        savedEnabled = false
                                     }
                                     is FocusProductResult.Conflict -> { pending = null; writeFailed = true }
                                     is FocusProductResult.SessionConflict -> { pending = null; writeFailed = true }
@@ -321,6 +369,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_goal_disable"),
                 ) { Text(stringResource(R.string.focus_goal_disable)) }
             }
+        }
         }
     }
 }

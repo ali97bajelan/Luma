@@ -153,14 +153,16 @@ I08 verification note: :app:assembleProductionDebug passed. Per request, no test
 
 ### I09 — Settings organization and permission guidance (S07,S08)
 
-Files: P/ui/focus/FocusSettingsScreen.kt, FocusSettingsRoute.kt, FocusGoalSettings.kt, FocusInvitationSettings.kt, FocusTagManager.kt; A/ui/focus/FocusAllowedAppsTest.kt, FocusReportsTest.kt.
+Files: P/ui/focus/FocusSettingsScreen.kt, FocusSettingsRoute.kt, FocusGoalSettings.kt, FocusInvitationSettings.kt, FocusTagManager.kt; A/ui/focus/FocusAllowedAppsTest.kt, FocusReportsTest.kt, AppNavigationTest.kt.
 
-- [ ] Group reminders/goals/tags/shortcuts into saveable disclosures with concise current-status summaries.
-- [ ] Preserve goal effective Monday/zone/revision rules; expose saved/pending status separately.
-- [ ] Label invitations Focus reminders; show schedule versus notification access; request only on Allow notifications and refresh after system settings return.
-- [ ] Retain edits on failed saves and existing conflict/merge/delete protections.
-- [ ] Preserve profile/running restrictions, unavailable selected apps/remove and separate discovery failure/no matches/empty selection.
-- [ ] Define connected cases for goal pending activation, permission denied/revoked, stale reminder token, tag conflicts and shortcut failure. Compile only; do not request device permissions now.
+- [x] Group reminders/goals/tags/shortcuts into saveable disclosures with concise current-status summaries, including the active-session restriction for shortcuts.
+- [x] Preserve goal effective Monday/zone/revision rules; expose saved/pending status separately.
+- [x] Label invitations Focus reminders; show schedule versus notification access; request only on Allow notifications and refresh after system settings return.
+- [x] Retain edits on failed saves and existing conflict/merge/delete protections.
+- [x] Preserve profile/running restrictions, unavailable selected apps/remove and separate discovery failure/no matches/empty selection.
+- [x] Define connected cases for goal pending activation, permission denied/revoked state, stale reminder token, tag conflicts and shortcut failure. Compile only; do not request device permissions now.
+
+I09 verification note: Android Studio inspections found no errors in the changed I09 production or test sources. `:app:assembleProductionDebug :app:assembleProductionDebugAndroidTest` failed at `:app:compileProductionDebugAndroidTestKotlin` on unrelated existing errors in LocalLockStoreTest, LockCredentialIntegrationTest, TodoEditorFlowTest and WidgetRendererAcceptanceTest; no errors were reported in the I09 sources. The connected sources were not executed, and no device permission prompt or emulator QA was run. Q08–Q11 remain deferred to QA01.
 
 ### I10 — Integration, accessibility and local gate (S01–S09)
 
