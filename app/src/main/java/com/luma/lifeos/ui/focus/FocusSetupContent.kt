@@ -377,6 +377,8 @@ internal fun FocusSetupStartAction(
         }
     } ?: when {
         state.busy -> R.string.focus_saving
+        state.operationFailed && state.operationFailure == com.luma.lifeos.focus.FocusOperationFailure.START ->
+            R.string.focus_start_error
         state.operationFailed -> R.string.focus_write_error
         else -> null
     }

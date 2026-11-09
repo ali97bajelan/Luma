@@ -65,15 +65,19 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class FocusOperationFailure { START, PAUSE, RESUME, END, RECOVERY, CHECKPOINT, UNKNOWN }
+
 data class FocusScreenState(
     val runtime: FocusRuntimeState,
     val busy: Boolean = false,
     val breakBusy: Boolean = false,
     val breakOperationFailed: Boolean = false,
     val operationFailed: Boolean = false,
+    val operationFailure: FocusOperationFailure? = null,
     val backPromptVisible: Boolean = false,
     val emergencyPromptVisible: Boolean = false,
     val shortcutUnavailable: Boolean = false,
+    val shortcutLabel: String? = null,
     val setup: FocusSetupState = FocusSetupState(),
     val insights: FocusInsightsState = FocusInsightsState.Unselected,
     val tagSuggestions: List<FocusTag> = emptyList(),
@@ -117,10 +121,12 @@ class FocusViewModel(
         val breakBusy: Boolean = false,
         val breakOperationFailed: Boolean = false,
         val operationFailed: Boolean = false,
+        val operationFailure: FocusOperationFailure? = null,
         val backPromptVisible: Boolean = false,
         val emergencyPromptVisible: Boolean = false,
         val emergencyMarkerSaved: Boolean? = null,
         val shortcutUnavailable: Boolean = false,
+        val shortcutLabel: String? = null,
         val setup: FocusSetupState,
         val taskCompletion: FocusTaskCompletionState = FocusTaskCompletionState(),
     )
@@ -191,9 +197,11 @@ class FocusViewModel(
             breakBusy = localState.breakBusy,
             breakOperationFailed = localState.breakOperationFailed,
             operationFailed = localState.operationFailed,
+            operationFailure = localState.operationFailure,
             backPromptVisible = localState.backPromptVisible,
             emergencyPromptVisible = localState.emergencyPromptVisible,
             shortcutUnavailable = localState.shortcutUnavailable || runtimeState.shortcutFailed,
+            shortcutLabel = localState.shortcutLabel,
             setup = if (canReadFocusSurface && (!localState.setup.taskOrigin || canReadTasks)) {
                 localState.setup
             } else FocusSetupState(),
@@ -266,10 +274,12 @@ class FocusViewModel(
                         breakBusy = false,
                         breakOperationFailed = false,
                         operationFailed = false,
+                        operationFailure = null,
                         backPromptVisible = false,
                         emergencyPromptVisible = false,
                         emergencyMarkerSaved = null,
                         shortcutUnavailable = false,
+                        shortcutLabel = null,
                         taskCompletion = FocusTaskCompletionState(),
                     )
                 }
@@ -280,8 +290,17 @@ class FocusViewModel(
                 val previous = local.value.setup.databaseGeneration
                 if (previous != null && previous != generation) {
                     pendingOperation = null
+                    pendingShortcutPackage = null
                     recentWorkState.value = FocusRecentWorkState.Hidden
-                    local.update { it.copy(operationFailed = false, taskCompletion = FocusTaskCompletionState()) }
+                    local.update {
+                        it.copy(
+                            operationFailed = false,
+                            operationFailure = null,
+                            shortcutUnavailable = false,
+                            shortcutLabel = null,
+                            taskCompletion = FocusTaskCompletionState(),
+                        )
+                    }
                 }
                 updateSetup(FocusSetupEvent.GenerationChanged(generation))
             }
@@ -788,7 +807,19 @@ class FocusViewModel(
     fun changeTimedMinutes(value: String) = updateSetup(FocusSetupEvent.TimedMinutesChanged(value))
     fun blurTimedMinutes() = updateSetup(FocusSetupEvent.TimedMinutesBlurred)
     fun attemptStart() = updateSetup(FocusSetupEvent.StartAttempted)
-    fun startAnother() = updateSetup(FocusSetupEvent.StartAnotherRequested)
+    fun startAnother() {
+        if (local.value.busy) return
+        pendingShortcutPackage = null
+        local.update {
+            it.copy(
+                operationFailed = false,
+                operationFailure = null,
+                shortcutUnavailable = false,
+                shortcutLabel = null,
+            )
+        }
+        updateSetup(FocusSetupEvent.StartAnotherRequested)
+    }
 
     fun dismissMissingTerminalSession(sessionId: UUID, generation: UUID): Boolean {
         if (!privateContentAccess.value) return false
@@ -936,7 +967,7 @@ class FocusViewModel(
     }
 
     fun start(input: FocusStartInput) {
-        if (pendingOperation is PendingOperation.Start) return
+        if (local.value.busy || pendingOperation is PendingOperation.Start) return
         val normalized = runCatching { normalizeFocusStartInput(input) }.getOrElse {
             updateSetup(FocusSetupEvent.StartValidationRejected)
             return
@@ -951,12 +982,14 @@ class FocusViewModel(
     }
 
     fun act(action: FocusAction, onSuccess: (() -> Unit)? = null) {
+        if (local.value.busy) return
         val session = runtime.state.value.session ?: return
         val attempt = runtime.captureUserOperationAttempt() ?: return reportUnavailableAttempt()
         submit(PendingOperation.Action(UUID.randomUUID(), session, action, attempt), onSuccess)
     }
 
     fun resolveRecovery(choice: FocusRecoveryChoice) {
+        if (local.value.busy) return
         val session = runtime.state.value.session ?: return
         val attempt = runtime.captureUserOperationAttempt() ?: return reportUnavailableAttempt()
         submit(PendingOperation.Recovery(session, choice, attempt))
@@ -974,18 +1007,36 @@ class FocusViewModel(
                 launchSelectedApp(shortcutPackage)
             } else {
                 pendingShortcutPackage = null
-                local.update { it.copy(shortcutUnavailable = false) }
+                local.update {
+                    it.copy(shortcutUnavailable = false, shortcutLabel = null)
+                }
             }
             return
         }
+        if (local.value.busy) return
         viewModelScope.launch {
-            local.update { it.copy(busy = true, operationFailed = false) }
+            local.update {
+                it.copy(busy = true, operationFailed = false, operationFailure = null)
+            }
             try {
                 runtime.checkpointNow()
-                local.update { it.copy(busy = false, operationFailed = runtime.state.value.checkpointFailed) }
+                val failed = runtime.state.value.checkpointFailed
+                local.update {
+                    it.copy(
+                        busy = false,
+                        operationFailed = failed,
+                        operationFailure = if (failed) FocusOperationFailure.CHECKPOINT else null,
+                    )
+                }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                local.update { it.copy(busy = false, operationFailed = true) }
+                local.update {
+                    it.copy(
+                        busy = false,
+                        operationFailed = true,
+                        operationFailure = FocusOperationFailure.CHECKPOINT,
+                    )
+                }
             }
         }
     }
@@ -993,8 +1044,9 @@ class FocusViewModel(
     fun retryInitialization() = runtime.retryInitialization()
 
     private fun submit(operation: PendingOperation, onSuccess: (() -> Unit)? = null) {
+        if (local.value.busy) return
         pendingOperation = operation
-        local.update { it.copy(busy = true, operationFailed = false) }
+        local.update { it.copy(busy = true, operationFailed = false, operationFailure = null) }
         viewModelScope.launch {
             try {
                 val result = when (operation) {
@@ -1020,7 +1072,9 @@ class FocusViewModel(
                                 },
                             )
                         }
-                        local.update { it.copy(busy = false, operationFailed = false) }
+                        local.update {
+                            it.copy(busy = false, operationFailed = false, operationFailure = null)
+                        }
                     }
                     is FocusWriteResult.Applied,
                     is FocusWriteResult.AlreadyApplied,
@@ -1039,9 +1093,13 @@ class FocusViewModel(
                             it.copy(
                                 busy = false,
                                 operationFailed = false,
+                                operationFailure = null,
                                 shortcutUnavailable = if (operation is PendingOperation.Action &&
                                     operation.action in setOf(FocusAction.PAUSE, FocusAction.STOP)
                                 ) false else it.shortcutUnavailable,
+                                shortcutLabel = if (operation is PendingOperation.Action &&
+                                    operation.action in setOf(FocusAction.PAUSE, FocusAction.STOP)
+                                ) null else it.shortcutLabel,
                             )
                         }
                         if (operation is PendingOperation.Action &&
@@ -1052,33 +1110,65 @@ class FocusViewModel(
                         }
                     }
                     is FocusWriteResult.Invalid -> {
-                        pendingOperation = null
                         if (operation is PendingOperation.Start) {
+                            pendingOperation = null
                             val metadataInvalid = result.reason == FocusInvalidReason.INVALID_METADATA
                             updateSetup(
                                 if (metadataInvalid) FocusSetupEvent.StartValidationRejected
                                 else FocusSetupEvent.StartOutcomeReconciled,
                             )
-                            local.update { it.copy(busy = false, operationFailed = false) }
+                            local.update {
+                                it.copy(busy = false, operationFailed = false, operationFailure = null)
+                            }
                         } else {
-                            local.update { it.copy(busy = false, operationFailed = true) }
+                            local.update {
+                                it.copy(
+                                    busy = false,
+                                    operationFailed = true,
+                                    operationFailure = operation.failureKind(),
+                                )
+                            }
                         }
                     }
                     is FocusWriteResult.Unavailable -> {
                         if (operation is PendingOperation.Start) updateSetup(FocusSetupEvent.StartIoFailed)
-                        local.update { it.copy(busy = false, operationFailed = true) }
+                        local.update {
+                            it.copy(
+                                busy = false,
+                                operationFailed = true,
+                                operationFailure = operation.failureKind(),
+                            )
+                        }
                     }
                 }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 if (operation is PendingOperation.Start) updateSetup(FocusSetupEvent.StartIoFailed)
-                local.update { it.copy(busy = false, operationFailed = true) }
+                local.update {
+                    it.copy(
+                        busy = false,
+                        operationFailed = true,
+                        operationFailure = operation.failureKind(),
+                    )
+                }
             }
         }
     }
 
+    private fun PendingOperation.failureKind(): FocusOperationFailure = when (this) {
+        is PendingOperation.Start -> FocusOperationFailure.START
+        is PendingOperation.Action -> when (action) {
+            FocusAction.PAUSE -> FocusOperationFailure.PAUSE
+            FocusAction.RESUME -> FocusOperationFailure.RESUME
+            FocusAction.STOP -> FocusOperationFailure.END
+        }
+        is PendingOperation.Recovery -> FocusOperationFailure.RECOVERY
+    }
+
     private fun reportUnavailableAttempt() {
-        local.update { it.copy(operationFailed = true) }
+        local.update {
+            it.copy(operationFailed = true, operationFailure = FocusOperationFailure.UNKNOWN)
+        }
     }
 
     fun showBackPrompt() = local.update { it.copy(backPromptVisible = true) }
@@ -1113,19 +1203,30 @@ class FocusViewModel(
         local.update { it.copy(emergencyPromptVisible = false) }
     }
 
-    fun launchSelectedApp(packageName: String) {
+    fun launchSelectedApp(packageName: String, displayName: String? = null) {
+        if (local.value.busy) return
         pendingShortcutPackage = packageName
         viewModelScope.launch {
-            local.update { it.copy(busy = true, shortcutUnavailable = false) }
+            local.update {
+                it.copy(
+                    busy = true,
+                    shortcutUnavailable = false,
+                    shortcutLabel = displayName ?: it.shortcutLabel,
+                )
+            }
             try {
                 when (runtime.launchSelectedApp(packageName)) {
                     FocusShortcutResult.LAUNCHED -> {
                         pendingShortcutPackage = null
-                        local.update { it.copy(shortcutUnavailable = false) }
+                        local.update {
+                            it.copy(shortcutUnavailable = false, shortcutLabel = null)
+                        }
                     }
                     FocusShortcutResult.NOT_SELECTED,
                     FocusShortcutResult.UNAVAILABLE,
-                    FocusShortcutResult.CHECKPOINT_FAILED -> local.update { it.copy(shortcutUnavailable = true) }
+                    FocusShortcutResult.CHECKPOINT_FAILED -> local.update {
+                        it.copy(shortcutUnavailable = true)
+                    }
                 }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure

@@ -105,12 +105,14 @@ I04 verification note: TodayFocusActionTest passed (3/3) and :app:compileProduct
 
 Files: P/ui/focus/FocusScreen.kt, FocusRoute.kt; P/focus/FocusViewModel.kt only for missing UI feedback; A/ui/focus/FocusScreenTest.kt, A/focus/FocusShortcutHandoffTest.kt.
 
-- [ ] Prioritize state/name/labeled timer and Pause/Resume + End and save; omit absent tag.
-- [ ] Place shortcuts in a disclosure, disambiguating duplicate labels only when needed.
-- [ ] Keep emergency help reachable in normal state and directly on failure/recovery; preserve marker warnings.
-- [ ] Provide distinct restore/starting/saving/checkpoint/shortcut errors with scoped retry and known-saved explanation. Preserve retry command identity.
-- [ ] Extend connected definitions for busy double tap, failed leave, unavailable shortcut, lock and recovery; use deterministic existing fakes. Compile only.
-- [ ] Run any changed local guard/coordinator tests. Do not change background counting or Back policy.
+- [x] Prioritize state/name/labeled timer and Pause/Resume + End and save; omit absent tag.
+- [x] Place shortcuts in a disclosure, disambiguating duplicate labels only when needed.
+- [x] Keep emergency help reachable in normal state and directly on failure/recovery; preserve marker warnings.
+- [x] Provide distinct restore/starting/saving/checkpoint/shortcut errors with scoped retry and known-saved explanation. Preserve retry command identity.
+- [x] Extend connected definitions for busy double tap, failed leave, unavailable shortcut, lock and recovery; use deterministic existing fakes. Compile only.
+- [x] No local guard/coordinator test source was changed; background counting and Back policy remain unchanged.
+
+I05 verification note: IDE inspections reported no errors in changed production or FocusScreenTest sources. The requested assemble build stopped at :app:compileProductionDebugAndroidTestKotlin on pre-existing errors in LocalLockStoreTest, LockCredentialIntegrationTest, TodoEditorFlowTest, FocusReportsTest and WidgetRendererAcceptanceTest; no errors were reported from I05 sources. No connected tests ran; device verification remains deferred to QA01.
 
 ### I06 — Saved summary and optional follow-up (S04)
 

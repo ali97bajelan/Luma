@@ -5,14 +5,18 @@ import com.luma.lifeos.ui.common.LumaButton
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
 import android.text.format.DateUtils
+import android.view.View
+import android.widget.ImageView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +34,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusAction
@@ -42,7 +48,9 @@ import com.luma.lifeos.domain.focus.FocusStartInput
 import com.luma.lifeos.domain.focus.FocusTimerMode
 import com.luma.lifeos.focus.FocusBreakState
 import com.luma.lifeos.focus.AllowedFocusApps
+import com.luma.lifeos.focus.FocusOperationFailure
 import com.luma.lifeos.focus.FocusScreenState
+import com.luma.lifeos.focus.displayName
 import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.PageNavigation
 
@@ -102,6 +110,14 @@ internal fun FocusScreen(
     val runtime = state.runtime
     val session = runtime.session
     var setupRequestedForSession by rememberSaveable { mutableStateOf<String?>(null) }
+    var shortcutsExpanded by rememberSaveable(
+        session?.id?.toString(),
+        runtime.databaseGeneration?.toString(),
+    ) { mutableStateOf(false) }
+    var helpExpanded by rememberSaveable(
+        session?.id?.toString(),
+        runtime.databaseGeneration?.toString(),
+    ) { mutableStateOf(false) }
     val showTerminal = session?.let {
         shouldShowFocusTerminal(it.id, setupRequestedForSession, state.setup.databaseGeneration)
     } == true && !state.setup.isRepeatDraft
@@ -182,6 +198,10 @@ internal fun FocusScreen(
                     onEmergencyExit = onEmergencyExit,
                     onLaunchApp = onLaunchApp,
                     onOpenPendingDestination = onOpenPendingDestination,
+                    shortcutsExpanded = shortcutsExpanded,
+                    onToggleShortcuts = { shortcutsExpanded = !shortcutsExpanded },
+                    helpExpanded = helpExpanded,
+                    onToggleHelp = { helpExpanded = !helpExpanded },
                 )
                 session?.state == FocusState.PAUSED -> PausedContent(
                     state = state,
@@ -192,6 +212,9 @@ internal fun FocusScreen(
                     onEmergencyExit = onEmergencyExit,
                     onOpenPendingDestination = onOpenPendingDestination,
                     onOpenHistory = onOpenHistory,
+                    onOpenSettings = onOpenSettings,
+                    helpExpanded = helpExpanded,
+                    onToggleHelp = { helpExpanded = !helpExpanded },
                 )
                 session?.state == FocusState.FINISHED && showTerminal -> TerminalContent(
                     state = state,
@@ -440,11 +463,65 @@ private fun SessionMetadata(session: FocusSession) {
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.testTag("focus_session_name"),
         )
+        session.metadata.tag?.let { tag ->
+            Text(
+                tag.name,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("focus_session_tag"),
+            )
+        }
+    }
+}
+
+private fun FocusScreenState.hasFailurePresentation(): Boolean =
+    operationFailed || runtime.writeFailed || runtime.checkpointFailed ||
+        shortcutUnavailable || runtime.shortcutFailed
+
+@Composable
+private fun FocusSectionToggle(
+    label: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    tag: String,
+) {
+    val description = stringResource(
+        if (expanded) R.string.focus_expanded else R.string.focus_collapsed,
+    )
+    TextButton(
+        onClick = onToggle,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            .semantics { stateDescription = description }
+            .testTag(tag),
+    ) { Text(label) }
+}
+
+@Composable
+private fun FocusHelpDisclosure(
+    expanded: Boolean,
+    hasFailure: Boolean,
+    onToggle: () -> Unit,
+    onEmergencyExit: () -> Unit,
+) {
+    FocusSectionToggle(
+        label = stringResource(R.string.focus_help),
+        expanded = expanded,
+        onToggle = onToggle,
+        tag = "focus_help_toggle",
+    )
+    if (expanded) {
         Text(
-            session.metadata.tag?.name ?: stringResource(R.string.focus_tag_untagged),
+            stringResource(
+                if (hasFailure) R.string.focus_help_failure_body else R.string.focus_help_body,
+            ),
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.testTag("focus_session_tag"),
         )
+        if (!hasFailure) {
+            TextButton(
+                onClick = onEmergencyExit,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .testTag("focus_emergency_exit_help"),
+            ) { Text(stringResource(R.string.focus_emergency_exit)) }
+        }
     }
 }
 
@@ -458,18 +535,26 @@ private fun RunningContent(
     onEmergencyExit: () -> Unit,
     onLaunchApp: (String) -> Unit,
     onOpenPendingDestination: () -> Unit,
+    shortcutsExpanded: Boolean,
+    onToggleShortcuts: () -> Unit,
+    helpExpanded: Boolean,
+    onToggleHelp: () -> Unit,
 ) {
     Text(
         stringResource(R.string.focus_running),
         modifier = Modifier.semantics { heading() }.testTag("focus_running_label"),
         style = MaterialTheme.typography.titleLarge,
     )
-    state.runtime.session?.let { SessionMetadata(it) }
     val session = state.runtime.session
+    session?.let { SessionMetadata(it) }
     val targetMillis = session?.timer?.targetMillis
+    Text(
+        stringResource(if (targetMillis == null) R.string.focus_elapsed_label else R.string.focus_remaining_label),
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.testTag("focus_timer_label"),
+    )
     if (targetMillis != null) {
         val remaining = (targetMillis - state.runtime.displayedMillis).coerceAtLeast(0L)
-        Text(stringResource(R.string.focus_remaining_label), style = MaterialTheme.typography.titleSmall)
         Text(
             DateUtils.formatElapsedTime(remaining / 1_000),
             style = MaterialTheme.typography.displayMedium,
@@ -494,27 +579,57 @@ private fun RunningContent(
             onClick = { onAction(FocusAction.STOP) },
             enabled = !state.busy,
             modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_stop"),
-        ) { Text(stringResource(R.string.focus_stop)) }
+        ) { Text(stringResource(R.string.focus_back_end_save)) }
     }
-    TextButton(
-        onClick = onEmergencyExit,
-        modifier = Modifier.fillMaxWidth().testTag("focus_emergency_exit"),
-    ) { Text(stringResource(R.string.focus_emergency_exit)) }
     if (allowedApps.isNotEmpty()) {
-        Text(stringResource(R.string.focus_shortcuts), style = MaterialTheme.typography.titleMedium)
-        allowedApps.forEach { app ->
-            OutlinedButton(
-                onClick = { onLaunchApp(app.packageName) },
-                enabled = !state.busy,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_app_${app.packageName}"),
-            ) { Text("${app.label} · ${app.packageName}") }
+        FocusSectionToggle(
+            label = stringResource(R.string.focus_shortcuts),
+            expanded = shortcutsExpanded,
+            onToggle = onToggleShortcuts,
+            tag = "focus_shortcuts_toggle",
+        )
+        if (shortcutsExpanded) {
+            allowedApps.forEach { app ->
+                OutlinedButton(
+                    onClick = { onLaunchApp(app.packageName) },
+                    enabled = !state.busy,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                        .testTag("focus_app_${app.packageName}"),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        app.icon?.let { icon ->
+                            AndroidView(
+                                factory = { context ->
+                                    ImageView(context).apply {
+                                        scaleType = ImageView.ScaleType.FIT_CENTER
+                                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                                    }
+                                },
+                                update = { it.setImageDrawable(icon) },
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                        Text(app.displayName(allowedApps), modifier = Modifier.weight(1f))
+                    }
+                }
+            }
         }
     }
+    FocusHelpDisclosure(
+        expanded = helpExpanded,
+        hasFailure = state.hasFailurePresentation(),
+        onToggle = onToggleHelp,
+        onEmergencyExit = onEmergencyExit,
+    )
     if (hasPendingDestination) PendingDestinationButton(
         enabled = !state.runtime.navigationGuarded && !state.runtime.recoveryRequired,
         onOpenPendingDestination = onOpenPendingDestination,
     )
-    FailureContent(state, onRetry, onEmergencyExit, showEmergencyAction = false)
+    FailureContent(state, onRetry, onEmergencyExit, shortcutName = state.shortcutLabel)
 }
 
 @Composable
@@ -527,32 +642,64 @@ private fun PausedContent(
     onEmergencyExit: () -> Unit,
     onOpenPendingDestination: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenSettings: () -> Unit,
+    helpExpanded: Boolean,
+    onToggleHelp: () -> Unit,
 ) {
-    Text(stringResource(R.string.focus_paused), style = MaterialTheme.typography.titleLarge)
+    Text(
+        stringResource(R.string.focus_paused),
+        modifier = Modifier.semantics { heading() }.testTag("focus_paused_label"),
+        style = MaterialTheme.typography.titleLarge,
+    )
     SessionMetadata(session)
     val targetMillis = session.timer.targetMillis
+    Text(
+        stringResource(if (targetMillis == null) R.string.focus_elapsed_label else R.string.focus_remaining_label),
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.testTag("focus_timer_label"),
+    )
     if (targetMillis != null) {
-        Text(stringResource(R.string.focus_remaining_label), style = MaterialTheme.typography.titleSmall)
-        Text(DateUtils.formatElapsedTime((targetMillis - session.creditedMillis).coerceAtLeast(0L) / 1_000),
-            style = MaterialTheme.typography.displaySmall, modifier = Modifier.testTag("focus_remaining"))
+        Text(
+            DateUtils.formatElapsedTime((targetMillis - session.creditedMillis).coerceAtLeast(0L) / 1_000),
+            style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier.testTag("focus_remaining"),
+        )
     } else {
-        Text(DateUtils.formatElapsedTime(session.creditedMillis / 1_000), style = MaterialTheme.typography.displaySmall,
-            modifier = Modifier.testTag("focus_elapsed"))
+        Text(
+            DateUtils.formatElapsedTime(session.creditedMillis / 1_000),
+            style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier.testTag("focus_elapsed"),
+        )
     }
+    Text(stringResource(R.string.focus_paused_time_note), style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(R.string.focus_paused_leave_hint), style = MaterialTheme.typography.bodyMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        LumaButton(onClick = { onAction(FocusAction.RESUME) }, enabled = !state.busy,
-            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_resume")) {
-            Text(stringResource(R.string.focus_resume))
-        }
-        OutlinedButton(onClick = { onAction(FocusAction.STOP) }, enabled = !state.busy,
-            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_stop")) {
-            Text(stringResource(R.string.focus_stop))
-        }
+        LumaButton(
+            onClick = { onAction(FocusAction.RESUME) },
+            enabled = !state.busy,
+            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_resume"),
+        ) { Text(stringResource(R.string.focus_resume)) }
+        OutlinedButton(
+            onClick = { onAction(FocusAction.STOP) },
+            enabled = !state.busy,
+            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_stop"),
+        ) { Text(stringResource(R.string.focus_back_end_save)) }
     }
-    Text(stringResource(R.string.focus_paused_leave_hint))
+    FocusHelpDisclosure(
+        expanded = helpExpanded,
+        hasFailure = state.hasFailurePresentation(),
+        onToggle = onToggleHelp,
+        onEmergencyExit = onEmergencyExit,
+    )
     OpenHistoryButton(onOpenHistory)
     if (hasPendingDestination) PendingDestinationButton(onOpenPendingDestination = onOpenPendingDestination)
-    FailureContent(state, onRetry, onEmergencyExit)
+    FailureContent(
+        state = state,
+        onRetry = onRetry,
+        onEmergencyExit = onEmergencyExit,
+        shortcutName = state.shortcutLabel,
+        onManageShortcuts = if (!hasPendingDestination && !state.busy) onOpenSettings else null,
+    )
 }
 
 @Composable
@@ -677,39 +824,79 @@ internal fun FailureContent(
     onRetry: () -> Unit,
     onEmergencyExit: () -> Unit,
     showEmergencyAction: Boolean = true,
+    shortcutName: String? = null,
+    onManageShortcuts: (() -> Unit)? = null,
 ) {
     when {
-        state.operationFailed || state.runtime.writeFailed -> {
-            Text(stringResource(R.string.focus_write_error), color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_write_error"))
+        state.operationFailure != FocusOperationFailure.CHECKPOINT &&
+            (state.operationFailed || state.runtime.writeFailed) -> {
+            val message = when (state.operationFailure) {
+                FocusOperationFailure.START -> R.string.focus_start_error
+                FocusOperationFailure.PAUSE -> R.string.focus_pause_error
+                FocusOperationFailure.RESUME -> R.string.focus_resume_error
+                FocusOperationFailure.END -> R.string.focus_end_error
+                FocusOperationFailure.RECOVERY -> R.string.focus_recovery_error
+                else -> R.string.focus_write_error
+            }
+            Text(
+                stringResource(message),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.testTag("focus_write_error"),
+            )
             TextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
                 Text(stringResource(R.string.retry))
             }
-            if (showEmergencyAction) TextButton(onClick = onEmergencyExit, modifier = Modifier.testTag("focus_emergency_exit")) {
-                Text(stringResource(R.string.focus_emergency_exit))
+            if (showEmergencyAction) {
+                TextButton(
+                    onClick = onEmergencyExit,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
+                ) { Text(stringResource(R.string.focus_emergency_exit)) }
             }
         }
-        state.runtime.checkpointFailed -> {
-            Text(stringResource(R.string.focus_checkpoint_error), color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_checkpoint_error"))
+        state.operationFailure == FocusOperationFailure.CHECKPOINT || state.runtime.checkpointFailed -> {
+            Text(
+                stringResource(R.string.focus_checkpoint_error),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.testTag("focus_checkpoint_error"),
+            )
             TextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
                 Text(stringResource(R.string.retry))
             }
-            if (showEmergencyAction) TextButton(onClick = onEmergencyExit, modifier = Modifier.testTag("focus_emergency_exit")) {
-                Text(stringResource(R.string.focus_emergency_exit))
+            if (showEmergencyAction) {
+                TextButton(
+                    onClick = onEmergencyExit,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
+                ) { Text(stringResource(R.string.focus_emergency_exit)) }
             }
         }
         state.shortcutUnavailable || state.runtime.shortcutFailed -> {
+            val message = stringResource(
+                R.string.focus_shortcut_unavailable_named,
+                shortcutName ?: stringResource(R.string.focus_shortcut_unknown),
+            )
             Text(
-                stringResource(R.string.focus_app_unavailable),
+                message,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.testTag("focus_app_unavailable"),
             )
+            Text(stringResource(R.string.focus_shortcut_manage_hint), style = MaterialTheme.typography.bodyMedium)
             TextButton(
                 onClick = onRetry,
                 enabled = !state.busy,
-                modifier = Modifier.testTag("focus_retry_shortcut"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_retry_shortcut"),
             ) { Text(stringResource(R.string.retry)) }
+            if (onManageShortcuts != null) {
+                TextButton(
+                    onClick = onManageShortcuts,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_manage_shortcuts"),
+                ) { Text(stringResource(R.string.focus_manage_shortcuts)) }
+            }
+            if (showEmergencyAction) {
+                TextButton(
+                    onClick = onEmergencyExit,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
+                ) { Text(stringResource(R.string.focus_emergency_exit)) }
+            }
         }
     }
 }

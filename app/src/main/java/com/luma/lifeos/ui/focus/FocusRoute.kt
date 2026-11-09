@@ -16,7 +16,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusPreferences
 import com.luma.lifeos.focus.FocusViewModel
-import com.luma.lifeos.domain.focus.FocusAction
+import com.luma.lifeos.focus.displayName
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusInvitationRepository
@@ -157,12 +157,13 @@ internal fun FocusRoute(
         viewModel.updateViewingContext(currentDay.date, currentDay.zone)
     }
 
+    val selectedFocusApps = discoveredApps.filter { it.packageName in selectedPackages }
     FocusScreen(
         state = presentationState,
         focusRepository = focusRepository,
         focusProductRepository = focusProductRepository,
         taskContentReadable = protectedTasksReadable,
-        allowedApps = discoveredApps.filter { it.packageName in selectedPackages },
+        allowedApps = selectedFocusApps,
         hasPendingDestination = hasPendingDestination,
         onBack = onBack,
         onShowBackPrompt = viewModel::showBackPrompt,
@@ -192,7 +193,11 @@ internal fun FocusRoute(
         onEmergencyExit = viewModel::requestEmergencyExit,
         onDismissEmergencyExit = viewModel::dismissEmergencyExit,
         onConfirmEmergencyExit = viewModel::confirmEmergencyExit,
-        onLaunchApp = viewModel::launchSelectedApp,
+        onLaunchApp = { packageName ->
+            val displayName = selectedFocusApps.firstOrNull { it.packageName == packageName }
+                ?.displayName(selectedFocusApps)
+            viewModel.launchSelectedApp(packageName, displayName)
+        },
         onOpenPendingDestination = onOpenPendingDestination,
         onOpenHistory = onOpenHistory,
         onOpenSettings = onOpenSettings,
