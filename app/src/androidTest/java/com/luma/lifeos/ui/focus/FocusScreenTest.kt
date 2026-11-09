@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.focus
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -10,7 +11,11 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusState
+import com.luma.lifeos.domain.focus.FocusRun
+import com.luma.lifeos.domain.focus.FocusSession
+import com.luma.lifeos.domain.focus.FocusTerminalReason
 import com.luma.lifeos.domain.focus.FocusTimeSample
+import com.luma.lifeos.domain.focus.FocusTimerConfig
 import com.luma.lifeos.domain.focus.createFocusSession
 import com.luma.lifeos.focus.AllowedFocusApps
 import com.luma.lifeos.focus.FocusOperationFailure
@@ -26,6 +31,26 @@ import org.junit.Test
 
 class FocusScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun savedCompletionShowsCreditedOutcomeBeforeSecondaryActions() {
+        val session = completedSession()
+        renderFocusScreen(
+            FocusScreenState(
+                runtime = FocusRuntimeState(
+                    initialized = true,
+                    loading = false,
+                    session = session,
+                ),
+            ),
+        )
+
+        compose.onNodeWithTag("focus_terminal_label").assertTextContains("Stopped before target")
+        compose.onNodeWithTag("focus_saved_duration").assertTextContains("10:00")
+        compose.onNodeWithTag("focus_done").assertIsDisplayed()
+        compose.onNodeWithTag("focus_follow_up_group").assertIsDisplayed()
+        compose.onNodeWithTag("focus_break_options_toggle").performClick()
+        compose.onNodeWithTag("focus_start_five_minute_break").assertIsDisplayed()
+    }
 
     @Test fun systemBackPromptProvidesReachablePauseAndStopActions() {
         var leaveAction: FocusAction? = null
@@ -484,6 +509,35 @@ class FocusScreenTest {
         compose.onNodeWithTag("focus_back_dialog").assertIsDisplayed()
         compose.onNodeWithTag("focus_write_error").assertIsDisplayed()
         compose.onNodeWithTag("focus_emergency_exit").assertIsDisplayed()
+    }
+
+    private fun completedSession(): FocusSession {
+        val sessionId = UUID.fromString("20000000-0000-0000-0000-000000000020")
+        val startedAt = Instant.parse("2026-10-30T12:00:00Z")
+        val endedAt = startedAt.plusSeconds(10 * 60)
+        val run = FocusRun(
+            id = UUID.fromString("20000000-0000-0000-0000-000000000021"),
+            sessionId = sessionId,
+            ordinal = 1,
+            startedAt = startedAt,
+            endedAt = endedAt,
+            creditedMillis = 10 * 60_000L,
+            rawStartedAt = startedAt,
+            rawEndedAt = endedAt,
+        )
+        return FocusSession(
+            id = sessionId,
+            state = FocusState.FINISHED,
+            revision = 1,
+            startedAt = startedAt,
+            endedAt = endedAt,
+            createdAt = startedAt,
+            updatedAt = endedAt,
+            terminalReason = FocusTerminalReason.USER_STOP,
+            recoveredOrUncertain = false,
+            runs = listOf(run),
+            timer = FocusTimerConfig.timed(25),
+        )
     }
 
     private fun renderFocusScreen(

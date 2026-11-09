@@ -145,6 +145,29 @@ class FocusSetupContentTest {
     }
 
     @Test
+    fun retryingRepeatConfirmsBeforeReplacingAnAuthoredDraft() {
+        val sourceId = UUID.fromString("30000000-0000-0000-0000-000000000005")
+        val requestedSessions = mutableListOf<UUID>()
+        renderSetup(
+            initialSetup = FocusSetupState(
+                name = "My authored draft",
+                repeatSourceSessionId = sourceId,
+                repeatLoadFailed = true,
+            ),
+            onRepeatSession = { requestedSessions += it },
+        )
+
+        compose.onNodeWithTag("focus_repeat_retry").performClick()
+        compose.onNodeWithTag("focus_repeat_retry_replace_confirm").assertIsDisplayed()
+        compose.runOnIdle { assertTrue(requestedSessions.isEmpty()) }
+
+        compose.onNodeWithTag("focus_repeat_retry_replace_cancel").performClick()
+        compose.onNodeWithTag("focus_repeat_retry").performClick()
+        compose.onNodeWithTag("focus_repeat_retry_replace_confirm").performClick()
+        compose.runOnIdle { assertEquals(listOf(sourceId), requestedSessions) }
+    }
+
+    @Test
     fun usingRecentSettingsConfirmsBeforeReplacingAnAuthoredDraft() {
         val session = createFocusSession(
             sessionId = UUID.fromString("30000000-0000-0000-0000-000000000002"),
@@ -185,6 +208,7 @@ class FocusSetupContentTest {
         initialSetup: FocusSetupState,
         onOpenTaskPicker: (() -> Unit)? = null,
         onClearTaskSelection: () -> Unit = {},
+        onRepeatSession: (UUID) -> Unit = {},
     ): MutableState<FocusSetupState> {
         val setup = mutableStateOf(initialSetup)
         compose.setContent {
@@ -211,7 +235,7 @@ class FocusSetupContentTest {
                         onTimedMinutesBlur = {
                             setup.value = reduceFocusSetupState(setup.value, FocusSetupEvent.TimedMinutesBlurred)
                         },
-                        onRepeatSession = {},
+                        onRepeatSession = onRepeatSession,
                         onOpenTaskPicker = onOpenTaskPicker,
                         onClearTaskSelection = onClearTaskSelection,
                         onRetryRecentWork = {},

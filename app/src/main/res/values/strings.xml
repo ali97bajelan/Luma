@@ -1373,6 +1373,7 @@
     <string name="focus_done">Done</string>
     <string name="focus_start_another">Start another focus session</string>
     <string name="focus_repeat">Repeat this session</string>
+    <string name="focus_use_session_settings">Use session settings</string>
     <string name="focus_recent_use_settings">Use settings</string>
     <string name="focus_repeat_loading">Loading session details…</string>
     <string name="focus_repeat_error">Could not load this session to repeat it.</string>
@@ -1397,6 +1398,15 @@
     <string name="focus_reflection_edit">Edit reflection</string>
     <string name="focus_reflection_save">Save reflection</string>
     <string name="focus_reflection_skip">Skip</string>
+    <string name="focus_follow_up_title">Optional next steps</string>
+    <string name="focus_break_options">Break options</string>
+    <string name="focus_break_options_hide">Hide break options</string>
+    <string name="focus_reflection_unsaved_title">Save your reflection before leaving?</string>
+    <string name="focus_reflection_unsaved_message">Your reflection has unsaved changes.</string>
+    <string name="focus_reflection_save_and_leave">Save and leave</string>
+    <string name="focus_reflection_discard_and_leave">Discard and leave</string>
+    <string name="focus_reflection_keep_editing">Keep editing</string>
+    <string name="focus_reflection_saved">Reflection saved</string>
     <string name="focus_reflection_invalid">Use a single line of up to 280 characters without control characters.</string>
     <string name="focus_reflection_conflict">This session changed. Review the latest reflection and save again.</string>
     <string name="focus_reflection_load_error">Could not load the latest saved reflection. Your focus time is safe.</string>
@@ -1487,6 +1497,8 @@
     <string name="focus_task_remove">Remove task</string>
     <string name="focus_task_change">Change task</string>
     <string name="focus_task_link_removed">The task link was removed. This session still follows task privacy.</string>
+    <string name="focus_task_complete_saving">Marking task complete…</string>
+    <string name="focus_task_unlink_saving">Removing task link…</string>
     <string name="focus_task_loading">Loading task…</string>
     <string name="focus_task_selection_conflict">This task is missing or completed. Choose another open task before starting.</string>
     <string name="focus_insights_total">Saved time: %1$s</string>

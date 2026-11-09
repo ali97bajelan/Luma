@@ -118,11 +118,13 @@ I05 verification note: IDE inspections reported no errors in changed production 
 
 Files: P/ui/focus/FocusCompletionContent.kt, FocusReflectionEditor.kt, FocusTaskCompletionAction.kt; A/ui/focus/FocusReportsTest.kt, FocusScreenTest.kt.
 
-- [ ] Make Done the only filled primary action on saved summary; group secondary break/reflection/repeat/new/history.
-- [ ] Retain outcome-specific copy and credited duration; move alert caveat to relevant break/alert intent.
-- [ ] Preserve explicit reflection Save/Cancel and implement an unsaved-change confirmation when navigation would discard edited text. Cancel keeps edits; discard leaves; save leaves only after successful save.
-- [ ] Keep linked task completion/unlink explicit with separate busy/success/error state; preserve stale-session and protected-content guards.
-- [ ] Define connected cases for early end/target/interrupted, reflection save failure, canceled discard, task complete/unlink failure and repeat draft replacement. Compile only.
+- [x] Make Done the only filled primary action on saved summary; group secondary break/reflection/repeat/new/history.
+- [x] Retain outcome-specific copy and credited duration; move alert caveat to relevant break/alert intent.
+- [x] Preserve explicit reflection Save/Cancel and implement an unsaved-change confirmation when navigation would discard edited text. Cancel keeps edits; discard leaves; save leaves only after successful save.
+- [x] Keep linked task completion/unlink explicit with separate busy/success/error state; preserve stale-session and protected-content guards.
+- [x] Define connected cases for early end/target/interrupted, reflection save failure, canceled discard, task complete/unlink failure and repeat draft replacement. Compiled only; execution remains deferred to QA01.
+
+I06 verification note: Android Studio inspections reported no errors in the changed production and I06 UI-test sources. The requested Gradle build passed resource merging and stopped at :app:compileProductionDebugAndroidTestKotlin on existing errors in LocalLockStoreTest, LockCredentialIntegrationTest, TodoEditorFlowTest and WidgetRendererAcceptanceTest; no errors were reported in the I06 changes. No connected tests ran; device verification remains deferred to QA01.
 
 ### I07 — Active and expired breaks (S05)
 

@@ -1374,6 +1374,7 @@
     <string name="focus_done">انجام شد</string>
     <string name="focus_start_another">شروع نشست تمرکز دیگر</string>
     <string name="focus_repeat">تکرار این نشست</string>
+    <string name="focus_use_session_settings">استفاده از تنظیمات نشست</string>
     <string name="focus_recent_use_settings">استفاده از تنظیمات</string>
     <string name="focus_repeat_loading">در حال بارگذاری جزئیات نشست…</string>
     <string name="focus_repeat_error">بارگذاری این نشست برای تکرار ممکن نشد.</string>
@@ -1398,6 +1399,15 @@
     <string name="focus_reflection_edit">ویرایش بازتاب</string>
     <string name="focus_reflection_save">ذخیرهٔ بازتاب</string>
     <string name="focus_reflection_skip">رد کردن</string>
+    <string name="focus_follow_up_title">گام‌های بعدی (اختیاری)</string>
+    <string name="focus_break_options">گزینه‌های استراحت</string>
+    <string name="focus_break_options_hide">پنهان کردن گزینه‌های استراحت</string>
+    <string name="focus_reflection_unsaved_title">پیش از خروج بازتاب را ذخیره می‌کنید؟</string>
+    <string name="focus_reflection_unsaved_message">تغییرات بازتاب هنوز ذخیره نشده‌اند.</string>
+    <string name="focus_reflection_save_and_leave">ذخیره و خروج</string>
+    <string name="focus_reflection_discard_and_leave">نادیده گرفتن تغییرات و خروج</string>
+    <string name="focus_reflection_keep_editing">ادامهٔ ویرایش</string>
+    <string name="focus_reflection_saved">بازتاب ذخیره شد</string>
     <string name="focus_reflection_invalid">یک خط حداکثر با ۲۸۰ نویسه و بدون نویسه‌های کنترلی وارد کنید.</string>
     <string name="focus_reflection_conflict">این نشست تغییر کرده است. بازتاب تازه را بررسی و دوباره ذخیره کنید.</string>
     <string name="focus_reflection_load_error">بارگذاری آخرین بازتاب ممکن نشد. زمان تمرکز شما محفوظ است.</string>
@@ -1488,6 +1498,8 @@
     <string name="focus_task_remove">برداشتن کار</string>
     <string name="focus_task_change">تغییر کار</string>
     <string name="focus_task_link_removed">پیوند کار برداشته شد. این نشست همچنان تابع حریم خصوصی کارها است.</string>
+    <string name="focus_task_complete_saving">در حال کامل کردن کار…</string>
+    <string name="focus_task_unlink_saving">در حال برداشتن پیوند کار…</string>
     <string name="focus_task_loading">در حال بارگیری کار…</string>
     <string name="focus_task_selection_conflict">این کار پیدا نشد یا تکمیل شده است. پیش از شروع، کار باز دیگری انتخاب کنید.</string>
     <string name="focus_insights_total">زمان ذخیره‌شده: %1$s</string>

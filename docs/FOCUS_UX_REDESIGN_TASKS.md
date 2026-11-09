@@ -22,7 +22,7 @@ Statuses: [ ] pending; [x] implemented/local-verified (I tasks) or QA-passed wit
 | [x] | I03 | Preparation hierarchy, timer presets, optional task/tag/recent work | P1 | I02 | S02 | Q01–Q03,Q09 |
 | [x] | I04 | State-aware Today and History/Settings header wiring in both hosts | P1 | I01,I03 | S01 | Q01,Q04,Q09,Q10 |
 | [x] | I05 | Running/paused hierarchy, shortcut/help and failure feedback | P1 | I01,I04 | S03,S08 | Q04,Q08,Q10,Q11 |
-| [ ] | I06 | Single-primary completion, reflection and explicit task actions | P1 | I02,I05 | S04 | Q05,Q09,Q11 |
+| [x] | I06 | Single-primary completion, reflection and explicit task actions | P1 | I02,I05 | S04 | Q05,Q09,Q11 |
 | [ ] | I07 | Active/expired break hierarchy and custom input | P1 | I06 | S05 | Q06,Q11 |
 | [ ] | I08 | Inline progress, compact history and disclosed run details | P2 | I03,I04,I06 | S06 | Q07,Q09,Q11 |
 | [ ] | I09 | Grouped settings, goal/reminder/tag/shortcut status and recovery | P2 | I04 | S07,S08 | Q08–Q11 |

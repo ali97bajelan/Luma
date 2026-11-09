@@ -1394,6 +1394,7 @@
     <string name="focus_done">Terminé</string>
     <string name="focus_start_another">Démarrer une autre session</string>
     <string name="focus_repeat">Répéter cette session</string>
+    <string name="focus_use_session_settings">Utiliser les paramètres de la session</string>
     <string name="focus_recent_use_settings">Utiliser les paramètres</string>
     <string name="focus_repeat_loading">Chargement des détails de la session…</string>
     <string name="focus_repeat_error">Impossible de charger cette session pour la répéter.</string>
@@ -1418,6 +1419,15 @@
     <string name="focus_reflection_edit">Modifier le bilan</string>
     <string name="focus_reflection_save">Enregistrer le bilan</string>
     <string name="focus_reflection_skip">Ignorer</string>
+    <string name="focus_follow_up_title">Prochaines étapes facultatives</string>
+    <string name="focus_break_options">Options de pause</string>
+    <string name="focus_break_options_hide">Masquer les options de pause</string>
+    <string name="focus_reflection_unsaved_title">Enregistrer le bilan avant de quitter ?</string>
+    <string name="focus_reflection_unsaved_message">Les modifications du bilan ne sont pas enregistrées.</string>
+    <string name="focus_reflection_save_and_leave">Enregistrer et quitter</string>
+    <string name="focus_reflection_discard_and_leave">Ignorer les modifications et quitter</string>
+    <string name="focus_reflection_keep_editing">Continuer la modification</string>
+    <string name="focus_reflection_saved">Bilan enregistré</string>
     <string name="focus_reflection_invalid">Saisissez une seule ligne de 280 caractères maximum, sans caractères de contrôle.</string>
     <string name="focus_reflection_conflict">Cette session a changé. Vérifiez le dernier bilan et réessayez.</string>
     <string name="focus_reflection_load_error">Impossible de charger le dernier bilan. Votre temps de concentration est conservé.</string>
@@ -1508,6 +1518,8 @@
     <string name="focus_task_remove">Retirer la tâche</string>
     <string name="focus_task_change">Changer de tâche</string>
     <string name="focus_task_link_removed">Le lien avec la tâche a été supprimé. Cette session reste soumise à la confidentialité des tâches.</string>
+    <string name="focus_task_complete_saving">Finalisation de la tâche…</string>
+    <string name="focus_task_unlink_saving">Suppression du lien de tâche…</string>
     <string name="focus_task_loading">Chargement de la tâche…</string>
     <string name="focus_task_selection_conflict">Cette tâche est absente ou terminée. Choisissez une autre tâche ouverte avant de démarrer.</string>
     <string name="focus_insights_total">Temps enregistré : %1$s</string>

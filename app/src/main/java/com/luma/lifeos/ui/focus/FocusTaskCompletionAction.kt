@@ -12,6 +12,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusSession
@@ -40,13 +43,21 @@ internal fun FocusTaskCompletionAction(
         onSessionChanged(session.id, session.revision, taskId, generation)
     }
     if (taskId == null) {
-        Text(stringResource(R.string.focus_task_link_removed), modifier = Modifier.testTag("focus_task_link_removed"))
+        Text(
+            stringResource(R.string.focus_task_link_removed),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                .testTag("focus_task_link_removed"),
+        )
         return
     }
     val currentGeneration = generation ?: return
     val stateMatches = state.matches(session.id, session.revision, taskId, currentGeneration)
     if (stateMatches && state.unlinkPhase == FocusTaskUnlinkPhase.UNLINKED) {
-        Text(stringResource(R.string.focus_task_link_removed), modifier = Modifier.testTag("focus_task_link_removed"))
+        Text(
+            stringResource(R.string.focus_task_link_removed),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                .testTag("focus_task_link_removed"),
+        )
         return
     }
     val visibleState = if (stateMatches) state else FocusTaskCompletionState(
@@ -72,13 +83,27 @@ internal fun FocusTaskCompletionAction(
         if (completionEligible) {
             when (visibleState.completionPhase) {
                 FocusTaskCompletionPhase.COMPLETED ->
-                    Text(stringResource(R.string.todo_status_completed), modifier = Modifier.testTag("focus_task_completed"))
+                    Text(
+                        stringResource(R.string.todo_status_completed),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            .testTag("focus_task_completed"),
+                    )
                 FocusTaskCompletionPhase.MISSING ->
                     Text(stringResource(R.string.todo_list_row_missing), modifier = Modifier.testTag("focus_task_completion_missing"))
                 FocusTaskCompletionPhase.CONFLICT ->
                     Text(stringResource(R.string.todo_list_row_conflict), modifier = Modifier.testTag("focus_task_completion_conflict"))
                 FocusTaskCompletionPhase.ERROR ->
-                    Text(stringResource(R.string.todo_list_row_failed), modifier = Modifier.testTag("focus_task_completion_error"))
+                    Text(
+                        stringResource(R.string.todo_list_row_failed),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            .testTag("focus_task_completion_error"),
+                    )
+                FocusTaskCompletionPhase.SAVING, FocusTaskCompletionPhase.LOADING ->
+                    Text(
+                        stringResource(R.string.focus_task_complete_saving),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            .testTag("focus_task_completion_saving"),
+                    )
                 else -> Unit
             }
             if (visibleState.completionPhase != FocusTaskCompletionPhase.COMPLETED &&
@@ -110,7 +135,17 @@ internal fun FocusTaskCompletionAction(
         if (visibleState.unlinkPhase == FocusTaskUnlinkPhase.CONFLICT) {
             Text(stringResource(R.string.todo_conflict), modifier = Modifier.testTag("focus_task_unlink_conflict"))
         } else if (visibleState.unlinkPhase == FocusTaskUnlinkPhase.ERROR) {
-            Text(stringResource(R.string.todo_status_error), modifier = Modifier.testTag("focus_task_unlink_error"))
+            Text(
+                stringResource(R.string.todo_status_error),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_task_unlink_error"),
+            )
+        } else if (visibleState.unlinkPhase == FocusTaskUnlinkPhase.SAVING) {
+            Text(
+                stringResource(R.string.focus_task_unlink_saving),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_task_unlink_saving"),
+            )
         }
         if (visibleState.unlinkPhase != FocusTaskUnlinkPhase.UNLINKED) {
             TextButton(

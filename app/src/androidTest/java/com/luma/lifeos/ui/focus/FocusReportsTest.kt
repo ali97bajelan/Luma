@@ -3,10 +3,11 @@ package com.luma.lifeos.ui.focus
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.luma.lifeos.domain.focus.FocusAction
+import androidx.compose.ui.test.performTextInput
 import com.luma.lifeos.domain.focus.FocusCommand
 import com.luma.lifeos.domain.focus.FocusHistoryQuery
 import com.luma.lifeos.domain.focus.FocusHistoryRow
@@ -27,12 +28,15 @@ import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStatistics
 import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusTerminalReason
+import com.luma.lifeos.domain.focus.FocusTimerConfig
 import com.luma.lifeos.domain.focus.FocusTimeSample
 import com.luma.lifeos.domain.focus.FocusWriteContext
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.compareFocusStatistics
 import com.luma.lifeos.domain.review.reviewPeriod
 import com.luma.lifeos.domain.time.TimeRange
+import com.luma.lifeos.focus.FocusRuntimeState
+import com.luma.lifeos.focus.FocusScreenState
 import com.luma.lifeos.ui.theme.LifeOsTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -149,6 +153,224 @@ class FocusReportsTest {
         compose.runOnIdle { assertEquals(row.session.id, missingSessionId) }
     }
 
+    @Test fun completionSummaryDistinguishesEarlyEndTargetAndInterrupted() {
+        val earlyEnd = sampleHistoryRow().session.copy(timer = FocusTimerConfig.timed(25))
+        renderCompletion(earlyEnd)
+        compose.onNodeWithTag("focus_terminal_label").assertTextContains("Stopped before target")
+        compose.onNodeWithTag("focus_saved_duration").assertTextContains("10:00")
+
+        val targetReached = earlyEnd.copy(
+            timer = FocusTimerConfig.timed(10),
+            terminalReason = FocusTerminalReason.TARGET_REACHED,
+        )
+        renderCompletion(targetReached)
+        compose.onNodeWithTag("focus_terminal_label").assertTextContains("Target reached")
+
+        val interrupted = earlyEnd.copy(
+            state = FocusState.INTERRUPTED,
+            terminalReason = FocusTerminalReason.PROCESS_RESTART_GAP,
+        )
+        renderCompletion(interrupted)
+        compose.onNodeWithTag("focus_terminal_label").assertTextContains("Interrupted")
+        compose.onNodeWithText("Time after the last saved checkpoint was not included.").assertIsDisplayed()
+    }
+
+    @Test fun completionActionsKeepDonePrimaryAndBreakOptionsSecondary() {
+        var doneCalls = 0
+        var requestedBreakMinutes: Int? = null
+        renderCompletion(
+            session = sampleHistoryRow().session,
+            onDone = { doneCalls++ },
+            onStartBreak = { requestedBreakMinutes = it },
+        )
+
+        compose.onNodeWithTag("focus_done").assertIsDisplayed()
+        compose.onNodeWithTag("focus_follow_up_group").assertIsDisplayed()
+        compose.onNodeWithTag("focus_break_options_toggle").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(0, compose.onAllNodesWithTag("focus_start_five_minute_break").fetchSemanticsNodes().size)
+        }
+        compose.onNodeWithTag("focus_break_options_toggle").performClick()
+        compose.onNodeWithTag("focus_start_five_minute_break").performClick()
+
+        compose.runOnIdle {
+            assertEquals(5, requestedBreakMinutes)
+            assertEquals(0, doneCalls)
+        }
+        compose.onNodeWithTag("focus_done").performClick()
+        compose.runOnIdle { assertEquals(1, doneCalls) }
+    }
+
+    @Test fun completionNavigationOffersCancelDiscardAndPreservesReflectionDraft() {
+        val row = sampleHistoryRow()
+        val repository = HistoryRepository(row)
+        val productRepository = EmptyFocusProductRepository(GENERATION)
+        var doneCalls = 0
+        renderCompletion(
+            session = row.session,
+            repository = repository,
+            productRepository = productRepository,
+            onDone = { doneCalls++ },
+        )
+        compose.waitUntil(5_000) { repository.terminalLookupCount > 0 }
+
+        compose.onNodeWithTag("focus_reflection_add").performClick()
+        compose.onNodeWithTag("focus_reflection_next_step").performTextInput("draft next step")
+        compose.onNodeWithTag("focus_done").performClick()
+        compose.onNodeWithTag("focus_reflection_leave_dialog").assertIsDisplayed()
+        compose.onNodeWithTag("focus_reflection_keep_editing").performClick()
+        compose.onNodeWithTag("focus_reflection_next_step").assertTextContains("draft next step")
+
+        compose.onNodeWithTag("focus_done").performClick()
+        compose.onNodeWithTag("focus_reflection_discard_and_leave").performClick()
+        compose.runOnIdle { assertEquals(1, doneCalls) }
+        compose.onNodeWithTag("focus_reflection_add").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(0, compose.onAllNodesWithTag("focus_reflection_next_step").fetchSemanticsNodes().size)
+        }
+    }
+
+    @Test fun failedReflectionSaveDoesNotLeaveCompletion() {
+        val row = sampleHistoryRow()
+        val repository = HistoryRepository(row)
+        val productRepository = EmptyFocusProductRepository(GENERATION)
+        var doneCalls = 0
+        renderCompletion(
+            session = row.session,
+            repository = repository,
+            productRepository = productRepository,
+            onDone = { doneCalls++ },
+        )
+        compose.waitUntil(5_000) { repository.terminalLookupCount > 0 }
+
+        compose.onNodeWithTag("focus_reflection_add").performClick()
+        compose.onNodeWithTag("focus_reflection_next_step").performTextInput("keep this draft")
+        compose.onNodeWithTag("focus_done").performClick()
+        compose.onNodeWithTag("focus_reflection_save_and_leave").performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("focus_reflection_save_error").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        compose.onNodeWithTag("focus_reflection_editor").assertIsDisplayed()
+        compose.onNodeWithTag("focus_reflection_next_step").assertTextContains("keep this draft")
+        compose.runOnIdle { assertEquals(0, doneCalls) }
+    }
+
+    @Test fun failedTaskCompletionAndUnlinkKeepSeparateExplicitRetryActions() {
+        val row = sampleHistoryRow()
+        val taskId = UUID.fromString("00000000-0000-0000-0000-000000000101")
+        val session = row.session.copy(taskOrigin = true, taskId = taskId)
+        val state = FocusTaskCompletionState(
+            sessionId = session.id,
+            sessionRevision = session.revision,
+            taskId = taskId,
+            generation = GENERATION,
+            completionPhase = FocusTaskCompletionPhase.ERROR,
+            pendingCompletion = PendingFocusTaskCompletion(
+                taskId = taskId,
+                expectedRevision = UUID.fromString("00000000-0000-0000-0000-000000000102"),
+                nextRevision = UUID.fromString("00000000-0000-0000-0000-000000000103"),
+                generation = GENERATION,
+            ),
+            unlinkPhase = FocusTaskUnlinkPhase.ERROR,
+            pendingUnlink = PendingFocusTaskUnlink(
+                commandId = UUID.fromString("00000000-0000-0000-0000-000000000104"),
+                sessionId = session.id,
+                taskId = taskId,
+                expectedRevision = session.revision,
+                generation = GENERATION,
+            ),
+        )
+        var completionRetries = 0
+        var unlinkRetries = 0
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusTaskCompletionAction(
+                    session = session,
+                    generation = GENERATION,
+                    state = state,
+                    canAccessTaskActions = true,
+                    onSessionChanged = { _, _, _, _ -> },
+                    onMarkComplete = { _, _, _, _ -> error("Retry action expected") },
+                    onRetryCompletion = { _, _, _, _ -> completionRetries++ },
+                    onUnlinkTask = { _, _, _, _ -> error("Retry action expected") },
+                    onRetryUnlink = { _, _, _, _ -> unlinkRetries++ },
+                    onChanged = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag("focus_task_completion_error").assertIsDisplayed()
+        compose.onNodeWithTag("focus_task_unlink_error").assertIsDisplayed()
+        compose.onNodeWithTag("focus_task_mark_complete").performClick()
+        compose.onNodeWithTag("focus_task_unlink").performClick()
+        compose.runOnIdle {
+            assertEquals(1, completionRetries)
+            assertEquals(1, unlinkRetries)
+        }
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusTaskCompletionAction(
+                    session = session,
+                    generation = GENERATION,
+                    state = state.copy(
+                        completionPhase = FocusTaskCompletionPhase.SAVING,
+                        unlinkPhase = FocusTaskUnlinkPhase.SAVING,
+                    ),
+                    canAccessTaskActions = true,
+                    onSessionChanged = { _, _, _, _ -> },
+                    onMarkComplete = { _, _, _, _ -> },
+                    onRetryCompletion = { _, _, _, _ -> },
+                    onUnlinkTask = { _, _, _, _ -> },
+                    onRetryUnlink = { _, _, _, _ -> },
+                    onChanged = {},
+                )
+            }
+        }
+        compose.onNodeWithTag("focus_task_completion_saving").assertIsDisplayed()
+        compose.onNodeWithTag("focus_task_unlink_saving").assertIsDisplayed()
+
+        compose.setContent {
+            LifeOsTheme {
+                FocusTaskCompletionAction(
+                    session = session,
+                    generation = GENERATION,
+                    state = state,
+                    canAccessTaskActions = false,
+                    onSessionChanged = { _, _, _, _ -> },
+                    onMarkComplete = { _, _, _, _ -> },
+                    onRetryCompletion = { _, _, _, _ -> },
+                    onUnlinkTask = { _, _, _, _ -> },
+                    onRetryUnlink = { _, _, _, _ -> },
+                    onChanged = {},
+                )
+            }
+        }
+        compose.runOnIdle {
+            assertEquals(0, compose.onAllNodesWithTag("focus_task_mark_complete").fetchSemanticsNodes().size)
+            assertEquals(0, compose.onAllNodesWithTag("focus_task_unlink").fetchSemanticsNodes().size)
+        }
+    }
+
+    @Test fun completionRepeatUsesTheSavedSessionWithoutStartingOne() {
+        val session = sampleHistoryRow().session
+        var repeatedSession: UUID? = null
+        var starts = 0
+        renderCompletion(
+            session = session,
+            onRepeat = { repeatedSession = it },
+            onStartAnother = { starts++ },
+        )
+
+        compose.onNodeWithTag("focus_repeat").performClick()
+        compose.runOnIdle {
+            assertEquals(session.id, repeatedSession)
+            assertEquals(0, starts)
+        }
+    }
+
     @Test fun historyShowsCreditedRunsAndOnlyDeletesAfterConfirmation() {
         val row = sampleHistoryRow()
         val repository = HistoryRepository(row)
@@ -163,6 +385,8 @@ class FocusReportsTest {
                     zone = zone,
                     isFocusReadable = true,
                     privateContentAccessFlow = flowOf(true),
+                    taskContentAccessAllowed = false,
+                    taskContentAccessFlow = flowOf(false),
                     databaseGenerationFlow = flowOf(GENERATION),
                     onBack = {},
                 )
@@ -269,6 +493,12 @@ class FocusReportsTest {
     private class EmptyFocusProductRepository(private val generation: UUID) : FocusProductRepository {
         override suspend fun currentGeneration(): UUID = generation
         override fun observeGoals() = flowOf(FocusGoalState.DISABLED)
+        override fun observeTaskFocusMillis(taskId: UUID) = flowOf(0L)
+        override suspend fun unlinkTask(
+            sessionId: UUID,
+            expectedRevision: Long,
+            context: FocusProductContext,
+        ): FocusProductResult = error("Not used by this test")
         override suspend fun saveReflection(
             sessionId: UUID,
             expectedRevision: Long,
@@ -306,6 +536,54 @@ class FocusReportsTest {
             expectedSettingsRevision: Long,
             context: FocusProductContext,
         ): FocusProductResult = error("Not used by this test")
+    }
+
+    private fun renderCompletion(
+        session: FocusSession,
+        repository: FocusRepository? = null,
+        productRepository: FocusProductRepository? = null,
+        onDone: () -> Unit = {},
+        onStartAnother: () -> Unit = {},
+        onRepeat: (UUID) -> Unit = {},
+        onStartBreak: (Int) -> Unit = {},
+        onHistory: () -> Unit = {},
+    ) {
+        compose.setContent {
+            LifeOsTheme {
+                FocusCompletionContent(
+                    state = FocusScreenState(
+                        runtime = FocusRuntimeState(
+                            initialized = true,
+                            loading = false,
+                            session = session,
+                            databaseGeneration = GENERATION,
+                        ),
+                        focusContentReadable = repository != null,
+                    ),
+                    session = session,
+                    focusRepository = repository,
+                    focusProductRepository = productRepository,
+                    taskContentReadable = true,
+                    interrupted = session.state == FocusState.INTERRUPTED,
+                    hasPendingDestination = false,
+                    onDone = onDone,
+                    onStartAnother = onStartAnother,
+                    onRepeatSession = onRepeat,
+                    onStartBreak = onStartBreak,
+                    onEndBreak = {},
+                    onRetry = {},
+                    onEmergencyExit = {},
+                    onOpenPendingDestination = {},
+                    onOpenHistory = onHistory,
+                    onTerminalSessionMissing = { _, _ -> },
+                    onTaskSessionChanged = { _, _, _, _ -> },
+                    onMarkTaskComplete = { _, _, _, _ -> },
+                    onRetryTaskCompletion = { _, _, _, _ -> },
+                    onUnlinkTask = { _, _, _, _ -> },
+                    onRetryTaskUnlink = { _, _, _, _ -> },
+                )
+            }
+        }
     }
 
     private fun sampleHistoryRow(): FocusHistoryRow {

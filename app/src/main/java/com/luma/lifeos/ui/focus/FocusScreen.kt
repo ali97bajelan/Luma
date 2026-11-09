@@ -27,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -109,6 +110,9 @@ internal fun FocusScreen(
 ) {
     val runtime = state.runtime
     val session = runtime.session
+    val completionNavigation = remember(session?.id, runtime.databaseGeneration) {
+        FocusReflectionNavigationState()
+    }
     var setupRequestedForSession by rememberSaveable { mutableStateOf<String?>(null) }
     var shortcutsExpanded by rememberSaveable(
         session?.id?.toString(),
@@ -125,24 +129,21 @@ internal fun FocusScreen(
         !(runtime.recoveryRequired && session != null) &&
         session?.state !in setOf(FocusState.RUNNING, FocusState.PAUSED) &&
         !(session?.state in setOf(FocusState.FINISHED, FocusState.INTERRUPTED) && showTerminal)
-    BackHandler {
+    fun navigateBack() {
         when {
             runtime.navigationGuarded -> onShowBackPrompt()
             runtime.recoveryRequired -> Unit
+            showTerminal -> completionNavigation.requestNavigation(onBack)
             else -> onBack()
         }
     }
 
+    BackHandler { navigateBack() }
+
     AppPageScaffold(
         title = stringResource(R.string.focus_title),
         navigation = PageNavigation.BACK,
-        onNavigate = {
-            when {
-                runtime.navigationGuarded -> onShowBackPrompt()
-                runtime.recoveryRequired -> Unit
-                else -> onBack()
-            }
-        },
+        onNavigate = { navigateBack() },
         modifier = Modifier.fillMaxSize().testTag("focus_screen"),
         bottomBar = {
             if (showSetupAction) {
@@ -225,6 +226,7 @@ internal fun FocusScreen(
                     interrupted = false,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
+                    navigationState = completionNavigation,
                     onStartAnother = {
                         onStartAnother()
                         session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
@@ -252,6 +254,7 @@ internal fun FocusScreen(
                     interrupted = true,
                     hasPendingDestination = hasPendingDestination,
                     onBack = onBack,
+                    navigationState = completionNavigation,
                     onStartAnother = {
                         onStartAnother()
                         session?.let { setupRequestedForSession = focusTerminalRequestKey(it.id, state.setup.databaseGeneration) }
@@ -754,6 +757,7 @@ private fun TerminalContent(
     onRetryTaskCompletion: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
     onUnlinkTask: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
     onRetryTaskUnlink: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
+    navigationState: FocusReflectionNavigationState,
 ) {
     FocusCompletionContent(
         state = state,
@@ -778,6 +782,7 @@ private fun TerminalContent(
         onRetryTaskCompletion = onRetryTaskCompletion,
         onUnlinkTask = onUnlinkTask,
         onRetryTaskUnlink = onRetryTaskUnlink,
+        navigationState = navigationState,
     )
 }
 

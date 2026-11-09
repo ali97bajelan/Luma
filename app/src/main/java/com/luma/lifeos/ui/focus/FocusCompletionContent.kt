@@ -12,7 +12,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -58,7 +60,50 @@ internal fun FocusCompletionContent(
     onRetryTaskCompletion: (UUID, Long, UUID, UUID) -> Unit,
     onUnlinkTask: (UUID, Long, UUID, UUID) -> Unit,
     onRetryTaskUnlink: (UUID, Long, UUID, UUID) -> Unit,
+    navigationState: FocusReflectionNavigationState? = null,
 ) {
+    val reflectionNavigation = navigationState ?: remember(session.id, state.runtime.databaseGeneration) {
+        FocusReflectionNavigationState()
+    }
+    var pendingNavigation by remember(session.id, state.runtime.databaseGeneration) {
+        mutableStateOf<(() -> Unit)?>(null)
+    }
+    var showReflectionLeaveDialog by remember(session.id, state.runtime.databaseGeneration) {
+        mutableStateOf(false)
+    }
+
+    fun finishPendingNavigation() {
+        val navigation = pendingNavigation
+        pendingNavigation = null
+        showReflectionLeaveDialog = false
+        navigation?.invoke()
+    }
+
+    fun keepEditing() {
+        pendingNavigation = null
+        showReflectionLeaveDialog = false
+    }
+
+    fun requestNavigation(navigation: () -> Unit) {
+        if (reflectionNavigation.hasUnsavedChanges) {
+            pendingNavigation = navigation
+            showReflectionLeaveDialog = true
+        } else {
+            navigation()
+        }
+    }
+
+    reflectionNavigation.requestNavigation = ::requestNavigation
+    LaunchedEffect(
+        reflectionNavigation.hasUnsavedChanges,
+        reflectionNavigation.isSaving,
+        pendingNavigation,
+    ) {
+        if (pendingNavigation != null && !reflectionNavigation.hasUnsavedChanges &&
+            !reflectionNavigation.isSaving
+        ) finishPendingNavigation()
+    }
+
     val terminalLabel = when {
         interrupted || session.state == FocusState.INTERRUPTED -> R.string.focus_terminal_interrupted
         session.terminalReason == FocusTerminalReason.TARGET_REACHED -> R.string.focus_terminal_target_reached
@@ -100,90 +145,145 @@ internal fun FocusCompletionContent(
     }
 
     LumaButton(
-        onClick = onDone,
+        onClick = { requestNavigation(onDone) },
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_done"),
     ) {
         Text(stringResource(R.string.focus_done))
     }
 
-    if (state.runtime.breakState != FocusBreakState.Idle) {
-        FocusBreakCountdown(
-            state = state.runtime.breakState,
-            busy = state.breakBusy,
-            onEndBreak = onEndBreak,
-        )
-    } else {
-        BreakActions(
-            sessionId = session.id,
-            busy = state.breakBusy,
-            onStartBreak = onStartBreak,
-        )
-    }
-    if (state.breakOperationFailed) {
-        Text(stringResource(R.string.focus_break_operation_error), color = MaterialTheme.colorScheme.error)
-    }
-
-    focusRepository?.let { repository ->
-        FocusReflectionEditor(
-            session = session,
-            repository = repository,
-            productRepository = focusProductRepository,
-            generation = state.runtime.databaseGeneration,
-            isFocusReadable = state.focusContentReadable && (!session.taskOrigin || taskContentReadable),
-            onSessionMissing = onTerminalSessionMissing,
-        )
-    }
-
-    FocusTaskCompletionAction(
-        session = session,
-        generation = state.runtime.databaseGeneration,
-        state = state.taskCompletion,
-        canAccessTaskActions = state.taskActionsAllowed && state.focusContentReadable && taskContentReadable,
-        onSessionChanged = onTaskSessionChanged,
-        onMarkComplete = onMarkTaskComplete,
-        onRetryCompletion = onRetryTaskCompletion,
-        onUnlinkTask = onUnlinkTask,
-        onRetryUnlink = onRetryTaskUnlink,
-        onChanged = {},
-    )
-
-    val repeatId = state.setup.repeatSourceSessionId ?: session.id
-    if (state.setup.repeatLoading) {
-        Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
-    }
-    if (state.setup.repeatLoadFailed) {
-        Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
-    }
-    OutlinedButton(
-        onClick = { onRepeatSession(repeatId) },
-        enabled = !state.busy && !state.setup.repeatLoading,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_repeat"),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().testTag("focus_follow_up_group"),
     ) {
-        Text(stringResource(R.string.focus_repeat))
-    }
-    OutlinedButton(
-        onClick = onStartAnother,
-        enabled = !state.busy,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_another"),
-    ) {
-        Text(stringResource(R.string.focus_start_another))
-    }
-    TextButton(
-        onClick = onOpenHistory,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_history_open"),
-    ) {
-        Text(stringResource(R.string.focus_open_history))
-    }
-    if (hasPendingDestination) {
-        Text(stringResource(R.string.focus_pending_destination))
-        LumaButton(
-            onClick = onOpenPendingDestination,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_open_pending_destination"),
-        ) {
-            Text(stringResource(R.string.focus_open_pending))
+        Text(stringResource(R.string.focus_follow_up_title), style = MaterialTheme.typography.titleMedium)
+        if (state.runtime.breakState != FocusBreakState.Idle) {
+            FocusBreakCountdown(
+                state = state.runtime.breakState,
+                busy = state.breakBusy,
+                onEndBreak = onEndBreak,
+            )
+        } else {
+            BreakActions(
+                sessionId = session.id,
+                busy = state.breakBusy,
+                onStartBreak = onStartBreak,
+            )
         }
+        if (state.breakOperationFailed) {
+            Text(stringResource(R.string.focus_break_operation_error), color = MaterialTheme.colorScheme.error)
+        }
+
+        focusRepository?.let { repository ->
+            FocusReflectionEditor(
+                session = session,
+                repository = repository,
+                productRepository = focusProductRepository,
+                generation = state.runtime.databaseGeneration,
+                isFocusReadable = state.focusContentReadable && (!session.taskOrigin || taskContentReadable),
+                navigationState = reflectionNavigation,
+                onSessionMissing = onTerminalSessionMissing,
+            )
+        }
+
+        FocusTaskCompletionAction(
+            session = session,
+            generation = state.runtime.databaseGeneration,
+            state = state.taskCompletion,
+            canAccessTaskActions = state.taskActionsAllowed && state.focusContentReadable && taskContentReadable,
+            onSessionChanged = onTaskSessionChanged,
+            onMarkComplete = onMarkTaskComplete,
+            onRetryCompletion = onRetryTaskCompletion,
+            onUnlinkTask = onUnlinkTask,
+            onRetryUnlink = onRetryTaskUnlink,
+            onChanged = {},
+        )
+
+        val repeatId = state.setup.repeatSourceSessionId ?: session.id
+        if (state.setup.repeatLoading) {
+            Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
+        }
+        if (state.setup.repeatLoadFailed) {
+            Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
+        }
+        OutlinedButton(
+            onClick = { requestNavigation { onRepeatSession(repeatId) } },
+            enabled = !state.busy && !state.setup.repeatLoading,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_repeat"),
+        ) {
+            Text(stringResource(R.string.focus_use_session_settings))
+        }
+        OutlinedButton(
+            onClick = { requestNavigation(onStartAnother) },
+            enabled = !state.busy,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_another"),
+        ) {
+            Text(stringResource(R.string.focus_start_another))
+        }
+        TextButton(
+            onClick = { requestNavigation(onOpenHistory) },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_history_open"),
+        ) {
+            Text(stringResource(R.string.focus_open_history))
+        }
+        if (hasPendingDestination) {
+            Text(stringResource(R.string.focus_pending_destination))
+            OutlinedButton(
+                onClick = { requestNavigation(onOpenPendingDestination) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_open_pending_destination"),
+            ) {
+                Text(stringResource(R.string.focus_open_pending))
+            }
+        }
+        FailureContent(state, onRetry, onEmergencyExit = { requestNavigation(onEmergencyExit) })
     }
-    FailureContent(state, onRetry, onEmergencyExit)
+
+    if (showReflectionLeaveDialog) {
+        LumaAlertDialog(
+            onDismissRequest = ::keepEditing,
+            title = { Text(stringResource(R.string.focus_reflection_unsaved_title)) },
+            text = { Text(stringResource(R.string.focus_reflection_unsaved_message)) },
+            confirmButton = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(
+                        onClick = {
+                            if (!reflectionNavigation.isSaving) {
+                                showReflectionLeaveDialog = false
+                                reflectionNavigation.saveForNavigation(
+                                    ::finishPendingNavigation,
+                                    ::keepEditing,
+                                )
+                            }
+                        },
+                        enabled = !reflectionNavigation.isSaving,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .testTag("focus_reflection_save_and_leave"),
+                    ) {
+                        Text(stringResource(R.string.focus_reflection_save_and_leave))
+                    }
+                    TextButton(
+                        onClick = {
+                            reflectionNavigation.discard()
+                            finishPendingNavigation()
+                        },
+                        enabled = !reflectionNavigation.isSaving,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .testTag("focus_reflection_discard_and_leave"),
+                    ) {
+                        Text(stringResource(R.string.focus_reflection_discard_and_leave))
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = ::keepEditing,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_keep_editing"),
+                ) {
+                    Text(stringResource(R.string.focus_reflection_keep_editing))
+                }
+            },
+            modifier = Modifier.testTag("focus_reflection_leave_dialog"),
+        )
+    }
 }
 
 @Composable
@@ -192,29 +292,39 @@ private fun BreakActions(
     busy: Boolean,
     onStartBreak: (Int) -> Unit,
 ) {
+    var showBreakOptions by rememberSaveable(sessionId.toString()) { mutableStateOf(false) }
     var showCustomizeDialog by rememberSaveable(sessionId.toString()) { mutableStateOf(false) }
     var customMinutes by rememberSaveable(sessionId.toString()) { mutableStateOf("") }
     var customMinutesAttempted by rememberSaveable(sessionId.toString()) { mutableStateOf(false) }
     val customDuration = customMinutes.toIntOrNull()?.takeIf { it in 1..60 }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
-        LumaButton(
-            onClick = { onStartBreak(5) },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_five_minute_break"),
-        ) {
-            Text(stringResource(R.string.focus_break_take_five))
-        }
         OutlinedButton(
-            onClick = {
-                customMinutesAttempted = false
-                showCustomizeDialog = true
-            },
+            onClick = { showBreakOptions = !showBreakOptions },
             enabled = !busy,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_customize_break"),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_break_options_toggle"),
         ) {
-            Text(stringResource(R.string.focus_break_customize))
+            Text(stringResource(if (showBreakOptions) R.string.focus_break_options_hide else R.string.focus_break_options))
+        }
+        if (showBreakOptions) {
+            Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
+            OutlinedButton(
+                onClick = { onStartBreak(5) },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_start_five_minute_break"),
+            ) {
+                Text(stringResource(R.string.focus_break_take_five))
+            }
+            OutlinedButton(
+                onClick = {
+                    customMinutesAttempted = false
+                    showCustomizeDialog = true
+                },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_customize_break"),
+            ) {
+                Text(stringResource(R.string.focus_break_customize))
+            }
         }
     }
 

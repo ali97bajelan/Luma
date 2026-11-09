@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusOutcome
@@ -32,7 +38,6 @@ import com.luma.lifeos.domain.focus.FocusReflection
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.normalizeFocusReflection
-import com.luma.lifeos.ui.common.LumaButton
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +52,15 @@ private data class PendingReflection(
     val generation: UUID,
 )
 
+internal class FocusReflectionNavigationState {
+    var hasUnsavedChanges by mutableStateOf(false)
+    var isSaving by mutableStateOf(false)
+    var saveForNavigation: ((onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit) =
+        { _, onFailure -> onFailure() }
+    var discard: () -> Unit = {}
+    var requestNavigation: ((() -> Unit) -> Unit) = { it() }
+}
+
 @Composable
 internal fun FocusReflectionEditor(
     session: FocusSession,
@@ -55,6 +69,7 @@ internal fun FocusReflectionEditor(
     generation: UUID?,
     isFocusReadable: Boolean,
     showWhenEmpty: Boolean = false,
+    navigationState: FocusReflectionNavigationState? = null,
     onSaved: () -> Unit = {},
     onSessionMissing: (UUID, UUID) -> Unit = { _, _ -> },
 ) {
@@ -79,6 +94,7 @@ internal fun FocusReflectionEditor(
         mutableStateOf<PendingReflection?>(null)
     }
     var saving by remember(session.id, currentGeneration, isFocusReadable) { mutableStateOf(false) }
+    var savedAnnouncement by remember(session.id, currentGeneration, isFocusReadable) { mutableStateOf(false) }
     var saveError by remember(session.id, currentGeneration, isFocusReadable) { mutableStateOf(false) }
     var conflict by remember(session.id, currentGeneration, isFocusReadable) { mutableStateOf(false) }
     var inputRejected by remember(session.id, currentGeneration, isFocusReadable) { mutableStateOf(false) }
@@ -148,15 +164,32 @@ internal fun FocusReflectionEditor(
         outcome = newOutcome
         nextStep = newNextStep
         pending = null
+        savedAnnouncement = false
         saveError = false
         conflict = false
     }
 
-    fun save(command: PendingReflection? = null) {
+    fun discardDraft() {
+        outcome = currentSession.reflection.outcome
+        nextStep = currentSession.reflection.nextStep.orEmpty()
+        editing = false
+        pending = null
+        saveError = false
+        conflict = false
+        inputRejected = false
+        if (showWhenEmpty && currentSession.reflection.isEmpty) dismissed = true
+    }
+
+    fun save(
+        command: PendingReflection? = null,
+        onSuccess: () -> Unit = {},
+        onFailure: () -> Unit = {},
+    ) {
         if (saving) return
         val normalized = runCatching { normalizeFocusReflection(FocusReflection(outcome, nextStep)) }
             .getOrElse {
                 inputRejected = true
+                onFailure()
                 return
             }
         val request = command ?: pending?.takeIf {
@@ -171,6 +204,7 @@ internal fun FocusReflectionEditor(
         )
         pending = request
         saving = true
+        savedAnnouncement = false
         saveError = false
         conflict = false
         inputRejected = false
@@ -180,6 +214,7 @@ internal fun FocusReflectionEditor(
                 if (beforeWrite != request.generation) {
                     pending = null
                     conflict = true
+                    onFailure()
                     return@launch
                 }
                 val result = withContext(Dispatchers.IO) {
@@ -198,6 +233,7 @@ internal fun FocusReflectionEditor(
                         } else null
                         if (saved == null || !saved.isTerminal) {
                             saveError = true
+                            onFailure()
                         } else {
                             currentSession = saved
                             outcome = saved.reflection.outcome
@@ -206,7 +242,9 @@ internal fun FocusReflectionEditor(
                             saveError = false
                             conflict = false
                             editing = false
+                            savedAnnouncement = true
                             onSaved()
+                            onSuccess()
                         }
                     }
                     is FocusProductResult.SessionConflict,
@@ -223,22 +261,52 @@ internal fun FocusReflectionEditor(
                             nextStep = latest.reflection.nextStep.orEmpty()
                         }
                         conflict = true
+                        onFailure()
                     }
                     is FocusProductResult.Invalid -> {
                         pending = null
                         inputRejected = result.reason == FocusProductInvalidReason.INVALID_REFLECTION
                         saveError = !inputRejected
+                        onFailure()
                     }
-                    is FocusProductResult.Unavailable -> saveError = true
+                    is FocusProductResult.Unavailable -> {
+                        saveError = true
+                        onFailure()
+                    }
                     is FocusProductResult.InvitationConflict,
-                    is FocusProductResult.MergeRequired -> saveError = true
+                    is FocusProductResult.MergeRequired -> {
+                        saveError = true
+                        onFailure()
+                    }
                 }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 saveError = true
+                onFailure()
             } finally {
                 saving = false
             }
+        }
+    }
+
+    val dirty = isFocusReadable && editing && FocusReflection(outcome, nextStep) != currentSession.reflection
+    navigationState?.saveForNavigation = { onSuccess, onFailure ->
+        save(onSuccess = onSuccess, onFailure = onFailure)
+    }
+    navigationState?.discard = ::discardDraft
+    SideEffect {
+        navigationState?.let {
+            it.hasUnsavedChanges = dirty
+            it.isSaving = saving
+        }
+    }
+    DisposableEffect(navigationState, session.id, currentGeneration) {
+        onDispose {
+            navigationState?.hasUnsavedChanges = false
+            navigationState?.isSaving = false
+            navigationState?.discard = {}
+            navigationState?.saveForNavigation = { _, onFailure -> onFailure() }
+            navigationState?.requestNavigation = { it() }
         }
     }
 
@@ -258,16 +326,29 @@ internal fun FocusReflectionEditor(
     if (dismissed) return
     val reflection = currentSession.reflection
     if (!editing) {
+        if (savedAnnouncement) {
+            Text(
+                stringResource(R.string.focus_reflection_saved),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_reflection_saved"),
+            )
+        }
         if (reflection.isEmpty) {
             if (showWhenEmpty) {
                 Text(stringResource(R.string.focus_reflection_prompt), style = MaterialTheme.typography.titleMedium)
                 TextButton(
-                    onClick = { editing = true },
+                    onClick = {
+                        savedAnnouncement = false
+                        editing = true
+                    },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_add"),
                 ) { Text(stringResource(R.string.focus_reflection_add)) }
             } else {
                 TextButton(
-                    onClick = { editing = true },
+                    onClick = {
+                        savedAnnouncement = false
+                        editing = true
+                    },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_add"),
                 ) { Text(stringResource(R.string.focus_reflection_add_outcome_or_step)) }
             }
@@ -277,7 +358,10 @@ internal fun FocusReflectionEditor(
                 reflection.nextStep?.let { Text(stringResource(R.string.focus_reflection_saved_next_step, it)) }
             }
             TextButton(
-                onClick = { editing = true },
+                onClick = {
+                    savedAnnouncement = false
+                    editing = true
+                },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_edit"),
             ) { Text(stringResource(R.string.focus_reflection_edit)) }
         }
@@ -326,11 +410,23 @@ internal fun FocusReflectionEditor(
         if (conflict) {
             Text(stringResource(R.string.focus_reflection_conflict), color = MaterialTheme.colorScheme.error)
         }
+        if (saving) {
+            Text(
+                stringResource(R.string.focus_saving),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_reflection_saving"),
+            )
+        }
         if (saveError) {
-            Text(stringResource(R.string.focus_reflection_save_error), color = MaterialTheme.colorScheme.error)
+            Text(
+                stringResource(R.string.focus_reflection_save_error),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_reflection_save_error"),
+            )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LumaButton(
+            OutlinedButton(
                 onClick = { save() },
                 enabled = !saving && !inputRejected,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_save"),
@@ -343,13 +439,7 @@ internal fun FocusReflectionEditor(
                 ) { Text(stringResource(R.string.retry)) }
             }
             TextButton(
-                onClick = {
-                    editing = false
-                    pending = null
-                    saveError = false
-                    conflict = false
-                    if (showWhenEmpty && currentSession.reflection.isEmpty) dismissed = true
-                },
+                onClick = { discardDraft() },
                 enabled = !saving,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("focus_reflection_skip"),
             ) { Text(stringResource(if (showWhenEmpty) R.string.focus_reflection_skip else R.string.cancel)) }
