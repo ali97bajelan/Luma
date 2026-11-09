@@ -1502,6 +1502,14 @@
     <string name="focus_open_history">Voir toutes les sessions</string>
     <string name="focus_week_title">Temps de concentration</string>
     <string name="focus_insights_title">Analyses de concentration</string>
+    <string name="focus_progress_heading">Progression enregistrée</string>
+    <string name="focus_progress_summary">%1$s · %2$s · %3$s</string>
+    <string name="focus_progress_loading">Chargement de la progression enregistrée…</string>
+    <string name="focus_progress_view">Voir la progression</string>
+    <string name="focus_progress_collapse">Réduire la progression</string>
+    <string name="focus_disclosure_expanded">Développé</string>
+    <string name="focus_disclosure_collapsed">Réduit</string>
+    <string name="focus_history_time_breakdown">Détail du temps</string>
     <string name="focus_period_today">Aujourd’hui</string>
     <string name="focus_period_week">Cette semaine</string>
     <string name="focus_period_all">Depuis toujours</string>
@@ -1580,7 +1588,7 @@
     <string name="focus_history_recovered">Session interrompue ou récupérée · le temps après le dernier enregistrement peut être exclu.</string>
     <string name="focus_history_segment">Intervalle %1$d · %2$s – %3$s · %4$s</string>
     <string name="focus_history_delete_title">Supprimer cette session ?</string>
-    <string name="focus_history_delete_confirm">La session et ses intervalles crédités seront supprimés de l’historique et des totaux.</string>
+    <string name="focus_history_delete_confirm">Supprimer « %1$s » et ses intervalles crédités de l’historique et des totaux ?</string>
     <string name="focus_history_delete_action">Supprimer</string>
     <string name="focus_history_delete_failed">Impossible de supprimer cette session. Actualisez l’historique et réessayez.</string>
     <string name="focus_history_previous_page">Précédent</string>

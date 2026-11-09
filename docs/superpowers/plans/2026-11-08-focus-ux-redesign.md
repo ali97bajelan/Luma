@@ -142,12 +142,14 @@ I07 verification note: IDE inspections reported no errors in changed production 
 
 Files: P/ui/focus/FocusScreen.kt, FocusInsightsCard.kt, FocusHistoryRoute.kt, FocusHistoryViewModel.kt, FocusGoalReport.kt, WeeklyFocusCard.kt; A/ui/focus/FocusReportsTest.kt; U/ui/focus/FocusHistoryFilterStateTest.kt.
 
-- [ ] Replace always-expanded setup insights with compact saved-progress summary and saveable inline expansion/Collapse.
-- [ ] Keep period selection separate from history filters and draft; scroll expanded heading into view.
-- [ ] Compact rows; put reflection/edit/repeat before disclosed run accounting; add expansion semantics.
-- [ ] Preserve day scope, pagination/list position, confirmed delete, exact credit and requested-session navigation.
-- [ ] Differentiate empty/filtered-empty/locked/error/missing; clearing filters preserves date range.
+- [x] Replace always-expanded setup insights with compact saved-progress summary and saveable inline expansion/Collapse.
+- [x] Keep period selection separate from history filters and draft; scroll expanded heading into view.
+- [x] Compact rows; put reflection/edit/repeat before disclosed run accounting; add expansion semantics.
+- [x] Preserve day scope, pagination/list position, confirmed delete, exact credit and requested-session navigation.
+- [x] Differentiate empty/filtered-empty/locked/error/missing; clearing filters preserves date range.
 - [ ] Add local filter tests for changed behavior and run them; define connected generation/privacy-loss cases and compile only.
+
+I08 verification note: :app:assembleProductionDebug passed. Per request, no tests were added or run; the planned local filter tests and connected generation/privacy-loss cases remain pending for the appropriate verification phase. Device verification remains deferred to QA01.
 
 ### I09 — Settings organization and permission guidance (S07,S08)
 

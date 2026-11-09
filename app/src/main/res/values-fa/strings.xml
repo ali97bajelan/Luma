@@ -1482,6 +1482,14 @@
     <string name="focus_open_history">نمایش همهٔ نشست‌ها</string>
     <string name="focus_week_title">زمان تمرکز</string>
     <string name="focus_insights_title">بینش‌های تمرکز</string>
+    <string name="focus_progress_heading">پیشرفت ذخیره‌شده</string>
+    <string name="focus_progress_summary">%1$s · %2$s · %3$s</string>
+    <string name="focus_progress_loading">در حال بارگذاری پیشرفت ذخیره‌شده…</string>
+    <string name="focus_progress_view">نمایش پیشرفت</string>
+    <string name="focus_progress_collapse">بستن پیشرفت</string>
+    <string name="focus_disclosure_expanded">بازشده</string>
+    <string name="focus_disclosure_collapsed">بسته‌شده</string>
+    <string name="focus_history_time_breakdown">جزئیات زمان</string>
     <string name="focus_period_today">امروز</string>
     <string name="focus_period_week">این هفته</string>
     <string name="focus_period_all">همهٔ زمان‌ها</string>
@@ -1560,7 +1568,7 @@
     <string name="focus_history_recovered">نشست قطع یا بازیابی شده · ممکن است زمان پس از آخرین ذخیره محاسبه نشده باشد.</string>
     <string name="focus_history_segment">بازهٔ %1$d · %2$s – %3$s · %4$s</string>
     <string name="focus_history_delete_title">این نشست تمرکز حذف شود؟</string>
-    <string name="focus_history_delete_confirm">نشست ذخیره‌شده و بازه‌های آن از تاریخچه و مجموع تمرکز حذف می‌شوند.</string>
+    <string name="focus_history_delete_confirm">«%1$s» و بازه‌های محاسبه‌شدهٔ آن از تاریخچه و مجموع زمان تمرکز حذف شوند؟</string>
     <string name="focus_history_delete_action">حذف نشست</string>
     <string name="focus_history_delete_failed">حذف نشست ممکن نشد. تاریخچه را تازه کنید و دوباره تلاش کنید.</string>
     <string name="focus_history_previous_page">پیشین</string>

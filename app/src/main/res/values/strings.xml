@@ -1481,6 +1481,14 @@
     <string name="focus_open_history">View all sessions</string>
     <string name="focus_week_title">Focus time</string>
     <string name="focus_insights_title">Focus insights</string>
+    <string name="focus_progress_heading">Saved progress</string>
+    <string name="focus_progress_summary">%1$s · %2$s · %3$s</string>
+    <string name="focus_progress_loading">Loading saved progress…</string>
+    <string name="focus_progress_view">View progress</string>
+    <string name="focus_progress_collapse">Collapse progress</string>
+    <string name="focus_disclosure_expanded">Expanded</string>
+    <string name="focus_disclosure_collapsed">Collapsed</string>
+    <string name="focus_history_time_breakdown">Time breakdown</string>
     <string name="focus_period_today">Today</string>
     <string name="focus_period_week">This week</string>
     <string name="focus_period_all">All time</string>
@@ -1559,7 +1567,7 @@
     <string name="focus_history_recovered">Interrupted or recovered · time after the last checkpoint may be excluded.</string>
     <string name="focus_history_segment">Run %1$d · %2$s – %3$s · %4$s</string>
     <string name="focus_history_delete_title">Delete this focus session?</string>
-    <string name="focus_history_delete_confirm">This removes the saved session and its credited runs from focus history and totals.</string>
+    <string name="focus_history_delete_confirm">Delete “%1$s” and its credited runs from focus history and totals?</string>
     <string name="focus_history_delete_action">Delete session</string>
     <string name="focus_history_delete_failed">The session could not be deleted. Refresh history and try again.</string>
     <string name="focus_history_previous_page">Previous</string>

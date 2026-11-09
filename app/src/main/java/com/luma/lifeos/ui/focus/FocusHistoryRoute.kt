@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -34,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.Lifecycle
@@ -155,7 +158,23 @@ internal fun FocusHistoryRoute(
             onBack = onBack,
         )
     } else {
-        Box(Modifier.fillMaxSize())
+        AppPageScaffold(
+            title = stringResource(R.string.focus_history_title),
+            navigation = PageNavigation.BACK,
+            onNavigate = onBack,
+            modifier = Modifier.fillMaxSize().testTag("focus_history_locked_screen"),
+        ) { pagePadding ->
+            Column(
+                Modifier.fillMaxSize().padding(pagePadding).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(stringResource(R.string.app_lock_gate_body), modifier = Modifier.testTag("focus_history_locked"))
+                TextButton(
+                    onClick = onRequestProtectedFocusUnlock,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_history_unlock"),
+                ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
+            }
+        }
     }
 }
 
@@ -205,6 +224,7 @@ private fun FocusHistoryScreen(
     }
     var expandedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<FocusHistoryRow?>(null) }
+    val listState = rememberLazyListState()
     LaunchedEffect(state.loading) {
         if (state.loading) deleteTarget = null
     }
@@ -216,7 +236,8 @@ private fun FocusHistoryScreen(
     ) { pagePadding ->
         LumaReadingPane(Modifier.fillMaxSize()) {
             LazyColumn(
-                Modifier.fillMaxSize().padding(pagePadding).testTag("focus_history_list"),
+                state = listState,
+                modifier = Modifier.fillMaxSize().padding(pagePadding).testTag("focus_history_list"),
                 contentPadding = PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -341,7 +362,14 @@ private fun FocusHistoryScreen(
         LumaAlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text(stringResource(R.string.focus_history_delete_title)) },
-            text = { Text(stringResource(R.string.focus_history_delete_confirm)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.focus_history_delete_confirm,
+                        target.session.metadata.name ?: stringResource(R.string.focus_session_fallback),
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(
                     enabled = state.deletingSessionId == null,
@@ -557,30 +585,25 @@ private fun FocusHistoryItem(
     val formatter = remember(zone, Locale.getDefault()) {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(zone)
     }
+    val expansionStateDescription = stringResource(
+        if (expanded) R.string.focus_disclosure_expanded else R.string.focus_disclosure_collapsed,
+    )
     LumaCard(Modifier.fillMaxWidth().testTag("focus_history_row_${row.session.id}")) {
         Column(
-            Modifier.fillMaxWidth().padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            Modifier.fillMaxWidth().padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            TextButton(onClick = onOpen, modifier = Modifier.fillMaxWidth().testTag("focus_history_detail")) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(
+                onClick = onOpen,
+                modifier = Modifier.fillMaxWidth()
+                    .semantics { stateDescription = expansionStateDescription }
+                    .testTag("focus_history_detail"),
+            ) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
                         row.session.metadata.name ?: stringResource(R.string.focus_session_fallback),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.testTag("focus_history_row_name"),
-                    )
-                    Text(
-                        row.session.metadata.tag?.name ?: stringResource(R.string.focus_tag_untagged),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.testTag("focus_history_row_tag"),
-                    )
-                    Text(formatter.format(row.session.startedAt), style = MaterialTheme.typography.bodySmall)
-                    Text(
-                        stringResource(
-                            if (row.session.state == FocusState.INTERRUPTED) R.string.focus_interrupted
-                            else R.string.focus_finished,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
                         if (range == null) stringResource(
@@ -593,6 +616,21 @@ private fun FocusHistoryItem(
                         ),
                         modifier = Modifier.testTag("focus_history_row_duration"),
                     )
+                    Text(formatter.format(row.session.startedAt), style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        stringResource(
+                            if (row.session.state == FocusState.INTERRUPTED) R.string.focus_interrupted
+                            else R.string.focus_finished,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    row.session.metadata.tag?.let { tag ->
+                        Text(
+                            tag.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.testTag("focus_history_row_tag"),
+                        )
+                    }
                 }
             }
             if (expanded) {

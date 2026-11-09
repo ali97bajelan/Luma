@@ -24,7 +24,7 @@ Statuses: [ ] pending; [x] implemented/local-verified (I tasks) or QA-passed wit
 | [x] | I05 | Running/paused hierarchy, shortcut/help and failure feedback | P1 | I01,I04 | S03,S08 | Q04,Q08,Q10,Q11 |
 | [x] | I06 | Single-primary completion, reflection and explicit task actions | P1 | I02,I05 | S04 | Q05,Q09,Q11 |
 | [x] | I07 | Active/expired break hierarchy and custom input | P1 | I06 | S05 | Q06,Q11 |
-| [ ] | I08 | Inline progress, compact history and disclosed run details | P2 | I03,I04,I06 | S06 | Q07,Q09,Q11 |
+| [x] | I08 | Inline progress, compact history and disclosed run details | P2 | I03,I04,I06 | S06 | Q07,Q09,Q11 |
 | [ ] | I09 | Grouped settings, goal/reminder/tag/shortcut status and recovery | P2 | I04 | S07,S08 | Q08–Q11 |
 | [ ] | I10 | Cross-surface accessibility/localization integration and local verification | P1 | I01–I09 | S01–S09 | Q01–Q12 |
 
@@ -35,6 +35,8 @@ I04 local verification: TodayFocusActionTest passed (3/3) and :app:compileProduc
 I05 local verification: IDE inspections reported no errors in changed production or FocusScreenTest sources. The requested assemble build stopped at :app:compileProductionDebugAndroidTestKotlin on pre-existing errors in LocalLockStoreTest, LockCredentialIntegrationTest, TodoEditorFlowTest, FocusReportsTest and WidgetRendererAcceptanceTest; no errors were reported from I05 sources. No connected tests ran; device verification remains deferred to QA01.
 
 I07 verification: IDE inspections reported no errors in changed production or Android-test sources. `:app:assembleProductionDebug :app:assembleProductionDebugAndroidTest` reached Android-test Kotlin compilation and stopped on existing errors in LocalLockStoreTest, LockCredentialIntegrationTest, TodoEditorFlowTest and WidgetRendererAcceptanceTest; no errors were reported from I07 sources. No connected tests ran; device verification remains deferred to QA01.
+
+I08 verification: Android Studio inspections reported no errors in changed production files. `:app:assembleProductionDebug` passed. Per request, no tests were added or run; local filter tests and connected generation/privacy-loss coverage remain pending. No emulator/connected QA ran; device verification remains deferred to QA01.
 
 ### Implementation gate G1
 

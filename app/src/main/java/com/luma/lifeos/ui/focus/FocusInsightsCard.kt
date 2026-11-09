@@ -1,6 +1,8 @@
 package com.luma.lifeos.ui.focus
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,13 +14,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusComparison
@@ -36,47 +43,110 @@ internal fun FocusInsightsCard(
     onRequestUnlock: () -> Unit = {},
 ) {
     var showAllTags by remember(state.query) { mutableStateOf(false) }
+    var progressExpanded by rememberSaveable { mutableStateOf(false) }
+    val expandedContentRequester = remember { BringIntoViewRequester() }
+    LaunchedEffect(progressExpanded) {
+        if (progressExpanded) expandedContentRequester.bringIntoView()
+    }
+
     LumaCard(Modifier.fillMaxWidth().testTag("focus_insights_card")) {
         Column(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(stringResource(R.string.focus_insights_title), style = MaterialTheme.typography.titleLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                FocusPeriod.entries.forEach { option ->
-                    FilterChip(
-                        selected = period == option,
-                        onClick = { onPeriodChange(option) },
-                        label = { Text(stringResource(option.labelResource())) },
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                            .testTag("focus_period_${option.name.lowercase()}"),
-                    )
-                }
-            }
+            Text(stringResource(R.string.focus_progress_heading), style = MaterialTheme.typography.titleLarge)
             when (state) {
-                FocusInsightsState.Unselected,
-                is FocusInsightsState.Loading -> CircularProgressIndicator(
-                    modifier = Modifier.testTag("focus_insights_loading"),
+                FocusInsightsState.Unselected -> Text(stringResource(R.string.focus_progress_loading))
+                is FocusInsightsState.Loading -> Text(stringResource(R.string.focus_progress_loading))
+                is FocusInsightsState.Error -> Text(
+                    stringResource(R.string.focus_insights_unavailable),
+                    color = MaterialTheme.colorScheme.error,
                 )
-                is FocusInsightsState.Error -> {
-                    Text(stringResource(R.string.focus_insights_unavailable), color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_retry")) {
-                        Text(stringResource(R.string.retry))
+                is FocusInsightsState.NeedsUnlock -> Text(stringResource(R.string.app_lock_gate_body))
+                is FocusInsightsState.Ready -> {
+                    val insights = state.insights
+                    if (insights.sessions == 0) {
+                        Text(stringResource(R.string.focus_insights_empty))
+                    } else {
+                        Text(
+                            stringResource(
+                                R.string.focus_progress_summary,
+                                stringResource(period.labelResource()),
+                                focusDuration(insights.totalMillis),
+                                focusContributorCount(insights.sessions),
+                            ),
+                            modifier = Modifier.testTag("focus_progress_summary"),
+                        )
                     }
                 }
-                is FocusInsightsState.NeedsUnlock -> {
-                    Text(stringResource(R.string.app_lock_gate_body))
-                    TextButton(
-                        onClick = onRequestUnlock,
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_unlock"),
-                    ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
-                }
-                is FocusInsightsState.Ready -> FocusInsightsContent(
-                    state.insights,
-                    state.comparison,
-                    showAllTags,
-                    onShowAllTags = { showAllTags = it },
+            }
+            val progressStateDescription = stringResource(
+                if (progressExpanded) R.string.focus_disclosure_expanded
+                else R.string.focus_disclosure_collapsed,
+            )
+            TextButton(
+                onClick = { progressExpanded = !progressExpanded },
+                modifier = Modifier.heightIn(min = 48.dp)
+                    .semantics { stateDescription = progressStateDescription }
+                    .testTag("focus_progress_toggle"),
+            ) {
+                Text(
+                    stringResource(
+                        if (progressExpanded) R.string.focus_progress_collapse
+                        else R.string.focus_progress_view,
+                    ),
                 )
+            }
+            if (progressExpanded) {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .bringIntoViewRequester(expandedContentRequester)
+                        .testTag("focus_insights_expanded"),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.focus_insights_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        FocusPeriod.entries.forEach { option ->
+                            FilterChip(
+                                selected = period == option,
+                                onClick = { onPeriodChange(option) },
+                                label = { Text(stringResource(option.labelResource())) },
+                                modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                    .testTag("focus_period_${option.name.lowercase()}"),
+                            )
+                        }
+                    }
+                    when (state) {
+                        FocusInsightsState.Unselected,
+                        is FocusInsightsState.Loading -> CircularProgressIndicator(
+                            modifier = Modifier.testTag("focus_insights_loading"),
+                        )
+                        is FocusInsightsState.Error -> {
+                            Text(stringResource(R.string.focus_insights_unavailable), color = MaterialTheme.colorScheme.error)
+                            TextButton(
+                                onClick = onRetry,
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_retry"),
+                            ) { Text(stringResource(R.string.retry)) }
+                        }
+                        is FocusInsightsState.NeedsUnlock -> {
+                            Text(stringResource(R.string.app_lock_gate_body))
+                            TextButton(
+                                onClick = onRequestUnlock,
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_insights_unlock"),
+                            ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
+                        }
+                        is FocusInsightsState.Ready -> FocusInsightsContent(
+                            state.insights,
+                            state.comparison,
+                            showAllTags,
+                            onShowAllTags = { showAllTags = it },
+                        )
+                    }
+                }
             }
         }
     }
