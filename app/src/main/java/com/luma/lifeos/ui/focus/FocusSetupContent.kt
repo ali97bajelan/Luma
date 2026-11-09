@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -32,6 +35,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
@@ -83,7 +89,11 @@ internal fun FocusSetupContent(
         }
     }
 
-    Text(stringResource(R.string.focus_intro), style = MaterialTheme.typography.bodyLarge)
+    Text(
+        stringResource(R.string.focus_intro),
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.semantics { heading() },
+    )
     OutlinedTextField(
         value = setup.name,
         onValueChange = onNameChange,
@@ -225,10 +235,15 @@ internal fun FocusSetupContent(
     } else {
         stringResource(R.string.focus_tag_selected, setup.tag)
     }
+    val tagDisclosureState = stringResource(
+        if (setup.tagAreaExpanded) R.string.focus_expanded else R.string.focus_collapsed,
+    )
     OutlinedButton(
         onClick = { onTagAreaExpandedChange(!setup.tagAreaExpanded) },
         enabled = fieldsEnabled,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_tag_disclosure"),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            .semantics { stateDescription = tagDisclosureState }
+            .testTag("focus_tag_disclosure"),
     ) { Text(tagDisclosureLabel) }
     if (setup.tagAreaExpanded) {
         OutlinedTextField(
@@ -390,6 +405,8 @@ internal fun FocusSetupStartAction(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 720.dp)
                 .imePadding()
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp)
@@ -409,7 +426,8 @@ internal fun FocusSetupStartAction(
                         FocusStartBlockReason.INVALID_CONFIGURATION,
                     ) || state.operationFailed
                     ) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.testTag("focus_start_block_reason"),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("focus_start_block_reason"),
                 )
             }
             LumaButton(

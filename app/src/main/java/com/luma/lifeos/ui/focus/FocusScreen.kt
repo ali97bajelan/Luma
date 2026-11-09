@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.ImageView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -31,9 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.viewinterop.AndroidView
@@ -164,7 +170,10 @@ internal fun FocusScreen(
         },
     ) { pagePadding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(pagePadding).verticalScroll(rememberScrollState())
+            modifier = Modifier.fillMaxSize().padding(pagePadding)
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 720.dp)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -179,17 +188,32 @@ internal fun FocusScreen(
             when {
                 runtime.loading -> {
                     CircularProgressIndicator(modifier = Modifier.testTag("focus_loading"))
-                    Text(stringResource(R.string.focus_loading_message))
-                    TextButton(onClick = onEmergencyExit, modifier = Modifier.testTag("focus_emergency_exit")) {
+                    Text(
+                        stringResource(R.string.focus_loading_message),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                    TextButton(
+                        onClick = onEmergencyExit,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .testTag("focus_emergency_exit"),
+                    ) {
                         Text(stringResource(R.string.focus_emergency_exit))
                     }
                 }
                 runtime.loadFailed -> {
-                    Text(stringResource(R.string.focus_load_error), color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.focus_load_error),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                     LumaButton(onClick = onRetryInitialization, modifier = Modifier.testTag("focus_retry_load")) {
                         Text(stringResource(R.string.retry))
                     }
-                    TextButton(onClick = onEmergencyExit, modifier = Modifier.testTag("focus_emergency_exit")) {
+                    TextButton(
+                        onClick = onEmergencyExit,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .testTag("focus_emergency_exit"),
+                    ) {
                         Text(stringResource(R.string.focus_emergency_exit))
                     }
                 }
@@ -568,6 +592,27 @@ private fun FocusHelpDisclosure(
 }
 
 @Composable
+private fun ResponsiveFocusActionPair(
+    first: @Composable (Modifier) -> Unit,
+    second: @Composable (Modifier) -> Unit,
+) {
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if ((maxWidth < 480.dp) || (fontScale >= 1.5f)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                first(Modifier.fillMaxWidth())
+                second(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                first(Modifier.weight(1f))
+                second(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
 private fun RunningContent(
     state: FocusScreenState,
     allowedApps: List<AllowedFocusApps.App>,
@@ -584,7 +629,10 @@ private fun RunningContent(
 ) {
     Text(
         stringResource(R.string.focus_running),
-        modifier = Modifier.semantics { heading() }.testTag("focus_running_label"),
+        modifier = Modifier.semantics {
+            heading()
+            liveRegion = LiveRegionMode.Polite
+        }.testTag("focus_running_label"),
         style = MaterialTheme.typography.titleLarge,
     )
     val session = state.runtime.session
@@ -611,18 +659,22 @@ private fun RunningContent(
         )
     }
     Text(stringResource(R.string.focus_background_note), style = MaterialTheme.typography.bodyMedium)
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        LumaButton(
-            onClick = { onAction(FocusAction.PAUSE) },
-            enabled = !state.busy,
-            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_pause"),
-        ) { Text(stringResource(R.string.focus_pause)) }
-        OutlinedButton(
-            onClick = { onAction(FocusAction.STOP) },
-            enabled = !state.busy,
-            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_stop"),
-        ) { Text(stringResource(R.string.focus_back_end_save)) }
-    }
+    ResponsiveFocusActionPair(
+        first = { modifier ->
+            LumaButton(
+                onClick = { onAction(FocusAction.PAUSE) },
+                enabled = !state.busy,
+                modifier = modifier.heightIn(min = 52.dp).testTag("focus_pause"),
+            ) { Text(stringResource(R.string.focus_pause)) }
+        },
+        second = { modifier ->
+            OutlinedButton(
+                onClick = { onAction(FocusAction.STOP) },
+                enabled = !state.busy,
+                modifier = modifier.heightIn(min = 52.dp).testTag("focus_stop"),
+            ) { Text(stringResource(R.string.focus_back_end_save)) }
+        },
+    )
     if (allowedApps.isNotEmpty()) {
         FocusSectionToggle(
             label = stringResource(R.string.focus_shortcuts),
@@ -690,7 +742,10 @@ private fun PausedContent(
 ) {
     Text(
         stringResource(R.string.focus_paused),
-        modifier = Modifier.semantics { heading() }.testTag("focus_paused_label"),
+        modifier = Modifier.semantics {
+            heading()
+            liveRegion = LiveRegionMode.Polite
+        }.testTag("focus_paused_label"),
         style = MaterialTheme.typography.titleLarge,
     )
     SessionMetadata(session)
@@ -715,18 +770,22 @@ private fun PausedContent(
     }
     Text(stringResource(R.string.focus_paused_time_note), style = MaterialTheme.typography.bodyMedium)
     Text(stringResource(R.string.focus_paused_leave_hint), style = MaterialTheme.typography.bodyMedium)
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        LumaButton(
-            onClick = { onAction(FocusAction.RESUME) },
-            enabled = !state.busy,
-            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_resume"),
-        ) { Text(stringResource(R.string.focus_resume)) }
-        OutlinedButton(
-            onClick = { onAction(FocusAction.STOP) },
-            enabled = !state.busy,
-            modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("focus_stop"),
-        ) { Text(stringResource(R.string.focus_back_end_save)) }
-    }
+    ResponsiveFocusActionPair(
+        first = { modifier ->
+            LumaButton(
+                onClick = { onAction(FocusAction.RESUME) },
+                enabled = !state.busy,
+                modifier = modifier.heightIn(min = 52.dp).testTag("focus_resume"),
+            ) { Text(stringResource(R.string.focus_resume)) }
+        },
+        second = { modifier ->
+            OutlinedButton(
+                onClick = { onAction(FocusAction.STOP) },
+                enabled = !state.busy,
+                modifier = modifier.heightIn(min = 52.dp).testTag("focus_stop"),
+            ) { Text(stringResource(R.string.focus_back_end_save)) }
+        },
+    )
     FocusHelpDisclosure(
         expanded = helpExpanded,
         hasFailure = state.hasFailurePresentation(),
@@ -751,14 +810,33 @@ private fun RecoveryContent(
     onResolveRecovery: (FocusRecoveryChoice) -> Unit,
     onEmergencyExit: () -> Unit,
 ) {
-    Text(stringResource(R.string.focus_recovery_title), style = MaterialTheme.typography.titleLarge)
+    Text(
+        stringResource(R.string.focus_recovery_title),
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.semantics {
+            heading()
+            liveRegion = LiveRegionMode.Polite
+        },
+    )
     Text(stringResource(R.string.focus_recovery_body))
     SessionMetadata(session)
-    val recoveryTime = session.timer.targetMillis?.let { target ->
-        Text(stringResource(R.string.focus_remaining_label), style = MaterialTheme.typography.titleSmall)
+    val targetMillis = session.timer.targetMillis
+    val timerLabel = stringResource(
+        if (targetMillis == null) R.string.focus_elapsed_label else R.string.focus_remaining_label,
+    )
+    val recoveryTime = targetMillis?.let { target ->
         (target - session.creditedMillis).coerceAtLeast(0L)
     } ?: session.creditedMillis
-    Text(DateUtils.formatElapsedTime(recoveryTime / 1_000), style = MaterialTheme.typography.displaySmall)
+    Text(
+        timerLabel,
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.testTag("focus_timer_label"),
+    )
+    Text(
+        DateUtils.formatElapsedTime(recoveryTime / 1_000),
+        style = MaterialTheme.typography.displaySmall,
+        modifier = Modifier.testTag(if (targetMillis == null) "focus_elapsed" else "focus_remaining"),
+    )
     LumaButton(onClick = { onResolveRecovery(FocusRecoveryChoice.CONTINUE_ELAPSED) }, enabled = !busy,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_recovery_continue")) {
         Text(stringResource(R.string.focus_recovery_continue))
@@ -767,7 +845,10 @@ private fun RecoveryContent(
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("focus_recovery_end")) {
         Text(stringResource(R.string.focus_recovery_end))
     }
-    TextButton(onClick = onEmergencyExit, modifier = Modifier.testTag("focus_emergency_exit")) {
+    TextButton(
+        onClick = onEmergencyExit,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_emergency_exit"),
+    ) {
         Text(stringResource(R.string.focus_emergency_exit))
     }
 }
@@ -839,8 +920,10 @@ internal fun FocusBreakCountdown(
         Text(
             stringResource(if (expired) R.string.focus_break_expired else R.string.focus_break_heading),
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.fillMaxWidth().semantics { heading() }
-                .testTag(if (expired) "focus_break_expired" else "focus_break_heading"),
+            modifier = Modifier.fillMaxWidth().semantics {
+                heading()
+                liveRegion = LiveRegionMode.Polite
+            }.testTag(if (expired) "focus_break_expired" else "focus_break_heading"),
         )
         if (state is FocusBreakState.Running) {
             Text(
@@ -908,7 +991,8 @@ internal fun FailureContent(
             Text(
                 stringResource(message),
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_write_error"),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_write_error"),
             )
             TextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
                 Text(stringResource(R.string.retry))
@@ -924,7 +1008,8 @@ internal fun FailureContent(
             Text(
                 stringResource(R.string.focus_checkpoint_error),
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_checkpoint_error"),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_checkpoint_error"),
             )
             TextButton(onClick = onRetry, enabled = !state.busy, modifier = Modifier.testTag("focus_retry")) {
                 Text(stringResource(R.string.retry))
@@ -944,7 +1029,8 @@ internal fun FailureContent(
             Text(
                 message,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_app_unavailable"),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_app_unavailable"),
             )
             Text(stringResource(R.string.focus_shortcut_manage_hint), style = MaterialTheme.typography.bodyMedium)
             TextButton(

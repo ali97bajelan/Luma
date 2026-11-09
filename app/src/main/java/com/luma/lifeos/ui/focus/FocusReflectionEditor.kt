@@ -43,6 +43,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 private data class PendingReflection(
     val commandId: UUID,
@@ -73,22 +74,25 @@ internal fun FocusReflectionEditor(
     onSaved: () -> Unit = {},
     onSessionMissing: (UUID, UUID) -> Unit = { _, _ -> },
 ) {
+    val editorDraftViewModel: FocusEditorDraftViewModel = viewModel()
+    SideEffect {
+        if (!isFocusReadable || generation == null) {
+            editorDraftViewModel.clearSession(session.id)
+        }
+    }
     val product = productRepository ?: return
     val currentGeneration = generation ?: return
     if (!session.isTerminal) return
 
+    val draftKey = FocusEditorDraftKey(session.id, session.revision, currentGeneration)
+    val draftState = editorDraftViewModel.reflectionDraft(draftKey)
     var currentSession by remember(session.id, currentGeneration, isFocusReadable) {
         mutableStateOf(session)
     }
-    var outcome by remember(session.id, currentGeneration, isFocusReadable) {
-        mutableStateOf(if (isFocusReadable) session.reflection.outcome else null)
-    }
-    var nextStep by remember(session.id, currentGeneration, isFocusReadable) {
-        mutableStateOf(if (isFocusReadable) session.reflection.nextStep.orEmpty() else "")
-    }
-    var editing by remember(session.id, currentGeneration, isFocusReadable) {
-        mutableStateOf(showWhenEmpty && session.reflection.isEmpty)
-    }
+    var outcome by draftState.outcome
+    var nextStep by draftState.nextStep
+    var editing by draftState.editing
+    var draftInitialized by draftState.initialized
     var dismissed by remember(session.id, currentGeneration, isFocusReadable) { mutableStateOf(false) }
     var pending by remember(session.id, currentGeneration, isFocusReadable) {
         mutableStateOf<PendingReflection?>(null)
@@ -108,6 +112,7 @@ internal fun FocusReflectionEditor(
             currentSession = session.copy(reflection = FocusReflection())
             outcome = null
             nextStep = ""
+            draftInitialized = false
             pending = null
             saving = false
             saveError = false
@@ -129,15 +134,26 @@ internal fun FocusReflectionEditor(
             } else null
             val afterRead = withContext(Dispatchers.IO) { product.currentGeneration() }
             when {
-                !readAuthorized || afterRead != currentGeneration -> authorityError = true
+                !readAuthorized || afterRead != currentGeneration -> {
+                    editorDraftViewModel.clearSession(session.id)
+                    outcome = null
+                    nextStep = ""
+                    editing = false
+                    draftInitialized = false
+                    authorityError = true
+                }
                 latest == null || latest.id != session.id || !latest.isTerminal -> {
                     dismissed = true
                     onSessionMissing(session.id, currentGeneration)
                 }
                 latest.revision >= currentSession.revision -> {
                     currentSession = latest
-                    outcome = latest.reflection.outcome
-                    nextStep = latest.reflection.nextStep.orEmpty()
+                    if (!draftInitialized) {
+                        outcome = latest.reflection.outcome
+                        nextStep = latest.reflection.nextStep.orEmpty()
+                        editing = showWhenEmpty && latest.reflection.isEmpty
+                        draftInitialized = true
+                    }
                     pending = null
                 }
             }

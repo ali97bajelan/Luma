@@ -16,6 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusState
@@ -41,11 +45,19 @@ internal fun TodayFocusCard(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(stringResource(R.string.focus_today_title), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.focus_today_title),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
+            )
             when (report) {
                 FocusReportState.Loading -> CircularProgressIndicator(Modifier.testTag("today_focus_loading"))
                 FocusReportState.Error -> {
-                    Text(stringResource(R.string.focus_report_unavailable), color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.focus_report_unavailable),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("today_focus_retry")) {
                         Text(stringResource(R.string.retry))
                     }

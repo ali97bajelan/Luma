@@ -26,7 +26,7 @@ Statuses: [ ] pending; [x] implemented/local-verified (I tasks) or QA-passed wit
 | [x] | I07 | Active/expired break hierarchy and custom input | P1 | I06 | S05 | Q06,Q11 |
 | [x] | I08 | Inline progress, compact history and disclosed run details | P2 | I03,I04,I06 | S06 | Q07,Q09,Q11 |
 | [x] | I09 | Grouped settings, goal/reminder/tag/shortcut status and recovery | P2 | I04 | S07,S08 | Q08–Q11 |
-| [ ] | I10 | Cross-surface accessibility/localization integration and local verification | P1 | I01–I09 | S01–S09 | Q01–Q12 |
+| [x] | I10 | Cross-surface accessibility/localization integration and local verification | P1 | I01–I09 | S01–S09 | Q01–Q12 |
 
 I03 local verification: FocusSetupStateTest passed (18/18) and :app:assembleProductionDebug passed. Broader JVM suites, Android test source compilation and lint currently report failures outside I03; emulator/connected execution remains deferred to QA01.
 
@@ -39,6 +39,8 @@ I07 verification: IDE inspections reported no errors in changed production or An
 I08 verification: Android Studio inspections reported no errors in changed production files. `:app:assembleProductionDebug` passed. Per request, no tests were added or run; local filter tests and connected generation/privacy-loss coverage remain pending. No emulator/connected QA ran; device verification remains deferred to QA01.
 
 I09 verification: Android Studio inspections found no errors in the changed I09 production or test sources. `:app:assembleProductionDebug :app:assembleProductionDebugAndroidTest` failed at `:app:compileProductionDebugAndroidTestKotlin` on unrelated existing errors in LocalLockStoreTest, LockCredentialIntegrationTest, TodoEditorFlowTest and WidgetRendererAcceptanceTest; no errors were reported in the I09 sources. Connected sources were not executed, and no device permission prompt or emulator QA was run. Q08–Q11 remain deferred to QA01.
+
+I10 verification: Android Studio inspections reported no errors in the changed production files, and `:app:assembleProductionDebug` passed after the final review fixes. Per request, unit tests, Android-test source compilation, lint, connected tests and emulator QA were not run; Q01–Q12 remain deferred to QA01. No new UI strings were added; existing localized resources are used. Both `LifeOsApp.kt` FocusRoute hosts forward `onOpenSettings`. Reflection and metadata drafts are retained in an in-memory ViewModel across configuration changes, not serialized; protected tag drafts are cleared when access or database generation changes. Review-focus test definitions remain incomplete; font/width, transition announcement, protected-draft and I08 generation/privacy cases are listed in the plan. Review minor deferred to QA01: FocusInsights may announce an error from both compact and expanded summaries. Suggested commit message: `feat(focus): improve accessibility and responsive layout`. No commit was created. I10 is implemented and build-verified; G1 remains open because the full local check set and connected test-source compilation were not run.
 
 ### Implementation gate G1
 

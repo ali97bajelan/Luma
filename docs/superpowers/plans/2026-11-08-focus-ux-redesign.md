@@ -169,12 +169,14 @@ I09 verification note: Android Studio inspections found no errors in the changed
 Files: all changed UI/resources/tests; no broad refactor.
 Consumes all implementation tasks; produces QA-ready integrated branch.
 
-- [ ] Inspect every new callback and both navigation hosts for consistency; run a spec-to-task coverage review.
-- [ ] Implement heading, timer labels, selection/expanded semantics, disabled-reason accessibility and transition-only announcements.
-- [ ] Implement responsive stacking, 48dp non-overlapping targets, theme tokens, IME/scroll handling and locale-safe numbers; preserve saveable state without caching protected data.
-- [ ] Ensure connected test definitions cover the review-focus conditions and QA matrix. Add debug/test-only fault fixtures where existing injection is insufficient, with no release surface.
+- [x] Inspect every new callback and both navigation hosts for consistency; run a spec-to-task coverage review.
+- [x] Implement heading, timer labels, selection/expanded semantics, disabled-reason accessibility and transition-only announcements.
+- [x] Implement responsive stacking, 48dp non-overlapping targets, theme tokens, IME/scroll handling and locale-safe numbers; preserve saveable state without caching protected data.
+- [ ] Ensure connected test definitions cover the review-focus conditions and QA matrix. No new definitions or fault fixtures were added in this pass; font-scale/width stacking, transition-only announcements, protected-draft restoration/clearing and I08 generation/privacy coverage remain pending.
 - [ ] Run local verification below; fix failures before G1.
 - [ ] Complete G1 tracker, record implementation commit and exact local results; hand off to QA without claiming device pass.
+
+I10 verification: Android Studio inspections reported no errors in changed production files, and `:app:assembleProductionDebug` passed after the final review fixes. Per the user’s instruction, no unit tests, Android-test source compilation, lint, connected tests or emulator QA were run. Review-focus and QA-matrix test definitions remain incomplete (checklist item above); Q01–Q12 remain deferred to QA01 and G1 remains open.
 
 ## Local verification commands
 

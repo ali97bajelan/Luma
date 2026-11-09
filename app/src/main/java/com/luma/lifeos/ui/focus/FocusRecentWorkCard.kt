@@ -19,6 +19,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusState
@@ -79,7 +82,11 @@ internal fun FocusRecentWorkCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(stringResource(R.string.focus_recent_work), style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.focus_recent_work_error), color = MaterialTheme.colorScheme.error)
+                Text(
+            stringResource(R.string.focus_recent_work_error),
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
                 TextButton(
                     onClick = onRetry,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_recent_work_retry"),

@@ -21,6 +21,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
@@ -125,6 +128,8 @@ internal fun FocusTagManager(
         title = stringResource(R.string.focus_tag_manager_title),
         summary = tagSummary,
         sectionTag = "focus_settings_tags",
+        contentStateIdentity = catalog.databaseGeneration?.toString(),
+        preserveContentState = canReadTaskOrigin,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().testTag("focus_tag_manager"),
@@ -155,7 +160,8 @@ internal fun FocusTagManager(
             if (failed) Text(
                 stringResource(R.string.focus_tag_manager_error),
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_tag_manager_error"),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_tag_manager_error"),
             )
         }
     }

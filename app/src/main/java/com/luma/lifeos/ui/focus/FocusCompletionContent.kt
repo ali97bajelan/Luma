@@ -21,8 +21,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -127,7 +130,10 @@ internal fun FocusCompletionContent(
         Text(
             stringResource(R.string.focus_break_expired),
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.fillMaxWidth().semantics { heading() }.testTag("focus_break_expired"),
+            modifier = Modifier.fillMaxWidth().semantics {
+                heading()
+                liveRegion = LiveRegionMode.Polite
+            }.testTag("focus_break_expired"),
         )
         LumaButton(
             onClick = { requestNavigation(onDone) },
@@ -147,7 +153,10 @@ internal fun FocusCompletionContent(
     Text(
         stringResource(R.string.focus_finished),
         style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.testTag(if (interrupted) "focus_interrupted" else "focus_finished"),
+        modifier = Modifier.semantics {
+            heading()
+            liveRegion = LiveRegionMode.Polite
+        }.testTag(if (interrupted) "focus_interrupted" else "focus_finished"),
     )
     Text(
         stringResource(terminalLabel),
@@ -209,7 +218,11 @@ internal fun FocusCompletionContent(
             )
         }
         if (state.breakOperationFailed) {
-            Text(stringResource(R.string.focus_break_operation_error), color = MaterialTheme.colorScheme.error)
+            Text(
+                stringResource(R.string.focus_break_operation_error),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
 
         focusRepository?.let { repository ->
@@ -241,7 +254,11 @@ internal fun FocusCompletionContent(
             Text(stringResource(R.string.focus_repeat_loading), modifier = Modifier.testTag("focus_repeat_loading"))
         }
         if (state.setup.repeatLoadFailed) {
-            Text(stringResource(R.string.focus_repeat_error), color = MaterialTheme.colorScheme.error)
+            Text(
+                stringResource(R.string.focus_repeat_error),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
         if (!breakExpired) {
             OutlinedButton(
@@ -339,10 +356,15 @@ private fun BreakActions(
     val customDuration = customMinutes.toIntOrNull()?.takeIf { it in 1..60 }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val breakOptionsState = stringResource(
+            if (showBreakOptions) R.string.focus_disclosure_expanded else R.string.focus_disclosure_collapsed,
+        )
         OutlinedButton(
             onClick = { showBreakOptions = !showBreakOptions },
             enabled = !busy,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_break_options_toggle"),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                .semantics { stateDescription = breakOptionsState }
+                .testTag("focus_break_options_toggle"),
         ) {
             Text(stringResource(if (showBreakOptions) R.string.focus_break_options_hide else R.string.focus_break_options))
         }

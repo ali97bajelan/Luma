@@ -11,6 +11,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +20,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
@@ -35,6 +39,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 private data class PendingFocusMetadataEdit(
     val commandId: UUID,
@@ -54,17 +59,25 @@ internal fun FocusSessionMetadataEditor(
     isFocusReadable: Boolean,
     onSaved: () -> Unit,
 ) {
+    val editorDraftViewModel: FocusEditorDraftViewModel = viewModel()
+    SideEffect {
+        if (!isFocusReadable || generation == null) {
+            editorDraftViewModel.clearSession(session.id)
+        }
+    }
     val product = productRepository ?: return
     val currentGeneration = generation ?: return
     if (!session.isTerminal || !isFocusReadable) return
 
-    var editing by remember(session.id, session.revision, currentGeneration) { mutableStateOf(false) }
-    var name by remember(session.id, session.revision, currentGeneration) {
-        mutableStateOf(session.metadata.name.orEmpty())
-    }
-    var tag by remember(session.id, session.revision, currentGeneration) {
-        mutableStateOf(session.metadata.tag?.name.orEmpty())
-    }
+    val draftKey = FocusEditorDraftKey(session.id, session.revision, currentGeneration)
+    val draftState = editorDraftViewModel.metadataDraft(
+        draftKey,
+        initialName = session.metadata.name.orEmpty(),
+        initialTag = session.metadata.tag?.name.orEmpty(),
+    )
+    var editing by draftState.editing
+    var name by draftState.name
+    var tag by draftState.tag
     var saving by remember(session.id, session.revision, currentGeneration) { mutableStateOf(false) }
     var rejected by remember(session.id, session.revision, currentGeneration) { mutableStateOf(false) }
     var conflict by remember(session.id, session.revision, currentGeneration) { mutableStateOf(false) }
@@ -207,7 +220,11 @@ internal fun FocusSessionMetadataEditor(
         )
         if (rejected) Text(stringResource(R.string.focus_session_metadata_invalid), color = MaterialTheme.colorScheme.error)
         if (conflict) Text(stringResource(R.string.focus_session_metadata_conflict), color = MaterialTheme.colorScheme.error)
-        if (saveError) Text(stringResource(R.string.focus_session_metadata_save_error), color = MaterialTheme.colorScheme.error)
+        if (saveError) Text(
+            stringResource(R.string.focus_session_metadata_save_error),
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             LumaButton(
                 onClick = { submit() },

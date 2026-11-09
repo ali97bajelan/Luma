@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,8 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
@@ -128,7 +131,8 @@ internal fun FocusSettingsScreen(
                     Text(
                         stringResource(R.string.focus_settings_running),
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.testTag("focus_settings_running"),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_settings_running"),
                     )
                 }
                 LumaOutlinedTextField(
@@ -140,17 +144,17 @@ internal fun FocusSettingsScreen(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     enabled = !isRunning,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         stringResource(R.string.focus_settings_available_apps),
                         modifier = Modifier.semantics { heading() },
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    TextButton(onClick = onRefresh, modifier = Modifier.testTag("focus_settings_refresh")) {
+                    TextButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp)
+                            .testTag("focus_settings_refresh"),
+                    ) {
                         Text(stringResource(R.string.focus_settings_refresh))
                     }
                 }
@@ -160,7 +164,8 @@ internal fun FocusSettingsScreen(
                     Text(
                         stringResource(R.string.focus_settings_discovery_error),
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.testTag("focus_settings_discovery_error"),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            .testTag("focus_settings_discovery_error"),
                     )
                 } else if (filteredApps.isEmpty()) {
                     Text(
@@ -217,7 +222,8 @@ internal fun FocusSettingsScreen(
                     Text(
                         stringResource(R.string.focus_settings_save_error),
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.testTag("focus_settings_save_error"),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                            .testTag("focus_settings_save_error"),
                     )
                 }
             }
@@ -230,10 +236,31 @@ internal fun FocusSettingsDisclosure(
     title: String,
     summary: String,
     sectionTag: String,
+    contentStateIdentity: String? = null,
+    preserveContentState: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     var expanded by rememberSaveable(sectionTag) { mutableStateOf(false) }
     val contentStateHolder = rememberSaveableStateHolder()
+    val contentStateKey = buildString {
+        append(sectionTag)
+        append(':')
+        append(contentStateIdentity ?: "default")
+        append(':')
+        append(if (preserveContentState) "available" else "locked")
+    }
+    var previousContentStateKey by rememberSaveable(sectionTag) {
+        mutableStateOf(contentStateKey)
+    }
+    SideEffect {
+        if (previousContentStateKey != contentStateKey) {
+            contentStateHolder.removeState(previousContentStateKey)
+        }
+        if (!preserveContentState) {
+            contentStateHolder.removeState(contentStateKey)
+        }
+        previousContentStateKey = contentStateKey
+    }
     val expansionDescription = stringResource(
         if (expanded) R.string.focus_disclosure_expanded else R.string.focus_disclosure_collapsed,
     )
@@ -261,12 +288,13 @@ internal fun FocusSettingsDisclosure(
             )
         }
         if (expanded) {
-            contentStateHolder.SaveableStateProvider(sectionTag) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().testTag("${sectionTag}_content"),
-                ) {
-                    content()
+            val contentModifier = Modifier.fillMaxWidth().testTag("${sectionTag}_content")
+            if (preserveContentState) {
+                contentStateHolder.SaveableStateProvider(contentStateKey) {
+                    Box(modifier = contentModifier) { content() }
                 }
+            } else {
+                Box(modifier = contentModifier) { content() }
             }
         }
     }

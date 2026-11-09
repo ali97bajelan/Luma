@@ -19,6 +19,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.mapSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -27,8 +29,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -54,6 +59,36 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private val FocusInvitationConfigSaver = mapSaver<FocusInvitationConfig>(
+    save = { config ->
+        mapOf(
+            "enabled" to config.enabled,
+            "revision" to config.revision,
+            "weekdays" to config.weekdays.map { it.value },
+            "time" to config.time.toString(),
+        )
+    },
+    restore = { saved ->
+        val weekdays = (saved["weekdays"] as? List<*>)
+            .orEmpty()
+            .mapNotNull { value ->
+                (value as? Number)?.toInt()?.let { day ->
+                    runCatching { DayOfWeek.of(day) }.getOrNull()
+                }
+            }
+            .toSet()
+        val time = runCatching {
+            LocalTime.parse(saved["time"] as? String ?: "09:00")
+        }.getOrDefault(LocalTime.of(9, 0))
+        FocusInvitationConfig(
+            enabled = saved["enabled"] as? Boolean ?: false,
+            revision = (saved["revision"] as? Number)?.toLong() ?: 0L,
+            weekdays = weekdays,
+            time = time,
+        )
+    },
+)
+
 @Composable
 internal fun FocusInvitationSettings(
     repository: FocusInvitationRepository,
@@ -73,16 +108,16 @@ internal fun FocusInvitationSettings(
     val persisted by repository.observeConfig().collectAsStateWithLifecycle(FocusInvitationConfig())
     val platformNotificationAccess = rememberReminderNotificationAccess()
     val notificationAccess = notificationAccessOverride ?: platformNotificationAccess
-    var draft by remember { mutableStateOf(persisted) }
-    var observedRevision by remember(repository) { mutableStateOf(persisted.revision) }
+    var draft by rememberSaveable(repository, stateSaver = FocusInvitationConfigSaver) {
+        mutableStateOf(persisted)
+    }
     var busy by remember { mutableStateOf(false) }
     var writeFailed by remember { mutableStateOf(false) }
     var weekdayRequired by remember { mutableStateOf(false) }
 
     LaunchedEffect(persisted.revision) {
-        if (persisted.revision != observedRevision) {
+        if (persisted.revision > draft.revision) {
             draft = persisted
-            observedRevision = persisted.revision
         }
     }
 
@@ -151,6 +186,13 @@ internal fun FocusInvitationSettings(
             if (preferences?.quietHours()?.enabled == true) {
                 Text(stringResource(R.string.focus_invitation_quiet_hours_hint), style = MaterialTheme.typography.bodySmall)
             }
+            val enableInvitationLabel = stringResource(R.string.focus_invitation_enable)
+            val disabledReason = when {
+                busy -> stringResource(R.string.focus_invitation_save_pending)
+                !draft.enabled && draft.weekdays.isEmpty() ->
+                    stringResource(R.string.focus_invitation_weekday_required)
+                else -> null
+            }
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -163,7 +205,10 @@ internal fun FocusInvitationSettings(
                     checked = draft.enabled,
                     enabled = !busy && (draft.enabled || draft.weekdays.isNotEmpty()),
                     onCheckedChange = { enabled -> save(draft.copy(enabled = enabled)) },
-                    modifier = Modifier.testTag("focus_invitation_enable"),
+                    modifier = Modifier.semantics {
+                        contentDescription = enableInvitationLabel
+                        disabledReason?.let { stateDescription = it }
+                    }.testTag("focus_invitation_enable"),
                 )
             }
             Text(stringResource(R.string.focus_invitation_weekdays), style = MaterialTheme.typography.titleSmall)
@@ -195,10 +240,11 @@ internal fun FocusInvitationSettings(
                     }
                 }
             }
-            if (weekdayRequired || (draft.enabled && draft.weekdays.isEmpty())) {
+            if (weekdayRequired || draft.weekdays.isEmpty()) {
                 Text(
                     stringResource(R.string.focus_invitation_weekday_required),
                     color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
             Row(
@@ -232,7 +278,8 @@ internal fun FocusInvitationSettings(
                     if (notificationAccess.granted) R.string.focus_invitation_notifications_allowed
                     else R.string.focus_invitation_notifications_blocked,
                 ),
-                modifier = Modifier.testTag("focus_invitation_notification_status"),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_invitation_notification_status"),
                 style = MaterialTheme.typography.bodySmall,
             )
             if (!notificationAccess.granted) {
@@ -246,14 +293,16 @@ internal fun FocusInvitationSettings(
             if (busy) {
                 Text(
                     stringResource(R.string.focus_invitation_save_pending),
-                    modifier = Modifier.testTag("focus_invitation_save_pending"),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("focus_invitation_save_pending"),
                 )
             }
             if (writeFailed) {
                 Text(
                     stringResource(R.string.focus_invitation_save_error),
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.testTag("focus_invitation_save_error"),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("focus_invitation_save_error"),
                 )
             }
         }

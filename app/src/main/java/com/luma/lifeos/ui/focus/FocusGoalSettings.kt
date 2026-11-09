@@ -26,7 +26,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -78,6 +80,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
     var targetText by rememberSaveable { mutableStateOf("") }
     var weekdayMask by rememberSaveable { mutableIntStateOf(0) }
     var selectedZoneId by rememberSaveable { mutableStateOf(deviceZone.id) }
+    var loadedRevision by rememberSaveable(repository) { mutableStateOf<Long?>(null) }
     var pending by remember { mutableStateOf<PendingGoalWrite?>(null) }
     var busy by remember { mutableStateOf(false) }
     var writeFailed by remember { mutableStateOf(false) }
@@ -102,6 +105,8 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
     }
 
     LaunchedEffect(goals.settingsRevision) {
+        if (loadedRevision == goals.settingsRevision) return@LaunchedEffect
+        if (loadedRevision != null && goals.settingsRevision < loadedRevision!!) return@LaunchedEffect
         val now = Instant.now()
         val configured = goals.pendingGoal(now) ?: goals.activeGoal(now)
             ?: goals.versions.maxWithOrNull(compareBy({ it.effectiveMonday }, { it.id.toString() }))
@@ -117,6 +122,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
         pending = null
         pendingEffectiveMonday = null
         writeFailed = false
+        loadedRevision = goals.settingsRevision
     }
 
     FocusSettingsDisclosure(
@@ -223,15 +229,24 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                         savedPendingGoal.effectiveMonday.format(localizedDate(FormatStyle.MEDIUM)),
                     )
                 } else stringResource(R.string.focus_goal_saved_active),
-                modifier = Modifier.testTag("focus_goal_saved_status"),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_goal_saved_status"),
             )
         }
         if (inputInvalid) {
-            Text(stringResource(R.string.focus_goal_invalid), color = MaterialTheme.colorScheme.error)
+            Text(
+                stringResource(R.string.focus_goal_invalid),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
         if (writeFailed) {
-            Text(stringResource(R.string.focus_goal_save_error), color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("focus_goal_save_error"))
+            Text(
+                stringResource(R.string.focus_goal_save_error),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("focus_goal_save_error"),
+            )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(

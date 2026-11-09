@@ -23,8 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -60,7 +63,11 @@ internal fun WeeklyFocusCard(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(stringResource(R.string.focus_week_title), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.focus_week_title),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
+            )
             val visibleReport = if (
                 report is FocusReportState.Ready &&
                 recentContext is FocusReviewContextState.NeedsUnlock
@@ -70,7 +77,11 @@ internal fun WeeklyFocusCard(
                     Modifier.testTag("review_focus_loading"),
                 )
                 FocusReportState.Error -> {
-                    Text(stringResource(R.string.focus_report_unavailable), color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.focus_report_unavailable),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("review_focus_retry")) {
                         Text(stringResource(R.string.retry))
                     }
@@ -117,7 +128,8 @@ internal fun WeeklyFocusCard(
                         FocusGoalReportState.Error -> Text(
                             stringResource(R.string.focus_goal_unavailable),
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.testTag("review_focus_goal_error"),
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                                .testTag("review_focus_goal_error"),
                         )
                         FocusGoalReportState.NeedsUnlock -> Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -370,7 +382,8 @@ private fun FocusReviewContextItem(
                 Text(
                     stringResource(R.string.focus_review_context_error),
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.testTag("review_focus_recent_context_error"),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("review_focus_recent_context_error"),
                 )
                 TextButton(
                     onClick = onRetry,
