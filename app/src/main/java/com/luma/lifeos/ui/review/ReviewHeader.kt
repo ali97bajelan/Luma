@@ -7,10 +7,6 @@ import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.theme.primaryFixed
 import com.luma.lifeos.ui.theme.onPrimaryFixed
 
-import android.icu.text.DateIntervalFormat
-import android.icu.util.DateInterval
-import android.icu.util.TimeZone
-import android.icu.util.ULocale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
@@ -33,11 +29,11 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.review.ReviewDates
 import com.luma.lifeos.domain.review.ReviewPeriod
+import com.luma.lifeos.calendar.CalendarDateFormatter
 import com.luma.lifeos.language.localizedDate
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.LumaUi
-import java.time.ZoneOffset
 import java.time.format.FormatStyle
-import java.util.Locale
 
 @Composable
 internal fun ReviewHeader(
@@ -50,9 +46,11 @@ internal fun ReviewHeader(
     var about by rememberSaveable { mutableStateOf(false) }
     val range = compactReviewRange(period.current)
     val comparison = compactReviewRange(period.previous)
-    val format = localizedDate(FormatStyle.MEDIUM)
-    val fullRange = stringResource(R.string.memory_review_range,
-        period.current.start.format(format), period.current.through.format(format))
+    val fullRange = stringResource(
+        R.string.memory_review_range,
+        localizedDate(period.current.start, FormatStyle.MEDIUM),
+        localizedDate(period.current.through, FormatStyle.MEDIUM),
+    )
 
     Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -107,8 +105,12 @@ internal fun ReviewHeader(
             Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(LumaUi.SectionGap)) {
                 Text(stringResource(R.string.review_saved_explanation))
-                Text(stringResource(R.string.review_comparison_range, period.previous.start.format(format),
-                    period.previous.through.format(format), stringResource(R.string.review_local_time)))
+                Text(stringResource(
+                    R.string.review_comparison_range,
+                    localizedDate(period.previous.start, FormatStyle.MEDIUM),
+                    localizedDate(period.previous.through, FormatStyle.MEDIUM),
+                    stringResource(R.string.review_local_time),
+                ))
                 if (period.partial) Text(stringResource(R.string.review_partial))
                 Text(stringResource(R.string.review_missing_context), modifier = Modifier.testTag("review_missing_context"))
             }
@@ -123,16 +125,13 @@ internal fun ReviewHeader(
 
 @Composable
 internal fun compactReviewRange(dates: ReviewDates): String {
-    val locale = Locale.getDefault()
-    return remember(dates, locale) {
-        // ICU collapses repeated months/years while keeping each language's date order.
-        // Use Gregorian civil dates, as elsewhere in the review, regardless of locale defaults.
-        val formatter = DateIntervalFormat.getInstance("yMMMd",
-            ULocale.forLocale(locale).setKeywordValue("calendar", "gregorian"))
-        formatter.timeZone = TimeZone.getTimeZone("UTC")
-        formatter.format(DateInterval(
-            dates.start.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-            dates.through.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        ))
+    val policy = rememberDisplayTimePolicy()
+    return remember(dates, policy.calendarSystem, policy.locale) {
+        CalendarDateFormatter.formatDateRange(
+            dates.start,
+            dates.through,
+            policy.calendarSystem,
+            policy.locale,
+        )
     }
 }

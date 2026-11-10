@@ -70,8 +70,8 @@ internal fun ReviewSectionNavigation(
     val range = compactReviewRange(period.current)
     val fullRange = stringResource(
         R.string.memory_review_range,
-        period.current.start.format(localizedDate(FormatStyle.MEDIUM)),
-        period.current.through.format(localizedDate(FormatStyle.MEDIUM)),
+        localizedDate(period.current.start, FormatStyle.MEDIUM),
+        localizedDate(period.current.through, FormatStyle.MEDIUM),
     )
     val inProgress = stringResource(R.string.review_in_progress)
     val stickyDescription = if (period.partial) {

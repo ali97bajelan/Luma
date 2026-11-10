@@ -110,7 +110,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 }
                 items(state.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { record ->
                     Column {
-                        Text(record.event.occurredAt.atZone(zone).toLocalDate().format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)), style = MaterialTheme.typography.labelLarge)
+                        Text(com.luma.lifeos.language.localizedDate(record.event.occurredAt.atZone(zone).toLocalDate(), FormatStyle.MEDIUM), style = MaterialTheme.typography.labelLarge)
                         EventCard(record, zone, onOpen = { vm.rememberResult(record.event.id); onEvent(record) },
                             openActionLabel = R.string.event_open)
                     }

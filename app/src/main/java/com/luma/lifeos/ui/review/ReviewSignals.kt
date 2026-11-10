@@ -78,11 +78,10 @@ internal fun ReviewDigital(report: WeeklyReview, onUsage: (LocalDate) -> Unit,
             }
         }
         if (a?.days.orEmpty().isNotEmpty() || b?.days.orEmpty().isNotEmpty()) DetailsDisclosure(R.string.review_daily_evidence, "review_usage_daily_details") {
-            val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
             (a?.days.orEmpty() + b?.days.orEmpty()).sortedBy { it.date }.forEach { day ->
                 LumaTextButton(onClick = { onUsage(day.date) }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                     .testTag("review_usage_date_${day.date}")) {
-                    Text(stringResource(R.string.review_usage_date, day.date.format(format),
+                    Text(stringResource(R.string.review_usage_date, com.luma.lifeos.language.localizedDate(day.date, FormatStyle.MEDIUM),
                         reviewDuration(day.totalMillis.takeUnless { day.apps.isEmpty() && day.history == UsageHistory.PARTIAL },
                             stringResource(R.string.review_usage_partial_total_unknown))))
                 }

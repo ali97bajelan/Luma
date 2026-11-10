@@ -389,9 +389,8 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         }
         if (report.current.moodDays.any { it.mood != null }) {
             DetailsDisclosure(R.string.review_daily_evidence, "review_mood_daily_details") {
-                val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
                 report.current.moodDays.filter { it.mood != null }.forEach { day ->
-                    Text(day.date.format(format))
+                    Text(com.luma.lifeos.language.localizedDate(day.date, FormatStyle.MEDIUM))
                     Text(reviewScale(day.mood?.score, stringResource(R.string.metric_no_check_ins_week)))
                     LumaTextButton(onClick = { onSources(ReviewDates(day.date, day.date), ReviewMetric(ReviewMetricKind.MOOD)) },
                         modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {

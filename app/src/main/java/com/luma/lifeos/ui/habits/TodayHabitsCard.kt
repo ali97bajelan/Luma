@@ -58,7 +58,7 @@ fun TodayHabitsCard(
     }
     val viewAllDescription = if (showScheduledCount) {
         stringResource(R.string.habit_view_all_scheduled_accessibility, scheduledCount,
-            shownDate.format(localizedDate(FormatStyle.FULL)))
+            localizedDate(shownDate, FormatStyle.FULL))
     } else {
         null
     }

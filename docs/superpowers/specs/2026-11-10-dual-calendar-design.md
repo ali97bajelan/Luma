@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-10
 
-Status: Proposed; documentation only. Implementation and QA have not started.
+Status: Proposed product decisions; DC-I01–I05 source implementation complete. DC-I06 and QA have not started; no acceptance is implied.
 
 [Task backlog](../../DUAL_CALENDAR_TASKS.md) · [Implementation plan](../plans/2026-11-10-dual-calendar.md)
 

@@ -58,14 +58,13 @@ import com.luma.lifeos.domain.focus.FocusTag
 import com.luma.lifeos.domain.focus.FocusTagFilter
 import com.luma.lifeos.domain.time.TimeRange
 import com.luma.lifeos.language.localizedDate
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.PageNavigation
 import java.time.ZoneId
 import java.time.format.FormatStyle
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
@@ -247,9 +246,8 @@ private fun FocusHistoryScreen(
                     Text(
                         stringResource(
                             R.string.focus_history_range,
-                            range.start.atZone(zone).toLocalDate().format(localizedDate(FormatStyle.MEDIUM)),
-                            range.endExclusive.minusNanos(1).atZone(zone).toLocalDate()
-                                .format(localizedDate(FormatStyle.MEDIUM)),
+                            localizedDate(range.start.atZone(zone).toLocalDate(), FormatStyle.MEDIUM),
+                            localizedDate(range.endExclusive.minusNanos(1).atZone(zone).toLocalDate(), FormatStyle.MEDIUM),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.testTag("focus_history_range"),
@@ -410,11 +408,7 @@ private fun FocusHistoryTargetScreen(
     onRefresh: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val formatter = remember(zone, Locale.getDefault()) {
-        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-            .withLocale(Locale.getDefault())
-            .withZone(zone)
-    }
+    val displayTime = rememberDisplayTimePolicy()
     AppPageScaffold(
         title = stringResource(R.string.focus_history_title),
         navigation = PageNavigation.BACK,
@@ -431,9 +425,8 @@ private fun FocusHistoryTargetScreen(
                     Text(
                         stringResource(
                             R.string.focus_history_range,
-                            range.start.atZone(zone).toLocalDate().format(localizedDate(FormatStyle.MEDIUM)),
-                            range.endExclusive.minusNanos(1).atZone(zone).toLocalDate()
-                                .format(localizedDate(FormatStyle.MEDIUM)),
+                            localizedDate(range.start.atZone(zone).toLocalDate(), FormatStyle.MEDIUM),
+                            localizedDate(range.endExclusive.minusNanos(1).atZone(zone).toLocalDate(), FormatStyle.MEDIUM),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.testTag("focus_history_range"),
@@ -487,7 +480,8 @@ private fun FocusHistoryTargetScreen(
                                             style = MaterialTheme.typography.titleMedium,
                                             modifier = Modifier.testTag("focus_history_target_name"),
                                         )
-                                        Text(formatter.format(session.startedAt), style = MaterialTheme.typography.bodySmall)
+                                        Text(displayTime.formatDateTime(session.startedAt.atZone(zone), FormatStyle.MEDIUM),
+                        style = MaterialTheme.typography.bodySmall)
                                         Text(
                                             stringResource(
                                                 if (session.state == FocusState.INTERRUPTED) R.string.focus_interrupted
@@ -584,9 +578,7 @@ private fun FocusHistoryItem(
     onRepeat: () -> Unit,
     onReflectionSaved: () -> Unit,
 ) {
-    val formatter = remember(zone, Locale.getDefault()) {
-        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(zone)
-    }
+    val displayTime = rememberDisplayTimePolicy()
     val expansionStateDescription = stringResource(
         if (expanded) R.string.focus_disclosure_expanded else R.string.focus_disclosure_collapsed,
     )
@@ -618,7 +610,8 @@ private fun FocusHistoryItem(
                         ),
                         modifier = Modifier.testTag("focus_history_row_duration"),
                     )
-                    Text(formatter.format(row.session.startedAt), style = MaterialTheme.typography.bodySmall)
+                    Text(displayTime.formatDateTime(row.session.startedAt.atZone(zone), FormatStyle.MEDIUM),
+                        style = MaterialTheme.typography.bodySmall)
                     Text(
                         stringResource(
                             if (row.session.state == FocusState.INTERRUPTED) R.string.focus_interrupted

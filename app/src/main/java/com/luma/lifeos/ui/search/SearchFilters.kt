@@ -93,7 +93,7 @@ private fun SearchDate(label: String, date: LocalDate?, tag: String, invalid: Bo
         val invalidMessage = if (invalid) stringResource(R.string.search_invalid_dates) else null
         LumaTextButton(onClick = onPick, modifier = Modifier.heightIn(min = 48.dp)
             .semantics { invalidMessage?.let { error(it) } }.testTag(tag)) {
-            Text(date?.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)) ?: stringResource(R.string.search_any_date))
+            Text(date?.let { com.luma.lifeos.language.localizedDate(it, FormatStyle.MEDIUM) } ?: stringResource(R.string.search_any_date))
         }
         if (date != null) LumaTextButton(onClick = onClear, modifier = Modifier.heightIn(min = 48.dp).testTag("${tag}_clear")) {
             Text(stringResource(R.string.search_clear_date, label))

@@ -1,6 +1,8 @@
 package com.luma.lifeos.calendar
 
 import android.icu.text.DateFormat as IcuDateFormat
+import android.icu.text.DateIntervalFormat
+import android.icu.util.DateInterval
 import android.icu.text.SimpleDateFormat as IcuSimpleDateFormat
 import android.icu.util.TimeZone as IcuTimeZone
 import android.icu.util.ULocale
@@ -16,7 +18,7 @@ import java.time.format.FormatStyle
 import java.util.Date
 import java.util.Locale
 
-/** Calendar-aware, display-only formatting for Calendar's local view policy. */
+/** Calendar-aware, display-only formatting; all inputs and outputs remain ISO-backed. */
 object CalendarDateFormatter {
     fun formatDate(
         date: LocalDate,
@@ -38,6 +40,22 @@ object CalendarDateFormatter {
         return formatter.format(date.toUtcDate())
     }
 
+    /** Compact month/day label used by memory cards without changing calendar semantics. */
+    fun formatMonthDay(date: LocalDate, system: CalendarSystem, locale: Locale): String {
+        if (system == CalendarSystem.GREGORIAN) {
+            val pattern = if (locale.language == "en") "MMM d" else "d MMM"
+            return DateTimeFormatter.ofPattern(pattern, locale)
+                .withChronology(IsoChronology.INSTANCE)
+                .withDecimalStyle(DecimalStyle.of(locale))
+                .format(date)
+        }
+
+        val formatter = IcuDateFormat.getInstanceForSkeleton("MMMd", localeFor(system, locale))
+        requireCalendarType(formatter.calendar.type, system)
+        formatter.timeZone = IcuTimeZone.getTimeZone("UTC")
+        return formatter.format(date.toUtcDate())
+    }
+
     fun formatMonth(date: LocalDate, system: CalendarSystem, locale: Locale): String {
         if (system == CalendarSystem.GREGORIAN) {
             return DateTimeFormatterBuilder().appendPattern("LLLL uuuu").toFormatter(locale)
@@ -50,6 +68,25 @@ object CalendarDateFormatter {
         requireCalendarType(formatter.calendar.type, system)
         formatter.timeZone = IcuTimeZone.getTimeZone("UTC")
         return formatter.format(date.toUtcDate())
+    }
+
+    fun formatDateRange(
+        start: LocalDate,
+        through: LocalDate,
+        system: CalendarSystem,
+        locale: Locale,
+    ): String {
+        if (system == CalendarSystem.GREGORIAN) {
+            return "${formatDate(start, FormatStyle.MEDIUM, system, locale)} – " +
+                formatDate(through, FormatStyle.MEDIUM, system, locale)
+        }
+
+        val formatter = DateIntervalFormat.getInstance("yMMMd", localeFor(system, locale))
+        formatter.timeZone = IcuTimeZone.getTimeZone("UTC")
+        return formatter.format(DateInterval(
+            start.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+            through.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        ))
     }
 
     fun formatMonthName(date: LocalDate, system: CalendarSystem, locale: Locale): String {

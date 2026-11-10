@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.CalendarDateFormatter
+import com.luma.lifeos.calendar.calendarMathFor
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitDayState
 import com.luma.lifeos.domain.habit.HabitRepository
@@ -44,11 +46,12 @@ import com.luma.lifeos.domain.habit.compareHabitWeeks
 import com.luma.lifeos.domain.habit.reviewTarget
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.language.DisplayTimePolicy
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.habits.habitUnitLabel
 import java.time.LocalDate
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
-import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -80,6 +83,7 @@ internal fun ReviewHabits(
     onRetry: () -> Unit,
     onHabit: (UUID, LocalDate) -> Unit,
 ) {
+    val displayTime = rememberDisplayTimePolicy()
     ReviewSection(R.string.review_habits, R.drawable.ic_nav_today, "habits") {
         when (val current = state) {
             ReviewHabitsState.Loading -> CircularProgressIndicator(Modifier.testTag("review_habits_loading"))
@@ -97,6 +101,7 @@ internal fun ReviewHabits(
                         currentStart = current.comparison.current.start,
                         currentThrough = current.comparison.current.through,
                         previousThrough = current.comparison.previous.through,
+                        displayTime = displayTime,
                         onHabit = onHabit,
                     )
                 }
@@ -111,6 +116,7 @@ private fun HabitReviewRow(
     currentStart: LocalDate,
     currentThrough: LocalDate,
     previousThrough: LocalDate,
+    displayTime: DisplayTimePolicy,
     onHabit: (UUID, LocalDate) -> Unit,
 ) {
     var detailsExpanded by rememberSaveable(row.habit.id.toString(), currentStart.toString()) {
@@ -171,7 +177,7 @@ private fun HabitReviewRow(
                 )
             }
 
-            HabitWeekStrip(slots, row.habit.id)
+            HabitWeekStrip(slots, row.habit.id, displayTime)
 
             if (row.previous != null) {
                 Text(
@@ -200,7 +206,7 @@ private fun HabitReviewRow(
                     Text(detailsLabel)
                 }
                 if (detailsExpanded) {
-                    row.current?.days.orEmpty().forEach { day -> HabitReviewDay(day, row, onHabit) }
+                    row.current?.days.orEmpty().forEach { day -> HabitReviewDay(day, row, displayTime, onHabit) }
                 }
             }
 
@@ -215,12 +221,12 @@ private fun HabitReviewRow(
 }
 
 @Composable
-private fun HabitWeekStrip(slots: List<HabitWeekSlot>, habitId: UUID) {
+private fun HabitWeekStrip(slots: List<HabitWeekSlot>, habitId: UUID, displayTime: DisplayTimePolicy) {
     val rows = if (LocalDensity.current.fontScale >= 1.5f) listOf(slots.take(4), slots.drop(4)) else listOf(slots)
     Column(Modifier.fillMaxWidth().testTag("review_habit_week_${habitId}"), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
         rows.forEachIndexed { index, row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
-                row.forEach { slot -> HabitWeekSlotCell(slot, habitId, Modifier.weight(1f)) }
+                row.forEach { slot -> HabitWeekSlotCell(slot, habitId, displayTime, Modifier.weight(1f)) }
                 if (rows.size > 1 && index == 1) Spacer(Modifier.weight((4 - row.size).toFloat()))
             }
         }
@@ -228,8 +234,11 @@ private fun HabitWeekStrip(slots: List<HabitWeekSlot>, habitId: UUID) {
 }
 
 @Composable
-private fun HabitWeekSlotCell(slot: HabitWeekSlot, habitId: UUID, modifier: Modifier = Modifier) {
-    val date = slot.date.format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL))
+private fun HabitWeekSlotCell(slot: HabitWeekSlot, habitId: UUID, displayTime: DisplayTimePolicy, modifier: Modifier = Modifier) {
+    val calendarMath = calendarMathFor(displayTime.calendarSystem)
+    val date = displayTime.formatDate(slot.date, FormatStyle.FULL)
+    val dateParts = calendarMath.fromIso(slot.date)
+    val dayNumber = CalendarDateFormatter.formatDayNumber(dateParts, displayTime.locale)
     val state = stringResource(reviewHabitSlotStateLabel(slot))
     val target = slot.day?.reviewTarget()
     val detail = when {
@@ -247,7 +256,7 @@ private fun HabitWeekSlotCell(slot: HabitWeekSlot, habitId: UUID, modifier: Modi
     } else {
         stringResource(R.string.review_habits_slot_accessibility_detail, date, state, detail)
     }
-    val weekday = slot.date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault())
+    val weekday = slot.date.dayOfWeek.getDisplayName(TextStyle.NARROW, displayTime.locale)
 
     Surface(
         modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description }
@@ -261,7 +270,7 @@ private fun HabitWeekSlotCell(slot: HabitWeekSlot, habitId: UUID, modifier: Modi
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             Text(weekday, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
-            Text(reviewNumber(slot.date.dayOfMonth), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+            Text(dayNumber, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
             Text(habitWeekSlotSymbol(slot), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
         }
     }
@@ -291,8 +300,8 @@ private fun reviewHabitSlotStateLabel(slot: HabitWeekSlot): Int = when {
 }
 
 @Composable
-private fun HabitReviewDay(day: HabitDay, row: HabitWeekComparisonRow, onHabit: (UUID, LocalDate) -> Unit) {
-    val date = day.date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
+private fun HabitReviewDay(day: HabitDay, row: HabitWeekComparisonRow, displayTime: DisplayTimePolicy, onHabit: (UUID, LocalDate) -> Unit) {
+    val date = displayTime.formatDate(day.date, FormatStyle.MEDIUM)
     val state = stringResource(reviewHabitStateLabel(day))
     Column(
         Modifier.fillMaxWidth().testTag("review_habit_day_${row.habit.id}_${day.date}"),

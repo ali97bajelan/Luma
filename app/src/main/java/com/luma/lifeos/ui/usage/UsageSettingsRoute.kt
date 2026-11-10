@@ -71,7 +71,7 @@ fun UsageIntegrationSettingsCard(integration: UsageIntegration, zone: ZoneId,
             if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
                 CircularProgressIndicator(Modifier.testTag("usage_busy"))
             currentAvailability.lastSync?.let { Text(stringResource(R.string.usage_last_sync,
-                it.atZone(zone).format(displayTime.dateTime(FormatStyle.MEDIUM)))) }
+                displayTime.formatDateTime(it.atZone(zone), FormatStyle.MEDIUM))) }
             when {
                 currentAvailability.access == IntegrationAccessState.REQUIRED ->
                     LumaButton(onClick = { showAccessExplanation = true }, enabled = !state.busy,

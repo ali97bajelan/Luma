@@ -15,6 +15,11 @@ import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.CalendarDateFormatter
+import com.luma.lifeos.calendar.CalendarPreference
+import com.luma.lifeos.calendar.CalendarPreferences
+import com.luma.lifeos.calendar.SystemCalendarLocale
+import com.luma.lifeos.calendar.resolveCalendarSystem
 import com.luma.lifeos.domain.widget.WidgetActionResult
 import com.luma.lifeos.domain.widget.WidgetKind
 import com.luma.lifeos.domain.widget.WidgetOutcome
@@ -27,7 +32,6 @@ import com.luma.lifeos.ui.theme.THEME_KEY
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.ceil
 import kotlin.math.max
@@ -870,10 +874,18 @@ object WidgetRenderer {
 
     private fun taskDueLabel(context: Context, row: WidgetRow.Task, date: LocalDate): String {
         val locale = AppLanguages.current(context).locale
+        val preferences = context.applicationContext.getSharedPreferences(
+            CalendarPreferences.PREFERENCES_NAME,
+            Context.MODE_PRIVATE,
+        )
+        val preference = CalendarPreference.fromStorage(
+            preferences.getString(CalendarPreferences.SELECTED_CALENDAR_KEY, null),
+        )
+        val system = resolveCalendarSystem(preference, SystemCalendarLocale.primary(context))
         val dateText = if (row.dueDate == date) {
             context.getString(R.string.widget_task_due_today)
         } else {
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(row.dueDate)
+            CalendarDateFormatter.formatDate(row.dueDate, FormatStyle.MEDIUM, system, locale)
         }
         val deadline = row.dueTime?.let { time ->
             context.getString(

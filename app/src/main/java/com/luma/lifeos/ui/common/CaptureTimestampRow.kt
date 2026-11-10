@@ -56,10 +56,10 @@ fun CaptureTimestampRow(
     val displayTime = rememberDisplayTimePolicy()
     val use24Hour = displayTime.use24Hour
     val dateText = if (current.toLocalDate() == LocalDate.now(zone)) {
-        stringResource(R.string.capture_timestamp_today, current.format(displayTime.time()))
+        stringResource(R.string.capture_timestamp_today, current.toLocalTime().format(displayTime.time()))
     } else {
         stringResource(R.string.capture_timestamp_value,
-            current.format(displayTime.date(FormatStyle.MEDIUM)), current.format(displayTime.time()))
+            displayTime.formatDate(current.toLocalDate(), FormatStyle.MEDIUM), current.toLocalTime().format(displayTime.time()))
     }
     val timeErrorMessage = stringResource(R.string.mood_time_error)
     var dialogOpen by rememberSaveable(milliseconds) { mutableStateOf(false) }

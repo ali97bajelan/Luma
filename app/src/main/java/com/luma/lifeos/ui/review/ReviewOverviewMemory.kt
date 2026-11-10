@@ -113,8 +113,10 @@ private fun LatestMemoryContent(
                     modifier = Modifier.testTag("review_overview_memory_empty"),
                 )
             } else {
-                val date = row.event.occurredAt.atZone(report.period.zone)
-                    .format(displayTime.dateTime(FormatStyle.MEDIUM))
+                val date = displayTime.formatDateTime(
+                    row.event.occurredAt.atZone(report.period.zone),
+                    FormatStyle.MEDIUM,
+                )
                 LumaTextButton(
                     onClick = { onEvent(row) },
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),

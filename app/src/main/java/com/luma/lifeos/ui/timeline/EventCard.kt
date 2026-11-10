@@ -143,7 +143,6 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
     if (!full && record.activities.size > 1) Text(stringResource(R.string.activity_more, record.activities.size - 1))
     record.appUsage?.let { usage ->
         if (full) {
-            val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
             LumaCard(Modifier.fillMaxWidth().testTag("event_usage_detail"),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.fillMaxWidth().padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
@@ -151,7 +150,7 @@ fun SignalContent(record: LifeEventRecord, zone: ZoneId, full: Boolean) {
                     Text(appUsageDuration(usage.durationMillis), style = MaterialTheme.typography.titleLarge)
                     Text(stringResource(R.string.usage_exact_duration, exactDuration(usage.durationMillis)),
                         style = MaterialTheme.typography.bodySmall)
-                    Text(stringResource(R.string.event_interval, usage.bucketStart.atZone(zone).format(formatter), usage.bucketEnd.atZone(zone).format(formatter)))
+                    Text(stringResource(R.string.event_interval, displayTime.formatDateTime(usage.bucketStart.atZone(zone), FormatStyle.MEDIUM), displayTime.formatDateTime(usage.bucketEnd.atZone(zone), FormatStyle.MEDIUM)))
                     Text(zone.id, style = MaterialTheme.typography.bodySmall)
                     Text(stringResource(record.event.source.label()), style = MaterialTheme.typography.labelMedium)
                     if (usage.appLabel != null) Text(usage.packageName, style = MaterialTheme.typography.bodySmall)

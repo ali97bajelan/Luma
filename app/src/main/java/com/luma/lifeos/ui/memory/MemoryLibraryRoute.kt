@@ -50,6 +50,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.CalendarDateFormatter
+import com.luma.lifeos.calendar.calendarMathFor
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.MemoryRepository
@@ -59,10 +61,6 @@ import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.LumaClickableListSurface
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.PageNavigation
-import java.time.YearMonth
-import java.time.chrono.IsoChronology
-import java.time.format.DateTimeFormatter
-import java.time.format.DecimalStyle
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -113,8 +111,11 @@ internal fun MemoryLibraryRoute(
     val state by key(authorizationEpoch) { holder.state.collectAsStateWithLifecycle() }
     val listState = key(authorizationEpoch) { rememberLazyListState() }
     val visibleRecords = (state as? MemoryLibraryUiState.Content)?.records
-    val rows = remember(visibleRecords, zone) {
-        visibleRecords?.let { memoryLibraryItems(it, zone) }.orEmpty()
+    val calendarMath = remember(displayTime.calendarSystem) {
+        calendarMathFor(displayTime.calendarSystem)
+    }
+    val rows = remember(visibleRecords, zone, calendarMath.system) {
+        visibleRecords?.let { memoryLibraryItems(it, zone, calendarMath) }.orEmpty()
     }
     var anchorRestored by remember(authorizationEpoch) { mutableStateOf(false) }
     LaunchedEffect(rows, authorizationEpoch) {
@@ -226,8 +227,17 @@ internal fun MemoryLibraryRoute(
                         items(rows, key = MemoryLibraryItem::key) { row ->
                             when (row) {
                                 is MemoryLibraryItem.MonthHeading -> {
-                                    val label = remember(row.month, displayTime.locale) {
-                                        monthHeading(row.month, displayTime.locale)
+                                    val label = remember(
+                                        row.month,
+                                        row.anchorDate,
+                                        displayTime.calendarSystem,
+                                        displayTime.locale,
+                                    ) {
+                                        CalendarDateFormatter.formatMonth(
+                                            row.anchorDate,
+                                            row.month.system,
+                                            displayTime.locale,
+                                        )
                                     }
                                     Text(
                                         label,
@@ -328,10 +338,10 @@ private fun MemoryLibraryCard(
         noteLines.toMutableList().apply { removeAt(noteHeadingIndex) }.joinToString("\n")
     } else note
     val occurredDate = record.event.occurredAt.atZone(zone).toLocalDate()
-    val dateText = occurredDate.format(
-        DateTimeFormatter.ofPattern(if (displayTime.locale.language == "en") "MMM d" else "d MMM", displayTime.locale)
-            .withChronology(IsoChronology.INSTANCE)
-            .withDecimalStyle(DecimalStyle.of(displayTime.locale)),
+    val dateText = CalendarDateFormatter.formatMonthDay(
+        occurredDate,
+        displayTime.calendarSystem,
+        displayTime.locale,
     )
     val source = when (type) {
         EventType.MOOD -> stringResource(R.string.memory_library_from_mood)
@@ -400,9 +410,4 @@ private fun MemoryLibraryCard(
     }
 }
 
-private fun monthHeading(month: YearMonth, locale: java.util.Locale): String =
-    month.atDay(1).format(
-        DateTimeFormatter.ofPattern("LLLL yyyy", locale)
-            .withChronology(IsoChronology.INSTANCE)
-            .withDecimalStyle(DecimalStyle.of(locale)),
-    )
+

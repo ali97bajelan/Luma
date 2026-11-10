@@ -288,7 +288,7 @@ fun TodoEditorScreen(
                     stringResource(R.string.todo_date_out_of_range)
                 } else null
                 val dueText = state.draft.dueDate?.let { date ->
-                    val formatted = date.format(displayTime.date(FormatStyle.LONG))
+                    val formatted = displayTime.formatDate(date, FormatStyle.LONG)
                     if (date == LocalDate.now()) stringResource(R.string.todo_due_today, formatted) else formatted
                 } ?: stringResource(R.string.todo_no_date)
                 Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {

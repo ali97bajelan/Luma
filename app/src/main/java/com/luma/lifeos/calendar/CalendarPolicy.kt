@@ -99,13 +99,16 @@ internal fun rememberCalendarPolicy(preferences: CalendarPreferences): CalendarP
 internal fun CalendarPolicyWidgetRefreshObserver() {
     val context = LocalContext.current.applicationContext
     val policy = rememberCalendarPolicy()
-    var lastEffectiveSystem by remember { mutableStateOf<CalendarSystem?>(null) }
+    var lastSnapshot by remember {
+        mutableStateOf<Pair<CalendarPreference, CalendarSystem>?>(null)
+    }
 
-    LaunchedEffect(policy.isReady, policy.system) {
+    LaunchedEffect(policy.isReady, policy.preference, policy.system) {
         if (!policy.isReady) return@LaunchedEffect
-        if (lastEffectiveSystem != null && lastEffectiveSystem != policy.system) {
+        val current = policy.preference to policy.system
+        if (lastSnapshot != null && lastSnapshot != current) {
             WidgetRefreshCoordinator.request(context)
         }
-        lastEffectiveSystem = policy.system
+        lastSnapshot = current
     }
 }

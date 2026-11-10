@@ -50,7 +50,6 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
         val observation = remember(integration) { observeUsageDay(integration, date, zone) }
         val state by observation.collectAsStateWithLifecycle(UsageDayState.Loading)
         val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
-        val format = displayTime.dateTime(FormatStyle.SHORT)
         LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review_usage")) {
          LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(LumaUi.PageGutter, 24.dp, LumaUi.PageGutter, 100.dp),
             verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
@@ -58,7 +57,7 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                 LumaTextButton(onClick = onBack, modifier = Modifier.testTag("review_usage_back")) { Text(stringResource(R.string.back)) }
                 AppSectionHeading(stringResource(R.string.review_saved_usage))
                 LumaSectionSurface {
-                    Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
+                    Text(com.luma.lifeos.language.localizedDate(date, FormatStyle.MEDIUM),
                         style = MaterialTheme.typography.titleMedium)
                     Text(zone.id, style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -99,12 +98,12 @@ fun ReviewUsageRoute(integration: UsageIntegration, date: LocalDate, zone: ZoneI
                         LumaListSurface(Modifier.testTag("review_usage_session_${session.identity}")) {
                             Column(Modifier.padding(LumaUi.SectionPadding)) {
                                 Text(session.appLabel ?: session.packageName)
-                                Text(stringResource(R.string.usage_session_times, session.start.atZone(zone).format(format), session.end.atZone(zone).format(format)))
+                                Text(stringResource(R.string.usage_session_times, displayTime.formatDateTime(session.start.atZone(zone), FormatStyle.SHORT), displayTime.formatDateTime(session.end.atZone(zone), FormatStyle.SHORT)))
                                 Text(reviewDuration(session.durationMillis, stringResource(R.string.review_usage_app_missing)))
                                 Text(stringResource(R.string.usage_exact_duration, exactDuration(session.durationMillis)),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (session.openedAt < session.start) Text(stringResource(R.string.usage_session_continued, session.openedAt.atZone(zone).format(format)))
+                                if (session.openedAt < session.start) Text(stringResource(R.string.usage_session_continued, displayTime.formatDateTime(session.openedAt.atZone(zone), FormatStyle.SHORT)))
                                 if (session.ongoing) Text(stringResource(R.string.usage_session_ongoing))
                             }
                         }

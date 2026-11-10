@@ -39,7 +39,6 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
     key(repository, week, retry) {
         val observation = remember { observeMemoryReview(repository, date, zone) }
         val state by observation.collectAsStateWithLifecycle(MemoryReviewState.Loading)
-        val format = com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)
         LumaReadingPane(Modifier.fillMaxSize().testTag("screen_review")) {
          Box(Modifier.fillMaxSize()) {
             LazyColumn(Modifier.fillMaxSize().testTag("memory_review_list"),
@@ -48,8 +47,8 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                 item {
                     AppSectionHeading(stringResource(R.string.memory_review_heading), style = MaterialTheme.typography.headlineLarge)
                     Text(stringResource(R.string.memory_review_intro))
-                    Text(stringResource(R.string.memory_review_range, week.start.atZone(zone).toLocalDate().format(format),
-                        week.endExclusive.atZone(zone).toLocalDate().minusDays(1).format(format)))
+                    Text(stringResource(R.string.memory_review_range, com.luma.lifeos.language.localizedDate(week.start.atZone(zone).toLocalDate(), FormatStyle.MEDIUM),
+                        com.luma.lifeos.language.localizedDate(week.endExclusive.atZone(zone).toLocalDate().minusDays(1), FormatStyle.MEDIUM)))
                 }
                 when (val current = state) {
                     MemoryReviewState.Loading -> item { CircularProgressIndicator() }
@@ -65,7 +64,7 @@ fun MemoryReviewRoute(repository: MemoryRepository, date: LocalDate, zone: ZoneI
                                 LinkedPeople(record.people)
                                 LinkedPlace(record.place)
                             PhotoCount(record.photos.size)
-                                Text(record.event.occurredAt.atZone(zone).format(displayTime.dateTime(FormatStyle.SHORT)),
+                                Text(displayTime.formatDateTime(record.event.occurredAt.atZone(zone), FormatStyle.SHORT),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 record.event.title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }

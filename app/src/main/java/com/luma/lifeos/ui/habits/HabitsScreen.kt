@@ -316,7 +316,7 @@ private fun HabitOpenTarget(
             pendingSchedule?.let { schedule ->
                 val message = if (day.date.isBefore(day.habit.start)) R.string.habit_effective_start else R.string.habit_effective_tomorrow
                 Text(stringResource(message,
-                    schedule.effectiveFrom.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+                    com.luma.lifeos.language.localizedDate(schedule.effectiveFrom, FormatStyle.MEDIUM)),
                     style = MaterialTheme.typography.bodySmall)
             }
         }

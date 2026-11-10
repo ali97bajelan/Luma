@@ -9,7 +9,6 @@ import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -25,9 +24,7 @@ import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.focus.FocusViewModel
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.Locale
 import java.util.UUID
 
 @Composable
@@ -46,11 +43,7 @@ internal fun FocusSessionDetailContent(
     onDelete: (() -> Unit)? = null,
     onChanged: () -> Unit,
 ) {
-    val formatter = remember(zone, Locale.getDefault()) {
-        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-            .withLocale(Locale.getDefault())
-            .withZone(zone)
-    }
+    val displayTime = com.luma.lifeos.language.rememberDisplayTimePolicy()
     var breakdownExpanded by rememberSaveable(session.id.toString(), generation?.toString()) {
         mutableStateOf(false)
     }
@@ -129,8 +122,8 @@ internal fun FocusSessionDetailContent(
                         stringResource(
                             R.string.focus_history_segment,
                             index + 1,
-                            formatter.format(run.startedAt),
-                            formatter.format(end),
+                            displayTime.formatDateTime(run.startedAt.atZone(zone), FormatStyle.MEDIUM),
+                            displayTime.formatDateTime(end.atZone(zone), FormatStyle.MEDIUM),
                             focusDuration(run.creditedMillis),
                         ),
                         modifier = Modifier.testTag("focus_history_segment_$index"),

@@ -17,7 +17,7 @@ internal fun CaptureDateChoice(
     onNow: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val formattedDate = date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
+    val formattedDate = com.luma.lifeos.language.localizedDate(date, FormatStyle.MEDIUM)
     LumaAlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.testTag("today_capture_date_dialog"),

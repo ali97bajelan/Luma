@@ -27,7 +27,7 @@ internal fun TodayDateNotice(selectedDate: LocalDate, currentDate: LocalDate, mo
         Text(
             stringResource(
                 R.string.today_viewing_date,
-                selectedDate.format(localizedDate(FormatStyle.FULL)),
+                localizedDate(selectedDate, FormatStyle.FULL),
             ),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             style = MaterialTheme.typography.bodyMedium,

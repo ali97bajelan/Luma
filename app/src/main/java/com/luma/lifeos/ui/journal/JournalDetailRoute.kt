@@ -82,7 +82,7 @@ fun JournalDetailRoute(repository: JournalRepository, eventId: EventId, onBack: 
                     val journal = requireNotNull(entry.journal)
                     if (entry.memory != null) LumaTextButton(onClick = onShare) { Text(stringResource(R.string.share_action)) }
                     Text(journal.title ?: stringResource(R.string.event_journal), style = MaterialTheme.typography.headlineMedium)
-                    Text(entry.event.occurredAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM)))
+                    Text(displayTime.formatDateTime(entry.event.occurredAt.atZone(ZoneId.systemDefault()), FormatStyle.MEDIUM))
                     if (journal.tags.isNotEmpty()) Text(journal.tags.joinToString(", ") { it.name })
                     LumaSectionSurface(modifier = Modifier.testTag("journal_detail_reading_surface")) {
                         Text(journal.body, style = MaterialTheme.typography.bodyLarge,

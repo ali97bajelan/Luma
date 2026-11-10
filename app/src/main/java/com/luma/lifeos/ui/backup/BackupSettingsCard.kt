@@ -493,7 +493,7 @@ internal fun BackupCardContent(
                             NumberFormat.getIntegerInstance().format(preview.habitLogCount),
                             NumberFormat.getIntegerInstance().format(preview.todoCount),
                             NumberFormat.getIntegerInstance().format(preview.focusSessionCount),
-                            preview.createdAt.atZone(ZoneId.systemDefault()).format(displayTime.dateTime(FormatStyle.MEDIUM))))
+                            displayTime.formatDateTime(preview.createdAt.atZone(ZoneId.systemDefault()), FormatStyle.MEDIUM)))
                         Text(stringResource(R.string.backup_replace_warning))
                         if (preview.todoCount == 0L) Text(stringResource(R.string.backup_no_tasks_warning))
                         if (preview.focusSessionCount == 0L) Text(stringResource(R.string.backup_no_focus_sessions_warning))

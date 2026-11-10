@@ -103,7 +103,7 @@ fun QuickCaptureSheet(
                             label = {
                                 Text(stringResource(
                                     R.string.capture_add_to_date,
-                                    browsedDate.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
+                                    com.luma.lifeos.language.localizedDate(browsedDate, FormatStyle.MEDIUM),
                                 ))
                             },
                             modifier = Modifier.heightIn(min = 48.dp).testTag("capture_on_browsed_date"),
@@ -150,7 +150,7 @@ fun QuickCaptureSheet(
                             Text(
                                 stringResource(
                                     R.string.capture_task_due_date,
-                                    taskDueDate.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)),
+                                    com.luma.lifeos.language.localizedDate(taskDueDate, FormatStyle.MEDIUM),
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                             )

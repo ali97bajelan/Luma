@@ -77,7 +77,7 @@ internal fun ActiveSearchFilters(state: SearchState, onRemove: (SearchFilterKey)
                 val category = stringResource(filter.key.kind.categoryResource())
                 val id = filter.key.id
                 val value = when {
-                    filter.date != null -> filter.date.format(localizedDate(FormatStyle.MEDIUM))
+                    filter.date != null -> localizedDate(filter.date, FormatStyle.MEDIUM)
                     filter.name != null -> filter.name
                     state.optionsLoading -> stringResource(R.string.search_selection_loading)
                     state.optionsError -> stringResource(R.string.search_selection_unavailable)

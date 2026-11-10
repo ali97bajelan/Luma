@@ -2,8 +2,10 @@ package com.luma.lifeos.ui.memory
 
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
+import com.luma.lifeos.domain.calendar.CalendarMath
+import com.luma.lifeos.domain.calendar.CalendarMonthId
 import com.luma.lifeos.domain.repository.MemoryRepository
-import java.time.YearMonth
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -31,8 +33,12 @@ enum class MemoryOlderLoadState { Idle, Loading, Error }
 sealed interface MemoryLibraryItem {
     val key: String
 
-    data class MonthHeading(val month: YearMonth) : MemoryLibraryItem {
-        override val key: String = "month:${month.year}-${month.monthValue.toString().padStart(2, '0')}"
+    data class MonthHeading(
+        val month: CalendarMonthId,
+        val anchorDate: LocalDate,
+    ) : MemoryLibraryItem {
+        override val key: String =
+            "month:${month.system.name.lowercase()}:${month.year}-${month.month.toString().padStart(2, '0')}"
     }
 
     data class Entry(val record: LifeEventRecord) : MemoryLibraryItem {
@@ -41,12 +47,18 @@ sealed interface MemoryLibraryItem {
 }
 
 /** Groups an already newest-first prefix without changing its order or stored records. */
-fun memoryLibraryItems(records: List<LifeEventRecord>, zone: ZoneId): List<MemoryLibraryItem> = buildList {
-    var currentMonth: YearMonth? = null
+fun memoryLibraryItems(
+    records: List<LifeEventRecord>,
+    zone: ZoneId,
+    math: CalendarMath,
+): List<MemoryLibraryItem> = buildList {
+    var currentMonth: CalendarMonthId? = null
     records.forEach { record ->
-        val month = YearMonth.from(record.event.occurredAt.atZone(zone))
+        val date = record.event.occurredAt.atZone(zone).toLocalDate()
+        val parts = math.fromIso(date)
+        val month = CalendarMonthId(math.system, parts.year, parts.month)
         if (month != currentMonth) {
-            add(MemoryLibraryItem.MonthHeading(month))
+            add(MemoryLibraryItem.MonthHeading(month, date))
             currentMonth = month
         }
         add(MemoryLibraryItem.Entry(record))

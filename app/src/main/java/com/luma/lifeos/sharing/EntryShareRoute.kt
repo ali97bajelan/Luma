@@ -58,10 +58,10 @@ fun EntryShareRoute(
         { androidContext.getString(R.string.share_feeling, it) }, stringResource(R.string.share_emotions), stringResource(R.string.share_note),
         stringResource(R.string.share_source), stringResource(R.string.share_people), stringResource(R.string.share_place),
         stringResource(R.string.share_energy), stringResource(R.string.share_stress), labels,
-        { instant, displayZone -> instant.atZone(displayZone).format(policy.date(FormatStyle.LONG)) },
+        { instant, displayZone -> policy.formatDate(instant.atZone(displayZone).toLocalDate(), FormatStyle.LONG) },
         { emotion -> com.luma.lifeos.language.builtinEmotionResource(emotion.id, emotion.name)?.let { androidContext.getString(it) } ?: emotion.name },
-        { instant, displayZone -> instant.atZone(displayZone).format(policy.dateTime(FormatStyle.LONG)) })
-    val key = "${policy.locale.toLanguageTag()}|${policy.use24Hour}"
+        { instant, displayZone -> policy.formatDateTime(instant.atZone(displayZone), FormatStyle.LONG) })
+    val key = "${policy.locale.toLanguageTag()}|${policy.use24Hour}|${policy.calendarSystem}"
     val factory = remember(repository, request) { viewModelFactory { initializer { EntryShareViewModel(repository, request) } } }
     val model: EntryShareViewModel = viewModel(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()

@@ -39,8 +39,6 @@ import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.domain.review.ReviewPeriod
 import java.time.LocalDate
 import java.time.format.FormatStyle
-import java.util.Locale
-import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun WeeklyFocusCard(
@@ -214,7 +212,7 @@ internal fun WeeklyFocusCard(
                         Text(
                             stringResource(
                                 R.string.focus_review_highest_day,
-                                highestDate.format(localizedDate(FormatStyle.MEDIUM)),
+                                localizedDate(highestDate, FormatStyle.MEDIUM),
                                 focusDuration(dailyTotals.getValue(highestDate)),
                             ),
                             modifier = Modifier.testTag("review_focus_highest_day"),
@@ -231,7 +229,7 @@ internal fun WeeklyFocusCard(
                                         if (dayIsInRange && onDayHistory != null) {
                                             val actionDescription = stringResource(
                                                 R.string.focus_review_day_history_action,
-                                                day.date.format(localizedDate(FormatStyle.MEDIUM)),
+                                                localizedDate(day.date, FormatStyle.MEDIUM),
                                             )
                                             Modifier
                                                 .clickable(role = Role.Button) { onDayHistory?.invoke(day.date) }
@@ -245,10 +243,7 @@ internal fun WeeklyFocusCard(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                                 ) {
-                                    val dayLabel = day.date.format(
-                                        DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
-                                            .withLocale(Locale.getDefault()),
-                                    )
+                                    val dayLabel = localizedDate(day.date, FormatStyle.SHORT)
                                     Text(dayLabel, modifier = Modifier.width(72.dp), style = MaterialTheme.typography.bodySmall)
                                     val stats = day.statistics
                                     if (stats == null) {
@@ -435,8 +430,11 @@ private fun FocusReviewContextItem(
 
 @Composable
 private fun dateRange(start: java.time.LocalDate, end: java.time.LocalDate): String {
-    val format = localizedDate(FormatStyle.MEDIUM)
-    return stringResource(R.string.memory_review_range, start.format(format), end.format(format))
+    return stringResource(
+        R.string.memory_review_range,
+        localizedDate(start, FormatStyle.MEDIUM),
+        localizedDate(end, FormatStyle.MEDIUM),
+    )
 }
 
 private fun barFraction(value: Long, maximum: Long): Float =

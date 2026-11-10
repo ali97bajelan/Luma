@@ -93,7 +93,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
     val now = Instant.now()
     val activeGoal = goals.activeGoal(now)
     val pendingGoal = goals.pendingGoal(now)
-    val pendingDate = pendingGoal?.effectiveMonday?.format(localizedDate(FormatStyle.MEDIUM))
+    val pendingDate = pendingGoal?.effectiveMonday?.let { localizedDate(it, FormatStyle.MEDIUM) }
     val goalSummary = when {
         writeFailed -> stringResource(R.string.focus_goal_save_error)
         busy -> stringResource(R.string.focus_goal_save_pending)
@@ -204,12 +204,16 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
             ?: goals.pendingGoal(Instant.now())?.effectiveMonday?.toString()
             ?: runCatching { nextGoalMonday(Instant.now(), ZoneId.of(selectedZoneId)).toString() }.getOrNull()
         if (effectiveDate != null) {
+            val parsedEffectiveDate = runCatching {
+                java.time.LocalDate.parse(effectiveDate)
+            }.getOrNull()
+            val displayEffectiveDate = if (parsedEffectiveDate != null) {
+                localizedDate(parsedEffectiveDate, FormatStyle.MEDIUM)
+            } else {
+                effectiveDate
+            }
             Text(
-                stringResource(
-                    R.string.focus_goal_effective_date,
-                    runCatching { java.time.LocalDate.parse(effectiveDate).format(localizedDate(FormatStyle.MEDIUM)) }
-                        .getOrDefault(effectiveDate),
-                ),
+                stringResource(R.string.focus_goal_effective_date, displayEffectiveDate),
                 modifier = Modifier.testTag("focus_goal_effective_date"),
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -227,7 +231,7 @@ internal fun FocusGoalSettings(repository: FocusProductRepository) {
                 else if (savedPendingGoal != null) {
                     stringResource(
                         R.string.focus_goal_saved_pending,
-                        savedPendingGoal.effectiveMonday.format(localizedDate(FormatStyle.MEDIUM)),
+                        localizedDate(savedPendingGoal.effectiveMonday, FormatStyle.MEDIUM),
                     )
                 } else stringResource(R.string.focus_goal_saved_active),
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }

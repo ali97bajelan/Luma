@@ -121,14 +121,14 @@ private fun HabitLogCard(
             }
         }.testTag(if (selected) "habit_log_selected" else "habit_log_card_${log.id}")) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(log.date.format(displayTime.date(FormatStyle.MEDIUM)),
+                Text(displayTime.formatDate(log.date, FormatStyle.MEDIUM),
                     style = MaterialTheme.typography.titleMedium)
                 val occurred = log.occurredAt?.atZone(log.zone)
                 Text(occurred?.let {
                     val time = displayTime.time().format(it)
                     if (log.zone != screenZone) "$time · ${log.zone.id}" else time
                 } ?: stringResource(R.string.habit_time_not_recorded))
-                val recorded = displayTime.dateTime(FormatStyle.MEDIUM).withZone(screenZone).format(log.recordedAt)
+                val recorded = displayTime.formatDateTime(log.recordedAt.atZone(screenZone), FormatStyle.MEDIUM)
                 Text(stringResource(R.string.habit_recorded_at, recorded), style = MaterialTheme.typography.bodySmall)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     verticalAlignment = Alignment.CenterVertically) {

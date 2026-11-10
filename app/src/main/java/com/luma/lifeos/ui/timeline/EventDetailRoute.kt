@@ -210,9 +210,8 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                             }
                             if (!record.canEditContent) Text(stringResource(R.string.event_read_only))
                             if (!groupedUsageDetails) {
-                                val formatter = displayTime.dateTime(FormatStyle.MEDIUM)
-                                Text(record.event.occurredAt.atZone(zone).format(formatter))
-                                record.event.endedAt?.let { Text(stringResource(R.string.event_ended, it.atZone(zone).format(formatter))) }
+                                Text(displayTime.formatDateTime(record.event.occurredAt.atZone(zone), FormatStyle.MEDIUM))
+                                record.event.endedAt?.let { Text(stringResource(R.string.event_ended, displayTime.formatDateTime(it.atZone(zone), FormatStyle.MEDIUM))) }
                                 Text(zone.id, style = MaterialTheme.typography.bodySmall)
                             }
                             record.mood?.let { MoodContent(it) }

@@ -75,7 +75,7 @@ fun HealthSettingsCard(integration: HealthIntegration, zone: ZoneId = ZoneId.sys
             if (state.loading || state.busy || currentAvailability.access == IntegrationAccessState.CHECKING)
                 CircularProgressIndicator(Modifier.testTag("health_busy"))
             currentAvailability.lastSync?.let { Text(stringResource(R.string.health_last_sync,
-                it.atZone(state.current.importZone ?: zone).format(displayTime.dateTime(FormatStyle.MEDIUM)))) }
+                displayTime.formatDateTime(it.atZone(state.current.importZone ?: zone), FormatStyle.MEDIUM))) }
             state.current.importZone?.let { Text(stringResource(R.string.health_zone, it.id)) }
             if (currentAvailability.enabled == false) Text(stringResource(R.string.health_open_imports_to_refresh),
                 style = MaterialTheme.typography.bodySmall)

@@ -255,7 +255,7 @@ fun HabitEditorScreen(
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .semantics { startError?.let(::error) }.testTag("habit_start_date"),
                     ) {
-                        val date = state.draft.start.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
+                        val date = com.luma.lifeos.language.localizedDate(state.draft.start, FormatStyle.MEDIUM)
                         Text("${stringResource(R.string.habit_start_date)}: $date", style = MaterialTheme.typography.labelLarge)
                     }
                     startError?.let {
@@ -340,7 +340,7 @@ fun HabitEditorScreen(
                     state.effectiveDate?.let { effective ->
                         val futureStart = effective.isAfter(LocalDate.now(state.trackingZone ?: deviceZone))
                         val message = if (state.editing && !futureStart) R.string.habit_effective_tomorrow else R.string.habit_effective_start
-                        Text(stringResource(message, effective.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+                        Text(stringResource(message, com.luma.lifeos.language.localizedDate(effective, FormatStyle.MEDIUM)),
                             style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_effective_date"))
                     }
                 }

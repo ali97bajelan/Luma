@@ -167,8 +167,7 @@ fun PlaceDetailRoute(repository: PlaceRepository, placeId: UUID, onBack: () -> U
                         items(events, key = { it.event.id.toString() }) { record ->
                             Column(Modifier.fillMaxWidth().testTag("place_event_${record.event.id}"),
                                 verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
-                                Text(record.event.occurredAt.atZone(zone)
-                                    .format(displayTime.dateTime(FormatStyle.MEDIUM)),
+                                Text(displayTime.formatDateTime(record.event.occurredAt.atZone(zone), FormatStyle.MEDIUM),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 EventCard(record, zone, onOpen = { onEvent(record) },

@@ -247,7 +247,7 @@ fun HabitDetailScreen(
     val view = LocalView.current
     val targetAnnouncement = selectedTarget?.let {
         stringResource(R.string.habit_selected_repetition_arrived,
-            it.date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM)))
+            com.luma.lifeos.language.localizedDate(it.date, FormatStyle.MEDIUM))
     }
     LaunchedEffect(selectedTarget?.id, habit?.id, detail?.loading) {
         if (selectedTarget != null && habit != null && detail?.loading != true) {
@@ -289,7 +289,7 @@ fun HabitDetailScreen(
                     }
                     item {
                         LumaSectionSurface(modifier = Modifier.testTag("habit_detail_summary")) {
-                            Text(date.format(com.luma.lifeos.language.localizedDate(FormatStyle.FULL)), style = MaterialTheme.typography.titleLarge)
+                            Text(com.luma.lifeos.language.localizedDate(date, FormatStyle.FULL), style = MaterialTheme.typography.titleLarge)
                             day?.let {
                                 HabitProgressContent(it)
                                 Text(stringResource(stateLabel(it)), style = MaterialTheme.typography.bodyMedium)
@@ -369,7 +369,7 @@ fun HabitDetailScreen(
                                 val message = if (futureStart && pendingSchedule.effectiveFrom == habit.start) R.string.habit_effective_start
                                     else R.string.habit_effective_tomorrow
                                 Text(stringResource(message,
-                                    pendingSchedule.effectiveFrom.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))),
+                                    com.luma.lifeos.language.localizedDate(pendingSchedule.effectiveFrom, FormatStyle.MEDIUM)),
                                     modifier = Modifier.testTag("habit_pending_effective_date"))
                                 val isFutureInitial = futureStart && pendingSchedule.effectiveFrom == habit.start
                                 if (!isFutureInitial) LumaTextButton(onClick = onCancelPending,

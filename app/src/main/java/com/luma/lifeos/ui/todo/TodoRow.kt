@@ -64,10 +64,10 @@ internal fun TodoRow(
     val secondary = task.completedAt?.let { completed ->
         stringResource(
             R.string.todo_completed_on,
-            completed.atZone(ZoneId.systemDefault()).toLocalDate().format(displayTime.date(FormatStyle.MEDIUM)),
+            displayTime.formatDate(completed.atZone(ZoneId.systemDefault()).toLocalDate(), FormatStyle.MEDIUM),
         )
     } ?: task.dueDate?.let { due ->
-        val formattedDate = due.format(displayTime.date(FormatStyle.MEDIUM))
+        val formattedDate = displayTime.formatDate(due, FormatStyle.MEDIUM)
         val formatted = task.dueTime?.let { time ->
             stringResource(R.string.todo_due_date_time, formattedDate, displayTime.time().format(time))
         } ?: formattedDate
@@ -83,7 +83,7 @@ internal fun TodoRow(
     } ?: if (completedList) null else stringResource(R.string.todo_no_date)
     val originalDueDate = task.dueDate
     val originalDue = if (task.isCompleted && originalDueDate != null) {
-        val formattedDate = originalDueDate.format(displayTime.date(FormatStyle.MEDIUM))
+        val formattedDate = displayTime.formatDate(originalDueDate, FormatStyle.MEDIUM)
         val deadline = task.dueTime?.let { time ->
             stringResource(R.string.todo_due_date_time, formattedDate, displayTime.time().format(time))
         } ?: formattedDate

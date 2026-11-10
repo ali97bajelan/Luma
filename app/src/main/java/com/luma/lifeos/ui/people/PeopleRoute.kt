@@ -182,8 +182,10 @@ fun PersonDetailRoute(repository: PersonRepository, personId: UUID, onBack: () -
                         items(events, key = { it.event.id.toString() }) { record ->
                             LumaListSurface(Modifier.testTag("person_event_${record.event.id}")) {
                                 Column(Modifier.padding(LumaUi.SectionPadding), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
-                                    Text(record.event.occurredAt.atZone(ZoneId.systemDefault())
-                                        .format(displayTime.dateTime(FormatStyle.MEDIUM)),
+                                    Text(displayTime.formatDateTime(
+                                        record.event.occurredAt.atZone(ZoneId.systemDefault()),
+                                        FormatStyle.MEDIUM,
+                                    ),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Text(stringResource(when (record.event.type) {

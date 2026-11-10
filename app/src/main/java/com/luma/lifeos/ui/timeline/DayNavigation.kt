@@ -31,7 +31,7 @@ fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () ->
     var picking by rememberSaveable { mutableStateOf(false) }
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val stackActions = maxWidth < 320.dp || LocalDensity.current.fontScale >= 1.5f
-        val dateText = date.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
+        val dateText = com.luma.lifeos.language.localizedDate(date, FormatStyle.MEDIUM)
         if (stackActions) {
             Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

@@ -380,10 +380,10 @@ private fun MoodRecoveryContent(state: MoodEditorState) {
     val moment = Instant.ofEpochMilli(state.draft.occurredAtMillis).atZone(zone)
     val displayTime = rememberDisplayTimePolicy()
     val timeText = if (moment.toLocalDate() == LocalDate.now(zone)) {
-        stringResource(R.string.capture_timestamp_today, moment.format(displayTime.time()))
+        stringResource(R.string.capture_timestamp_today, moment.toLocalTime().format(displayTime.time()))
     } else {
         stringResource(R.string.capture_timestamp_value,
-            moment.format(displayTime.date(FormatStyle.MEDIUM)), moment.format(displayTime.time()))
+            displayTime.formatDate(moment.toLocalDate(), FormatStyle.MEDIUM), moment.toLocalTime().format(displayTime.time()))
     }
     Text(stringResource(R.string.mood_recovery_time, timeText), modifier = Modifier.testTag("mood_recovery_time"))
     state.draft.score?.let { score ->

@@ -80,7 +80,7 @@ internal fun HabitLogCorrectionDialog(
                         .semantics { dateError?.let(::error) }
                         .testTag("habit_correction_date"),
                 ) {
-                    Text("${stringResource(R.string.habit_correction_date)} · ${draft.selectedDate.format(displayTime.date(FormatStyle.MEDIUM))}")
+                    Text("${stringResource(R.string.habit_correction_date)} · ${displayTime.formatDate(draft.selectedDate, FormatStyle.MEDIUM)}")
                 }
                 dateError?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_correction_date_error"))
