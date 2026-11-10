@@ -65,13 +65,15 @@ All `ui/` paths above are under `app/src/main/java/com/luma/lifeos/`. Rescan dat
 - `GregorianCalendarMath : CalendarMath`; `IcuPersianCalendarMath : CalendarMath`.
 - Extend `calendarRange`, `moveCalendarSelection`, `canMoveCalendarSelection` with `math: CalendarMath = GregorianCalendarMath`; add `calendarGridDates(selected: LocalDate, mode: CalendarMode, firstDay: DayOfWeek, math: CalendarMath): List<LocalDate?>`. Keep existing callers source-compatible until migrated.
 
-- [ ] Inspect current Calendar domain bounds/eligibility and the duplicated grid helper; preserve task/overdue rules.
-- [ ] Add typed parts/month IDs and Gregorian math using java.time, with explicit argument validation and invalid-date rejection.
-- [ ] Implement Persian math using public `android.icu.util.Calendar.getInstance(UTC, ULocale(...calendar=persian...))`, `EXTENDED_YEAR`, explicit type checking and non-lenient validation. Keep Android types out of `:core:domain`.
-- [ ] Bridge date-only values via ISO epoch days and UTC milliseconds with correct negative-day division; use independent confined ICU instances, never shared mutable globals.
-- [ ] Make shared grid and repository range derive from the same active-calendar month boundaries. Use null slots outside ISO years 1–9999; handle intermediate dates outside that range without passing them to guarded repository models.
-- [ ] Implement month movement by active calendar fields and day clamping; weeks move seven ISO days. Clip canonical bounds and disable outward arrows appropriately.
-- [ ] Source-inspect leap Esfand, Nowruz, Gregorian February and partial edge months. Record intended fixtures for DC-Q01; do not author/run tests yet.
+- [x] Inspect current Calendar domain bounds/eligibility and the duplicated grid helper; preserve task/overdue rules.
+- [x] Add typed parts/month IDs and Gregorian math using java.time, with explicit argument validation and invalid-date rejection.
+- [x] Implement Persian math using public `android.icu.util.Calendar.getInstance(UTC, ULocale(...calendar=persian...))`, `EXTENDED_YEAR`, explicit type checking and non-lenient validation. Keep Android types out of `:core:domain`.
+- [x] Bridge date-only values via ISO epoch days and UTC milliseconds with correct negative-day division; use independent confined ICU instances, never shared mutable globals.
+- [x] Make shared grid and repository range derive from the same active-calendar month boundaries. Use null slots outside ISO years 1–9999; handle intermediate dates outside that range without passing them to guarded repository models.
+- [x] Implement month movement by active calendar fields and day clamping; weeks move seven ISO days. Clip canonical bounds and disable outward arrows appropriately.
+- [x] Source-inspect leap Esfand, Nowruz, Gregorian February and partial edge months. Record intended fixtures for DC-Q01; do not author/run tests yet.
+
+**DC-I01 source review (2026-11-10):** Calendar task eligibility/overdue rules and repository date bounds remain unchanged. The Persian adapter delegates leap Esfand and Nowruz conversion to strict, explicitly selected ICU Persian calendar math. DC-Q01 fixtures queued from the specification: `2024-03-20 ↔ 1403-01-01`, `2025-03-20 ↔ 1403-12-30`, `2025-03-21 ↔ 1404-01-01`; reject `1404-12-30`. These fixtures have not been executed. No persistence/schema or stored-date changes were made.
 
 ## DC-I02 — Durable preference, lifecycle policy and Settings
 

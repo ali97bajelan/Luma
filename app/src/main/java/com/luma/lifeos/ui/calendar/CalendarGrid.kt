@@ -46,8 +46,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.calendar.CalendarMode
+import com.luma.lifeos.domain.calendar.GregorianCalendarMath
+import com.luma.lifeos.domain.calendar.calendarGridDates
 import com.luma.lifeos.domain.calendar.canMoveCalendarSelection
-import com.luma.lifeos.domain.todo.TodoTextLimits
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.language.DisplayTimePolicy
 import java.time.DayOfWeek
@@ -56,7 +57,6 @@ import java.time.format.DateTimeFormatterBuilder
 import java.time.format.DecimalStyle
 import java.time.format.FormatStyle
 import java.time.chrono.IsoChronology
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 @Composable
@@ -76,7 +76,7 @@ internal fun CalendarGrid(
             .format(state.selectedDate)
     }
     val dates = remember(state.selectedDate, state.mode, state.firstDay) {
-        calendarGridDates(state.selectedDate, state.mode, state.firstDay)
+        calendarGridDates(state.selectedDate, state.mode, state.firstDay, GregorianCalendarMath)
     }
     val markerScroll = rememberScrollState()
     val fontScale = LocalDensity.current.fontScale
@@ -435,26 +435,5 @@ private fun markerCounts(state: CalendarUiState, date: LocalDate): DayMarkers = 
     overdue = (state.taskMarkers as? CalendarDataState.Ready)?.value?.get(date)?.overdue == true,
     memories = (state.memoryMarkers as? CalendarDataState.Ready)?.value?.get(date) ?: 0,
 )
-
-private fun calendarGridDates(selected: LocalDate, mode: CalendarMode, firstDay: DayOfWeek): List<LocalDate?> {
-    val first = when (mode) {
-        CalendarMode.WEEK -> selected.with(TemporalAdjusters.previousOrSame(firstDay))
-        CalendarMode.MONTH -> {
-            val monthStart = selected.withDayOfMonth(1)
-            val offset = (monthStart.dayOfWeek.value - firstDay.value + 7) % 7
-            monthStart.minusDays(offset.toLong())
-        }
-    }
-    val slots = when (mode) {
-        CalendarMode.WEEK -> 7
-        CalendarMode.MONTH -> {
-            val offset = (selected.withDayOfMonth(1).dayOfWeek.value - firstDay.value + 7) % 7
-            ((offset + selected.lengthOfMonth() + 6) / 7) * 7
-        }
-    }
-    return List(slots) { index ->
-        first.plusDays(index.toLong()).takeIf { it.year in TodoTextLimits.MIN_YEAR..TodoTextLimits.MAX_YEAR }
-    }
-}
 
 private val MIN_GRID_WIDTH = 336.dp

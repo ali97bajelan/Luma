@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-10
 
-Status: Proposed; documentation only. All implementation and QA tasks are not started.
+Status: Implementation in progress; DC-I01 source complete (QA pending), DC-I02–I06 and DC-Q01 not started.
 
 [Specification](superpowers/specs/2026-11-10-dual-calendar-design.md) · [Implementation plan](superpowers/plans/2026-11-10-dual-calendar.md)
 
@@ -25,7 +25,7 @@ Do not insert QA tasks, test runs, Gradle builds, installations or emulator sess
 
 | ID | Priority | Status | Deliverable | Depends on | Source completion evidence |
 | --- | --- | --- | --- | --- | --- |
-| DC-I01 | P0 | Not started | Calendar-system/math contracts, Gregorian implementation, Android ICU Persian adapter and shared ISO-backed grid/range/month movement | Existing canonical domain rules | Boundary/conversion/range source review; no database/schema change |
+| DC-I01 | P0 | Source complete (QA pending) | Calendar-system/math contracts, Gregorian implementation, Android ICU Persian adapter and shared ISO-backed grid/range/month movement | Existing canonical domain rules | Boundary/conversion/range source review; no database/schema change |
 | DC-I02 | P0 | Not started | Durable observable preference, true system-language resolver, lifecycle policy, Settings card and EN/FR/FA copy | I01 types | One preference owner; save/error/system-default wiring and resource parity reviewed |
 | DC-I03 | P0 | Not started | Persian/Gregorian Calendar rendering, page-local fast switch and stale-marker protection | I01–I02 | Same selected ISO day, agenda/filter/actions and navigation retained |
 | DC-I04 | P0 | Not started | Shared calendar-aware picker and all existing picker-host integrations | I01–I02 | ISO input/output, caller bounds, Confirm/Cancel/draft/tag contracts reviewed |
@@ -46,4 +46,4 @@ Create the implementation/QA record at `docs/validation/2026-11-10-dual-calendar
 
 I06 marks source completion only. DC-Q01 marks acceptance only after every required check passes on the current source patch. Unavailable devices, unresolved failures or missing matrix checks remain BLOCKED/NOT RUN and acceptance stays pending. Existing Calendar/redesign results do not prove this feature.
 
-No app files, tests, builds or device state were changed by this planning package.
+DC-I01 source changes are recorded above. Tests, Gradle builds/lint, APK installs and device/emulator checks remain unrun; DC-Q01 remains pending.
