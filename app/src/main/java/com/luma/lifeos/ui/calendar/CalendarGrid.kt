@@ -1,11 +1,12 @@
 package com.luma.lifeos.ui.calendar
 
+import com.luma.lifeos.ui.common.LumaSegmentedControl
+import com.luma.lifeos.ui.common.LumaSegmentedOption
 import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -223,49 +224,19 @@ private fun CalendarModeControl(
     onSetMode: (CalendarMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Row(
-            modifier = Modifier.padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CalendarModeOption(
-                selected = mode == CalendarMode.MONTH,
-                label = R.string.calendar_month,
-                tag = "calendar_mode_month",
-                onClick = { onSetMode(CalendarMode.MONTH) },
-            )
-            CalendarModeOption(
-                selected = mode == CalendarMode.WEEK,
-                label = R.string.calendar_week,
-                tag = "calendar_mode_week",
-                onClick = { onSetMode(CalendarMode.WEEK) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun CalendarModeOption(
-    selected: Boolean,
-    label: Int,
-    tag: String,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.heightIn(min = 48.dp).semantics { this.selected = selected }.testTag(tag),
-        shape = CircleShape,
-        color = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-    ) {
-        Box(Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-            Text(stringResource(label), maxLines = 1)
-        }
+    LumaSegmentedControl(modifier = modifier.horizontalScroll(rememberScrollState())) {
+        LumaSegmentedOption(
+            selected = mode == CalendarMode.MONTH,
+            onClick = { onSetMode(CalendarMode.MONTH) },
+            label = { Text(stringResource(R.string.calendar_month), maxLines = 1) },
+            modifier = Modifier.testTag("calendar_mode_month"),
+        )
+        LumaSegmentedOption(
+            selected = mode == CalendarMode.WEEK,
+            onClick = { onSetMode(CalendarMode.WEEK) },
+            label = { Text(stringResource(R.string.calendar_week), maxLines = 1) },
+            modifier = Modifier.testTag("calendar_mode_week"),
+        )
     }
 }
 

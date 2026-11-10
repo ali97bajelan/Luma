@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -57,6 +59,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -217,6 +220,56 @@ internal fun LumaFilterChip(
         shape = shape,
         colors = chipColors,
     )
+}
+
+@Composable
+internal fun LumaSegmentedControl(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(LumaUi.RelatedGap).selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
+    }
+}
+
+@Composable
+internal fun LumaSegmentedOption(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        modifier = modifier
+            .heightIn(min = LumaUi.MinTouchTargetHeight)
+            .selectable(
+                selected = selected,
+                enabled = enabled,
+                role = Role.RadioButton,
+                onClick = onClick,
+            ),
+        shape = CircleShape,
+        color = if (selected) scheme.primaryFixed else scheme.surfaceContainerHigh,
+        contentColor = if (selected) scheme.onPrimaryFixed else scheme.onSurfaceVariant,
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = LumaUi.ChoiceGap),
+            contentAlignment = Alignment.Center,
+        ) {
+            label()
+        }
+    }
 }
 
 @Composable

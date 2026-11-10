@@ -122,7 +122,7 @@ private fun GregorianCalendarDatePicker(
         }
     }
     LaunchedEffect(pickerState.displayedMonthMillis) {
-        pickerState.displayedMonthMillis.toPickerDate().let(state::setDisplayedDate)
+        pickerState.displayedMonthMillis.toPickerDate().let(state::updateDisplayedDate)
     }
 
     DatePicker(
@@ -237,7 +237,7 @@ private fun PersianCalendarDatePicker(
                     isSelectable = isSelectable,
                     locale = locale,
                     onSelected = { month ->
-                        calendarMonthStart(math, parts.year, month)?.let { state.setDisplayedDate(it) }
+                        calendarMonthStart(math, parts.year, month)?.let { state.updateDisplayedDate(it) }
                         mode = PICKER_MODE_CALENDAR
                     },
                 )
@@ -256,7 +256,7 @@ private fun PersianCalendarDatePicker(
                         }
                         val targetMonth = availableMonths.minByOrNull { abs(it - parts.month) }
                         targetMonth?.let { month ->
-                            calendarMonthStart(math, year, month)?.let(state::setDisplayedDate)
+                            calendarMonthStart(math, year, month)?.let(state::updateDisplayedDate)
                         }
                         mode = PICKER_MODE_CALENDAR
                     },
@@ -463,7 +463,7 @@ private fun moveCalendarMonth(
     val targetIndex = parts.monthIndex() + monthDelta
     val targetYear = Math.floorDiv(targetIndex, 12L).toInt()
     val targetMonth = Math.floorMod(targetIndex, 12L).toInt() + 1
-    calendarMonthStart(math, targetYear, targetMonth)?.let(state::setDisplayedDate)
+    calendarMonthStart(math, targetYear, targetMonth)?.let(state::updateDisplayedDate)
 }
 
 private fun CalendarDateParts.monthIndex(): Long =

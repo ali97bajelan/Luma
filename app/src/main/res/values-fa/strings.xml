@@ -850,8 +850,8 @@
     <string name="settings_calendar_description">تقویمی را که لوما برای نمایش تاریخ‌ها استفاده می‌کند انتخاب کنید.</string>
     <string name="calendar_preference_system">پیروی از سیستم</string>
     <string name="calendar_preference_follow_system_summary">تقویم فعلی: %1$s</string>
-    <string name="calendar_preference_persian">فارسی (شمسی)</string>
-    <string name="calendar_preference_gregorian">گریگوری</string>
+    <string name="calendar_preference_persian">شمسی</string>
+    <string name="calendar_preference_gregorian">میلادی</string>
     <string name="calendar_preference_save_error">ذخیرهٔ ترجیح تقویم انجام نشد. دوباره تلاش کنید.</string>
     <string name="calendar_preference_retry">تلاش دوباره</string>
     <string name="settings_backup_title">پشتیبان‌گیری</string>

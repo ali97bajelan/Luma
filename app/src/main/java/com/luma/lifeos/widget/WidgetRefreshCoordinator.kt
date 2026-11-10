@@ -18,7 +18,6 @@ object WidgetRefreshCoordinator {
     const val PERIODIC_WORK_NAME = "luma-widget-periodic-refresh"
     const val REFRESH_WORK_NAME = "luma-widget-refresh-chain"
     private const val PERIOD_MINUTES = 30L
-    private const val QUICK_CAPTURE_PROVIDER = ".widget.QuickCaptureWidgetProvider"
 
     fun request(context: Context) {
         val appContext = context.applicationContext
@@ -80,7 +79,7 @@ object WidgetRefreshCoordinator {
     fun refreshQuickCapture(context: Context) {
         val appContext = context.applicationContext
         val manager = AppWidgetManager.getInstance(appContext)
-        val provider = ComponentName(appContext.packageName, appContext.packageName + QUICK_CAPTURE_PROVIDER)
+        val provider = ComponentName(appContext, QuickCaptureWidgetProvider::class.java)
         val ids = manager.getAppWidgetIds(provider)
         if (ids.isEmpty()) return
         val update = Intent(appContext, QuickCaptureWidgetProvider::class.java).apply {
@@ -97,13 +96,11 @@ object WidgetRefreshCoordinator {
         val appContext = context.applicationContext
         val manager = AppWidgetManager.getInstance(appContext)
         return WidgetKind.entries.associateWith { kind ->
-            val providerName = when (kind) {
-                WidgetKind.HABITS -> ".widget.HabitsWidgetProvider"
-                WidgetKind.TASKS -> ".widget.TasksWidgetProvider"
+            val providerClass = when (kind) {
+                WidgetKind.HABITS -> HabitsWidgetProvider::class.java
+                WidgetKind.TASKS -> TasksWidgetProvider::class.java
             }
-            manager.getAppWidgetIds(
-                ComponentName(appContext.packageName, appContext.packageName + providerName),
-            )
+            manager.getAppWidgetIds(ComponentName(appContext, providerClass))
         }
     }
 

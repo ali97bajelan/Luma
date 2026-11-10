@@ -47,7 +47,7 @@ internal class LumaCalendarDatePickerState(
         selectedDate = null
     }
 
-    fun setDisplayedDate(date: LocalDate) {
+    fun updateDisplayedDate(date: LocalDate) {
         displayedDate = date.coerceIn(minDate, maxDate)
     }
 

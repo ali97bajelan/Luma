@@ -3,7 +3,6 @@ package com.luma.lifeos.ui.calendar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.calendar.CalendarSystem
 import com.luma.lifeos.ui.common.LumaFilterChip
+import com.luma.lifeos.ui.common.LumaSegmentedControl
+import com.luma.lifeos.ui.common.LumaSegmentedOption
 import com.luma.lifeos.ui.common.LumaUi
 import androidx.compose.material3.Text
 
@@ -25,7 +26,7 @@ internal fun CalendarSystemControl(
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier.testTag("calendar_system_switch")) {
-        val stackOptions = (maxWidth < 420.dp) || (LocalDensity.current.fontScale >= 1.3f)
+        val stackOptions = (maxWidth < 320.dp) || (LocalDensity.current.fontScale >= 1.3f)
         if (stackOptions) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -37,6 +38,7 @@ internal fun CalendarSystemControl(
                     label = R.string.calendar_preference_persian,
                     tag = "calendar_system_persian",
                     enabled = enabled,
+                    segmented = false,
                     onSelect = onSelect,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -46,21 +48,20 @@ internal fun CalendarSystemControl(
                     label = R.string.calendar_preference_gregorian,
                     tag = "calendar_system_gregorian",
                     enabled = enabled,
+                    segmented = false,
                     onSelect = onSelect,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-            ) {
+            LumaSegmentedControl(modifier = Modifier.fillMaxWidth()) {
                 CalendarSystemOption(
                     system = CalendarSystem.PERSIAN,
                     selected = system == CalendarSystem.PERSIAN,
                     label = R.string.calendar_preference_persian,
                     tag = "calendar_system_persian",
                     enabled = enabled,
+                    segmented = true,
                     onSelect = onSelect,
                     modifier = Modifier.weight(1f),
                 )
@@ -70,6 +71,7 @@ internal fun CalendarSystemControl(
                     label = R.string.calendar_preference_gregorian,
                     tag = "calendar_system_gregorian",
                     enabled = enabled,
+                    segmented = true,
                     onSelect = onSelect,
                     modifier = Modifier.weight(1f),
                 )
@@ -85,14 +87,27 @@ private fun CalendarSystemOption(
     label: Int,
     tag: String,
     enabled: Boolean,
+    segmented: Boolean,
     onSelect: (CalendarSystem) -> Unit,
     modifier: Modifier,
 ) {
-    LumaFilterChip(
-        selected = selected,
-        onClick = { onSelect(system) },
-        enabled = enabled,
-        label = { Text(stringResource(label)) },
-        modifier = modifier.testTag(tag),
-    )
+    val optionModifier = modifier.testTag(tag)
+    val optionLabel: @Composable () -> Unit = { Text(stringResource(label)) }
+    if (segmented) {
+        LumaSegmentedOption(
+            selected = selected,
+            onClick = { onSelect(system) },
+            enabled = enabled,
+            label = optionLabel,
+            modifier = optionModifier,
+        )
+    } else {
+        LumaFilterChip(
+            selected = selected,
+            onClick = { onSelect(system) },
+            enabled = enabled,
+            label = optionLabel,
+            modifier = optionModifier,
+        )
+    }
 }
