@@ -276,6 +276,7 @@ fun LifeOsApp(
     }
     val localContext = LocalContext.current
     val applicationContext = localContext.applicationContext
+    com.luma.lifeos.calendar.CalendarPolicyWidgetRefreshObserver()
     val hostActivity = remember(localContext) { localContext.findActivity() }
     val resolvedMoodDraftStore = remember(applicationContext, moodDraftStore) {
         moodDraftStore ?: FileMoodDraftStore(applicationContext)
@@ -1464,6 +1465,7 @@ fun LifeOsApp(
                     screenTag = "screen_settings_language") {
                     com.luma.lifeos.ui.theme.ThemeSettingsCard()
                     com.luma.lifeos.language.LanguageSettingsCard()
+                    com.luma.lifeos.ui.settings.CalendarSettingsCard()
                 }
             }
             if (backup != null) composable("settings_backup") {

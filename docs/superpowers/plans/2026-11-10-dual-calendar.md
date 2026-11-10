@@ -87,14 +87,18 @@ All `ui/` paths above are under `app/src/main/java/com/luma/lifeos/`. Rescan dat
 - `CalendarPolicy(preference: CalendarPreference, system: CalendarSystem, displayLocale: Locale, firstDay: DayOfWeek)`.
 - `rememberCalendarPolicy()` observes the shared store, app configuration and lifecycle resume; `calendarMathFor(system: CalendarSystem): CalendarMath` supplies adapters.
 
-- [ ] Read the required shared theme/tokens/components/scaffold and redesign references before UI edits; preserve the current palette.
-- [ ] Add system-locale lookup for API 33+ and 28–32. Treat missing, unknown or malformed stored values as SYSTEM without persisting the derived calendar.
-- [ ] Add an application-context preference store with lifetime-safe observation, serialized writes and accessible failure state. No main-thread `commit()`.
-- [ ] Resolve effective type on start/configuration/resume and propagate only effective changes; app language controls display locale separately.
-- [ ] Add CalendarSettingsCard after LanguageSettingsCard in `settings_language`; update localized hub title/description as needed without renaming the existing route or tags.
-- [ ] Add Follow system/effective-type supporting text, Persian (Shamsi), Gregorian and retry copy in EN/FR/FA with identical format placeholders.
-- [ ] Trigger existing widget refresh only after accepted effective changes, including system-default changes on resume. No database/archive changes.
-- [ ] Source-inspect settings → preference → observer wiring and save-failure/rapid-write handling. Mark DQA-01/02 pending.
+- [x] Read the required shared theme/tokens/components/scaffold and redesign references before UI edits; preserve the current palette.
+- [x] Add system-locale lookup for API 33+ and 28–32. Treat missing, unknown or malformed stored values as SYSTEM without persisting the derived calendar.
+- [x] Add an application-context preference store with lifetime-safe observation, serialized writes and accessible failure state. No main-thread `commit()`.
+- [x] Resolve effective type on start/configuration/resume and propagate only effective changes; app language controls display locale separately.
+- [x] Add CalendarSettingsCard after LanguageSettingsCard in `settings_language`; update localized hub title/description as needed without renaming the existing route or tags.
+- [x] Add Follow system/effective-type supporting text, Persian (Shamsi), Gregorian and retry copy in EN/FR/FA with identical format placeholders.
+- [x] Trigger existing widget refresh only after accepted effective changes, including system-default changes on resume. No database/archive changes.
+- [x] Source-inspect settings → preference → observer wiring and save-failure/rapid-write handling. Mark DQA-01/02 pending.
+
+**DC-I02 source review (2026-11-10):** One application-owned `CalendarPreferences` instance stores `selected_calendar` in `app_calendar`; initial reads and serialized durable writes run on `Dispatchers.IO`, and its `StateFlow` updates only after `commit()` succeeds. The API-specific resolver reads only the primary device locale, treats unknown/empty values as SYSTEM/Gregorian as specified, and recomputes on configuration and resume while using the app configuration for display locale. Settings uses the existing Language destination, shared Luma section surfaces/tokens, stable row/error tags, retry feedback, and matching EN/FR/FA placeholders. The app root requests the existing widget refresh only when the accepted effective calendar changes. DQA-01/02 remain pending; no tests, Gradle tasks, installs or device checks were run.
+
+**Ruling:** The shared policy includes an initialization-ready flag and Settings disables its choices until the asynchronous preference read completes. This keeps preference reads off the main thread and prevents an initial placeholder SYSTEM value from appearing selected or triggering a widget refresh; the cost if wrong is a brief delay before the Settings rows can be changed.
 
 ## DC-I03 — Calendar screen and quick switch
 
