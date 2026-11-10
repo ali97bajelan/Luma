@@ -5,7 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.calendar.CalendarFilter
 import com.luma.lifeos.domain.calendar.CalendarMode
+import com.luma.lifeos.calendar.CalendarPreference
+import com.luma.lifeos.calendar.calendarMathFor as resolveCalendarMath
+import com.luma.lifeos.domain.calendar.CalendarMath
 import com.luma.lifeos.domain.calendar.CalendarRepository
+import com.luma.lifeos.domain.calendar.CalendarSystem
 import com.luma.lifeos.domain.calendar.calendarRange
 import com.luma.lifeos.domain.calendar.moveCalendarSelection
 import com.luma.lifeos.domain.calendar.requireCalendarDate
@@ -33,6 +37,7 @@ import kotlinx.coroutines.launch
 class CalendarViewModel(
     private val repository: CalendarRepository,
     private val saved: SavedStateHandle,
+    private val calendarMathFor: (CalendarSystem) -> CalendarMath = ::resolveCalendarMath,
 ) : ViewModel() {
     private val taskRetry = kotlinx.coroutines.flow.MutableStateFlow(0)
     private val memoryRetry = kotlinx.coroutines.flow.MutableStateFlow(0)
@@ -40,6 +45,10 @@ class CalendarViewModel(
     private var environmentReady = false
 
     private val restoredSelection = readDate(saved.get<String>(KEY_SELECTED_DATE))
+    private val restoredViewOverride = saved.get<String>(KEY_VIEW_SYSTEM).calendarSystemOrNull()
+    private var defaultSignature: String? = null
+    private var appCalendarSystem = CalendarSystem.GREGORIAN
+    private var gregorianFirstDay = DayOfWeek.MONDAY
     private val mutableState = kotlinx.coroutines.flow.MutableStateFlow(
         CalendarUiState(
             selectedDate = restoredSelection ?: LocalDate.now(),
@@ -106,7 +115,14 @@ class CalendarViewModel(
 
     fun movePeriod(delta: Int) {
         val current = mutableState.value
-        runCatching { moveCalendarSelection(current.selectedDate, current.mode, delta) }
+        runCatching {
+            moveCalendarSelection(
+                current.selectedDate,
+                current.mode,
+                delta,
+                calendarMathFor(current.calendarSystem),
+            )
+        }
             .getOrNull()
             ?.let(::selectDate)
     }
@@ -154,50 +170,97 @@ class CalendarViewModel(
         }
     }
 
-    /** Refreshes civil-day, locale-week and restore keys without moving the user's selection. */
+    /** Refreshes civil-day, calendar policy and restore keys without moving the user's selection. */
     fun setEnvironment(
         today: LocalDate,
         zone: ZoneId,
-        firstDay: DayOfWeek,
+        gregorianFirstDay: DayOfWeek,
         restoreGeneration: Int,
+        appCalendarPreference: CalendarPreference = CalendarPreference.SYSTEM,
+        appCalendarSystem: CalendarSystem = CalendarSystem.GREGORIAN,
     ) {
         requireCalendarDate(today, "today")
         val current = mutableState.value
         val firstEnvironment = !environmentReady
         val restoreChanged = current.restoreGeneration != restoreGeneration
         val civilEnvironmentChanged = current.today != today || current.zone != zone
-        val weekEnvironmentChanged = current.firstDay != firstDay
+        val signature = "${appCalendarPreference.storageValue}:${appCalendarSystem.name}"
+        val previousSignature = if (firstEnvironment) {
+            saved.get<String>(KEY_VIEW_DEFAULT_SIGNATURE)
+        } else {
+            defaultSignature
+        }
+        val signatureChanged = previousSignature != null && previousSignature != signature
+        val candidateOverride = if (firstEnvironment) restoredViewOverride else current.viewCalendarOverride
+        val invalidRestoredOverride = firstEnvironment &&
+            candidateOverride != null &&
+            previousSignature != signature
+        val viewOverride = if (
+            signatureChanged ||
+            invalidRestoredOverride ||
+            candidateOverride == appCalendarSystem
+        ) {
+            null
+        } else {
+            candidateOverride
+        }
+        val nextSystem = viewOverride ?: appCalendarSystem
+        val nextFirstDay = if (nextSystem == CalendarSystem.PERSIAN) {
+            DayOfWeek.SATURDAY
+        } else {
+            gregorianFirstDay
+        }
+        val calendarChanged = current.calendarSystem != nextSystem
+        val weekEnvironmentChanged = current.firstDay != nextFirstDay
+        val markerEnvironmentChanged =
+            firstEnvironment ||
+                restoreChanged ||
+                civilEnvironmentChanged ||
+                weekEnvironmentChanged ||
+                calendarChanged
         val selectedDate = if (firstEnvironment && restoredSelection == null) today else current.selectedDate
+        val pageRequestsChanged = firstEnvironment || restoreChanged || civilEnvironmentChanged
+
         environmentReady = true
+        defaultSignature = signature
+        this.appCalendarSystem = appCalendarSystem
+        this.gregorianFirstDay = gregorianFirstDay
+        saved[KEY_VIEW_DEFAULT_SIGNATURE] = signature
+        saved[KEY_VIEW_SYSTEM] = viewOverride?.name
 
         if (firstEnvironment && restoredSelection == null) saved[KEY_SELECTED_DATE] = today.toString()
         mutableState.value = current.copy(
             selectedDate = selectedDate,
             today = today,
             zone = zone,
-            firstDay = firstDay,
+            calendarSystem = nextSystem,
+            viewCalendarOverride = viewOverride,
+            firstDay = nextFirstDay,
             restoreGeneration = restoreGeneration,
             pageLimit = if (firstEnvironment || restoreChanged || civilEnvironmentChanged) PAGE_SIZE else current.pageLimit,
             memoryPageLimit = if (firstEnvironment || restoreChanged || civilEnvironmentChanged) PAGE_SIZE else current.memoryPageLimit,
-            loadingMoreMemories = false,
-            loadMoreMemoriesError = false,
-            loadingMore = false,
-            loadMoreError = false,
-            taskPage = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
+            loadingMoreMemories = current.loadingMoreMemories && !pageRequestsChanged,
+            loadMoreMemoriesError = current.loadMoreMemoriesError && !pageRequestsChanged,
+            loadingMore = current.loadingMore && !pageRequestsChanged,
+            loadMoreError = current.loadMoreError && !pageRequestsChanged,
+            taskPage = if (pageRequestsChanged) {
                 CalendarDataState.Loading
             } else current.taskPage,
-            taskMarkers = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || weekEnvironmentChanged || selectedDate != current.selectedDate) {
+            taskMarkers = if (markerEnvironmentChanged) {
                 CalendarDataState.Loading
             } else current.taskMarkers,
-            overdueCount = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
+            overdueCount = if (pageRequestsChanged) {
                 CalendarDataState.Loading
             } else current.overdueCount,
-            memoryMarkers = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || weekEnvironmentChanged || selectedDate != current.selectedDate) {
+            memoryMarkers = if (markerEnvironmentChanged) {
                 CalendarDataState.Loading
             } else current.memoryMarkers,
-            memoryPage = if (firstEnvironment || restoreChanged || civilEnvironmentChanged || selectedDate != current.selectedDate) {
+            memoryPage = if (pageRequestsChanged) {
                 CalendarDataState.Loading
             } else current.memoryPage,
+            calendarRequestGeneration = if (calendarChanged || weekEnvironmentChanged) {
+                current.calendarRequestGeneration + 1
+            } else current.calendarRequestGeneration,
         )
 
         if (restoreChanged) {
@@ -205,6 +268,26 @@ class CalendarViewModel(
             memoryRetry.update { it + 1 }
         }
         environmentInitialized.value = true
+    }
+
+    /** Changes only the Calendar back-stack entry's view. The ISO selection and agenda remain intact. */
+    fun setViewCalendarSystem(system: CalendarSystem) {
+        if (!environmentReady) return
+        val current = mutableState.value
+        if (current.calendarSystem == system) return
+
+        val override = if (system == appCalendarSystem) null else system
+        val firstDay = if (system == CalendarSystem.PERSIAN) DayOfWeek.SATURDAY else gregorianFirstDay
+        saved[KEY_VIEW_SYSTEM] = override?.name
+        saved[KEY_VIEW_DEFAULT_SIGNATURE] = defaultSignature
+        mutableState.value = current.copy(
+            calendarSystem = system,
+            viewCalendarOverride = override,
+            firstDay = firstDay,
+            calendarRequestGeneration = current.calendarRequestGeneration + 1,
+            taskMarkers = CalendarDataState.Loading,
+            memoryMarkers = CalendarDataState.Loading,
+        )
     }
 
     private fun observeTaskPage() = viewModelScope.launch {
@@ -339,7 +422,9 @@ class CalendarViewModel(
     private fun CalendarUiState.markerRequestKey() = TaskMarkerRequest(
         selectedDate,
         today,
-        calendarRange(selectedDate, mode, firstDay),
+        calendarSystem,
+        calendarRequestGeneration,
+        calendarRange(selectedDate, mode, firstDay, calendarMathFor(calendarSystem)),
         zone,
         restoreGeneration,
     )
@@ -364,7 +449,9 @@ class CalendarViewModel(
     private fun CalendarUiState.memoryMarkerRequestKey() = MemoryMarkerRequest(
         selectedDate,
         today,
-        calendarRange(selectedDate, mode, firstDay),
+        calendarSystem,
+        calendarRequestGeneration,
+        calendarRange(selectedDate, mode, firstDay, calendarMathFor(calendarSystem)),
         zone,
         restoreGeneration,
     )
@@ -397,6 +484,8 @@ class CalendarViewModel(
     private data class TaskMarkerRequest(
         val selectedDate: LocalDate,
         val today: LocalDate,
+        val calendarSystem: CalendarSystem,
+        val calendarRequestGeneration: Long,
         val range: com.luma.lifeos.domain.calendar.CalendarRange,
         val zone: ZoneId,
         val restoreGeneration: Int,
@@ -425,6 +514,8 @@ class CalendarViewModel(
     private data class MemoryMarkerRequest(
         val selectedDate: LocalDate,
         val today: LocalDate,
+        val calendarSystem: CalendarSystem,
+        val calendarRequestGeneration: Long,
         val range: com.luma.lifeos.domain.calendar.CalendarRange,
         val zone: ZoneId,
         val restoreGeneration: Int,
@@ -438,11 +529,16 @@ class CalendarViewModel(
     private inline fun <reified T : Enum<T>> String?.enumOrDefault(default: T): T =
         this?.let { value -> runCatching { enumValueOf<T>(value) }.getOrNull() } ?: default
 
+    private fun String?.calendarSystemOrNull(): CalendarSystem? =
+        this?.let { value -> runCatching { CalendarSystem.valueOf(value) }.getOrNull() }
+
     private companion object {
         const val PAGE_SIZE = 50
         const val KEY_SELECTED_DATE = "calendar_selected_date"
         const val KEY_MODE = "calendar_mode"
         const val KEY_FILTER = "calendar_filter"
+        const val KEY_VIEW_SYSTEM = "calendar_view_system"
+        const val KEY_VIEW_DEFAULT_SIGNATURE = "calendar_view_default_signature"
     }
 }
 

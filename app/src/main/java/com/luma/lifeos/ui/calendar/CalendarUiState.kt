@@ -2,6 +2,7 @@ package com.luma.lifeos.ui.calendar
 
 import com.luma.lifeos.domain.calendar.CalendarFilter
 import com.luma.lifeos.domain.calendar.CalendarMode
+import com.luma.lifeos.domain.calendar.CalendarSystem
 import com.luma.lifeos.domain.calendar.CalendarMemories
 import com.luma.lifeos.domain.calendar.CalendarTaskMarker
 import com.luma.lifeos.domain.todo.TodoPage
@@ -23,6 +24,8 @@ data class CalendarUiState(
     val mode: CalendarMode = CalendarMode.MONTH,
     val filter: CalendarFilter = CalendarFilter.ALL,
     val zone: ZoneId = ZoneId.systemDefault(),
+    val calendarSystem: CalendarSystem = CalendarSystem.GREGORIAN,
+    val viewCalendarOverride: CalendarSystem? = null,
     val firstDay: DayOfWeek = DayOfWeek.MONDAY,
     val restoreGeneration: Int = 0,
     val pageLimit: Int = 50,
@@ -36,6 +39,7 @@ data class CalendarUiState(
     val overdueCount: CalendarDataState<Int> = CalendarDataState.Loading,
     val memoryMarkers: CalendarDataState<Map<LocalDate, Int>> = CalendarDataState.Loading,
     val memoryPage: CalendarDataState<CalendarMemories> = CalendarDataState.Loading,
+    val calendarRequestGeneration: Long = 0L,
 ) {
     val exactTaskCount: Int?
         get() = (taskMarkers as? CalendarDataState.Ready)?.value?.get(selectedDate)?.count ?: when (taskMarkers) {

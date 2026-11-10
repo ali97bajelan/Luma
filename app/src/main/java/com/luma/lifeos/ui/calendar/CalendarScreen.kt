@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.calendar.CalendarFilter
 import com.luma.lifeos.domain.calendar.CalendarMode
+import com.luma.lifeos.domain.calendar.CalendarSystem
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.language.DisplayTimePolicy
@@ -48,6 +49,8 @@ internal fun CalendarScreen(
     onSelectDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
     onSetMode: (CalendarMode) -> Unit,
+    onSetCalendarSystem: (CalendarSystem) -> Unit,
+    calendarSwitchEnabled: Boolean,
     onMovePeriod: (Int) -> Unit,
     onFilter: (CalendarFilter) -> Unit,
     onRetry: (CalendarSource) -> Unit,
@@ -97,7 +100,16 @@ internal fun CalendarScreen(
                         )
                     }
                     item(key = "calendar_grid") {
-                        CalendarGrid(state, displayTime, onSelectDate, onSetMode, onMovePeriod, onRetry)
+                        CalendarGrid(
+                            state = state,
+                            displayTime = displayTime,
+                            onSelectDate = onSelectDate,
+                            onSetMode = onSetMode,
+                            onSetCalendarSystem = onSetCalendarSystem,
+                            calendarSwitchEnabled = calendarSwitchEnabled,
+                            onMovePeriod = onMovePeriod,
+                            onRetry = onRetry,
+                        )
                     }
                     item(key = "calendar_agenda") {
                         CalendarAgenda(

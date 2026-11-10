@@ -7,22 +7,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.luma.lifeos.calendar.calendarMathFor
+import com.luma.lifeos.calendar.rememberCalendarPolicy
 import com.luma.lifeos.domain.calendar.CalendarRepository
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.todo.TodoRepository
-import com.luma.lifeos.ui.todo.TodayTasksActionState
 import com.luma.lifeos.ui.todo.TodayTasksViewModel
 import com.luma.lifeos.ui.todo.TodoActionResult
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.WeekFields
-import java.util.Locale
 import java.util.UUID
 
 @Composable
@@ -41,16 +40,37 @@ fun CalendarRoute(
     onAllTasks: () -> Unit,
     onTaskActionResult: (TodoActionResult) -> Unit,
 ) {
-    val configuration = LocalConfiguration.current
-    val locale = configuration.locales[0] ?: Locale.getDefault()
-    val firstDay = remember(locale) { WeekFields.of(locale).firstDayOfWeek }
+    val calendarPolicy = rememberCalendarPolicy()
+    val locale = calendarPolicy.displayLocale
+    val gregorianFirstDay = remember(locale) { WeekFields.of(locale).firstDayOfWeek }
     val calendarFactory = remember(repository) {
-        viewModelFactory { initializer { CalendarViewModel(repository, createSavedStateHandle()) } }
+        viewModelFactory {
+            initializer {
+                CalendarViewModel(repository, createSavedStateHandle(), ::calendarMathFor)
+            }
+        }
     }
     val calendarViewModel: CalendarViewModel = viewModel(factory = calendarFactory)
     val state by calendarViewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(today, zone, firstDay, restoreGeneration) {
-        calendarViewModel.setEnvironment(today, zone, firstDay, restoreGeneration)
+    LaunchedEffect(
+        today,
+        zone,
+        gregorianFirstDay,
+        restoreGeneration,
+        calendarPolicy.preference,
+        calendarPolicy.system,
+        calendarPolicy.isReady,
+    ) {
+        if (calendarPolicy.isReady) {
+            calendarViewModel.setEnvironment(
+                today,
+                zone,
+                gregorianFirstDay,
+                restoreGeneration,
+                calendarPolicy.preference,
+                calendarPolicy.system,
+            )
+        }
     }
 
     val taskFactory = remember(todos) {
@@ -80,6 +100,8 @@ fun CalendarRoute(
         onSelectDate = calendarViewModel::selectDate,
         onToday = calendarViewModel::goToToday,
         onSetMode = calendarViewModel::setMode,
+        onSetCalendarSystem = calendarViewModel::setViewCalendarSystem,
+        calendarSwitchEnabled = calendarPolicy.isReady,
         onMovePeriod = calendarViewModel::movePeriod,
         onFilter = calendarViewModel::setFilter,
         onRetry = calendarViewModel::retry,

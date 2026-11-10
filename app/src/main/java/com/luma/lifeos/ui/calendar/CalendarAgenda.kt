@@ -43,7 +43,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.CalendarDateFormatter
 import com.luma.lifeos.domain.calendar.CalendarFilter
+import com.luma.lifeos.domain.calendar.CalendarSystem
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.language.DisplayTimePolicy
 import com.luma.lifeos.ui.common.LumaSectionHeader
@@ -88,7 +90,15 @@ internal fun CalendarAgenda(
         }
         if (state.filter == CalendarFilter.OVERDUE) {
             Text(
-                stringResource(R.string.calendar_overdue_as_of, state.today.format(displayTime.date(FormatStyle.MEDIUM))),
+                stringResource(
+                    R.string.calendar_overdue_as_of,
+                    CalendarDateFormatter.formatDate(
+                        state.today,
+                        FormatStyle.MEDIUM,
+                        state.calendarSystem,
+                        displayTime.locale,
+                    ),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.testTag("calendar_overdue_scope"),
@@ -136,7 +146,12 @@ internal fun CalendarAgenda(
 private fun CalendarDateRibbon(state: CalendarUiState, displayTime: DisplayTimePolicy) {
     LumaSectionSurface(modifier = Modifier.testTag("calendar_date_ribbon")) {
         Text(
-            state.selectedDate.format(displayTime.date(FormatStyle.FULL)),
+            CalendarDateFormatter.formatDate(
+                state.selectedDate,
+                FormatStyle.FULL,
+                state.calendarSystem,
+                displayTime.locale,
+            ),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() },
         )
@@ -276,6 +291,7 @@ private fun CalendarTasksSection(
                                     today = state.today,
                                     actions = actions,
                                     displayTime = displayTime,
+                                    calendarSystem = state.calendarSystem,
                                     onOpen = { onTask(task.id) },
                                     onDelete = { onDeleteTask(task.id) },
                                     onSetCompleted = { onSetCompleted(task, it) },
@@ -367,6 +383,7 @@ private fun CalendarTaskRow(
     today: LocalDate,
     actions: TodayTasksActionState,
     displayTime: DisplayTimePolicy,
+    calendarSystem: CalendarSystem,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
     onSetCompleted: (Boolean) -> Unit,
@@ -382,7 +399,7 @@ private fun CalendarTaskRow(
     val completionDescription = stringResource(R.string.todo_checkbox_accessibility, task.title, completionLabel)
     val menuDescription = stringResource(R.string.calendar_task_menu_description, task.title)
     val separator = stringResource(R.string.accessibility_label_separator)
-    val dateBadge = taskDateBadge(task, today, displayTime)
+    val dateBadge = taskDateBadge(task, today, displayTime, calendarSystem)
     val dueDate = requireNotNull(task.dueDate)
     val taskFocus = remember(task.id) { FocusRequester() }
 
@@ -489,9 +506,19 @@ private fun CalendarTaskRow(
 }
 
 @Composable
-private fun taskDateBadge(task: TodoTask, today: LocalDate, displayTime: DisplayTimePolicy): String {
+private fun taskDateBadge(
+    task: TodoTask,
+    today: LocalDate,
+    displayTime: DisplayTimePolicy,
+    calendarSystem: CalendarSystem,
+): String {
     val date = requireNotNull(task.dueDate)
-    val dateLabel = date.format(displayTime.date(FormatStyle.MEDIUM))
+    val dateLabel = CalendarDateFormatter.formatDate(
+        date,
+        FormatStyle.MEDIUM,
+        calendarSystem,
+        displayTime.locale,
+    )
     val timeLabel = task.dueTime?.let(displayTime.time()::format)
     return when {
         date.isBefore(today) -> stringResource(R.string.calendar_task_overdue, dateLabel + (timeLabel?.let { " · $it" } ?: ""))

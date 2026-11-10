@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,18 +46,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.CalendarDateFormatter
+import com.luma.lifeos.calendar.calendarMathFor
+import com.luma.lifeos.domain.calendar.CalendarMath
 import com.luma.lifeos.domain.calendar.CalendarMode
-import com.luma.lifeos.domain.calendar.GregorianCalendarMath
 import com.luma.lifeos.domain.calendar.calendarGridDates
 import com.luma.lifeos.domain.calendar.canMoveCalendarSelection
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.language.DisplayTimePolicy
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.format.DateTimeFormatterBuilder
-import java.time.format.DecimalStyle
 import java.time.format.FormatStyle
-import java.time.chrono.IsoChronology
 import java.util.Locale
 
 @Composable
@@ -65,31 +65,31 @@ internal fun CalendarGrid(
     displayTime: DisplayTimePolicy,
     onSelectDate: (LocalDate) -> Unit,
     onSetMode: (CalendarMode) -> Unit,
+    onSetCalendarSystem: (com.luma.lifeos.domain.calendar.CalendarSystem) -> Unit,
+    calendarSwitchEnabled: Boolean,
     onMovePeriod: (Int) -> Unit,
     onRetry: (CalendarSource) -> Unit,
 ) {
     val locale = displayTime.locale
-    val monthLabel = remember(state.selectedDate, locale) {
-        DateTimeFormatterBuilder().appendPattern("LLLL uuuu").toFormatter(locale)
-            .withChronology(IsoChronology.INSTANCE)
-            .withDecimalStyle(DecimalStyle.of(locale))
-            .format(state.selectedDate)
+    val math = remember(state.calendarSystem) { calendarMathFor(state.calendarSystem) }
+    val monthLabel = remember(state.selectedDate, state.calendarSystem, locale) {
+        CalendarDateFormatter.formatMonth(state.selectedDate, state.calendarSystem, locale)
     }
-    val dates = remember(state.selectedDate, state.mode, state.firstDay) {
-        calendarGridDates(state.selectedDate, state.mode, state.firstDay, GregorianCalendarMath)
+    val dates = remember(state.selectedDate, state.mode, state.firstDay, math) {
+        calendarGridDates(state.selectedDate, state.mode, state.firstDay, math)
     }
     val markerScroll = rememberScrollState()
     val fontScale = LocalDensity.current.fontScale
     val canPrevious = runCatching {
-        canMoveCalendarSelection(state.selectedDate, state.mode, -1)
+        canMoveCalendarSelection(state.selectedDate, state.mode, -1, math)
     }.getOrDefault(false)
     val canNext = runCatching {
-        canMoveCalendarSelection(state.selectedDate, state.mode, 1)
+        canMoveCalendarSelection(state.selectedDate, state.mode, 1, math)
     }.getOrDefault(false)
 
     LumaSectionSurface(modifier = Modifier.testTag("calendar_grid_card")) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val stacked = maxWidth < 500.dp || fontScale >= 1.5f
+            val stacked = maxWidth < 560.dp || fontScale >= 1.3f
             if (stacked) {
                 Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                     Text(
@@ -99,26 +99,48 @@ internal fun CalendarGrid(
                         modifier = Modifier.semantics { stateDescription = monthLabel }
                             .testTag("calendar_month_label"),
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
-                        CalendarModeControl(state.mode, onSetMode, Modifier.fillMaxWidth())
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            CalendarPeriodButtons(state.mode, canPrevious, canNext, onMovePeriod)
-                        }
+                    CalendarSystemControl(
+                        system = state.calendarSystem,
+                        onSelect = onSetCalendarSystem,
+                        enabled = calendarSwitchEnabled,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    CalendarModeControl(state.mode, onSetMode, Modifier.fillMaxWidth())
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CalendarPeriodButtons(state.mode, canPrevious, canNext, onMovePeriod)
                     }
                 }
             } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        monthLabel,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).semantics { stateDescription = monthLabel }
-                            .testTag("calendar_month_label"),
-                    )
-                    CalendarModeControl(state.mode, onSetMode)
-                    CalendarPeriodButtons(state.mode, canPrevious, canNext, onMovePeriod)
+                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            monthLabel,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).semantics { stateDescription = monthLabel }
+                                .testTag("calendar_month_label"),
+                        )
+                        CalendarSystemControl(
+                            system = state.calendarSystem,
+                            onSelect = onSetCalendarSystem,
+                            enabled = calendarSwitchEnabled,
+                            modifier = Modifier.widthIn(max = 420.dp),
+                        )
+                    }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CalendarModeControl(state.mode, onSetMode)
+                        CalendarPeriodButtons(state.mode, canPrevious, canNext, onMovePeriod)
+                    }
                 }
             }
         }
@@ -143,6 +165,7 @@ internal fun CalendarGrid(
                                         selectedDate = state.selectedDate,
                                         today = state.today,
                                         mode = state.mode,
+                                        calendarMath = math,
                                         markers = markerCounts(state, date),
                                         markerState = state,
                                         displayTime = displayTime,
@@ -301,6 +324,7 @@ private fun CalendarDateCell(
     selectedDate: LocalDate,
     today: LocalDate,
     mode: CalendarMode,
+    calendarMath: CalendarMath,
     markers: DayMarkers,
     markerState: CalendarUiState,
     displayTime: DisplayTimePolicy,
@@ -309,7 +333,10 @@ private fun CalendarDateCell(
 ) {
     val isSelected = date == selectedDate
     val isToday = date == today
-    val isOverflow = mode == CalendarMode.MONTH && date.month != selectedDate.month
+    val dateParts = remember(date, calendarMath) { calendarMath.fromIso(date) }
+    val selectedParts = remember(selectedDate, calendarMath) { calendarMath.fromIso(selectedDate) }
+    val isOverflow = mode == CalendarMode.MONTH &&
+        (dateParts.year != selectedParts.year || dateParts.month != selectedParts.month)
     val fill = when {
         isSelected -> MaterialTheme.colorScheme.primary
         isToday -> MaterialTheme.colorScheme.primaryContainer
@@ -322,7 +349,9 @@ private fun CalendarDateCell(
         else -> MaterialTheme.colorScheme.onSurface
     }
     val border = if (isToday && !isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
-    val dateLabel = date.format(displayTime.date(FormatStyle.FULL))
+    val dateLabel = remember(date, calendarMath.system, displayTime.locale) {
+        CalendarDateFormatter.formatDate(date, FormatStyle.FULL, calendarMath.system, displayTime.locale)
+    }
     val taskCount = when (val source = markerState.taskMarkers) {
         is CalendarDataState.Ready -> pluralStringResource(
             R.plurals.calendar_tasks_count, source.value[date]?.count ?: 0, source.value[date]?.count ?: 0,
@@ -350,7 +379,9 @@ private fun CalendarDateCell(
     )
     val todayStatus = stringResource(R.string.calendar_day_today)
     val locale = displayTime.locale
-    val number = remember(date.dayOfMonth, locale) { java.text.NumberFormat.getIntegerInstance(locale).format(date.dayOfMonth) }
+    val number = remember(dateParts, locale) {
+        CalendarDateFormatter.formatDayNumber(dateParts, locale)
+    }
     val bringIntoViewRequester = remember(date) { BringIntoViewRequester() }
     LaunchedEffect(isSelected) {
         if (isSelected) bringIntoViewRequester.bringIntoView()
