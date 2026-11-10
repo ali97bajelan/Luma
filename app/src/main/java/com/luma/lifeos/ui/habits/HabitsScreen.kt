@@ -12,20 +12,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -41,13 +37,14 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitDayState
 import com.luma.lifeos.domain.habit.HabitDefinition
@@ -59,7 +56,6 @@ import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitsScreen(
     state: HabitsUiState,
@@ -84,23 +80,17 @@ fun HabitsScreen(
     }
     val saveableStateHolder = rememberSaveableStateHolder()
 
-    Scaffold(
-        modifier = Modifier.testTag("screen_habits"),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.habit_title),
-                style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() }) }, navigationIcon = {
-                onBack?.let { back ->
-                    LumaTextButton(onClick = back, modifier = Modifier.testTag("habits_back")) {
-                        Text(stringResource(R.string.back))
-                    }
-                }
-            }, actions = {
-                LumaTextButton(onClick = onCreate, modifier = Modifier.testTag("habit_create")) {
-                    Text(stringResource(R.string.habit_add))
-                }
-            }, windowInsets = WindowInsets(0, 0, 0, 0))
+    AppPageScaffold(
+        title = stringResource(R.string.habit_title),
+        navigation = if (onBack == null) PageNavigation.NONE else PageNavigation.BACK,
+        onNavigate = onBack,
+        actions = {
+            LumaTextButton(onClick = onCreate, modifier = Modifier.testTag("habit_create")) {
+                Text(stringResource(R.string.habit_add))
+            }
         },
+        modifier = Modifier.testTag("screen_habits"),
+        navigationTag = "habits_back",
     ) { padding ->
         LumaReadingPane(modifier = Modifier.fillMaxSize().padding(padding)) {
             saveableStateHolder.SaveableStateProvider(selectedDate.toString()) {
