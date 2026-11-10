@@ -20,6 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.luma.lifeos.domain.lock.LockCoverage
+import com.luma.lifeos.domain.lock.LockLoadStatus
+import com.luma.lifeos.domain.lock.LockSection
 
 /** A short, non-exported receiver that validates then hands all data work to WorkManager. */
 class WidgetActionReceiver : BroadcastReceiver() {
@@ -33,7 +36,10 @@ class WidgetActionReceiver : BroadcastReceiver() {
 
         when (action) {
             is WidgetIntents.Action.Refresh -> WidgetRefreshCoordinator.request(context)
-            is WidgetIntents.Action.Mutation -> WidgetIntents.mutationNavigation(context, action.widgetId, action.token)
+            is WidgetIntents.Action.Mutation -> enqueueIfUnprotected(
+                context,
+                WidgetActionRequest(action.widgetId, action.token),
+            )
             is WidgetIntents.Action.DismissFeedback -> {
                 val data = Data.Builder()
                     .putInt(WidgetActionWorker.KEY_WIDGET_ID, action.widgetId)
@@ -52,9 +58,45 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 is WidgetIntents.CollectionRoute.Navigate -> navigateToCollectionItem(
                     context, action.widgetId, route.itemId, route.date,
                 )
-                is WidgetIntents.CollectionRoute.Mutate -> WidgetIntents.mutationNavigation(
-                    context, action.widgetId, route.token, route.itemId, route.date,
+                is WidgetIntents.CollectionRoute.Mutate -> enqueueIfUnprotected(
+                    context,
+                    WidgetActionRequest(action.widgetId, route.token, route.itemId, route.date),
                 )
+            }
+        }
+    }
+
+    private fun enqueueIfUnprotected(context: Context, request: WidgetActionRequest) {
+        val pendingResult = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val app = context.applicationContext as? LumaApplication ?: return@launch
+                val kind = WidgetRefreshCoordinator.kindForWidgetId(context, request.widgetId) ?: return@launch
+                app.appLockCoordinator.initialize()
+                val snapshot = app.appLockCoordinator.snapshot.value
+                val policy = snapshot.policy
+                if (snapshot.loadStatus != LockLoadStatus.READY || policy == null) {
+                    WidgetRefreshCoordinator.request(context)
+                    return@launch
+                }
+                val section = when (kind) {
+                    WidgetKind.HABITS -> LockSection.HABITS
+                    WidgetKind.TASKS -> LockSection.TASKS
+                }
+                val protected = policy.enabled &&
+                    (policy.coverage == LockCoverage.WHOLE_APP || section in policy.sections)
+                if (protected) {
+                    // Protected mutations still require the app's unlock and confirmation flow.
+                    WidgetRefreshCoordinator.request(context)
+                    return@launch
+                }
+                enqueueWidgetAction(context, request)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                WidgetRefreshCoordinator.request(context)
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -93,7 +135,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
     }
 }
 
-/** Queues only after any required app unlock and confirmation have completed in the UI. */
+/** Queues a command after app-lock policy has allowed background execution. */
 internal fun enqueueWidgetAction(context: Context, request: WidgetActionRequest) {
     val data = Data.Builder()
         .putInt(WidgetActionWorker.KEY_WIDGET_ID, request.widgetId)

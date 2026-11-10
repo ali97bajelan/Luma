@@ -64,17 +64,14 @@ object WidgetIntents {
         )
     }
 
-    /** The PendingIntent carries only the live widget ID and opaque persisted command token. */
+    /** Dispatches the opaque persisted command to the receiver without opening the app. */
     fun mutation(context: Context, widgetId: Int, token: UUID): PendingIntent {
         require(widgetId > 0) { "A live widget ID is required" }
-        val intent = Intent(context, MainActivity::class.java).apply {
-            action = ACTION_PENDING_MUTATION
-            data = pendingMutationUri(widgetId, token)
-            putExtra(EXTRA_PENDING_WIDGET_ID, widgetId)
-            putExtra(EXTRA_PENDING_TOKEN, token.toString())
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val intent = Intent(context, WidgetActionReceiver::class.java).apply {
+            action = ACTION_MUTATION
+            data = actionUri("mutation", widgetId, token.toString())
         }
-        return PendingIntent.getActivity(
+        return PendingIntent.getBroadcast(
             context,
             token.hashCode(),
             intent,
