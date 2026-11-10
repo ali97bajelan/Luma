@@ -40,6 +40,10 @@ Status: **source migration complete** for the rows below. **Rendered inspection 
 | Photo gallery and viewer | [x] Shared action/button sizing and close icon; preserve immersive image sizing, secure-window behavior, loading, retry and recovery states. | Migrated |
 | Global dialogs, sheets, pickers and empty/error states | [x] Use shared Luma dialog/date-picker/sheet, field, button, choice/list surface and feedback components wherever their semantics fit; retain action labels, test tags, retry and undo. | Migrated |
 
+## Dual-calendar source ownership
+
+DC-I02 adds the Calendar card to the existing Settings surface. DC-I03 owns the Calendar system control and presentation. DC-I04 owns the shared calendar-aware date-picker content used by DayNavigation, task due dates, capture timestamps, habit dates, Search and Weekly Review. DC-I05 owns Settings-driven date labels, memory month grouping and widget due-date text. Source review and the full ownership/evidence map are in the [dual-calendar handoff](../validation/2026-11-10-dual-calendar.md). These source changes follow the Luma components and tokens listed above; DQA-01–10 remain NOT RUN until DC-Q01, so this note does not change any historical visual acceptance result.
+
 ## Shared-system checks
 
 - [x] Consumer screens use shared Luma buttons, fields, chips, cards and dialogs instead of direct Material controls.

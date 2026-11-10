@@ -63,6 +63,17 @@ class CalendarPreferences internal constructor(
     val selection: StateFlow<CalendarPreference> = mutableSelection.asStateFlow()
     val initialized: StateFlow<Boolean> = mutableInitialized.asStateFlow()
 
+    /** Waits for the accepted persisted selection, serializing with any in-flight write. */
+    suspend fun awaitSelection(): CalendarPreference = withContext(ioDispatcher) {
+        writeMutex.withLock {
+            if (!mutableInitialized.value) {
+                mutableSelection.value = initialSelection.await()
+                mutableInitialized.value = true
+            }
+            mutableSelection.value
+        }
+    }
+
     init {
         applicationScope.launch(ioDispatcher) {
             writeMutex.withLock {

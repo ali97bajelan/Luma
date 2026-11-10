@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-10
 
-Status: Implementation in progress; DC-I01–I05 source complete (QA pending), DC-I06 and DC-Q01 not started.
+Status: DC-I01–I06 source complete (QA pending); DC-Q01 not started.
 
 [Specification](superpowers/specs/2026-11-10-dual-calendar-design.md) · [Implementation plan](superpowers/plans/2026-11-10-dual-calendar.md)
 
@@ -30,7 +30,7 @@ Do not insert QA tasks, test runs, Gradle builds, installations or emulator sess
 | DC-I03 | P0 | Source complete (QA pending) | Persian/Gregorian Calendar rendering, page-local fast switch and stale-marker protection | I01–I02 | Same selected ISO day, agenda/filter/actions and navigation retained |
 | DC-I04 | P0 | Source complete (QA pending) | Shared calendar-aware picker and all existing picker-host integrations | I01–I02 | ISO input/output, caller bounds, Confirm/Cancel/draft/tag contracts reviewed |
 | DC-I05 | P0 | Source complete (QA pending) | App-wide human date display, active-calendar memory grouping and widget date refresh | I01–I04 | Complete call-site inventory; machine dates, report semantics and widget actions unchanged |
-| DC-I06 | P0 | Not started | Source coverage review and explicit QA handoff | I01–I05 complete | Revision/patch, files, risks and DQA-01–10 recorded as NOT RUN |
+| DC-I06 | P0 | Source complete (QA pending) | Source coverage review and explicit QA handoff | I01–I05 complete | [Revision/patch, inventory, risks and DQA-01–10 NOT RUN](validation/2026-11-10-dual-calendar.md) |
 
 ## One final QA task
 
@@ -46,4 +46,4 @@ Create the implementation/QA record at `docs/validation/2026-11-10-dual-calendar
 
 I06 marks source completion only. DC-Q01 marks acceptance only after every required check passes on the current source patch. Unavailable devices, unresolved failures or missing matrix checks remain BLOCKED/NOT RUN and acceptance stays pending. Existing Calendar/redesign results do not prove this feature.
 
-DC-I01–I03 source changes are recorded above. No tests, lint, installs or device checks were run. The user-requested `:app:assembleProductionDebug` build was attempted after DC-I03 and failed during `:app:processProductionDebugResources` because AAPT2 Daemon #0 could not start ("Failed to exec spawn helper"). DC-I04 is now source complete (QA pending); its requested `:app:assembleProductionDebug` build failed at the same resource-processing task because AAPT2 Daemon #0 could not start ("Failed to exec spawn helper"). DC-I05 is now source complete (QA pending); the user-requested `:app:assembleProductionDebug` build ran after implementation and failed during `:app:processProductionDebugResources` because AAPT2 Daemon #0 could not start ("Failed to exec spawn helper"). No tests, lint, installs or device checks were run. DC-Q01 remains pending.
+DC-I01–I03 source changes are recorded above. No tests, lint, installs or device checks were run. The user-requested `:app:assembleProductionDebug` build was attempted after DC-I03 and failed during `:app:processProductionDebugResources` because AAPT2 Daemon #0 could not start ("Failed to exec spawn helper"). DC-I04 is now source complete (QA pending); its requested `:app:assembleProductionDebug` build failed at the same resource-processing task because AAPT2 Daemon #0 could not start ("Failed to exec spawn helper"). DC-I05 is now source complete (QA pending); the user-requested `:app:assembleProductionDebug` build ran after implementation and failed during `:app:processProductionDebugResources` because AAPT2 Daemon #0 could not start ("Failed to exec spawn helper"). No tests, lint, installs or device checks were run. DC-I06 source review and QA handoff are complete at source revision `6309dc182e8c50018183733ab15f626f13e2f094`; see `docs/validation/2026-11-10-dual-calendar.md`. The user-requested final-patch `:app:assembleProductionDebug` task ran after the DC-I06 source corrections and failed at `:app:processProductionDebugResources` because AAPT2 Daemon #0 could not start (`Failed to exec spawn helper`). This is not DC-Q01 evidence. No tests, lint, installs or device checks were run; DC-Q01 remains pending.

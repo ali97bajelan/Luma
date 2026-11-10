@@ -112,9 +112,14 @@ private fun GregorianCalendarDatePicker(
         selectableDates = selectableDates,
     )
     LaunchedEffect(pickerState.selectedDateMillis) {
-        pickerState.selectedDateMillis?.toPickerDate()
+        val selectedDate = pickerState.selectedDateMillis
+            ?.toPickerDate()
             ?.takeIf { state.isSelectable(it, isSelectable) }
-            ?.let(state::selectDate)
+        if (selectedDate == null) {
+            state.clearSelection()
+        } else {
+            state.selectDate(selectedDate)
+        }
     }
     LaunchedEffect(pickerState.displayedMonthMillis) {
         pickerState.displayedMonthMillis.toPickerDate().let(state::setDisplayedDate)

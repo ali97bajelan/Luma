@@ -149,6 +149,7 @@ class WidgetConfigurationActivity : ComponentActivity() {
                 )
                 val snapshot = if (locked) null else try {
                     withContext(Dispatchers.IO) {
+                        (application as LumaApplication).calendarPreferences.awaitSelection()
                         WidgetRenderer.snapshotForRendering(
                             store = storage.widgets,
                             widgetId = selectedWidgetId,

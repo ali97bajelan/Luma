@@ -83,7 +83,7 @@ fun CalendarSettingsCard() {
                     val supportingText = if ((preference == CalendarPreference.SYSTEM) && policy.isReady) {
                         stringResource(
                             R.string.calendar_preference_follow_system_summary,
-                            stringResource(calendarName(policy.system)),
+                            stringResource(calendarName(policy.systemDefault)),
                         )
                     } else {
                         null

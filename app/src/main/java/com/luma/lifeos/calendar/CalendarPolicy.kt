@@ -25,6 +25,7 @@ import java.time.temporal.WeekFields
 data class CalendarPolicy(
     val preference: CalendarPreference,
     val system: CalendarSystem,
+    val systemDefault: CalendarSystem,
     val displayLocale: Locale,
     val firstDay: DayOfWeek,
     val isReady: Boolean,
@@ -83,6 +84,7 @@ internal fun rememberCalendarPolicy(preferences: CalendarPreferences): CalendarP
         CalendarPolicy(
             preference = preference,
             system = system,
+            systemDefault = resolveCalendarSystem(CalendarPreference.SYSTEM, primarySystemLocale),
             displayLocale = displayLocale,
             firstDay = if (system == CalendarSystem.PERSIAN) {
                 DayOfWeek.SATURDAY

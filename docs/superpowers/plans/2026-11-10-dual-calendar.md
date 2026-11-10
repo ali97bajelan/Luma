@@ -183,12 +183,12 @@ All `ui/` paths above are under `app/src/main/java/com/luma/lifeos/`. Rescan dat
 
 **Depends on:** I01–I05 complete. **Spec:** All. **Deliverable:** Reviewable implementation ready for the single QA task.
 
-- [ ] Perform source-only consistency review of preference ownership, constructor/callback wiring, formatter cache keys, duplicated date math, resource parity and unchanged canonical boundaries.
-- [ ] Update task statuses to Source complete; QA pending, never Passed/Accepted.
-- [ ] Create `docs/validation/2026-11-10-dual-calendar.md` with actual source revision/patch, touched-file inventory, implementation decisions and known risks. Mark every DQA scenario and every command/device result NOT RUN.
-- [ ] Update redesign route/checklist ownership/evidence references for Settings, Calendar, shared date pickers and affected app surfaces without changing historical acceptance results.
-- [ ] Confirm all I tasks are complete, record that the user-requested I05 build attempt is not QA evidence, and verify that test/lint/install/device QA has not started. Hand all DQA-01–10 obligations to DC-Q01.
-- [ ] Commit only feature files when requested/appropriate; do not stage unrelated working-tree changes.
+- [x] Perform source-only consistency review of preference ownership, constructor/callback wiring, formatter cache keys, duplicated date math, resource parity and unchanged canonical boundaries.
+- [x] Update task statuses to Source complete; QA pending, never Passed/Accepted.
+- [x] Create `docs/validation/2026-11-10-dual-calendar.md` with the source revision/patch, touched-file inventory, implementation decisions and known risks. Mark every DQA scenario and every QA command/device result NOT RUN; record the user-requested build attempt separately.
+- [x] Update redesign route/checklist ownership/evidence references for Settings, Calendar, shared date pickers and affected app surfaces without changing historical acceptance results.
+- [x] Confirm all I tasks are complete, record the user-requested implementation build attempt as non-QA evidence, and verify that test/lint/install/device QA has not started. Hand all DQA-01–10 obligations to DC-Q01.
+- [x] Preserve unrelated working-tree changes and do not stage them; no commit was requested.
 
 ## DC-Q01 — One consolidated final QA, defect fixing and acceptance
 
@@ -209,6 +209,12 @@ This is the only QA task. The subsections below are activities within it, not se
 - [ ] Fix discovered defects within DC-Q01 and rerun affected tests/checks on the final source patch; broaden only when the defect affects shared behavior. Keep one defect/evidence log.
 - [ ] Record commands, results/counts, screenshots, fixture sources, outstanding failures and final revision/patch in the validation record. Mark acceptance PASS only when all required checks pass; missing coverage remains BLOCKED/NOT RUN. Historical results never substitute for this feature's QA.
 
+**DC-I06 source review (2026-11-10):** Reviewed the single app-wide preference owner, system-locale resolver, Settings and Calendar callback wiring, saved back-stack override/signature, formatter memoization keys, ICU/Gregorian math boundaries, EN/FR/FA resource parity, and canonical ISO storage boundary. The review found and corrected three source mismatches before handoff: Gregorian invalid input retaining a stale picker selection, widget rendering bypassing the accepted preference owner, and the Follow system summary using an explicit override instead of the system-derived value. The complete inventory and risks are in `docs/validation/2026-11-10-dual-calendar.md`. Tests, lint, install and device QA remain NOT RUN for DC-Q01.
+
+**Ruling:** Include these narrowly scoped corrections in DC-I06 because the discovered picker, widget and preference-summary behavior contradicted DC-01/02/05 and made the source incomplete for QA handoff. This extends I06 beyond documentation review; the cost if wrong is a larger source patch to revalidate in the single DC-Q01 phase.
+
+**Post-I06 build results (2026-11-10):** The first Android Studio Gradle `:app:assembleProductionDebug` attempt after the initial handoff draft and the second attempt after the DC-I06 source corrections both failed at `:app:processProductionDebugResources` because AAPT2 Daemon #0 could not start (`Failed to exec spawn helper`, exit value 1). The direct wrapper invocation could not start because `gradlew` is not executable in this workspace. The final-patch build did not complete and is not DQA-10 or acceptance evidence; no tests, lint or device QA ran.
+
 ## Handoff
 
-The page-local switch is a confirmed user requirement. App-wide Settings scope, the local-view lifecycle and Follow system mode remain proposed product decisions. DC-I01–I05 source implementation is complete; DC-I06 handoff and DC-Q01 acceptance remain pending.
+The page-local switch is a confirmed user requirement. App-wide Settings scope, the local-view lifecycle and Follow system mode remain proposed product decisions. DC-I01–I06 source implementation is complete; DC-Q01 acceptance remains pending.

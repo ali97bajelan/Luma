@@ -24,6 +24,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
         }
 
         val app = applicationContext as? LumaApplication ?: return Result.failure()
+        app.calendarPreferences.awaitSelection()
         val kindName = inputData.getString(KEY_REMAP_KIND)
         val oldIds = inputData.getIntArray(KEY_REMAP_OLD_IDS) ?: intArrayOf()
         val newIds = inputData.getIntArray(KEY_REMAP_NEW_IDS) ?: intArrayOf()

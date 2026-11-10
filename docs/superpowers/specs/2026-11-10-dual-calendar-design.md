@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-10
 
-Status: Proposed product decisions; DC-I01–I05 source implementation complete. DC-I06 and QA have not started; no acceptance is implied.
+Status: Proposed product decisions; DC-I01–I06 source implementation complete. DC-Q01 has not started; no acceptance is implied.
 
 [Task backlog](../../DUAL_CALENDAR_TASKS.md) · [Implementation plan](../plans/2026-11-10-dual-calendar.md)
 
@@ -10,7 +10,7 @@ Status: Proposed product decisions; DC-I01–I05 source implementation complete.
 
 Luma supports two calendar systems: Persian Solar Hijri (Shamsi/Jalali) and Gregorian. Users choose the app-wide calendar in Settings and switch only the Calendar page's view using its quick control. With no explicit choice, the device's primary system language determines the calendar: `fa` → Persian; every other language → Gregorian.
 
-The user requested task, specification and plan documents, with **one QA task after all implementation is complete**. This package does not authorize or report app implementation.
+The user requested a task, specification and plan package with **one QA task after all implementation is complete**. DC-I01–I06 implementation and DC-Q01 QA status are tracked in the task backlog and [validation handoff](../../validation/2026-11-10-dual-calendar.md); this specification does not imply acceptance.
 
 ## Proposed product decisions
 

@@ -14,10 +14,10 @@ import android.util.SizeF
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
+import com.luma.lifeos.LumaApplication
 import com.luma.lifeos.R
 import com.luma.lifeos.calendar.CalendarDateFormatter
 import com.luma.lifeos.calendar.CalendarPreference
-import com.luma.lifeos.calendar.CalendarPreferences
 import com.luma.lifeos.calendar.SystemCalendarLocale
 import com.luma.lifeos.calendar.resolveCalendarSystem
 import com.luma.lifeos.domain.widget.WidgetActionResult
@@ -874,13 +874,11 @@ object WidgetRenderer {
 
     private fun taskDueLabel(context: Context, row: WidgetRow.Task, date: LocalDate): String {
         val locale = AppLanguages.current(context).locale
-        val preferences = context.applicationContext.getSharedPreferences(
-            CalendarPreferences.PREFERENCES_NAME,
-            Context.MODE_PRIVATE,
-        )
-        val preference = CalendarPreference.fromStorage(
-            preferences.getString(CalendarPreferences.SELECTED_CALENDAR_KEY, null),
-        )
+        val preference = (context.applicationContext as? LumaApplication)
+            ?.calendarPreferences
+            ?.selection
+            ?.value
+            ?: CalendarPreference.SYSTEM
         val system = resolveCalendarSystem(preference, SystemCalendarLocale.primary(context))
         val dateText = if (row.dueDate == date) {
             context.getString(R.string.widget_task_due_today)

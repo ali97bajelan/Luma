@@ -127,8 +127,10 @@ internal class WidgetCollectionFactory(
         metadata = null
         if (widgetId <= 0 || kind == null || WidgetRefreshCoordinator.kindForWidgetId(context, widgetId) != kind) return
         if (!privacyAllowsRead()) return
-        val store = widgetStore() ?: return
+        val app = context.applicationContext as? LumaApplication ?: return
+        val store = app.storage.widgets
         metadata = runBlocking(Dispatchers.IO) {
+            app.calendarPreferences.awaitSelection()
             store.snapshot(widgetId, snapshotNow, deviceZone, rowLimit = 0)
                 ?.takeIf { it.instance.kind == kind }
         }
