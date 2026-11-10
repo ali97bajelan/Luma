@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,7 +18,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.TimeInput
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,9 +33,8 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.rememberCalendarPolicy
 import com.luma.lifeos.language.rememberDisplayTimePolicy
-import com.luma.lifeos.ui.today.pickerDate
-import com.luma.lifeos.ui.today.pickerMillis
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -117,16 +113,22 @@ fun CaptureTimestampRow(
     }
 
     if (dialogOpen) {
-        val date = rememberDatePickerState(
-            initialSelectedDateMillis = pickerMillis(current.toLocalDate()),
-            yearRange = minOf(1900, current.year)..maxOf(2100, current.year),
+        val yearRange = minOf(1900, current.year)..maxOf(2100, current.year)
+        val (minDate, maxDate) = calendarPickerBounds(yearRange)
+        val date = rememberLumaCalendarDatePickerState(
+            initialDate = current.toLocalDate(),
+            displayedDate = current.toLocalDate(),
+            minDate = minDate,
+            maxDate = maxDate,
         )
+        val calendarPolicy = rememberCalendarPolicy()
+        val isSelectable: (LocalDate) -> Boolean = { true }
         val time = rememberTimePickerState(
             initialHour = current.hour,
             initialMinute = current.minute,
             is24Hour = use24Hour,
         )
-        val selectedDate = date.selectedDateMillis?.let(::pickerDate) ?: current.toLocalDate()
+        val selectedDate = date.selectedDate ?: current.toLocalDate()
         val selectedTime = captureTimestampForSelection(
             current.toLocalDateTime(), selectedDate, time.hour, time.minute,
         ).toLocalTime()
@@ -140,9 +142,10 @@ fun CaptureTimestampRow(
                     verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                 ) {
                     Text(stringResource(R.string.capture_timestamp_date), style = MaterialTheme.typography.titleSmall)
-                    DatePicker(
+                    LumaCalendarDatePicker(
                         state = date,
-                        colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        policy = calendarPolicy,
+                        isSelectable = isSelectable,
                         modifier = Modifier.testTag("capture_timestamp_date_picker"),
                     )
                     Text(stringResource(R.string.capture_timestamp_time), style = MaterialTheme.typography.titleSmall)

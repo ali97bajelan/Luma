@@ -18,11 +18,13 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.rememberCalendarPolicy
+import com.luma.lifeos.ui.common.LumaCalendarDatePicker
+import com.luma.lifeos.ui.common.calendarPickerBounds
+import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
 import com.luma.lifeos.domain.search.SearchOption
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.LumaListSurface
-import com.luma.lifeos.ui.today.pickerDate
-import com.luma.lifeos.ui.today.pickerMillis
 import java.time.LocalDate
 import java.time.format.FormatStyle
 import java.util.UUID
@@ -65,13 +67,21 @@ internal fun SearchFilters(state: SearchState, vm: SearchViewModel, onDone: () -
     }
     datePicking?.let { side ->
         val selected = (if (side == "from") input.from else input.through) ?: LocalDate.now(state.zone)
-        val picker = rememberDatePickerState(initialSelectedDateMillis = pickerMillis(selected), yearRange = minOf(1900, selected.year)..maxOf(2100, selected.year))
+        val yearRange = minOf(1900, selected.year)..maxOf(2100, selected.year)
+        val (minDate, maxDate) = calendarPickerBounds(yearRange)
+        val picker = rememberLumaCalendarDatePickerState(selected, selected, minDate, maxDate)
+        val calendarPolicy = rememberCalendarPolicy()
+        val isSelectable: (LocalDate) -> Boolean = { true }
         LumaDatePickerDialog(onDismissRequest = { datePicking = null }, modifier = Modifier.testTag("search_date_dialog"),
-            confirmButton = { LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
-                picker.selectedDateMillis?.let { if (side == "from") vm.setFrom(pickerDate(it)) else vm.setThrough(pickerDate(it)) }
+            confirmButton = { LumaTextButton(enabled = picker.canConfirm(isSelectable), onClick = {
+                picker.selectedDate?.takeIf { picker.isSelectable(it, isSelectable) }?.let {
+                    if (side == "from") vm.setFrom(it) else vm.setThrough(it)
+                }
                 datePicking = null
             }) { Text(stringResource(R.string.select_date)) } },
-            dismissButton = { LumaTextButton(onClick = { datePicking = null }) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
+            dismissButton = { LumaTextButton(onClick = { datePicking = null }) { Text(stringResource(R.string.cancel)) } }) {
+            LumaCalendarDatePicker(picker, calendarPolicy, isSelectable)
+        }
     }
 }
 

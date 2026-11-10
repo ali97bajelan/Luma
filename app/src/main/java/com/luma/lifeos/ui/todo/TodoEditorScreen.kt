@@ -29,8 +29,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import com.luma.lifeos.ui.common.LumaOutlinedButton
@@ -39,7 +37,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.TimeInput
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +58,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.rememberCalendarPolicy
+import com.luma.lifeos.ui.common.LumaCalendarDatePicker
+import com.luma.lifeos.ui.common.calendarPickerBounds
+import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
 import com.luma.lifeos.domain.todo.TodoField
 import com.luma.lifeos.domain.todo.TodoTextLimits
 import com.luma.lifeos.domain.todo.TodoValidationReason
@@ -70,8 +71,6 @@ import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.ui.common.LumaEditorActionFooter
 import com.luma.lifeos.ui.common.LumaPrimaryActionButton
-import com.luma.lifeos.ui.today.pickerDate
-import com.luma.lifeos.ui.today.pickerMillis
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.LocalTime
@@ -545,19 +544,20 @@ fun TodoEditorScreen(
     }
 
     if (pickingDate) {
-        val pickerDate = pickerStartDate.toLocalDateOrNull() ?: state.draft.dueDate ?: LocalDate.now()
-        val picker = rememberDatePickerState(
-            initialSelectedDateMillis = pickerMillis(pickerDate),
-            yearRange = minOf(1900, pickerDate.year)..maxOf(2100, pickerDate.year),
-        )
+        val initialDate = pickerStartDate.toLocalDateOrNull() ?: state.draft.dueDate ?: LocalDate.now()
+        val yearRange = minOf(1900, initialDate.year)..maxOf(2100, initialDate.year)
+        val (minDate, maxDate) = calendarPickerBounds(yearRange)
+        val picker = rememberLumaCalendarDatePickerState(initialDate, initialDate, minDate, maxDate)
+        val calendarPolicy = rememberCalendarPolicy()
+        val isSelectable: (LocalDate) -> Boolean = { true }
         LumaDatePickerDialog(
             onDismissRequest = { pickingDate = false },
             modifier = Modifier.testTag("todo_editor_date_dialog"),
             confirmButton = {
                 LumaTextButton(
-                    enabled = picker.selectedDateMillis != null,
+                    enabled = picker.canConfirm(isSelectable),
                     onClick = {
-                        picker.selectedDateMillis?.let { onDueDate(pickerDate(it)) }
+                        picker.selectedDate?.takeIf { picker.isSelectable(it, isSelectable) }?.let(onDueDate)
                         pickingDate = false
                     },
                     modifier = Modifier.testTag("todo_editor_select_date"),
@@ -566,7 +566,9 @@ fun TodoEditorScreen(
             dismissButton = {
                 LumaTextButton(onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) }
             },
-        ) { DatePicker(state = picker) }
+        ) {
+            LumaCalendarDatePicker(picker, calendarPolicy, isSelectable)
+        }
     }
     if (pickingTime && state.draft.dueDate != null) {
         key(timePickerSession) {

@@ -137,13 +137,17 @@ All `ui/` paths above are under `app/src/main/java/com/luma/lifeos/`. Rescan dat
 - State exposes `selectedDate: LocalDate?`; the caller retains ownership of Confirm/Cancel/Back and draft mutation.
 - Bounds remain ISO dates and the selected type comes from policy. Gregorian delegates to Material with UTC bridge values; Persian uses shared math and Luma controls.
 
-- [ ] Inventory each host's existing limits, disabled-day constraints, null handling, open/restore state and test tags before migration.
-- [ ] Build shared picker state/content with real Persian month/year/day selection, efficient month/year chooser, selected semantics and at least 48 dp targets. Reuse LumaDatePickerDialog or the existing timestamp dialog shell.
-- [ ] Keep tentative selection when policy changes/recreation occurs; recompute the visible active month from the same ISO anchor. Do not commit as a side effect of recomposition.
-- [ ] Translate each host's existing ISO year/date bounds to allowed days, including partial Persian years. Prevent invalid selections and leave Confirm disabled for null/invalid values.
-- [ ] Migrate DayNavigation, TodoEditorScreen, CaptureTimestampRow, HabitEditorRoute, HabitLogCorrectionDialog, SearchFilters and WeeklyReviewRoute.
-- [ ] Preserve Gregorian input mode and timestamp TimeInput/zone/DST behavior; provide a usable Persian year/month chooser without introducing raw numeric Persian input in this feature.
-- [ ] Source-inspect Confirm-once/Cancel-never behavior, draft preservation, nullable task dates, scrolling/IME/insets and tags across every consumer. DQA-06/08 remain pending.
+- [x] Inventory each host's existing limits, disabled-day constraints, null handling, open/restore state and test tags before migration.
+- [x] Build shared picker state/content with real Persian month/year/day selection, efficient month/year chooser, selected semantics and at least 48 dp targets. Reuse LumaDatePickerDialog or the existing timestamp dialog shell.
+- [x] Keep tentative selection when policy changes/recreation occurs; recompute the visible active month from the same ISO anchor. Do not commit as a side effect of recomposition.
+- [x] Translate each host's existing ISO year/date bounds to allowed days, including partial Persian years. Prevent invalid selections and leave Confirm disabled for null/invalid values.
+- [x] Migrate DayNavigation, TodoEditorScreen, CaptureTimestampRow, HabitEditorRoute, HabitLogCorrectionDialog, SearchFilters and WeeklyReviewRoute.
+- [x] Preserve Gregorian input mode and timestamp TimeInput/zone/DST behavior; provide a usable Persian year/month chooser without introducing raw numeric Persian input in this feature.
+- [x] Source-inspect Confirm-once/Cancel-never behavior, draft preservation, nullable task dates, scrolling/IME/insets and tags across every consumer. DQA-06/08 remain pending.
+
+**DC-I04 source review (2026-11-10):** Added the shared saveable ISO-backed picker state/content and localized calendar field formatting. Gregorian uses Material's picker with a UTC date-only bridge; Persian uses the shared ICU math, Saturday-first grid, real month/day selection and bounded month/year chooser. Migrated DayNavigation, task due date, capture timestamp, habit start/correction, Search bounds and Weekly Review. The Settings calendar policy controls each app-wide picker; Review still disallows dates after today. Existing dialog tags and Confirm/Cancel callback ownership remain at each host; timestamp time/zone/DST controls are unchanged. The source scan found Material DatePicker only in the shared Gregorian implementation. Android Studio source analysis reports no code errors. Tests, lint and device checks were NOT RUN; DQA-06/08 remain pending DC-Q01.
+
+**Build result:** The requested `:app:assembleProductionDebug` build failed during `:app:processProductionDebugResources` because AAPT2 Daemon #0 could not start (`Failed to exec spawn helper`). This build result does not establish DC-I04 acceptance; DC-Q01 remains pending.
 
 ## DC-I05 — App-wide display, month grouping and widget date consistency
 

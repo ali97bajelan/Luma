@@ -52,6 +52,34 @@ object CalendarDateFormatter {
         return formatter.format(date.toUtcDate())
     }
 
+    fun formatMonthName(date: LocalDate, system: CalendarSystem, locale: Locale): String {
+        if (system == CalendarSystem.GREGORIAN) {
+            return DateTimeFormatter.ofPattern("LLLL", locale)
+                .withChronology(IsoChronology.INSTANCE)
+                .withDecimalStyle(DecimalStyle.of(locale))
+                .format(date)
+        }
+
+        val formatter = IcuSimpleDateFormat("LLLL", localeFor(system, locale))
+        requireCalendarType(formatter.calendar.type, system)
+        formatter.timeZone = IcuTimeZone.getTimeZone("UTC")
+        return formatter.format(date.toUtcDate())
+    }
+
+    fun formatWeekday(date: LocalDate, system: CalendarSystem, locale: Locale): String {
+        if (system == CalendarSystem.GREGORIAN) {
+            return DateTimeFormatter.ofPattern("EEE", locale)
+                .withChronology(IsoChronology.INSTANCE)
+                .withDecimalStyle(DecimalStyle.of(locale))
+                .format(date)
+        }
+
+        val formatter = IcuSimpleDateFormat("EEE", localeFor(system, locale))
+        requireCalendarType(formatter.calendar.type, system)
+        formatter.timeZone = IcuTimeZone.getTimeZone("UTC")
+        return formatter.format(date.toUtcDate())
+    }
+
     fun formatDayNumber(parts: CalendarDateParts, locale: Locale): String =
         java.text.NumberFormat.getIntegerInstance(locale).format(parts.day)
 

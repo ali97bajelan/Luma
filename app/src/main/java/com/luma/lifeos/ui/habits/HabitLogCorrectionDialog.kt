@@ -8,14 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.material3.TimeInput
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,11 +26,13 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.common.LumaCalendarDatePicker
+import com.luma.lifeos.ui.common.calendarPickerBounds
+import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
+import com.luma.lifeos.calendar.rememberCalendarPolicy
 import com.luma.lifeos.language.rememberDisplayTimePolicy
-import com.luma.lifeos.ui.today.pickerDate
-import com.luma.lifeos.ui.today.pickerMillis
+import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneOffset
 import java.time.format.FormatStyle
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
@@ -43,7 +42,7 @@ internal fun HabitLogCorrectionDialog(
     draft: HabitLogCorrectionDraft,
     busy: Boolean,
     error: HabitCorrectionError?,
-    onDate: (java.time.LocalDate) -> Unit,
+    onDate: (LocalDate) -> Unit,
     onTime: (LocalTime?) -> Unit,
     onSave: () -> Unit,
     onRequestClose: () -> Unit,
@@ -131,15 +130,21 @@ internal fun HabitLogCorrectionDialog(
     )
 
     if (dateOpen) {
-        val date = rememberDatePickerState(
-            initialSelectedDateMillis = pickerMillis(draft.selectedDate),
-            yearRange = minOf(1900, draft.selectedDate.year)..maxOf(2100, draft.selectedDate.year),
+        val yearRange = minOf(1900, draft.selectedDate.year)..maxOf(2100, draft.selectedDate.year)
+        val (minDate, maxDate) = calendarPickerBounds(yearRange)
+        val date = rememberLumaCalendarDatePickerState(
+            initialDate = draft.selectedDate,
+            displayedDate = draft.selectedDate,
+            minDate = minDate,
+            maxDate = maxDate,
         )
+        val calendarPolicy = rememberCalendarPolicy()
+        val isSelectable: (LocalDate) -> Boolean = { true }
         LumaDatePickerDialog(
             onDismissRequest = ::closeDate,
             confirmButton = {
-                LumaTextButton(enabled = date.selectedDateMillis != null, onClick = {
-                    date.selectedDateMillis?.let { onDate(pickerDate(it)) }
+                LumaTextButton(enabled = date.canConfirm(isSelectable), onClick = {
+                    date.selectedDate?.takeIf { date.isSelectable(it, isSelectable) }?.let(onDate)
                     closeDate()
                 }, modifier = Modifier.testTag("habit_correction_select_date")) {
                     Text(stringResource(R.string.select_date))
@@ -147,7 +152,9 @@ internal fun HabitLogCorrectionDialog(
             },
             dismissButton = { LumaTextButton(onClick = ::closeDate) { Text(stringResource(R.string.cancel)) } },
             modifier = Modifier.testTag("habit_correction_date_picker"),
-        ) { DatePicker(state = date) }
+        ) {
+            LumaCalendarDatePicker(date, calendarPolicy, isSelectable)
+        }
     }
     if (timeOpen) {
         val selected = draft.selectedTime ?: LocalTime.NOON

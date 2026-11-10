@@ -1191,6 +1191,8 @@
     <string name="calendar_heading">Calendrier et agenda</string>
     <string name="calendar_subtitle">Tâches planifiées et souvenirs enregistrés</string>
     <string name="calendar_month">Mois</string>
+    <string name="calendar_year">Année</string>
+    <string name="calendar_choose_month_year">Choisir le mois et l’année</string>
     <string name="calendar_week">Semaine</string>
     <string name="calendar_previous_month">Mois précédent</string>
     <string name="calendar_next_month">Mois suivant</string>

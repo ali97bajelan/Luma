@@ -18,8 +18,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
-import com.luma.lifeos.ui.today.pickerDate
-import com.luma.lifeos.ui.today.pickerMillis
+import com.luma.lifeos.calendar.rememberCalendarPolicy
+import com.luma.lifeos.ui.common.LumaCalendarDatePicker
+import com.luma.lifeos.ui.common.calendarPickerBounds
+import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
 import java.time.LocalDate
 import java.time.format.FormatStyle
 
@@ -77,13 +79,18 @@ fun DayNavigation(date: LocalDate, onSelect: (LocalDate) -> Unit, onToday: () ->
         }
     }
     if (picking) {
-        val picker = rememberDatePickerState(initialSelectedDateMillis = pickerMillis(date), yearRange = minOf(1900, date.year)..maxOf(2100, date.year))
+        val yearRange = minOf(1900, date.year)..maxOf(2100, date.year)
+        val (minDate, maxDate) = calendarPickerBounds(yearRange)
+        val picker = rememberLumaCalendarDatePickerState(date, date, minDate, maxDate)
+        val calendarPolicy = rememberCalendarPolicy()
+        val isSelectable: (LocalDate) -> Boolean = { true }
         LumaDatePickerDialog(modifier = Modifier.testTag("date_picker_dialog"), onDismissRequest = { picking = false },
-            confirmButton = { LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
-                picker.selectedDateMillis?.let { onSelect(pickerDate(it)) }; picking = false
+            confirmButton = { LumaTextButton(enabled = picker.canConfirm(isSelectable), onClick = {
+                picker.selectedDate?.takeIf { picker.isSelectable(it, isSelectable) }?.let(onSelect)
+                picking = false
             }) { Text(stringResource(R.string.select_date)) } },
             dismissButton = { LumaTextButton(onClick = { picking = false }) { Text(stringResource(R.string.cancel)) } }) {
-            DatePicker(state = picker)
+            LumaCalendarDatePicker(picker, calendarPolicy, isSelectable)
         }
     }
 }

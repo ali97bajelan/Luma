@@ -1173,6 +1173,8 @@
     <string name="calendar_heading">Calendar &amp; Agenda</string>
     <string name="calendar_subtitle">Scheduled tasks and saved memories</string>
     <string name="calendar_month">Month</string>
+    <string name="calendar_year">Year</string>
+    <string name="calendar_choose_month_year">Choose month and year</string>
     <string name="calendar_week">Week</string>
     <string name="calendar_previous_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>

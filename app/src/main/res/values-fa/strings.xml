@@ -1174,6 +1174,8 @@
     <string name="calendar_heading">تقویم و برنامه</string>
     <string name="calendar_subtitle">کارهای زمان‌بندی‌شده و خاطرات ذخیره‌شده</string>
     <string name="calendar_month">ماه</string>
+    <string name="calendar_year">سال</string>
+    <string name="calendar_choose_month_year">انتخاب ماه و سال</string>
     <string name="calendar_week">هفته</string>
     <string name="calendar_previous_month">ماه قبل</string>
     <string name="calendar_next_month">ماه بعد</string>

@@ -4,6 +4,10 @@ import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaDatePickerDialog
 
 import com.luma.lifeos.ui.common.LumaFilterChip
+import com.luma.lifeos.ui.common.LumaCalendarDatePicker
+import com.luma.lifeos.ui.common.calendarPickerBounds
+import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
+import com.luma.lifeos.calendar.rememberCalendarPolicy
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +27,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.BorderStroke
 import androidx.annotation.StringRes
-import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChipDefaults
@@ -35,7 +38,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,7 +66,6 @@ import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.domain.habit.HabitRepository
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
@@ -347,18 +348,22 @@ fun HabitEditorScreen(
         }
     }
     if (choosingStart) {
-        val picker = rememberDatePickerState(initialSelectedDateMillis = state.draft.start.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        val initialDate = state.draft.start
+        val (minDate, maxDate) = calendarPickerBounds(1900..2100)
+        val picker = rememberLumaCalendarDatePickerState(initialDate, initialDate, minDate, maxDate)
+        val calendarPolicy = rememberCalendarPolicy()
+        val isSelectable: (LocalDate) -> Boolean = { true }
         LumaDatePickerDialog(
             onDismissRequest = { choosingStart = false },
             confirmButton = {
-            LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
-                picker.selectedDateMillis?.let { onStart(pickerLocalDate(it)) }
-                choosingStart = false
-            }) { Text(stringResource(R.string.select_date)) }
+                LumaTextButton(enabled = picker.canConfirm(isSelectable), onClick = {
+                    picker.selectedDate?.takeIf { picker.isSelectable(it, isSelectable) }?.let(onStart)
+                    choosingStart = false
+                }) { Text(stringResource(R.string.select_date)) }
             },
             dismissButton = { LumaTextButton(onClick = { choosingStart = false }) { Text(stringResource(R.string.cancel)) } },
         ) {
-            DatePicker(state = picker)
+            LumaCalendarDatePicker(picker, calendarPolicy, isSelectable)
         }
     }
     if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
@@ -385,4 +390,3 @@ private fun schedulePresetLabel(preset: HabitSchedulePreset): Int = when (preset
     HabitSchedulePreset.CUSTOM -> R.string.habit_preset_custom
 }
 
-private fun pickerLocalDate(millis: Long): LocalDate = java.time.Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()

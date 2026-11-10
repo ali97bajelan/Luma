@@ -24,6 +24,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import com.luma.lifeos.R
+import com.luma.lifeos.calendar.rememberCalendarPolicy
+import com.luma.lifeos.ui.common.LumaCalendarDatePicker
+import com.luma.lifeos.ui.common.calendarPickerBounds
+import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.habit.HabitRepository
@@ -32,8 +36,6 @@ import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.language.emotionDisplayName
 import com.luma.lifeos.ui.timeline.EventCard
-import com.luma.lifeos.ui.today.pickerDate
-import com.luma.lifeos.ui.today.pickerMillis
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusProductRepository
@@ -330,17 +332,20 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     }
     if (picking) {
         val selectedDate = restoredReviewDate(selected, today)
-        val picker = rememberDatePickerState(initialSelectedDateMillis = pickerMillis(selectedDate),
-            yearRange = minOf(1900, selectedDate.year)..maxOf(2100, today.year),
-            selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long) = pickerDate(utcTimeMillis) <= today
-                override fun isSelectableYear(year: Int) = year <= today.year
-            })
+        val yearRange = minOf(1900, selectedDate.year)..maxOf(2100, today.year)
+        val (minDate, maxDate) = calendarPickerBounds(yearRange)
+        val picker = rememberLumaCalendarDatePickerState(selectedDate, selectedDate, minDate, maxDate)
+        val calendarPolicy = rememberCalendarPolicy()
+        val isSelectable: (LocalDate) -> Boolean = { it <= today }
         LumaDatePickerDialog(onDismissRequest = { picking = false },
-            confirmButton = { LumaTextButton(enabled = picker.selectedDateMillis != null, onClick = {
-                picker.selectedDateMillis?.let { selected = minOf(pickerDate(it), today).toString() }; picking = false
+            confirmButton = { LumaTextButton(enabled = picker.canConfirm(isSelectable), onClick = {
+                picker.selectedDate?.takeIf { picker.isSelectable(it, isSelectable) }
+                    ?.let { selected = minOf(it, today).toString() }
+                picking = false
             }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.select_date)) } },
-            dismissButton = { LumaTextButton(onClick = { picking = false }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.cancel)) } }) { DatePicker(picker) }
+            dismissButton = { LumaTextButton(onClick = { picking = false }, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) { Text(stringResource(R.string.cancel)) } }) {
+            LumaCalendarDatePicker(picker, calendarPolicy, isSelectable)
+        }
     }
 }
 
