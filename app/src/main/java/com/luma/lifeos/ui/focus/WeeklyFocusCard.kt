@@ -98,7 +98,10 @@ internal fun WeeklyFocusCard(
                         .filter { it.date in period.current.start..period.current.through }
                         .mapNotNull { day -> day.statistics?.let { day.date to it.totalMillis } }
                         .toMap()
-                    val distribution = focusWeekDistribution(dailyTotals)
+                    val distribution = focusWeekDistribution(
+                        dailyTotals,
+                        firstDayOfWeek = period.current.start.dayOfWeek,
+                    )
                     val ratio = maxOf(value.current.totalMillis, value.previous.totalMillis)
                     Text(
                         stringResource(

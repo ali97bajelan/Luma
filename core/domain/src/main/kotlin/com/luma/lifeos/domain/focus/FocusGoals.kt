@@ -92,11 +92,17 @@ fun nextGoalMonday(now: Instant, zone: ZoneId): LocalDate =
     now.atZone(zone).toLocalDate().with(TemporalAdjusters.next(DayOfWeek.MONDAY))
 
 /** Positive saved contributions count; ties select the earliest local date. */
-fun focusWeekDistribution(dailyTotals: Map<LocalDate, Long>): FocusWeekDistribution {
+fun focusWeekDistribution(
+    dailyTotals: Map<LocalDate, Long>,
+    firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
+): FocusWeekDistribution {
     require(dailyTotals.size <= 7) { "A focus week has at most seven daily totals" }
-    val monday = dailyTotals.keys.firstOrNull()?.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    require(dailyTotals.keys.all { it.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) == monday }) {
-        "Daily focus totals must belong to one ISO week"
+    val weekStart = dailyTotals.keys.firstOrNull()
+        ?.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    require(dailyTotals.keys.all {
+        it.with(TemporalAdjusters.previousOrSame(firstDayOfWeek)) == weekStart
+    }) {
+        "Daily focus totals must belong to one selected week"
     }
     require(dailyTotals.values.all { it >= 0 }) { "Daily focus totals cannot be negative" }
     val active = dailyTotals.filterValues { it > 0 }

@@ -168,10 +168,10 @@ class FocusReportsTest {
         assertEquals(1, openedFocus)
     }
 
-    @Test fun weeklyReportShowsPartialWeekAndDoesNotInventPercentForEmptyBaseline() {
+    @Test fun weeklyReportSupportsSaturdayStartAndDoesNotInventPercentForEmptyBaseline() {
         val zone = ZoneId.of("UTC")
         val today = LocalDate.parse("2026-10-28")
-        val period = reviewPeriod(today, today, zone)
+        val period = reviewPeriod(today, today, zone, firstDayOfWeek = DayOfWeek.SATURDAY)
         val current = FocusStatistics(60_000, contributingSessions = 1, interruptedContributors = 0)
         val previous = FocusStatistics(0, contributingSessions = 0, interruptedContributors = 0)
         val comparison = compareFocusStatistics(current, previous)
