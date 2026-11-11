@@ -855,7 +855,7 @@
     <string name="more_settings">Paramètres</string>
     <string name="more_settings_description">Apparence et langue, sauvegarde, confidentialité et intégrations.</string>
     <string name="settings_appearance_language_title">Apparence et langue</string>
-    <string name="settings_appearance_language_description">Choisissez le thème, la langue et le calendrier de Luma.</string>
+    <string name="settings_appearance_language_description">Choisissez le thème, la langue, le calendrier et le début de semaine de Luma.</string>
     <string name="settings_language_title">Langue</string>
     <string name="settings_language_description">Choisissez la langue utilisée par Luma.</string>
     <string name="settings_calendar_title">Calendrier</string>
@@ -866,6 +866,17 @@
     <string name="calendar_preference_gregorian">Grégorien</string>
     <string name="calendar_preference_save_error">Impossible d’enregistrer la préférence de calendrier. Réessayez.</string>
     <string name="calendar_preference_retry">Réessayer</string>
+    <string name="week_start_title">Début de semaine</string>
+    <string name="week_start_description">Choisissez le premier jour de chaque semaine dans le bilan hebdomadaire.</string>
+    <string name="week_start_saturday">Samedi</string>
+    <string name="week_start_sunday">Dimanche</string>
+    <string name="week_start_monday">Lundi</string>
+    <string name="week_start_tuesday">Mardi</string>
+    <string name="week_start_wednesday">Mercredi</string>
+    <string name="week_start_thursday">Jeudi</string>
+    <string name="week_start_friday">Vendredi</string>
+    <string name="week_start_save_error">Impossible d’enregistrer le début de semaine. Réessayez.</string>
+    <string name="week_start_retry">Réessayer</string>
     <string name="settings_backup_title">Sauvegarde</string>
     <string name="settings_backup_description">Exportez ou restaurez une sauvegarde locale privée.</string>
     <string name="settings_privacy_title">Confidentialité</string>

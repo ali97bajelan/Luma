@@ -843,7 +843,7 @@
     <string name="more_settings">تنظیمات</string>
     <string name="more_settings_description">ظاهر و زبان، پشتیبان‌گیری، حریم خصوصی و یکپارچه‌سازی‌ها.</string>
     <string name="settings_appearance_language_title">ظاهر و زبان</string>
-    <string name="settings_appearance_language_description">پوسته، زبان و تقویم لوما را انتخاب کنید.</string>
+    <string name="settings_appearance_language_description">پوسته، زبان، تقویم و روز آغاز هفته را انتخاب کنید.</string>
     <string name="settings_language_title">زبان</string>
     <string name="settings_language_description">زبان نمایش لوما را انتخاب کنید.</string>
     <string name="settings_calendar_title">تقویم</string>
@@ -854,6 +854,17 @@
     <string name="calendar_preference_gregorian">میلادی</string>
     <string name="calendar_preference_save_error">ذخیرهٔ ترجیح تقویم انجام نشد. دوباره تلاش کنید.</string>
     <string name="calendar_preference_retry">تلاش دوباره</string>
+    <string name="week_start_title">روز آغاز هفته</string>
+    <string name="week_start_description">روز نخست هر هفته را در مرور هفتگی انتخاب کنید.</string>
+    <string name="week_start_saturday">شنبه</string>
+    <string name="week_start_sunday">یکشنبه</string>
+    <string name="week_start_monday">دوشنبه</string>
+    <string name="week_start_tuesday">سه‌شنبه</string>
+    <string name="week_start_wednesday">چهارشنبه</string>
+    <string name="week_start_thursday">پنج‌شنبه</string>
+    <string name="week_start_friday">جمعه</string>
+    <string name="week_start_save_error">ذخیرهٔ روز آغاز هفته انجام نشد. دوباره تلاش کنید.</string>
+    <string name="week_start_retry">تلاش دوباره</string>
     <string name="settings_backup_title">پشتیبان‌گیری</string>
     <string name="settings_backup_description">یک نسخهٔ پشتیبان خصوصی و محلی تهیه یا بازیابی کنید.</string>
     <string name="settings_privacy_title">حریم خصوصی</string>

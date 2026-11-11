@@ -122,6 +122,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.luma.lifeos.ui.today.TodayRoute
 import com.luma.lifeos.ui.today.rememberCurrentDay
+import com.luma.lifeos.calendar.rememberWeekStartPreferences
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -276,6 +277,8 @@ fun LifeOsApp(
     }
     val localContext = LocalContext.current
     val applicationContext = localContext.applicationContext
+    val weekStartPreferences = rememberWeekStartPreferences()
+    val firstDayOfWeek by weekStartPreferences.selection.collectAsStateWithLifecycle()
     com.luma.lifeos.calendar.CalendarPolicyWidgetRefreshObserver()
     val hostActivity = remember(localContext) { localContext.findActivity() }
     val resolvedMoodDraftStore = remember(applicationContext, moodDraftStore) {
@@ -1102,6 +1105,7 @@ fun LifeOsApp(
                         )
                         PrimaryDestination.REVIEW -> {
                             if (reviews != null) WeeklyReviewRoute(reviews, currentDay.date, currentDay.zone,
+                                firstDayOfWeek = firstDayOfWeek,
                                 integrationAvailability = integrationAvailability,
                                 onIntegrations = { navController.navigate("settings_integrations") },
                                 onCheckIn = { openCapture("mood", null) },
@@ -1466,6 +1470,7 @@ fun LifeOsApp(
                     com.luma.lifeos.ui.theme.ThemeSettingsCard()
                     com.luma.lifeos.language.LanguageSettingsCard()
                     com.luma.lifeos.ui.settings.CalendarSettingsCard()
+                    com.luma.lifeos.ui.settings.WeekStartSettingsCard()
                 }
             }
             if (backup != null) composable("settings_backup") {

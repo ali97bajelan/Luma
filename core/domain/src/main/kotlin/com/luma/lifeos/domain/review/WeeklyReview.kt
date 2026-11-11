@@ -16,12 +16,21 @@ data class ReviewDates(val start: LocalDate, val through: LocalDate) {
     fun endInstant(zone: ZoneId): Instant = through.plusDays(1).atStartOfDay(zone).toInstant()
 }
 data class ReviewPeriod(val current: ReviewDates, val previous: ReviewDates, val zone: ZoneId, val partial: Boolean)
-fun reviewPeriod(date: LocalDate, today: LocalDate, zone: ZoneId): ReviewPeriod {
-    val monday = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    require(monday <= today) { "Future weeks are unavailable" }
-    val end = minOf(monday.plusDays(6), today)
-    return ReviewPeriod(ReviewDates(monday, end), ReviewDates(monday.minusWeeks(1), end.minusWeeks(1)), zone,
-        today <= monday.plusDays(6))
+fun reviewPeriod(
+    date: LocalDate,
+    today: LocalDate,
+    zone: ZoneId,
+    firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
+): ReviewPeriod {
+    val weekStart = date.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    require(weekStart <= today) { "Future weeks are unavailable" }
+    val end = minOf(weekStart.plusDays(6), today)
+    return ReviewPeriod(
+        ReviewDates(weekStart, end),
+        ReviewDates(weekStart.minusWeeks(1), end.minusWeeks(1)),
+        zone,
+        today <= weekStart.plusDays(6),
+    )
 }
 data class ReviewName(val id: UUID, val name: String)
 /** Deliberately excludes bodies, notes and photos. */

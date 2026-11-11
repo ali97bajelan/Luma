@@ -77,13 +77,15 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     databaseGenerationFlow: Flow<UUID?>? = null,
     onPlanAnotherSession: (() -> Unit)? = null,
     captureBottomClearance: Dp = 0.dp,
-    onRequestProtectedFocusUnlock: () -> Unit = {}) {
+    onRequestProtectedFocusUnlock: () -> Unit = {},
+    firstDayOfWeek: DayOfWeek = DayOfWeek.SATURDAY,
+) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
     var focusRetry by remember { mutableIntStateOf(0) }
     var focusContextRetry by remember { mutableIntStateOf(0) }
-    val period = reviewPeriod(restoredReviewDate(selected, today), today, zone)
+    val period = reviewPeriod(restoredReviewDate(selected, today), today, zone, firstDayOfWeek)
     val weekKey = "${period.current.start}|${period.zone.id}"
     val listState = rememberLazyListState()
     var section by rememberSaveable { mutableStateOf<String?>(null) }

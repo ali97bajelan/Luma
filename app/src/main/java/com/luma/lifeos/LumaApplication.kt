@@ -85,6 +85,9 @@ class LumaApplication : Application() {
     val calendarPreferences: com.luma.lifeos.calendar.CalendarPreferences by lazy {
         com.luma.lifeos.calendar.CalendarPreferences(this, applicationScope = applicationScope)
     }
+    val weekStartPreferences: com.luma.lifeos.calendar.WeekStartPreferences by lazy {
+        com.luma.lifeos.calendar.WeekStartPreferences(this, applicationScope = applicationScope)
+    }
     private val lockCrypto: AndroidLockCrypto by lazy { AndroidLockCrypto() }
     internal val localLockStore: AndroidLocalLockStore by lazy { AndroidLocalLockStore(this, lockCrypto) }
     val appLockCoordinator: AppLockCoordinator by lazy {
