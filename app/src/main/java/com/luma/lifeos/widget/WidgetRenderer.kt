@@ -450,7 +450,6 @@ object WidgetRenderer {
         secondaryTextColor: Int,
         rowActionBackground: Int,
         inline: Boolean,
-        progressColumnWidthPx: Int,
         dark: Boolean,
     ) = RemoteViews(context.packageName,
         when {
@@ -468,9 +467,6 @@ object WidgetRenderer {
             appContext.getColor(if (isAppDark(context, appContext)) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light))
         setInt(R.id.widget_habit_row_action, "setBackgroundResource", rowActionBackground)
         setTextViewText(R.id.widget_habit_row_title, row.title)
-        if (inline && progressColumnWidthPx > 0) {
-            setInt(R.id.widget_habit_row_count, "setWidth", progressColumnWidthPx)
-        }
         setContentDescription(
             R.id.widget_habit_row_text,
             appContext.getString(R.string.widget_habit_open_description, bidiWrapped(appContext, row.title)),
@@ -584,7 +580,7 @@ object WidgetRenderer {
                 val measured = measureHabitRow(appContext, widthDp, row, progressWidth)
                 habitRow(
                     context, appContext, snapshot, row, textColor, secondaryTextColor,
-                    rowActionBackground, measured.inlineHabit, progressWidth, dark,
+                    rowActionBackground, measured.inlineHabit, dark,
                 )
             }
             is WidgetRow.Task -> taskRow(
