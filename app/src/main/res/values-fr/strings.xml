@@ -1106,6 +1106,15 @@
     <string name="todo_list_completed_tab">Terminées</string>
     <string name="todo_list_open_count">%1$s tâches ouvertes</string>
     <string name="todo_list_completed_count">%1$s tâches terminées</string>
+    <string name="todo_list_filter_heading">Filtrer par importance</string>
+    <string name="todo_list_filter_all">Toutes</string>
+    <string name="todo_list_sort_heading">Trier par</string>
+    <string name="todo_list_sort_date">Date</string>
+    <string name="todo_list_sort_importance">Importance</string>
+    <string name="todo_list_importance_order_heading">Importance élevée d’abord</string>
+    <string name="todo_list_matching_count">Tâches correspondantes : %1$s</string>
+    <string name="todo_list_empty_matching">Aucune tâche ne correspond à cette importance.</string>
+    <string name="todo_list_reset_query">Effacer les filtres et le tri</string>
     <string name="todo_list_loading">Chargement des tâches…</string>
     <string name="todo_list_refreshing">Actualisation des tâches…</string>
     <string name="todo_list_loading_more">Chargement de la suite…</string>

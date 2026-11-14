@@ -162,6 +162,44 @@ interface TodoDao {
     fun observeToday(date: String, limit: Int): Flow<List<TodoPageRow>>
 
     @Query("""
+        SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
+            task.due_time_minutes, task.created_at, task.updated_at, task.revision_token,
+            counts.total_count, task.importance_code
+        FROM (
+            SELECT COUNT(*) AS total_count
+            FROM todo_task
+            WHERE ((:completed = 1 AND completed_at IS NOT NULL)
+                OR (:completed = 0 AND completed_at IS NULL))
+                AND (:importanceCode IS NULL OR importance_code = :importanceCode)
+        ) AS counts
+        LEFT JOIN todo_task AS task
+            ON ((:completed = 1 AND task.completed_at IS NOT NULL)
+                OR (:completed = 0 AND task.completed_at IS NULL))
+            AND (:importanceCode IS NULL OR task.importance_code = :importanceCode)
+        ORDER BY
+            CASE WHEN :sortByImportance = 1 THEN task.importance_code END DESC,
+            CASE WHEN :sortByImportance = 1 AND task.due_date IS NULL THEN 1 ELSE 0 END ASC,
+            CASE WHEN :sortByImportance = 1 THEN task.due_date END ASC,
+            CASE WHEN :sortByImportance = 1 AND task.due_time_minutes IS NULL THEN 1 ELSE 0 END ASC,
+            CASE WHEN :sortByImportance = 1 THEN task.due_time_minutes END ASC,
+            CASE WHEN :completed = 1 AND :sortByImportance = 0 THEN task.completed_at END DESC,
+            CASE WHEN :completed = 0 AND :sortByImportance = 0 AND task.due_date IS NULL THEN 1 ELSE 0 END ASC,
+            CASE WHEN :completed = 0 AND :sortByImportance = 0 THEN task.due_date END ASC,
+            CASE WHEN :completed = 0 AND :sortByImportance = 0 AND task.due_time_minutes IS NULL THEN 1 ELSE 0 END ASC,
+            CASE WHEN :completed = 0 AND :sortByImportance = 0 THEN task.due_time_minutes END ASC,
+            CASE WHEN (:completed = 0 AND :sortByImportance = 0) OR :sortByImportance = 1
+                THEN task.created_at END ASC,
+            task.id ASC
+        LIMIT :limit
+    """)
+    fun observeFiltered(
+        completed: Boolean,
+        importanceCode: Int?,
+        sortByImportance: Boolean,
+        limit: Int,
+    ): Flow<List<TodoPageRow>>
+
+    @Query("""
         UPDATE todo_task SET title = :title, note = :note, due_date = :dueDate,
             due_time_minutes = :dueTimeMinutes, importance_code = :importanceCode,
             updated_at = :updatedAt, revision_token = :nextRevision

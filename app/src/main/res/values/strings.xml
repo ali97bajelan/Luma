@@ -1091,6 +1091,15 @@
     <string name="todo_list_completed_tab">Completed</string>
     <string name="todo_list_open_count">%1$s open tasks</string>
     <string name="todo_list_completed_count">%1$s completed tasks</string>
+    <string name="todo_list_filter_heading">Filter by importance</string>
+    <string name="todo_list_filter_all">All</string>
+    <string name="todo_list_sort_heading">Sort by</string>
+    <string name="todo_list_sort_date">Date</string>
+    <string name="todo_list_sort_importance">Importance</string>
+    <string name="todo_list_importance_order_heading">Highest importance first</string>
+    <string name="todo_list_matching_count">%1$s matching tasks</string>
+    <string name="todo_list_empty_matching">No tasks match this importance.</string>
+    <string name="todo_list_reset_query">Clear filters and sorting</string>
     <string name="todo_list_loading">Loading tasks…</string>
     <string name="todo_list_refreshing">Refreshing tasks…</string>
     <string name="todo_list_loading_more">Loading more…</string>

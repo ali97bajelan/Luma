@@ -8,10 +8,12 @@ import com.luma.lifeos.data.todo.toEntity
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoConflictException
 import com.luma.lifeos.domain.todo.TodoInput
+import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoPage
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
+import com.luma.lifeos.domain.todo.TodoSort
 import com.luma.lifeos.domain.todo.normalizeTodoInput
 import java.time.Clock
 import java.time.LocalDate
@@ -29,6 +31,21 @@ class RoomTodoRepository(
         require(limit > 0) { "Task page size must be positive" }
         val rows = if (completed) dao.observeCompleted(limit) else dao.observeOpen(limit)
         return rows.map { pageRows ->
+            TodoPage(
+                items = pageRows.mapNotNull { it.toEntityOrNull()?.toDomain() },
+                total = pageRows.firstOrNull()?.totalCount ?: 0,
+            )
+        }
+    }
+
+    override fun observeList(query: TodoListQuery, limit: Int): Flow<TodoPage> {
+        require(limit > 0) { "Task page size must be positive" }
+        return dao.observeFiltered(
+            completed = query.completed,
+            importanceCode = query.importance?.code,
+            sortByImportance = query.sort == TodoSort.IMPORTANCE,
+            limit = limit,
+        ).map { pageRows ->
             TodoPage(
                 items = pageRows.mapNotNull { it.toEntityOrNull()?.toDomain() },
                 total = pageRows.firstOrNull()?.totalCount ?: 0,

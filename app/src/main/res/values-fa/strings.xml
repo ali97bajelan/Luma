@@ -1092,6 +1092,15 @@
     <string name="todo_list_completed_tab">تکمیل‌شده</string>
     <string name="todo_list_open_count">%1$s کار باز</string>
     <string name="todo_list_completed_count">%1$s کار تکمیل‌شده</string>
+    <string name="todo_list_filter_heading">فیلتر بر پایهٔ اهمیت</string>
+    <string name="todo_list_filter_all">همه</string>
+    <string name="todo_list_sort_heading">مرتب‌سازی بر پایهٔ</string>
+    <string name="todo_list_sort_date">تاریخ</string>
+    <string name="todo_list_sort_importance">اهمیت</string>
+    <string name="todo_list_importance_order_heading">اولویت با اهمیت بیشتر</string>
+    <string name="todo_list_matching_count">کارهای منطبق: %1$s</string>
+    <string name="todo_list_empty_matching">کاری با این اهمیت پیدا نشد.</string>
+    <string name="todo_list_reset_query">پاک‌کردن فیلتر و مرتب‌سازی</string>
     <string name="todo_list_loading">در حال بارگذاری کارها…</string>
     <string name="todo_list_refreshing">در حال تازه‌سازی کارها…</string>
     <string name="todo_list_loading_more">در حال بارگذاری موارد بیشتر…</string>

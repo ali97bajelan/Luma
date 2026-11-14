@@ -18,6 +18,7 @@ import com.luma.lifeos.domain.model.PersonInput
 import com.luma.lifeos.domain.repository.PersonRepository
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoInput
+import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoPage
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
@@ -37,6 +38,13 @@ class ProtectedTodoRepository(
 ) : TodoRepository by delegate {
     override fun observeList(completed: Boolean, limit: Int): Flow<TodoPage> = combine(
         delegate.observeList(completed, limit), gateway.snapshot,
+    ) { page, state ->
+        if (gateway.filterSection(true, LockSection.TASKS, state)) page.copy(items = immutableProjectionList(page.items))
+        else TodoPage(emptyList(), 0)
+    }
+
+    override fun observeList(query: TodoListQuery, limit: Int): Flow<TodoPage> = combine(
+        delegate.observeList(query, limit), gateway.snapshot,
     ) { page, state ->
         if (gateway.filterSection(true, LockSection.TASKS, state)) page.copy(items = immutableProjectionList(page.items))
         else TodoPage(emptyList(), 0)

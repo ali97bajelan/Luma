@@ -50,6 +50,9 @@ fun TodoListRoute(
         onDismissRowError = vm::dismissRowError,
         onRetryLoad = vm::retryLoad,
         onLoadMore = vm::loadMore,
+        onImportanceFilter = vm::setImportanceFilter,
+        onSort = vm::setSort,
+        onResetQuery = vm::resetQuery,
         undoFeedback = {
             state.undoableCompletion?.let { result ->
                 TodoActionFeedbackCard(

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -47,7 +49,8 @@ import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.domain.todo.TodoBucket
-import com.luma.lifeos.domain.todo.TodoTask
+import com.luma.lifeos.domain.todo.TodoImportance
+import com.luma.lifeos.domain.todo.TodoSort
 import com.luma.lifeos.domain.todo.todoBucket
 import java.text.NumberFormat
 import java.util.UUID
@@ -68,6 +71,9 @@ fun TodoListScreen(
     onRetryLoad: () -> Unit,
     onLoadMore: () -> Unit,
     undoFeedback: @Composable () -> Unit,
+    onImportanceFilter: (TodoImportance?) -> Unit = {},
+    onSort: (TodoSort) -> Unit = {},
+    onResetQuery: () -> Unit = {},
 ) {
     val stateHolder = rememberSaveableStateHolder()
     val focusRequesters = remember { mutableStateMapOf<UUID, FocusRequester>() }
@@ -75,10 +81,11 @@ fun TodoListScreen(
     val addFocusRequester = remember { FocusRequester() }
     val openTabFocusRequester = remember { FocusRequester() }
     val count = NumberFormat.getIntegerInstance().format(state.page.total)
+    val isFlatList = state.completed || state.importanceFilter != null || state.sort == TodoSort.IMPORTANCE
     val groups = remember(state.page.items, state.today) {
         TodoBucket.entries.map { bucket -> bucket to state.page.items.filter { todoBucket(it, state.today) == bucket } }
     }
-    val visibleTasks = if (state.completed) state.page.items else groups.flatMap { it.second }
+    val visibleTasks = if (isFlatList) state.page.items else groups.flatMap { it.second }
     val visibleIds = remember(visibleTasks) { visibleTasks.mapTo(mutableSetOf()) { it.id } }
     val offPageIntents = state.pendingIntents.values.filter { it.taskId !in visibleIds }
     val offPageErrors = state.rowErrors.entries.mapNotNull { (taskId, error) ->
@@ -132,8 +139,70 @@ fun TodoListScreen(
                 )
             }
             Text(
+                stringResource(R.string.todo_list_filter_heading),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.semantics { heading() },
+            )
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LumaFilterChip(
+                    selected = state.importanceFilter == null,
+                    onClick = { onImportanceFilter(null) },
+                    label = { Text(stringResource(R.string.todo_list_filter_all)) },
+                    modifier = Modifier.testTag("todo_list_importance_filter_all"),
+                )
+                listOf(
+                    TodoImportance.HIGH to R.string.todo_importance_high,
+                    TodoImportance.MEDIUM to R.string.todo_importance_medium,
+                    TodoImportance.LOW to R.string.todo_importance_low,
+                    TodoImportance.NONE to R.string.todo_importance_none,
+                ).forEach { (importance, labelResource) ->
+                    LumaFilterChip(
+                        selected = state.importanceFilter == importance,
+                        onClick = { onImportanceFilter(importance) },
+                        label = { Text(stringResource(labelResource)) },
+                        modifier = Modifier.testTag("todo_list_importance_filter_${importance.name.lowercase()}"),
+                    )
+                }
+            }
+            Text(
+                stringResource(R.string.todo_list_sort_heading),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.semantics { heading() },
+            )
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LumaFilterChip(
+                    selected = state.sort == TodoSort.DATE,
+                    onClick = { onSort(TodoSort.DATE) },
+                    label = { Text(stringResource(R.string.todo_list_sort_date)) },
+                    modifier = Modifier.testTag("todo_list_sort_date"),
+                )
+                LumaFilterChip(
+                    selected = state.sort == TodoSort.IMPORTANCE,
+                    onClick = { onSort(TodoSort.IMPORTANCE) },
+                    label = { Text(stringResource(R.string.todo_list_sort_importance)) },
+                    modifier = Modifier.testTag("todo_list_sort_importance"),
+                )
+            }
+            if (state.sort == TodoSort.IMPORTANCE) {
+                Text(
+                    stringResource(R.string.todo_list_importance_order_heading),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.semantics { heading() }
+                        .testTag("todo_list_importance_order_heading"),
+                )
+            }
+            Text(
                 stringResource(
-                    if (state.completed) R.string.todo_list_completed_count else R.string.todo_list_open_count,
+                    if (state.importanceFilter != null) R.string.todo_list_matching_count
+                    else if (state.completed) R.string.todo_list_completed_count else R.string.todo_list_open_count,
                     count,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -180,7 +249,10 @@ fun TodoListScreen(
 
             // Do not compose a loading-only list: LazyListState would clamp its saved index to zero.
             if (state.dataFresh || state.page.items.isNotEmpty() || recoveryItemCount > 0) {
-                stateHolder.SaveableStateProvider(if (state.completed) "completed" else "open") {
+                stateHolder.SaveableStateProvider(
+                    "${if (state.completed) "completed" else "open"}:" +
+                        "${state.importanceFilter?.code ?: -1}:${state.sort.name}",
+                ) {
                     val listState = rememberLazyListState()
                     LaunchedEffect(
                         state.completed,
@@ -233,7 +305,7 @@ fun TodoListScreen(
                             if (state.completed) openTabFocusRequester.requestFocus() else addFocusRequester.requestFocus()
                         } else {
                             val target = visibleTasks[targetIndex]
-                            val lazyIndex = if (state.completed) {
+                            val lazyIndex = if (isFlatList) {
                                 recoveryItemCount + targetIndex
                             } else {
                                 var index = recoveryItemCount
@@ -295,11 +367,22 @@ fun TodoListScreen(
                                     Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                                         Text(
                                             stringResource(
-                                                if (state.completed) R.string.todo_list_empty_completed
-                                                else R.string.todo_list_empty_open,
+                                                when {
+                                                    state.importanceFilter != null -> R.string.todo_list_empty_matching
+                                                    state.completed -> R.string.todo_list_empty_completed
+                                                    else -> R.string.todo_list_empty_open
+                                                },
                                             ),
                                             style = MaterialTheme.typography.titleMedium,
                                         )
+                                        if (state.importanceFilter != null || state.sort != TodoSort.DATE) {
+                                            LumaTextButton(
+                                                onClick = onResetQuery,
+                                                modifier = Modifier.testTag("todo_list_reset_query"),
+                                            ) {
+                                                Text(stringResource(R.string.todo_list_reset_query))
+                                            }
+                                        }
                                         if (state.completed) {
                                             LumaTextButton(
                                                 onClick = { onSelectCompleted(false) },
@@ -320,7 +403,7 @@ fun TodoListScreen(
                             }
                         }
                         if (state.page.items.isNotEmpty()) {
-                            if (state.completed) {
+                            if (isFlatList) {
                                 items(state.page.items, key = { "task:${it.id}" }) { task ->
                                     val rowError = state.rowErrors[task.id]
                                     val rowFocusRequester = remember(task.id) { FocusRequester() }
@@ -333,7 +416,7 @@ fun TodoListScreen(
                                     TodoRow(
                                         task = task,
                                         today = state.today,
-                                        completedList = true,
+                                        completedList = state.completed,
                                         canOpen = rowError != TodoListRowError.MISSING,
                                         canMutate = state.dataFresh && rowError != TodoListRowError.CONFLICT &&
                                             rowError != TodoListRowError.MISSING,

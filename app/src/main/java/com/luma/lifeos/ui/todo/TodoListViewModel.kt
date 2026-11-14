@@ -7,7 +7,10 @@ import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoConflictException
 import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoPage
+import com.luma.lifeos.domain.todo.TodoImportance
+import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoRepository
+import com.luma.lifeos.domain.todo.TodoSort
 import com.luma.lifeos.domain.todo.TodoTask
 import java.time.LocalDate
 import java.util.Base64
@@ -56,6 +59,8 @@ data class TodoListUiState(
     val undoing: Boolean = false,
     val undoFailed: Boolean = false,
     val undoTerminal: Boolean = false,
+    val importanceFilter: TodoImportance? = null,
+    val sort: TodoSort = TodoSort.DATE,
 )
 
 /** Observed prefix, retained list selection and revision-safe row actions. */
@@ -64,8 +69,6 @@ class TodoListViewModel(
     private val repository: TodoRepository,
     private val saved: SavedStateHandle,
 ) : ViewModel() {
-    private var openLimit = saved[KEY_OPEN_LIMIT] ?: TODO_DEFAULT_PAGE_SIZE
-    private var completedLimit = saved[KEY_COMPLETED_LIMIT] ?: TODO_DEFAULT_PAGE_SIZE
     private val refreshVersion = MutableStateFlow(0)
     private val reconciling = mutableSetOf<UUID>()
     private val mutationJobs = mutableMapOf<UUID, Job>()
@@ -73,7 +76,13 @@ class TodoListViewModel(
     private val mutableState = MutableStateFlow(
         TodoListUiState(
             completed = saved[KEY_COMPLETED] ?: false,
-            pageLimit = if (saved.get<Boolean>(KEY_COMPLETED) == true) completedLimit else openLimit,
+            pageLimit = pageLimitFor(
+                completed = saved[KEY_COMPLETED] ?: false,
+                importanceFilter = readImportanceFilter(),
+                sort = readSort(),
+            ),
+            importanceFilter = readImportanceFilter(),
+            sort = readSort(),
             pendingIntents = readPendingIntents(),
             rowErrors = readPendingIntents().keys.associateWith { TodoListRowError.FAILED },
             rowErrorTitles = readPendingIntents().mapValues { it.value.title },
@@ -85,11 +94,16 @@ class TodoListViewModel(
     init {
         viewModelScope.launch {
             combine(
-                mutableState.map { it.completed to it.pageLimit }.distinctUntilChanged(),
+                mutableState.map { state ->
+                    ListRequest(
+                        query = TodoListQuery(state.completed, state.importanceFilter, state.sort),
+                        limit = state.pageLimit,
+                    )
+                }.distinctUntilChanged(),
                 refreshVersion,
             ) { request, _ -> request }
-                .flatMapLatest { (completed, limit) ->
-                    repository.observeList(completed, limit)
+                .flatMapLatest { request ->
+                    repository.observeList(request.query, request.limit)
                         .map<TodoPage, ListObservation> { ListObservation.Loaded(it) }
                         .catch { emit(ListObservation.Failed) }
                 }
@@ -131,10 +145,41 @@ class TodoListViewModel(
     fun selectCompleted(completed: Boolean) {
         val current = mutableState.value
         if (current.completed == completed) return
-        val limit = if (completed) completedLimit else openLimit
+        val limit = pageLimitFor(completed, current.importanceFilter, current.sort)
         saved[KEY_COMPLETED] = completed
         mutableState.value = current.copy(
             completed = completed,
+            page = TodoPage(emptyList(), 0),
+            pageLimit = limit,
+            loading = true,
+            refreshing = true,
+            loadingMore = false,
+            dataFresh = false,
+            loadError = null,
+        )
+    }
+
+    fun setImportanceFilter(value: TodoImportance?) {
+        updateQuery(importanceFilter = value, sort = mutableState.value.sort)
+    }
+
+    fun setSort(value: TodoSort) {
+        updateQuery(importanceFilter = mutableState.value.importanceFilter, sort = value)
+    }
+
+    fun resetQuery() {
+        updateQuery(importanceFilter = null, sort = TodoSort.DATE)
+    }
+
+    private fun updateQuery(importanceFilter: TodoImportance?, sort: TodoSort) {
+        val current = mutableState.value
+        if (current.importanceFilter == importanceFilter && current.sort == sort) return
+        val limit = pageLimitFor(current.completed, importanceFilter, sort)
+        saved[KEY_IMPORTANCE_FILTER] = importanceFilter?.code ?: FILTER_ALL
+        saved[KEY_IMPORTANCE_SORT] = sort == TodoSort.IMPORTANCE
+        mutableState.value = current.copy(
+            importanceFilter = importanceFilter,
+            sort = sort,
             page = TodoPage(emptyList(), 0),
             pageLimit = limit,
             loading = true,
@@ -149,13 +194,7 @@ class TodoListViewModel(
         val current = mutableState.value
         if (!current.dataFresh || current.loading || current.loadingMore || current.page.items.size >= current.page.total) return
         val expandedLimit = current.pageLimit + TODO_DEFAULT_PAGE_SIZE
-        if (current.completed) {
-            completedLimit = expandedLimit
-            saved[KEY_COMPLETED_LIMIT] = expandedLimit
-        } else {
-            openLimit = expandedLimit
-            saved[KEY_OPEN_LIMIT] = expandedLimit
-        }
+        saved[pageLimitKey(current.completed, current.importanceFilter, current.sort)] = expandedLimit
         mutableState.update { it.copy(pageLimit = expandedLimit, loadingMore = true, loadError = null) }
     }
 
@@ -281,10 +320,11 @@ class TodoListViewModel(
         undoJobs.clear()
         clearPendingIntents()
         clearUndoResult()
-        openLimit = TODO_DEFAULT_PAGE_SIZE
-        completedLimit = TODO_DEFAULT_PAGE_SIZE
-        saved[KEY_OPEN_LIMIT] = openLimit
-        saved[KEY_COMPLETED_LIMIT] = completedLimit
+        saved.keys().filter { it.startsWith(KEY_PAGE_LIMIT_PREFIX) }.forEach { saved.remove<Int>(it) }
+        saved.remove<Int>(KEY_OPEN_LIMIT)
+        saved.remove<Int>(KEY_COMPLETED_LIMIT)
+        saved[KEY_IMPORTANCE_FILTER] = FILTER_ALL
+        saved[KEY_IMPORTANCE_SORT] = false
         saved[KEY_COMPLETED] = false
         mutableState.value = TodoListUiState(today = mutableState.value.today)
         refreshVersion.update { it + 1 }
@@ -447,13 +487,45 @@ class TodoListViewModel(
         )
     }.getOrNull()
 
+    private fun readImportanceFilter(): TodoImportance? = when (val code = saved.get<Int>(KEY_IMPORTANCE_FILTER)) {
+        null, FILTER_ALL -> null
+        else -> runCatching { TodoImportance.fromCode(code) }.getOrNull()
+    }
+
+    private fun readSort(): TodoSort =
+        if (saved.get<Boolean>(KEY_IMPORTANCE_SORT) == true) TodoSort.IMPORTANCE else TodoSort.DATE
+
+    private fun pageLimitFor(
+        completed: Boolean,
+        importanceFilter: TodoImportance?,
+        sort: TodoSort,
+    ): Int {
+        val key = pageLimitKey(completed, importanceFilter, sort)
+        val savedLimit = saved.get<Int>(key)
+        if (savedLimit != null) return savedLimit.coerceAtLeast(TODO_DEFAULT_PAGE_SIZE)
+        if (importanceFilter == null && sort == TodoSort.DATE) {
+            val legacyKey = if (completed) KEY_COMPLETED_LIMIT else KEY_OPEN_LIMIT
+            return (saved.get<Int>(legacyKey) ?: TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(TODO_DEFAULT_PAGE_SIZE)
+        }
+        return TODO_DEFAULT_PAGE_SIZE
+    }
+
+    private fun pageLimitKey(completed: Boolean, importanceFilter: TodoImportance?, sort: TodoSort): String =
+        "$KEY_PAGE_LIMIT_PREFIX${if (completed) "completed" else "open"}_${importanceFilter?.code ?: FILTER_ALL}_${sort.name}"
+
+    private data class ListRequest(val query: TodoListQuery, val limit: Int)
+
     private sealed interface ListObservation {
         data class Loaded(val page: TodoPage) : ListObservation
         data object Failed : ListObservation
     }
 
     private companion object {
+        const val FILTER_ALL = -1
         const val KEY_COMPLETED = "todo_list_completed"
+        const val KEY_IMPORTANCE_FILTER = "todo_list_importance_filter"
+        const val KEY_IMPORTANCE_SORT = "todo_list_importance_sort"
+        const val KEY_PAGE_LIMIT_PREFIX = "todo_list_page_limit_"
         const val KEY_OPEN_LIMIT = "todo_list_open_limit"
         const val KEY_COMPLETED_LIMIT = "todo_list_completed_limit"
         const val KEY_PENDING = "todo_list_pending"

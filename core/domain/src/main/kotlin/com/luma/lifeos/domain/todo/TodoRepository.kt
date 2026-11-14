@@ -48,6 +48,20 @@ private fun unsupportedTodoFamilyOperation(): Nothing =
  */
 interface TodoRepository {
     fun observeList(completed: Boolean, limit: Int = TODO_DEFAULT_PAGE_SIZE): Flow<TodoPage>
+
+    /**
+     * Observe the bounded task-list query after applying importance membership and ordering.
+     * Legacy repository implementations can keep supporting the original All/Date query while
+     * failing closed for filters they cannot evaluate before paging.
+     */
+    fun observeList(query: TodoListQuery, limit: Int = TODO_DEFAULT_PAGE_SIZE): Flow<TodoPage> {
+        require(limit > 0) { "Task page size must be positive" }
+        if (query.importance == null && query.sort == TodoSort.DATE) {
+            return observeList(query.completed, limit)
+        }
+        throw UnsupportedOperationException("This TodoRepository implementation does not support importance queries")
+    }
+
     fun observeToday(date: LocalDate, limit: Int = TODO_DEFAULT_TODAY_LIMIT): Flow<TodoPage>
 
     /**
