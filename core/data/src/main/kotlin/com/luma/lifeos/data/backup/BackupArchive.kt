@@ -32,10 +32,14 @@ internal val BACKUP_TABLES = BACKUP_TABLES_V13
 /** Keep archive versioning tied to its table inventory and restore behavior, not Room. */
 internal const val CURRENT_BACKUP_SCHEMA_VERSION = 13
 internal fun backupImportColumns(table: String, schemaVersion: Int, currentColumns: List<String>): List<String> =
-    FocusGoalArchiveAdapter.importColumns(
+    TodoImportanceArchiveAdapter.importColumns(
         table,
         schemaVersion,
-        FocusMetadataArchiveAdapter.importColumns(table, schemaVersion, currentColumns),
+        FocusGoalArchiveAdapter.importColumns(
+            table,
+            schemaVersion,
+            FocusMetadataArchiveAdapter.importColumns(table, schemaVersion, currentColumns),
+        ),
     )
 
 internal fun backupTables(version: Int): List<String> = when (version) {

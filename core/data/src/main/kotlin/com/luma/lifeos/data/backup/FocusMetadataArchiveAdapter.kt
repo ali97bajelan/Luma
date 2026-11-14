@@ -18,10 +18,7 @@ internal object FocusMetadataArchiveAdapter {
         if (excludeSessionId) FOCUS_SESSION_EXPORT_EXCLUDING_QUERY else FOCUS_SESSION_EXPORT_QUERY
 
     fun importColumns(table: String, schemaVersion: Int, currentColumns: List<String>): List<String> = when {
-        table == "todo_task" && schemaVersion == 4 -> currentColumns.filterNot {
-            it in setOf("due_time_minutes", "importance_code")
-        }
-        table == "todo_task" && schemaVersion in 5..12 -> currentColumns.filterNot { it == "importance_code" }
+        table == "todo_task" && schemaVersion == 4 -> currentColumns.filterNot { it == "due_time_minutes" }
         table == "focus_session" && schemaVersion == 7 -> currentColumns.filterNot {
             it in setOf("name", "tag_id", "timer_mode", "target_millis", "outcome", "next_step", "task_id", "task_origin")
         }

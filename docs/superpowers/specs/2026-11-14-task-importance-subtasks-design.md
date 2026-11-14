@@ -1,6 +1,6 @@
 # Task importance and one-level subtasks specification
 
-Date: 14 November 2026. Status: **TI-02 importance persistence source handoff COMPLETE — QA PENDING; overall I01–I08 implementation in progress; TI-QA01 NOT RUN. The user-requested `./gradlew check` failed on 3 existing domain test cases; `:core:data` KSP generated [Room schema 16](../../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/16.json).**
+Date: 14 November 2026. Status: **TI-02 importance persistence and TI-05 importance backup compatibility source handoffs COMPLETE — QA PENDING; overall I01–I08 implementation in progress; TI-QA01 NOT RUN. The user-requested `./gradlew check` failed on 3 existing domain test cases; `:core:data` KSP generated [Room schema 16](../../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/16.json).**
 
 User decision: **Four importance choices + one-level task hierarchy**. User also requested specifications/plans and **one emulator QA task after all implementation is done**. Detailed behavior below is the implementation recommendation derived from that choice, not an assertion that the user separately chose every edge case. This documentation request does not start implementation.
 
