@@ -7,17 +7,25 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
 
-internal fun TodoEntity.toDomain(): TodoTask = TodoTask(
-    id = UUID.fromString(id),
-    title = title,
-    note = note,
-    dueDate = dueDate?.let { LocalDate.parse(it) },
-    dueTime = dueTimeMinutes?.let { LocalTime.of(it / 60, it % 60) },
-    completedAt = completedAt?.let(Instant::ofEpochMilli),
-    createdAt = Instant.ofEpochMilli(createdAt),
-    updatedAt = Instant.ofEpochMilli(updatedAt),
-    revision = UUID.fromString(revisionToken),
-)
+internal fun TodoEntity.toDomain(): TodoTask {
+    val taskId = UUID.fromString(id)
+    val revision = UUID.fromString(revisionToken)
+    return TodoTask(
+        id = taskId,
+        title = title,
+        note = note,
+        dueDate = dueDate?.let { LocalDate.parse(it) },
+        dueTime = dueTimeMinutes?.let { LocalTime.of(it / 60, it % 60) },
+        completedAt = completedAt?.let(Instant::ofEpochMilli),
+        createdAt = Instant.ofEpochMilli(createdAt),
+        updatedAt = Instant.ofEpochMilli(updatedAt),
+        revision = revision,
+        importance = com.luma.lifeos.domain.todo.TodoImportance.NONE,
+        parentId = null,
+        siblingPosition = null,
+        familyRevision = taskId,
+    )
+}
 
 internal fun TodoInput.toEntity(
     id: UUID,

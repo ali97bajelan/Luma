@@ -32,7 +32,7 @@ Each condition below is assigned to an implementation owner and an assertion in 
 
 ## Execution boundary and task board
 
-Status for every source task: **NOT STARTED**. QA: **NOT RUN**. Source dependencies below do not require predecessor test results. This schedule supersedes the research backlog’s suggestion of a release between importance and subtasks: complete the combined implementation, then one QA task. No schema-changing intermediate release.
+Status: **I01 SOURCE COMPLETE — QA PENDING; I02–I08 NOT STARTED.** Requested `./gradlew check`: **FAILED** (`:core:domain:test`, 187 tests, 3 unrelated failures in `MemoryTest` and `ProtectedRecordClassifierTest`). TI-QA01: **NOT RUN**. Source dependencies below do not require predecessor test results. This schedule supersedes the research backlog’s suggestion of a release between importance and subtasks: complete the combined implementation, then one QA task. No schema-changing intermediate release.
 
 | Task | Scope | Depends on source handoff | Research IDs |
 | --- | --- | --- | --- |
@@ -91,12 +91,12 @@ Keep existing get/create/update/searchOpen/list/Today APIs for compatibility whi
 
 **Files:** domain Todo files and new types above. **Consumes:** existing normalization, UUID revisions, civil dates. **Produces:** all cross-task contracts above. **Requirements:** TI-R01/02/06/07.
 
-- [ ] Inspect active source, AGENTS.md and git status; record baseline SHA and unrelated edits. Establish execution isolation per the worktree skill if needed; do not commit unrelated files.
-- [ ] Add importance codes/decoder and model/input extensions. Keep existing title/note/year/time validation; validate parent/position shape locally without pretending model construction can prove parent existence.
-- [ ] Define row/query/progress types and explicit DATE/IMPORTANCE comparator contract matching TI-R05; null filter differs from NONE.
-- [ ] Define family preview/receipt/error types and repository signatures; document root family-token ownership, command retry identity, confirmation-required legacy fallback and mutation no-op semantics.
-- [ ] Review source against TI-R01/02/06/07 and update all production constructor/copy callsites mechanically. Reserve test-fixture updates for TI-QA01 under source-first workflow.
-- [ ] Record I01 SOURCE COMPLETE — QA PENDING with touched paths, interface decisions and required case assertions; no runtime claims.
+- [x] Inspect active source, AGENTS.md and git status; record baseline SHA and unrelated edits. Establish execution isolation per the worktree skill if needed; do not commit unrelated files.
+- [x] Add importance codes/decoder and model/input extensions. Keep existing title/note/year/time validation; validate parent/position shape locally without pretending model construction can prove parent existence.
+- [x] Define row/query/progress types and explicit DATE/IMPORTANCE comparator contract matching TI-R05; null filter differs from NONE.
+- [x] Define family preview/receipt/error types and repository signatures; document root family-token ownership, command retry identity, confirmation-required legacy fallback and mutation no-op semantics.
+- [x] Review source against TI-R01/02/06/07 and update all production constructor/copy callsites mechanically. Reserve test-fixture updates for TI-QA01 under source-first workflow.
+- [x] Record I01 SOURCE COMPLETE — QA PENDING with touched paths, interface decisions and required case assertions; no runtime claims.
 
 ## I02 — Room schema, queries and family commands
 

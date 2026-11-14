@@ -1,7 +1,7 @@
 # Tasks improvement research and proposed backlog
 
 Prepared: 14 November 2026. Role: senior product manager.
-Status: **Approach selected by user — four importance choices + one-level task hierarchy. Specification and plan prepared; implementation NOT STARTED; QA NOT RUN.**
+Status: **Approach selected by user — four importance choices + one-level task hierarchy. I01 domain contract source handoff COMPLETE — QA PENDING; I02–I08 NOT STARTED. Requested `./gradlew check` FAILED with 3 unrelated `:core:domain:test` failures; final TI-QA01 NOT RUN.**
 
 Execution package: [specification](superpowers/specs/2026-11-14-task-importance-subtasks-design.md) · [implementation plan](superpowers/plans/2026-11-14-task-importance-subtasks.md) · [single final QA task TI-QA01](TASK_IMPORTANCE_SUBTASKS_QA.md). The selected scope and scheduling below supersede the original research proposal; these execution documents own detailed contracts and task status.
 
