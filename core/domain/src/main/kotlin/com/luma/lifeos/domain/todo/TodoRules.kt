@@ -54,7 +54,13 @@ fun normalizeTodoInput(input: TodoInput): TodoInput {
         throw TodoValidationException(TodoField.DUE_TIME, TodoValidationReason.OUT_OF_RANGE)
     }
 
-    return TodoInput(title = title, note = note, dueDate = dueDate, dueTime = dueTime)
+    return TodoInput(
+        title = title,
+        note = note,
+        dueDate = dueDate,
+        dueTime = dueTime,
+        importance = input.importance,
+    )
 }
 
 fun todoBucket(task: TodoTask, today: LocalDate): TodoBucket = when {
@@ -75,11 +81,34 @@ val openTodoTaskComparator: Comparator<TodoTask> = Comparator { first, second ->
         ?: first.id.toString().compareTo(second.id.toString())
 }
 
+/**
+ * Highest importance first, then the established open-task due-date/time and creation ordering.
+ * The stored importance code is stable and independent of enum declaration order.
+ */
+val importanceTodoTaskComparator: Comparator<TodoTask> = Comparator { first, second ->
+    second.importance.code.compareTo(first.importance.code)
+        .takeIf { it != 0 }
+        ?: openTodoTaskComparator.compare(first, second)
+}
+
+fun todoTaskComparator(sort: TodoSort): Comparator<TodoTask> = when (sort) {
+    TodoSort.DATE -> openTodoTaskComparator
+    TodoSort.IMPORTANCE -> importanceTodoTaskComparator
+}
+
 val completedTodoTaskComparator: Comparator<TodoTask> = Comparator { first, second ->
     compareValues(second.completedAt, first.completedAt)
         .takeIf { it != 0 }
         ?: first.id.toString().compareTo(second.id.toString())
 }
+
+/** Date is the existing completion-time order for completed tasks. */
+fun todoTaskComparator(query: TodoListQuery): Comparator<TodoTask> =
+    if (query.completed && query.sort == TodoSort.DATE) {
+        completedTodoTaskComparator
+    } else {
+        todoTaskComparator(query.sort)
+    }
 
 private fun compareDueDates(first: LocalDate?, second: LocalDate?): Int = when {
     first == null && second == null -> 0
