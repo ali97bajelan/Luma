@@ -2,6 +2,7 @@ package com.luma.lifeos.ui.todo
 
 import com.luma.lifeos.domain.todo.TodoField
 import com.luma.lifeos.domain.todo.TodoInput
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoValidationReason
 import java.time.LocalDate
 import java.time.LocalTime
@@ -12,8 +13,15 @@ data class TodoDraft(
     val note: String = "",
     val dueDate: LocalDate? = null,
     val dueTime: LocalTime? = null,
+    val importance: TodoImportance = TodoImportance.NONE,
 ) {
-    fun toInput(): TodoInput = TodoInput(title = title, note = note, dueDate = dueDate, dueTime = dueTime)
+    fun toInput(): TodoInput = TodoInput(
+        title = title,
+        note = note,
+        dueDate = dueDate,
+        dueTime = dueTime,
+        importance = importance,
+    )
 }
 
 enum class TodoEditorError { LOAD, SAVE, STATUS, DELETE }

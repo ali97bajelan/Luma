@@ -63,6 +63,7 @@ import com.luma.lifeos.ui.common.LumaCalendarDatePicker
 import com.luma.lifeos.ui.common.calendarPickerBounds
 import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
 import com.luma.lifeos.domain.todo.TodoField
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoTextLimits
 import com.luma.lifeos.domain.todo.TodoValidationReason
 import com.luma.lifeos.language.rememberDisplayTimePolicy
@@ -80,6 +81,7 @@ import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaDestructiveTextButton
+import com.luma.lifeos.ui.common.LumaTodoImportanceSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,6 +104,7 @@ fun TodoEditorScreen(
     onSaveAndFocusTask: (() -> Unit)? = null,
     canDeleteTaskOrigin: Boolean = true,
     onRequestDeleteUnlock: () -> Unit = {},
+    onImportance: (TodoImportance) -> Unit = {},
 ) {
     var discarding by rememberSaveable { mutableStateOf(false) }
     var focusConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -282,6 +285,13 @@ fun TodoEditorScreen(
                     modifier = Modifier.fillMaxWidth().focusRequester(noteFocus)
                         .bringIntoViewRequester(noteBringIntoView)
                         .semantics { noteError?.let { error(it) } }.testTag("todo_editor_note"),
+                )
+
+                LumaTodoImportanceSelector(
+                    importance = state.draft.importance,
+                    onImportanceChange = onImportance,
+                    enabled = canEdit,
+                    modifier = Modifier.testTag("todo_editor_importance"),
                 )
 
                 val dueDateError = if (state.fieldErrors[TodoField.DUE_DATE] == TodoValidationReason.OUT_OF_RANGE) {

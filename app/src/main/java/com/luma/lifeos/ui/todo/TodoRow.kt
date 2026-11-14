@@ -27,12 +27,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.ui.common.LumaTodoImportanceBadge
+import com.luma.lifeos.ui.common.todoImportanceLabelRes
 import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoTask
+import com.luma.lifeos.domain.todo.TodoTaskRow
 import com.luma.lifeos.domain.todo.todoBucket
 import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.time.ZoneId
 import java.time.format.FormatStyle
+import java.util.Locale
 
 @Composable
 internal fun TodoRow(
@@ -50,8 +54,12 @@ internal fun TodoRow(
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    rowContext: TodoTaskRow? = null,
 ) {
     val displayTime = rememberDisplayTimePolicy()
+    val importance = rowContext?.takeIf { it.task.id == task.id }?.task?.importance ?: task.importance
+    val importanceLabel = stringResource(todoImportanceLabelRes(importance))
+    val importanceValue = stringResource(R.string.todo_importance_value, importanceLabel)
     val statusDescription = stringResource(if (task.isCompleted) R.string.todo_status_completed else R.string.todo_status_open)
     val checkboxDescription = stringResource(
         if (task.isCompleted) R.string.todo_reopen else R.string.todo_mark_complete,
@@ -89,7 +97,7 @@ internal fun TodoRow(
         } ?: formattedDate
         stringResource(R.string.todo_due_original, deadline)
     } else null
-    val accessDescription = listOfNotNull(task.title, secondary, originalDue, statusDescription)
+    val accessDescription = listOfNotNull(task.title, importanceValue, secondary, originalDue, statusDescription)
         .joinToString(stringResource(R.string.accessibility_label_separator))
 
     val rowContent: @Composable ColumnScope.() -> Unit = {
@@ -115,6 +123,10 @@ internal fun TodoRow(
             ) {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     Text(task.title, style = MaterialTheme.typography.bodyLarge)
+                    LumaTodoImportanceBadge(
+                        importance = importance,
+                        modifier = Modifier.testTag("todo_row_importance_${importance.name.lowercase(Locale.ROOT)}"),
+                    )
                     secondary?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     originalDue?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }

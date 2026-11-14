@@ -1047,6 +1047,12 @@
     <string name="todo_no_date">Aucune date</string>
     <string name="todo_due_today">Aujourd’hui · %1$s</string>
     <string name="todo_due_time_label">Heure d’échéance</string>
+    <string name="todo_importance_label">Importance</string>
+    <string name="todo_importance_none">Aucune</string>
+    <string name="todo_importance_low">Faible</string>
+    <string name="todo_importance_medium">Moyenne</string>
+    <string name="todo_importance_high">Élevée</string>
+    <string name="todo_importance_value">Importance : %1$s</string>
     <string name="todo_no_time">Aucune heure</string>
     <string name="todo_add_time">Ajouter une heure</string>
     <string name="todo_change_time">Modifier l’heure</string>

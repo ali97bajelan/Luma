@@ -1033,6 +1033,12 @@
     <string name="todo_no_date">بدون تاریخ</string>
     <string name="todo_due_today">امروز · %1$s</string>
     <string name="todo_due_time_label">زمان مهلت</string>
+    <string name="todo_importance_label">اهمیت</string>
+    <string name="todo_importance_none">تعیین‌نشده</string>
+    <string name="todo_importance_low">کم</string>
+    <string name="todo_importance_medium">متوسط</string>
+    <string name="todo_importance_high">زیاد</string>
+    <string name="todo_importance_value">اهمیت: %1$s</string>
     <string name="todo_no_time">بدون زمان</string>
     <string name="todo_add_time">افزودن زمان</string>
     <string name="todo_change_time">تغییر زمان</string>

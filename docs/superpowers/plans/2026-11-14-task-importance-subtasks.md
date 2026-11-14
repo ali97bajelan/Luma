@@ -15,7 +15,7 @@
 - Four stable stored codes: NONE=0, LOW=1, MEDIUM=2, HIGH=3. Do not persist enum ordinal or localized strings.
 - One root → direct children only. No moving/promoting existing tasks, projects, recurrence implementation or new Tasks text search.
 - Finish every implementation handoff first, then execute the single TI-QA01. No emulator/device actions in I01–I08.
-- Implementation follows the repository source-first boundary: no test authoring, Gradle/sync/build/lint/schema generation; QA owns these and defect fixes. Static source/diff checks are allowed.
+- Implementation follows the repository source-first boundary: no test authoring, sync/build/lint/schema generation; TI-QA01 owns full QA and defect fixes. The user requested a Gradle check after TI-03 source completion; `./gradlew` lacked execute permission, so Android Studio’s `check` task was run and its result is recorded below. Static source/diff checks are allowed.
 - Use current warm-paper/obsidian roles, bundled typography/shapes and LumaUi spacing/radii. Maintain System/Light/Dark, English/French/Persian, Persian RTL, at least 48 dp targets and existing drafts/recovery/insets.
 - Preserve unrelated dirty files and personal installations. Inspect current Room/archive versions before allocating one coordinated increment each. No destructive migrations.
 - core:domain remains free of Android/Room dependencies. Keep existing SDK/toolchain floors; this feature does not authorize upgrades.
@@ -32,7 +32,7 @@ Each condition below is assigned to an implementation owner and an assertion in 
 
 ## Execution boundary and task board
 
-Status: **I01 SOURCE COMPLETE — QA PENDING; TI-02 importance persistence slice SOURCE COMPLETE — QA PENDING; remaining I02 hierarchy/query/command work and I03–I08 NOT STARTED.** Allocated the combined feature’s working-tree Room version 16 and archive version 13; no intermediate release is intended. User-requested TI-02 `./gradlew check`: **FAILED** on the existing 3 `:core:domain:test` cases (`MemoryTest` and two `ProtectedRecordClassifierTest` cases); `:core:data` KSP completed and generated [Room schema 16](../../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/16.json). `git diff --check`: **PASS**. TI-QA01: **NOT RUN**. Source dependencies below do not require predecessor test results. This schedule supersedes the research backlog’s suggestion of a release between importance and subtasks: complete the combined implementation, then one QA task.
+Status: **I01 SOURCE COMPLETE — QA PENDING; TI-02 importance persistence slice SOURCE COMPLETE — QA PENDING; I03 editor importance and shared presentation SOURCE COMPLETE — QA PENDING; remaining I02 hierarchy/query/command work and I04–I08 NOT STARTED.** Allocated the combined feature’s working-tree Room version 16 and archive version 13; no intermediate release is intended. User-requested TI-02 `./gradlew check`: **FAILED** on the existing 3 `:core:domain:test` cases (`MemoryTest` and two `ProtectedRecordClassifierTest` cases); `:core:data` KSP completed and generated [Room schema 16](../../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/16.json). User-requested TI-03 Gradle check (Android Studio `check` task after `./gradlew` returned Permission denied): **FAILED** — `:app:testProductionDebugUnitTest` reported 340 passed and 8 failed (1 `TranslationCatalogTest`, 7 `MemoryEditorTest`); the 3 documented `:core:domain:test` failures also remain. `:integration:health` and `:integration:usage` debug/release unit-test tasks passed. TI-QA01: **NOT RUN**. Source dependencies below do not require predecessor test results. This schedule supersedes the research backlog’s suggestion of a release between importance and subtasks: complete the combined implementation, then one QA task.
 
 | Task | Scope | Depends on source handoff | Research IDs |
 | --- | --- | --- | --- |
@@ -118,11 +118,15 @@ Keep existing get/create/update/searchOpen/list/Today APIs for compatibility whi
 
 **Consumes:** TodoImportance, extended TodoInput. **Produces:** `setImportance(value: TodoImportance): Unit` on editor VM; optional `rowContext: TodoTaskRow?` on existing row; shared labeled selector/badge. **Requirements:** TI-R01/03/11.
 
-- [ ] Inspect all shared UI definitions and redesign ledgers named in the spec, plus current editor saved-input/pending serializers.
-- [ ] Add importance to draft/baseline/pending serialization and dirty comparison; old saved drafts default to None. Add VM setter without bypassing current busy/conflict/missing guards.
-- [ ] Add localized importance section with four single-choice actions, and render accessible text/icon metadata in shared task row presentation using Luma wrappers/tokens. Keep primary Save reachable with IME/large text.
-- [ ] Preserve legacy row test tags and date/status semantics; use additional tags `todo_importance_none`, `todo_importance_low`, `todo_importance_medium`, `todo_importance_high`. Do not combine row open and importance selection into an ambiguous tap target.
-- [ ] Review catalog format/plural parity and retained-draft failure branches. Record I03 source handoff; QA cases 01/02/09 prove behavior later.
+- [x] Inspect all shared UI definitions and redesign ledgers named in the spec, plus current editor saved-input/pending serializers.
+- [x] Add importance to draft/baseline/pending serialization and dirty comparison; old saved drafts default to None. Add VM setter without bypassing current busy/conflict/missing guards.
+- [x] Add localized importance section with four single-choice actions, and render accessible text/icon metadata in shared task row presentation using Luma wrappers/tokens. Keep primary Save reachable with IME/large text.
+- [x] Preserve legacy row test tags and date/status semantics; use additional tags `todo_importance_none`, `todo_importance_low`, `todo_importance_medium`, `todo_importance_high`. Do not combine row open and importance selection into an ambiguous tap target.
+- [x] Review catalog format/plural parity and retained-draft failure branches. Record I03 source handoff; QA cases 01/02/09 prove behavior later.
+
+**I03 source handoff (14 November 2026):** SOURCE COMPLETE — QA PENDING. `TodoDraft`, baseline input and pending input retain the stable importance code; old SavedStateHandle entries default to None. The shared selector and row badge use localized values, Luma roles/tokens and preserved row behavior. User-requested Gradle check FAILED as recorded above; TI-QA01 cases 01/02/09 remain NOT RUN. Final review found no Critical or Important issues; its Minor Persian label finding was corrected to `تعیین‌نشده`.
+
+**Rulings:** Runtime TalkBack/focus, locale rendering, narrow/large-text layout, IME reachability and theme observations remain TI-QA01 checks without waiver — source inspection cannot establish rendered behavior — cost if wrong: accessibility/layout issues may remain hidden until the final QA pass. Child navigation and hierarchy actions remain I05/I06 implementation scope — TI-03 implements importance only — cost if wrong: family workflows remain unavailable until those tasks are completed.
 
 ## I04 — List matching, ordering and bounded family state
 
