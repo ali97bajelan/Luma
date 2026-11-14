@@ -35,6 +35,8 @@ data class TodoTaskRow(
 data class TodoRowPage(
     val items: List<TodoTaskRow>,
     val total: Int,
+    /** Full root-level child progress for child pages, independent of the visible prefix. */
+    val familyProgress: TodoChildProgress? = null,
 ) {
     init {
         require(total >= 0) { "Task total cannot be negative" }

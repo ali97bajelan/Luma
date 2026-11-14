@@ -346,9 +346,13 @@ interface TodoDao {
         SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
             task.created_at, task.updated_at, task.revision_token, task.due_time_minutes,
             task.importance_code, task.parent_id, task.sibling_position, task.family_revision_token,
-            parent.title AS parent_title, CAST(NULL AS INTEGER) AS child_total,
-            CAST(NULL AS INTEGER) AS child_completed, counts.total_count
-        FROM (SELECT COUNT(*) AS total_count FROM todo_task WHERE parent_id = :parentId) AS counts
+            parent.title AS parent_title, counts.total_count AS child_total,
+            counts.completed_count AS child_completed, counts.total_count
+        FROM (
+            SELECT COUNT(*) AS total_count,
+                COALESCE(SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END), 0) AS completed_count
+            FROM todo_task WHERE parent_id = :parentId
+        ) AS counts
         LEFT JOIN todo_task AS task ON task.parent_id = :parentId
         LEFT JOIN todo_task AS parent ON parent.id = task.parent_id
         ORDER BY task.sibling_position ASC, task.id ASC

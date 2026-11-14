@@ -2,7 +2,9 @@ package com.luma.lifeos.ui.todo
 
 import com.luma.lifeos.domain.todo.TodoField
 import com.luma.lifeos.domain.todo.TodoInput
+import com.luma.lifeos.domain.todo.TodoChildProgress
 import com.luma.lifeos.domain.todo.TodoImportance
+import com.luma.lifeos.domain.todo.TodoTaskRow
 import com.luma.lifeos.domain.todo.TodoValidationReason
 import java.time.LocalDate
 import java.time.LocalTime
@@ -35,6 +37,8 @@ data class TodoActionResult(
 
 enum class TodoUndoOutcome { UNDONE, RETRYABLE_FAILURE, STALE }
 
+enum class TodoChildActionError { MOVE, DELETE, STALE }
+
 typealias TodoEditorResult = TodoActionResult
 
 data class TodoUiState(
@@ -55,6 +59,24 @@ data class TodoUiState(
     val deleteConfirmationRequested: Boolean = false,
     val pendingAction: String? = null,
     val result: TodoEditorResult? = null,
+    val taskId: UUID? = null,
+    val parentId: UUID? = null,
+    val parentTitle: String? = null,
+    val parentContextLoading: Boolean = false,
+    val parentContextError: Boolean = false,
+    val parentMissing: Boolean = false,
+    val parentCompleted: Boolean = false,
+    val children: List<TodoTaskRow> = emptyList(),
+    val childrenPageLimit: Int = 50,
+    val childTotal: Int = 0,
+    val childProgress: TodoChildProgress? = null,
+    val childrenLoading: Boolean = false,
+    val childrenError: Boolean = false,
+    val childDeleteConfirmationRequested: Boolean = false,
+    val childDeleteTargetId: UUID? = null,
+    val childContinuationTaskId: UUID? = null,
+    val childActionPendingId: UUID? = null,
+    val childActionError: TodoChildActionError? = null,
 ) {
     /** A failed read after conflict resolution was approved can be retried without another prompt. */
     val canRetryConfirmedReload: Boolean

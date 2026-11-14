@@ -16,7 +16,7 @@ internal object AppRoutes {
     const val FOCUS_TASK_PICKER = "focus_task_picker"
     const val FOCUS_HISTORY = "focus_history?start={start}&through={through}&zone={zone}&session={session}"
     const val TASKS = "tasks"
-    const val TASK_EDITOR = "task_editor?taskId={taskId}&dueDate={dueDate}"
+    const val TASK_EDITOR = "task_editor?taskId={taskId}&dueDate={dueDate}&parentId={parentId}"
 
     // Retained as secondary routes so restored back stacks keep resolving.
     const val PEOPLE = "people"

@@ -34,11 +34,15 @@ fun TodoEditorRoute(
     requestDelete: Boolean = false,
     canDeleteTaskOrigin: Boolean = true,
     onRequestDeleteUnlock: () -> Unit = {},
+    parentId: UUID? = null,
+    onAddSubtask: (UUID) -> Unit = {},
+    onOpenTask: (UUID) -> Unit = {},
+    onOpenParent: (UUID) -> Unit = {},
 ) {
-    val factory = remember(repository, taskId, initialDueDate) {
+    val factory = remember(repository, taskId, initialDueDate, parentId) {
         viewModelFactory {
             initializer {
-                TodoEditorViewModel(repository, taskId, initialDueDate, createSavedStateHandle())
+                TodoEditorViewModel(repository, taskId, initialDueDate, parentId, createSavedStateHandle())
             }
         }
     }
@@ -54,6 +58,9 @@ fun TodoEditorRoute(
     val linkedFocusMillis by focusTotalFlow.collectAsStateWithLifecycle(initialValue = null)
     val latestOnClose by rememberUpdatedState(onClose)
     val latestOnFocusTask by rememberUpdatedState(onFocusTask)
+    val latestOnAddSubtask by rememberUpdatedState(onAddSubtask)
+    val latestOnOpenTask by rememberUpdatedState(onOpenTask)
+    val latestOnOpenParent by rememberUpdatedState(onOpenParent)
     var continueToFocusAfterSave by rememberSaveable { mutableStateOf(false) }
     val handledRestore = rememberSaveable { mutableStateOf(restoreGeneration) }
     val context = LocalContext.current
@@ -69,6 +76,10 @@ fun TodoEditorRoute(
         if (requestDelete && state.ready) {
             if (canDeleteTaskOrigin) editor.requestDelete() else onRequestDeleteUnlock()
         }
+    }
+
+    LaunchedEffect(state.childContinuationTaskId) {
+        editor.consumeSubtaskContinuation()?.let(latestOnAddSubtask)
     }
 
     LaunchedEffect(state.finished) {
@@ -94,6 +105,17 @@ fun TodoEditorRoute(
         onDueTime = editor::setDueTime,
         onImportance = editor::setImportance,
         onSetCompleted = editor::setCompleted,
+        onAddSubtask = { id -> latestOnAddSubtask(id) },
+        onSaveAndContinueToSubtask = editor::saveAndContinueToSubtask,
+        onOpenTask = { id -> latestOnOpenTask(id) },
+        onOpenParent = { id -> latestOnOpenParent(id) },
+        onMoveChild = editor::moveChild,
+        onRequestDeleteChild = editor::requestDeleteChild,
+        onConfirmDeleteChild = editor::confirmDeleteChild,
+        onCancelDeleteChild = editor::cancelDeleteChild,
+        onRetryChildDelete = editor::retryChildDelete,
+        onRetryChildren = editor::retryChildren,
+        onLoadMoreChildren = editor::loadMoreChildren,
         onRequestDelete = editor::requestDelete,
         onConfirmDelete = editor::confirmDelete,
         onCancelDelete = editor::cancelDelete,

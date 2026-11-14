@@ -783,15 +783,45 @@ fun LifeOsApp(
         navController.navigate("memory")
         navController.currentBackStackEntry?.savedStateHandle?.set(MEMORY_LIBRARY_CAPTURE_ORIGIN_KEY, true)
     }
-    fun openTodoEditor(taskId: UUID? = null, dueDate: LocalDate? = null, requestDelete: Boolean = false) {
-        if (taskId == null && appLockEnabled()) {
+    fun openTodoEditor(
+        taskId: UUID? = null,
+        dueDate: LocalDate? = null,
+        parentId: UUID? = null,
+        requestDelete: Boolean = false,
+    ) {
+        if (parentId != null && (!protectedTasksReadable || appLockGateVisible)) {
+            requestProtectedFocusUnlock()
+            return
+        }
+        if (taskId == null && parentId == null && appLockEnabled()) {
             openRestrictedCapture()
             return
         }
-        navController.navigate("task_editor?taskId=${taskId?.toString().orEmpty()}&dueDate=${dueDate?.toString().orEmpty()}")
+        navController.navigate(
+            "task_editor?taskId=${taskId?.toString().orEmpty()}&dueDate=${dueDate?.toString().orEmpty()}&parentId=${parentId?.toString().orEmpty()}",
+        )
         if (requestDelete) {
             navController.currentBackStackEntry?.savedStateHandle?.set(TODO_EDITOR_REQUEST_DELETE_KEY, true)
         }
+    }
+    fun openTodoParent(parentId: UUID) {
+        if (!protectedTasksReadable || appLockGateVisible) {
+            requestProtectedFocusUnlock()
+            return
+        }
+        val current = navController.currentBackStackEntry
+        if (current?.destination?.route == AppRoutes.TASK_EDITOR) {
+            val previous = navController.previousBackStackEntry
+            val previousTaskId = previous?.arguments?.getString("taskId").orEmpty()
+            if (previous?.destination?.route == AppRoutes.TASK_EDITOR &&
+                (previousTaskId.isEmpty() || previousTaskId == parentId.toString())
+            ) {
+                navController.popBackStack()
+                return
+            }
+            navController.popBackStack()
+        }
+        openTodoEditor(taskId = parentId)
     }
     fun openHabitEditor(habitId: UUID? = null) {
         if (habitId == null && appLockEnabled()) {
@@ -1280,10 +1310,13 @@ fun LifeOsApp(
                     arguments = listOf(
                         navArgument("taskId") { type = NavType.StringType; nullable = true; defaultValue = null },
                         navArgument("dueDate") { type = NavType.StringType; nullable = true; defaultValue = null },
+                        navArgument("parentId") { type = NavType.StringType; nullable = true; defaultValue = null },
                     ),
                 ) { entry ->
                     val taskId = entry.arguments?.getString("taskId")?.takeIf(String::isNotEmpty)?.let(UUID::fromString)
                     val dueDate = entry.arguments?.getString("dueDate")?.takeIf(String::isNotEmpty)?.let(LocalDate::parse)
+                    val parentId = entry.arguments?.getString("parentId")
+                        ?.takeIf(String::isNotEmpty)?.let(UUID::fromString)
                     val requestDelete by entry.savedStateHandle
                         .getStateFlow(TODO_EDITOR_REQUEST_DELETE_KEY, false)
                         .collectAsStateWithLifecycle()
@@ -1291,6 +1324,10 @@ fun LifeOsApp(
                         repository = todos,
                         taskId = taskId,
                         initialDueDate = dueDate,
+                        parentId = parentId,
+                        onAddSubtask = { rootId -> openTodoEditor(parentId = rootId) },
+                        onOpenTask = { childId -> openTodoEditor(taskId = childId) },
+                        onOpenParent = ::openTodoParent,
                         onClose = { result ->
                             if (navController.currentDestination?.route == AppRoutes.TASK_EDITOR) {
                                 if (result != null) {

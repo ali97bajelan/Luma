@@ -7,7 +7,9 @@ import com.luma.lifeos.domain.todo.TodoConflictException
 import com.luma.lifeos.domain.todo.TodoField
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoImportance
+import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoMissingException
+import com.luma.lifeos.domain.todo.TodoMoveDirection
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.TodoValidationException
@@ -20,6 +22,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -28,9 +31,15 @@ class TodoEditorViewModel(
     private val repository: TodoRepository,
     taskId: UUID?,
     initialDueDate: LocalDate?,
+    requestedParentId: UUID?,
     private val saved: SavedStateHandle,
 ) : ViewModel() {
     private val creating = taskId == null
+    private val creationParentId = if (creating) {
+        saved.uuid(KEY_PARENT_ID) ?: requestedParentId?.also { saved[KEY_PARENT_ID] = it.toString() }
+    } else {
+        null
+    }
     private val operationId = taskId ?: saved.uuid(KEY_OPERATION_ID)
         ?: UUID.randomUUID().also { saved[KEY_OPERATION_ID] = it.toString() }
     private val initialRevision = saved.uuid(KEY_INITIAL_REVISION)
@@ -46,7 +55,12 @@ class TodoEditorViewModel(
     private var baselineCompleted = saved[KEY_BASELINE_COMPLETED] ?: false
     private var loadJob: Job? = null
     private var mutationJob: Job? = null
+    private var childListJob: Job? = null
+    private var parentContextJob: Job? = null
+    private var childActionJob: Job? = null
 
+    private val initialChildPageLimit = saved.get<Int>(KEY_CHILD_PAGE_LIMIT)
+        ?.takeIf { it >= TODO_DEFAULT_PAGE_SIZE } ?: TODO_DEFAULT_PAGE_SIZE
     private val mutableState = MutableStateFlow(
         TodoUiState(
             draft = saved.readDraft() ?: TodoDraft(dueDate = initialDue),
@@ -58,6 +72,13 @@ class TodoEditorViewModel(
             deleted = saved[KEY_DELETED] ?: false,
             pendingAction = readPending()?.type?.label,
             result = saved.readResult(),
+            taskId = operationId,
+            parentId = creationParentId,
+            parentContextLoading = creationParentId != null,
+            childrenPageLimit = initialChildPageLimit,
+            childDeleteConfirmationRequested = saved[KEY_CHILD_DELETE_REQUESTED] ?: false,
+            childDeleteTargetId = saved.uuid(KEY_CHILD_DELETE_ID),
+            childContinuationTaskId = saved.uuid(KEY_CHILD_CONTINUATION),
         ),
     )
     val state: StateFlow<TodoUiState> = mutableState.asStateFlow()
@@ -85,11 +106,113 @@ class TodoEditorViewModel(
 
     fun setImportance(value: TodoImportance) = change(field = null) { it.copy(importance = value) }
 
+    fun saveAndContinueToSubtask() {
+        val current = state.value
+        if (!current.ready || current.busy || current.finished || current.conflict || current.missing ||
+            current.parentId != null
+        ) return
+        saved[KEY_CONTINUE_TO_SUBTASK] = true
+        save()
+    }
+
+    fun consumeSubtaskContinuation(): UUID? {
+        val id = saved.uuid(KEY_CHILD_CONTINUATION) ?: return null
+        saved.remove<String>(KEY_CHILD_CONTINUATION)
+        mutableState.value = state.value.copy(childContinuationTaskId = null)
+        return id
+    }
+
+    fun loadMoreChildren() {
+        val current = state.value
+        val rootId = current.taskId ?: return
+        if (!current.ready || !current.editing || current.parentId != null || current.childrenLoading ||
+            current.children.size >= current.childTotal
+        ) return
+        val nextLimit = current.childrenPageLimit + TODO_DEFAULT_PAGE_SIZE
+        saved[KEY_CHILD_PAGE_LIMIT] = nextLimit
+        mutableState.value = current.copy(
+            childrenPageLimit = nextLimit,
+            childrenLoading = true,
+            childrenError = false,
+        )
+        observeChildren(rootId, nextLimit)
+    }
+
+    fun retryChildren() {
+        val current = state.value
+        val rootId = current.taskId ?: return
+        if (!current.editing || current.parentId != null || current.childrenLoading) return
+        observeChildren(rootId, current.childrenPageLimit)
+    }
+
+    fun moveChild(childId: UUID, revision: UUID, direction: TodoMoveDirection) {
+        val current = state.value
+        if (!current.ready || !current.editing || current.parentId != null || current.busy ||
+            current.childActionPendingId != null
+        ) return
+        mutableState.value = current.copy(childActionPendingId = childId, childActionError = null)
+        childActionJob = viewModelScope.launch {
+            try {
+                repository.moveChild(childId, revision, UUID.randomUUID(), direction)
+                mutableState.value = state.value.copy(childActionPendingId = null)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.value = state.value.copy(
+                    childActionPendingId = null,
+                    childActionError = if (failure is TodoConflictException || failure is TodoMissingException) {
+                        TodoChildActionError.STALE
+                    } else {
+                        TodoChildActionError.MOVE
+                    },
+                )
+            }
+        }
+    }
+
+    fun requestDeleteChild(childId: UUID, revision: UUID) {
+        val current = state.value
+        if (!current.ready || !current.editing || current.parentId != null || current.busy ||
+            current.childActionPendingId != null
+        ) return
+        saved[KEY_CHILD_DELETE_ID] = childId.toString()
+        saved[KEY_CHILD_DELETE_REVISION] = revision.toString()
+        saved[KEY_CHILD_DELETE_REQUESTED] = true
+        mutableState.value = current.copy(
+            childDeleteConfirmationRequested = true,
+            childDeleteTargetId = childId,
+            childActionError = null,
+        )
+    }
+
+    fun cancelDeleteChild() {
+        clearChildDeleteTarget()
+        mutableState.value = state.value.copy(
+            childDeleteConfirmationRequested = false,
+            childDeleteTargetId = null,
+        )
+    }
+
+    fun confirmDeleteChild() {
+        val current = state.value
+        if (!current.childDeleteConfirmationRequested || current.busy ||
+            current.childActionPendingId != null
+        ) return
+        mutableState.value = current.copy(childDeleteConfirmationRequested = false)
+        deletePendingChild()
+    }
+
+    fun retryChildDelete() {
+        if (state.value.childActionError == TodoChildActionError.DELETE) deletePendingChild()
+    }
+
     /** Closes this editor without replaying a draft or mutation after archive replacement. */
     fun invalidateAfterRestore() {
         if (!state.value.finished) {
             loadJob?.cancel()
             mutationJob?.cancel()
+            childListJob?.cancel()
+            parentContextJob?.cancel()
+            childActionJob?.cancel()
             finish()
         }
     }
@@ -97,11 +220,15 @@ class TodoEditorViewModel(
     fun save() {
         val current = state.value
         if (!current.ready || current.busy || current.finished || current.conflict || current.missing) return
+        if (creating && creationParentId != null &&
+            (current.parentContextLoading || current.parentContextError || current.parentMissing || current.parentCompleted)
+        ) return
         if (pendingBlocksFields(readPending())) return
 
         val input = try {
             normalizeTodoInput(current.draft.toInput())
         } catch (failure: TodoValidationException) {
+            saved.remove<Boolean>(KEY_CONTINUE_TO_SUBTASK)
             val errors = mapOf(failure.field to failure.reason)
             persistFieldErrors(errors)
             mutableState.value = current.copy(
@@ -226,6 +353,7 @@ class TodoEditorViewModel(
                     if (task == null) {
                         val baseline = baselineInput ?: TodoInput("", null, initialDue)
                         val draft = saved.readDraft() ?: baseline.toDraft()
+                        val parent = creationParentId?.let { repository.get(it) }
                         persistDraft(draft, baseline)
                         mutableState.value = state.value.copy(
                             draft = draft,
@@ -236,11 +364,19 @@ class TodoEditorViewModel(
                             dirty = equivalent(draft.toInput(), baseline).not(),
                             pendingAction = pending?.type?.label,
                             error = pending?.type?.editorError,
+                            taskId = operationId,
+                            parentId = creationParentId,
+                            parentTitle = parent?.title,
+                            parentContextLoading = false,
+                            parentContextError = false,
+                            parentMissing = creationParentId != null && parent == null,
+                            parentCompleted = parent?.isCompleted == true,
+                            childContinuationTaskId = saved.uuid(KEY_CHILD_CONTINUATION),
                         )
                     } else if (pending?.type == PendingType.CREATE && task.revision == initialRevision &&
-                        pending.input == task.toInput()
+                        task.parentId == creationParentId && pending.input == task.toInput()
                     ) {
-                        finish(savedResult = null)
+                        if (shouldContinueToSubtask()) completeSuccessfulSave(task) else finish(savedResult = null)
                     } else {
                         val draft = saved.readDraft() ?: TodoDraft(dueDate = initialDue)
                         mutableState.value = state.value.copy(
@@ -252,6 +388,8 @@ class TodoEditorViewModel(
                             dirty = true,
                             conflict = true,
                             pendingAction = pending?.type?.label,
+                            taskId = operationId,
+                            parentId = creationParentId,
                         )
                     }
                 } else if (task == null) {
@@ -259,6 +397,7 @@ class TodoEditorViewModel(
                         finish(deleted = true)
                     } else {
                         val draft = saved.readDraft() ?: baselineInput?.toDraft() ?: TodoDraft()
+                        val retainedParentId = saved.uuid(KEY_PARENT_ID)
                         mutableState.value = state.value.copy(
                             draft = draft,
                             baselineTitle = baselineInput?.title.orEmpty(),
@@ -268,6 +407,9 @@ class TodoEditorViewModel(
                             dirty = baselineInput?.let { !equivalent(draft.toInput(), it) } ?: true,
                             missing = true,
                             pendingAction = pending?.type?.label,
+                            taskId = operationId,
+                            parentId = retainedParentId,
+                            parentMissing = retainedParentId != null,
                         )
                     }
                 } else {
@@ -290,6 +432,8 @@ class TodoEditorViewModel(
                         val draft = saved.readDraft() ?: task.toDraft()
                         persistDraft(draft, baselineInput ?: task.toInput())
                         val pendingConflicts = pending != null && pending.expectedRevision != task.revision
+                        val taskParentId = task.parentId
+                        saved[KEY_PARENT_ID] = taskParentId?.toString().orEmpty()
                         mutableState.value = state.value.copy(
                             draft = draft,
                             loading = false,
@@ -301,7 +445,13 @@ class TodoEditorViewModel(
                             missing = false,
                             pendingAction = pending?.type?.label,
                             error = if (stale || pendingConflicts) null else pending?.type?.editorError,
+                            taskId = task.id,
+                            parentId = taskParentId,
+                            parentContextLoading = taskParentId != null,
+                            childContinuationTaskId = saved.uuid(KEY_CHILD_CONTINUATION),
                         )
+                        if (taskParentId == null) observeChildren(task.id, state.value.childrenPageLimit)
+                        else loadParentContext(taskParentId)
                     }
                 }
             } catch (failure: Exception) {
@@ -330,7 +480,7 @@ class TodoEditorViewModel(
                     pendingAction = null,
                 )
                 if (input == committed.toInput()) {
-                    finish()
+                    completeSuccessfulSave(committed)
                     return
                 }
                 live = committed
@@ -367,7 +517,7 @@ class TodoEditorViewModel(
         val expected = baselineRevision ?: throw TodoConflictException(operationId)
         if (live.revision != expected) throw TodoConflictException(operationId)
         if (input == live.toInput()) {
-            finish()
+            completeSuccessfulSave(live)
             return
         }
         val update = PendingOperation(
@@ -383,7 +533,12 @@ class TodoEditorViewModel(
         persistPending(pending)
         mutableState.value = state.value.copy(pendingAction = pending.type.label)
         val task = when (pending.type) {
-            PendingType.CREATE -> repository.create(operationId, requireNotNull(pending.nextRevision), requireNotNull(pending.input))
+            PendingType.CREATE -> {
+                val revision = requireNotNull(pending.nextRevision)
+                val input = requireNotNull(pending.input)
+                if (creationParentId == null) repository.create(operationId, revision, input)
+                else repository.createChild(operationId, revision, creationParentId, input)
+            }
             PendingType.UPDATE -> repository.update(
                 operationId,
                 requireNotNull(pending.expectedRevision),
@@ -392,12 +547,24 @@ class TodoEditorViewModel(
             )
             else -> error("Only create and update operations save task fields")
         }
+        completeSuccessfulSave(task)
+    }
+
+    private fun completeSuccessfulSave(task: TodoTask) {
         persistBaseline(task.toInput(), task.revision, task.isCompleted)
         baselineInput = task.toInput()
         baselineRevision = task.revision
         baselineCompleted = task.isCompleted
-        finish()
+        if (shouldContinueToSubtask()) {
+            saved.remove<Boolean>(KEY_CONTINUE_TO_SUBTASK)
+            saved[KEY_CHILD_CONTINUATION] = task.id.toString()
+            acceptLatest(task)
+        } else {
+            finish()
+        }
     }
+
+    private fun shouldContinueToSubtask() = saved.get<Boolean>(KEY_CONTINUE_TO_SUBTASK) == true
 
     private fun executeStatus(pending: PendingOperation) {
         persistPending(pending)
@@ -450,8 +617,140 @@ class TodoEditorViewModel(
         )
     }
 
-    private fun handleFailure(error: TodoEditorError, failure: Exception) {
+    private fun observeChildren(rootId: UUID, limit: Int = state.value.childrenPageLimit) {
+        childListJob?.cancel()
+        mutableState.value = state.value.copy(childrenLoading = true, childrenError = false)
+        childListJob = viewModelScope.launch {
+            try {
+                repository.observeChildren(rootId, limit).collect { page ->
+                    val current = state.value
+                    if (current.taskId == rootId && current.parentId == null) {
+                        mutableState.value = current.copy(
+                            children = page.items,
+                            childTotal = page.total,
+                            childProgress = page.familyProgress,
+                            childrenLoading = false,
+                            childrenError = false,
+                        )
+                    }
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.value = state.value.copy(childrenLoading = false, childrenError = true)
+            }
+        }
+    }
+
+    private fun loadParentContext(parentId: UUID) {
+        parentContextJob?.cancel()
+        mutableState.value = state.value.copy(
+            parentId = parentId,
+            parentTitle = null,
+            parentContextLoading = true,
+            parentContextError = false,
+            parentMissing = false,
+            parentCompleted = false,
+        )
+        parentContextJob = viewModelScope.launch {
+            try {
+                val parent = repository.get(parentId)
+                val current = state.value
+                if (current.parentId == parentId) {
+                    mutableState.value = current.copy(
+                        parentTitle = parent?.title,
+                        parentContextLoading = false,
+                        parentContextError = false,
+                        parentMissing = parent == null,
+                        parentCompleted = parent?.isCompleted == true,
+                    )
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                val current = state.value
+                if (current.parentId == parentId) {
+                    mutableState.value = current.copy(
+                        parentContextLoading = false,
+                        parentContextError = true,
+                        error = TodoEditorError.LOAD,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun deletePendingChild() {
         val current = state.value
+        val childId = current.childDeleteTargetId ?: saved.uuid(KEY_CHILD_DELETE_ID) ?: return
+        val expectedRevision = saved.uuid(KEY_CHILD_DELETE_REVISION) ?: return
+        if (current.childActionPendingId != null) return
+        mutableState.value = current.copy(childActionPendingId = childId, childActionError = null)
+        childActionJob = viewModelScope.launch {
+            try {
+                repository.delete(childId, expectedRevision)
+                clearChildDeleteTarget()
+                mutableState.value = state.value.copy(
+                    childDeleteConfirmationRequested = false,
+                    childDeleteTargetId = null,
+                    childActionPendingId = null,
+                    childActionError = null,
+                )
+                state.value.taskId?.let { rootId ->
+                    if (state.value.parentId == null) observeChildren(rootId)
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                val stale = failure is TodoConflictException || failure is TodoMissingException
+                if (stale) clearChildDeleteTarget()
+                mutableState.value = state.value.copy(
+                    childActionPendingId = null,
+                    childDeleteConfirmationRequested = false,
+                    childDeleteTargetId = if (stale) null else childId,
+                    childActionError = if (stale) TodoChildActionError.STALE else TodoChildActionError.DELETE,
+                )
+            }
+        }
+    }
+
+    private fun clearChildDeleteTarget() {
+        saved.remove<String>(KEY_CHILD_DELETE_ID)
+        saved.remove<String>(KEY_CHILD_DELETE_REVISION)
+        saved.remove<Boolean>(KEY_CHILD_DELETE_REQUESTED)
+    }
+
+    private suspend fun handleFailure(error: TodoEditorError, failure: Exception) {
+        if (error == TodoEditorError.SAVE && failure !is CancellationException) {
+            saved.remove<Boolean>(KEY_CONTINUE_TO_SUBTASK)
+        }
+        val current = state.value
+        if (error == TodoEditorError.SAVE && creating && creationParentId != null &&
+            (failure is TodoConflictException || failure is TodoMissingException)
+        ) {
+            val parentId = requireNotNull(creationParentId)
+            val parent = try {
+                repository.get(parentId)
+            } catch (lookupFailure: Exception) {
+                if (lookupFailure is CancellationException) throw lookupFailure
+                mutableState.value = current.copy(
+                    busy = false,
+                    parentContextLoading = false,
+                    parentContextError = true,
+                    error = TodoEditorError.SAVE,
+                )
+                return
+            }
+            if (parent == null || parent.isCompleted) {
+                mutableState.value = current.copy(
+                    busy = false,
+                    parentTitle = parent?.title,
+                    parentContextLoading = false,
+                    parentContextError = false,
+                    parentMissing = parent == null,
+                    parentCompleted = parent?.isCompleted == true,
+                    error = TodoEditorError.SAVE,
+                )
+                return
+            }
+        }
         when (failure) {
             is CancellationException -> {
                 mutableState.value = current.copy(busy = false)
@@ -480,7 +779,10 @@ class TodoEditorViewModel(
         persistBaseline(baselineInput!!, baselineRevision, baselineCompleted)
         val draft = task.toDraft()
         persistDraft(draft, baselineInput!!)
-        mutableState.value = state.value.copy(
+        val taskParentId = task.parentId
+        saved[KEY_PARENT_ID] = taskParentId?.toString().orEmpty()
+        val current = state.value
+        mutableState.value = current.copy(
             draft = draft,
             baselineTitle = task.title,
             loading = false,
@@ -495,11 +797,27 @@ class TodoEditorViewModel(
             missing = false,
             deleteConfirmationRequested = false,
             pendingAction = null,
+            taskId = task.id,
+            parentId = taskParentId,
+            parentTitle = current.parentTitle.takeIf { current.parentId == taskParentId },
+            parentContextLoading = taskParentId != null,
+            parentContextError = false,
+            parentMissing = false,
+            parentCompleted = false,
+            childContinuationTaskId = saved.uuid(KEY_CHILD_CONTINUATION),
         )
+        if (taskParentId == null) observeChildren(task.id, current.childrenPageLimit)
+        else loadParentContext(taskParentId)
     }
 
     private fun finish(savedResult: TodoEditorResult? = null, deleted: Boolean = false) {
         clearPending()
+        clearChildDeleteTarget()
+        childListJob?.cancel()
+        parentContextJob?.cancel()
+        childActionJob?.cancel()
+        saved.remove<Boolean>(KEY_CONTINUE_TO_SUBTASK)
+        saved.remove<String>(KEY_CHILD_CONTINUATION)
         saved[KEY_FINISHED] = true
         saved[KEY_DELETED] = deleted
         if (savedResult == null) {
@@ -527,7 +845,8 @@ class TodoEditorViewModel(
 
     private fun committedTask(pending: PendingOperation, task: TodoTask): TodoTask? = when (pending.type) {
         PendingType.CREATE -> task.takeIf {
-            task.revision == pending.nextRevision && pending.input == task.toInput()
+            task.parentId == creationParentId &&
+                task.revision == pending.nextRevision && pending.input == task.toInput()
         }
         PendingType.UPDATE -> task.takeIf {
             task.revision == pending.nextRevision && pending.input == task.toInput()
@@ -719,6 +1038,13 @@ class TodoEditorViewModel(
 
     private companion object {
         const val KEY_OPERATION_ID = "todo_operation_id"
+        const val KEY_PARENT_ID = "todo_parent_id"
+        const val KEY_CHILD_PAGE_LIMIT = "todo_child_page_limit"
+        const val KEY_CHILD_DELETE_ID = "todo_child_delete_id"
+        const val KEY_CHILD_DELETE_REVISION = "todo_child_delete_revision"
+        const val KEY_CHILD_DELETE_REQUESTED = "todo_child_delete_requested"
+        const val KEY_CONTINUE_TO_SUBTASK = "todo_continue_to_subtask"
+        const val KEY_CHILD_CONTINUATION = "todo_child_continuation"
         const val KEY_INITIAL_REVISION = "todo_initial_revision"
         const val KEY_INITIAL_DUE_DATE = "todo_initial_due_date"
         const val KEY_TITLE = "todo_draft_title"

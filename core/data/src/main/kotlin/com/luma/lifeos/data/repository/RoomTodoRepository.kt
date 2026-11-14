@@ -6,6 +6,7 @@ import com.luma.lifeos.data.todo.toDomain
 import com.luma.lifeos.data.todo.toEntity
 import com.luma.lifeos.data.todo.toDomainOrNull
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
+import com.luma.lifeos.domain.todo.TodoChildProgress
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoPage
@@ -70,11 +71,21 @@ class RoomTodoRepository(
 
     override fun observeChildren(parentId: UUID, limit: Int): Flow<TodoRowPage> {
         require(limit > 0) { "Task page size must be positive" }
-        return dao.observeChildren(parentId.toString(), minOf(limit, TODO_DEFAULT_PAGE_SIZE))
+        return dao.observeChildren(parentId.toString(), limit)
             .map { rows ->
+                val aggregate = rows.firstOrNull()
+                val familyTotal = aggregate?.childTotal ?: 0
                 TodoRowPage(
                     items = rows.mapNotNull { it.toDomainOrNull() },
-                    total = rows.firstOrNull()?.totalCount ?: 0,
+                    total = aggregate?.totalCount ?: 0,
+                    familyProgress = if (familyTotal > 0) {
+                        TodoChildProgress(
+                            completed = requireNotNull(aggregate?.childCompleted),
+                            total = familyTotal,
+                        )
+                    } else {
+                        null
+                    },
                 )
             }
     }

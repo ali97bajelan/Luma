@@ -32,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import com.luma.lifeos.ui.common.LumaOutlinedButton
+import com.luma.lifeos.ui.common.LumaCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -105,8 +106,21 @@ fun TodoEditorScreen(
     canDeleteTaskOrigin: Boolean = true,
     onRequestDeleteUnlock: () -> Unit = {},
     onImportance: (TodoImportance) -> Unit = {},
+    onAddSubtask: (UUID) -> Unit = {},
+    onSaveAndContinueToSubtask: () -> Unit = {},
+    onOpenTask: (UUID) -> Unit = {},
+    onOpenParent: (UUID) -> Unit = {},
+    onMoveChild: (UUID, UUID, com.luma.lifeos.domain.todo.TodoMoveDirection) -> Unit = { _, _, _ -> },
+    onRequestDeleteChild: (UUID, UUID) -> Unit = { _, _ -> },
+    onConfirmDeleteChild: () -> Unit = {},
+    onCancelDeleteChild: () -> Unit = {},
+    onRetryChildDelete: () -> Unit = {},
+    onRetryChildren: () -> Unit = {},
+    onLoadMoreChildren: () -> Unit = {},
 ) {
     var discarding by rememberSaveable { mutableStateOf(false) }
+    var pendingParentNavigation by rememberSaveable { mutableStateOf("") }
+    var subtaskContinuationConfirmation by rememberSaveable { mutableStateOf(false) }
     var focusConfirmation by rememberSaveable { mutableStateOf(false) }
     var reloadConfirmation by rememberSaveable { mutableStateOf(false) }
     var pickingDate by rememberSaveable { mutableStateOf(false) }
@@ -122,6 +136,8 @@ fun TodoEditorScreen(
     val canEdit = state.ready && !state.busy && !state.finished && !state.conflict && !state.missing &&
         state.pendingAction != "complete" && state.pendingAction != "reopen" && state.pendingAction != "delete"
     val readOnly = !canEdit
+    val canSave = canEdit && !(state.parentId != null && !state.editing &&
+        (state.parentContextLoading || state.parentContextError || state.parentMissing || state.parentCompleted))
     val canFocusTask = state.ready && state.editing && !state.taskCompleted && !state.busy &&
         !state.finished && !state.conflict && !state.missing && state.pendingAction == null
 
@@ -201,7 +217,7 @@ fun TodoEditorScreen(
                         primaryAction = { actionModifier ->
                             LumaPrimaryActionButton(
                                 onClick = onSave,
-                                enabled = canEdit,
+                                enabled = canSave,
                                 modifier = actionModifier.testTag("todo_editor_save"),
                             ) {
                                 Text(
@@ -242,6 +258,54 @@ fun TodoEditorScreen(
                 }
                 if (state.missing) {
                     AccessibleFeedback(stringResource(R.string.todo_missing), Modifier.testTag("todo_editor_missing"))
+                }
+                if (state.parentId != null) {
+                    LumaCard(
+                        modifier = Modifier.fillMaxWidth().testTag("todo_editor_parent_context"),
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        ) {
+                            Text(
+                                stringResource(R.string.todo_subtask_parent_context),
+                                modifier = Modifier.semantics { heading() },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            state.parentTitle?.let { title ->
+                                Text(title, style = MaterialTheme.typography.bodyLarge)
+                            }
+                            when {
+                                state.parentContextLoading -> Text(
+                                    stringResource(R.string.todo_subtasks_loading),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                state.parentContextError -> AccessibleFeedback(
+                                    stringResource(R.string.todo_subtask_parent_unavailable),
+                                    Modifier.testTag("todo_editor_parent_context_error"),
+                                )
+                                state.parentMissing -> AccessibleFeedback(
+                                    stringResource(R.string.todo_subtask_parent_missing),
+                                    Modifier.testTag("todo_editor_parent_missing"),
+                                )
+                                state.parentCompleted -> AccessibleFeedback(
+                                    stringResource(R.string.todo_subtask_parent_completed),
+                                    isError = false,
+                                )
+                            }
+                            state.parentId.takeIf { !state.parentMissing && !state.parentContextError }?.let { parentId ->
+                                LumaTextButton(
+                                    onClick = {
+                                        if (state.dirty) pendingParentNavigation = parentId.toString()
+                                        else onOpenParent(parentId)
+                                    },
+                                    enabled = !state.parentContextLoading,
+                                    modifier = Modifier.fillMaxWidth().testTag("todo_editor_open_parent"),
+                                ) { Text(stringResource(R.string.todo_open_parent)) }
+                            }
+                        }
+                    }
                 }
                 val titleError = titleErrorText(state)
                 LumaOutlinedTextField(
@@ -421,6 +485,30 @@ fun TodoEditorScreen(
                     )
                 }
 
+                if (state.parentId == null) {
+                    TodoChildList(
+                        state = state,
+                        canEdit = canEdit,
+                        canDeleteTaskOrigin = canDeleteTaskOrigin,
+                        onAddSubtask = {
+                            if (state.editing && !state.dirty) {
+                                state.taskId?.let(onAddSubtask)
+                            } else {
+                                subtaskContinuationConfirmation = true
+                            }
+                        },
+                        onOpenTask = onOpenTask,
+                        onMoveChild = onMoveChild,
+                        onRequestDeleteChild = onRequestDeleteChild,
+                        onConfirmDeleteChild = onConfirmDeleteChild,
+                        onCancelDeleteChild = onCancelDeleteChild,
+                        onRetryChildDelete = onRetryChildDelete,
+                        onRetryChildren = onRetryChildren,
+                        onLoadMoreChildren = onLoadMoreChildren,
+                        onRequestDeleteUnlock = onRequestDeleteUnlock,
+                    )
+                }
+
                 if (state.editing) {
                     Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         Text(
@@ -461,6 +549,56 @@ fun TodoEditorScreen(
                 Spacer(Modifier.heightIn(min = 4.dp))
             }
         }
+    }
+
+    if (subtaskContinuationConfirmation) {
+        LumaAlertDialog(
+            onDismissRequest = { subtaskContinuationConfirmation = false },
+            modifier = Modifier.testTag("todo_editor_subtask_continue_dialog"),
+            title = { Text(stringResource(R.string.todo_subtask_continue_title)) },
+            text = { Text(stringResource(R.string.todo_subtask_continue_body)) },
+            confirmButton = {
+                LumaTextButton(
+                    onClick = {
+                        subtaskContinuationConfirmation = false
+                        onSaveAndContinueToSubtask()
+                    },
+                    enabled = canSave,
+                    modifier = Modifier.testTag("todo_editor_subtask_save_continue"),
+                ) { Text(stringResource(R.string.todo_save_and_continue)) }
+            },
+            dismissButton = {
+                LumaTextButton(
+                    onClick = { subtaskContinuationConfirmation = false },
+                    modifier = Modifier.testTag("todo_editor_subtask_continue_cancel"),
+                ) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+
+    if (pendingParentNavigation.isNotEmpty()) {
+        val parentId = runCatching { UUID.fromString(pendingParentNavigation) }.getOrNull()
+        LumaAlertDialog(
+            onDismissRequest = { pendingParentNavigation = "" },
+            modifier = Modifier.testTag("todo_editor_parent_discard_dialog"),
+            title = { Text(stringResource(R.string.todo_discard_title)) },
+            text = { Text(stringResource(R.string.todo_discard_body)) },
+            confirmButton = {
+                LumaTextButton(
+                    onClick = {
+                        pendingParentNavigation = ""
+                        parentId?.let(onOpenParent)
+                    },
+                    modifier = Modifier.testTag("todo_editor_parent_discard_confirm"),
+                ) { Text(stringResource(R.string.discard)) }
+            },
+            dismissButton = {
+                LumaTextButton(
+                    onClick = { pendingParentNavigation = "" },
+                    modifier = Modifier.testTag("todo_editor_parent_discard_cancel"),
+                ) { Text(stringResource(R.string.keep_editing)) }
+            },
+        )
     }
 
     if (focusConfirmation && onFocusTask != null && onSaveAndFocusTask != null) {
