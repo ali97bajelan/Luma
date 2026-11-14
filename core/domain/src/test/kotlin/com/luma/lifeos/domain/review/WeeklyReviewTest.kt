@@ -104,6 +104,43 @@ class WeeklyReviewTest {
         assertEquals(report, calculateWeeklyReview(period, listOf(row(1)), listOf(zero, first, second)))
         assertTrue(runCatching { calculateWeeklyReview(period, emptyList(), listOf(first, first)) }.isFailure)
     }
+    @Test fun weeklyUsageRespectsEverySelectedWeekStart() {
+        DayOfWeek.entries.forEach { firstDay ->
+            val selectedPeriod = reviewPeriod(today, today, zone, firstDayOfWeek = firstDay)
+            val start = selectedPeriod.previous.start.minusDays(1)
+            val through = selectedPeriod.current.through.plusDays(1)
+            val dailyReports = generateSequence(start) { it.plusDays(1) }
+                .takeWhile { it <= through }
+                .mapIndexed { index, date ->
+                    val millis = (index + 1L) * 100L
+                    DailyUsageReport(
+                        date,
+                        zone,
+                        listOf(AppUsageTotal("reader", "Reader", millis)),
+                        millis,
+                        history = UsageHistory.COMPLETE,
+                    )
+                }.toList()
+
+            val report = calculateWeeklyReview(selectedPeriod, emptyList(), dailyReports)
+            val currentUsage = requireNotNull(report.current.usage)
+            val previousUsage = requireNotNull(report.previous.usage)
+            val expectedCurrent = selectedPeriod.current.dates.sumOf { date ->
+                dailyReports.single { it.date == date }.totalMillis
+            }
+            val expectedPrevious = selectedPeriod.previous.dates.sumOf { date ->
+                dailyReports.single { it.date == date }.totalMillis
+            }
+
+            assertEquals(firstDay.name, selectedPeriod.current.dates, currentUsage.days.map { it.date })
+            assertEquals(firstDay.name, selectedPeriod.previous.dates, previousUsage.days.map { it.date })
+            assertEquals(firstDay.name, expectedCurrent, currentUsage.totalMillis)
+            assertEquals(firstDay.name, expectedPrevious, previousUsage.totalMillis)
+            assertEquals(firstDay.name, expectedCurrent, currentUsage.apps.single().durationMillis)
+            assertEquals(firstDay.name, expectedPrevious, previousUsage.apps.single().durationMillis)
+        }
+    }
+
     @Test fun partialEmptyUsageWindowDoesNotEstablishMeasuredZero() {
         val partial = DailyUsageReport(today, zone, emptyList(), 0, history = UsageHistory.PARTIAL)
         assertNull(calculateWeeklyReview(period, emptyList(), listOf(partial)).current.usage!!.totalMillis)

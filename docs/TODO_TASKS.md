@@ -1,5 +1,7 @@
 # Tasks feature planning handoff
 
+Selected extension (14 November 2026): the user chose **four importance choices + one-level task hierarchy**. Read the [research/backlog](TASKS_IMPROVEMENT_BACKLOG_2026-11-14.md), [specification](superpowers/specs/2026-11-14-task-importance-subtasks-design.md), [implementation plan](superpowers/plans/2026-11-14-task-importance-subtasks.md) and [single final emulator QA task TI-QA01](TASK_IMPORTANCE_SUBTASKS_QA.md). Complete I01–I08 source handoffs before any QA; TI-QA01 owns all test authoring, Gradle/schema/build/lint, emulator/manual checks, fixes and retests. Extension implementation is NOT STARTED and QA is NOT RUN. Historical statuses below remain unchanged; the new spec corrects the old three-item Today assumption against current scrollable-list source.
+
 Prepared: 19 October 2026. Status: TD01–TD06 complete; TD07 in progress (focused app/data acceptance, builds, native export/restore/reset, CRUD isolation and 10,000-task performance pass; the full app suite has 14 failures outside Todo, the full data suite has two Timeline failures, and native TalkBack speech/focus traversal remains unverified). The 23 October due-time extension is implemented in source; its Gradle test and emulator checks were not run at the user's request.
 
 The user requested investigation by a senior product manager and a senior UI/UX
