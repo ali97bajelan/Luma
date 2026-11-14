@@ -9,6 +9,7 @@ import com.luma.lifeos.domain.widget.WidgetActionResult
 import com.luma.lifeos.domain.widget.WidgetKind
 import com.luma.lifeos.domain.widget.WidgetOutcome
 import com.luma.lifeos.domain.todo.TodoConflictException
+import com.luma.lifeos.domain.todo.TodoConfirmationRequiredException
 import com.luma.lifeos.domain.todo.TodoMissingException
 import java.time.Clock
 import java.time.Instant
@@ -133,6 +134,8 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
             )
         } catch (_: TodoMissingException) {
             return reject(command, WidgetOutcome.MISSING)
+        } catch (_: TodoConfirmationRequiredException) {
+            return reject(command, WidgetOutcome.CONFLICT, updateFeedback = true)
         } catch (_: TodoConflictException) {
             return reject(command, WidgetOutcome.CONFLICT)
         }
@@ -172,6 +175,8 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
             )
         } catch (_: TodoMissingException) {
             return reject(command, WidgetOutcome.MISSING, updateFeedback = true)
+        } catch (_: TodoConfirmationRequiredException) {
+            return reject(command, WidgetOutcome.CONFLICT, updateFeedback = true)
         } catch (_: TodoConflictException) {
             return reject(command, WidgetOutcome.CONFLICT, updateFeedback = true)
         }

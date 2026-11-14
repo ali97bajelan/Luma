@@ -43,6 +43,9 @@ import com.luma.lifeos.data.habit.HabitScheduleEntity
 import com.luma.lifeos.data.habit.HabitSettingsEntity
 import com.luma.lifeos.data.todo.TodoDao
 import com.luma.lifeos.data.todo.TodoEntity
+import com.luma.lifeos.data.todo.TodoCommandDao
+import com.luma.lifeos.data.todo.TodoCommandEntity
+import com.luma.lifeos.data.todo.TodoCommandMemberEntity
 import com.luma.lifeos.data.todo.TaskReminderEntity
 import com.luma.lifeos.data.todo.TaskReminderDao
 import com.luma.lifeos.data.widget.WidgetCommandEntity
@@ -59,7 +62,7 @@ import com.luma.lifeos.data.widget.WidgetInstanceEntity
         UsageSessionEntity::class, UsageSessionWindowEntity::class,
         HabitSettingsEntity::class, HabitEntity::class, HabitScheduleEntity::class, HabitLogEntity::class,
         HabitDayChoiceEntity::class, HabitReminderEntity::class, HabitReminderRuntimeEntity::class,
-        TodoEntity::class,
+        TodoEntity::class, TodoCommandEntity::class, TodoCommandMemberEntity::class,
         TaskReminderEntity::class,
         WidgetInstanceEntity::class, WidgetCommandEntity::class,
         FocusSessionEntity::class, FocusRunEntity::class, FocusRuntimeEntity::class, FocusBreakEntity::class,
@@ -83,6 +86,7 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun habits(): HabitDao
     abstract fun habitTimeline(): HabitTimelineSql
     abstract fun todos(): TodoDao
+    abstract fun todoCommands(): TodoCommandDao
     abstract fun taskReminders(): TaskReminderDao
     abstract fun widgets(): WidgetDao
     abstract fun focus(): FocusDao
@@ -90,10 +94,104 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focusInvitations(): FocusInvitationDao
 
     companion object {
-        const val VERSION = 16
+        const val VERSION = 17
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(16, 17) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE todo_task ADD COLUMN parent_id TEXT REFERENCES todo_task(id) ON DELETE CASCADE")
+                    db.execSQL("ALTER TABLE todo_task ADD COLUMN sibling_position INTEGER CHECK (sibling_position IS NULL OR sibling_position >= 0)")
+                    db.execSQL("ALTER TABLE todo_task ADD COLUMN family_revision_token TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'")
+                    db.execSQL("""UPDATE todo_task SET family_revision_token =
+                        lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' ||
+                        lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' ||
+                        lower(hex(randomblob(6)))""")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_todo_task_parent_id_sibling_position ON todo_task(parent_id, sibling_position)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_parent_id_completed_at_sibling_position ON todo_task(parent_id, completed_at, sibling_position)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_task_completed_at_importance_code_due_date_due_time_minutes_created_at_id ON todo_task(completed_at, importance_code, due_date, due_time_minutes, created_at, id)")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS todo_family_command (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        kind TEXT NOT NULL,
+                        state TEXT NOT NULL,
+                        target_id TEXT NOT NULL,
+                        root_id TEXT NOT NULL,
+                        completed INTEGER,
+                        family_revision_before TEXT NOT NULL,
+                        family_revision_after TEXT,
+                        process_token TEXT,
+                        payload_version INTEGER NOT NULL DEFAULT 1,
+                        command_id TEXT,
+                        source_command_id TEXT,
+                        child_count INTEGER NOT NULL DEFAULT 0,
+                        changed_task_count INTEGER NOT NULL DEFAULT 0,
+                        open_child_count INTEGER NOT NULL DEFAULT 0,
+                        reopens_parent INTEGER NOT NULL DEFAULT 0,
+                        confirmation_required INTEGER NOT NULL DEFAULT 0,
+                        undo_available INTEGER NOT NULL DEFAULT 0,
+                        pinned INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        terminal_at INTEGER
+                    )""")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_todo_family_command_command_id ON todo_family_command(command_id)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_family_command_state_pinned_created_at ON todo_family_command(state, pinned, created_at)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_family_command_source_command_id ON todo_family_command(source_command_id)")
+                    db.execSQL("""CREATE TABLE IF NOT EXISTS todo_family_command_member (
+                        command_id TEXT NOT NULL,
+                        task_id TEXT NOT NULL,
+                        expected_revision TEXT NOT NULL,
+                        previous_completed_at INTEGER,
+                        will_change INTEGER NOT NULL,
+                        resulting_revision TEXT,
+                        resulting_completed_at INTEGER,
+                        PRIMARY KEY(command_id, task_id),
+                        FOREIGN KEY(command_id) REFERENCES todo_family_command(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )""")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_todo_family_command_member_task_id ON todo_family_command_member(task_id)")
+                    db.execSQL("""CREATE TRIGGER IF NOT EXISTS todo_task_validate_family_insert
+                        BEFORE INSERT ON todo_task
+                        WHEN ((NEW.parent_id IS NULL) != (NEW.sibling_position IS NULL))
+                          OR (NEW.sibling_position IS NOT NULL AND NEW.sibling_position < 0)
+                          OR (NEW.parent_id IS NOT NULL AND NOT EXISTS (
+                              SELECT 1 FROM todo_task AS parent
+                              WHERE parent.id = NEW.parent_id AND parent.parent_id IS NULL
+                                AND parent.completed_at IS NULL
+                          ))
+                        BEGIN SELECT RAISE(ABORT, 'Invalid task family relationship'); END""")
+                    db.execSQL("""CREATE TRIGGER IF NOT EXISTS todo_task_validate_family_update
+                        BEFORE UPDATE OF parent_id, sibling_position ON todo_task
+                        WHEN ((NEW.parent_id IS NULL) != (NEW.sibling_position IS NULL))
+                          OR (NEW.sibling_position IS NOT NULL AND NEW.sibling_position < 0)
+                          OR (NEW.parent_id IS NOT NULL AND NOT EXISTS (
+                              SELECT 1 FROM todo_task AS parent
+                              WHERE parent.id = NEW.parent_id AND parent.parent_id IS NULL
+                          ))
+                          OR (NEW.parent_id IS NOT NULL AND NEW.parent_id != OLD.parent_id AND EXISTS (
+                              SELECT 1 FROM todo_task AS parent
+                              WHERE parent.id = NEW.parent_id AND parent.completed_at IS NOT NULL
+                          ))
+                          OR (NEW.parent_id IS NOT NULL AND OLD.parent_id IS NULL AND EXISTS (
+                              SELECT 1 FROM todo_task AS child WHERE child.parent_id = OLD.id
+                          ))
+                        BEGIN SELECT RAISE(ABORT, 'Invalid task family relationship'); END""")
+                    db.execSQL("""CREATE TRIGGER IF NOT EXISTS todo_task_reject_completed_root_with_open_children
+                        BEFORE UPDATE OF completed_at ON todo_task
+                        WHEN NEW.parent_id IS NULL AND NEW.completed_at IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1 FROM todo_task AS child
+                              WHERE child.parent_id = NEW.id AND child.completed_at IS NULL
+                          )
+                        BEGIN SELECT RAISE(ABORT, 'Completed task cannot have open subtasks'); END""")
+                    db.execSQL("""CREATE TRIGGER IF NOT EXISTS todo_task_reject_open_child_under_completed_root
+                        BEFORE UPDATE OF completed_at ON todo_task
+                        WHEN NEW.parent_id IS NOT NULL AND NEW.completed_at IS NULL
+                          AND EXISTS (
+                              SELECT 1 FROM todo_task AS parent
+                              WHERE parent.id = NEW.parent_id AND parent.completed_at IS NOT NULL
+                          )
+                        BEGIN SELECT RAISE(ABORT, 'Open subtask requires an open parent'); END""")
+                }
+            },
             object : Migration(15, 16) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE todo_task ADD COLUMN importance_code INTEGER NOT NULL DEFAULT 0")

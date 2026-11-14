@@ -195,6 +195,8 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                 // Revoke them only inside the committed replacement transaction.
                                 database.widgets().deleteAllCommands()
                                 database.widgets().resetInstancesAfterRestore()
+                                // Family command handles and receipts belong to the pre-restore task graph.
+                                database.todoCommands().clearAll()
                                 for (table in backupTables(schemaVersion)) {
                                     if (table == "habit_reminder_runtime") continue
                                     stage.openHelper.readableDatabase.query("SELECT * FROM `$table`").use { cursor ->

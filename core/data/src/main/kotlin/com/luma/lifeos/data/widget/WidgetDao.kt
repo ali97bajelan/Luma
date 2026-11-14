@@ -26,6 +26,23 @@ interface WidgetDao {
     @Query("DELETE FROM widget_command WHERE created_at < :cutoff")
     suspend fun deleteCommandsBefore(cutoff: Long): Int
 
+    @Query("""
+        UPDATE widget_instance SET feedback_json = NULL
+        WHERE widget_id IN (
+            SELECT widget_id FROM widget_command
+            WHERE `action` IN ('TASK_COMPLETE', 'TASK_UNDO')
+              AND payload_json LIKE '%' || '"taskId":"' || :taskId || '"' || '%'
+        )
+    """)
+    suspend fun clearFeedbackForTaskCommands(taskId: String): Int
+
+    @Query("""
+        UPDATE widget_command SET status = 'REJECTED', outcome_json = :outcomeJson
+        WHERE `action` IN ('TASK_COMPLETE', 'TASK_UNDO') AND status = 'READY'
+          AND payload_json LIKE '%' || '"taskId":"' || :taskId || '"' || '%'
+    """)
+    suspend fun invalidateReadyTaskCommands(taskId: String, outcomeJson: String): Int
+
     @Upsert
     suspend fun upsertInstance(instance: WidgetInstanceEntity)
 

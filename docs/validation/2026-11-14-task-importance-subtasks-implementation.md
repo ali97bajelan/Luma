@@ -1,7 +1,7 @@
 # Task importance and subtasks — implementation handoff
 
 Date: 14 November 2026  
-Status: **TI-05 importance backup compatibility SOURCE COMPLETE — QA PENDING.** This handoff covers the importance archive slice. Broader I08 hierarchy/archive work remains open; TI-QA01 owns test authoring and full validation.
+Status: **Latest source handoff: TI-06/I02 hierarchy storage, family queries and transactional commands SOURCE COMPLETE — QA PENDING.** The TI-05 importance archive slice is preserved below; broader I04–I08 surface/archive work remains open and TI-QA01 owns test authoring and full validation.
 
 ## Source identity
 
@@ -27,3 +27,14 @@ Status: **TI-05 importance backup compatibility SOURCE COMPLETE — QA PENDING.*
 - `git diff --check`: passed.
 - User-requested `bash ./gradlew check --console=plain`: failed at `:core:domain:test` with the same three previously tracked failures: `MemoryTest.directMemoryRequiresTextAndValidImportanceAndBoundedDrafts`, `ProtectedRecordClassifierTest.eventRecordsMatchTheIndependentFixtureProtectionSets`, and `ProtectedRecordClassifierTest.linkedIdentityFieldsRequirePeopleIndependentlyOfJournalOrMemoryProse`. `:core:data:compileDebugKotlin` succeeded before the task stopped.
 - Tests, schema generation, and emulator verification remain pending for TI-QA01.
+
+## TI-06 / I02 family storage and commands
+
+- Base commit: `23ddb94d332fb13720166ea87d4b665eeebe7656`.
+- Room schema version 17 is allocated; KSP generated [schema 17](../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/17.json) during the requested check. Schema/migration verification remains TI-QA01 evidence. Portable archive schema 13 remains unchanged in this source handoff.
+- Changed source paths: `core/data/src/main/kotlin/com/luma/lifeos/data/db/LumaDatabase.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/repository/RoomTodoRepository.kt`, new `RoomTodoFamilyCommands.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/todo/TodoDao.kt`, `TodoEntity.kt`, `TodoMapping.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/calendar/CalendarDao.kt`, new `TodoCommandDao.kt`, new `TodoCommandEntity.kt`, `core/data/src/main/kotlin/com/luma/lifeos/data/widget/WidgetDao.kt`, `WidgetCommandExecutor.kt`, and `core/data/src/main/kotlin/com/luma/lifeos/data/backup/RoomBackupService.kt`.
+- Implemented additive 16→17 task-family storage and local command journal; bounded family row/search/Today projections with parent/progress joins; transactional child create/reorder, family completion/Undo/delete, reminder invalidation, Focus unlinking, widget-command invalidation, and legacy fail-closed behavior. Restore clears the local command journal inside the replacement transaction.
+- Static review corrected stale family retry checks, a depth-transition trigger gap, and missing root progress in search rows. Widget-to-task confirmation routing and restored family-token/archive adaptation remain I07/I08 source work; no release-ready claim is made.
+- `git diff --check`: passed after the source and handoff updates.
+- User-requested `bash ./gradlew check --console=plain`: FAILED at `:core:domain:test` with the same 3 previously recorded failures: `MemoryTest.directMemoryRequiresTextAndValidImportanceAndBoundedDrafts`, `ProtectedRecordClassifierTest.eventRecordsMatchTheIndependentFixtureProtectionSets`, and `ProtectedRecordClassifierTest.linkedIdentityFieldsRequirePeopleIndependentlyOfJournalOrMemoryProse`. KSP completed for debug/release and `:core:data:copyRoomSchemas` produced schema 17; `:core:data:compileDebugKotlin` was not reached.
+- TI-QA01 cases 01/03/05/07/08/10/11, schema/migration verification, test authoring, and emulator verification remain NOT RUN. The pre-existing untracked `app/production/` directory remains untouched.
