@@ -24,20 +24,22 @@ object WidgetIntents {
     private const val URI_AUTHORITY = "navigate"
     private const val ACTION_AUTHORITY = "action"
 
-    fun navigation(context: Context, widgetId: Int, destination: WidgetDestination): PendingIntent {
+    internal fun navigationIntent(context: Context, widgetId: Int, destination: WidgetDestination): Intent {
         require(widgetId > 0) { "A live widget ID is required" }
-        val intent = Intent(context, MainActivity::class.java).apply {
+        return Intent(context, MainActivity::class.java).apply {
             action = ACTION_NAVIGATION
             data = destinationUri(widgetId, destination)
             addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
-        return PendingIntent.getActivity(
+    }
+
+    fun navigation(context: Context, widgetId: Int, destination: WidgetDestination): PendingIntent =
+        PendingIntent.getActivity(
             context,
             0,
-            intent,
+            navigationIntent(context, widgetId, destination),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-    }
 
     /** The configuration Activity validates the ID against the live provider before reading or saving. */
     fun configuration(context: Context, widgetId: Int): PendingIntent {
@@ -139,18 +141,40 @@ object WidgetIntents {
     /** Mutable only so the host can merge an explicit row fill-in route into this scoped template. */
     fun collectionTemplate(context: Context, widgetId: Int): PendingIntent {
         require(widgetId > 0) { "A live widget ID is required" }
-        val intent = Intent(context, WidgetActionReceiver::class.java).apply {
+        val intent = Intent(context, WidgetCollectionClickActivity::class.java).apply {
             action = ACTION_COLLECTION_ITEM
             data = actionUri("collection", widgetId)
         }
         val mutable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getActivity(
             context,
             0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or mutable,
         )
     }
+
+    internal fun decodeCollectionClick(intent: Intent): Action.Collection? {
+        val component = intent.component ?: return null
+        if (component.className != WidgetCollectionClickActivity::class.java.name) return null
+        val receiverIntent = Intent(intent).setClassName(
+            component.packageName,
+            WidgetActionReceiver::class.java.name,
+        )
+        return decodeAction(receiverIntent) as? Action.Collection
+    }
+
+    internal fun collectionReceiverIntent(context: Context, action: Action.Collection): Intent =
+        Intent(context, WidgetActionReceiver::class.java).apply {
+            this.action = ACTION_COLLECTION_ITEM
+            data = actionUri("collection", action.widgetId)
+            putExtras(
+                when (val route = action.route) {
+                    is CollectionRoute.Navigate -> collectionNavigation(route.itemId, route.date)
+                    is CollectionRoute.Mutate -> collectionMutation(route.token, route.itemId, route.date)
+                },
+            )
+        }
 
     fun collectionNavigation(itemId: UUID, date: LocalDate): Intent = Intent().apply {
         putExtra(EXTRA_COLLECTION_ACTION, COLLECTION_NAVIGATE)

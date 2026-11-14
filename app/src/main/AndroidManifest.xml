@@ -39,6 +39,12 @@
             </intent-filter>
         </activity-alias>
         <activity
+            android:name=".widget.WidgetCollectionClickActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
             android:name=".widget.WidgetConfigurationActivity"
             android:excludeFromRecents="true"
             android:exported="true" />
