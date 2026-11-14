@@ -18,6 +18,7 @@ data class TodoPageRow(
     @ColumnInfo(name = "revision_token") val revisionToken: String?,
     @ColumnInfo(name = "total_count") val totalCount: Int,
     @ColumnInfo(name = "due_time_minutes") val dueTimeMinutes: Int? = null,
+    @ColumnInfo(name = "importance_code") val importanceCode: Int = 0,
 ) {
     fun toEntityOrNull(): TodoEntity? = taskId?.let { id ->
         TodoEntity(
@@ -30,6 +31,7 @@ data class TodoPageRow(
             updatedAt = requireNotNull(updatedAt),
             revisionToken = requireNotNull(revisionToken),
             dueTimeMinutes = dueTimeMinutes,
+            importanceCode = importanceCode,
         )
     }
 }
@@ -107,7 +109,7 @@ interface TodoDao {
 
     @Query("""
         SELECT id AS task_id, title, note, due_date, completed_at, created_at, updated_at,
-            revision_token, 0 AS total_count, due_time_minutes
+            revision_token, 0 AS total_count, due_time_minutes, importance_code
         FROM todo_task
         WHERE completed_at IS NULL
           AND (:escapedQuery = '' OR title LIKE '%' || :escapedQuery || '%' ESCAPE '\')
@@ -122,7 +124,8 @@ interface TodoDao {
     @Query("""
         SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
             task.due_time_minutes,
-            task.created_at, task.updated_at, task.revision_token, counts.total_count
+            task.created_at, task.updated_at, task.revision_token, counts.total_count,
+            task.importance_code
         FROM (SELECT COUNT(*) AS total_count FROM todo_task WHERE completed_at IS NULL) AS counts
         LEFT JOIN todo_task AS task ON task.completed_at IS NULL
         ORDER BY CASE WHEN task.due_date IS NULL THEN 1 ELSE 0 END,
@@ -135,7 +138,8 @@ interface TodoDao {
     @Query("""
         SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
             task.due_time_minutes,
-            task.created_at, task.updated_at, task.revision_token, counts.total_count
+            task.created_at, task.updated_at, task.revision_token, counts.total_count,
+            task.importance_code
         FROM (SELECT COUNT(*) AS total_count FROM todo_task WHERE completed_at IS NOT NULL) AS counts
         LEFT JOIN todo_task AS task ON task.completed_at IS NOT NULL
         ORDER BY task.completed_at DESC, task.id ASC
@@ -146,7 +150,8 @@ interface TodoDao {
     @Query("""
         SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
             task.due_time_minutes,
-            task.created_at, task.updated_at, task.revision_token, counts.total_count
+            task.created_at, task.updated_at, task.revision_token, counts.total_count,
+            task.importance_code
         FROM (SELECT COUNT(*) AS total_count FROM todo_task
             WHERE completed_at IS NULL AND due_date <= :date) AS counts
         LEFT JOIN todo_task AS task ON task.completed_at IS NULL AND task.due_date <= :date
@@ -158,7 +163,7 @@ interface TodoDao {
 
     @Query("""
         UPDATE todo_task SET title = :title, note = :note, due_date = :dueDate,
-            due_time_minutes = :dueTimeMinutes,
+            due_time_minutes = :dueTimeMinutes, importance_code = :importanceCode,
             updated_at = :updatedAt, revision_token = :nextRevision
         WHERE id = :id AND revision_token = :expectedRevision
     """)
@@ -170,6 +175,7 @@ interface TodoDao {
         note: String?,
         dueDate: String?,
         dueTimeMinutes: Int?,
+        importanceCode: Int,
         updatedAt: Long,
     ): Int
 

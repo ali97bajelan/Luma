@@ -113,6 +113,7 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
             updatedAt = l("updated_at"),
             revisionToken = s("revision_token"),
             dueTimeMinutes = optionalInt("due_time_minutes"),
+            importanceCode = optionalInt("importance_code") ?: 0,
         ).toDomain()
         "task_reminder" -> {
             require(l("enabled") in 0..1 && l("needs_reconcile") in 0..1)

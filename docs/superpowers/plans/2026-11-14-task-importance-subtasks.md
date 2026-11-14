@@ -32,7 +32,7 @@ Each condition below is assigned to an implementation owner and an assertion in 
 
 ## Execution boundary and task board
 
-Status: **I01 SOURCE COMPLETE — QA PENDING; I02–I08 NOT STARTED.** Requested `./gradlew check`: **FAILED** (`:core:domain:test`, 187 tests, 3 unrelated failures in `MemoryTest` and `ProtectedRecordClassifierTest`). TI-QA01: **NOT RUN**. Source dependencies below do not require predecessor test results. This schedule supersedes the research backlog’s suggestion of a release between importance and subtasks: complete the combined implementation, then one QA task. No schema-changing intermediate release.
+Status: **I01 SOURCE COMPLETE — QA PENDING; TI-02 importance persistence slice SOURCE COMPLETE — QA PENDING; remaining I02 hierarchy/query/command work and I03–I08 NOT STARTED.** Allocated the combined feature’s working-tree Room version 16 and archive version 13; no intermediate release is intended. User-requested TI-02 `./gradlew check`: **FAILED** on the existing 3 `:core:domain:test` cases (`MemoryTest` and two `ProtectedRecordClassifierTest` cases); `:core:data` KSP completed and generated [Room schema 16](../../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/16.json). `git diff --check`: **PASS**. TI-QA01: **NOT RUN**. Source dependencies below do not require predecessor test results. This schedule supersedes the research backlog’s suggestion of a release between importance and subtasks: complete the combined implementation, then one QA task.
 
 | Task | Scope | Depends on source handoff | Research IDs |
 | --- | --- | --- | --- |

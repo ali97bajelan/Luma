@@ -103,6 +103,7 @@ class RoomTodoRepository(
                 note = normalized.note,
                 dueDate = normalized.dueDate?.toString(),
                 dueTimeMinutes = normalized.dueTime?.let { it.hour * 60 + it.minute },
+                importanceCode = normalized.importance.code,
                 updatedAt = updatedAt,
             ) == 1) { "Task changed while its update was being applied" }
             database.taskReminders().onTaskRevisionChanged(key, nextRevision.toString(), UUID.randomUUID().toString())
@@ -186,5 +187,5 @@ class RoomTodoRepository(
 
     private fun TodoTask.matches(input: TodoInput): Boolean =
         title == input.title && note == input.note && dueDate == input.dueDate &&
-            dueTime == input.dueTime
+            dueTime == input.dueTime && importance == input.importance
 }

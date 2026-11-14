@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.normalizeTodoInput
 import java.time.LocalDate
@@ -26,6 +27,7 @@ data class TodoEntity(
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     @ColumnInfo(name = "revision_token") val revisionToken: String,
     @ColumnInfo(name = "due_time_minutes") val dueTimeMinutes: Int? = null,
+    @ColumnInfo(name = "importance_code", defaultValue = "0") val importanceCode: Int = 0,
 ) {
     init {
         require(id == canonicalUuid(id))
@@ -38,6 +40,7 @@ data class TodoEntity(
         val normalized = normalizeTodoInput(TodoInput(title, note, parsedDueDate, dueTime))
         require(normalized.title == title && normalized.note == note)
         require(updatedAt >= createdAt)
+        TodoImportance.fromCode(importanceCode)
     }
 }
 

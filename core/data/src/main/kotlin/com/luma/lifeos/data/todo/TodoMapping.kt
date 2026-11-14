@@ -1,5 +1,6 @@
 package com.luma.lifeos.data.todo
 
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoTask
 import java.time.Instant
@@ -20,7 +21,7 @@ internal fun TodoEntity.toDomain(): TodoTask {
         createdAt = Instant.ofEpochMilli(createdAt),
         updatedAt = Instant.ofEpochMilli(updatedAt),
         revision = revision,
-        importance = com.luma.lifeos.domain.todo.TodoImportance.NONE,
+        importance = TodoImportance.fromCode(importanceCode),
         parentId = null,
         siblingPosition = null,
         familyRevision = taskId,
@@ -41,4 +42,5 @@ internal fun TodoInput.toEntity(
     updatedAt = now.toEpochMilli(),
     revisionToken = revision.toString(),
     dueTimeMinutes = dueTime?.let { it.hour * 60 + it.minute },
+    importanceCode = importance.code,
 )

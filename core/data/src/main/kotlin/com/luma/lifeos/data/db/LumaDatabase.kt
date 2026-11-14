@@ -90,10 +90,15 @@ abstract class LumaDatabase : RoomDatabase() {
     abstract fun focusInvitations(): FocusInvitationDao
 
     companion object {
-        const val VERSION = 15
+        const val VERSION = 16
         const val FILE_NAME = "luma.db"
 
         val MIGRATIONS: List<Migration> = listOf(
+            object : Migration(15, 16) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE todo_task ADD COLUMN importance_code INTEGER NOT NULL DEFAULT 0")
+                }
+            },
             object : Migration(14, 15) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     // Nullable linked task fields keep all existing session and run rows intact.

@@ -26,7 +26,7 @@ interface CalendarDao {
     @Query("""
         SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
             task.due_time_minutes, task.created_at, task.updated_at, task.revision_token,
-            totals.total_count
+            totals.total_count, task.importance_code
         FROM (
             SELECT COUNT(*) AS total_count FROM todo_task
             WHERE completed_at IS NULL AND due_date IS NOT NULL AND (
