@@ -4,9 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
+import com.luma.lifeos.domain.todo.TodoChildProgress
 import com.luma.lifeos.domain.todo.TodoConflictException
 import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoPage
+import com.luma.lifeos.domain.todo.TodoRowPage
+import com.luma.lifeos.domain.todo.TodoTaskRow
 import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoRepository
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,6 +43,11 @@ data class TodoMutationIntent(
     val resultingRevision: UUID,
     val completed: Boolean,
     val title: String,
+)
+
+data class TodoParentCompletionOffer(
+    val parentTask: TodoTask,
+    val progress: TodoChildProgress,
 )
 
 data class TodoListUiState(
@@ -61,6 +70,13 @@ data class TodoListUiState(
     val undoTerminal: Boolean = false,
     val importanceFilter: TodoImportance? = null,
     val sort: TodoSort = TodoSort.DATE,
+    val rowPage: TodoRowPage = TodoRowPage(emptyList(), 0),
+    val expandedRootIds: Set<UUID> = emptySet(),
+    val childrenByRoot: Map<UUID, TodoRowPage> = emptyMap(),
+    val childPageLimits: Map<UUID, Int> = emptyMap(),
+    val loadingChildren: Set<UUID> = emptySet(),
+    val childLoadErrors: Set<UUID> = emptySet(),
+    val parentCompletionOffer: TodoParentCompletionOffer? = null,
 )
 
 /** Observed prefix, retained list selection and revision-safe row actions. */
@@ -72,6 +88,7 @@ class TodoListViewModel(
     private val refreshVersion = MutableStateFlow(0)
     private val reconciling = mutableSetOf<UUID>()
     private val mutationJobs = mutableMapOf<UUID, Job>()
+    private val childJobs = mutableMapOf<UUID, Job>()
     private val undoJobs = mutableMapOf<TodoActionResult, Job>()
     private val mutableState = MutableStateFlow(
         TodoListUiState(
@@ -83,6 +100,8 @@ class TodoListViewModel(
             ),
             importanceFilter = readImportanceFilter(),
             sort = readSort(),
+            expandedRootIds = readExpandedRootIds(),
+            childPageLimits = readExpandedRootIds().associateWith(::childPageLimitFor),
             pendingIntents = readPendingIntents(),
             rowErrors = readPendingIntents().keys.associateWith { TodoListRowError.FAILED },
             rowErrorTitles = readPendingIntents().mapValues { it.value.title },
@@ -103,15 +122,16 @@ class TodoListViewModel(
                 refreshVersion,
             ) { request, _ -> request }
                 .flatMapLatest { request ->
-                    repository.observeList(request.query, request.limit)
-                        .map<TodoPage, ListObservation> { ListObservation.Loaded(it) }
+                    observeRows(request.query, request.limit)
+                        .map<TodoRowPage, ListObservation> { ListObservation.Loaded(it) }
                         .catch { emit(ListObservation.Failed) }
                 }
                 .collect { observation ->
                     when (observation) {
                         is ListObservation.Loaded -> mutableState.update {
                             it.copy(
-                                page = observation.page,
+                                page = TodoPage(observation.page.items.map { row -> row.task }, observation.page.total),
+                                rowPage = observation.page,
                                 loading = false,
                                 refreshing = false,
                                 loadingMore = false,
@@ -140,6 +160,10 @@ class TodoListViewModel(
                 }
         }
         reconcilePendingIntents()
+        mutableState.value.expandedRootIds.forEach { rootId ->
+            startChildObservation(rootId, childPageLimitFor(rootId))
+        }
+        restoreParentCompletionOffer()
     }
 
     fun selectCompleted(completed: Boolean) {
@@ -150,6 +174,7 @@ class TodoListViewModel(
         mutableState.value = current.copy(
             completed = completed,
             page = TodoPage(emptyList(), 0),
+            rowPage = TodoRowPage(emptyList(), 0),
             pageLimit = limit,
             loading = true,
             refreshing = true,
@@ -167,6 +192,50 @@ class TodoListViewModel(
         updateQuery(importanceFilter = mutableState.value.importanceFilter, sort = value)
     }
 
+    fun setExpanded(rootId: UUID, expanded: Boolean) {
+        if (!expanded) {
+            collapseRoot(rootId)
+            return
+        }
+        val current = mutableState.value
+        val root = current.rowPage.items.firstOrNull { it.task.id == rootId } ?: return
+        if (root.task.parentId != null || root.progress == null || rootId in current.expandedRootIds) return
+        val expandedIds = current.expandedRootIds + rootId
+        saveExpandedRootIds(expandedIds)
+        val limit = childPageLimitFor(rootId)
+        mutableState.update {
+            it.copy(
+                expandedRootIds = expandedIds,
+                childPageLimits = it.childPageLimits + (rootId to limit),
+                loadingChildren = it.loadingChildren + rootId,
+                childLoadErrors = it.childLoadErrors - rootId,
+            )
+        }
+        startChildObservation(rootId, limit)
+    }
+
+    fun loadMoreChildren(rootId: UUID) {
+        val current = mutableState.value
+        val page = current.childrenByRoot[rootId] ?: return
+        if (rootId !in current.expandedRootIds || rootId in current.loadingChildren || page.items.size >= page.total) return
+        val nextLimit = (current.childPageLimits[rootId] ?: childPageLimitFor(rootId)) + TODO_DEFAULT_PAGE_SIZE
+        saved[childPageLimitKey(rootId)] = nextLimit
+        mutableState.update {
+            it.copy(
+                childPageLimits = it.childPageLimits + (rootId to nextLimit),
+                loadingChildren = it.loadingChildren + rootId,
+                childLoadErrors = it.childLoadErrors - rootId,
+            )
+        }
+        startChildObservation(rootId, nextLimit)
+    }
+
+    fun retryChildren(rootId: UUID) {
+        val current = mutableState.value
+        if (rootId !in current.expandedRootIds || rootId in current.loadingChildren) return
+        startChildObservation(rootId, current.childPageLimits[rootId] ?: childPageLimitFor(rootId))
+    }
+
     fun resetQuery() {
         updateQuery(importanceFilter = null, sort = TodoSort.DATE)
     }
@@ -181,6 +250,7 @@ class TodoListViewModel(
             importanceFilter = importanceFilter,
             sort = sort,
             page = TodoPage(emptyList(), 0),
+            rowPage = TodoRowPage(emptyList(), 0),
             pageLimit = limit,
             loading = true,
             refreshing = true,
@@ -225,11 +295,31 @@ class TodoListViewModel(
 
     fun setCompleted(taskId: UUID, completed: Boolean) {
         val current = mutableState.value
-        val task = current.page.items.firstOrNull { it.id == taskId } ?: return
+        val task = current.rowPage.items.firstOrNull { it.task.id == taskId }?.task
+            ?: current.childrenByRoot.values.asSequence()
+                .flatMap { it.items.asSequence() }
+                .firstOrNull { it.task.id == taskId }?.task
+            ?: return
+        queueCompletion(task, completed)
+    }
+
+    fun completeSuggestedParent() {
+        val offer = mutableState.value.parentCompletionOffer ?: return
+        queueCompletion(offer.parentTask, completed = true)
+    }
+
+    fun dismissParentCompletionOffer() {
+        clearParentCompletionOffer()
+    }
+
+    private fun queueCompletion(task: TodoTask, completed: Boolean) {
+        val current = mutableState.value
+        val taskId = task.id
         if (!current.dataFresh || current.inFlight.contains(taskId) || current.pendingIntents.containsKey(taskId) ||
             (current.undoing && current.undoableCompletion?.taskId == taskId) || task.isCompleted == completed
         ) return
         clearUndoResult()
+        if (completed && current.parentCompletionOffer?.parentTask?.id == taskId) clearParentCompletionOffer(taskId)
         val intent = TodoMutationIntent(task.id, task.revision, UUID.randomUUID(), completed, task.title)
         updatePending(current.pendingIntents + (taskId to intent))
         mutableState.update {
@@ -238,6 +328,7 @@ class TodoListViewModel(
                 rowErrors = it.rowErrors - taskId,
                 rowErrorTitles = it.rowErrorTitles - taskId,
                 undoFailed = false,
+                parentCompletionOffer = it.parentCompletionOffer?.takeUnless { offer -> offer.parentTask.id == taskId },
             )
         }
         execute(intent)
@@ -262,9 +353,14 @@ class TodoListViewModel(
     }
 
     fun undoCompletion() {
-        val result = mutableState.value.undoableCompletion ?: return
+        val current = mutableState.value
+        val result = current.undoableCompletion ?: return
         if (!result.completed) return
-        if (mutableState.value.undoing || mutableState.value.undoTerminal || result in undoJobs) return
+        if (current.undoing || current.undoTerminal || result in undoJobs) return
+        val undoParentId = current.rowPage.items.firstOrNull { it.task.id == result.taskId }?.task?.parentId
+            ?: current.childrenByRoot.values.asSequence()
+                .flatMap { it.items.asSequence() }
+                .firstOrNull { it.task.id == result.taskId }?.task?.parentId
         val undoNextKey = undoNextKey(result)
         val nextRevision = saved.get<String>(undoNextKey)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?: UUID.randomUUID().also { saved[undoNextKey] = it.toString() }
@@ -274,7 +370,7 @@ class TodoListViewModel(
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 repository.setCompleted(result.taskId, result.resultingRevision, nextRevision, completed = false)
-                clearUndoResult(result)
+                clearParentOfferAfterUndo(result, undoParentId)
             } catch (failure: Exception) {
                 if (failure is CancellationException) {
                     mutableState.update {
@@ -285,7 +381,8 @@ class TodoListViewModel(
                 val latest = runCatching { repository.get(result.taskId) }
                 val live = latest.getOrNull()
                 when {
-                    live?.revision == nextRevision && !live.isCompleted -> clearUndoResult(result)
+                    live?.revision == nextRevision && !live.isCompleted ->
+                        clearParentOfferAfterUndo(result, undoParentId)
                     live?.revision == result.resultingRevision && live.isCompleted -> mutableState.update {
                         if (it.undoableCompletion == result) it.copy(undoing = false, undoFailed = true) else it
                     }
@@ -316,6 +413,11 @@ class TodoListViewModel(
     fun invalidateAfterRestore() {
         mutationJobs.values.toList().forEach { it.cancel() }
         mutationJobs.clear()
+        childJobs.values.toList().forEach { it.cancel() }
+        childJobs.clear()
+        saved.remove<ArrayList<String>>(KEY_EXPANDED_ROOTS)
+        saved.keys().filter { it.startsWith(KEY_CHILD_PAGE_LIMIT_PREFIX) }.forEach { saved.remove<Int>(it) }
+        saved.remove<String>(KEY_PARENT_COMPLETION_OFFER)
         undoJobs.values.toList().forEach { it.cancel() }
         undoJobs.clear()
         clearPendingIntents()
@@ -388,6 +490,56 @@ class TodoListViewModel(
             )
         }
         saveUndoResult(result.takeIf { it.completed })
+        if (intent.completed) {
+            val parentId = task.parentId
+            if (parentId == null) clearParentCompletionOffer(task.id)
+            else suggestParentCompletion(parentId)
+        }
+    }
+
+    private fun suggestParentCompletion(parentId: UUID) {
+        saved[KEY_PARENT_COMPLETION_OFFER] = parentId.toString()
+        mutableState.update { it.copy(parentCompletionOffer = null) }
+        refreshParentCompletionOffer(parentId)
+    }
+
+    private fun restoreParentCompletionOffer() {
+        val parentId = saved.get<String>(KEY_PARENT_COMPLETION_OFFER)
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: return
+        refreshParentCompletionOffer(parentId)
+    }
+
+    private fun refreshParentCompletionOffer(parentId: UUID) {
+        viewModelScope.launch {
+            try {
+                val parent = repository.get(parentId)
+                if (parent == null || parent.parentId != null || parent.isCompleted) {
+                    clearParentCompletionOffer(parentId)
+                    return@launch
+                }
+                val progress = repository.observeChildren(parentId, limit = 1).first().familyProgress
+                if (progress == null || progress.completed != progress.total) {
+                    clearParentCompletionOffer(parentId)
+                    return@launch
+                }
+                if (saved.get<String>(KEY_PARENT_COMPLETION_OFFER) == parentId.toString()) {
+                    mutableState.update { it.copy(parentCompletionOffer = TodoParentCompletionOffer(parent, progress)) }
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+            }
+        }
+    }
+
+    private fun clearParentCompletionOffer(parentId: UUID? = null) {
+        val savedId = saved.get<String>(KEY_PARENT_COMPLETION_OFFER)
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        if (parentId == null || savedId == parentId) saved.remove<String>(KEY_PARENT_COMPLETION_OFFER)
+        mutableState.update { current ->
+            if (parentId == null || current.parentCompletionOffer?.parentTask?.id == parentId) {
+                current.copy(parentCompletionOffer = null)
+            } else current
+        }
     }
 
     private fun reconcilePendingIntents() {
@@ -448,6 +600,11 @@ class TodoListViewModel(
             saved[KEY_UNDO_ID] = result.taskId.toString()
             saved[KEY_UNDO_REVISION] = result.resultingRevision.toString()
         }
+    }
+
+    private fun clearParentOfferAfterUndo(result: TodoActionResult, parentId: UUID?) {
+        parentId?.let(::clearParentCompletionOffer)
+        clearUndoResult(result)
     }
 
     private fun clearUndoResult(expected: TodoActionResult? = null) {
@@ -513,10 +670,88 @@ class TodoListViewModel(
     private fun pageLimitKey(completed: Boolean, importanceFilter: TodoImportance?, sort: TodoSort): String =
         "$KEY_PAGE_LIMIT_PREFIX${if (completed) "completed" else "open"}_${importanceFilter?.code ?: FILTER_ALL}_${sort.name}"
 
+    private fun observeRows(query: TodoListQuery, limit: Int): kotlinx.coroutines.flow.Flow<TodoRowPage> = try {
+        repository.observeRows(query, limit)
+    } catch (_: UnsupportedOperationException) {
+        repository.observeList(query, limit).map { page ->
+            val roots = page.items.filter { it.parentId == null }
+            TodoRowPage(roots.map { TodoTaskRow(it, parent = null, progress = null) }, page.total)
+        }
+    }
+
+    private fun startChildObservation(rootId: UUID, limit: Int) {
+        if (rootId !in mutableState.value.expandedRootIds) return
+        childJobs.remove(rootId)?.cancel()
+        mutableState.update {
+            it.copy(
+                childPageLimits = it.childPageLimits + (rootId to limit),
+                loadingChildren = it.loadingChildren + rootId,
+                childLoadErrors = it.childLoadErrors - rootId,
+            )
+        }
+        val job = viewModelScope.launch {
+            try {
+                repository.observeChildren(rootId, limit).collect { page ->
+                    if (rootId !in mutableState.value.expandedRootIds) return@collect
+                    if (page.total == 0) {
+                        collapseRoot(rootId)
+                        return@collect
+                    }
+                    mutableState.update {
+                        it.copy(
+                            childrenByRoot = it.childrenByRoot + (rootId to page),
+                            loadingChildren = it.loadingChildren - rootId,
+                            childLoadErrors = it.childLoadErrors - rootId,
+                        )
+                    }
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.update {
+                    if (rootId in it.expandedRootIds) {
+                        it.copy(
+                            loadingChildren = it.loadingChildren - rootId,
+                            childLoadErrors = it.childLoadErrors + rootId,
+                        )
+                    } else it
+                }
+            }
+        }
+        childJobs[rootId] = job
+    }
+
+    private fun collapseRoot(rootId: UUID) {
+        childJobs.remove(rootId)?.cancel()
+        val expandedIds = mutableState.value.expandedRootIds - rootId
+        saveExpandedRootIds(expandedIds)
+        mutableState.update {
+            it.copy(
+                expandedRootIds = expandedIds,
+                childrenByRoot = it.childrenByRoot - rootId,
+                loadingChildren = it.loadingChildren - rootId,
+                childLoadErrors = it.childLoadErrors - rootId,
+            )
+        }
+    }
+
+    private fun readExpandedRootIds(): Set<UUID> =
+        saved.get<ArrayList<String>>(KEY_EXPANDED_ROOTS).orEmpty().mapNotNull { value ->
+            runCatching { UUID.fromString(value) }.getOrNull()
+        }.toSet()
+
+    private fun saveExpandedRootIds(ids: Set<UUID>) {
+        saved[KEY_EXPANDED_ROOTS] = ArrayList(ids.map(UUID::toString))
+    }
+
+    private fun childPageLimitFor(rootId: UUID): Int =
+        (saved.get<Int>(childPageLimitKey(rootId)) ?: TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(TODO_DEFAULT_PAGE_SIZE)
+
+    private fun childPageLimitKey(rootId: UUID): String = "$KEY_CHILD_PAGE_LIMIT_PREFIX$rootId"
+
     private data class ListRequest(val query: TodoListQuery, val limit: Int)
 
     private sealed interface ListObservation {
-        data class Loaded(val page: TodoPage) : ListObservation
+        data class Loaded(val page: TodoRowPage) : ListObservation
         data object Failed : ListObservation
     }
 
@@ -526,6 +761,9 @@ class TodoListViewModel(
         const val KEY_IMPORTANCE_FILTER = "todo_list_importance_filter"
         const val KEY_IMPORTANCE_SORT = "todo_list_importance_sort"
         const val KEY_PAGE_LIMIT_PREFIX = "todo_list_page_limit_"
+        const val KEY_EXPANDED_ROOTS = "todo_list_expanded_roots"
+        const val KEY_CHILD_PAGE_LIMIT_PREFIX = "todo_list_child_page_limit_"
+        const val KEY_PARENT_COMPLETION_OFFER = "todo_list_parent_completion_offer"
         const val KEY_OPEN_LIMIT = "todo_list_open_limit"
         const val KEY_COMPLETED_LIMIT = "todo_list_completed_limit"
         const val KEY_PENDING = "todo_list_pending"

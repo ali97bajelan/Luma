@@ -97,8 +97,21 @@ internal fun TodoRow(
         } ?: formattedDate
         stringResource(R.string.todo_due_original, deadline)
     } else null
-    val accessDescription = listOfNotNull(task.title, importanceValue, secondary, originalDue, statusDescription)
-        .joinToString(stringResource(R.string.accessibility_label_separator))
+    val parentContext = rowContext?.parent?.let { parent ->
+        stringResource(R.string.todo_subtask_parent_name, parent.title)
+    }
+    val progressDescription = rowContext?.progress?.let { progress ->
+        stringResource(R.string.todo_subtask_progress, progress.completed, progress.total)
+    }
+    val accessDescription = listOfNotNull(
+        task.title,
+        importanceValue,
+        parentContext,
+        progressDescription,
+        secondary,
+        originalDue,
+        statusDescription,
+    ).joinToString(stringResource(R.string.accessibility_label_separator))
 
     val rowContent: @Composable ColumnScope.() -> Unit = {
         Row(
@@ -127,6 +140,12 @@ internal fun TodoRow(
                         importance = importance,
                         modifier = Modifier.testTag("todo_row_importance_${importance.name.lowercase(Locale.ROOT)}"),
                     )
+                    parentContext?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    progressDescription?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     secondary?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     originalDue?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }

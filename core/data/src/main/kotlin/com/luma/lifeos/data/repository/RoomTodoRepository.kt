@@ -60,7 +60,7 @@ class RoomTodoRepository(
             completed = query.completed,
             importanceCode = query.importance?.code,
             sortByImportance = query.sort == TodoSort.IMPORTANCE,
-            limit = minOf(limit, TODO_DEFAULT_PAGE_SIZE),
+            limit = limit,
         ).map { rows ->
             TodoRowPage(
                 items = rows.mapNotNull { it.toDomainOrNull() },
