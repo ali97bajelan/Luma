@@ -136,6 +136,7 @@ import com.luma.lifeos.ui.integrations.IntegrationAvailabilityViewModel
 import com.luma.lifeos.domain.habit.HabitReminderRepository
 import com.luma.lifeos.reminders.ReminderOpenRequest
 import com.luma.lifeos.reminders.ReminderActionRequest
+import com.luma.lifeos.reminders.KIND_TASK
 import com.luma.lifeos.reminders.FocusInvitationOpenRequest
 import com.luma.lifeos.domain.focus.FocusInvitationRepository
 import com.luma.lifeos.reminders.ReminderPreferences
@@ -673,6 +674,24 @@ fun LifeOsApp(
             }
         }
     }
+    suspend fun routeTaskReminderFamilyConfirmation(request: ReminderActionRequest): Boolean {
+        if (request.kind != KIND_TASK || request.action != "COMPLETE") return false
+        val todoRepository = todos ?: return false
+        val preview = try {
+            todoRepository.prepareCompletion(request.id, completed = true)
+        } catch (failure: Exception) {
+            if (failure is CancellationException) throw failure
+            return false
+        }
+        try {
+            if (!preview.confirmationRequired) return false
+            navController.navigate("task_editor?taskId=\${request.id}&dueDate=&parentId=")
+            return true
+        } finally {
+            runCatching { todoRepository.releaseCommandHandle(preview.planId) }
+        }
+    }
+
     LaunchedEffect(reminderAction?.kind, reminderAction?.id, reminderAction?.action, reminderAction?.token,
         lockSnapshot.loadStatus, lockSnapshot.policy?.generation) {
         val request = reminderAction ?: return@LaunchedEffect
@@ -691,6 +710,10 @@ fun LifeOsApp(
         val protected = policy?.enabled == true &&
             (policy.coverage == LockCoverage.WHOLE_APP || section in policy.sections)
         if (!protected) {
+            if (routeTaskReminderFamilyConfirmation(request)) {
+                onReminderActionConsumed()
+                return@LaunchedEffect
+            }
             enqueueReminderAction(applicationContext, request)
             onReminderActionConsumed()
             return@LaunchedEffect
@@ -2046,8 +2069,13 @@ fun LifeOsApp(
                     val dispatcher = protectedActionDispatcher
                     val accepted = dispatcher != null && dispatcher.confirm(reminderActionToConfirm.ticket) &&
                         dispatcher.consumeForDispatch(reminderActionToConfirm.ticket)
-                    if (accepted) enqueueReminderAction(applicationContext, reminderActionToConfirm.request)
-                    else widgetActionError = true
+                    if (accepted) {
+                        photoScope.launch {
+                            if (!routeTaskReminderFamilyConfirmation(reminderActionToConfirm.request)) {
+                                enqueueReminderAction(applicationContext, reminderActionToConfirm.request)
+                            }
+                        }
+                    } else widgetActionError = true
                     pendingReminderAction = null
                     showReminderActionConfirmation = false
                     onReminderActionConsumed()

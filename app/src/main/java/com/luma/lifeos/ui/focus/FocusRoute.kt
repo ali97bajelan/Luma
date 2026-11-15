@@ -162,6 +162,7 @@ internal fun FocusRoute(
         state = presentationState,
         focusRepository = focusRepository,
         focusProductRepository = focusProductRepository,
+        taskFamilyActions = viewModel.taskFamilyActions,
         taskContentReadable = protectedTasksReadable,
         allowedApps = selectedFocusApps,
         hasPendingDestination = hasPendingDestination,

@@ -3,6 +3,7 @@ package com.luma.lifeos.domain.todo
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /** A write could not be applied because the row no longer matches the operation's revision. */
 class TodoConflictException(val taskId: UUID) : IllegalStateException("Task revision conflict: $taskId")
@@ -78,16 +79,29 @@ interface TodoRepository {
     fun observeChildren(parentId: UUID, limit: Int = TODO_DEFAULT_PAGE_SIZE): Flow<TodoRowPage> =
         unsupportedTodoFamilyOperation()
 
-    /** Observe independently eligible tasks for the date with parent context and a bounded prefix. */
-    fun observeTodayRows(date: LocalDate, limit: Int = TODO_DEFAULT_PAGE_SIZE): Flow<TodoRowPage> =
-        unsupportedTodoFamilyOperation()
+    /**
+     * Observe independently eligible tasks for the date with parent context and a bounded prefix.
+     * Legacy adapters can preserve their old read behavior; persistence-backed implementations
+     * override this with a family-aware projection.
+     */
+    fun observeTodayRows(date: LocalDate, limit: Int = TODO_DEFAULT_PAGE_SIZE): Flow<TodoRowPage> {
+        require(limit > 0) { "Task page size must be positive" }
+        return observeToday(date, limit).map { page -> page.asRows() }
+    }
 
-    /** Literal open-title search with batched parent context and stable bounded paging. */
+    /**
+     * Literal open-title search with batched parent context and stable bounded paging.
+     * Legacy adapters can preserve their existing read behavior until they implement row context.
+     */
     suspend fun searchOpenRows(
         query: String,
         offset: Int,
         limit: Int = TODO_DEFAULT_PAGE_SIZE,
-    ): TodoRowPage = unsupportedTodoFamilyOperation()
+    ): TodoRowPage {
+        require(offset >= 0) { "Task search offset cannot be negative" }
+        require(limit > 0) { "Task search page size must be positive" }
+        return searchOpen(query, offset, limit).asRows()
+    }
 
     /** Literal title search over open tasks, returned in stable 50-row pages. */
     suspend fun searchOpen(query: String, offset: Int, limit: Int = TODO_DEFAULT_PAGE_SIZE): TodoPage
@@ -140,6 +154,22 @@ interface TodoRepository {
     suspend fun applyCompletion(planId: UUID, commandId: UUID): TodoCompletionReceipt =
         unsupportedTodoFamilyOperation()
 
+    /**
+     * Validate an aggregate guard in the same transaction as a new completion command.
+     * In-memory repositories may use this compatibility default; persistent repositories that
+     * share the guarded aggregate's database must override it and run [validate] transactionally.
+     * An already-applied idempotent command returns its stored result without running this guard
+     * or reapplying task changes.
+     */
+    suspend fun applyCompletionValidated(
+        planId: UUID,
+        commandId: UUID,
+        validate: suspend () -> Unit,
+    ): TodoCompletionReceipt {
+        validate()
+        return applyCompletion(planId, commandId)
+    }
+
     /** Atomically undo only the rows changed by the named completion command. */
     suspend fun undoCompletion(commandId: UUID, undoCommandId: UUID): TodoCompletionReceipt =
         unsupportedTodoFamilyOperation()
@@ -156,4 +186,9 @@ interface TodoRepository {
 
     /** Release a no-longer-referenced preview, retry or Undo handle. */
     suspend fun releaseCommandHandle(id: UUID): Unit = unsupportedTodoFamilyOperation()
+
+    private fun TodoPage.asRows(): TodoRowPage = TodoRowPage(
+        items = items.map { TodoTaskRow(task = it, parent = null, progress = null) },
+        total = total,
+    )
 }

@@ -26,6 +26,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitRepository
+import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.HabitsViewModel
@@ -94,6 +95,7 @@ fun TodayRoute(
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
     var todoRetry by remember { mutableIntStateOf(0) }
+    var todayTaskLimit by rememberSaveable(deviceDate.toString()) { mutableIntStateOf(TODO_DEFAULT_PAGE_SIZE) }
     var focusRetry by remember { mutableIntStateOf(0) }
     val todayTasksViewModel = if (todos != null) {
         val tasksFactory = remember(todos) {
@@ -144,7 +146,9 @@ fun TodayRoute(
             summaryState
         } else null
         val todayTasks = if (todos != null && shouldShowTodayTasks(date, deviceDate)) {
-            val tasksFlow = remember(todos, deviceDate, todoRetry) { observeTodayTasks(todos, deviceDate) }
+            val tasksFlow = remember(todos, deviceDate, todoRetry, todayTaskLimit) {
+                observeTodayTasks(todos, deviceDate, todayTaskLimit)
+            }
             val tasksState by tasksFlow.collectAsStateWithLifecycle(initialValue = TodayTasksState.Loading)
             tasksState
         } else null
@@ -155,7 +159,11 @@ fun TodayRoute(
                 integrationAvailability = integrationAvailability, onIntegrations = onIntegrations,
                 todayTasks = todayTasks, todayTaskActions = todayTaskActions, onTask = onTask, onSetTaskCompleted = { task, completed ->
                     todayTasksViewModel?.setCompleted(task, completed)
-                }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
+                }, onAllTasks = onAllTasks, onLoadMoreTasks = {
+                    todayTaskLimit = (todayTaskLimit + TODO_DEFAULT_PAGE_SIZE).coerceAtMost(
+                        (todayTasks as? TodayTasksState.Data)?.total ?: todayTaskLimit,
+                    )
+                }, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
                 deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
@@ -204,7 +212,11 @@ fun TodayRoute(
                 onHabitOpenDate = onHabitOpenDate, onCapture = onCapture,
                 todayTasks = todayTasks, todayTaskActions = todayTaskActions, onTask = onTask, onSetTaskCompleted = { task, completed ->
                     todayTasksViewModel?.setCompleted(task, completed)
-                }, onAllTasks = onAllTasks, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
+                }, onAllTasks = onAllTasks, onLoadMoreTasks = {
+                    todayTaskLimit = (todayTaskLimit + TODO_DEFAULT_PAGE_SIZE).coerceAtMost(
+                        (todayTasks as? TodayTasksState.Data)?.total ?: todayTaskLimit,
+                    )
+                }, onAddTask = { onAddTask(deviceDate) }, onRetryTasks = { todoRetry++ },
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
                 deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },

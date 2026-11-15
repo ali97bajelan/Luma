@@ -70,6 +70,7 @@ internal fun FocusSessionDetailContent(
                 onUnlinkTask = focusViewModel::unlinkTask,
                 onRetryUnlink = focusViewModel::retryTaskUnlink,
                 onChanged = onChanged,
+                familyActions = focusViewModel.taskFamilyActions,
             )
         }
         FocusReflectionEditor(

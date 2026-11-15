@@ -37,6 +37,7 @@ class TodoFamilyActions(
     private val keyPrefix: String,
     private val onCompletionApplied: (TodoCompletionReceipt) -> Unit,
     private val onDeleteApplied: (UUID) -> Unit,
+    private val beforeCompletionApply: suspend (TodoFamilyActionState) -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow(readState())
     val state = mutableState.asStateFlow()
@@ -188,7 +189,9 @@ class TodoFamilyActions(
             try {
                 when (current.type) {
                     TodoFamilyActionType.COMPLETION -> {
-                        val receipt = repository.applyCompletion(planId, commandId)
+                        val receipt = repository.applyCompletionValidated(planId, commandId) {
+                            beforeCompletionApply(current)
+                        }
                         val applied = applying.copy(
                             phase = TodoFamilyActionPhase.APPLIED,
                             changedTaskCount = receipt.changedTaskCount,

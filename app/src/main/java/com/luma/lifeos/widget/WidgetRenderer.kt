@@ -26,6 +26,7 @@ import com.luma.lifeos.domain.widget.WidgetOutcome
 import com.luma.lifeos.domain.widget.WidgetRow
 import com.luma.lifeos.domain.widget.WidgetSnapshot
 import com.luma.lifeos.domain.widget.WidgetStore
+import com.luma.lifeos.ui.common.todoImportanceLabelRes
 import com.luma.lifeos.language.AppLanguages
 import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.ui.theme.THEME_KEY
@@ -617,7 +618,8 @@ object WidgetRenderer {
         val errorTextColor = appContext.getColor(if (dark) R.color.widget_error_dark else R.color.widget_error_light)
         val mutationTextColor = appContext.getColor(if (dark) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light)
         val feedbackTextColor = if (feedback.outcome in setOf(WidgetOutcome.STALE, WidgetOutcome.CONFLICT,
-                WidgetOutcome.MISSING, WidgetOutcome.INVALID, WidgetOutcome.FAILED)) errorTextColor else textColor
+                WidgetOutcome.CONFIRMATION_REQUIRED, WidgetOutcome.MISSING, WidgetOutcome.INVALID,
+                WidgetOutcome.FAILED)) errorTextColor else textColor
         views.setTextColor(R.id.widget_data_feedback, feedbackTextColor)
         views.setTextColor(R.id.widget_feedback_dismiss, utilityTextColor)
         views.setViewVisibility(R.id.widget_feedback_dismiss, View.VISIBLE)
@@ -681,6 +683,16 @@ object WidgetRenderer {
                 openDescriptionResource(snapshot.instance.kind),
                 WidgetIntents.navigation(context, widgetId, destinationFor(snapshot.instance.kind)),
             )
+            WidgetOutcome.CONFIRMATION_REQUIRED -> {
+                val destination = feedback.taskId?.let { WidgetDestination.Task(it) }
+                    ?: destinationFor(snapshot.instance.kind)
+                action(
+                    R.id.widget_feedback_primary,
+                    R.string.widget_task_family_open,
+                    R.string.widget_task_family_open_description,
+                    WidgetIntents.navigation(context, widgetId, destination),
+                )
+            }
             WidgetOutcome.CONFLICT, WidgetOutcome.MISSING, WidgetOutcome.INVALID -> action(
                 R.id.widget_feedback_primary,
                 openLabelResource(snapshot.instance.kind),
@@ -888,14 +900,24 @@ object WidgetRenderer {
                 localizedTime(DateFormat.is24HourFormat(context), locale).format(time),
             )
         } ?: dateText
-        if (row.dueDate == date && row.dueTime == null) return dateText
-        if (row.dueDate == date) return bidiWrapped(context, deadline)
-        val dueDate = bidiWrapped(context, deadline)
-        return if (row.dueDate.isBefore(date)) {
-            context.getString(R.string.widget_task_overdue, dueDate)
-        } else {
-            context.getString(R.string.widget_task_due_date, dueDate)
+        val dueLabel = when {
+            row.dueDate == date && row.dueTime == null -> dateText
+            row.dueDate == date -> bidiWrapped(context, deadline)
+            row.dueDate.isBefore(date) ->
+                context.getString(R.string.widget_task_overdue, bidiWrapped(context, deadline))
+            else -> context.getString(R.string.widget_task_due_date, bidiWrapped(context, deadline))
         }
+        val metadata = buildList {
+            val importanceLabel = context.getString(todoImportanceLabelRes(row.importance))
+            add(context.getString(R.string.todo_importance_value, importanceLabel))
+            row.parentTitle?.let { parent ->
+                add(context.getString(R.string.todo_subtask_parent_name, bidiWrapped(context, parent)))
+            }
+            row.childProgress?.let { progress ->
+                add(context.getString(R.string.todo_subtask_progress, progress.completed, progress.total))
+            }
+        }
+        return (listOf(dueLabel) + metadata).joinToString(" · ")
     }
 
     private fun openLabel(context: Context, kind: WidgetKind?) =
@@ -927,7 +949,10 @@ object WidgetRenderer {
                     WidgetOutcome.MISSING,
                     WidgetOutcome.INVALID,
                     WidgetOutcome.FAILED,
-                )) openLabel(context, kind) else null,
+                )) openLabel(context, kind)
+                else if (result.outcome == WidgetOutcome.CONFIRMATION_REQUIRED) {
+                    context.getString(R.string.widget_task_family_open)
+                } else null,
         )
         val actionsHeight = if (actionLabels.isEmpty()) 0 else {
             max(48, actionLabels.maxOf { measureTextHeight(context, it, actionWidthPx, 14f) } + 12)
@@ -970,6 +995,7 @@ object WidgetRenderer {
         WidgetOutcome.STALE -> context.getString(R.string.widget_feedback_stale)
         WidgetOutcome.CONFLICT -> context.getString(R.string.widget_feedback_conflict)
         WidgetOutcome.MISSING -> context.getString(R.string.widget_feedback_missing)
+        WidgetOutcome.CONFIRMATION_REQUIRED -> context.getString(R.string.widget_task_family_confirmation)
         WidgetOutcome.INVALID -> context.getString(R.string.widget_feedback_unavailable)
         WidgetOutcome.FAILED -> context.getString(R.string.widget_feedback_failed)
     }

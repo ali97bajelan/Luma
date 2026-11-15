@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.todo.TodoFamilyActionState
 import java.util.UUID
 
 data class PendingFocusTaskCompletion(
@@ -44,6 +45,7 @@ data class FocusTaskCompletionState(
     val pendingCompletion: PendingFocusTaskCompletion? = null,
     val unlinkPhase: FocusTaskUnlinkPhase = FocusTaskUnlinkPhase.IDLE,
     val pendingUnlink: PendingFocusTaskUnlink? = null,
+    val familyAction: TodoFamilyActionState = TodoFamilyActionState(),
 ) {
     fun matches(sessionId: UUID, sessionRevision: Long, taskId: UUID?, generation: UUID?): Boolean =
         (

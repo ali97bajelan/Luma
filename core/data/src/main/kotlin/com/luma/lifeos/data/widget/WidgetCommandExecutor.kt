@@ -134,8 +134,13 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
             )
         } catch (_: TodoMissingException) {
             return reject(command, WidgetOutcome.MISSING)
-        } catch (_: TodoConfirmationRequiredException) {
-            return reject(command, WidgetOutcome.CONFLICT, updateFeedback = true)
+        } catch (failure: TodoConfirmationRequiredException) {
+            return reject(
+                command,
+                WidgetOutcome.CONFIRMATION_REQUIRED,
+                updateFeedback = true,
+                taskId = failure.taskId,
+            )
         } catch (_: TodoConflictException) {
             return reject(command, WidgetOutcome.CONFLICT)
         }
@@ -175,8 +180,13 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
             )
         } catch (_: TodoMissingException) {
             return reject(command, WidgetOutcome.MISSING, updateFeedback = true)
-        } catch (_: TodoConfirmationRequiredException) {
-            return reject(command, WidgetOutcome.CONFLICT, updateFeedback = true)
+        } catch (failure: TodoConfirmationRequiredException) {
+            return reject(
+                command,
+                WidgetOutcome.CONFIRMATION_REQUIRED,
+                updateFeedback = true,
+                taskId = failure.taskId,
+            )
         } catch (_: TodoConflictException) {
             return reject(command, WidgetOutcome.CONFLICT, updateFeedback = true)
         }
@@ -229,8 +239,9 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
         command: WidgetCommandEntity,
         outcome: WidgetOutcome,
         updateFeedback: Boolean = false,
+        taskId: UUID? = null,
     ): WidgetActionResult {
-        val result = result(outcome)
+        val result = result(outcome, taskId)
         check(widgets.finishReadyCommand(command.token, REJECTED, encodeWidgetActionResult(result)) == 1) {
             "Widget command was no longer ready while recording its rejection"
         }
@@ -254,7 +265,7 @@ internal class WidgetCommandExecutor(private val database: LumaDatabase) {
         }
     }
 
-    private fun result(outcome: WidgetOutcome) = WidgetActionResult(outcome)
+    private fun result(outcome: WidgetOutcome, taskId: UUID? = null) = WidgetActionResult(outcome, taskId = taskId)
 
     private fun fixedClock(instant: Instant): Clock = Clock.fixed(instant, ZoneOffset.UTC)
 

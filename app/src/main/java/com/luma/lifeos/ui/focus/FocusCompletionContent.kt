@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.todo.TodoFamilyActions
 import com.luma.lifeos.domain.focus.FocusProductRepository
 import com.luma.lifeos.domain.focus.FocusRepository
 import com.luma.lifeos.domain.focus.FocusSession
@@ -67,6 +68,7 @@ internal fun FocusCompletionContent(
     onUnlinkTask: (UUID, Long, UUID, UUID) -> Unit,
     onRetryTaskUnlink: (UUID, Long, UUID, UUID) -> Unit,
     navigationState: FocusReflectionNavigationState? = null,
+    taskFamilyActions: TodoFamilyActions? = null,
 ) {
     val reflectionNavigation = navigationState ?: remember(session.id, state.runtime.databaseGeneration) {
         FocusReflectionNavigationState()
@@ -249,6 +251,7 @@ internal fun FocusCompletionContent(
             onUnlinkTask = onUnlinkTask,
             onRetryUnlink = onRetryTaskUnlink,
             onChanged = {},
+            familyActions = taskFamilyActions,
         )
 
         if (state.setup.repeatLoading) {

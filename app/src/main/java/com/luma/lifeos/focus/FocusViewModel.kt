@@ -20,8 +20,10 @@ import com.luma.lifeos.domain.focus.FocusTimerMode
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.domain.todo.TodoConflictException
-import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoRepository
+import com.luma.lifeos.ui.todo.TodoFamilyActions
+import com.luma.lifeos.ui.todo.TodoFamilyActionPhase
+import com.luma.lifeos.ui.todo.TodoFamilyActionState
 import com.luma.lifeos.ui.focus.FocusInsightsState
 import com.luma.lifeos.ui.focus.FocusPrivateSurface
 import com.luma.lifeos.ui.focus.FocusPeriod
@@ -139,6 +141,44 @@ class FocusViewModel(
     private val privateContentAccess = MutableStateFlow(false)
     private val taskContentAccess = MutableStateFlow(false)
     private val taskActionAccess = MutableStateFlow(false)
+    val taskFamilyActions: TodoFamilyActions? = todos?.let { taskRepository ->
+        TodoFamilyActions(
+            repository = taskRepository,
+            saved = savedStateHandle,
+            scope = viewModelScope,
+            keyPrefix = "focus_task_family",
+            onCompletionApplied = { receipt ->
+                // Focus does not offer Undo, so release the family receipt after completion.
+                viewModelScope.launch {
+                    runCatching { taskRepository.releaseCommandHandle(receipt.commandId) }
+                }
+                val current = local.value.taskCompletion
+                val generation = current.generation
+                if (current.taskId == receipt.targetId && generation != null &&
+                    canPerformTaskActions(generation)
+                ) {
+                    local.update {
+                        it.copy(taskCompletion = it.taskCompletion.copy(
+                            completionPhase = FocusTaskCompletionPhase.COMPLETED,
+                            pendingCompletion = null,
+                        ))
+                    }
+                }
+            },
+            onDeleteApplied = {},
+            beforeCompletionApply = { action ->
+                val current = local.value.taskCompletion
+                val targetId = action.targetId ?: throw IllegalStateException("Missing focus task target")
+                val sessionId = current.sessionId ?: throw TodoConflictException(targetId)
+                val sessionRevision = current.sessionRevision ?: throw TodoConflictException(targetId)
+                val generation = current.generation ?: throw TodoConflictException(targetId)
+                if (current.taskId != targetId || !canPerformTaskActions(generation) ||
+                    !isCurrentTaskLinkedSession(sessionId, sessionRevision, targetId, generation)
+                ) throw TodoConflictException(targetId)
+            },
+        )
+    }
+    private val familyActionState = taskFamilyActions?.state ?: flowOf(TodoFamilyActionState())
     private var privateContentAccessResolved = false
     private var taskContentAccessResolved = false
     private val insightRetry = MutableStateFlow(0)
@@ -149,13 +189,15 @@ class FocusViewModel(
         privateContentAccess,
         taskContentAccess,
         taskActionAccess,
-    ) { canReadFocus, canReadTasks, canManageLinkedTaskActions ->
-        Triple(canReadFocus, canReadTasks, canManageLinkedTaskActions)
+        familyActionState,
+    ) { canReadFocus, canReadTasks, canManageLinkedTaskActions, familyAction ->
+        Triple(canReadFocus, canReadTasks, canManageLinkedTaskActions) to familyAction
     }
 
     private val baseState: StateFlow<FocusScreenState> = combine(
         runtime.state, local, insightState, tagSuggestions, contentAccess,
-    ) { runtimeState, localState, insights, suggestions, access ->
+    ) { runtimeState, localState, insights, suggestions, accessAndFamily ->
+        val (access, familyAction) = accessAndFamily
         val (canReadFocus, canReadTasks, canManageLinkedTaskActions) = access
         val visibleSurfaces = visibleFocusPrivateSurfaces(canReadFocus)
         val canReadFocusSurface = FocusPrivateSurface.FOCUS in visibleSurfaces
@@ -210,7 +252,22 @@ class FocusViewModel(
             focusContentReadable = canReadFocusSurface,
             taskOriginSelected = localState.setup.taskOrigin || runtimeState.session?.taskOrigin == true,
             taskActionsAllowed = canReadFocus && canReadTasks && canManageLinkedTaskActions,
-            taskCompletion = localState.taskCompletion,
+            taskCompletion = localState.taskCompletion.copy(
+                familyAction = familyAction,
+                completionPhase = when (familyAction.phase) {
+                    TodoFamilyActionPhase.PREVIEWING -> FocusTaskCompletionPhase.LOADING
+                    TodoFamilyActionPhase.AWAITING_CONFIRMATION,
+                    TodoFamilyActionPhase.IDLE -> if (
+                        localState.taskCompletion.completionPhase == FocusTaskCompletionPhase.LOADING ||
+                        localState.taskCompletion.completionPhase == FocusTaskCompletionPhase.SAVING
+                    ) FocusTaskCompletionPhase.IDLE else localState.taskCompletion.completionPhase
+                    TodoFamilyActionPhase.APPLYING -> FocusTaskCompletionPhase.SAVING
+                    TodoFamilyActionPhase.APPLIED -> FocusTaskCompletionPhase.COMPLETED
+                    TodoFamilyActionPhase.RETRYABLE_FAILURE -> FocusTaskCompletionPhase.ERROR
+                    TodoFamilyActionPhase.CONFLICT -> FocusTaskCompletionPhase.CONFLICT
+                    TodoFamilyActionPhase.MISSING -> FocusTaskCompletionPhase.MISSING
+                },
+            ),
         )
     }.stateIn(
         viewModelScope,
@@ -233,7 +290,9 @@ class FocusViewModel(
             focusContentReadable = privateContentAccess.value,
             taskOriginSelected = local.value.setup.taskOrigin || runtime.state.value.session?.taskOrigin == true,
             taskActionsAllowed = privateContentAccess.value && taskContentAccess.value && taskActionAccess.value,
-            taskCompletion = local.value.taskCompletion,
+            taskCompletion = local.value.taskCompletion.copy(
+                familyAction = taskFamilyActions?.state?.value ?: TodoFamilyActionState(),
+            ),
         ),
     )
 
@@ -439,6 +498,7 @@ class FocusViewModel(
     ) {
         val current = local.value.taskCompletion
         if (!current.matches(sessionId, sessionRevision, taskId, generation)) {
+            taskFamilyActions?.invalidate()
             local.update {
                 it.copy(
                     taskCompletion = FocusTaskCompletionState(
@@ -455,10 +515,7 @@ class FocusViewModel(
     fun markTaskComplete(sessionId: UUID, sessionRevision: Long, taskId: UUID, generation: UUID) {
         if (!canPerformTaskActions(generation) || todos == null || repository == null) return
         syncTaskCompletionSession(sessionId, sessionRevision, taskId, generation)
-        val current = local.value.taskCompletion
-        if (current.completionPhase == FocusTaskCompletionPhase.LOADING ||
-            current.completionPhase == FocusTaskCompletionPhase.SAVING
-        ) return
+        if (taskFamilyActions?.state?.value?.isActive == true) return
         local.update {
             it.copy(taskCompletion = it.taskCompletion.copy(
                 completionPhase = FocusTaskCompletionPhase.LOADING,
@@ -487,23 +544,15 @@ class FocusViewModel(
                 }
                 if (task == null) {
                     setTaskCompletionPhase(FocusTaskCompletionPhase.MISSING, clearPending = true)
-                } else if (task.isCompleted) {
-                    setTaskCompletionPhase(FocusTaskCompletionPhase.COMPLETED, clearPending = true)
-                } else {
-                    val pending = PendingFocusTaskCompletion(
-                        taskId = taskId,
-                        expectedRevision = task.revision,
-                        nextRevision = UUID.randomUUID(),
-                        generation = generation,
-                    )
-                    local.update {
-                        it.copy(taskCompletion = it.taskCompletion.copy(
-                            completionPhase = FocusTaskCompletionPhase.SAVING,
-                            pendingCompletion = pending,
-                        ))
-                    }
-                    persistTaskCompletion(sessionId, sessionRevision, pending)
+                    return@launch
                 }
+                local.update {
+                    it.copy(taskCompletion = it.taskCompletion.copy(
+                        completionPhase = FocusTaskCompletionPhase.SAVING,
+                    ))
+                }
+                taskFamilyActions?.complete(taskId, completed = true, title = task.title, expectedRevision = task.revision)
+                    ?: setTaskCompletionPhase(FocusTaskCompletionPhase.ERROR, clearPending = true)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 if (canPerformTaskActions(generation)) {
@@ -515,15 +564,14 @@ class FocusViewModel(
 
     fun retryTaskCompletion(sessionId: UUID, sessionRevision: Long, taskId: UUID, generation: UUID) {
         val state = local.value.taskCompletion
-        val pending = state.pendingCompletion
-        if (state.matches(sessionId, sessionRevision, taskId, generation) && pending != null) {
-            if (state.completionPhase == FocusTaskCompletionPhase.SAVING) return
-            local.update {
-                it.copy(taskCompletion = it.taskCompletion.copy(completionPhase = FocusTaskCompletionPhase.SAVING))
-            }
-            viewModelScope.launch { persistTaskCompletion(sessionId, sessionRevision, pending) }
-        } else {
+        if (!state.matches(sessionId, sessionRevision, taskId, generation)) {
             markTaskComplete(sessionId, sessionRevision, taskId, generation)
+            return
+        }
+        when (taskFamilyActions?.state?.value?.phase) {
+            TodoFamilyActionPhase.RETRYABLE_FAILURE -> taskFamilyActions?.retry()
+            TodoFamilyActionPhase.CONFLICT, TodoFamilyActionPhase.MISSING -> taskFamilyActions?.reviewAgain()
+            else -> markTaskComplete(sessionId, sessionRevision, taskId, generation)
         }
     }
 
@@ -563,82 +611,6 @@ class FocusViewModel(
             viewModelScope.launch { persistTaskUnlink(pending, productRepository) }
         } else {
             unlinkTask(sessionId, sessionRevision, taskId, generation)
-        }
-    }
-
-    private suspend fun persistTaskCompletion(
-        sessionId: UUID,
-        sessionRevision: Long,
-        pending: PendingFocusTaskCompletion,
-    ) {
-        val taskRepository = todos ?: return
-        try {
-            if (!canPerformTaskActions(pending.generation)) {
-                clearTaskCompletionState()
-                return
-            }
-            val linkedSessionIsCurrent = isCurrentTaskLinkedSession(
-                sessionId, sessionRevision, pending.taskId, pending.generation,
-            )
-            if (!canPerformTaskActions(pending.generation)) {
-                clearTaskCompletionState()
-                return
-            }
-            if (!linkedSessionIsCurrent) {
-                setTaskCompletionPhase(FocusTaskCompletionPhase.CONFLICT, clearPending = true)
-                return
-            }
-            taskRepository.setCompleted(
-                pending.taskId,
-                pending.expectedRevision,
-                pending.nextRevision,
-                completed = true,
-            )
-            if (!canPerformTaskActions(pending.generation)) {
-                clearTaskCompletionState()
-                return
-            }
-            local.update {
-                it.copy(taskCompletion = it.taskCompletion.copy(
-                    completionPhase = FocusTaskCompletionPhase.COMPLETED,
-                    pendingCompletion = null,
-                ))
-            }
-        } catch (_: TodoMissingException) {
-            if (canPerformTaskActions(pending.generation)) {
-                setTaskCompletionPhase(FocusTaskCompletionPhase.MISSING, clearPending = true)
-            } else clearTaskCompletionState()
-        } catch (_: TodoConflictException) {
-            if (!canPerformTaskActions(pending.generation)) {
-                clearTaskCompletionState()
-                return
-            }
-            val latest = try {
-                taskRepository.get(pending.taskId)
-            } catch (failure: Exception) {
-                if (failure is CancellationException) throw failure
-                if (canPerformTaskActions(pending.generation)) {
-                    setTaskCompletionPhase(FocusTaskCompletionPhase.ERROR, clearPending = true)
-                } else clearTaskCompletionState()
-                return
-            }
-            if (!canPerformTaskActions(pending.generation)) {
-                clearTaskCompletionState()
-            } else {
-                setTaskCompletionPhase(
-                    when {
-                        latest == null -> FocusTaskCompletionPhase.MISSING
-                        latest.isCompleted -> FocusTaskCompletionPhase.COMPLETED
-                        else -> FocusTaskCompletionPhase.CONFLICT
-                    },
-                    clearPending = true,
-                )
-            }
-        } catch (failure: Exception) {
-            if (failure is CancellationException) throw failure
-            if (canPerformTaskActions(pending.generation)) {
-                setTaskCompletionPhase(FocusTaskCompletionPhase.ERROR, clearPending = false)
-            } else clearTaskCompletionState()
         }
     }
 
@@ -736,6 +708,7 @@ class FocusViewModel(
     }
 
     private fun clearTaskCompletionState() {
+        taskFamilyActions?.invalidate()
         local.update { it.copy(taskCompletion = FocusTaskCompletionState()) }
     }
 

@@ -1,8 +1,8 @@
 # Task importance and one-level subtasks specification
 
-Date: 14 November 2026. Status: **TI-02 importance persistence, TI-05 importance backup compatibility, and TI-06/I02 hierarchy storage/query/transaction source handoffs COMPLETE — QA PENDING; I04/TI-08 bounded family modes SOURCE COMPLETE — QA PENDING (requested Gradle check timed out without an exit result); I05/TI-07 SOURCE COMPLETE — QA PENDING; I06–I08 NOT STARTED; TI-QA01 NOT RUN. TI-06 allocated Room schema 17; KSP generated [schema 17](../../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/17.json) during the requested check, but schema/migration verification remains TI-QA01 evidence. The TI-06 `./gradlew check` failed on the same three existing `:core:domain:test` cases recorded in the backlog and plan.**
+Date: 14 November 2026. Status (15 November 2026): **I01–I07, including TI-10, SOURCE COMPLETE — QA PENDING; I08 NOT STARTED; TI-QA01 NOT RUN.** TI-06 allocated Room schema 17 and KSP generated [schema 17](../../../core/data/schemas/com.luma.lifeos.data.db.LumaDatabase/17.json); schema/migration verification remains TI-QA01 evidence. Prior Gradle results remain recorded in the implementation plan and backlog. The TI-10 source handoff and requested final check are recorded in [the implementation validation handoff](../../validation/2026-11-14-task-importance-subtasks-implementation.md).
 
-User decision: **Four importance choices + one-level task hierarchy**. User also requested specifications/plans and **one emulator QA task after all implementation is done**. Detailed behavior below is the implementation recommendation derived from that choice, not an assertion that the user separately chose every edge case. This documentation request does not start implementation.
+User decision: **Four importance choices + one-level task hierarchy**. User also requested specifications/plans and **one emulator QA task after all implementation is done**. Detailed behavior below is the implementation recommendation derived from that choice, not an assertion that the user separately chose every edge case. Implementation is proceeding in the linked plan; source handoffs remain distinct from validation and release acceptance.
 
 [Research/backlog](../../TASKS_IMPROVEMENT_BACKLOG_2026-11-14.md) · [Implementation plan](../plans/2026-11-14-task-importance-subtasks.md) · [Single QA task](../../TASK_IMPORTANCE_SUBTASKS_QA.md)
 
@@ -133,6 +133,6 @@ All cases initially NOT RUN. Use isolated test application IDs/data and dedicate
 
 Storage helper names, SQL batching, shared component placement and journal serialization format can be chosen by the implementer without changing these contracts. Never store secrets in logs or use real user task titles in evidence. Performance targets are baseline-relative as defined in QA; emulator samples do not prove representative phone performance.
 
-The written plan pins cross-task type names/interfaces so later implementers do not invent incompatible commands. The approved approach is recorded; implementation is a future request. Detailed defaults can be corrected during spec review without restarting the market research.
+The written plan pins cross-task type names/interfaces so implementation increments share compatible commands. Detailed defaults can be corrected during spec review without restarting the market research. Current source handoffs and outstanding QA are recorded in the linked plan and implementation validation handoff.
 
 Builder check (14 November 2026): an independent Android engineer reviewed this specification for material unanswered planning questions and reported none. This is a document-readiness review, not compilation, runtime verification or user approval of every detailed default.

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -14,7 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +46,7 @@ fun TodayTasksCard(
     onTask: (UUID) -> Unit,
     onSetCompleted: (TodoTask, Boolean) -> Unit,
     onAllTasks: () -> Unit,
+    onLoadMoreTasks: () -> Unit,
     onAddTask: () -> Unit,
     onRetry: () -> Unit,
     onRetryTask: (UUID) -> Unit,
@@ -55,7 +58,7 @@ fun TodayTasksCard(
             modifier = Modifier.testTag("today_tasks_heading"),
             actionLabel = stringResource(R.string.todo_today_view_all),
             onAction = onAllTasks,
-            actionModifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_all"),
+            actionModifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight).testTag("today_tasks_all"),
         )
         when (state) {
             TodayTasksState.Loading -> Row(
@@ -71,7 +74,7 @@ fun TodayTasksCard(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.testTag("today_tasks_error"),
                 )
-                LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("today_tasks_retry")) {
+                LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight).testTag("today_tasks_retry")) {
                     Text(stringResource(R.string.retry))
                 }
             }
@@ -85,48 +88,66 @@ fun TodayTasksCard(
                 }
                 if (state.total == 0 && state.tasks.isEmpty()) {
                     Text(stringResource(R.string.todo_today_empty), modifier = Modifier.testTag("today_tasks_empty"))
-                } else if (state.tasks.isNotEmpty()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp)
-                            .verticalScroll(rememberScrollState()).testTag("today_tasks_scroll"),
-                    ) {
-                    listOf(TodoBucket.OVERDUE, TodoBucket.TODAY).forEach { bucket ->
-                        val bucketTasks = state.tasks.filter { task ->
-                            !task.isCompleted && todoBucket(task, today) == bucket
-                        }
-                        if (bucketTasks.isNotEmpty()) {
-                            Text(
-                                stringResource(if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue else R.string.todo_group_today),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.semantics { heading() }
-                                    .testTag("today_tasks_group_${bucket.name.lowercase()}"),
-                            )
-                            bucketTasks.forEach { task ->
-                                key(task.id) {
-                                    val focusRequester = remember { FocusRequester() }
-                                    val rowError = actions.rowErrors[task.id]
-                                    TodoRow(
-                                        task = task,
-                                        today = today,
-                                        completedList = false,
-                                        canOpen = rowError != TodoListRowError.MISSING,
-                                        canMutate = rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
-                                        pending = task.id in actions.pendingIntents || task.id in actions.inFlight ||
-                                            (actions.familyAction.busy && actions.familyAction.targetId == task.id),
-                                        error = rowError,
-                                        onOpen = { onTask(task.id) },
-                                        onSetCompleted = { onSetCompleted(task, it) },
-                                        onRetry = { onRetryTask(task.id) },
-                                        onDismissError = { onDismissTaskError(task.id) },
-                                        focusRequester = focusRequester,
-                                        compact = true,
-                                    )
-                                }
+                } else if (state.tasks.isNotEmpty() || state.total > 0) {
+                    val bucketRows = listOf(TodoBucket.OVERDUE, TodoBucket.TODAY)
+                        .map { bucket ->
+                            bucket to state.rows.filter { row ->
+                                !row.task.isCompleted && todoBucket(row.task, today) == bucket
                             }
                         }
-                    }
+                        .filter { (_, rows) -> rows.isNotEmpty() }
+                    LazyColumn(
+                        state = rememberLazyListState(),
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp)
+                            .testTag("today_tasks_scroll"),
+                    ) {
+                        bucketRows.forEach { (bucket, bucketTasks) ->
+                            item(key = "today_tasks_group_${bucket.name}") {
+                                Text(
+                                    stringResource(
+                                        if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue
+                                        else R.string.todo_group_today,
+                                    ),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.semantics { heading() }
+                                        .testTag("today_tasks_group_${bucket.name.lowercase()}"),
+                                )
+                            }
+                            items(bucketTasks, key = { it.task.id.toString() }) { row ->
+                                val task = row.task
+                                val focusRequester = remember(task.id) { FocusRequester() }
+                                val rowError = actions.rowErrors[task.id]
+                                TodoRow(
+                                    task = task,
+                                    today = today,
+                                    completedList = false,
+                                    canOpen = rowError != TodoListRowError.MISSING,
+                                    canMutate = rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
+                                    pending = task.id in actions.pendingIntents || task.id in actions.inFlight ||
+                                        (actions.familyAction.busy && actions.familyAction.targetId == task.id),
+                                    error = rowError,
+                                    onOpen = { onTask(task.id) },
+                                    onSetCompleted = { onSetCompleted(task, it) },
+                                    onRetry = { onRetryTask(task.id) },
+                                    onDismissError = { onDismissTaskError(task.id) },
+                                    focusRequester = focusRequester,
+                                    compact = true,
+                                    rowContext = row,
+                                )
+                            }
+                        }
+                        if (state.tasks.size < state.total) {
+                            item(key = "today_tasks_load_more") {
+                                LumaTextButton(
+                                    onClick = onLoadMoreTasks,
+                                    modifier = Modifier.fillMaxWidth()
+                                        .heightIn(min = LumaUi.MinTouchTargetHeight)
+                                        .testTag("today_tasks_load_more"),
+                                ) { Text(stringResource(R.string.calendar_load_more)) }
+                            }
+                        }
                     }
                 }
             }
@@ -181,7 +202,7 @@ fun TodayTasksCard(
         }
         LumaTextButton(
             onClick = onAddTask,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("today_tasks_add"),
+            modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight).testTag("today_tasks_add"),
         ) {
             Text(stringResource(R.string.todo_list_add))
         }
@@ -232,7 +253,7 @@ internal fun TodayTaskRecoverySummary(
                 if (retryEnabled) {
                     LumaTextButton(
                         onClick = onRetry,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight)
                             .testTag("today_task_feedback_retry_$taskId"),
                     ) {
                         Text(stringResource(R.string.todo_retry_action))
@@ -241,7 +262,7 @@ internal fun TodayTaskRecoverySummary(
                 if (error == TodoListRowError.CONFLICT) {
                     LumaTextButton(
                         onClick = onOpen,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight)
                             .testTag("today_task_feedback_open_$taskId"),
                     ) {
                         Text(stringResource(R.string.todo_status_open))
@@ -250,7 +271,7 @@ internal fun TodayTaskRecoverySummary(
                 if (error == TodoListRowError.CONFLICT || error == TodoListRowError.MISSING) {
                     LumaTextButton(
                         onClick = onDismiss,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight)
                             .testTag("today_task_feedback_dismiss_$taskId"),
                     ) {
                         Text(stringResource(R.string.todo_feedback_dismiss))

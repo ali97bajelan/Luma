@@ -200,6 +200,7 @@ internal fun encodeWidgetActionResult(result: com.luma.lifeos.domain.widget.Widg
         .put("outcome", result.outcome.name)
         .put("retryToken", result.retryToken?.toString() ?: JSONObject.NULL)
         .put("undoToken", result.undoToken?.toString() ?: JSONObject.NULL)
+        .put("taskId", result.taskId?.toString() ?: JSONObject.NULL)
         .toString()
 
 internal fun decodeWidgetActionResult(value: String): com.luma.lifeos.domain.widget.WidgetActionResult? =
@@ -210,5 +211,6 @@ internal fun decodeWidgetActionResult(value: String): com.luma.lifeos.domain.wid
             outcome = com.luma.lifeos.domain.widget.WidgetOutcome.valueOf(json.getString("outcome")),
             retryToken = uuid("retryToken"),
             undoToken = uuid("undoToken"),
+            taskId = uuid("taskId"),
         )
     }.getOrNull()

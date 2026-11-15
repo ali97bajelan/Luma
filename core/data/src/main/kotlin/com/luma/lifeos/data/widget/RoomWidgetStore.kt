@@ -9,6 +9,8 @@ import com.luma.lifeos.domain.widget.WidgetOutcome
 import com.luma.lifeos.domain.widget.WidgetRow
 import com.luma.lifeos.domain.widget.WidgetSnapshot
 import com.luma.lifeos.domain.widget.WidgetStore
+import com.luma.lifeos.domain.todo.TodoChildProgress
+import com.luma.lifeos.domain.todo.TodoImportance
 import kotlinx.coroutines.CancellationException
 import java.time.Clock
 import java.time.Instant
@@ -241,6 +243,14 @@ class RoomWidgetStore(
                                 dueDate = LocalDate.parse(requireNotNull(row.dueDate)),
                                 actionToken = token,
                                 dueTime = row.dueTimeMinutes?.let { java.time.LocalTime.of(it / 60, it % 60) },
+                                parentTitle = row.parentTitle,
+                                importance = TodoImportance.fromCode(row.importanceCode),
+                                childProgress = row.childTotal?.takeIf { it > 0 }?.let { total ->
+                                    TodoChildProgress(
+                                        completed = requireNotNull(row.childCompleted),
+                                        total = total,
+                                    )
+                                },
                             )
                         }
                     } else {

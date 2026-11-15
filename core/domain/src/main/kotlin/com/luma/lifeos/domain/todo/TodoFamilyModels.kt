@@ -26,7 +26,9 @@ data class TodoTaskRow(
     val progress: TodoChildProgress?,
 ) {
     init {
-        require(task.parentId == parent?.id) { "Row parent context must match the task relationship" }
+        require(parent == null || task.parentId == parent.id) {
+            "Row parent context must match the task relationship"
+        }
         require(progress == null || task.parentId == null) { "Only roots can carry child progress" }
     }
 }

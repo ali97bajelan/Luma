@@ -34,6 +34,7 @@ internal object WidgetCompactRenderer {
                 WidgetOutcome.SAVED -> if (kind == WidgetKind.TASKS) R.string.widget_task_saved else R.string.widget_habit_saved
                 WidgetOutcome.UNDONE -> R.string.widget_feedback_undone
                 WidgetOutcome.STALE -> R.string.widget_feedback_stale
+                WidgetOutcome.CONFIRMATION_REQUIRED -> R.string.widget_task_family_confirmation
                 WidgetOutcome.FAILED -> R.string.widget_feedback_failed
                 WidgetOutcome.CONFLICT -> R.string.widget_feedback_conflict
                 WidgetOutcome.MISSING -> R.string.widget_feedback_missing
@@ -65,6 +66,12 @@ internal object WidgetCompactRenderer {
                 R.string.widget_dismiss to WidgetIntents.dismissFeedback(context, widgetId)
             feedback?.outcome == WidgetOutcome.STALE ->
                 R.string.widget_data_refresh to WidgetIntents.refresh(context, widgetId)
+            feedback?.outcome == WidgetOutcome.CONFIRMATION_REQUIRED ->
+                R.string.widget_task_family_open to WidgetIntents.navigation(
+                    context,
+                    widgetId,
+                    feedback.taskId?.let { WidgetDestination.Task(it) } ?: destination,
+                )
             feedback?.outcome == WidgetOutcome.FAILED && feedback.retryToken != null ->
                 R.string.widget_feedback_retry to WidgetIntents.mutation(context, widgetId, requireNotNull(feedback.retryToken))
             emptyLibraryAction != null -> emptyLibraryAction
@@ -98,6 +105,7 @@ internal object WidgetCompactRenderer {
             snapshot == null -> appContext.getString(R.string.widget_compact_setup)
             feedback != null -> when (feedback.outcome) {
                 WidgetOutcome.STALE -> appContext.getString(R.string.widget_compact_stale)
+                WidgetOutcome.CONFIRMATION_REQUIRED -> appContext.getString(R.string.widget_task_family_confirmation)
                 WidgetOutcome.FAILED -> appContext.getString(R.string.widget_compact_failed)
                 WidgetOutcome.CONFLICT -> appContext.getString(R.string.widget_compact_conflict)
                 WidgetOutcome.MISSING, WidgetOutcome.INVALID -> appContext.getString(R.string.widget_compact_missing)

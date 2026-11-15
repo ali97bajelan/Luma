@@ -46,6 +46,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.todo.TodoFamilyActions
 import com.luma.lifeos.domain.focus.FocusAction
 import com.luma.lifeos.domain.focus.FocusRecoveryChoice
 import com.luma.lifeos.domain.focus.FocusSession
@@ -103,6 +104,7 @@ internal fun FocusScreen(
     onEndBreak: () -> Unit = {},
     focusRepository: FocusRepository? = null,
     focusProductRepository: FocusProductRepository? = null,
+    taskFamilyActions: TodoFamilyActions? = null,
     taskContentReadable: Boolean = true,
     onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit = { _, _ -> },
     onTaskSessionChanged: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit = { _, _, _, _ -> },
@@ -269,6 +271,7 @@ internal fun FocusScreen(
                     onStartBreak = onStartBreak,
                     onEndBreak = onEndBreak,
                     onTaskSessionChanged = onTaskSessionChanged,
+                    taskFamilyActions = taskFamilyActions,
                     onMarkTaskComplete = onMarkTaskComplete,
                     onRetryTaskCompletion = onRetryTaskCompletion,
                     onUnlinkTask = onUnlinkTask,
@@ -297,6 +300,7 @@ internal fun FocusScreen(
                     onStartBreak = onStartBreak,
                     onEndBreak = onEndBreak,
                     onTaskSessionChanged = onTaskSessionChanged,
+                    taskFamilyActions = taskFamilyActions,
                     onMarkTaskComplete = onMarkTaskComplete,
                     onRetryTaskCompletion = onRetryTaskCompletion,
                     onUnlinkTask = onUnlinkTask,
@@ -874,6 +878,7 @@ private fun TerminalContent(
     onOpenHistory: () -> Unit,
     onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit,
     onTaskSessionChanged: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit,
+    taskFamilyActions: TodoFamilyActions? = null,
     onMarkTaskComplete: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
     onRetryTaskCompletion: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
     onUnlinkTask: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
@@ -899,6 +904,7 @@ private fun TerminalContent(
         onOpenHistory = onOpenHistory,
         onTerminalSessionMissing = onTerminalSessionMissing,
         onTaskSessionChanged = onTaskSessionChanged,
+        taskFamilyActions = taskFamilyActions,
         onMarkTaskComplete = onMarkTaskComplete,
         onRetryTaskCompletion = onRetryTaskCompletion,
         onUnlinkTask = onUnlinkTask,

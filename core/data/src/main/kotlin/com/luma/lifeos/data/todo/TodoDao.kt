@@ -92,6 +92,10 @@ data class WidgetTodoRow(
     @ColumnInfo(name = "due_date") val dueDate: String,
     @ColumnInfo(name = "revision_token") val revisionToken: String,
     @ColumnInfo(name = "due_time_minutes") val dueTimeMinutes: Int? = null,
+    @ColumnInfo(name = "parent_title") val parentTitle: String? = null,
+    @ColumnInfo(name = "importance_code") val importanceCode: Int = 0,
+    @ColumnInfo(name = "child_total") val childTotal: Int? = null,
+    @ColumnInfo(name = "child_completed") val childCompleted: Int? = null,
 )
 
 data class WidgetTodoSummary(
@@ -130,29 +134,53 @@ interface TodoDao {
     suspend fun widgetTodaySummary(date: String): WidgetTodoSummary
 
     @Query("""
-        SELECT id AS task_id, title, due_date, revision_token, due_time_minutes
-        FROM todo_task
-        WHERE completed_at IS NULL AND due_date <= :date
-        ORDER BY due_date ASC, CASE WHEN due_time_minutes IS NULL THEN 1 ELSE 0 END,
-            due_time_minutes ASC, created_at ASC, id ASC
+        SELECT task.id AS task_id, task.title, task.due_date, task.revision_token, task.due_time_minutes,
+            parent.title AS parent_title, task.importance_code, progress.child_total AS child_total,
+            progress.child_completed AS child_completed
+        FROM todo_task AS task
+        LEFT JOIN todo_task AS parent ON parent.id = task.parent_id
+        LEFT JOIN (
+            SELECT parent_id, COUNT(*) AS child_total,
+                SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS child_completed
+            FROM todo_task WHERE parent_id IS NOT NULL GROUP BY parent_id
+        ) AS progress ON progress.parent_id = task.id
+        WHERE task.completed_at IS NULL AND task.due_date <= :date
+        ORDER BY task.due_date ASC, CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
+            task.due_time_minutes ASC, task.created_at ASC, task.id ASC
         LIMIT :limit
     """)
     suspend fun widgetTodayRows(date: String, limit: Int): List<WidgetTodoRow>
 
     @Query("""
-        SELECT id AS task_id, title, due_date, revision_token, due_time_minutes
-        FROM todo_task
-        WHERE completed_at IS NULL AND due_date <= :date
-        ORDER BY due_date ASC, CASE WHEN due_time_minutes IS NULL THEN 1 ELSE 0 END,
-            due_time_minutes ASC, created_at ASC, id ASC
+        SELECT task.id AS task_id, task.title, task.due_date, task.revision_token, task.due_time_minutes,
+            parent.title AS parent_title, task.importance_code, progress.child_total AS child_total,
+            progress.child_completed AS child_completed
+        FROM todo_task AS task
+        LEFT JOIN todo_task AS parent ON parent.id = task.parent_id
+        LEFT JOIN (
+            SELECT parent_id, COUNT(*) AS child_total,
+                SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS child_completed
+            FROM todo_task WHERE parent_id IS NOT NULL GROUP BY parent_id
+        ) AS progress ON progress.parent_id = task.id
+        WHERE task.completed_at IS NULL AND task.due_date <= :date
+        ORDER BY task.due_date ASC, CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
+            task.due_time_minutes ASC, task.created_at ASC, task.id ASC
         LIMIT :limit OFFSET :offset
     """)
     suspend fun widgetTodayRowsPage(date: String, limit: Int, offset: Int): List<WidgetTodoRow>
 
     @Query("""
-        SELECT id AS task_id, title, due_date, revision_token, due_time_minutes
-        FROM todo_task
-        WHERE id = :taskId AND completed_at IS NULL AND due_date <= :date
+        SELECT task.id AS task_id, task.title, task.due_date, task.revision_token, task.due_time_minutes,
+            parent.title AS parent_title, task.importance_code, progress.child_total AS child_total,
+            progress.child_completed AS child_completed
+        FROM todo_task AS task
+        LEFT JOIN todo_task AS parent ON parent.id = task.parent_id
+        LEFT JOIN (
+            SELECT parent_id, COUNT(*) AS child_total,
+                SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS child_completed
+            FROM todo_task WHERE parent_id IS NOT NULL GROUP BY parent_id
+        ) AS progress ON progress.parent_id = task.id
+        WHERE task.id = :taskId AND task.completed_at IS NULL AND task.due_date <= :date
         LIMIT 1
     """)
     suspend fun widgetTodayRow(taskId: String, date: String): WidgetTodoRow?

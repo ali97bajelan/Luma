@@ -16,11 +16,11 @@ import com.luma.lifeos.domain.model.Person
 import com.luma.lifeos.domain.model.PersonHistory
 import com.luma.lifeos.domain.model.PersonInput
 import com.luma.lifeos.domain.repository.PersonRepository
-import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoPage
 import com.luma.lifeos.domain.todo.TodoRepository
+import com.luma.lifeos.domain.todo.TodoRowPage
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
@@ -57,10 +57,23 @@ class ProtectedTodoRepository(
         else TodoPage(emptyList(), 0)
     }
 
+    override fun observeTodayRows(date: LocalDate, limit: Int): Flow<TodoRowPage> = combine(
+        delegate.observeTodayRows(date, limit), gateway.snapshot,
+    ) { page, state ->
+        if (gateway.filterSection(true, LockSection.TASKS, state)) {
+            page.copy(items = immutableProjectionList(page.items))
+        } else TodoRowPage(emptyList(), 0)
+    }
+
     override suspend fun searchOpen(query: String, offset: Int, limit: Int): TodoPage =
         gateway.readValue(taskListRead(), { delegate.searchOpen(query, offset, limit) }) { page, _ ->
             page.copy(items = immutableProjectionList(page.items))
         } ?: TodoPage(emptyList(), 0)
+
+    override suspend fun searchOpenRows(query: String, offset: Int, limit: Int): TodoRowPage =
+        gateway.readValue(taskListRead(), { delegate.searchOpenRows(query, offset, limit) }) { page, _ ->
+            page.copy(items = immutableProjectionList(page.items))
+        } ?: TodoRowPage(emptyList(), 0)
 
     override suspend fun get(id: UUID): TodoTask? = gateway.readValue(taskRead(id), { delegate.get(id) }) { value, _ -> value }
     override suspend fun create(id: UUID, initialRevision: UUID, input: TodoInput) =

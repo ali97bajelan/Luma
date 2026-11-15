@@ -124,6 +124,9 @@
     <string name="widget_feedback_conflict">This item changed. Open Luma to review it.</string>
     <string name="widget_feedback_missing">This item is unavailable. Open Luma.</string>
     <string name="widget_feedback_unavailable">This action is unavailable. Open Luma.</string>
+    <string name="widget_task_family_confirmation">This task needs family confirmation. Open it in Luma to review the change.</string>
+    <string name="widget_task_family_open">Open task</string>
+    <string name="widget_task_family_open_description">Open this task in Luma to review and confirm the family change</string>
     <string name="widget_feedback_failed">Couldn’t save this change.</string>
     <string name="widget_feedback_undo">Undo</string>
     <string name="widget_feedback_undo_description">Undo the saved habit repetition</string>

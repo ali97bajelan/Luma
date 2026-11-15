@@ -47,10 +47,13 @@ import com.luma.lifeos.calendar.CalendarDateFormatter
 import com.luma.lifeos.domain.calendar.CalendarFilter
 import com.luma.lifeos.domain.calendar.CalendarSystem
 import com.luma.lifeos.domain.todo.TodoTask
+import com.luma.lifeos.domain.todo.TodoTaskRow
 import com.luma.lifeos.language.DisplayTimePolicy
 import com.luma.lifeos.ui.common.LumaSectionHeader
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaListSurface
+import com.luma.lifeos.ui.common.LumaTodoImportanceBadge
+import com.luma.lifeos.ui.common.todoImportanceLabelRes
 import com.luma.lifeos.ui.todo.TodayTaskRecoverySummary
 import com.luma.lifeos.ui.todo.TodayTasksActionState
 import com.luma.lifeos.ui.todo.TodoListRowError
@@ -288,6 +291,7 @@ private fun CalendarTasksSection(
                             key(task.id) {
                                 CalendarTaskRow(
                                     task = task,
+                                    rowContext = taskPage.value.rowContextById[task.id],
                                     today = state.today,
                                     actions = actions,
                                     displayTime = displayTime,
@@ -380,6 +384,7 @@ private fun CalendarTaskRecovery(
 @Composable
 private fun CalendarTaskRow(
     task: TodoTask,
+    rowContext: TodoTaskRow?,
     today: LocalDate,
     actions: TodayTasksActionState,
     displayTime: DisplayTimePolicy,
@@ -401,6 +406,11 @@ private fun CalendarTaskRow(
     val separator = stringResource(R.string.accessibility_label_separator)
     val dateBadge = taskDateBadge(task, today, displayTime, calendarSystem)
     val dueDate = requireNotNull(task.dueDate)
+    val row = rowContext?.takeIf { it.task.id == task.id }
+    val importanceLabel = stringResource(todoImportanceLabelRes(task.importance))
+    val importanceDescription = stringResource(R.string.todo_importance_value, importanceLabel)
+    val parentLabel = row?.parent?.let { stringResource(R.string.todo_subtask_parent_name, it.title) }
+    val progressLabel = row?.progress?.let { stringResource(R.string.todo_subtask_progress, it.completed, it.total) }
     val taskFocus = remember(task.id) { FocusRequester() }
 
     LumaListSurface(modifier = Modifier.testTag("calendar_task_${task.id}")) {
@@ -423,12 +433,21 @@ private fun CalendarTaskRow(
                     enabled = rowError != TodoListRowError.MISSING,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).focusRequester(taskFocus)
                         .semantics {
-                            contentDescription = listOfNotNull(task.title, dateBadge, task.note)
-                                .joinToString(separator)
+                            contentDescription = listOfNotNull(
+                                task.title,
+                                importanceDescription,
+                                parentLabel,
+                                progressLabel,
+                                dateBadge,
+                                task.note,
+                            ).joinToString(separator)
                         }.testTag("calendar_task_open_${task.id}"),
                 ) {
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap), horizontalAlignment = Alignment.Start) {
                         Text(task.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        LumaTodoImportanceBadge(importance = task.importance)
+                        parentLabel?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        progressLabel?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Surface(
                         color = if (dueDate.isBefore(today)) MaterialTheme.colorScheme.errorContainer
                             else MaterialTheme.colorScheme.secondaryContainer,

@@ -125,6 +125,9 @@
     <string name="widget_feedback_conflict">Cet élément a changé. Ouvrez Luma pour le vérifier.</string>
     <string name="widget_feedback_missing">Cet élément est indisponible. Ouvrez Luma.</string>
     <string name="widget_feedback_unavailable">Cette action est indisponible. Ouvrez Luma.</string>
+    <string name="widget_task_family_confirmation">Cette tâche nécessite une confirmation de sa famille. Ouvrez-la dans Luma pour examiner la modification.</string>
+    <string name="widget_task_family_open">Ouvrir la tâche</string>
+    <string name="widget_task_family_open_description">Ouvrir cette tâche dans Luma pour examiner et confirmer la modification de sa famille</string>
     <string name="widget_feedback_failed">Impossible d’enregistrer cette modification.</string>
     <string name="widget_feedback_undo">Annuler</string>
     <string name="widget_feedback_undo_description">Annuler la répétition enregistrée</string>

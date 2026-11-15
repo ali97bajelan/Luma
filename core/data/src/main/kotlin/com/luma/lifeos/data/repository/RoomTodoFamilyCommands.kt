@@ -335,7 +335,11 @@ internal class RoomTodoFamilyCommands(
         }
     }
 
-    suspend fun applyCompletion(planId: UUID, commandId: UUID): TodoCompletionReceipt {
+    suspend fun applyCompletion(
+        planId: UUID,
+        commandId: UUID,
+        validateBeforeApply: suspend () -> Unit = {},
+    ): TodoCompletionReceipt {
         try {
             return database.withTransaction {
                 pruneJournal()
@@ -370,6 +374,7 @@ internal class RoomTodoFamilyCommands(
                     throw TodoConflictException(UUID.fromString(command.targetId))
                 }
                 val family = revalidatePrepared(command)
+                validateBeforeApply()
                 val affected = commands.members(command.id).filter { it.willChange }
                 val now = clock.instant()
                 val completed = requireNotNull(command.completed)

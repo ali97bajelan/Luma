@@ -16,8 +16,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
+import com.luma.lifeos.ui.todo.TodoFamilyActions
+import com.luma.lifeos.ui.todo.TodoFamilyActionDialogs
+import com.luma.lifeos.ui.todo.TodoFamilyActionPhase
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusTerminalReason
@@ -35,6 +37,7 @@ internal fun FocusTaskCompletionAction(
     onUnlinkTask: (UUID, Long, UUID, UUID) -> Unit,
     onRetryUnlink: (UUID, Long, UUID, UUID) -> Unit,
     onChanged: () -> Unit,
+    familyActions: TodoFamilyActions? = null,
 ) {
     if (!canAccessTaskActions || !session.taskOrigin) return
     if (!session.isTerminal) return
@@ -81,7 +84,13 @@ internal fun FocusTaskCompletionAction(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap), modifier = Modifier.fillMaxWidth()) {
-        if (completionEligible) {
+        if (completionEligible && visibleState.familyAction.phase !in setOf(
+                TodoFamilyActionPhase.AWAITING_CONFIRMATION,
+                TodoFamilyActionPhase.RETRYABLE_FAILURE,
+                TodoFamilyActionPhase.CONFLICT,
+                TodoFamilyActionPhase.MISSING,
+            )
+        ) {
             when (visibleState.completionPhase) {
                 FocusTaskCompletionPhase.COMPLETED ->
                     Text(
@@ -100,14 +109,18 @@ internal fun FocusTaskCompletionAction(
                             .testTag("focus_task_completion_error"),
                     )
                 FocusTaskCompletionPhase.SAVING, FocusTaskCompletionPhase.LOADING ->
-                    Text(
+                    if (visibleState.familyAction.phase == TodoFamilyActionPhase.PREVIEWING ||
+                        visibleState.familyAction.phase == TodoFamilyActionPhase.APPLYING ||
+                        familyActions == null
+                    ) Text(
                         stringResource(R.string.focus_task_complete_saving),
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                             .testTag("focus_task_completion_saving"),
                     )
                 else -> Unit
             }
-            if (visibleState.completionPhase != FocusTaskCompletionPhase.COMPLETED &&
+            if (!visibleState.familyAction.isActive &&
+                visibleState.completionPhase != FocusTaskCompletionPhase.COMPLETED &&
                 visibleState.completionPhase != FocusTaskCompletionPhase.MISSING
             ) {
                 LumaTextButton(
@@ -120,7 +133,7 @@ internal fun FocusTaskCompletionAction(
                     },
                     enabled = visibleState.completionPhase != FocusTaskCompletionPhase.SAVING &&
                         visibleState.completionPhase != FocusTaskCompletionPhase.LOADING,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_mark_complete"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight).testTag("focus_task_mark_complete"),
                 ) {
                     if (visibleState.completionPhase == FocusTaskCompletionPhase.SAVING ||
                         visibleState.completionPhase == FocusTaskCompletionPhase.LOADING
@@ -131,6 +144,17 @@ internal fun FocusTaskCompletionAction(
                     ))
                 }
             }
+        }
+
+        if (familyActions != null) {
+            TodoFamilyActionDialogs(
+                state = visibleState.familyAction,
+                onConfirm = familyActions::confirm,
+                onCancel = familyActions::cancel,
+                onRetry = familyActions::retry,
+                onReviewAgain = familyActions::reviewAgain,
+                onDismiss = familyActions::dismiss,
+            )
         }
 
         if (visibleState.unlinkPhase == FocusTaskUnlinkPhase.CONFLICT) {
@@ -158,7 +182,7 @@ internal fun FocusTaskCompletionAction(
                     }
                 },
                 enabled = visibleState.unlinkPhase != FocusTaskUnlinkPhase.SAVING,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("focus_task_unlink"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight).testTag("focus_task_unlink"),
             ) {
                 if (visibleState.unlinkPhase == FocusTaskUnlinkPhase.SAVING) CircularProgressIndicator()
                 else Text(stringResource(

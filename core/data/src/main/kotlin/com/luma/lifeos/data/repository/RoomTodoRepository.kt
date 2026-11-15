@@ -104,7 +104,7 @@ class RoomTodoRepository(
     override fun observeTodayRows(date: LocalDate, limit: Int): Flow<TodoRowPage> {
         require(limit > 0) { "Task page size must be positive" }
         require(date.year in 1..9999) { "Task date must be in years 0001–9999" }
-        return dao.observeTodayRows(date.toString(), minOf(limit, TODO_DEFAULT_PAGE_SIZE))
+        return dao.observeTodayRows(date.toString(), limit)
             .map { rows ->
                 TodoRowPage(
                     items = rows.mapNotNull { it.toDomainOrNull() },
@@ -197,6 +197,12 @@ class RoomTodoRepository(
 
     override suspend fun applyCompletion(planId: UUID, commandId: UUID) =
         familyCommands.applyCompletion(planId, commandId)
+
+    override suspend fun applyCompletionValidated(
+        planId: UUID,
+        commandId: UUID,
+        validate: suspend () -> Unit,
+    ) = familyCommands.applyCompletion(planId, commandId, validate)
 
     override suspend fun undoCompletion(commandId: UUID, undoCommandId: UUID) =
         familyCommands.undoCompletion(commandId, undoCommandId)

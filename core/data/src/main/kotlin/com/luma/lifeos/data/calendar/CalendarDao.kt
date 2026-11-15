@@ -6,7 +6,7 @@ import androidx.room.RawQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 import com.luma.lifeos.data.entity.LifeEventEntity
 import com.luma.lifeos.data.entity.MemoryEntity
-import com.luma.lifeos.data.todo.TodoPageRow
+import com.luma.lifeos.data.todo.TodoFamilyPageRow
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -26,8 +26,9 @@ interface CalendarDao {
     @Query("""
         SELECT task.id AS task_id, task.title, task.note, task.due_date, task.completed_at,
             task.due_time_minutes, task.created_at, task.updated_at, task.revision_token,
-            totals.total_count, task.importance_code, task.parent_id, task.sibling_position,
-            task.family_revision_token
+            task.importance_code, task.parent_id, task.sibling_position, task.family_revision_token,
+            parent.title AS parent_title, progress.child_total AS child_total,
+            progress.child_completed AS child_completed, totals.total_count
         FROM (
             SELECT COUNT(*) AS total_count FROM todo_task
             WHERE completed_at IS NULL AND due_date IS NOT NULL AND (
@@ -45,12 +46,20 @@ interface CalendarDao {
                 (:date <> :today AND task.due_date = :date)
             ))
         )
+        LEFT JOIN todo_task AS parent ON parent.id = task.parent_id
+        LEFT JOIN (
+            SELECT parent_id, COUNT(*) AS child_total,
+                SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS child_completed
+            FROM todo_task
+            WHERE parent_id IS NOT NULL
+            GROUP BY parent_id
+        ) AS progress ON progress.parent_id = task.id
         ORDER BY task.due_date ASC,
             CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
             task.due_time_minutes ASC, task.created_at ASC, task.id ASC
         LIMIT :limit
     """)
-    fun observeTasks(date: String, today: String, overdueOnly: Boolean, limit: Int): Flow<List<TodoPageRow>>
+    fun observeTasks(date: String, today: String, overdueOnly: Boolean, limit: Int): Flow<List<TodoFamilyPageRow>>
 
     @Query("SELECT COUNT(*) FROM todo_task WHERE completed_at IS NULL AND due_date < :today")
     fun observeOverdueCount(today: String): Flow<Int>

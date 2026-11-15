@@ -87,11 +87,19 @@ data class TodoInput(
     val importance: TodoImportance = TodoImportance.NONE,
 )
 
-data class TodoPage(val items: List<TodoTask>, val total: Int) {
+data class TodoPage(
+    val items: List<TodoTask>,
+    val total: Int,
+    /** Batched parent and progress context for task rows that need it. */
+    val rowContextById: Map<UUID, TodoTaskRow> = emptyMap(),
+) {
     init {
         require(total >= 0) { "Task total cannot be negative" }
         require(items.size <= total) { "Task page cannot exceed its total" }
         require(items.map(TodoTask::id).distinct().size == items.size) { "Task page contains duplicate tasks" }
+        require(rowContextById.all { (id, row) -> id == row.task.id && items.any { it.id == id } }) {
+            "Task row context must belong to a visible page item"
+        }
     }
 }
 

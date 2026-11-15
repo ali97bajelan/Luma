@@ -4,6 +4,7 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import com.luma.lifeos.data.calendar.CalendarDao
 import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.todo.toDomain
+import com.luma.lifeos.data.todo.toDomainOrNull
 import com.luma.lifeos.domain.calendar.CalendarRange
 import com.luma.lifeos.domain.calendar.CalendarMemory
 import com.luma.lifeos.domain.calendar.CalendarMemories
@@ -54,9 +55,11 @@ class RoomCalendarRepository(database: LumaDatabase) : CalendarRepository {
         requireCalendarDate(today, "today")
         require(limit > 0) { "Calendar task page size must be positive" }
         return dao.observeTasks(date.toString(), today.toString(), overdueOnly, limit).map { rows ->
+            val taskRows = rows.mapNotNull { it.toDomainOrNull() }
             TodoPage(
-                items = rows.mapNotNull { it.toEntityOrNull()?.toDomain() },
+                items = taskRows.map { it.task },
                 total = rows.firstOrNull()?.totalCount ?: 0,
+                rowContextById = taskRows.associateBy { it.task.id },
             )
         }.flowOn(Dispatchers.Default)
     }

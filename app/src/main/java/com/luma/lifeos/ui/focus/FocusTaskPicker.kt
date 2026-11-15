@@ -1,6 +1,8 @@
 package com.luma.lifeos.ui.focus
 
 import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaTodoImportanceBadge
+import com.luma.lifeos.ui.common.todoImportanceLabelRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,12 +30,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoRepository
@@ -63,7 +65,7 @@ internal fun FocusTaskPickerRoute(
         }
         state = FocusTaskPickerState(query = query, offset = offset, loading = true, requestId = requestId)
         try {
-            val page = repository.searchOpen(query, offset, TODO_DEFAULT_PAGE_SIZE)
+            val page = repository.searchOpenRows(query, offset, TODO_DEFAULT_PAGE_SIZE)
             if (state.requestId == requestId) {
                 state = FocusTaskPickerState(query = query, offset = offset, page = page, requestId = requestId)
             }
@@ -120,12 +122,12 @@ internal fun FocusTaskPickerRoute(
                             if (visibleState.hasPrevious) {
                                 LumaTextButton(
                                     onClick = { offset = (offset - TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(0) },
-                                    modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_previous"),
+                                    modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight).testTag("focus_task_picker_previous"),
                                 ) { Text(stringResource(R.string.focus_task_picker_previous)) }
                             }
                             LumaTextButton(
                                 onClick = { retry += 1 },
-                                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_retry"),
+                                modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight).testTag("focus_task_picker_retry"),
                             ) { Text(stringResource(R.string.retry)) }
                         }
                     }
@@ -140,7 +142,7 @@ internal fun FocusTaskPickerRoute(
                         if (visibleState.hasPrevious) {
                             LumaTextButton(
                                 onClick = { offset = (offset - TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(0) },
-                                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_previous"),
+                                modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight).testTag("focus_task_picker_previous"),
                             ) { Text(stringResource(R.string.focus_task_picker_previous)) }
                         }
                     }
@@ -161,13 +163,42 @@ internal fun FocusTaskPickerRoute(
                             Modifier.weight(1f).fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                         ) {
-                            items(page.items, key = { it.id.toString() }) { task ->
+                            items(page.items, key = { it.task.id.toString() }) { row ->
+                                val task = row.task
+                                val importanceLabel = stringResource(todoImportanceLabelRes(task.importance))
+                                val parentLabel = row.parent?.let {
+                                    stringResource(R.string.todo_subtask_parent_name, it.title)
+                                }
+                                val progressLabel = row.progress?.let {
+                                    stringResource(R.string.todo_subtask_progress, it.completed, it.total)
+                                }
+                                val importanceDescription = stringResource(R.string.todo_importance_value, importanceLabel)
+                                val separator = stringResource(R.string.accessibility_label_separator)
                                 LumaOutlinedButton(
                                     onClick = { onSelectTask(task.id) },
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight)
+                                        .semantics {
+                                            contentDescription = listOfNotNull(
+                                                task.title, importanceDescription, parentLabel, progressLabel,
+                                            ).joinToString(separator)
+                                        }
                                         .testTag("focus_task_picker_item_${task.id}"),
                                 ) {
-                                    Text(task.title, modifier = Modifier.fillMaxWidth())
+                                    Column(
+                                        Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
+                                    ) {
+                                        Text(task.title, style = MaterialTheme.typography.bodyLarge)
+                                        LumaTodoImportanceBadge(importance = task.importance)
+                                        parentLabel?.let {
+                                            Text(it, style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        progressLabel?.let {
+                                            Text(it, style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -178,12 +209,12 @@ internal fun FocusTaskPickerRoute(
                             LumaTextButton(
                                 onClick = { offset = (offset - TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(0) },
                                 enabled = visibleState.hasPrevious,
-                                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_previous"),
+                                modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight).testTag("focus_task_picker_previous"),
                             ) { Text(stringResource(R.string.focus_task_picker_previous)) }
                             LumaTextButton(
                                 onClick = { offset += TODO_DEFAULT_PAGE_SIZE },
                                 enabled = visibleState.hasNext,
-                                modifier = Modifier.heightIn(min = 48.dp).testTag("focus_task_picker_next"),
+                                modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight).testTag("focus_task_picker_next"),
                             ) { Text(stringResource(R.string.focus_task_picker_next)) }
                         }
                     }
