@@ -28,18 +28,29 @@ internal val BACKUP_TABLES_V11 = BACKUP_TABLES_V10
 /** Task links extend focus_session; invitation schedules and delivery remain device-local. */
 internal val BACKUP_TABLES_V12 = BACKUP_TABLES_V11
 internal val BACKUP_TABLES_V13 = BACKUP_TABLES_V12
-internal val BACKUP_TABLES = BACKUP_TABLES_V13
+internal val BACKUP_TABLES_V14 = BACKUP_TABLES_V13
+internal val BACKUP_TABLES = BACKUP_TABLES_V14
 /** Keep archive versioning tied to its table inventory and restore behavior, not Room. */
-internal const val CURRENT_BACKUP_SCHEMA_VERSION = 13
-internal fun backupImportColumns(table: String, schemaVersion: Int, currentColumns: List<String>): List<String> =
-    TodoImportanceArchiveAdapter.importColumns(
+internal const val CURRENT_BACKUP_SCHEMA_VERSION = 14
+internal fun backupImportColumns(
+    table: String,
+    schemaVersion: Int,
+    currentColumns: List<String>,
+    archiveHeader: List<String>? = null,
+): List<String> =
+    TodoHierarchyArchiveAdapter.importColumns(
         table,
         schemaVersion,
-        FocusGoalArchiveAdapter.importColumns(
+        TodoImportanceArchiveAdapter.importColumns(
             table,
             schemaVersion,
-            FocusMetadataArchiveAdapter.importColumns(table, schemaVersion, currentColumns),
+            FocusGoalArchiveAdapter.importColumns(
+                table,
+                schemaVersion,
+                FocusMetadataArchiveAdapter.importColumns(table, schemaVersion, currentColumns),
+            ),
         ),
+        archiveHeader,
     )
 
 internal fun backupTables(version: Int): List<String> = when (version) {
@@ -56,6 +67,7 @@ internal fun backupTables(version: Int): List<String> = when (version) {
     11 -> BACKUP_TABLES_V11
     12 -> BACKUP_TABLES_V12
     13 -> BACKUP_TABLES_V13
+    14 -> BACKUP_TABLES_V14
     else -> error("Unsupported database schema version")
 }
 data class ArchiveManifest(val formatVersion: Int, val schemaVersion: Int, val createdAt: Long, val names: Set<String>)

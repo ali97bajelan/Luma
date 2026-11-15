@@ -751,7 +751,7 @@
     <string name="backup_leave_restore_completed">Sauvegarde restaurée avec succès. Vos données enregistrées ont été remplacées.</string>
     <string name="backup_leave_restore_failed">Échec de la restauration. Vos données enregistrées précédentes sont toujours disponibles.</string>
     <string name="backup_confirm_title">Remplacer les données enregistrées ?</string>
-    <string name="backup_preview">%1$s événements · %2$s photos · %3$s habitudes · %4$s répétitions · %5$s tâches · %6$s sessions de concentration\nSauvegarde créée le %7$s</string>
+    <string name="backup_preview">%1$s événements · %2$s photos · %3$s habitudes · %4$s répétitions · %5$s tâches (sous-tâches incluses) · %6$s sessions de concentration\nSauvegarde créée le %7$s</string>
     <string name="backup_replace_warning">Cette opération remplace les données de vie, l’historique de concentration, les tâches, les catalogues et l’historique importé par cette sauvegarde. Exportez d’abord vos données actuelles pour les conserver. La langue de l’application et les autorisations Android sont conservées. Les importations seront désactivées.</string>
     <string name="backup_no_tasks_warning">Cette sauvegarde ne contient aucune tâche. Sa restauration supprimera les tâches actuellement enregistrées sur cet appareil.</string>
     <string name="backup_no_focus_sessions_warning">Cette sauvegarde ne contient aucune session de concentration. Sa restauration supprimera l’historique de concentration de cet appareil.</string>

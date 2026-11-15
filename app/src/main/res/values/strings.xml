@@ -739,7 +739,7 @@
     <string name="backup_leave_restore_completed">Backup restored successfully. Your saved data has been replaced.</string>
     <string name="backup_leave_restore_failed">Backup restore failed. Your previous saved data is still available.</string>
     <string name="backup_confirm_title">Replace saved data?</string>
-    <string name="backup_preview">%1$s events · %2$s photos · %3$s habits · %4$s repetitions · %5$s tasks · %6$s focus sessions\nBackup created %7$s</string>
+    <string name="backup_preview">%1$s events · %2$s photos · %3$s habits · %4$s repetitions · %5$s tasks (including subtasks) · %6$s focus sessions\nBackup created %7$s</string>
     <string name="backup_replace_warning">This replaces all saved life records, focus history, tasks, catalogs, and imported history with this backup. Export your current data first if you want to keep it. App language and Android permissions stay as they are. Imports will be turned off.</string>
     <string name="backup_no_tasks_warning">This backup contains no tasks. Restoring it will remove any tasks currently stored on this device.</string>
     <string name="backup_no_focus_sessions_warning">This backup contains no focus sessions. Restoring it will remove focus history currently stored on this device.</string>

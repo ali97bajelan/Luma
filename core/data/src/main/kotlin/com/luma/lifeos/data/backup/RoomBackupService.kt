@@ -80,7 +80,14 @@ class RoomBackupService(private val context: Context, private val database: Luma
                             sqlite.query(query)
                         }
                         cursor.use {
-                            file.outputStream().use { out -> BackupRows.write(out, cursor.columnNames.toList(), cursorRows(cursor)) }
+                            file.outputStream().use { out ->
+                                val currentColumns = cursor.columnNames.toList()
+                                val archiveColumns = TodoHierarchyArchiveAdapter.exportColumns(table, currentColumns)
+                                val archiveRows = cursorRows(cursor).map { row ->
+                                    TodoHierarchyArchiveAdapter.exportRow(table, currentColumns, row, archiveColumns)
+                                }
+                                BackupRows.write(out, archiveColumns, archiveRows)
+                            }
                         }
                         payloads["tables/$table.tsv"] = file
                     }
@@ -113,28 +120,96 @@ class RoomBackupService(private val context: Context, private val database: Luma
                     currentCoroutineContext().ensureActive()
                     val currentColumns = columns(sql, table)
                     val currentNames = currentColumns.map { it.name }
-                    val names = backupImportColumns(table, manifest.schemaVersion, currentNames)
-                    val insertNames = FocusMetadataArchiveAdapter.insertColumns(table, manifest.schemaVersion, names, currentNames)
+                    val archiveHeader = if (table == "todo_task") {
+                        BackupRows.readHeader(File(work, "payload/tables/todo_task.tsv"))
+                    } else {
+                        null
+                    }
+                    val names = backupImportColumns(
+                        table,
+                        manifest.schemaVersion,
+                        currentNames,
+                        archiveHeader,
+                    )
+                    val focusInsertNames = FocusMetadataArchiveAdapter.insertColumns(
+                        table,
+                        manifest.schemaVersion,
+                        names,
+                        currentNames,
+                    )
+                    val insertNames = TodoHierarchyArchiveAdapter.insertColumns(
+                        table,
+                        manifest.schemaVersion,
+                        names,
+                        focusInsertNames,
+                    )
                     val importColumns = currentColumns.filter { it.name in names }
                     val statement = sql.compileStatement(BackupSql.insert(table, insertNames))
                     statement.use {
-                        BackupRows.read(File(work, "payload/tables/$table.tsv"), names) { row ->
-                            validateTypes(importColumns, row)
-                            val insertRow = FocusMetadataArchiveAdapter.adaptRow(table, manifest.schemaVersion, names, row, insertNames)
-                            val validationRow = insertNames.zip(insertRow).toMap().toMutableMap()
-                            if (table == "todo_task" && manifest.schemaVersion == 4) {
-                                validationRow["due_time_minutes"] = null
+                        val passes: List<TodoHierarchyArchiveAdapter.ImportPass?> =
+                            if (table == "todo_task") {
+                                listOf(
+                                    TodoHierarchyArchiveAdapter.ImportPass.ROOTS,
+                                    TodoHierarchyArchiveAdapter.ImportPass.CHILDREN,
+                                )
+                            } else {
+                                listOf(null)
                             }
-                            validateBackupRow(table, validationRow)
-                            bind(statement, insertRow); statement.executeInsert()
+                        passes.forEach { pass ->
+                            BackupRows.read(File(work, "payload/tables/$table.tsv"), names) { row ->
+                                if (TodoHierarchyArchiveAdapter.matchesImportPass(names, row, pass)) {
+                                    validateTypes(importColumns, row)
+                                    val focusAdaptedRow = FocusMetadataArchiveAdapter.adaptRow(
+                                        table,
+                                        manifest.schemaVersion,
+                                        names,
+                                        row,
+                                        insertNames,
+                                    )
+                                    val insertRow = TodoHierarchyArchiveAdapter.adaptRow(
+                                        table,
+                                        manifest.schemaVersion,
+                                        names,
+                                        focusAdaptedRow,
+                                        insertNames,
+                                    )
+                                    val validationRow = insertNames.zip(insertRow).toMap().toMutableMap()
+                                    if (table == "todo_task" && manifest.schemaVersion == 4) {
+                                        validationRow["due_time_minutes"] = null
+                                    }
+                                    validateBackupRow(table, validationRow)
+                                    val stagedRow = TodoHierarchyArchiveAdapter.prepareStagingRow(
+                                        table,
+                                        pass,
+                                        insertNames,
+                                        insertRow,
+                                    )
+                                    bind(statement, stagedRow)
+                                    statement.executeInsert()
+                                }
+                            }
                         }
                     }
+                }
+                if (manifest.schemaVersion >= 4) {
+                    val taskColumns = backupImportColumns(
+                        "todo_task",
+                        manifest.schemaVersion,
+                        columns(sql, "todo_task").map { it.name },
+                        BackupRows.readHeader(File(work, "payload/tables/todo_task.tsv")),
+                    )
+                    TodoHierarchyArchiveAdapter.restoreRootStatusesFromArchive(
+                        sql,
+                        File(work, "payload/tables/todo_task.tsv"),
+                        taskColumns,
+                    )
                 }
                 normalizeLegacyJournals(sql)
                 sql.execSQL("INSERT OR IGNORE INTO focus_goal_settings(singleton_id, enabled, settings_revision) VALUES (1, 0, 0)")
                 validateFocusArchive(sql)
                 validateFocusMetadataArchive(sql)
                 validateFocusGoalsArchive(sql, Instant.ofEpochMilli(manifest.createdAt))
+                TodoHierarchyArchiveAdapter.validateStaged(sql)
                 sql.query("PRAGMA foreign_key_check").use { require(!it.moveToFirst()) { "Backup contains broken references" } }
                 sql.query("PRAGMA integrity_check").use { require(it.moveToFirst() && it.getString(0) == "ok") }
                 BackupSql.invalidGraphQueries.forEach { query ->
@@ -197,9 +272,35 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                 database.widgets().resetInstancesAfterRestore()
                                 // Family command handles and receipts belong to the pre-restore task graph.
                                 database.todoCommands().clearAll()
+                                val stagedSql = stage.openHelper.readableDatabase
                                 for (table in backupTables(schemaVersion)) {
                                     if (table == "habit_reminder_runtime") continue
-                                    stage.openHelper.readableDatabase.query("SELECT * FROM `$table`").use { cursor ->
+                                    if (table == "todo_task") {
+                                        val passes = listOf(
+                                            TodoHierarchyArchiveAdapter.ImportPass.ROOTS,
+                                            TodoHierarchyArchiveAdapter.ImportPass.CHILDREN,
+                                        )
+                                        passes.forEach { pass ->
+                                            stagedSql.query(TodoHierarchyArchiveAdapter.restoreQuery(pass)).use { cursor ->
+                                                val names = cursor.columnNames.toList()
+                                                target.compileStatement(BackupSql.insert(table, names)).use { statement ->
+                                                    cursorRows(cursor).forEach { original ->
+                                                        val row = original.toMutableList()
+                                                        if (pass == TodoHierarchyArchiveAdapter.ImportPass.ROOTS) {
+                                                            row[names.indexOf("completed_at")] = null
+                                                        }
+                                                        row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
+                                                        row[names.indexOf("family_revision_token")] = UUID.randomUUID().toString()
+                                                        bind(statement, row)
+                                                        statement.executeInsert()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        TodoHierarchyArchiveAdapter.restoreRootStatusesFromDatabase(stagedSql, target)
+                                        continue
+                                    }
+                                    stagedSql.query("SELECT * FROM `$table`").use { cursor ->
                                         val names = cursor.columnNames.toList()
                                         target.compileStatement(BackupSql.insert(table, names)).use { statement ->
                                             cursorRows(cursor).forEach { original ->
@@ -209,9 +310,6 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                                 }
                                                 if (table == "habit_reminder") {
                                                     row[names.indexOf("enabled")] = 0L
-                                                    row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
-                                                }
-                                                if (table == "todo_task") {
                                                     row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
                                                 }
                                                 if (table == "task_reminder") {
@@ -272,6 +370,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
             else { val text = cursor.getString(0); requireSafeJsonDepth(text); org.json.JSONObject(text) }
         }
     private fun exportQuery(table: String, excludePausedSession: Boolean): String = when (table) {
+        "todo_task" -> TodoHierarchyArchiveAdapter.exportQuery()
         "focus_session" -> FocusMetadataArchiveAdapter.focusSessionExportQuery(excludePausedSession) + " ORDER BY id"
         "focus_run" -> """SELECT r.* FROM focus_run AS r
             INNER JOIN focus_session AS s ON s.id = r.session_id

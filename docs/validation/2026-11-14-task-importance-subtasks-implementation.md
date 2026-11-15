@@ -1,7 +1,7 @@
 # Task importance and subtasks — implementation handoff
 
 Date: 14 November 2026  
-Status: **Latest source handoff: I07/TI-10 Today, Calendar, widget, reminder and Focus integration SOURCE COMPLETE — QA PENDING. I08 remains open; TI-QA01 owns test authoring and full validation.** Earlier TI-05/TI-06 handoffs and their historical check results are preserved below.
+Status: **Latest source handoff: I08/TI-11 hierarchy archive and restore safety SOURCE COMPLETE — QA PENDING. TI-QA01 owns test authoring and full validation.** Earlier TI-05/TI-06/I07 handoffs and their historical check results are preserved below.
 
 ## Source identity
 
@@ -82,3 +82,14 @@ Status: **Latest source handoff: I07/TI-10 Today, Calendar, widget, reminder and
   - `core/domain/src/main/kotlin/com/luma/lifeos/domain/widget/WidgetModels.kt`
   - Tracking: `docs/TASKS_IMPROVEMENT_BACKLOG_2026-11-14.md`, `docs/superpowers/plans/2026-11-14-task-importance-subtasks.md`, `docs/superpowers/specs/2026-11-14-task-importance-subtasks-design.md`, and this handoff.
 - Suggested commit message: `feat(todo): integrate task families across surfaces`. No commit was created.
+
+## I08 / TI-11 hierarchy archive and restore safety
+
+- Status: **SOURCE COMPLETE — QA PENDING** (15 November 2026). Base commit: `10d2f27021ef158757ca54d781a24e21daecd0ac`. Room schema 17 remains allocated; portable archive schema advances from 13 to 14.
+- Schema-14 task archives preserve parent ID, sibling position and importance while omitting the device-local family revision token. Export orders roots before children and children by sibling position. Schema 4–12 task rows adapt as roots with None importance; schema 13 remains accepted in its contractual legacy header, plus an exact transitional Room-17 header emitted by pre-I08 code. Family revision tokens are regenerated on staging/restore.
+- Staging imports roots before children regardless of payload order, holds completed roots open until children are inserted, then applies archived completion times. Final staging validation rejects missing/deep/cyclic parent relationships, incomplete hierarchy fields, invalid/duplicate sibling positions, and completed parents with open children before live replacement. Live replacement repeats the safe root/child order, rotates task and family revisions, clears device-local family/widget command state, resets widget instances and deactivates task reminders for reconciliation. App-data reset uses Android's existing full user-data-clear path.
+- Localized backup preview labels now make clear that task counts include subtasks. Backup format documentation records schema-14 compatibility and restore validation behavior.
+- Changed source paths: `core/data/src/main/kotlin/com/luma/lifeos/data/backup/{BackupArchive.kt,BackupRows.kt,BackupValidation.kt,RoomBackupService.kt,TodoHierarchyArchiveAdapter.kt}` and `app/src/main/res/{values,values-fr,values-fa}/strings.xml`. Tracking paths: `docs/BACKUP_FORMAT.md`, `docs/TODO_TASKS.md`, `docs/TASKS_IMPROVEMENT_BACKLOG_2026-11-14.md`, this handoff, and the I08 plan/spec status.
+- Android Studio inspections report no errors in the changed archive adapter, archive dispatch, staging validation and restore service; non-blocking style warnings remain. `git diff --check`: passed. No tests were authored and no device/emulator actions were performed, consistent with I08 ownership.
+- Requested `bash ./gradlew check --console=plain` (15 November 2026): **FAILED** at `:core:domain:test` (187 tests, 3 failures): `MemoryTest.directMemoryRequiresTextAndValidImportanceAndBoundedDrafts`, `ProtectedRecordClassifierTest.eventRecordsMatchTheIndependentFixtureProtectionSets`, and `ProtectedRecordClassifierTest.linkedIdentityFieldsRequirePeopleIndependentlyOfJournalOrMemoryProse`. These match the failures recorded by earlier increments. Integration health/usage debug/release unit tests passed; core-data KSP ran for debug/release, `:core:data:compileDebugKotlin` succeeded, and `:core:data:copyRoomSchemas` was `NO-SOURCE`. `git diff --check` passed. TI-QA01 test authoring, migration/schema verification, and emulator checks remain NOT RUN.
+- Suggested commit message: `feat(backup): preserve task hierarchies in archives and restore`. No commit was created.

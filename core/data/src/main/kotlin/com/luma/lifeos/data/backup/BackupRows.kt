@@ -7,6 +7,13 @@ import java.util.Base64
 /** Version 1 typed TSV; no locale-sensitive formatting or executable SQL. */
 object BackupRows {
     const val MAX_LINE_BYTES = 4 * 1024 * 1024
+
+    fun readHeader(file: File): List<String> =
+        file.inputStream().buffered().use { input ->
+            readLine(input, MAX_LINE_BYTES)?.split('\t')
+                ?: error("Backup table header is missing")
+        }
+
     fun write(output: OutputStream, columns: List<String>, rows: Sequence<List<Any?>>) {
         val writer = output.bufferedWriter(Charsets.UTF_8)
         writer.write(columns.joinToString("\t")); writer.newLine()

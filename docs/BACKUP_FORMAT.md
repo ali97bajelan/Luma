@@ -3,8 +3,8 @@
 Settings → Backup and restore exports saved application tables and referenced
 photos using the system file picker. Choose backup to restore validates a file and
 shows its creation time, event count, photo count, habit count, repetition count,
-task count and terminal focus-session count before asking to replace the current
-saved data. There is no merge mode.
+task-record count (including subtasks) and terminal focus-session count before asking
+to replace the current saved data. There is no merge mode.
 Export current data first to retain it.
 
 App Lock credentials and policy are device-local and are never archive members.
@@ -31,12 +31,13 @@ referenced photos abort export rather than silently omitting them.
 ## Archive layout
 
 - `manifest.properties`: Java Properties syntax. Required `format=luma-backup`,
-  `format_version=1`, `schema_version=1` through `12`, `created_at` (UTC epoch
+  `format_version=1`, `schema_version=1` through `14`, `created_at` (UTC epoch
   milliseconds),
   and `file_count`. Every payload has `size.<path>` and `sha256.<path>` entries.
-- `tables/<table>.tsv`: one file per application table. Header is the exact column
-  list from that Room schema. Subsequent lines have a typed cell per column,
-  separated by tabs and terminated by LF.
+- `tables/<table>.tsv`: one file per application table. Header is the exact
+  versioned archive column list; task archives omit device-local family revision
+  fields. Subsequent lines have a typed cell per column, separated by tabs and
+  terminated by LF.
 - `photos/<canonical-uuid>.img`: original private image bytes referenced by
   `media_attachment.relative_path`. Image type is validated by Android decoding;
   the extension is an internal filename, not an image format.
@@ -113,7 +114,8 @@ schedules, delivery occurrences, action tokens and alarm state remain device-loc
 and are never exported.
 Unknown format/schema versions fail safely; future versions require an explicit
 reader. Task rows are validated for canonical UUIDs and civil dates, minute range,
-the date/time pairing, title/note limits, and update/creation chronology. Schema 4
+the date/time pairing, title/note limits, update/creation chronology, and (in schema
+14) root-only parentage, sibling-order validity and the completed-parent invariant. Schema 4
 restores preserve task identities, content and timestamps while assigning null due
 time and rotating revision tokens. Schema 5 preserves due minutes as well; both
 versions rotate revision tokens so pre-restore writes cannot change replacement
@@ -131,6 +133,18 @@ invitation settings/delivery through the 14→15 migration. Terminal history,
 reflections, referenced focus tags, weekly goal versions/settings, task links and
 task-origin markers are portable. Breaks, invitation configuration, delivery/action
 tokens and other Focus/widget runtime remain device-local.
+
+Schema 13 adds `importance_code` to task rows using stable codes NONE=0, LOW=1,
+MEDIUM=2 and HIGH=3. Schemas 4–12 adapt tasks to root tasks with NONE importance.
+The short-lived Room 17/schema-13 producer is also accepted through its exact
+hierarchy-and-family-token header; its relationships are retained and family tokens
+are regenerated. Schema 14 keeps the same table inventory and adds nullable
+`parent_id` and
+`sibling_position` task columns. It preserves independent child status, importance,
+date and time, and exports roots before children with children ordered by their
+sibling position. Family revision tokens and the device-local family-command journal
+are not exported.
+
 Task due times are floating civil values: changing time
 zone does not convert the saved date or minute. Buckets remain based on the local
 calendar date. A task reminder is created only after the user enables it and the
@@ -202,8 +216,14 @@ widget instances and command tokens; Room schema 6 adds task due minutes; Room s
 8 adds focus data. Device-local tables are excluded from every archive inventory. A successful replacement restore revokes all widget
 commands, hides per-instance details and clears widget feedback in the same
 transaction as the content replacement. A failed or cancelled restore leaves widget
-runtime state untouched. The portable archive schema is version 12. Device-only quiet
-hours, invitation schedules/delivery/actions and lock-screen preview privacy are not
+runtime state untouched. Schema 14 stages roots before children regardless of archive
+row order, then applies archived parent completion after its children; malformed,
+missing, cyclic, deeper or inconsistent families fail before live replacement. A
+successful restore rotates task and family revisions, clears local family-command
+records and widget commands, and triggers reminder reconciliation through the
+existing callback. Android's app-data reset clears the database and its local command
+journal. The portable archive schema is version 14. Device-only quiet hours,
+invitation schedules/delivery/actions and lock-screen preview privacy are not
 included in backups.
 
 Native transaction, image/provider behavior, concurrency, lifecycle and power-loss
