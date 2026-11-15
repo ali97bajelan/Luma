@@ -11,6 +11,19 @@ class TodoConflictException(val taskId: UUID) : IllegalStateException("Task revi
 /** An update or completion change targeted a task that no longer exists. */
 class TodoMissingException(val taskId: UUID) : NoSuchElementException("Task does not exist: $taskId")
 
+enum class TodoMoveRejection {
+    ROOT_HAS_CHILDREN,
+    TARGET_NOT_ROOT,
+    SELF_PARENT,
+    COMPLETED_PARENT,
+}
+
+/** A move would violate the one-level task-family rules. */
+class TodoMoveRejectedException(
+    val taskId: UUID,
+    val rejection: TodoMoveRejection,
+) : IllegalStateException("Task move is not allowed for $taskId: $rejection")
+
 /** A legacy single-row operation cannot safely apply the requested family-wide change. */
 class TodoConfirmationRequiredException(
     val taskId: UUID,
@@ -131,6 +144,21 @@ interface TodoRepository {
         nextRevision: UUID,
         direction: TodoMoveDirection,
     ): Unit = unsupportedTodoFamilyOperation()
+
+    /**
+     * Move a leaf between standalone/root and child positions without changing its content ID.
+     * A null target promotes a child to a root; a root with children cannot become a child.
+     * Rejects self/deeper nesting and open tasks under completed parents. The source and target
+     * family revisions are revalidated in the same transaction.
+     */
+    suspend fun moveTask(
+        id: UUID,
+        expectedRevision: UUID,
+        nextRevision: UUID,
+        expectedSourceFamilyRevision: UUID,
+        targetParentId: UUID?,
+        expectedTargetFamilyRevision: UUID?,
+    ): TodoTask = unsupportedTodoFamilyOperation()
 
     suspend fun update(id: UUID, expectedRevision: UUID, nextRevision: UUID, input: TodoInput): TodoTask
     suspend fun setCompleted(

@@ -467,6 +467,22 @@ interface TodoDao {
         updatedAt: Long,
     ): Int
 
+    @Query("""
+        UPDATE todo_task SET parent_id = :parentId, sibling_position = :siblingPosition,
+            family_revision_token = :familyRevision, revision_token = :nextRevision, updated_at = :updatedAt
+        WHERE id = :id AND revision_token = :expectedRevision AND parent_id IS :expectedParentId
+    """)
+    suspend fun moveRelationship(
+        id: String,
+        expectedRevision: String,
+        expectedParentId: String?,
+        nextRevision: String,
+        parentId: String?,
+        siblingPosition: Long?,
+        familyRevision: String,
+        updatedAt: Long,
+    ): Int
+
     @Query("DELETE FROM todo_task WHERE id = :id AND revision_token = :expectedRevision")
     suspend fun delete(id: String, expectedRevision: String): Int
 }

@@ -119,6 +119,13 @@ fun TodoEditorScreen(
     onRetryChildDelete: () -> Unit = {},
     onRetryChildren: () -> Unit = {},
     onLoadMoreChildren: () -> Unit = {},
+    onOpenMovePicker: () -> Unit = {},
+    onSelectMoveTarget: (UUID) -> Unit = {},
+    onSelectMoveToRoot: () -> Unit = {},
+    onLoadMoreMoveTargets: () -> Unit = {},
+    onRetryMoveTargets: () -> Unit = {},
+    onConfirmMove: () -> Unit = {},
+    onCancelMovePicker: () -> Unit = {},
 ) {
     var discarding by rememberSaveable { mutableStateOf(false) }
     var pendingParentNavigation by rememberSaveable { mutableStateOf("") }
@@ -136,12 +143,18 @@ fun TodoEditorScreen(
     val timeBringIntoView = remember { BringIntoViewRequester() }
     val displayTime = rememberDisplayTimePolicy()
     val canEdit = state.ready && !state.busy && !state.finished && !state.conflict && !state.missing &&
+        !state.move.hasPendingOperation &&
         state.pendingAction != "complete" && state.pendingAction != "reopen" && state.pendingAction != "delete"
     val readOnly = !canEdit
     val canSave = canEdit && !(state.parentId != null && !state.editing &&
         (state.parentContextLoading || state.parentContextError || state.parentMissing || state.parentCompleted))
     val canFocusTask = state.ready && state.editing && !state.taskCompleted && !state.busy &&
-        !state.finished && !state.conflict && !state.missing && state.pendingAction == null
+        !state.finished && !state.conflict && !state.missing && !state.move.hasPendingOperation &&
+        state.pendingAction == null
+    val canMoveTask = state.editing && state.ready && !state.busy && !state.finished &&
+        !state.conflict && !state.missing && state.pendingAction == null &&
+        (state.parentId?.let { !state.parentContextLoading && !state.parentContextError && !state.parentMissing } == true ||
+            (state.parentId == null && !state.childrenLoading && !state.childrenError && state.childTotal == 0))
 
     fun close() {
         if (state.busy) return
@@ -511,6 +524,33 @@ fun TodoEditorScreen(
                     )
                 }
 
+                if (canMoveTask && !state.move.hasPendingOperation) {
+                    LumaOutlinedButton(
+                        onClick = onOpenMovePicker,
+                        enabled = canEdit && !state.move.applying,
+                        modifier = Modifier.fillMaxWidth().testTag("todo_editor_move_task"),
+                    ) {
+                        Text(stringResource(R.string.todo_move_picker_title))
+                    }
+                }
+                if (!state.move.open && state.move.issue != null) {
+                    AccessibleFeedback(
+                        stringResource(
+                            if (state.move.issue == TodoMoveIssue.STALE) R.string.todo_move_stale else R.string.todo_move_error,
+                        ),
+                        Modifier.testTag("todo_editor_move_recovery"),
+                    )
+                    if (state.move.hasPendingOperation || (state.move.issue == TodoMoveIssue.STALE && canMoveTask)) {
+                        LumaTextButton(
+                            onClick = onOpenMovePicker,
+                            enabled = !state.busy,
+                            modifier = Modifier.fillMaxWidth().testTag("todo_editor_move_recovery_action"),
+                        ) {
+                            Text(stringResource(if (state.move.hasPendingOperation) R.string.todo_move_retry else R.string.todo_move_refresh))
+                        }
+                    }
+                }
+
                 if (state.editing) {
                     Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                         Text(
@@ -735,6 +775,17 @@ fun TodoEditorScreen(
                 },
             )
         }
+    }
+    if (state.move.open) {
+        TodoMovePickerSheet(
+            state = state,
+            onDismiss = onCancelMovePicker,
+            onSelectTarget = onSelectMoveTarget,
+            onSelectRoot = onSelectMoveToRoot,
+            onLoadMore = onLoadMoreMoveTargets,
+            onRetryTargets = onRetryMoveTargets,
+            onMove = onConfirmMove,
+        )
     }
 }
 

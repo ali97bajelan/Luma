@@ -10,6 +10,8 @@ import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoMoveDirection
+import com.luma.lifeos.domain.todo.TodoMoveRejectedException
+import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.TodoValidationException
@@ -23,6 +25,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Draft and revision-safe task mutations for the shared create/edit screen. */
@@ -65,6 +68,8 @@ class TodoEditorViewModel(
     private var childListJob: Job? = null
     private var parentContextJob: Job? = null
     private var childActionJob: Job? = null
+    private var moveTargetsJob: Job? = null
+    private var moveRefreshJob: Job? = null
 
     private val initialChildPageLimit = saved.get<Int>(KEY_CHILD_PAGE_LIMIT)
         ?.takeIf { it >= TODO_DEFAULT_PAGE_SIZE } ?: TODO_DEFAULT_PAGE_SIZE
@@ -207,6 +212,340 @@ class TodoEditorViewModel(
         }
     }
 
+    fun openMovePicker() {
+        val current = state.value
+        if (!canMove(current)) return
+        val pending = readPendingMove()
+        mutableState.value = current.copy(
+            move = TodoMoveUiState(
+                open = true,
+                selectedTargetId = pending?.targetParentId,
+                moveToRootSelected = pending?.targetParentId == null && pending != null,
+                hasPendingOperation = pending != null,
+                issue = if (pending != null) TodoMoveIssue.FAILED else null,
+            ),
+        )
+        loadMoveTargets(TODO_DEFAULT_PAGE_SIZE)
+    }
+
+    fun selectMoveTarget(targetId: UUID) {
+        val current = state.value
+        if (!current.move.open || current.move.applying || current.move.hasPendingOperation ||
+            current.move.targets.none { it.task.id == targetId }
+        ) return
+        mutableState.value = current.copy(
+            move = current.move.copy(
+                selectedTargetId = targetId,
+                moveToRootSelected = false,
+                issue = null,
+            ),
+        )
+    }
+
+    fun selectMoveToRoot() {
+        val current = state.value
+        if (!current.move.open || current.parentId == null || current.move.applying ||
+            current.move.hasPendingOperation
+        ) return
+        mutableState.value = current.copy(
+            move = current.move.copy(
+                selectedTargetId = null,
+                moveToRootSelected = true,
+                issue = null,
+            ),
+        )
+    }
+
+    fun loadMoreMoveTargets() {
+        val move = state.value.move
+        if (!move.open || move.applying || move.hasPendingOperation || move.loadingTargets || !move.hasMoreTargets) return
+        loadMoveTargets(move.targetsPageLimit + TODO_DEFAULT_PAGE_SIZE)
+    }
+
+    fun retryMoveTargets() {
+        val move = state.value.move
+        if (!move.open || move.applying || move.hasPendingOperation || move.loadingTargets) return
+        refreshMoveTargets()
+    }
+
+    fun cancelMovePicker() {
+        val current = state.value
+        if (current.move.applying) return
+        moveTargetsJob?.cancel()
+        moveRefreshJob?.cancel()
+        mutableState.value = current.copy(
+            move = if (current.move.hasPendingOperation) {
+                current.move.copy(open = false, targets = emptyList(), loadingTargets = false)
+            } else {
+                TodoMoveUiState()
+            },
+        )
+    }
+
+    fun confirmMove() {
+        val current = state.value
+        val move = current.move
+        if (!move.open || move.applying || !current.ready || current.busy || current.conflict || current.missing) return
+        val retained = readPendingMove()
+        if (retained != null) {
+            runPendingMove(retained)
+            return
+        }
+        val targetParentId = when {
+            move.moveToRootSelected && current.parentId != null -> null
+            move.selectedTargetId != null -> move.selectedTargetId
+            else -> return
+        }
+        val targetRevision = targetParentId?.let { id ->
+            move.targets.firstOrNull { it.task.id == id }?.task?.familyRevision ?: return
+        }
+        val expected = baselineRevision ?: return
+        val sourceFamily = current.familyRevision ?: return
+        val pending = PendingMove(
+            expectedRevision = expected,
+            nextRevision = UUID.randomUUID(),
+            expectedSourceFamilyRevision = sourceFamily,
+            targetParentId = targetParentId,
+            expectedTargetFamilyRevision = targetRevision,
+        )
+        persistPendingMove(pending)
+        runPendingMove(pending)
+    }
+
+    fun retryMove() {
+        val current = state.value
+        val pending = readPendingMove() ?: return
+        if (!current.move.open || current.move.applying || current.busy) return
+        runPendingMove(pending)
+    }
+
+    private fun canMove(current: TodoUiState): Boolean =
+        current.ready && current.editing && !current.busy && !current.finished && !current.conflict &&
+            !current.missing && current.pendingAction == null &&
+            (current.parentId != null || (!current.childrenLoading && !current.childrenError && current.childTotal == 0))
+
+    private fun loadMoveTargets(limit: Int) {
+        val current = state.value
+        if (!current.move.open || current.move.applying || current.taskId == null) return
+        moveTargetsJob?.cancel()
+        mutableState.value = current.copy(
+            move = current.move.copy(
+                targetsPageLimit = limit,
+                loadingTargets = true,
+                targetLoadFailed = false,
+            ),
+        )
+        moveTargetsJob = viewModelScope.launch {
+            try {
+                val openPage = repository.observeRows(TodoListQuery(completed = false), limit).first()
+                val completedPage = if (current.taskCompleted) {
+                    repository.observeRows(TodoListQuery(completed = true), limit).first()
+                } else {
+                    null
+                }
+                val latest = state.value
+                val excluded = setOfNotNull(latest.taskId, latest.parentId)
+                val targets = (openPage.items + completedPage?.items.orEmpty())
+                    .asSequence()
+                    .filter { row -> row.task.parentId == null && row.task.id !in excluded }
+                    .filter { row -> latest.taskCompleted || !row.task.isCompleted }
+                    .distinctBy { row -> row.task.id }
+                    .toList()
+                mutableState.value = latest.copy(
+                    move = latest.move.copy(
+                        targets = targets,
+                        targetsPageLimit = limit,
+                        hasMoreTargets = openPage.items.size < openPage.total ||
+                            (completedPage?.let { it.items.size < it.total } == true),
+                        loadingTargets = false,
+                        targetLoadFailed = false,
+                        selectedTargetId = latest.move.selectedTargetId?.takeIf { id -> targets.any { it.task.id == id } },
+                    ),
+                )
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.value = state.value.copy(
+                    move = state.value.move.copy(loadingTargets = false, targetLoadFailed = true),
+                )
+            }
+        }
+    }
+
+    private fun refreshMoveTargets() {
+        val current = state.value
+        if (!current.move.open || current.move.applying) return
+        clearPendingMove()
+        moveRefreshJob?.cancel()
+        mutableState.value = current.copy(
+            move = current.move.copy(
+                targets = emptyList(),
+                selectedTargetId = null,
+                moveToRootSelected = false,
+                hasPendingOperation = false,
+                loadingTargets = true,
+                targetLoadFailed = false,
+            ),
+        )
+        moveRefreshJob = viewModelScope.launch {
+            try {
+                val task = repository.get(operationId)
+                if (task == null) {
+                    mutableState.value = state.value.copy(
+                        busy = false,
+                        missing = true,
+                        move = state.value.move.copy(open = false, loadingTargets = false, issue = TodoMoveIssue.STALE),
+                    )
+                    return@launch
+                }
+                val original = baselineInput
+                if (original != null && (!equivalent(task.toInput(), original) || task.isCompleted != baselineCompleted)) {
+                    mutableState.value = state.value.copy(
+                        busy = false,
+                        conflict = true,
+                        move = state.value.move.copy(open = false, loadingTargets = false, issue = TodoMoveIssue.STALE),
+                    )
+                    return@launch
+                }
+                val parent = task.parentId?.let { repository.get(it) }
+                val childPage = if (task.parentId == null) {
+                    repository.observeChildren(task.id, current.childrenPageLimit).first()
+                } else {
+                    null
+                }
+                val baseline = original ?: task.toInput()
+                baselineRevision = task.revision
+                baselineCompleted = task.isCompleted
+                persistBaseline(baseline, task.revision, task.isCompleted)
+                persistDraft(current.draft, baseline)
+                saved[KEY_PARENT_ID] = task.parentId?.toString().orEmpty()
+                val stillMovable = task.parentId != null || childPage?.total == 0
+                mutableState.value = state.value.copy(
+                    busy = false,
+                    pendingAction = null,
+                    taskCompleted = task.isCompleted,
+                    dirty = !equivalent(current.draft.toInput(), baseline),
+                    conflict = false,
+                    missing = false,
+                    taskId = task.id,
+                    parentId = task.parentId,
+                    familyRevision = task.familyRevision,
+                    parentTitle = parent?.title,
+                    parentContextLoading = false,
+                    parentContextError = false,
+                    parentMissing = task.parentId != null && parent == null,
+                    parentCompleted = parent?.isCompleted == true,
+                    children = childPage?.items.orEmpty(),
+                    childTotal = childPage?.total ?: 0,
+                    childProgress = childPage?.familyProgress,
+                    childrenLoading = false,
+                    childrenError = false,
+                    move = state.value.move.copy(
+                        open = stillMovable,
+                        loadingTargets = false,
+                        issue = TodoMoveIssue.STALE,
+                    ),
+                )
+                if (!stillMovable) return@launch
+                loadMoveTargets(state.value.move.targetsPageLimit)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.value = state.value.copy(
+                    busy = false,
+                    move = state.value.move.copy(loadingTargets = false, targetLoadFailed = true),
+                )
+            }
+        }
+    }
+
+    private fun runPendingMove(pending: PendingMove) {
+        val current = state.value
+        if (current.busy || current.move.applying) return
+        mutableState.value = current.copy(
+            busy = true,
+            pendingAction = "move",
+            move = current.move.copy(applying = true, hasPendingOperation = true, issue = null),
+        )
+        mutationJob = viewModelScope.launch {
+            try {
+                val task = repository.moveTask(
+                    id = operationId,
+                    expectedRevision = pending.expectedRevision,
+                    nextRevision = pending.nextRevision,
+                    expectedSourceFamilyRevision = pending.expectedSourceFamilyRevision,
+                    targetParentId = pending.targetParentId,
+                    expectedTargetFamilyRevision = pending.expectedTargetFamilyRevision,
+                )
+                completeSuccessfulMove(task)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (failure is TodoConflictException || failure is TodoMissingException ||
+                    failure is TodoMoveRejectedException
+                ) {
+                    clearPendingMove()
+                    mutableState.value = state.value.copy(
+                        busy = false,
+                        pendingAction = null,
+                        move = state.value.move.copy(applying = false, hasPendingOperation = false, issue = TodoMoveIssue.STALE),
+                    )
+                    refreshMoveTargets()
+                } else {
+                    mutableState.value = state.value.copy(
+                        busy = false,
+                        pendingAction = null,
+                        move = state.value.move.copy(applying = false, hasPendingOperation = true, issue = TodoMoveIssue.FAILED),
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun completeSuccessfulMove(task: TodoTask) {
+        moveTargetsJob?.cancel()
+        moveRefreshJob?.cancel()
+        val current = state.value
+        val parent = task.parentId?.let { repository.get(it) }
+        val children = if (task.parentId == null) {
+            repository.observeChildren(task.id, current.childrenPageLimit).first()
+        } else {
+            null
+        }
+        val baseline = baselineInput ?: task.toInput()
+        clearPendingMove()
+        persistBaseline(baseline, task.revision, task.isCompleted)
+        persistDraft(current.draft, baseline)
+        saved[KEY_PARENT_ID] = task.parentId?.toString().orEmpty()
+        childListJob?.cancel()
+        parentContextJob?.cancel()
+        mutableState.value = current.copy(
+            loading = false,
+            ready = true,
+            busy = false,
+            editing = true,
+            taskCompleted = task.isCompleted,
+            dirty = !equivalent(current.draft.toInput(), baseline),
+            error = null,
+            conflict = false,
+            missing = false,
+            pendingAction = null,
+            taskId = task.id,
+            parentId = task.parentId,
+            familyRevision = task.familyRevision,
+            parentTitle = parent?.title,
+            parentContextLoading = false,
+            parentContextError = false,
+            parentMissing = task.parentId != null && parent == null,
+            parentCompleted = parent?.isCompleted == true,
+            children = children?.items.orEmpty(),
+            childTotal = children?.total ?: 0,
+            childProgress = children?.familyProgress,
+            childrenLoading = false,
+            childrenError = false,
+            childActionError = null,
+            move = TodoMoveUiState(targetsPageLimit = current.move.targetsPageLimit),
+        )
+        if (task.parentId == null) observeChildren(task.id, current.childrenPageLimit)
+    }
+
     fun requestDeleteChild(childId: UUID, revision: UUID) {
         val current = state.value
         if (!current.ready || !current.editing || current.parentId != null || current.busy ||
@@ -277,7 +616,9 @@ class TodoEditorViewModel(
 
     fun save() {
         val current = state.value
-        if (!current.ready || current.busy || current.finished || current.conflict || current.missing) return
+        if (!current.ready || current.busy || current.finished || current.conflict || current.missing ||
+            readPendingMove() != null
+        ) return
         if (creating && creationParentId != null &&
             (current.parentContextLoading || current.parentContextError || current.parentMissing || current.parentCompleted)
         ) return
@@ -310,7 +651,8 @@ class TodoEditorViewModel(
     fun setCompleted(completed: Boolean) {
         val current = state.value
         if (!current.ready || current.busy || current.finished || current.conflict || current.missing ||
-            current.dirty || current.editing.not() || current.taskCompleted == completed || readPending() != null
+            current.dirty || current.editing.not() || current.taskCompleted == completed || readPending() != null ||
+            readPendingMove() != null
         ) return
         familyActions.complete(operationId, completed, current.draft.title, baselineRevision)
     }
@@ -318,7 +660,7 @@ class TodoEditorViewModel(
     fun requestDelete() {
         val current = state.value
         if (!current.ready || current.busy || current.finished || current.conflict || current.missing ||
-            !current.editing || readPending() != null
+            !current.editing || readPending() != null || readPendingMove() != null
         ) return
         familyActions.delete(operationId, current.draft.title, baselineRevision)
     }
@@ -356,6 +698,10 @@ class TodoEditorViewModel(
     /** Retry an approved conflict reload, a mutation with its retained token, or the initial load. */
     fun retry() {
         val current = state.value
+        if (readPendingMove() != null) {
+            retryMove()
+            return
+        }
         if (current.familyAction.phase == TodoFamilyActionPhase.RETRYABLE_FAILURE) {
             familyActions.retry()
             return
@@ -477,6 +823,7 @@ class TodoEditorViewModel(
                     if (pending?.type == PendingType.DELETE) {
                         finish(deleted = true)
                     } else {
+                        clearPendingMove()
                         val draft = saved.readDraft() ?: baselineInput?.toDraft() ?: TodoDraft()
                         val retainedParentId = saved.uuid(KEY_PARENT_ID)
                         mutableState.value = state.value.copy(
@@ -503,7 +850,11 @@ class TodoEditorViewModel(
                         }
                     } else {
                         val savedRevision = baselineRevision
-                        val stale = savedRevision != null && savedRevision != task.revision
+                        val pendingMove = readPendingMove()
+                        val moveCommitted = pendingMove?.let {
+                            task.revision == it.nextRevision && task.parentId == it.targetParentId
+                        } == true
+                        val stale = savedRevision != null && savedRevision != task.revision && !moveCommitted
                         if (savedRevision == null || !stale) {
                             baselineInput = task.toInput()
                             baselineRevision = task.revision
@@ -528,11 +879,36 @@ class TodoEditorViewModel(
                             error = if (stale || pendingConflicts) null else pending?.type?.editorError,
                             taskId = task.id,
                             parentId = taskParentId,
+                            familyRevision = task.familyRevision,
                             parentContextLoading = taskParentId != null,
                             childContinuationTaskId = saved.uuid(KEY_CHILD_CONTINUATION),
                         )
                         if (taskParentId == null) observeChildren(task.id, state.value.childrenPageLimit)
                         else loadParentContext(taskParentId)
+                        when {
+                            moveCommitted -> {
+                                clearPendingMove()
+                                mutableState.value = state.value.copy(move = TodoMoveUiState())
+                            }
+                            pendingMove != null && stale -> {
+                                clearPendingMove()
+                                mutableState.value = state.value.copy(
+                                    move = TodoMoveUiState(issue = TodoMoveIssue.STALE),
+                                )
+                            }
+                            pendingMove != null -> {
+                                mutableState.value = state.value.copy(
+                                    move = TodoMoveUiState(
+                                        open = true,
+                                        selectedTargetId = pendingMove.targetParentId,
+                                        moveToRootSelected = pendingMove.targetParentId == null,
+                                        hasPendingOperation = true,
+                                        issue = TodoMoveIssue.FAILED,
+                                    ),
+                                )
+                                loadMoveTargets(TODO_DEFAULT_PAGE_SIZE)
+                            }
+                        }
                     }
                 }
             } catch (failure: Exception) {
@@ -802,7 +1178,10 @@ class TodoEditorViewModel(
     }
 
     private fun acceptLatest(task: TodoTask) {
+        moveTargetsJob?.cancel()
+        moveRefreshJob?.cancel()
         clearPending()
+        clearPendingMove()
         persistFieldErrors(emptyMap())
         baselineInput = task.toInput()
         baselineRevision = task.revision
@@ -830,12 +1209,14 @@ class TodoEditorViewModel(
             pendingAction = null,
             taskId = task.id,
             parentId = taskParentId,
+            familyRevision = task.familyRevision,
             parentTitle = current.parentTitle.takeIf { current.parentId == taskParentId },
             parentContextLoading = taskParentId != null,
             parentContextError = false,
             parentMissing = false,
             parentCompleted = false,
             childContinuationTaskId = saved.uuid(KEY_CHILD_CONTINUATION),
+            move = TodoMoveUiState(),
         )
         if (taskParentId == null) observeChildren(task.id, current.childrenPageLimit)
         else loadParentContext(taskParentId)
@@ -843,10 +1224,13 @@ class TodoEditorViewModel(
 
     private fun finish(savedResult: TodoEditorResult? = null, deleted: Boolean = false) {
         clearPending()
+        clearPendingMove()
         clearChildDeleteTarget()
         childListJob?.cancel()
         parentContextJob?.cancel()
         childActionJob?.cancel()
+        moveTargetsJob?.cancel()
+        moveRefreshJob?.cancel()
         saved.remove<Boolean>(KEY_CONTINUE_TO_SUBTASK)
         saved.remove<String>(KEY_CHILD_CONTINUATION)
         saved[KEY_FINISHED] = true
@@ -888,6 +1272,45 @@ class TodoEditorViewModel(
             task.revision == pending.nextRevision && task.isCompleted == pending.completed
         }
         PendingType.DELETE -> null
+    }
+
+    private fun persistPendingMove(pending: PendingMove) {
+        saved[KEY_MOVE_EXPECTED] = pending.expectedRevision.toString()
+        saved[KEY_MOVE_NEXT] = pending.nextRevision.toString()
+        saved[KEY_MOVE_SOURCE_FAMILY] = pending.expectedSourceFamilyRevision.toString()
+        saved[KEY_MOVE_TARGET_PARENT] = pending.targetParentId?.toString().orEmpty()
+        saved[KEY_MOVE_TARGET_FAMILY] = pending.expectedTargetFamilyRevision?.toString().orEmpty()
+    }
+
+    private fun clearPendingMove() {
+        listOf(
+            KEY_MOVE_EXPECTED,
+            KEY_MOVE_NEXT,
+            KEY_MOVE_SOURCE_FAMILY,
+            KEY_MOVE_TARGET_PARENT,
+            KEY_MOVE_TARGET_FAMILY,
+        ).forEach { saved.remove<String>(it) }
+    }
+
+    private fun readPendingMove(): PendingMove? {
+        val expected = saved.uuid(KEY_MOVE_EXPECTED) ?: return null
+        val next = saved.uuid(KEY_MOVE_NEXT) ?: return null
+        val sourceFamily = saved.uuid(KEY_MOVE_SOURCE_FAMILY) ?: return null
+        val rawTargetParent = saved.get<String>(KEY_MOVE_TARGET_PARENT) ?: return null
+        val targetParent = if (rawTargetParent.isEmpty()) {
+            null
+        } else {
+            runCatching { UUID.fromString(rawTargetParent) }.getOrNull() ?: return null
+        }
+        val rawTargetFamily = saved.get<String>(KEY_MOVE_TARGET_FAMILY) ?: return null
+        val targetFamily = if (targetParent == null) {
+            if (rawTargetFamily.isNotEmpty()) return null
+            null
+        } else {
+            if (rawTargetFamily.isEmpty()) return null
+            runCatching { UUID.fromString(rawTargetFamily) }.getOrNull() ?: return null
+        }
+        return PendingMove(expected, next, sourceFamily, targetParent, targetFamily)
     }
 
     private fun persistBaseline(input: TodoInput, revision: UUID?, completed: Boolean) {
@@ -953,10 +1376,12 @@ class TodoEditorViewModel(
 
     private fun canEditFields(current: TodoUiState, pending: PendingOperation?) =
         current.ready && !current.busy && !current.finished && !current.conflict && !current.missing &&
-            pending?.type != PendingType.COMPLETE && pending?.type != PendingType.REOPEN && pending?.type != PendingType.DELETE
+            readPendingMove() == null && pending?.type != PendingType.COMPLETE && pending?.type != PendingType.REOPEN &&
+            pending?.type != PendingType.DELETE
 
     private fun pendingBlocksFields(pending: PendingOperation?) =
-        pending?.type == PendingType.COMPLETE || pending?.type == PendingType.REOPEN || pending?.type == PendingType.DELETE
+        readPendingMove() != null || pending?.type == PendingType.COMPLETE || pending?.type == PendingType.REOPEN ||
+            pending?.type == PendingType.DELETE
 
     private fun equivalent(first: TodoInput, second: TodoInput): Boolean = comparable(first) == comparable(second)
 
@@ -1055,6 +1480,14 @@ class TodoEditorViewModel(
             runCatching { LocalTime.parse(it) }.getOrNull()?.takeIf { time -> time.second == 0 && time.nano == 0 }
         }
 
+    private data class PendingMove(
+        val expectedRevision: UUID,
+        val nextRevision: UUID,
+        val expectedSourceFamilyRevision: UUID,
+        val targetParentId: UUID?,
+        val expectedTargetFamilyRevision: UUID?,
+    )
+
     private data class PendingOperation(
         val type: PendingType,
         val expectedRevision: UUID? = null,
@@ -1106,5 +1539,10 @@ class TodoEditorViewModel(
         const val KEY_RESULT_COMPLETED = "todo_result_completed"
         const val KEY_RESULT_REVISION = "todo_result_revision"
         const val KEY_RESULT_COMMAND = "todo_result_command"
+        const val KEY_MOVE_EXPECTED = "todo_move_expected_revision"
+        const val KEY_MOVE_NEXT = "todo_move_next_revision"
+        const val KEY_MOVE_SOURCE_FAMILY = "todo_move_source_family_revision"
+        const val KEY_MOVE_TARGET_PARENT = "todo_move_target_parent"
+        const val KEY_MOVE_TARGET_FAMILY = "todo_move_target_family_revision"
     }
 }

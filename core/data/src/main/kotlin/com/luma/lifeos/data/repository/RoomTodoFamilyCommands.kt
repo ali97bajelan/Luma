@@ -21,6 +21,8 @@ import com.luma.lifeos.domain.todo.TodoFamilyAction
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoMoveDirection
+import com.luma.lifeos.domain.todo.TodoMoveRejectedException
+import com.luma.lifeos.domain.todo.TodoMoveRejection
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.normalizeTodoInput
 import java.time.Clock
@@ -190,6 +192,89 @@ internal class RoomTodoFamilyCommands(
             )
             check(parentId.toString() == child.parentId) { "Sibling move crossed task families" }
         }
+    }
+
+    suspend fun moveTask(
+        id: UUID,
+        expectedRevision: UUID,
+        nextRevision: UUID,
+        expectedSourceFamilyRevision: UUID,
+        targetParentId: UUID?,
+        expectedTargetFamilyRevision: UUID?,
+    ): TodoTask = database.withTransaction {
+        val key = id.toString()
+        val existing = tasks.find(key) ?: throw TodoMissingException(id)
+        val current = existing.toDomain()
+        if (current.revision == nextRevision && current.parentId == targetParentId) return@withTransaction current
+        if (current.revision != expectedRevision || current.familyRevision != expectedSourceFamilyRevision) {
+            throw TodoConflictException(id)
+        }
+        require(nextRevision != expectedRevision) { "A task move must use a new revision token" }
+        if (current.parentId == targetParentId) return@withTransaction current
+
+        val (sourceRoot, sourceFamily) = loadFamily(existing)
+        if (sourceRoot.familyRevisionToken != expectedSourceFamilyRevision.toString()) {
+            throw TodoConflictException(UUID.fromString(sourceRoot.id))
+        }
+        if (existing.parentId == null && sourceFamily.any { it.parentId == existing.id }) {
+            throw TodoMoveRejectedException(id, TodoMoveRejection.ROOT_HAS_CHILDREN)
+        }
+        if (targetParentId == id) throw TodoMoveRejectedException(id, TodoMoveRejection.SELF_PARENT)
+
+        val target = targetParentId?.let { targetId ->
+            val parent = tasks.find(targetId.toString()) ?: throw TodoMissingException(targetId)
+            if (parent.parentId != null) {
+                throw TodoMoveRejectedException(targetId, TodoMoveRejection.TARGET_NOT_ROOT)
+            }
+            if (parent.completedAt != null && !current.isCompleted) {
+                throw TodoMoveRejectedException(targetId, TodoMoveRejection.COMPLETED_PARENT)
+            }
+            val family = tasks.family(parent.id)
+            validateFamily(parent, family)
+            if (parent.familyRevisionToken != expectedTargetFamilyRevision?.toString()) {
+                throw TodoConflictException(targetId)
+            }
+            parent to family
+        }
+        if (targetParentId == null && expectedTargetFamilyRevision != null) {
+            throw TodoConflictException(id)
+        }
+
+        val targetRoot = target?.first
+        val targetFamily = target?.second.orEmpty()
+        val targetPosition = targetRoot?.let {
+            Math.addExact(
+                targetFamily.asSequence()
+                    .filter { member -> member.parentId != null }
+                    .maxOfOrNull { member -> requireNotNull(member.siblingPosition) } ?: -1L,
+                1L,
+            )
+        }
+        val sourceNextFamilyRevision = UUID.randomUUID().toString()
+        rotateFamily(sourceRoot.id, sourceRoot.familyRevisionToken, sourceNextFamilyRevision, sourceFamily.size)
+
+        val targetNextFamilyRevision = targetRoot?.let {
+            UUID.randomUUID().toString().also { revision ->
+                rotateFamily(it.id, it.familyRevisionToken, revision, targetFamily.size)
+            }
+        }
+        val resultingFamilyRevision = targetNextFamilyRevision ?: UUID.randomUUID().toString()
+        check(tasks.moveRelationship(
+            id = key,
+            expectedRevision = expectedRevision.toString(),
+            expectedParentId = existing.parentId,
+            nextRevision = nextRevision.toString(),
+            parentId = targetParentId?.toString(),
+            siblingPosition = targetPosition,
+            familyRevision = resultingFamilyRevision,
+            updatedAt = monotonicMillis(existing),
+        ) == 1) { "Task changed while its family relationship was being updated" }
+        database.taskReminders().onTaskRevisionChanged(
+            key,
+            nextRevision.toString(),
+            UUID.randomUUID().toString(),
+        )
+        requireNotNull(tasks.find(key)).toDomain()
     }
 
     suspend fun setCompleted(

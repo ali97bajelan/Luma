@@ -40,6 +40,22 @@ enum class TodoUndoOutcome { UNDONE, RETRYABLE_FAILURE, STALE }
 
 enum class TodoChildActionError { MOVE, DELETE, STALE }
 
+enum class TodoMoveIssue { STALE, FAILED }
+
+data class TodoMoveUiState(
+    val open: Boolean = false,
+    val targets: List<TodoTaskRow> = emptyList(),
+    val targetsPageLimit: Int = 50,
+    val hasMoreTargets: Boolean = false,
+    val loadingTargets: Boolean = false,
+    val targetLoadFailed: Boolean = false,
+    val selectedTargetId: UUID? = null,
+    val moveToRootSelected: Boolean = false,
+    val applying: Boolean = false,
+    val hasPendingOperation: Boolean = false,
+    val issue: TodoMoveIssue? = null,
+)
+
 typealias TodoEditorResult = TodoActionResult
 
 data class TodoUiState(
@@ -62,6 +78,7 @@ data class TodoUiState(
     val result: TodoEditorResult? = null,
     val taskId: UUID? = null,
     val parentId: UUID? = null,
+    val familyRevision: UUID? = null,
     val parentTitle: String? = null,
     val parentContextLoading: Boolean = false,
     val parentContextError: Boolean = false,
@@ -79,6 +96,7 @@ data class TodoUiState(
     val childActionPendingId: UUID? = null,
     val childActionError: TodoChildActionError? = null,
     val familyAction: TodoFamilyActionState = TodoFamilyActionState(),
+    val move: TodoMoveUiState = TodoMoveUiState(),
 ) {
     /** A failed read after conflict resolution was approved can be retried without another prompt. */
     val canRetryConfirmedReload: Boolean

@@ -182,6 +182,22 @@ class RoomTodoRepository(
         direction: com.luma.lifeos.domain.todo.TodoMoveDirection,
     ) = familyCommands.moveChild(id, expectedRevision, nextRevision, direction)
 
+    override suspend fun moveTask(
+        id: UUID,
+        expectedRevision: UUID,
+        nextRevision: UUID,
+        expectedSourceFamilyRevision: UUID,
+        targetParentId: UUID?,
+        expectedTargetFamilyRevision: UUID?,
+    ): TodoTask = familyCommands.moveTask(
+        id,
+        expectedRevision,
+        nextRevision,
+        expectedSourceFamilyRevision,
+        targetParentId,
+        expectedTargetFamilyRevision,
+    )
+
     override suspend fun update(
         id: UUID,
         expectedRevision: UUID,
