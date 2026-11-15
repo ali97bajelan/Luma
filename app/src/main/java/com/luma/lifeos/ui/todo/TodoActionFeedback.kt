@@ -45,7 +45,7 @@ fun TodoActionFeedback(
     result: TodoActionResult?,
     snackbarHostState: SnackbarHostState,
     onUndo: suspend (TodoActionResult) -> TodoUndoOutcome,
-    onConsumed: () -> Unit,
+    onConsumed: suspend () -> Unit,
 ) {
     val message = stringResource(if (result?.completed == true) R.string.todo_completed_feedback else R.string.todo_reopened_feedback)
     val undoLabel = stringResource(R.string.todo_undo)
@@ -121,34 +121,54 @@ fun TodoActionFeedbackHost(
             result = current,
             snackbarHostState = snackbarHostState,
             onUndo = { result ->
-                val undoKey = "todo_action_undo_${result.taskId}_${result.resultingRevision}"
-                val revision = saved?.get<String>(undoKey)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                val undoIdentity = result.completionCommandId ?: result.resultingRevision
+                val undoKey = "todo_action_undo_${result.taskId}_$undoIdentity"
+                val undoCommandId = saved?.get<String>(undoKey)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: UUID.randomUUID().also { saved?.set(undoKey, it.toString()) }
                 try {
-                    repository.setCompleted(
-                        result.taskId,
-                        result.resultingRevision,
-                        revision,
-                        completed = false,
-                    )
+                    val commandId = result.completionCommandId
+                    if (commandId != null) {
+                        repository.undoCompletion(commandId, undoCommandId)
+                        repository.releaseCommandHandle(commandId)
+                        repository.releaseCommandHandle(undoCommandId)
+                    } else {
+                        repository.setCompleted(
+                            result.taskId,
+                            requireNotNull(result.resultingRevision),
+                            undoCommandId,
+                            completed = false,
+                        )
+                    }
                     saved?.remove<String>(undoKey)
                     TodoUndoOutcome.UNDONE
                 } catch (failure: Exception) {
                     if (failure is kotlinx.coroutines.CancellationException) throw failure
-                    val latest = runCatching { repository.get(result.taskId) }
-                    val live = latest.getOrNull()
-                    when {
-                        live?.revision == revision && !live.isCompleted -> {
-                            saved?.remove<String>(undoKey)
-                            TodoUndoOutcome.UNDONE
+                    if (result.completionCommandId != null) {
+                        when (failure) {
+                            is TodoConflictException, is TodoMissingException -> TodoUndoOutcome.STALE
+                            else -> TodoUndoOutcome.RETRYABLE_FAILURE
                         }
-                        live?.revision == result.resultingRevision && live.isCompleted -> TodoUndoOutcome.RETRYABLE_FAILURE
-                        failure is TodoConflictException || failure is TodoMissingException || latest.isSuccess -> TodoUndoOutcome.STALE
-                        else -> TodoUndoOutcome.RETRYABLE_FAILURE
+                    } else {
+                        val latest = runCatching { repository.get(result.taskId) }
+                        val live = latest.getOrNull()
+                        when {
+                            live?.revision == undoCommandId && !live.isCompleted -> {
+                                saved?.remove<String>(undoKey)
+                                TodoUndoOutcome.UNDONE
+                            }
+                            live != null && live.revision == result.resultingRevision && live.isCompleted -> TodoUndoOutcome.RETRYABLE_FAILURE
+                            failure is TodoConflictException || failure is TodoMissingException || latest.isSuccess -> TodoUndoOutcome.STALE
+                            else -> TodoUndoOutcome.RETRYABLE_FAILURE
+                        }
                     }
                 }
             },
-            onConsumed = { activeState.value = null },
+            onConsumed = {
+                current.completionCommandId?.let { commandId ->
+                    runCatching { repository.releaseCommandHandle(commandId) }
+                }
+                activeState.value = null
+            },
         )
     }
 }
@@ -194,10 +214,14 @@ fun TodoActionFeedbackCard(
     }
 }
 
-fun TodoActionResult.encodeActionResult(): String = "$taskId|$completed|$resultingRevision"
+fun TodoActionResult.encodeActionResult(): String =
+    "$taskId|$completed|${resultingRevision ?: ""}|${completionCommandId ?: ""}"
 
 private fun String.decodeActionResult(): TodoActionResult? = runCatching {
     val pieces = split('|')
-    require(pieces.size == 3)
-    TodoActionResult(UUID.fromString(pieces[0]), pieces[1].toBooleanStrict(), UUID.fromString(pieces[2]))
+    require(pieces.size in 3..4)
+    val revision = pieces[2].takeIf(String::isNotEmpty)?.let(UUID::fromString)
+    val commandId = pieces.getOrNull(3)?.takeIf(String::isNotEmpty)?.let(UUID::fromString)
+    require(revision != null || commandId != null)
+    TodoActionResult(UUID.fromString(pieces[0]), pieces[1].toBooleanStrict(), revision, commandId)
 }.getOrNull()

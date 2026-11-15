@@ -113,7 +113,8 @@ fun TodayTasksCard(
                                         completedList = false,
                                         canOpen = rowError != TodoListRowError.MISSING,
                                         canMutate = rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
-                                        pending = task.id in actions.pendingIntents,
+                                        pending = task.id in actions.pendingIntents || task.id in actions.inFlight ||
+                                            (actions.familyAction.busy && actions.familyAction.targetId == task.id),
                                         error = rowError,
                                         onOpen = { onTask(task.id) },
                                         onSetCompleted = { onSetCompleted(task, it) },

@@ -14,20 +14,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -99,6 +96,11 @@ fun TodoEditorScreen(
     onRequestDelete: () -> Unit,
     onConfirmDelete: () -> Unit,
     onCancelDelete: () -> Unit,
+    onConfirmFamilyAction: () -> Unit = {},
+    onCancelFamilyAction: () -> Unit = {},
+    onRetryFamilyAction: () -> Unit = {},
+    onReviewFamilyAction: () -> Unit = {},
+    onDismissFamilyAction: () -> Unit = {},
     onDueTime: (LocalTime?) -> Unit = {},
     linkedFocusMillis: Long? = null,
     onFocusTask: (() -> Unit)? = null,
@@ -629,33 +631,17 @@ fun TodoEditorScreen(
         )
     }
 
-    if (state.deleteConfirmationRequested) {
-        val deleteBody = stringResource(
-            if (state.dirty) R.string.todo_delete_dirty_body else R.string.todo_delete_body,
-            state.baselineTitle.ifEmpty { state.draft.title },
-        )
-        LumaAlertDialog(
-            onDismissRequest = onCancelDelete,
-            modifier = Modifier.testTag("todo_editor_delete_dialog"),
-            title = { Text(stringResource(R.string.todo_delete_title)) },
-            text = { Text(deleteBody) },
-            confirmButton = {
-                if (canDeleteTaskOrigin) {
-                    LumaDestructiveTextButton(onClick = onConfirmDelete, modifier = Modifier.testTag("todo_editor_confirm_delete")) {
-                        Text(stringResource(R.string.delete))
-                    }
-                } else {
-                    LumaTextButton(
-                        onClick = onRequestDeleteUnlock,
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_editor_unlock_delete"),
-                    ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
-                }
-            },
-            dismissButton = {
-                LumaTextButton(onClick = onCancelDelete) { Text(stringResource(R.string.cancel)) }
-            },
-        )
-    }
+    TodoFamilyActionDialogs(
+        state = state.familyAction,
+        onConfirm = onConfirmFamilyAction,
+        onCancel = onCancelFamilyAction,
+        onRetry = onRetryFamilyAction,
+        onReviewAgain = onReviewFamilyAction,
+        onDismiss = onDismissFamilyAction,
+        unsavedChanges = state.dirty,
+        canDelete = canDeleteTaskOrigin,
+        onRequestDeleteUnlock = onRequestDeleteUnlock,
+    )
 
     if (discarding) {
         LumaAlertDialog(

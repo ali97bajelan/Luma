@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
 
 enum class TodoListLoadError { INITIAL, REFRESH, PAGE }
 enum class TodoListRowError { FAILED, CONFLICT, MISSING }
@@ -77,6 +76,7 @@ data class TodoListUiState(
     val loadingChildren: Set<UUID> = emptySet(),
     val childLoadErrors: Set<UUID> = emptySet(),
     val parentCompletionOffer: TodoParentCompletionOffer? = null,
+    val familyAction: TodoFamilyActionState = TodoFamilyActionState(),
 )
 
 /** Observed prefix, retained list selection and revision-safe row actions. */
@@ -109,8 +109,21 @@ class TodoListViewModel(
         ),
     )
     val state = mutableState.asStateFlow()
+    private val familyActions = TodoFamilyActions(
+        repository = repository,
+        saved = saved,
+        scope = viewModelScope,
+        keyPrefix = "todo_list_family",
+        onCompletionApplied = ::acceptFamilyCompletion,
+        onDeleteApplied = {},
+    )
 
     init {
+        viewModelScope.launch {
+            familyActions.state.collect { action ->
+                mutableState.update { it.copy(familyAction = action) }
+            }
+        }
         viewModelScope.launch {
             combine(
                 mutableState.map { state ->
@@ -316,36 +329,34 @@ class TodoListViewModel(
         val current = mutableState.value
         val taskId = task.id
         if (!current.dataFresh || current.inFlight.contains(taskId) || current.pendingIntents.containsKey(taskId) ||
-            (current.undoing && current.undoableCompletion?.taskId == taskId) || task.isCompleted == completed
+            (current.undoing && current.undoableCompletion?.taskId == taskId) ||
+            (current.familyAction.busy && current.familyAction.targetId == taskId) || task.isCompleted == completed
         ) return
         clearUndoResult()
         if (completed && current.parentCompletionOffer?.parentTask?.id == taskId) clearParentCompletionOffer(taskId)
-        val intent = TodoMutationIntent(task.id, task.revision, UUID.randomUUID(), completed, task.title)
-        updatePending(current.pendingIntents + (taskId to intent))
         mutableState.update {
             it.copy(
-                inFlight = it.inFlight + taskId,
                 rowErrors = it.rowErrors - taskId,
                 rowErrorTitles = it.rowErrorTitles - taskId,
                 undoFailed = false,
                 parentCompletionOffer = it.parentCompletionOffer?.takeUnless { offer -> offer.parentTask.id == taskId },
             )
         }
-        execute(intent)
+        familyActions.complete(taskId, completed, task.title, task.revision)
     }
 
     fun retry(taskId: UUID) {
         val current = mutableState.value
+        if (current.familyAction.targetId == taskId &&
+            current.familyAction.phase == TodoFamilyActionPhase.RETRYABLE_FAILURE
+        ) {
+            familyActions.retry()
+            return
+        }
         val intent = current.pendingIntents[taskId] ?: return
         if (!current.dataFresh || current.inFlight.contains(taskId)) return
-        mutableState.update {
-            it.copy(
-                inFlight = it.inFlight + taskId,
-                rowErrors = it.rowErrors - taskId,
-                rowErrorTitles = it.rowErrorTitles - taskId,
-            )
-        }
-        execute(intent)
+        familyActions.complete(taskId, intent.completed, intent.title, intent.expectedRevision)
+        removePending(taskId)
     }
 
     fun dismissRowError(taskId: UUID) {
@@ -357,6 +368,10 @@ class TodoListViewModel(
         val result = current.undoableCompletion ?: return
         if (!result.completed) return
         if (current.undoing || current.undoTerminal || result in undoJobs) return
+        if (result.completionCommandId != null) {
+            undoFamilyCompletion(result)
+            return
+        }
         val undoParentId = current.rowPage.items.firstOrNull { it.task.id == result.taskId }?.task?.parentId
             ?: current.childrenByRoot.values.asSequence()
                 .flatMap { it.items.asSequence() }
@@ -369,7 +384,7 @@ class TodoListViewModel(
         }
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
-                repository.setCompleted(result.taskId, result.resultingRevision, nextRevision, completed = false)
+                repository.setCompleted(result.taskId, requireNotNull(result.resultingRevision), nextRevision, completed = false)
                 clearParentOfferAfterUndo(result, undoParentId)
             } catch (failure: Exception) {
                 if (failure is CancellationException) {
@@ -383,7 +398,7 @@ class TodoListViewModel(
                 when {
                     live?.revision == nextRevision && !live.isCompleted ->
                         clearParentOfferAfterUndo(result, undoParentId)
-                    live?.revision == result.resultingRevision && live.isCompleted -> mutableState.update {
+                    live != null && live.revision == result.resultingRevision && live.isCompleted -> mutableState.update {
                         if (it.undoableCompletion == result) it.copy(undoing = false, undoFailed = true) else it
                     }
                     failure is TodoConflictException || failure is TodoMissingException ||
@@ -407,7 +422,45 @@ class TodoListViewModel(
         job.start()
     }
 
-    fun dismissUndo() = clearUndoResult()
+    private fun undoFamilyCompletion(result: TodoActionResult) {
+        val commandId = requireNotNull(result.completionCommandId)
+        val undoKey = undoNextKey(result)
+        val undoCommandId = saved.get<String>(undoKey)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+            ?: UUID.randomUUID().also { saved[undoKey] = it.toString() }
+        mutableState.update { if (it.undoableCompletion == result) it.copy(undoing = true, undoFailed = false) else it }
+        val job = viewModelScope.launch {
+            try {
+                repository.undoCompletion(commandId, undoCommandId)
+                familyActions.release(commandId)
+                familyActions.release(undoCommandId)
+                clearParentOfferAfterUndo(result, null)
+                refresh()
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                val terminal = failure is TodoConflictException || failure is TodoMissingException
+                mutableState.update {
+                    if (it.undoableCompletion == result) {
+                        it.copy(undoing = false, undoFailed = true, undoTerminal = terminal)
+                    } else it
+                }
+                if (terminal) refresh()
+            } finally {
+                undoJobs.remove(result)
+            }
+        }
+        undoJobs[result] = job
+    }
+
+    fun dismissUndo() {
+        mutableState.value.undoableCompletion?.completionCommandId?.let(familyActions::release)
+        clearUndoResult()
+    }
+
+    fun confirmFamilyAction() = familyActions.confirm()
+    fun cancelFamilyAction() = familyActions.cancel()
+    fun retryFamilyAction() = familyActions.retry()
+    fun reviewFamilyAction() = familyActions.reviewAgain()
+    fun dismissFamilyAction() = familyActions.dismiss()
 
     /** Clears retained operations and reloads after a committed backup replacement. */
     fun invalidateAfterRestore() {
@@ -420,6 +473,7 @@ class TodoListViewModel(
         saved.remove<String>(KEY_PARENT_COMPLETION_OFFER)
         undoJobs.values.toList().forEach { it.cancel() }
         undoJobs.clear()
+        familyActions.invalidate()
         clearPendingIntents()
         clearUndoResult()
         saved.keys().filter { it.startsWith(KEY_PAGE_LIMIT_PREFIX) }.forEach { saved.remove<Int>(it) }
@@ -432,47 +486,31 @@ class TodoListViewModel(
         refreshVersion.update { it + 1 }
     }
 
-    private fun execute(intent: TodoMutationIntent) {
-        mutationJobs[intent.taskId]?.cancel()
-        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
-            try {
-                val task = repository.setCompleted(
-                    intent.taskId,
-                    intent.expectedRevision,
-                    intent.resultingRevision,
-                    intent.completed,
-                )
-                acceptCommitted(intent, task)
-            } catch (failure: Exception) {
-                if (failure is CancellationException) {
-                    mutableState.update { it.copy(inFlight = it.inFlight - intent.taskId) }
-                    throw failure
-                }
-                val latest = runCatching { repository.get(intent.taskId) }
-                val live = latest.getOrNull()
-                when {
-                    live != null && isCommitted(intent, live) -> acceptCommitted(intent, live)
-                    latest.isSuccess && live == null || failure is TodoMissingException -> {
-                        failAndRemove(intent.taskId, TodoListRowError.MISSING, intent.title)
-                        refresh()
-                    }
-                    live != null && live.revision != intent.expectedRevision || failure is TodoConflictException -> {
-                        failAndRemove(intent.taskId, TodoListRowError.CONFLICT, intent.title)
-                        refresh()
-                    }
-                    else -> mutableState.update {
-                        it.copy(
-                            inFlight = it.inFlight - intent.taskId,
-                            rowErrors = it.rowErrors + (intent.taskId to TodoListRowError.FAILED),
-                        )
-                    }
-                }
-            } finally {
-                if (mutationJobs[intent.taskId] === coroutineContext[Job]) mutationJobs.remove(intent.taskId)
+    private fun acceptFamilyCompletion(receipt: com.luma.lifeos.domain.todo.TodoCompletionReceipt) {
+        val taskId = receipt.targetId
+        if (receipt.changedTaskCount == 0) {
+            refresh()
+            return
+        }
+        clearUndoResult()
+        val result = TodoActionResult(taskId, receipt.completed, null, receipt.commandId)
+        mutableState.update {
+            it.copy(
+                rowErrors = it.rowErrors - taskId,
+                rowErrorTitles = it.rowErrorTitles - taskId,
+                undoableCompletion = result,
+                undoing = false,
+                undoFailed = false,
+                undoTerminal = false,
+            )
+        }
+        saveUndoResult(result.takeIf { receipt.undoAvailable })
+        if (receipt.completed) {
+            viewModelScope.launch {
+                repository.get(taskId)?.parentId?.let(::suggestParentCompletion)
             }
         }
-        mutationJobs[intent.taskId] = job
-        job.start()
+        refresh()
     }
 
     private fun acceptCommitted(intent: TodoMutationIntent, task: TodoTask) {
@@ -592,13 +630,18 @@ class TodoListViewModel(
 
     private fun saveUndoResult(result: TodoActionResult?) {
         val previous = readUndoResult()
-        previous?.let { saved.remove<String>(undoNextKey(it)) }
+        previous?.let {
+            saved.remove<String>(undoNextKey(it))
+            it.completionCommandId?.let(familyActions::release)
+        }
         if (result == null) {
             saved.remove<String>(KEY_UNDO_ID)
             saved.remove<String>(KEY_UNDO_REVISION)
+            saved.remove<String>(KEY_UNDO_COMMAND)
         } else {
             saved[KEY_UNDO_ID] = result.taskId.toString()
-            saved[KEY_UNDO_REVISION] = result.resultingRevision.toString()
+            saved[KEY_UNDO_REVISION] = result.resultingRevision?.toString().orEmpty()
+            saved[KEY_UNDO_COMMAND] = result.completionCommandId?.toString().orEmpty()
         }
     }
 
@@ -616,12 +659,16 @@ class TodoListViewModel(
     }
 
     private fun undoNextKey(result: TodoActionResult) =
-        "$KEY_UNDO_NEXT_PREFIX${result.taskId}_${result.resultingRevision}"
+        "$KEY_UNDO_NEXT_PREFIX${result.taskId}_${result.completionCommandId ?: result.resultingRevision}"
 
     private fun readUndoResult(): TodoActionResult? {
         val id = saved.get<String>(KEY_UNDO_ID)?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: return null
-        val revision = saved.get<String>(KEY_UNDO_REVISION)?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: return null
-        return TodoActionResult(id, true, revision)
+        val revision = saved.get<String>(KEY_UNDO_REVISION)?.takeIf(String::isNotEmpty)
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        val command = saved.get<String>(KEY_UNDO_COMMAND)?.takeIf(String::isNotEmpty)
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        if (revision == null && command == null) return null
+        return TodoActionResult(id, true, revision, command)
     }
 
     private fun readPendingIntents(): Map<UUID, TodoMutationIntent> =
@@ -769,6 +816,7 @@ class TodoListViewModel(
         const val KEY_PENDING = "todo_list_pending"
         const val KEY_UNDO_ID = "todo_list_undo_id"
         const val KEY_UNDO_REVISION = "todo_list_undo_revision"
+        const val KEY_UNDO_COMMAND = "todo_list_undo_command"
         const val KEY_UNDO_NEXT_PREFIX = "todo_list_undo_next_"
     }
 }

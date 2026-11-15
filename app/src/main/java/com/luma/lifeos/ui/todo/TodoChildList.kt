@@ -17,7 +17,6 @@ import com.luma.lifeos.R
 import com.luma.lifeos.domain.todo.TodoMoveDirection
 import com.luma.lifeos.domain.todo.TodoTaskRow
 import com.luma.lifeos.ui.common.AccessibleFeedback
-import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaCard
 import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 import com.luma.lifeos.ui.common.LumaOutlinedButton
@@ -137,34 +136,6 @@ internal fun TodoChildList(
         }
     }
 
-    if (state.childDeleteConfirmationRequested) {
-        LumaAlertDialog(
-            onDismissRequest = onCancelDeleteChild,
-            modifier = Modifier.testTag("todo_editor_subtask_delete_dialog"),
-            title = { Text(stringResource(R.string.todo_subtask_delete_title)) },
-            text = { Text(stringResource(R.string.todo_subtask_delete_body)) },
-            confirmButton = {
-                if (canDeleteTaskOrigin) {
-                    LumaDestructiveTextButton(
-                        onClick = onConfirmDeleteChild,
-                        modifier = Modifier.testTag("todo_editor_subtask_confirm_delete"),
-                    ) {
-                        Text(stringResource(R.string.delete))
-                    }
-                } else {
-                    LumaTextButton(
-                        onClick = onRequestDeleteUnlock,
-                        modifier = Modifier.fillMaxWidth().testTag("todo_editor_subtask_unlock_delete"),
-                    ) { Text(stringResource(R.string.app_lock_gate_unlock)) }
-                }
-            },
-            dismissButton = {
-                LumaTextButton(onClick = onCancelDeleteChild) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-        )
-    }
 }
 
 @Composable

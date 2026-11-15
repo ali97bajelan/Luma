@@ -32,7 +32,8 @@ enum class TodoEditorError { LOAD, SAVE, STATUS, DELETE }
 data class TodoActionResult(
     val taskId: UUID,
     val completed: Boolean,
-    val resultingRevision: UUID,
+    val resultingRevision: UUID?,
+    val completionCommandId: UUID? = null,
 )
 
 enum class TodoUndoOutcome { UNDONE, RETRYABLE_FAILURE, STALE }
@@ -77,6 +78,7 @@ data class TodoUiState(
     val childContinuationTaskId: UUID? = null,
     val childActionPendingId: UUID? = null,
     val childActionError: TodoChildActionError? = null,
+    val familyAction: TodoFamilyActionState = TodoFamilyActionState(),
 ) {
     /** A failed read after conflict resolution was approved can be retried without another prompt. */
     val canRetryConfirmedReload: Boolean

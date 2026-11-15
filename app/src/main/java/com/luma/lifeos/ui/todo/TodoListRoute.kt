@@ -71,4 +71,12 @@ fun TodoListRoute(
             }
         },
     )
+    TodoFamilyActionDialogs(
+        state = state.familyAction,
+        onConfirm = vm::confirmFamilyAction,
+        onCancel = vm::cancelFamilyAction,
+        onRetry = vm::retryFamilyAction,
+        onReviewAgain = vm::reviewFamilyAction,
+        onDismiss = vm::dismissFamilyAction,
+    )
 }

@@ -22,7 +22,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -82,8 +81,39 @@ class TodoEditorViewModel(
         ),
     )
     val state: StateFlow<TodoUiState> = mutableState.asStateFlow()
+    private val familyActions = TodoFamilyActions(
+        repository = repository,
+        saved = saved,
+        scope = viewModelScope,
+        keyPrefix = "todo_editor_family",
+        onCompletionApplied = { receipt ->
+            clearPending()
+            finish(TodoEditorResult(receipt.targetId, receipt.completed, null, receipt.commandId))
+        },
+        onDeleteApplied = ::onFamilyDeleteApplied,
+    )
 
     init {
+        viewModelScope.launch {
+            familyActions.state.collect { action ->
+                mutableState.value = state.value.copy(
+                    familyAction = action,
+                    busy = if (action.type == null) state.value.busy else action.busy,
+                    pendingAction = when {
+                        action.type == null -> state.value.pendingAction
+                        action.busy && action.type == TodoFamilyActionType.DELETE -> "delete"
+                        action.busy && action.completed == true -> "complete"
+                        action.busy && action.completed == false -> "reopen"
+                        else -> null
+                    },
+                    childDeleteConfirmationRequested = action.phase == TodoFamilyActionPhase.AWAITING_CONFIRMATION &&
+                        action.type == TodoFamilyActionType.DELETE && action.targetId == state.value.childDeleteTargetId,
+                    childActionPendingId = if (action.type == TodoFamilyActionType.DELETE &&
+                        action.targetId == state.value.childDeleteTargetId && action.busy
+                    ) action.targetId else state.value.childActionPendingId,
+                )
+            }
+        }
         if (baselineInput == null && creating) {
             baselineInput = TodoInput(title = "", note = null, dueDate = initialDue)
             persistBaseline(baselineInput!!, revision = null, completed = false)
@@ -178,36 +208,56 @@ class TodoEditorViewModel(
         saved[KEY_CHILD_DELETE_REVISION] = revision.toString()
         saved[KEY_CHILD_DELETE_REQUESTED] = true
         mutableState.value = current.copy(
-            childDeleteConfirmationRequested = true,
+            childDeleteConfirmationRequested = false,
             childDeleteTargetId = childId,
             childActionError = null,
         )
+        childActionJob = viewModelScope.launch {
+            try {
+                val latest = repository.get(childId)
+                if (latest == null || latest.revision != revision) {
+                    clearChildDeleteTarget()
+                    mutableState.value = state.value.copy(
+                        childDeleteTargetId = null,
+                        childActionError = TodoChildActionError.STALE,
+                    )
+                    return@launch
+                }
+                familyActions.delete(childId, latest.title, revision)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.value = state.value.copy(
+                    childActionError = if (failure is TodoConflictException || failure is TodoMissingException) {
+                        TodoChildActionError.STALE
+                    } else TodoChildActionError.DELETE,
+                )
+            }
+        }
     }
 
     fun cancelDeleteChild() {
+        familyActions.cancel()
         clearChildDeleteTarget()
         mutableState.value = state.value.copy(
             childDeleteConfirmationRequested = false,
             childDeleteTargetId = null,
+            childActionPendingId = null,
         )
     }
 
     fun confirmDeleteChild() {
-        val current = state.value
-        if (!current.childDeleteConfirmationRequested || current.busy ||
-            current.childActionPendingId != null
-        ) return
-        mutableState.value = current.copy(childDeleteConfirmationRequested = false)
-        deletePendingChild()
+        if (!state.value.childDeleteConfirmationRequested || state.value.busy) return
+        familyActions.confirm()
     }
 
     fun retryChildDelete() {
-        if (state.value.childActionError == TodoChildActionError.DELETE) deletePendingChild()
+        if (state.value.familyAction.phase == TodoFamilyActionPhase.RETRYABLE_FAILURE) familyActions.retry()
     }
 
     /** Closes this editor without replaying a draft or mutation after archive replacement. */
     fun invalidateAfterRestore() {
         if (!state.value.finished) {
+            familyActions.invalidate()
             loadJob?.cancel()
             mutationJob?.cancel()
             childListJob?.cancel()
@@ -254,14 +304,7 @@ class TodoEditorViewModel(
         if (!current.ready || current.busy || current.finished || current.conflict || current.missing ||
             current.dirty || current.editing.not() || current.taskCompleted == completed || readPending() != null
         ) return
-        val expected = baselineRevision ?: return
-        val pending = PendingOperation(
-            type = if (completed) PendingType.COMPLETE else PendingType.REOPEN,
-            expectedRevision = expected,
-            nextRevision = UUID.randomUUID(),
-            completed = completed,
-        )
-        executeStatus(pending)
+        familyActions.complete(operationId, completed, current.draft.title, baselineRevision)
     }
 
     fun requestDelete() {
@@ -269,28 +312,46 @@ class TodoEditorViewModel(
         if (!current.ready || current.busy || current.finished || current.conflict || current.missing ||
             !current.editing || readPending() != null
         ) return
-        mutableState.value = current.copy(deleteConfirmationRequested = true)
+        familyActions.delete(operationId, current.draft.title, baselineRevision)
     }
 
     fun cancelDelete() {
-        mutableState.value = state.value.copy(deleteConfirmationRequested = false)
+        familyActions.cancel()
+        if (state.value.childDeleteTargetId != null) cancelDeleteChild()
     }
 
     fun confirmDelete() {
         val current = state.value
         if (!current.ready || current.busy || current.finished || current.conflict || current.missing || !current.editing) return
-        val pending = readPending()?.takeIf { it.type == PendingType.DELETE } ?: run {
-            val expected = baselineRevision ?: return
-            PendingOperation(PendingType.DELETE, expectedRevision = expected)
-                .also(::persistPending)
+        familyActions.confirm()
+    }
+
+    fun confirmFamilyAction() = familyActions.confirm()
+    fun cancelFamilyAction() {
+        familyActions.cancel()
+        if (state.value.childDeleteTargetId != null) cancelDeleteChild()
+    }
+    fun retryFamilyAction() = familyActions.retry()
+    fun reviewFamilyAction() = familyActions.reviewAgain()
+    fun dismissFamilyAction() {
+        familyActions.dismiss()
+        if (state.value.childDeleteTargetId != null) {
+            clearChildDeleteTarget()
+            mutableState.value = state.value.copy(
+                childDeleteConfirmationRequested = false,
+                childDeleteTargetId = null,
+                childActionPendingId = null,
+            )
         }
-        mutableState.value = current.copy(deleteConfirmationRequested = false)
-        executeDelete(pending)
     }
 
     /** Retry an approved conflict reload, a mutation with its retained token, or the initial load. */
     fun retry() {
         val current = state.value
+        if (current.familyAction.phase == TodoFamilyActionPhase.RETRYABLE_FAILURE) {
+            familyActions.retry()
+            return
+        }
         if (current.busy || current.finished || current.missing) return
         if (current.canRetryConfirmedReload) {
             reload()
@@ -302,8 +363,20 @@ class TodoEditorViewModel(
             return
         }
         when (readPending()?.type) {
-            PendingType.COMPLETE, PendingType.REOPEN -> executeStatus(requireNotNull(readPending()))
-            PendingType.DELETE -> executeDelete(requireNotNull(readPending()))
+            PendingType.COMPLETE, PendingType.REOPEN -> {
+                val pending = requireNotNull(readPending())
+                clearPending()
+                familyActions.complete(
+                    operationId,
+                    requireNotNull(pending.completed),
+                    current.draft.title,
+                    pending.expectedRevision,
+                )
+            }
+            PendingType.DELETE -> {
+                clearPending()
+                familyActions.delete(operationId, current.draft.title, baselineRevision)
+            }
             PendingType.CREATE, PendingType.UPDATE -> save()
             null -> when (current.error) {
                 TodoEditorError.SAVE -> save()
@@ -566,41 +639,6 @@ class TodoEditorViewModel(
 
     private fun shouldContinueToSubtask() = saved.get<Boolean>(KEY_CONTINUE_TO_SUBTASK) == true
 
-    private fun executeStatus(pending: PendingOperation) {
-        persistPending(pending)
-        mutableState.value = state.value.copy(busy = true, error = null, pendingAction = pending.type.label)
-        mutationJob = viewModelScope.launch {
-            try {
-                val task = repository.setCompleted(
-                    operationId,
-                    requireNotNull(pending.expectedRevision),
-                    requireNotNull(pending.nextRevision),
-                    requireNotNull(pending.completed),
-                )
-                persistBaseline(task.toInput(), task.revision, task.isCompleted)
-                baselineInput = task.toInput()
-                baselineRevision = task.revision
-                baselineCompleted = task.isCompleted
-                finish(resultFor(task))
-            } catch (failure: Exception) {
-                handleFailure(TodoEditorError.STATUS, failure)
-            }
-        }
-    }
-
-    private fun executeDelete(pending: PendingOperation) {
-        persistPending(pending)
-        mutableState.value = state.value.copy(busy = true, error = null, pendingAction = PendingType.DELETE.label)
-        mutationJob = viewModelScope.launch {
-            try {
-                repository.delete(operationId, requireNotNull(pending.expectedRevision))
-                finish(deleted = true)
-            } catch (failure: Exception) {
-                handleFailure(TodoEditorError.DELETE, failure)
-            }
-        }
-    }
-
     private fun change(field: TodoField?, transform: (TodoDraft) -> TodoDraft) {
         val current = state.value
         if (!canEditFields(current, readPending())) return
@@ -678,36 +716,21 @@ class TodoEditorViewModel(
         }
     }
 
-    private fun deletePendingChild() {
-        val current = state.value
-        val childId = current.childDeleteTargetId ?: saved.uuid(KEY_CHILD_DELETE_ID) ?: return
-        val expectedRevision = saved.uuid(KEY_CHILD_DELETE_REVISION) ?: return
-        if (current.childActionPendingId != null) return
-        mutableState.value = current.copy(childActionPendingId = childId, childActionError = null)
-        childActionJob = viewModelScope.launch {
-            try {
-                repository.delete(childId, expectedRevision)
-                clearChildDeleteTarget()
-                mutableState.value = state.value.copy(
-                    childDeleteConfirmationRequested = false,
-                    childDeleteTargetId = null,
-                    childActionPendingId = null,
-                    childActionError = null,
-                )
-                state.value.taskId?.let { rootId ->
-                    if (state.value.parentId == null) observeChildren(rootId)
-                }
-            } catch (failure: Exception) {
-                if (failure is CancellationException) throw failure
-                val stale = failure is TodoConflictException || failure is TodoMissingException
-                if (stale) clearChildDeleteTarget()
-                mutableState.value = state.value.copy(
-                    childActionPendingId = null,
-                    childDeleteConfirmationRequested = false,
-                    childDeleteTargetId = if (stale) null else childId,
-                    childActionError = if (stale) TodoChildActionError.STALE else TodoChildActionError.DELETE,
-                )
-            }
+    private fun onFamilyDeleteApplied(targetId: UUID) {
+        if (targetId == operationId) {
+            clearPending()
+            finish(deleted = true)
+            return
+        }
+        if (state.value.childDeleteTargetId == targetId) {
+            clearChildDeleteTarget()
+            mutableState.value = state.value.copy(
+                childDeleteConfirmationRequested = false,
+                childDeleteTargetId = null,
+                childActionPendingId = null,
+                childActionError = null,
+            )
+            state.value.taskId?.let(::observeChildren)
         }
     }
 
@@ -823,10 +846,12 @@ class TodoEditorViewModel(
         if (savedResult == null) {
             saved.remove<String>(KEY_RESULT_TASK_ID)
             saved.remove<String>(KEY_RESULT_REVISION)
+            saved.remove<String>(KEY_RESULT_COMMAND)
             saved.remove<Boolean>(KEY_RESULT_COMPLETED)
         } else {
             saved[KEY_RESULT_TASK_ID] = savedResult.taskId.toString()
-            saved[KEY_RESULT_REVISION] = savedResult.resultingRevision.toString()
+            saved[KEY_RESULT_REVISION] = savedResult.resultingRevision?.toString().orEmpty()
+            saved[KEY_RESULT_COMMAND] = savedResult.completionCommandId?.toString().orEmpty()
             saved[KEY_RESULT_COMPLETED] = savedResult.completed
         }
         mutableState.value = state.value.copy(
@@ -959,9 +984,11 @@ class TodoEditorViewModel(
 
     private fun resultFrom(saved: SavedStateHandle): TodoEditorResult? {
         val id = saved.uuid(KEY_RESULT_TASK_ID) ?: return null
-        val revision = saved.uuid(KEY_RESULT_REVISION) ?: return null
-        val completed = saved[KEY_RESULT_COMPLETED] ?: return null
-        return TodoEditorResult(id, completed, revision)
+        val revision = saved.uuid(KEY_RESULT_REVISION)
+        val command = saved.uuid(KEY_RESULT_COMMAND)
+        if (revision == null && command == null) return null
+        val completed = saved.get<Boolean>(KEY_RESULT_COMPLETED) ?: return null
+        return TodoEditorResult(id, completed, revision, command)
     }
 
     private fun SavedStateHandle.uuid(key: String): UUID? = get<String>(key)?.let { value ->
@@ -1070,5 +1097,6 @@ class TodoEditorViewModel(
         const val KEY_RESULT_TASK_ID = "todo_result_task_id"
         const val KEY_RESULT_COMPLETED = "todo_result_completed"
         const val KEY_RESULT_REVISION = "todo_result_revision"
+        const val KEY_RESULT_COMMAND = "todo_result_command"
     }
 }

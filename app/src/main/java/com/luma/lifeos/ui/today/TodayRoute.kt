@@ -27,21 +27,19 @@ import java.time.ZoneId
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.todo.TodoRepository
-import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.ui.habits.HabitsUiState
 import com.luma.lifeos.ui.habits.HabitsViewModel
 import com.luma.lifeos.ui.habits.HabitLogSnackbarFeedback
 import com.luma.lifeos.ui.todo.TodayTasksActionState
 import com.luma.lifeos.ui.todo.TodayTasksState
 import com.luma.lifeos.ui.todo.TodayTasksViewModel
+import com.luma.lifeos.ui.todo.TodoFamilyActionDialogs
 import com.luma.lifeos.ui.todo.TodoActionResult
 import com.luma.lifeos.ui.todo.observeTodayTasks
 import com.luma.lifeos.ui.todo.shouldShowTodayTasks
 import com.luma.lifeos.ui.integrations.IntegrationAvailabilityState
-import com.luma.lifeos.ui.focus.FocusDayReport
 import com.luma.lifeos.ui.focus.FocusReportSource
 import com.luma.lifeos.ui.focus.FocusReportState
-import com.luma.lifeos.ui.focus.TodayFocusCard
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -214,5 +212,13 @@ fun TodayRoute(
                 onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory,
                 onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock)
         }
+        TodoFamilyActionDialogs(
+            state = todayTaskActions.familyAction,
+            onConfirm = { todayTasksViewModel?.confirmFamilyAction() },
+            onCancel = { todayTasksViewModel?.cancelFamilyAction() },
+            onRetry = { todayTasksViewModel?.retryFamilyAction() },
+            onReviewAgain = { todayTasksViewModel?.reviewFamilyAction() },
+            onDismiss = { todayTasksViewModel?.dismissFamilyAction() },
+        )
     }
 }

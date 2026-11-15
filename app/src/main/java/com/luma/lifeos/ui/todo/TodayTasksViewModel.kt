@@ -3,14 +3,11 @@ package com.luma.lifeos.ui.todo
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.luma.lifeos.domain.todo.TodoConflictException
-import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoRepository
 import com.luma.lifeos.domain.todo.TodoTask
 import java.util.Base64
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +26,7 @@ data class TodayTasksActionState(
     val inFlight: Set<UUID> = emptySet(),
     val rowFeedback: Map<UUID, TodayTaskRowFeedback> = emptyMap(),
     val actionResult: TodoActionResult? = null,
+    val familyAction: TodoFamilyActionState = TodoFamilyActionState(),
 ) {
     val rowErrors: Map<UUID, TodoListRowError> get() = rowFeedback.mapValues { it.value.error }
 }
@@ -52,39 +50,60 @@ class TodayTasksViewModel(
 
     private val mutationJobs = mutableMapOf<UUID, Job>()
     private val reconciling = mutableSetOf<UUID>()
+    private val familyActions = TodoFamilyActions(
+        repository = repository,
+        saved = saved,
+        scope = viewModelScope,
+        keyPrefix = "todo_today_family",
+        onCompletionApplied = ::acceptFamilyCompletion,
+        onDeleteApplied = {},
+    )
 
     init {
+        viewModelScope.launch {
+            familyActions.state.collect { action ->
+                mutableState.update {
+                    it.copy(
+                        familyAction = action,
+                        inFlight = if (action.busy && action.targetId != null) it.inFlight + action.targetId
+                            else action.targetId?.let(it.inFlight::minus) ?: it.inFlight,
+                    )
+                }
+            }
+        }
         reconcilePendingIntents()
     }
 
     fun setCompleted(task: TodoTask, completed: Boolean) {
         val current = mutableState.value
-        if (!completed || task.isCompleted || task.id in current.pendingIntents || task.id in current.inFlight) return
+        if (task.id in current.pendingIntents || task.id in current.inFlight ||
+            (familyActions.state.value.busy && familyActions.state.value.targetId == task.id) ||
+            task.isCompleted == completed
+        ) return
         clearActionResult()
-        val intent = TodoMutationIntent(
-            task.id,
-            task.revision,
-            UUID.randomUUID(),
-            completed = true,
-            title = task.title,
-        )
-        updatePending(current.pendingIntents + (task.id to intent))
         updateRowFeedback(current.rowFeedback - task.id)
-        mutableState.update {
-            it.copy(
-                inFlight = it.inFlight + task.id,
-            )
-        }
-        execute(intent)
+        mutableState.update { it.copy(inFlight = it.inFlight + task.id) }
+        familyActions.complete(task.id, completed, task.title, task.revision)
     }
+
+    fun confirmFamilyAction() = familyActions.confirm()
+    fun cancelFamilyAction() = familyActions.cancel()
+    fun retryFamilyAction() = familyActions.retry()
+    fun reviewFamilyAction() = familyActions.reviewAgain()
+    fun dismissFamilyAction() = familyActions.dismiss()
 
     fun retry(taskId: UUID) {
         val current = mutableState.value
+        if (current.familyAction.targetId == taskId &&
+            current.familyAction.phase == TodoFamilyActionPhase.RETRYABLE_FAILURE
+        ) {
+            familyActions.retry()
+            return
+        }
         val intent = current.pendingIntents[taskId] ?: return
         if (taskId in current.inFlight) return
-        updateRowFeedback(current.rowFeedback - taskId)
-        mutableState.update { it.copy(inFlight = it.inFlight + taskId) }
-        execute(intent)
+        familyActions.complete(taskId, intent.completed, intent.title, intent.expectedRevision)
+        removePending(taskId)
     }
 
     fun dismissRowError(taskId: UUID) {
@@ -101,44 +120,22 @@ class TodayTasksViewModel(
     fun invalidateAfterRestore() {
         mutationJobs.values.toList().forEach { it.cancel() }
         mutationJobs.clear()
+        familyActions.invalidate()
         clearPendingIntents()
         saved.remove<ArrayList<String>>(KEY_ROW_FEEDBACK)
         saved.remove<String>(KEY_ACTION_RESULT)
         mutableState.value = TodayTasksActionState()
     }
 
-    private fun execute(intent: TodoMutationIntent) {
-        mutationJobs[intent.taskId]?.cancel()
-        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
-            try {
-                val committed = repository.setCompleted(
-                    intent.taskId,
-                    intent.expectedRevision,
-                    intent.resultingRevision,
-                    completed = intent.completed,
-                )
-                acceptCommitted(intent, committed)
-            } catch (failure: Exception) {
-                if (failure is CancellationException) {
-                    mutableState.update { it.copy(inFlight = it.inFlight - intent.taskId) }
-                    throw failure
-                }
-                val latest = runCatching { repository.get(intent.taskId) }
-                val live = latest.getOrNull()
-                when {
-                    live != null && isCommitted(intent, live) -> acceptCommitted(intent, live)
-                    (latest.isSuccess && live == null) || failure is TodoMissingException ->
-                        failAndRemove(intent.taskId, TodoListRowError.MISSING)
-                    (live != null && live.revision != intent.expectedRevision) || failure is TodoConflictException ->
-                        failAndRemove(intent.taskId, TodoListRowError.CONFLICT)
-                    else -> recordFailure(intent, TodoListRowError.FAILED)
-                }
-            } finally {
-                if (mutationJobs[intent.taskId] === coroutineContext[Job]) mutationJobs.remove(intent.taskId)
-            }
+    private fun acceptFamilyCompletion(receipt: com.luma.lifeos.domain.todo.TodoCompletionReceipt) {
+        val taskId = receipt.targetId
+        if (receipt.changedTaskCount == 0) {
+            mutableState.update { it.copy(inFlight = it.inFlight - taskId) }
+            return
         }
-        mutationJobs[intent.taskId] = job
-        job.start()
+        val result = TodoActionResult(taskId, receipt.completed, null, receipt.commandId)
+        saved[KEY_ACTION_RESULT] = result.encodeActionResult()
+        mutableState.update { it.copy(inFlight = it.inFlight - taskId, actionResult = result) }
     }
 
     private fun acceptCommitted(intent: TodoMutationIntent, task: TodoTask) {

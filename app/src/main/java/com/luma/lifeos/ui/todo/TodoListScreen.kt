@@ -581,9 +581,11 @@ private fun TodoListRowEntry(
         today = state.today,
         completedList = task.isCompleted,
         canOpen = rowError != TodoListRowError.MISSING,
-        canMutate = state.dataFresh && !childReadUnavailable && rowError != TodoListRowError.CONFLICT &&
-            rowError != TodoListRowError.MISSING,
+        canMutate = state.dataFresh && !childReadUnavailable &&
+            !(state.familyAction.busy && state.familyAction.targetId == task.id) &&
+            rowError != TodoListRowError.CONFLICT && rowError != TodoListRowError.MISSING,
         pending = task.id in state.inFlight || task.id in state.pendingIntents ||
+            (state.familyAction.busy && state.familyAction.targetId == task.id) ||
             (state.undoing && state.undoableCompletion?.taskId == task.id),
         error = rowError,
         onOpen = { onOpenTask(task.id) },
