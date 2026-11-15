@@ -1124,6 +1124,9 @@
     <string name="todo_list_add">Add task</string>
     <string name="todo_list_open_tab">Open</string>
     <string name="todo_list_completed_tab">Completed</string>
+    <string name="todo_list_search_open_label">Search open tasks by title</string>
+    <string name="todo_list_search_completed_label">Search completed tasks by title</string>
+    <string name="todo_list_search_clear">Clear search</string>
     <string name="todo_list_open_count">%1$s open parent or standalone tasks</string>
     <string name="todo_list_completed_count">%1$s completed parent or standalone tasks</string>
     <string name="todo_list_filter_heading">Filter by importance</string>
@@ -1134,7 +1137,8 @@
     <string name="todo_list_importance_order_heading">Highest importance first</string>
     <string name="todo_list_matching_count">%1$s matching tasks, including subtasks</string>
     <string name="todo_list_empty_matching">No tasks match this importance.</string>
-    <string name="todo_list_reset_query">Clear filters and sorting</string>
+    <string name="todo_list_empty_search">No tasks match this title and selected filters.</string>
+    <string name="todo_list_reset_query">Clear search, filters, and sorting</string>
     <string name="todo_list_loading">Loading tasks…</string>
     <string name="todo_list_refreshing">Refreshing tasks…</string>
     <string name="todo_list_loading_more">Loading more…</string>

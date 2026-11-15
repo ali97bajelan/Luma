@@ -57,18 +57,19 @@ interface TodoRepository {
      */
     fun observeList(query: TodoListQuery, limit: Int = TODO_DEFAULT_PAGE_SIZE): Flow<TodoPage> {
         require(limit > 0) { "Task page size must be positive" }
-        if (query.importance == null && query.sort == TodoSort.DATE) {
+        if (query.importance == null && query.sort == TodoSort.DATE && query.titleSearch.isNullOrBlank()) {
             return observeList(query.completed, limit)
         }
-        throw UnsupportedOperationException("This TodoRepository implementation does not support importance queries")
+        throw UnsupportedOperationException("This TodoRepository implementation does not support task-list filters")
     }
 
     fun observeToday(date: LocalDate, limit: Int = TODO_DEFAULT_TODAY_LIMIT): Flow<TodoPage>
 
     /**
-     * Observe roots for an unfiltered query, or independent matching tasks when importance is set.
-     * Implementations must filter, sort and count before applying the bounded page. This default
-     * fails closed until the implementation provides the family-aware query.
+     * Observe roots for an unfiltered query, or independent matching tasks when importance or
+     * title search is set. Implementations must apply status, text, and importance filters before
+     * counting or applying the bounded page. This default fails closed until the implementation
+     * provides the family-aware query.
      */
     fun observeRows(
         query: TodoListQuery,

@@ -57,6 +57,7 @@ fun TodoListRoute(
         onLoadMore = vm::loadMore,
         onImportanceFilter = vm::setImportanceFilter,
         onSort = vm::setSort,
+        onSearchQueryChange = vm::setSearchQuery,
         onResetQuery = vm::resetQuery,
         undoFeedback = {
             state.undoableCompletion?.let { result ->

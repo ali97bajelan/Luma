@@ -1139,6 +1139,9 @@
     <string name="todo_list_add">Ajouter une tâche</string>
     <string name="todo_list_open_tab">Ouvertes</string>
     <string name="todo_list_completed_tab">Terminées</string>
+    <string name="todo_list_search_open_label">Rechercher les tâches ouvertes par titre</string>
+    <string name="todo_list_search_completed_label">Rechercher les tâches terminées par titre</string>
+    <string name="todo_list_search_clear">Effacer la recherche</string>
     <string name="todo_list_open_count">%1$s tâches parentes ou autonomes ouvertes</string>
     <string name="todo_list_completed_count">%1$s tâches parentes ou autonomes terminées</string>
     <string name="todo_list_filter_heading">Filtrer par importance</string>
@@ -1149,7 +1152,8 @@
     <string name="todo_list_importance_order_heading">Importance élevée d’abord</string>
     <string name="todo_list_matching_count">Tâches correspondantes, sous-tâches incluses : %1$s</string>
     <string name="todo_list_empty_matching">Aucune tâche ne correspond à cette importance.</string>
-    <string name="todo_list_reset_query">Effacer les filtres et le tri</string>
+    <string name="todo_list_empty_search">Aucune tâche ne correspond à ce titre et aux filtres sélectionnés.</string>
+    <string name="todo_list_reset_query">Effacer la recherche, les filtres et le tri</string>
     <string name="todo_list_loading">Chargement des tâches…</string>
     <string name="todo_list_refreshing">Actualisation des tâches…</string>
     <string name="todo_list_loading_more">Chargement de la suite…</string>

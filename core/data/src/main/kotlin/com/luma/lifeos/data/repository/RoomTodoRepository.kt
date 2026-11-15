@@ -41,6 +41,9 @@ class RoomTodoRepository(
 
     override fun observeList(query: TodoListQuery, limit: Int): Flow<TodoPage> {
         require(limit > 0) { "Task page size must be positive" }
+        if (!query.titleSearch.isNullOrBlank()) {
+            throw UnsupportedOperationException("Title search requires family-aware task rows")
+        }
         return dao.observeFiltered(
             completed = query.completed,
             importanceCode = query.importance?.code,
@@ -56,10 +59,15 @@ class RoomTodoRepository(
 
     override fun observeRows(query: TodoListQuery, limit: Int): Flow<TodoRowPage> {
         require(limit > 0) { "Task page size must be positive" }
+        val escapedTitleSearch = query.titleSearch
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.escapeLikeWildcards()
         return dao.observeRows(
             completed = query.completed,
             importanceCode = query.importance?.code,
             sortByImportance = query.sort == TodoSort.IMPORTANCE,
+            escapedTitleSearch = escapedTitleSearch,
             limit = limit,
         ).map { rows ->
             TodoRowPage(

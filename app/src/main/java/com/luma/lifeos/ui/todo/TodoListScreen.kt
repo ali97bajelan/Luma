@@ -47,6 +47,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.PageHeader
 import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.ui.common.LumaListSurface
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaUi
@@ -76,6 +77,7 @@ fun TodoListScreen(
     undoFeedback: @Composable () -> Unit,
     onImportanceFilter: (TodoImportance?) -> Unit = {},
     onSort: (TodoSort) -> Unit = {},
+    onSearchQueryChange: (String) -> Unit = {},
     onResetQuery: () -> Unit = {},
     onCompleteParent: () -> Unit = {},
     onDismissParentOffer: () -> Unit = {},
@@ -94,16 +96,25 @@ fun TodoListScreen(
     } else {
         state.page.items.filter { it.parentId == null }.map { TodoTaskRow(it, parent = null, progress = null) }
     }
-    val isFlatList = state.completed || state.importanceFilter != null || state.sort == TodoSort.IMPORTANCE
+    val isFlatList = state.completed || state.importanceFilter != null ||
+        state.searchQuery.isNotBlank() || state.sort == TodoSort.IMPORTANCE
     val groups = remember(listRows, state.today) {
         TodoBucket.entries.map { bucket -> bucket to listRows.filter { todoBucket(it.task, state.today) == bucket } }
     }
     val visibleRows = if (isFlatList) listRows else groups.flatMap { it.second }
-    val visibleTasks = remember(visibleRows, state.childrenByRoot, state.expandedRootIds, state.importanceFilter) {
+    val visibleTasks = remember(
+        visibleRows,
+        state.childrenByRoot,
+        state.expandedRootIds,
+        state.importanceFilter,
+        state.searchQuery,
+    ) {
         buildList {
             visibleRows.forEach { row ->
                 add(row.task)
-                if (state.importanceFilter == null && row.task.parentId == null && row.task.id in state.expandedRootIds) {
+                if (state.searchQuery.isBlank() && state.importanceFilter == null &&
+                    row.task.parentId == null && row.task.id in state.expandedRootIds
+                ) {
                     addAll(state.childrenByRoot[row.task.id]?.items.orEmpty().map { it.task })
                 }
             }
@@ -125,6 +136,7 @@ fun TodoListScreen(
         groups,
         isFlatList,
         state.importanceFilter,
+        state.searchQuery,
         state.expandedRootIds,
         state.childrenByRoot,
         state.loadingChildren,
@@ -137,8 +149,8 @@ fun TodoListScreen(
                 rows.forEach { row ->
                     put(row.task.id, index++)
                     val rootId = row.task.id
-                    val expandableRoot = state.importanceFilter == null &&
-                        row.task.parentId == null && row.progress != null
+                    val expandableRoot = state.searchQuery.isBlank() &&
+                        state.importanceFilter == null && row.task.parentId == null && row.progress != null
                     if (expandableRoot && rootId in state.expandedRootIds) {
                         index++ // Subtasks heading.
                         val childPage = state.childrenByRoot[rootId]
@@ -213,6 +225,32 @@ fun TodoListScreen(
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("todo_list_completed_tab"),
                 )
             }
+            LumaOutlinedTextField(
+                value = state.searchQuery,
+                onValueChange = onSearchQueryChange,
+                singleLine = true,
+                label = {
+                    Text(
+                        stringResource(
+                            if (state.completed) R.string.todo_list_search_completed_label
+                            else R.string.todo_list_search_open_label,
+                        ),
+                    )
+                },
+                modifier = Modifier.fillMaxWidth().testTag("todo_list_search"),
+                trailingIcon = if (state.searchQuery.isNotEmpty()) {
+                    {
+                        LumaTextButton(
+                            onClick = { onSearchQueryChange("") },
+                            modifier = Modifier.testTag("todo_list_search_clear"),
+                        ) {
+                            Text(stringResource(R.string.todo_list_search_clear))
+                        }
+                    }
+                } else {
+                    null
+                },
+            )
             Text(
                 stringResource(R.string.todo_list_filter_heading),
                 style = MaterialTheme.typography.labelLarge,
@@ -276,8 +314,13 @@ fun TodoListScreen(
             }
             Text(
                 stringResource(
-                    if (state.importanceFilter != null) R.string.todo_list_matching_count
-                    else if (state.completed) R.string.todo_list_completed_count else R.string.todo_list_open_count,
+                    if (state.searchQuery.isNotBlank() || state.importanceFilter != null) {
+                        R.string.todo_list_matching_count
+                    } else if (state.completed) {
+                        R.string.todo_list_completed_count
+                    } else {
+                        R.string.todo_list_open_count
+                    },
                     count,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -326,7 +369,8 @@ fun TodoListScreen(
             if (state.dataFresh || state.page.items.isNotEmpty() || recoveryItemCount > 0) {
                 stateHolder.SaveableStateProvider(
                     "${if (state.completed) "completed" else "open"}:" +
-                        "${state.importanceFilter?.code ?: -1}:${state.sort.name}",
+                        "${state.importanceFilter?.code ?: -1}:${state.sort.name}:" +
+                        if (state.searchQuery.isNotBlank()) "search" else "browse",
                 ) {
                     val listState = rememberLazyListState()
                     LaunchedEffect(
@@ -439,6 +483,7 @@ fun TodoListScreen(
                                         Text(
                                             stringResource(
                                                 when {
+                                                    state.searchQuery.isNotBlank() -> R.string.todo_list_empty_search
                                                     state.importanceFilter != null -> R.string.todo_list_empty_matching
                                                     state.completed -> R.string.todo_list_empty_completed
                                                     else -> R.string.todo_list_empty_open
@@ -446,7 +491,9 @@ fun TodoListScreen(
                                             ),
                                             style = MaterialTheme.typography.titleMedium,
                                         )
-                                        if (state.importanceFilter != null || state.sort != TodoSort.DATE) {
+                                        if (state.searchQuery.isNotBlank() ||
+                                            state.importanceFilter != null || state.sort != TodoSort.DATE
+                                        ) {
                                             LumaTextButton(
                                                 onClick = onResetQuery,
                                                 modifier = Modifier.testTag("todo_list_reset_query"),
@@ -639,7 +686,8 @@ private fun LazyListScope.todoFamilyRows(
 ) {
     rows.forEach { row ->
         val rootId = row.task.id
-        val canExpand = state.importanceFilter == null && row.task.parentId == null && row.progress != null
+        val canExpand = state.searchQuery.isBlank() && state.importanceFilter == null &&
+            row.task.parentId == null && row.progress != null
         item(key = "task:$rootId") {
             TodoListRowEntry(
                 row = row,

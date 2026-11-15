@@ -1125,6 +1125,9 @@
     <string name="todo_list_add">افزودن کار</string>
     <string name="todo_list_open_tab">باز</string>
     <string name="todo_list_completed_tab">تکمیل‌شده</string>
+    <string name="todo_list_search_open_label">جست‌وجوی کارهای باز بر پایهٔ عنوان</string>
+    <string name="todo_list_search_completed_label">جست‌وجوی کارهای تکمیل‌شده بر پایهٔ عنوان</string>
+    <string name="todo_list_search_clear">پاک‌کردن جست‌وجو</string>
     <string name="todo_list_open_count">%1$s کار والد یا مستقلِ باز</string>
     <string name="todo_list_completed_count">%1$s کار والد یا مستقلِ تکمیل‌شده</string>
     <string name="todo_list_filter_heading">فیلتر بر پایهٔ اهمیت</string>
@@ -1135,7 +1138,8 @@
     <string name="todo_list_importance_order_heading">اولویت با اهمیت بیشتر</string>
     <string name="todo_list_matching_count">کارهای منطبق، همراه با زیرکارها: %1$s</string>
     <string name="todo_list_empty_matching">کاری با این اهمیت پیدا نشد.</string>
-    <string name="todo_list_reset_query">پاک‌کردن فیلتر و مرتب‌سازی</string>
+    <string name="todo_list_empty_search">کاری با این عنوان و فیلترهای انتخاب‌شده پیدا نشد.</string>
+    <string name="todo_list_reset_query">پاک‌کردن جست‌وجو، فیلترها و مرتب‌سازی</string>
     <string name="todo_list_loading">در حال بارگذاری کارها…</string>
     <string name="todo_list_refreshing">در حال تازه‌سازی کارها…</string>
     <string name="todo_list_loading_more">در حال بارگذاری موارد بیشتر…</string>

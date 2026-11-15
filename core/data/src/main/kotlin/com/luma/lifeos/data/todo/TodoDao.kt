@@ -332,13 +332,15 @@ interface TodoDao {
             WHERE ((:completed = 1 AND completed_at IS NOT NULL)
                 OR (:completed = 0 AND completed_at IS NULL))
               AND (:importanceCode IS NULL OR importance_code = :importanceCode)
-              AND (:importanceCode IS NOT NULL OR parent_id IS NULL)
+              AND (:importanceCode IS NOT NULL OR :escapedTitleSearch IS NOT NULL OR parent_id IS NULL)
+              AND (:escapedTitleSearch IS NULL OR title LIKE '%' || :escapedTitleSearch || '%' ESCAPE '\')
         ) AS counts
         LEFT JOIN todo_task AS task
             ON ((:completed = 1 AND task.completed_at IS NOT NULL)
                 OR (:completed = 0 AND task.completed_at IS NULL))
             AND (:importanceCode IS NULL OR task.importance_code = :importanceCode)
-            AND (:importanceCode IS NOT NULL OR task.parent_id IS NULL)
+            AND (:importanceCode IS NOT NULL OR :escapedTitleSearch IS NOT NULL OR task.parent_id IS NULL)
+            AND (:escapedTitleSearch IS NULL OR task.title LIKE '%' || :escapedTitleSearch || '%' ESCAPE '\')
         LEFT JOIN todo_task AS parent ON parent.id = task.parent_id
         LEFT JOIN (
             SELECT parent_id, COUNT(*) AS child_total,
@@ -367,6 +369,7 @@ interface TodoDao {
         completed: Boolean,
         importanceCode: Int?,
         sortByImportance: Boolean,
+        escapedTitleSearch: String?,
         limit: Int,
     ): Flow<List<TodoFamilyPageRow>>
 

@@ -69,6 +69,7 @@ data class TodoListUiState(
     val undoTerminal: Boolean = false,
     val importanceFilter: TodoImportance? = null,
     val sort: TodoSort = TodoSort.DATE,
+    val searchQuery: String = "",
     val rowPage: TodoRowPage = TodoRowPage(emptyList(), 0),
     val expandedRootIds: Set<UUID> = emptySet(),
     val childrenByRoot: Map<UUID, TodoRowPage> = emptyMap(),
@@ -97,9 +98,11 @@ class TodoListViewModel(
                 completed = saved[KEY_COMPLETED] ?: false,
                 importanceFilter = readImportanceFilter(),
                 sort = readSort(),
+                titleSearch = readSearchQuery(),
             ),
             importanceFilter = readImportanceFilter(),
             sort = readSort(),
+            searchQuery = readSearchQuery(),
             expandedRootIds = readExpandedRootIds(),
             childPageLimits = readExpandedRootIds().associateWith(::childPageLimitFor),
             pendingIntents = readPendingIntents(),
@@ -128,7 +131,12 @@ class TodoListViewModel(
             combine(
                 mutableState.map { state ->
                     ListRequest(
-                        query = TodoListQuery(state.completed, state.importanceFilter, state.sort),
+                        query = TodoListQuery(
+                            completed = state.completed,
+                            importance = state.importanceFilter,
+                            sort = state.sort,
+                            titleSearch = state.searchQuery.takeIf(String::isNotBlank),
+                        ),
                         limit = state.pageLimit,
                     )
                 }.distinctUntilChanged(),
@@ -182,7 +190,12 @@ class TodoListViewModel(
     fun selectCompleted(completed: Boolean) {
         val current = mutableState.value
         if (current.completed == completed) return
-        val limit = pageLimitFor(completed, current.importanceFilter, current.sort)
+        val limit = pageLimitFor(
+            completed = completed,
+            importanceFilter = current.importanceFilter,
+            sort = current.sort,
+            titleSearch = current.searchQuery,
+        )
         saved[KEY_COMPLETED] = completed
         mutableState.value = current.copy(
             completed = completed,
@@ -249,19 +262,35 @@ class TodoListViewModel(
         startChildObservation(rootId, current.childPageLimits[rootId] ?: childPageLimitFor(rootId))
     }
 
-    fun resetQuery() {
-        updateQuery(importanceFilter = null, sort = TodoSort.DATE)
+    fun setSearchQuery(value: String) {
+        val current = mutableState.value
+        updateQuery(current.importanceFilter, current.sort, value)
     }
 
-    private fun updateQuery(importanceFilter: TodoImportance?, sort: TodoSort) {
+    fun resetQuery() {
+        updateQuery(importanceFilter = null, sort = TodoSort.DATE, titleSearch = "")
+    }
+
+    private fun updateQuery(
+        importanceFilter: TodoImportance?,
+        sort: TodoSort,
+        titleSearch: String = mutableState.value.searchQuery,
+    ) {
         val current = mutableState.value
-        if (current.importanceFilter == importanceFilter && current.sort == sort) return
-        val limit = pageLimitFor(current.completed, importanceFilter, sort)
+        if (current.importanceFilter == importanceFilter && current.sort == sort &&
+            current.searchQuery == titleSearch
+        ) return
         saved[KEY_IMPORTANCE_FILTER] = importanceFilter?.code ?: FILTER_ALL
         saved[KEY_IMPORTANCE_SORT] = sort == TodoSort.IMPORTANCE
+        saved[KEY_SEARCH_QUERY] = titleSearch
+        if (titleSearch.isNotBlank()) {
+            saved[searchPageLimitKey(current.completed, importanceFilter, sort)] = TODO_DEFAULT_PAGE_SIZE
+        }
+        val limit = pageLimitFor(current.completed, importanceFilter, sort, titleSearch)
         mutableState.value = current.copy(
             importanceFilter = importanceFilter,
             sort = sort,
+            searchQuery = titleSearch,
             page = TodoPage(emptyList(), 0),
             rowPage = TodoRowPage(emptyList(), 0),
             pageLimit = limit,
@@ -277,7 +306,12 @@ class TodoListViewModel(
         val current = mutableState.value
         if (!current.dataFresh || current.loading || current.loadingMore || current.page.items.size >= current.page.total) return
         val expandedLimit = current.pageLimit + TODO_DEFAULT_PAGE_SIZE
-        saved[pageLimitKey(current.completed, current.importanceFilter, current.sort)] = expandedLimit
+        val limitKey = if (current.searchQuery.isNotBlank()) {
+            searchPageLimitKey(current.completed, current.importanceFilter, current.sort)
+        } else {
+            pageLimitKey(current.completed, current.importanceFilter, current.sort)
+        }
+        saved[limitKey] = expandedLimit
         mutableState.update { it.copy(pageLimit = expandedLimit, loadingMore = true, loadError = null) }
     }
 
@@ -479,6 +513,9 @@ class TodoListViewModel(
         saved.keys().filter { it.startsWith(KEY_PAGE_LIMIT_PREFIX) }.forEach { saved.remove<Int>(it) }
         saved.remove<Int>(KEY_OPEN_LIMIT)
         saved.remove<Int>(KEY_COMPLETED_LIMIT)
+        saved.remove<String>(KEY_SEARCH_QUERY)
+        saved.keys().filter { it.startsWith(KEY_SEARCH_PAGE_LIMIT_PREFIX) }
+            .forEach { saved.remove<Int>(it) }
         saved[KEY_IMPORTANCE_FILTER] = FILTER_ALL
         saved[KEY_IMPORTANCE_SORT] = false
         saved[KEY_COMPLETED] = false
@@ -691,6 +728,8 @@ class TodoListViewModel(
         )
     }.getOrNull()
 
+    private fun readSearchQuery(): String = saved.get<String>(KEY_SEARCH_QUERY).orEmpty()
+
     private fun readImportanceFilter(): TodoImportance? = when (val code = saved.get<Int>(KEY_IMPORTANCE_FILTER)) {
         null, FILTER_ALL -> null
         else -> runCatching { TodoImportance.fromCode(code) }.getOrNull()
@@ -703,7 +742,12 @@ class TodoListViewModel(
         completed: Boolean,
         importanceFilter: TodoImportance?,
         sort: TodoSort,
+        titleSearch: String? = null,
     ): Int {
+        if (!titleSearch.isNullOrBlank()) {
+            return (saved.get<Int>(searchPageLimitKey(completed, importanceFilter, sort))
+                ?: TODO_DEFAULT_PAGE_SIZE).coerceAtLeast(TODO_DEFAULT_PAGE_SIZE)
+        }
         val key = pageLimitKey(completed, importanceFilter, sort)
         val savedLimit = saved.get<Int>(key)
         if (savedLimit != null) return savedLimit.coerceAtLeast(TODO_DEFAULT_PAGE_SIZE)
@@ -716,6 +760,9 @@ class TodoListViewModel(
 
     private fun pageLimitKey(completed: Boolean, importanceFilter: TodoImportance?, sort: TodoSort): String =
         "$KEY_PAGE_LIMIT_PREFIX${if (completed) "completed" else "open"}_${importanceFilter?.code ?: FILTER_ALL}_${sort.name}"
+
+    private fun searchPageLimitKey(completed: Boolean, importanceFilter: TodoImportance?, sort: TodoSort): String =
+        "$KEY_SEARCH_PAGE_LIMIT_PREFIX${if (completed) "completed" else "open"}_${importanceFilter?.code ?: FILTER_ALL}_${sort.name}"
 
     private fun observeRows(query: TodoListQuery, limit: Int): kotlinx.coroutines.flow.Flow<TodoRowPage> = try {
         repository.observeRows(query, limit)
@@ -807,6 +854,8 @@ class TodoListViewModel(
         const val KEY_COMPLETED = "todo_list_completed"
         const val KEY_IMPORTANCE_FILTER = "todo_list_importance_filter"
         const val KEY_IMPORTANCE_SORT = "todo_list_importance_sort"
+        const val KEY_SEARCH_QUERY = "todo_list_search_query"
+        const val KEY_SEARCH_PAGE_LIMIT_PREFIX = "todo_list_search_page_limit_"
         const val KEY_PAGE_LIMIT_PREFIX = "todo_list_page_limit_"
         const val KEY_EXPANDED_ROOTS = "todo_list_expanded_roots"
         const val KEY_CHILD_PAGE_LIMIT_PREFIX = "todo_list_child_page_limit_"
