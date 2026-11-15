@@ -33,6 +33,14 @@ class TodoEditorViewModel(
     requestedParentId: UUID?,
     private val saved: SavedStateHandle,
 ) : ViewModel() {
+    /** Retained source-compatible constructor for callers creating or editing root tasks. */
+    constructor(
+        repository: TodoRepository,
+        taskId: UUID?,
+        initialDueDate: LocalDate?,
+        saved: SavedStateHandle,
+    ) : this(repository, taskId, initialDueDate, requestedParentId = null, saved = saved)
+
     private val creating = taskId == null
     private val creationParentId = if (creating) {
         saved.uuid(KEY_PARENT_ID) ?: requestedParentId?.also { saved[KEY_PARENT_ID] = it.toString() }

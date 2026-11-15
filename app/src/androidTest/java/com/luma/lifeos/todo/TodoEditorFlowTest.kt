@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -21,10 +22,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.input.ImeAction
 import com.luma.lifeos.R
 import com.luma.lifeos.language.localizedTime
 import com.luma.lifeos.domain.todo.TodoConflictException
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoPage
 import com.luma.lifeos.domain.todo.TodoRepository
@@ -507,6 +510,109 @@ class TodoEditorFlowTest {
         }
     }
 
+    @Test fun importanceCanBeChangedAndClearedWithoutAddingADeadline() {
+        val state = mutableStateOf(
+            TodoUiState(
+                loading = false,
+                ready = true,
+                draft = TodoDraft(title = "Important without a deadline"),
+                dirty = false,
+            ),
+        )
+        val selected = mutableListOf<TodoImportance>()
+        compose.setContent {
+            LifeOsTheme {
+                TodoEditorScreen(
+                    state = state.value,
+                    onClose = {},
+                    onSave = {},
+                    onRetry = {},
+                    onReload = {},
+                    onTitle = {},
+                    onNote = {},
+                    onDueDate = {},
+                    onSetCompleted = {},
+                    onRequestDelete = {},
+                    onConfirmDelete = {},
+                    onCancelDelete = {},
+                    onImportance = { importance ->
+                        selected += importance
+                        state.value = state.value.copy(
+                            draft = state.value.draft.copy(importance = importance),
+                            dirty = true,
+                        )
+                    },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("todo_importance_none").assertIsSelected()
+        listOf(TodoImportance.LOW, TodoImportance.MEDIUM, TodoImportance.HIGH, TodoImportance.NONE).forEach { importance ->
+            val tag = "todo_importance_${importance.name.lowercase()}"
+            compose.onNodeWithTag(tag).performScrollTo().performClick()
+            compose.onNodeWithTag(tag).assertIsSelected()
+        }
+        compose.onNodeWithTag("todo_editor_due_date_value")
+            .assertTextContains(appContext.getString(R.string.todo_no_date))
+
+        compose.runOnIdle {
+            assertEquals(
+                listOf(TodoImportance.LOW, TodoImportance.MEDIUM, TodoImportance.HIGH, TodoImportance.NONE),
+                selected,
+            )
+            assertEquals(TodoImportance.NONE, state.value.draft.importance)
+            assertEquals(null, state.value.draft.dueDate)
+            assertEquals(null, state.value.draft.dueTime)
+            assertTrue(state.value.dirty)
+        }
+    }
+
+    @Test fun unsavedParentRequiresSaveAndContinueConfirmation() {
+        val state = mutableStateOf(TodoUiState(loading = false, ready = true))
+        var continuationRequests = 0
+        compose.setContent {
+            LifeOsTheme {
+                TodoEditorScreen(
+                    state = state.value,
+                    onClose = {},
+                    onSave = {},
+                    onRetry = {},
+                    onReload = {},
+                    onTitle = { title ->
+                        state.value = state.value.copy(
+                            draft = state.value.draft.copy(title = title),
+                            dirty = true,
+                        )
+                    },
+                    onNote = {},
+                    onDueDate = {},
+                    onSetCompleted = {},
+                    onRequestDelete = {},
+                    onConfirmDelete = {},
+                    onCancelDelete = {},
+                    onSaveAndContinueToSubtask = { continuationRequests++ },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("todo_editor_title").performTextInput("Parent draft")
+        compose.onNodeWithTag("todo_editor_add_subtask").performScrollTo().performClick()
+        compose.onNodeWithTag("todo_editor_subtask_continue_dialog").assertExists()
+        compose.onNodeWithTag("todo_editor_subtask_continue_cancel").performClick()
+        compose.runOnIdle {
+            assertEquals(0, continuationRequests)
+            assertEquals("Parent draft", state.value.draft.title)
+            assertTrue(state.value.dirty)
+        }
+
+        compose.onNodeWithTag("todo_editor_add_subtask").performScrollTo().performClick()
+        compose.onNodeWithTag("todo_editor_subtask_save_continue").performClick()
+        compose.runOnIdle {
+            assertEquals(1, continuationRequests)
+            assertEquals("Parent draft", state.value.draft.title)
+        }
+    }
+
     private val appContext get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private fun enterPickerMinute(value: String) {
@@ -560,6 +666,9 @@ class TodoEditorFlowTest {
         override fun observeList(completed: Boolean, limit: Int): Flow<TodoPage> = flowOf(TodoPage(emptyList(), 0))
 
         override fun observeToday(date: LocalDate, limit: Int): Flow<TodoPage> = flowOf(TodoPage(emptyList(), 0))
+
+        override suspend fun searchOpen(query: String, offset: Int, limit: Int): TodoPage =
+            TodoPage(emptyList(), 0)
 
         override suspend fun get(id: UUID): TodoTask? {
             reads++

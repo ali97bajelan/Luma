@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.todo
 
 import androidx.lifecycle.SavedStateHandle
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoInput
 import java.time.Instant
 import java.time.LocalDate
@@ -100,6 +101,45 @@ class TodoEditorViewModelTest {
 
         assertEquals(LocalDate.parse("2026-10-21"), editor.state.value.draft.dueDate)
         assertNull(editor.state.value.draft.dueTime)
+        assertEquals(TodoImportance.NONE, editor.state.value.draft.importance)
+    }
+
+    @Test fun importanceDraftSurvivesRetryAndCanBeClearedBackToNone() = runTest(dispatcher) {
+        val original = todoFixtureTask("Importance", dueDate = null)
+        val repository = TodoRepositoryFixture(listOf(original)).apply {
+            failNextUpdateBeforeCommit = IllegalStateException("offline")
+        }
+        val saved = SavedStateHandle()
+        val editor = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+
+        editor.setImportance(TodoImportance.HIGH)
+        assertTrue(editor.state.value.dirty)
+        editor.save()
+        advanceUntilIdle()
+        assertEquals(TodoEditorError.SAVE, editor.state.value.error)
+        assertEquals(TodoImportance.HIGH.code, saved.get<Int>("todo_pending_input.importance"))
+
+        val recreated = TodoEditorViewModel(repository, original.id, null, saved)
+        advanceUntilIdle()
+        assertEquals(TodoImportance.HIGH, recreated.state.value.draft.importance)
+        assertTrue(recreated.state.value.dirty)
+        recreated.retry()
+        advanceUntilIdle()
+        assertTrue(recreated.state.value.finished)
+        assertEquals(TodoImportance.HIGH, repository.tasks.single().importance)
+        assertNull(repository.tasks.single().dueDate)
+
+        val clearSaved = SavedStateHandle()
+        val clearEditor = TodoEditorViewModel(repository, original.id, null, clearSaved)
+        advanceUntilIdle()
+        clearEditor.setImportance(TodoImportance.NONE)
+        assertTrue(clearEditor.state.value.dirty)
+        clearEditor.save()
+        advanceUntilIdle()
+        assertTrue(clearEditor.state.value.finished)
+        assertEquals(TodoImportance.NONE, repository.tasks.single().importance)
+        assertNull(repository.tasks.single().dueDate)
     }
 
     @Test fun confirmedMinuteSurvivesRecreationAndMidnightIsNotNull() = runTest(dispatcher) {
@@ -393,7 +433,7 @@ class TodoEditorViewModelTest {
         advanceUntilIdle()
         editor.setCompleted(true)
         advanceUntilIdle()
-        assertEquals(TodoEditorError.STATUS, editor.state.value.error)
+        assertEquals(TodoFamilyActionPhase.RETRYABLE_FAILURE, editor.state.value.familyAction.phase)
         assertEquals(1, repository.completionCalls.size)
 
         val recreated = TodoEditorViewModel(repository, original.id, null, saved)
@@ -403,7 +443,8 @@ class TodoEditorViewModelTest {
         assertNotNull(recreated.state.value.result)
         assertEquals(original.id, recreated.state.value.result?.taskId)
         assertTrue(recreated.state.value.result?.completed == true)
-        assertEquals(repository.tasks.single().revision, recreated.state.value.result?.resultingRevision)
+        assertEquals(null, recreated.state.value.result?.resultingRevision)
+        assertNotNull(recreated.state.value.result?.completionCommandId)
         assertEquals(1, repository.completionCalls.size)
         assertNull(recreated.state.value.error)
     }

@@ -2,6 +2,8 @@ package com.luma.lifeos.ui.todo
 
 import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
+import com.luma.lifeos.domain.todo.TodoImportance
+import com.luma.lifeos.domain.todo.TodoSort
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -104,15 +106,15 @@ class TodoListViewModelTest {
 
         list.setCompleted(open.id, true)
         list.setCompleted(open.id, true)
-        assertTrue(list.state.value.inFlight.contains(open.id))
         advanceUntilIdle()
 
+        assertEquals(TodoFamilyActionPhase.APPLIED, list.state.value.familyAction.phase)
         assertEquals(1, repository.completionCalls.size)
         val result = list.state.value.undoableCompletion
         assertNotNull(result)
         assertEquals(open.id, result?.taskId)
         assertTrue(result?.completed == true)
-        assertEquals(result?.resultingRevision, repository.tasks.single().revision)
+        assertNotNull(result?.completionCommandId)
 
         list.undoCompletion()
         advanceUntilIdle()
@@ -142,7 +144,48 @@ class TodoListViewModelTest {
         assertTrue(list.state.value.undoTerminal)
         assertTrue(repository.tasks.single().isCompleted)
         assertEquals("Edited after completion", repository.tasks.single().title)
-        assertEquals(committed.revision, list.state.value.undoableCompletion?.resultingRevision)
+        assertNotNull(list.state.value.undoableCompletion?.completionCommandId)
+    }
+
+    @Test fun importanceFilterMatchesChildrenWithoutAddingTheirParentAndRetainsSelection() = runTest(dispatcher) {
+        val root = todoFixtureTask("Undated None root", dueDate = null, importance = TodoImportance.NONE)
+        val child = todoFixtureTask(
+            "High child",
+            id = stableId("high-child"),
+            dueDate = null,
+            importance = TodoImportance.HIGH,
+            parentId = root.id,
+            siblingPosition = 0,
+            familyRevision = root.familyRevision,
+        )
+        val repository = TodoRepositoryFixture(listOf(root, child))
+        val saved = SavedStateHandle()
+        val list = TodoListViewModel(repository, saved)
+        advanceUntilIdle()
+        assertEquals(listOf(root.id), list.state.value.rowPage.items.map { it.task.id })
+
+        list.setImportanceFilter(TodoImportance.HIGH)
+        advanceUntilIdle()
+        assertEquals(1, list.state.value.rowPage.total)
+        assertEquals(listOf(child.id), list.state.value.rowPage.items.map { it.task.id })
+        assertEquals(root.id, list.state.value.rowPage.items.single().parent?.id)
+
+        val recreated = TodoListViewModel(repository, saved)
+        advanceUntilIdle()
+        assertEquals(TodoImportance.HIGH, recreated.state.value.importanceFilter)
+        assertEquals(listOf(child.id), recreated.state.value.rowPage.items.map { it.task.id })
+
+        recreated.setImportanceFilter(TodoImportance.NONE)
+        advanceUntilIdle()
+        assertEquals(1, recreated.state.value.rowPage.total)
+        assertEquals(listOf(root.id), recreated.state.value.rowPage.items.map { it.task.id })
+        recreated.setSort(TodoSort.IMPORTANCE)
+        advanceUntilIdle()
+        assertEquals(TodoSort.IMPORTANCE, recreated.state.value.sort)
+        recreated.resetQuery()
+        advanceUntilIdle()
+        assertEquals(null, recreated.state.value.importanceFilter)
+        assertEquals(TodoSort.DATE, recreated.state.value.sort)
     }
 
     @Test fun completedSelectionAndEachModePrefixSurviveRecreation() = runTest(dispatcher) {
@@ -179,7 +222,7 @@ class TodoListViewModelTest {
         assertTrue(recreated.state.value.completed)
         assertEquals(100, recreated.state.value.pageLimit)
         assertEquals(51, recreated.state.value.page.total)
-        assertEquals(100, saved.get<Int>("todo_list_open_limit"))
+        assertEquals(100, saved.get<Int>("todo_list_page_limit_open_-1_DATE"))
     }
 
     @Test fun refreshDayUpdatesTheDeviceDayUsedByListGroups() = runTest(dispatcher) {

@@ -1,15 +1,15 @@
 # TI-QA01 — Final task importance and subtasks QA
 
-Date: 14 November 2026. Status: **NOT RUN**. This document defines **one QA task**, including emulator testing, after all feature implementation is source complete. Cases 01–11 are coverage scenarios inside this task, not separate tasks or intermediate gates.
+Date: 15 November 2026. Status: **PARTIAL — required acceptance remains BLOCKED**. Focused domain and Todo host suites pass, but the broader Gradle check fails, app instrumentation sources have unrelated compile errors, and SDK repository access prevented creation of a disposable AVD. See the [execution record](validation/2026-11-15-task-importance-subtasks-qa.md). Cases 01–11 remain blocked as complete acceptance scenarios.
 
 [Specification](superpowers/specs/2026-11-14-task-importance-subtasks-design.md) · [Implementation plan](superpowers/plans/2026-11-14-task-importance-subtasks.md) · [Research/backlog](TASKS_IMPROVEMENT_BACKLOG_2026-11-14.md)
 
 ## Entry gate
 
-- [ ] I01–I08 each have SOURCE COMPLETE — QA PENDING handoffs and the final feature handoff records source SHA/dirty patch identity, changed paths, schema/archive allocations, static-review findings and known uncertainty.
-- [ ] No predecessor QA PASS is needed to complete implementation. Start this task only once every implementation handoff exists.
-- [ ] Read the complete spec, plan, current AGENTS.md, [shared workflow](feature-roadmap/WORKFLOW.md) and actual implementation before deriving test assertions.
-- [ ] Author/update tests and synthetic fixtures here; generate/inspect Room schemas, run Gradle/build/lint, control emulators and correct defects here. No test result or evidence directory is pre-created by this planning pass.
+- [x] I01–I08 have SOURCE COMPLETE — QA PENDING handoffs; the execution record captures the candidate base SHA, tracked diff hash, new test file hashes, changed source/test areas, schema/archive versions and known uncertainty.
+- [x] No predecessor QA PASS was needed; TI-QA01 started after all implementation handoffs existed.
+- [x] Read the complete spec, plan, current AGENTS.md, [shared workflow](feature-roadmap/WORKFLOW.md) and relevant implementation before deriving assertions.
+- [ ] Tests and synthetic fixtures are authored, schema 17 was inspected at source level, and Gradle host/build checks ran. Populated migration execution, instrumentation, lint and emulator/manual evidence remain blocked; see the [execution record](validation/2026-11-15-task-importance-subtasks-qa.md).
 
 ## Isolation and evidence
 
@@ -35,21 +35,21 @@ Freeze test clocks and use deterministic UUIDs. Keep expected data separate from
 
 ## Case matrix
 
-All cases initially **NOT RUN**. Requirements refer to TI-R01–TI-R12 in the spec.
+Current outcomes below reflect this execution. Each case is BLOCKED as full acceptance; host-level pass evidence and exact blockers are recorded in the [execution record](validation/2026-11-15-task-importance-subtasks-qa.md). Requirements refer to TI-R01–TI-R12 in the spec.
 
-| Case | Scope | Requirements | Initial result |
+| Case | Scope | Requirements | Result |
 | --- | --- | --- | --- |
-| 01 | Importance model and populated migrations | R01/R10 | NOT RUN |
-| 02 | Editor importance, validation and drafts | R01/R03/R11 | NOT RUN |
-| 03 | Hierarchy/order invariants and CRUD | R02/R10 | NOT RUN |
-| 04 | Child/parent editor journeys and progress | R02/R03/R04/R06/R11 | NOT RUN |
-| 05 | Query modes, ordering, filters and paging | R04/R05 | NOT RUN |
-| 06 | Today/Calendar/reminder/widget/Focus journeys | R04/R05/R09/R11 | NOT RUN |
-| 07 | Atomic completion, Undo, deletion and concurrency | R06/R07/R08/R09 | NOT RUN |
-| 08 | Failure/retry/crash/restore/app-lock recovery | R03/R07/R08/R09/R10 | NOT RUN |
-| 09 | Locale/theme/accessibility/calendar/input matrix | R01/R03/R04/R05/R09/R11 | NOT RUN |
-| 10 | Archive/restore/reset and revision invalidation | R02/R07/R08/R09/R10 | NOT RUN |
-| 11 | Large dataset and bounded rendering/query behavior | R04/R05/R09/R12 | NOT RUN |
+| 01 | Importance model and populated migrations | R01/R10 | BLOCKED — populated Room migrations not executed; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 02 | Editor importance, validation and drafts | R01/R03/R11 | BLOCKED — host tests pass; UI/device matrix not run; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 03 | Hierarchy/order invariants and CRUD | R02/R10 | BLOCKED — persistence transactions not executed; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 04 | Child/parent editor journeys and progress | R02/R03/R04/R06/R11 | BLOCKED — Compose hierarchy journey not run; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 05 | Query modes, ordering, filters and paging | R04/R05 | BLOCKED — Room query/paging acceptance not executed; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 06 | Today/Calendar/reminder/widget/Focus journeys | R04/R05/R09/R11 | BLOCKED — device journeys not run; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 07 | Atomic completion, Undo, deletion and concurrency | R06/R07/R08/R09 | BLOCKED — persistence command tests not executed; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 08 | Failure/retry/crash/restore/app-lock recovery | R03/R07/R08/R09/R10 | BLOCKED — process/app-lock device paths not run; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 09 | Locale/theme/accessibility/calendar/input matrix | R01/R03/R04/R05/R09/R11 | BLOCKED — locale, accessibility and device matrix not run; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 10 | Archive/restore/reset and revision invalidation | R02/R07/R08/R09/R10 | BLOCKED — archive and reset tests not executed; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
+| 11 | Large dataset and bounded rendering/query behavior | R04/R05/R09/R12 | BLOCKED — scale/performance run not executed; [run evidence](validation/2026-11-15-task-importance-subtasks-qa.md#case-results) |
 
 ### Case 01 — Model and migration
 
@@ -175,4 +175,4 @@ If debug targets the personal app, replace with actual isolated variant tasks be
 
 ## Exit criteria
 
-Exactly one TI-QA01 result is recorded after all source work. PASS requires all necessary host/schema/build/lint checks and required emulator/manual cases/matrix cells with evidence, zero unresolved critical defects, and documented scope for any approved exceptions. SOURCE COMPLETE, compilation or a subset pass never substitutes for full acceptance. This document’s current status remains **NOT RUN** until actual execution evidence exists.
+Exactly one TI-QA01 result is recorded after all source work. PASS requires all necessary host/schema/build/lint checks and required emulator/manual cases/matrix cells with evidence, zero unresolved critical defects, and documented scope for any approved exceptions. SOURCE COMPLETE, compilation or a subset pass never substitutes for full acceptance. This document’s current status is **PARTIAL — acceptance BLOCKED**; keep it open until all required evidence passes or an explicit exception is approved.

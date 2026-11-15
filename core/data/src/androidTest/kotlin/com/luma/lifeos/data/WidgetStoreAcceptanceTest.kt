@@ -8,6 +8,7 @@ import com.luma.lifeos.data.repository.RoomHabitRepository
 import com.luma.lifeos.data.repository.RoomTodoRepository
 import com.luma.lifeos.data.widget.RoomWidgetStore
 import com.luma.lifeos.domain.habit.HabitSaveInput
+import com.luma.lifeos.domain.todo.TodoChildProgress
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.widget.WidgetInstance
 import com.luma.lifeos.domain.widget.WidgetKind
@@ -77,6 +78,34 @@ class WidgetStoreAcceptanceTest {
         val afterUndo = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, 3)).rows.single() as WidgetRow.Task
         assertEquals(created.id, afterUndo.id)
         assertEquals(LocalTime.of(9, 5), afterUndo.dueTime)
+    }
+
+    @Test fun widgetFamilyRowShowsProgressAndRequiresInAppConfirmationForRootCompletion() = runBlocking {
+        val widgetId = 48
+        val parent = todos.create(
+            UUID.nameUUIDFromBytes("widget-family-root".toByteArray()),
+            UUID.randomUUID(),
+            TodoInput("Widget family root", dueDate = today),
+        )
+        val child = todos.createChild(
+            UUID.nameUUIDFromBytes("widget-family-child".toByteArray()),
+            UUID.randomUUID(),
+            parent.id,
+            TodoInput("Undated widget child"),
+        )
+        widgets.configure(WidgetInstance(widgetId, WidgetKind.TASKS))
+
+        val before = requireNotNull(widgets.snapshot(widgetId, now, ZoneOffset.UTC, rowLimit = 3))
+        val row = before.rows.single() as WidgetRow.Task
+        assertEquals(parent.id, row.id)
+        assertEquals(TodoChildProgress(completed = 0, total = 1), row.childProgress)
+        assertEquals(null, row.parentTitle)
+        val result = widgets.execute(widgetId, requireNotNull(row.actionToken), now, ZoneOffset.UTC)
+
+        assertEquals(WidgetOutcome.CONFIRMATION_REQUIRED, result.outcome)
+        assertEquals(parent.id, result.taskId)
+        assertEquals(false, todos.get(parent.id)?.isCompleted)
+        assertEquals(false, todos.get(child.id)?.isCompleted)
     }
 
     @Test fun legacySummaryHabitShowsProgressAndKeepsUndoCommandUsableAfterSnapshot() = runBlocking {

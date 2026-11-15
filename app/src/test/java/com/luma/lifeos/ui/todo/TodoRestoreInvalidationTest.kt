@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui.todo
 
 import androidx.lifecycle.SavedStateHandle
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoPage
 import com.luma.lifeos.domain.todo.TodoRepository
@@ -44,11 +45,13 @@ class TodoRestoreInvalidationTest {
 
         editor.setTitle("Unsaved draft")
         editor.setDueTime(LocalTime.of(9, 5))
+        editor.setImportance(TodoImportance.HIGH)
         assertTrue(editor.state.value.dirty)
         editor.invalidateAfterRestore()
         assertTrue(editor.state.value.finished)
         assertEquals("Unsaved draft", editor.state.value.draft.title)
         assertEquals("09:05", saved.get<String>("todo_draft_due_time"))
+        assertEquals(TodoImportance.HIGH.code, saved.get<Int>("todo_draft_importance"))
 
         repository.current = task("Restored data", id = original.id)
         val loadsAfterRestore = repository.loads
@@ -57,6 +60,7 @@ class TodoRestoreInvalidationTest {
 
         assertTrue(recreated.state.value.finished)
         assertEquals("Unsaved draft", recreated.state.value.draft.title)
+        assertEquals(TodoImportance.HIGH, recreated.state.value.draft.importance)
         assertEquals(loadsAfterRestore, repository.loads)
         assertEquals(0, repository.updates)
         assertEquals(0, repository.creates)
@@ -71,10 +75,12 @@ class TodoRestoreInvalidationTest {
         val editor = TodoEditorViewModel(repository, original.id, null, saved)
         advanceUntilIdle()
         editor.setDueTime(LocalTime.of(10, 15))
+        editor.setImportance(TodoImportance.MEDIUM)
         editor.save()
         advanceUntilIdle()
         assertEquals(TodoEditorError.SAVE, editor.state.value.error)
         assertEquals("10:15", saved.get<String>("todo_pending_input.due_time"))
+        assertEquals(TodoImportance.MEDIUM.code, saved.get<Int>("todo_pending_input.importance"))
 
         editor.invalidateAfterRestore()
         repository.replace(original.copy(

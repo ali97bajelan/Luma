@@ -1,7 +1,10 @@
 package com.luma.lifeos.ui.todo
 
 import androidx.lifecycle.SavedStateHandle
+import com.luma.lifeos.domain.todo.TODO_DEFAULT_PAGE_SIZE
 import com.luma.lifeos.domain.todo.TodoBucket
+import com.luma.lifeos.domain.todo.TodoImportance
+import com.luma.lifeos.domain.todo.TodoParentContext
 import com.luma.lifeos.domain.todo.todoBucket
 import java.time.LocalDate
 import java.util.UUID
@@ -57,8 +60,39 @@ class TodayTasksStateTest {
         assertEquals(eligible.take(2).map { it.id }, preview.tasks.take(2).map { it.id })
         assertTrue(preview.tasks.last().id in eligible.takeLast(2).map { it.id })
         assertTrue(preview.tasks.none { it.id in unrelated.map { row -> row.id } })
-        assertEquals(Int.MAX_VALUE, repository.todayRequests.single().limit)
+        assertEquals(TODO_DEFAULT_PAGE_SIZE, repository.todayRequests.single().limit)
         assertEquals(today, repository.todayRequests.single().date)
+    }
+
+    @Test fun todayUsesIndependentChildDatesAndReturnsABoundedPrefixWithFullCount() = runTest(dispatcher) {
+        val parent = todoFixtureTask(
+            "Undated parent",
+            id = stableId("today-undated-parent"),
+            dueDate = null,
+            importance = TodoImportance.NONE,
+        )
+        val child = todoFixtureTask(
+            "Overdue high child",
+            id = stableId("today-overdue-child"),
+            dueDate = today.minusDays(1),
+            importance = TodoImportance.HIGH,
+            parentId = parent.id,
+            siblingPosition = 0,
+            familyRevision = parent.familyRevision,
+        )
+        val dueToday = (0 until 50).map { index ->
+            todoFixtureTask("Today $index", id = stableId("today-$index"), dueDate = today)
+        }
+        val repository = TodoRepositoryFixture(listOf(parent, child) + dueToday)
+
+        val preview = observeTodayTasks(repository, today).take(2).toList().last() as TodayTasksState.Data
+
+        assertEquals(TODO_DEFAULT_PAGE_SIZE, preview.tasks.size)
+        assertEquals(51, preview.total)
+        assertEquals(child.id, preview.tasks.first().id)
+        assertEquals(TodoParentContext(parent.id, parent.title), preview.rows.first().parent)
+        assertTrue(preview.tasks.none { it.id == parent.id })
+        assertEquals(TODO_DEFAULT_PAGE_SIZE, repository.todayRequests.single().limit)
     }
 
     @Test fun historicalAndFutureDaysStayHiddenAcrossMidnightAndZoneChanges() {
@@ -121,9 +155,9 @@ class TodayTasksStateTest {
 
         actions.setCompleted(task, true)
         advanceUntilIdle()
-        assertEquals(TodoListRowError.FAILED, actions.state.value.rowErrors[task.id])
-        val pending = actions.state.value.pendingIntents.getValue(task.id)
-        assertFalse(task.id in actions.state.value.inFlight)
+        assertEquals(TodoFamilyActionPhase.RETRYABLE_FAILURE, actions.state.value.familyAction.phase)
+        assertTrue(task.id !in actions.state.value.inFlight)
+        assertTrue(actions.state.value.pendingIntents.isEmpty())
 
         actions.retry(task.id)
         advanceUntilIdle()
@@ -132,10 +166,9 @@ class TodayTasksStateTest {
         assertNotNull(result)
         assertEquals(task.id, result?.taskId)
         assertTrue(result?.completed == true)
-        assertEquals(pending.resultingRevision, result?.resultingRevision)
-        assertEquals(2, repository.completionCalls.size)
-        assertEquals(repository.completionCalls[0], repository.completionCalls[1])
-        assertEquals(result?.resultingRevision, repository.tasks.single().revision)
+        assertNotNull(result?.completionCommandId)
+        assertEquals(1, repository.completionCalls.size)
+        assertTrue(repository.tasks.single().isCompleted)
 
         actions.consumeActionResult(requireNotNull(result))
         assertNull(actions.state.value.actionResult)
@@ -149,7 +182,8 @@ class TodayTasksStateTest {
         val repository = TodoRepositoryFixture(listOf(task)).apply {
             failNextCompletionAfterCommit = IllegalStateException("response lost")
         }
-        val actions = TodayTasksViewModel(repository, SavedStateHandle())
+        val saved = SavedStateHandle()
+        val actions = TodayTasksViewModel(repository, saved)
         advanceUntilIdle()
 
         actions.setCompleted(task, true)
@@ -157,8 +191,16 @@ class TodayTasksStateTest {
 
         assertEquals(1, repository.completionCalls.size)
         assertTrue(repository.tasks.single().isCompleted)
-        assertEquals(repository.tasks.single().revision, actions.state.value.actionResult?.resultingRevision)
+        assertEquals(TodoFamilyActionPhase.RETRYABLE_FAILURE, actions.state.value.familyAction.phase)
+        assertNull(actions.state.value.actionResult)
         assertTrue(actions.state.value.pendingIntents.isEmpty())
+
+        val recreated = TodayTasksViewModel(repository, saved)
+        advanceUntilIdle()
+        assertEquals(1, repository.completionCalls.size)
+        assertTrue(recreated.state.value.actionResult?.completed == true)
+        assertEquals(null, recreated.state.value.actionResult?.resultingRevision)
+        assertNotNull(recreated.state.value.actionResult?.completionCommandId)
     }
 
     private fun stableId(value: String) = UUID.nameUUIDFromBytes(value.toByteArray())
