@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.luma.lifeos.LumaApplication
 import java.io.IOException
 import java.time.DayOfWeek
+import java.time.temporal.WeekFields
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -35,14 +36,16 @@ class WeekStartPreferences internal constructor(
     private val preferences: SharedPreferences by lazy {
         applicationContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
+    private val defaultSelection = applicationContext.resources.configuration.locales
+        .let { locales -> if (locales.isEmpty) DEFAULT else WeekFields.of(locales[0]).firstDayOfWeek }
     private val writeMutex = Mutex()
-    private val mutableSelection = MutableStateFlow(DEFAULT)
+    private val mutableSelection = MutableStateFlow(defaultSelection)
     private val mutableInitialized = MutableStateFlow(value = false)
     private val initialSelection = applicationScope.async(ioDispatcher) {
         try {
-            DayOfWeek.valueOf(preferences.getString(SELECTED_DAY_KEY, null) ?: DEFAULT.name)
+            DayOfWeek.valueOf(preferences.getString(SELECTED_DAY_KEY, null) ?: defaultSelection.name)
         } catch (_: Exception) {
-            DEFAULT
+            defaultSelection
         }
     }
 
@@ -84,7 +87,7 @@ class WeekStartPreferences internal constructor(
     }
 
     companion object {
-        val DEFAULT: DayOfWeek = DayOfWeek.SATURDAY
+        val DEFAULT: DayOfWeek = DayOfWeek.MONDAY
         const val PREFERENCES_NAME = "app_calendar"
         const val SELECTED_DAY_KEY = "week_start_day"
     }

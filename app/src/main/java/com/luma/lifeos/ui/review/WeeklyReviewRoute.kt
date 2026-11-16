@@ -78,7 +78,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     onPlanAnotherSession: (() -> Unit)? = null,
     captureBottomClearance: Dp = 0.dp,
     onRequestProtectedFocusUnlock: () -> Unit = {},
-    firstDayOfWeek: DayOfWeek = DayOfWeek.SATURDAY,
+    firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
 ) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
@@ -201,7 +201,9 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
         val placeholderListState = rememberLazyListState()
         val empty = report?.let { it.current.records == 0 && it.current.usage?.totalMillis == null && it.current.activities.isEmpty() } == true && habits == null
         val keys = report?.let {
-            listOf("heading", "overview", "sections") + (if (empty) listOf("empty") else emptyList()) +
+            listOf("heading", "overview", "sections") +
+                (if (focusReport != null) listOf("focus") else emptyList()) +
+                (if (empty) listOf("empty") else emptyList()) +
                 reviewSections(habits != null).drop(1).map { destination -> destination.key }
         }
         LaunchedEffect(keys, sectionTarget) {
@@ -245,37 +247,6 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         is WeeklyReviewState.Data -> {
                             val report = current.report
                             val a = report.current; val b = report.previous
-                            focusReport?.let { focusState ->
-                                item(key = "focus") {
-                                    WeeklyFocusCard(
-                                        report = focusState,
-                                        period = period,
-                                        onRetry = { focusRetry++ },
-                                        onCurrentHistory = {
-                                            onFocusHistory(period.current.start, period.current.through, period.zone)
-                                        },
-                                        onPreviousHistory = {
-                                            onFocusHistory(period.previous.start, period.previous.through, period.zone)
-                                        },
-                                        onDayHistory = { date -> onFocusHistory(date, date, period.zone) },
-                                        onPlanAnotherSession = onPlanAnotherSession,
-                                        goalReport = focusGoalReport,
-                                        inProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
-                                        inProgressPaused = focusInProgressPaused && showProtectedFocus,
-                                        onRequestUnlock = onRequestProtectedFocusUnlock,
-                                        recentContext = focusRecentContext,
-                                        onRetryRecentContext = { focusContextRetry++ },
-                                        onViewSession = { sessionId ->
-                                            onFocusSessionDetail(
-                                                sessionId,
-                                                period.current.start,
-                                                period.current.through,
-                                                period.zone,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
                             item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount,
                                 integrationAvailability, onIntegrations, onCheckIn, habitState,
                                 onHabits = { section = "habits"; sectionTarget = "habits" }) }
@@ -285,6 +256,37 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                                         section = key
                                         sectionTarget = key
                                     }, includeHabits = habits != null)
+                            }
+                        }
+                        focusReport?.let { focusState ->
+                            item(key = "focus") {
+                                WeeklyFocusCard(
+                                    report = focusState,
+                                    period = period,
+                                    onRetry = { focusRetry++ },
+                                    onCurrentHistory = {
+                                        onFocusHistory(period.current.start, period.current.through, period.zone)
+                                    },
+                                    onPreviousHistory = {
+                                        onFocusHistory(period.previous.start, period.previous.through, period.zone)
+                                    },
+                                    onDayHistory = { date -> onFocusHistory(date, date, period.zone) },
+                                    onPlanAnotherSession = onPlanAnotherSession,
+                                    goalReport = focusGoalReport,
+                                    inProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
+                                    inProgressPaused = focusInProgressPaused && showProtectedFocus,
+                                    onRequestUnlock = onRequestProtectedFocusUnlock,
+                                    recentContext = focusRecentContext,
+                                    onRetryRecentContext = { focusContextRetry++ },
+                                    onViewSession = { sessionId ->
+                                        onFocusSessionDetail(
+                                            sessionId,
+                                            period.current.start,
+                                            period.current.through,
+                                            period.zone,
+                                        )
+                                    },
+                                )
                             }
                         }
                         if (empty) item(key = "empty") {
@@ -326,6 +328,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                         if (habits != null) item(key = "habits") {
                             ReviewHabits(requireNotNull(habitState), { habitRetry++ }, onHabit)
                         }
+
                         }
                     }
                 }

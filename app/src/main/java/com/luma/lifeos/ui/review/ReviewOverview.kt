@@ -23,6 +23,7 @@ import com.luma.lifeos.domain.repository.WeeklyReviewRepository
 import com.luma.lifeos.domain.review.ReviewActivity
 import com.luma.lifeos.domain.review.ReviewDates
 import com.luma.lifeos.domain.review.ReviewMetric
+import com.luma.lifeos.domain.review.ReviewMetricKind
 import com.luma.lifeos.domain.review.ReviewStatistics
 import com.luma.lifeos.domain.review.WeeklyReview
 import com.luma.lifeos.ui.common.LumaSectionHeader
@@ -83,6 +84,13 @@ internal fun ReviewOverview(
             if (mood == null) {
                 LumaTextButton(onClick = onCheckIn, modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_checkin")) {
                     Text(stringResource(R.string.review_checkin_action))
+                }
+            } else {
+                LumaTextButton(
+                    onClick = { onSources(report.period.current, ReviewMetric(ReviewMetricKind.MOOD)) },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("review_overview_mood_sources"),
+                ) {
+                    Text(stringResource(R.string.review_view_sources))
                 }
             }
             Text(
