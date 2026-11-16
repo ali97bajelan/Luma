@@ -1050,11 +1050,7 @@ fun LifeOsApp(
                                     onTask = { id -> openTodoEditor(taskId = id) },
                                     onDeleteTask = { id -> openTodoEditor(taskId = id, requestDelete = true) },
                                     onAddTask = { date -> openTodoEditor(dueDate = date) },
-                                    onSchedule = { date ->
-                                        calendarCaptureDueDate = date.toString()
-                                        widgetQuickCapture = false
-                                        if (appLockEnabled()) openRestrictedCapture() else capturing = true
-                                    },
+                                    onSchedule = { date -> openTodoEditor(dueDate = date) },
                                     onMemory = { id -> navController.navigate("memory?eventId=$id") },
                                     onAddMemory = { date -> openCapture("memory", date) },
                                     onAllTasks = { navController.navigate(AppRoutes.TASKS) },
