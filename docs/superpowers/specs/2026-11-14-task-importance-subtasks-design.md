@@ -92,7 +92,7 @@ Widgets keep their separate launcher design contract, date order, bounded collec
 
 Focus picker can choose children with parent context and reuse literal open-title search. Session time belongs only to its selected task ID; no automatic parent aggregate. Focus completion revalidates session revision, task revision and restore generation, then uses the same family policy. Completion and any Focus state/receipt write that must be atomic must share the existing Room transaction. Do not mark a task complete after its Focus link/session changed.
 
-Reminders retain current approximate scheduling, due-time rules and quiet-hour handling. Reconcile/cancel for every changed/deleted task after commit; failure to schedule does not roll back saved task data and is shown through existing reminder status/retry behavior. Recurrence is not introduced; if F08 exists at execution time, reject unsupported recurring families visibly without discarding either feature’s content.
+Reminders retain current approximate scheduling, due-time rules and quiet-hour handling. Reconcile/cancel for every changed/deleted task after commit; failure to schedule does not roll back saved task data and is shown through existing reminder status/retry behavior. TI-15 extends the existing F08 proposal to cover one-level recurring families while keeping recurrence implementation outside this feature. If either feature is implemented before F08 family support is source-complete and accepted, visibly reject unsupported recurring families without discarding either feature’s content. When co-shipped, F08 must reuse this specification’s canonical family IDs, revisions, completion/Undo, archive and restore rules.
 
 ### TI-R10 — Persistence, migration and portable archives
 
