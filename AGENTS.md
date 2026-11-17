@@ -21,3 +21,7 @@ Resolve conflicting design documents against current code and the latest applica
 Preserve intentional specialized visuals such as Focus timers, charts, calendar markers and photo crop overlays. Follow the separate launcher-widget design contract for launcher widgets.
 
 UI changes must preserve navigation, callbacks, state, drafts, validation, test tags, retry and undo behavior. Maintain System/Light/Dark support, English/French/Persian localization, RTL, offline fonts, accessible semantics, touch targets of at least 48 dp, large-text support, and existing inset, keyboard, scrolling and FAB clearance behavior.
+
+## Commit messages
+
+When asked to generate a commit message, use Conventional Commits format: `<type>(<optional scope>): <imperative summary>`. Keep it concise and based on the actual changes.

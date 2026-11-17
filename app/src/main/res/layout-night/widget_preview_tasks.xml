@@ -81,20 +81,52 @@
         android:orientation="horizontal"
         android:padding="8dp">
 
+        <TextView
+            android:layout_width="3dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/widget_task_importance_accent_medium_dark"
+            android:importantForAccessibility="no"
+            android:text="" />
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView android:fontFamily="@font/widget_sans"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:maxLines="2"
-                android:text="@string/widget_preview_task"
-                android:textColor="@color/widget_text_primary_dark"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView android:fontFamily="@font/widget_sans"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:maxLines="2"
+                    android:text="@string/widget_preview_task"
+                    android:textColor="@color/widget_text_primary_dark"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView android:fontFamily="@font/widget_sans"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/widget_task_importance_badge_medium_dark"
+                    android:gravity="center"
+                    android:minHeight="24dp"
+                    android:minWidth="48dp"
+                    android:paddingStart="6dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="2dp"
+                    android:text="@string/todo_importance_medium"
+                    android:textColor="@color/widget_importance_medium_text_dark"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
             <TextView android:fontFamily="@font/widget_sans"
                 android:id="@+id/widget_preview_task_due"
@@ -125,11 +157,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:background="@drawable/widget_row_background_dark"
+        android:background="@drawable/widget_task_row_high_background_dark"
         android:gravity="center_vertical"
         android:minHeight="64dp"
         android:orientation="horizontal"
         android:padding="8dp">
+
+        <TextView
+            android:layout_width="3dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/widget_task_importance_accent_high_dark"
+            android:importantForAccessibility="no"
+            android:text="" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -137,14 +177,38 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView android:fontFamily="@font/widget_sans"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:maxLines="2"
-                android:text="@string/widget_preview_task_second"
-                android:textColor="@color/widget_text_primary_dark"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView android:fontFamily="@font/widget_sans"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:maxLines="2"
+                    android:text="@string/widget_preview_task_second"
+                    android:textColor="@color/widget_text_primary_dark"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView android:fontFamily="@font/widget_sans"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/widget_task_importance_badge_high_dark"
+                    android:gravity="center"
+                    android:minHeight="24dp"
+                    android:minWidth="48dp"
+                    android:paddingStart="6dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="2dp"
+                    android:text="@string/widget_preview_task_importance_high"
+                    android:textColor="@color/widget_importance_high_text_dark"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
             <TextView android:fontFamily="@font/widget_sans"
                 android:id="@+id/widget_preview_task_overdue"

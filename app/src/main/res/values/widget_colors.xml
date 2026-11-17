@@ -30,6 +30,21 @@
     <color name="widget_progress_fill_light">#FF28735B</color>
     <color name="widget_progress_fill_dark">#FF94B49F</color>
 
+    <color name="widget_importance_medium_fill_light">#FFFFF2CF</color>
+    <color name="widget_importance_medium_text_light">#FF684600</color>
+    <color name="widget_importance_medium_edge_light">#FFCE922C</color>
+    <color name="widget_importance_medium_fill_dark">#FF4A3214</color>
+    <color name="widget_importance_medium_text_dark">#FFFFD18A</color>
+    <color name="widget_importance_medium_edge_dark">#FFFFC879</color>
+    <color name="widget_importance_high_fill_light">#FF993612</color>
+    <color name="widget_importance_high_text_light">#FFFFFFFF</color>
+    <color name="widget_importance_high_edge_light">#FFFF8C69</color>
+    <color name="widget_importance_high_glow_light">#66FF8C69</color>
+    <color name="widget_importance_high_fill_dark">#FFFF8C69</color>
+    <color name="widget_importance_high_text_dark">#FF3A0A00</color>
+    <color name="widget_importance_high_edge_dark">#FFFFB5A0</color>
+    <color name="widget_importance_high_glow_dark">#66FFB5A0</color>
+
     <!-- Retained aliases for existing widget previews and compact layouts. -->
     <color name="widget_on_primary">@color/widget_text_primary_light</color>
     <color name="widget_on_primary_dark">@color/widget_text_primary_dark</color>

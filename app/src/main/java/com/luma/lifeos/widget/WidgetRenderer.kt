@@ -57,6 +57,13 @@ object WidgetRenderer {
         val fitsWidth: Boolean = true,
     )
 
+    private data class TaskImportanceVisual(
+        val badgeBackgroundResource: Int,
+        val badgeTextColorResource: Int,
+        val accentBackgroundResource: Int?,
+        val rowBackgroundResource: Int?,
+    )
+
     /** Loads shell metadata plus only the small first page needed to size the collection viewport. */
     internal suspend fun snapshotForRendering(
         store: WidgetStore,
@@ -517,34 +524,68 @@ object WidgetRenderer {
         textColor: Int,
         secondaryTextColor: Int,
         rowActionBackground: Int,
+        widthDp: Int,
         dark: Boolean,
     ) = RemoteViews(context.packageName, R.layout.widget_task_row).apply {
-        setInt(R.id.widget_task_row_root, "setBackgroundResource",
-            if (dark) R.drawable.widget_row_background_dark else R.drawable.widget_row_background)
+        val importanceBadge = taskImportanceBadgeLabel(appContext, row.importance)
+        val importanceDescription = taskImportanceAccessibilityLabel(appContext, row.importance)
+        val importanceVisual = taskImportanceVisual(row.importance, dark)
+        val inlineImportance = taskImportanceFitsInline(appContext, widthDp, row)
+        val defaultRowBackground = if (dark) {
+            R.drawable.widget_row_background_dark
+        } else {
+            R.drawable.widget_row_background
+        }
+        val rowBackground = importanceVisual?.rowBackgroundResource ?: defaultRowBackground
+        setInt(R.id.widget_task_row_root, "setBackgroundResource", rowBackground)
         setInt(R.id.widget_task_row_text, "setBackgroundResource",
             if (dark) R.drawable.widget_row_target_background_dark else R.drawable.widget_row_target_background)
+        setViewVisibility(R.id.widget_task_row_importance_accent,
+            if (importanceVisual?.accentBackgroundResource == null) View.GONE else View.VISIBLE)
+        importanceVisual?.accentBackgroundResource?.let { accent ->
+            setInt(R.id.widget_task_row_importance_accent, "setBackgroundResource", accent)
+        }
+        setViewVisibility(R.id.widget_task_row_heading_inline,
+            if (inlineImportance) View.VISIBLE else View.GONE)
+        setViewVisibility(R.id.widget_task_row_heading_stacked,
+            if (inlineImportance) View.GONE else View.VISIBLE)
         setTextColor(R.id.widget_task_row_title, textColor)
+        setTextColor(R.id.widget_task_row_title_stacked, textColor)
+        setViewVisibility(R.id.widget_task_row_importance,
+            if (importanceBadge == null) View.GONE else View.VISIBLE)
+        setViewVisibility(R.id.widget_task_row_importance_stacked,
+            if (importanceBadge == null) View.GONE else View.VISIBLE)
+        setTextViewText(R.id.widget_task_row_importance, importanceBadge.orEmpty())
+        setTextViewText(R.id.widget_task_row_importance_stacked, importanceBadge.orEmpty())
+        importanceVisual?.let { visual ->
+            val badgeBackground = visual.badgeBackgroundResource
+            setInt(R.id.widget_task_row_importance, "setBackgroundResource", badgeBackground)
+            setInt(R.id.widget_task_row_importance_stacked, "setBackgroundResource", badgeBackground)
+            val badgeTextColor = appContext.getColor(visual.badgeTextColorResource)
+            setTextColor(R.id.widget_task_row_importance, badgeTextColor)
+            setTextColor(R.id.widget_task_row_importance_stacked, badgeTextColor)
+        }
         val dueColor = if (row.dueDate.isBefore(snapshot.date)) {
-            appContext.getColor(if (isAppDark(context, appContext)) R.color.widget_overdue_dark else R.color.widget_overdue_light)
+            appContext.getColor(if (dark) R.color.widget_overdue_dark else R.color.widget_overdue_light)
         } else secondaryTextColor
         setTextColor(R.id.widget_task_row_due, dueColor)
         setTextColor(R.id.widget_task_row_action,
-            appContext.getColor(if (isAppDark(context, appContext)) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light))
+            appContext.getColor(if (dark) R.color.widget_mutation_text_dark else R.color.widget_mutation_text_light))
         setInt(R.id.widget_task_row_action, "setBackgroundResource", rowActionBackground)
         setTextViewText(R.id.widget_task_row_title, row.title)
-        setContentDescription(
-            R.id.widget_task_row_text,
-            appContext.getString(R.string.widget_task_open_description, bidiWrapped(appContext, row.title)),
-        )
+        setTextViewText(R.id.widget_task_row_title_stacked, row.title)
         setOnClickFillInIntent(
             R.id.widget_task_row_text,
             WidgetIntents.collectionNavigation(row.id, snapshot.date),
         )
         val dueLabel = taskDueLabel(appContext, row, snapshot.date)
         setTextViewText(R.id.widget_task_row_due, dueLabel)
-        setContentDescription(R.id.widget_task_row_text,
-            appContext.getString(R.string.widget_task_open_description, bidiWrapped(appContext, row.title)) +
-                ", " + dueLabel)
+        val openDescription = appContext.getString(
+            R.string.widget_task_open_description,
+            bidiWrapped(appContext, row.title),
+        )
+        val taskDetails = listOfNotNull(importanceDescription, dueLabel).joinToString(", ")
+        setContentDescription(R.id.widget_task_row_text, "$openDescription, $taskDetails")
 
         val canComplete = row.actionToken != null
         setViewVisibility(R.id.widget_task_row_action, if (canComplete) View.VISIBLE else View.GONE)
@@ -553,7 +594,7 @@ object WidgetRenderer {
             setContentDescription(
                 R.id.widget_task_row_action,
                 appContext.getString(R.string.widget_task_complete_description, bidiWrapped(appContext, row.title)) +
-                    ", " + dueLabel,
+                    ", " + taskDetails,
             )
             setOnClickFillInIntent(
                 R.id.widget_task_row_action,
@@ -587,7 +628,7 @@ object WidgetRenderer {
             }
             is WidgetRow.Task -> taskRow(
                 context, appContext, snapshot, row, textColor, secondaryTextColor,
-                rowActionBackground, dark,
+                rowActionBackground, widthDp, dark,
             )
         }
     }
@@ -853,10 +894,41 @@ object WidgetRenderer {
         val actionWidthDp = if (canComplete) max(48f,
             measureTextWidth(context, actionText, 14f) / density + 16f) else 0f
         val rawTextWidthDp = widthDp - 24f - 16f - actionWidthDp - if (canComplete) 8f else 0f
-        val textWidthPx = (rawTextWidthDp.coerceAtLeast(1f) * density).toInt()
-        val titleHeight = measureTextHeight(context, row.title, textWidthPx, 16f, maxLines = 2, bold = true)
-        val dueHeight = measureTextHeight(context, taskDueLabel(context, row, date), textWidthPx, 14f)
-        return MeasuredRow(max(48, titleHeight + dueHeight) + 16, fitsWidth = rawTextWidthDp >= 48f)
+        val accentWidthDp = taskImportanceAccentWidth(row.importance)
+        val textContentWidthDp = (rawTextWidthDp - accentWidthDp).coerceAtLeast(1f)
+        val badgeText = taskImportanceBadgeLabel(context, row.importance)
+        val inlineImportance = taskImportanceFitsInline(context, widthDp, row)
+        val badgeWidthDp = badgeText?.let {
+            max(48f, measureTextWidth(context, it, 12f) / density + 12f)
+        } ?: 0f
+        val titleWidthDp = if (badgeText != null && inlineImportance) {
+            textContentWidthDp - badgeWidthDp - 8f
+        } else {
+            textContentWidthDp
+        }
+        val titleWidthPx = (titleWidthDp.coerceAtLeast(1f) * density).toInt()
+        val titleHeight = measureTextHeight(context, row.title, titleWidthPx, 16f, maxLines = 2, bold = true)
+        val badgeHeight = badgeText?.let {
+            max(24f, measureTextHeight(context, it, (badgeWidthDp * density).toInt(), 12f, maxLines = 1) + 4f)
+        } ?: 0f
+        val headingHeight = when {
+            badgeText == null -> titleHeight.toFloat()
+            inlineImportance -> max(titleHeight.toFloat(), badgeHeight)
+            else -> titleHeight + 4f + badgeHeight
+        }
+        val textContentWidthPx = (textContentWidthDp * density).toInt()
+        val dueHeight = measureTextHeight(
+            context,
+            taskDueLabel(context, row, date),
+            textContentWidthPx,
+            14f,
+        )
+        val height = max(48f, headingHeight + dueHeight) + 16f
+        val badgeFitsWidth = badgeText == null || badgeWidthDp <= textContentWidthDp
+        return MeasuredRow(
+            height.roundToInt(),
+            fitsWidth = textContentWidthDp >= 48f && badgeFitsWidth,
+        )
     }
 
     private fun habitProgressText(context: Context, row: WidgetRow.Habit): String = when {
@@ -879,6 +951,74 @@ object WidgetRenderer {
             )
         }
         return paint.measureText(text)
+    }
+
+    private fun taskImportanceBadgeLabel(context: Context, importance: TodoImportance): String? {
+        val label = when (importance) {
+            TodoImportance.NONE -> return null
+            TodoImportance.LOW -> context.getString(R.string.todo_importance_low)
+            TodoImportance.MEDIUM -> context.getString(R.string.todo_importance_medium)
+            TodoImportance.HIGH -> context.getString(
+                R.string.widget_task_importance_high_badge,
+                context.getString(R.string.todo_importance_high),
+            )
+        }
+        return bidiWrapped(context, label)
+    }
+
+    private fun taskImportanceAccessibilityLabel(context: Context, importance: TodoImportance): String? =
+        if (importance == TodoImportance.NONE) {
+            null
+        } else {
+            context.getString(R.string.todo_importance_value, context.getString(todoImportanceLabelRes(importance)))
+        }
+
+    private fun taskImportanceVisual(importance: TodoImportance, dark: Boolean): TaskImportanceVisual? =
+        when (importance) {
+            TodoImportance.NONE -> null
+            TodoImportance.LOW -> TaskImportanceVisual(
+                badgeBackgroundResource = if (dark) R.drawable.widget_task_importance_badge_low_dark
+                    else R.drawable.widget_task_importance_badge_low_light,
+                badgeTextColorResource = if (dark) R.color.widget_text_secondary_dark
+                    else R.color.widget_text_secondary_light,
+                accentBackgroundResource = null,
+                rowBackgroundResource = null,
+            )
+            TodoImportance.MEDIUM -> TaskImportanceVisual(
+                badgeBackgroundResource = if (dark) R.drawable.widget_task_importance_badge_medium_dark
+                    else R.drawable.widget_task_importance_badge_medium_light,
+                badgeTextColorResource = if (dark) R.color.widget_importance_medium_text_dark
+                    else R.color.widget_importance_medium_text_light,
+                accentBackgroundResource = if (dark) R.drawable.widget_task_importance_accent_medium_dark
+                    else R.drawable.widget_task_importance_accent_medium_light,
+                rowBackgroundResource = null,
+            )
+            TodoImportance.HIGH -> TaskImportanceVisual(
+                badgeBackgroundResource = if (dark) R.drawable.widget_task_importance_badge_high_dark
+                    else R.drawable.widget_task_importance_badge_high_light,
+                badgeTextColorResource = if (dark) R.color.widget_importance_high_text_dark
+                    else R.color.widget_importance_high_text_light,
+                accentBackgroundResource = if (dark) R.drawable.widget_task_importance_accent_high_dark
+                    else R.drawable.widget_task_importance_accent_high_light,
+                rowBackgroundResource = if (dark) R.drawable.widget_task_row_high_background_dark
+                    else R.drawable.widget_task_row_high_background_light,
+            )
+        }
+
+    private fun taskImportanceAccentWidth(importance: TodoImportance): Float =
+        if (importance == TodoImportance.MEDIUM || importance == TodoImportance.HIGH) 11f else 0f
+
+    private fun taskImportanceFitsInline(context: Context, widthDp: Int, row: WidgetRow.Task): Boolean {
+        val badgeText = taskImportanceBadgeLabel(context, row.importance) ?: return true
+        val density = context.resources.displayMetrics.density
+        val canComplete = row.actionToken != null
+        val actionText = context.getString(R.string.widget_task_complete)
+        val actionWidthDp = if (canComplete) max(48f,
+            measureTextWidth(context, actionText, 14f) / density + 16f) else 0f
+        val rawTextWidthDp = widthDp - 24f - 16f - actionWidthDp - if (canComplete) 8f else 0f
+        val badgeWidthDp = max(48f, measureTextWidth(context, badgeText, 12f) / density + 12f)
+        val textContentWidthDp = rawTextWidthDp - taskImportanceAccentWidth(row.importance)
+        return textContentWidthDp - badgeWidthDp - 8f >= 48f
     }
 
     private fun taskDueLabel(context: Context, row: WidgetRow.Task, date: LocalDate): String {
@@ -909,10 +1049,6 @@ object WidgetRenderer {
             else -> context.getString(R.string.widget_task_due_date, bidiWrapped(context, deadline))
         }
         val metadata = buildList {
-            if (row.importance != TodoImportance.NONE) {
-                val importanceLabel = context.getString(todoImportanceLabelRes(row.importance))
-                add(context.getString(R.string.todo_importance_value, importanceLabel))
-            }
             row.parentTitle?.let { parent ->
                 add(context.getString(R.string.todo_subtask_parent_name, bidiWrapped(context, parent)))
             }
