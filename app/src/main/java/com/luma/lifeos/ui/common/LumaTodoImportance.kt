@@ -5,17 +5,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import java.util.Locale
@@ -66,12 +70,66 @@ internal fun LumaTodoImportanceSelector(
     }
 }
 
+internal enum class TodoImportancePresentation {
+    STANDARD,
+    EXPRESSIVE,
+}
+
+@Composable
+internal fun todoImportanceAccentColor(importance: TodoImportance): Color? = when (importance) {
+    TodoImportance.NONE, TodoImportance.LOW -> null
+    TodoImportance.MEDIUM -> MaterialTheme.colorScheme.tertiary
+    TodoImportance.HIGH -> MaterialTheme.colorScheme.primary
+}
+
 @Composable
 internal fun LumaTodoImportanceBadge(
     importance: TodoImportance,
     modifier: Modifier = Modifier,
+    presentation: TodoImportancePresentation = TodoImportancePresentation.STANDARD,
 ) {
     val label = stringResource(todoImportanceLabelRes(importance))
+    if (presentation == TodoImportancePresentation.EXPRESSIVE) {
+        val colors = MaterialTheme.colorScheme
+        val (containerColor, contentColor, outlineColor) = when (importance) {
+            TodoImportance.NONE -> return
+            TodoImportance.LOW -> Triple(
+                colors.surfaceContainerHigh,
+                colors.onSurfaceVariant,
+                colors.outlineVariant,
+            )
+            TodoImportance.MEDIUM -> Triple(
+                colors.tertiaryContainer,
+                colors.onTertiaryContainer,
+                colors.tertiary,
+            )
+            TodoImportance.HIGH -> Triple(
+                colors.primaryContainer,
+                colors.onPrimaryContainer,
+                colors.primary,
+            )
+        }
+        val badgeLabel = if (importance == TodoImportance.HIGH) {
+            stringResource(R.string.todo_importance_high_badge, label)
+        } else {
+            label
+        }
+        Surface(
+            modifier = modifier,
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = containerColor,
+            contentColor = contentColor,
+            border = androidx.compose.foundation.BorderStroke(1.dp, outlineColor.copy(alpha = 0.48f)),
+        ) {
+            Text(
+                text = badgeLabel,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(horizontal = LumaUi.ContentGap, vertical = LumaUi.RelatedGap),
+            )
+        }
+        return
+    }
+
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),

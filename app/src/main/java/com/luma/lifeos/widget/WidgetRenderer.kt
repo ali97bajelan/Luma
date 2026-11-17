@@ -959,7 +959,7 @@ object WidgetRenderer {
             TodoImportance.LOW -> context.getString(R.string.todo_importance_low)
             TodoImportance.MEDIUM -> context.getString(R.string.todo_importance_medium)
             TodoImportance.HIGH -> context.getString(
-                R.string.widget_task_importance_high_badge,
+                R.string.todo_importance_high_badge,
                 context.getString(R.string.todo_importance_high),
             )
         }

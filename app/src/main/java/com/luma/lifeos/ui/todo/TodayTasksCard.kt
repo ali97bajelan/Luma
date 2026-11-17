@@ -1,18 +1,25 @@
 package com.luma.lifeos.ui.todo
 
 import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.LumaOutlinedButton
+import com.luma.lifeos.ui.common.TodoImportancePresentation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
@@ -24,6 +31,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -82,7 +90,8 @@ fun TodayTasksCard(
                 if (state.total > 0) {
                     Text(
                         stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total)),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.testTag("today_tasks_count"),
                     )
                 }
@@ -96,24 +105,71 @@ fun TodayTasksCard(
                             }
                         }
                         .filter { (_, rows) -> rows.isNotEmpty() }
+                    val visibleTaskCount = bucketRows.sumOf { (_, rows) -> rows.size }
+                    val firstBucket = bucketRows.firstOrNull()?.first
+                    firstBucket?.let { bucket ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue
+                                    else R.string.todo_group_today,
+                                ),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.semantics { heading() }
+                                    .testTag("today_tasks_group_${bucket.name.lowercase()}"),
+                            )
+                            if (visibleTaskCount > 2) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = MaterialTheme.colorScheme.tertiary,
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.32f),
+                                    ),
+                                    modifier = Modifier.testTag("today_tasks_scroll_hint"),
+                                ) {
+                                    Text(
+                                        stringResource(
+                                            R.string.todo_today_scroll_for_more,
+                                            NumberFormat.getIntegerInstance().format(visibleTaskCount),
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(
+                                            horizontal = LumaUi.ContentGap,
+                                            vertical = LumaUi.RelatedGap,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
                     LazyColumn(
                         state = rememberLazyListState(),
                         modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp)
                             .testTag("today_tasks_scroll"),
                     ) {
-                        bucketRows.forEach { (bucket, bucketTasks) ->
-                            item(key = "today_tasks_group_${bucket.name}") {
-                                Text(
-                                    stringResource(
-                                        if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue
-                                        else R.string.todo_group_today,
-                                    ),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.semantics { heading() }
-                                        .testTag("today_tasks_group_${bucket.name.lowercase()}"),
-                                )
+                        bucketRows.forEachIndexed { index, (bucket, bucketTasks) ->
+                            if (index > 0) {
+                                item(key = "today_tasks_group_${bucket.name}") {
+                                    Text(
+                                        stringResource(
+                                            if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue
+                                            else R.string.todo_group_today,
+                                        ),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.semantics { heading() }
+                                            .testTag("today_tasks_group_${bucket.name.lowercase()}"),
+                                    )
+                                }
                             }
                             items(bucketTasks, key = { it.task.id.toString() }) { row ->
                                 val task = row.task
@@ -135,6 +191,7 @@ fun TodayTasksCard(
                                     focusRequester = focusRequester,
                                     compact = true,
                                     omitNoneImportance = true,
+                                    importancePresentation = TodoImportancePresentation.EXPRESSIVE,
                                     rowContext = row,
                                 )
                             }
@@ -201,11 +258,17 @@ fun TodayTasksCard(
                 }
             }
         }
-        LumaTextButton(
+        val addTaskLabel = stringResource(R.string.todo_list_add)
+        LumaOutlinedButton(
             onClick = onAddTask,
-            modifier = Modifier.fillMaxWidth().heightIn(min = LumaUi.MinTouchTargetHeight).testTag("today_tasks_add"),
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.fillMaxWidth()
+                .semantics { contentDescription = addTaskLabel }
+                .testTag("today_tasks_add"),
         ) {
-            Text(stringResource(R.string.todo_list_add))
+            Text("+", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(LumaUi.RelatedGap))
+            Text(addTaskLabel)
         }
     }
 }

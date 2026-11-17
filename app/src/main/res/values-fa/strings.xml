@@ -1041,7 +1041,7 @@
     <string name="todo_importance_low">کم</string>
     <string name="todo_importance_medium">متوسط</string>
     <string name="todo_importance_high">زیاد</string>
-    <string name="widget_task_importance_high_badge">🔥 %1$s</string>
+    <string name="todo_importance_high_badge">🔥 %1$s</string>
     <string name="todo_importance_value">اهمیت: %1$s</string>
     <string name="todo_no_time">بدون زمان</string>
     <string name="todo_add_time">افزودن زمان</string>
@@ -1163,6 +1163,7 @@
     <string name="todo_list_empty_open">کار بازی وجود ندارد.</string>
     <string name="todo_list_empty_completed">هنوز کاری تکمیل نشده است.</string>
     <string name="todo_today_count">%1$s کار باز با مهلت امروز یا گذشته</string>
+    <string name="todo_today_scroll_for_more">برای دیدن موارد بیشتر پیمایش کنید (%1$s)</string>
     <string name="todo_today_empty">هیچ کار بازی با مهلت امروز یا گذشته وجود ندارد.</string>
     <string name="todo_today_view_all">دیدن همه</string>
     <string name="todo_today_task_feedback">وضعیت کارها</string>

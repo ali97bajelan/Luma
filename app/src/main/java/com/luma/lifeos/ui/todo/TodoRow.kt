@@ -3,6 +3,7 @@ package com.luma.lifeos.ui.todo
 import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -19,14 +20,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaSectionSurface
+import com.luma.lifeos.ui.common.TodoImportancePresentation
+import com.luma.lifeos.ui.common.todoImportanceAccentColor
 import com.luma.lifeos.ui.common.LumaTodoImportanceBadge
 import com.luma.lifeos.ui.common.todoImportanceLabelRes
 import com.luma.lifeos.domain.todo.TodoBucket
@@ -57,10 +65,15 @@ internal fun TodoRow(
     compact: Boolean = false,
     rowContext: TodoTaskRow? = null,
     omitNoneImportance: Boolean = false,
+    importancePresentation: TodoImportancePresentation = TodoImportancePresentation.STANDARD,
 ) {
     val displayTime = rememberDisplayTimePolicy()
     val importance = rowContext?.takeIf { it.task.id == task.id }?.task?.importance ?: task.importance
-    val showImportance = !omitNoneImportance || importance != TodoImportance.NONE
+    val showImportance = if (importancePresentation == TodoImportancePresentation.EXPRESSIVE) {
+        importance != TodoImportance.NONE
+    } else {
+        !omitNoneImportance || importance != TodoImportance.NONE
+    }
     val importanceValue = if (showImportance) {
         stringResource(
             R.string.todo_importance_value,
@@ -144,12 +157,33 @@ internal fun TodoRow(
                     .testTag("todo_open_${task.id}"),
             ) {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
-                    Text(task.title, style = MaterialTheme.typography.bodyLarge)
-                    if (showImportance) {
-                        LumaTodoImportanceBadge(
-                            importance = importance,
-                            modifier = Modifier.testTag("todo_row_importance_${importance.name.lowercase(Locale.ROOT)}"),
-                        )
+                    if (importancePresentation == TodoImportancePresentation.EXPRESSIVE) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        ) {
+                            Text(
+                                task.title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (showImportance) {
+                                LumaTodoImportanceBadge(
+                                    importance = importance,
+                                    modifier = Modifier.testTag("todo_row_importance_${importance.name.lowercase(Locale.ROOT)}"),
+                                    presentation = importancePresentation,
+                                )
+                            }
+                        }
+                    } else {
+                        Text(task.title, style = MaterialTheme.typography.bodyLarge)
+                        if (showImportance) {
+                            LumaTodoImportanceBadge(
+                                importance = importance,
+                                modifier = Modifier.testTag("todo_row_importance_${importance.name.lowercase(Locale.ROOT)}"),
+                            )
+                        }
                     }
                     parentContext?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -207,13 +241,45 @@ internal fun TodoRow(
         }
     }
 
+    val importanceAccent = if (compact && importancePresentation == TodoImportancePresentation.EXPRESSIVE) {
+        todoImportanceAccentColor(importance)
+    } else {
+        null
+    }
     val rowModifier = modifier.fillMaxWidth().testTag("todo_row_${task.id}")
     if (compact) {
+        val rowSurfaceModifier = if (importanceAccent == null) {
+            rowModifier
+        } else {
+            rowModifier.drawWithContent {
+                drawContent()
+                val accentWidth = LumaUi.RelatedGap.toPx()
+                val accentStart = if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - accentWidth
+                drawRoundRect(
+                    color = importanceAccent,
+                    topLeft = Offset(accentStart, 0f),
+                    size = Size(accentWidth, size.height),
+                    cornerRadius = CornerRadius(accentWidth / 2f),
+                )
+            }
+        }
+        val rowColor = when {
+            importancePresentation != TodoImportancePresentation.EXPRESSIVE -> MaterialTheme.colorScheme.surfaceContainer
+            importance == TodoImportance.MEDIUM -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f)
+            importance == TodoImportance.HIGH -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f)
+            else -> MaterialTheme.colorScheme.surfaceContainer
+        }
         Surface(
-            modifier = rowModifier,
+            modifier = rowSurfaceModifier,
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainer,
+            color = rowColor,
             contentColor = MaterialTheme.colorScheme.onSurface,
+            border = if (importance == TodoImportance.HIGH && importanceAccent != null) {
+                BorderStroke(1.5.dp, importanceAccent.copy(alpha = 0.68f))
+            } else {
+                null
+            },
+            shadowElevation = if (importance == TodoImportance.HIGH && importanceAccent != null) 3.dp else 0.dp,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),

@@ -146,7 +146,7 @@ interface TodoDao {
         ) AS progress ON progress.parent_id = task.id
         WHERE task.completed_at IS NULL AND task.due_date <= :date
         ORDER BY task.due_date ASC, CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
-            task.due_time_minutes ASC, task.created_at ASC, task.id ASC
+            task.due_time_minutes ASC, task.importance_code DESC, task.created_at ASC, task.id ASC
         LIMIT :limit
     """)
     suspend fun widgetTodayRows(date: String, limit: Int): List<WidgetTodoRow>
@@ -164,7 +164,7 @@ interface TodoDao {
         ) AS progress ON progress.parent_id = task.id
         WHERE task.completed_at IS NULL AND task.due_date <= :date
         ORDER BY task.due_date ASC, CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
-            task.due_time_minutes ASC, task.created_at ASC, task.id ASC
+            task.due_time_minutes ASC, task.importance_code DESC, task.created_at ASC, task.id ASC
         LIMIT :limit OFFSET :offset
     """)
     suspend fun widgetTodayRowsPage(date: String, limit: Int, offset: Int): List<WidgetTodoRow>
@@ -277,7 +277,7 @@ interface TodoDao {
         ) AS counts
         LEFT JOIN todo_task AS task ON task.completed_at IS NULL AND task.due_date <= :date
         ORDER BY task.due_date ASC, CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
-            task.due_time_minutes ASC, task.created_at ASC, task.id ASC
+            task.due_time_minutes ASC, task.importance_code DESC, task.created_at ASC, task.id ASC
         LIMIT :limit
     """)
     fun observeToday(date: String, limit: Int): Flow<List<TodoPageRow>>
@@ -412,7 +412,7 @@ interface TodoDao {
             GROUP BY parent_id
         ) AS progress ON progress.parent_id = task.id
         ORDER BY task.due_date ASC, CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
-            task.due_time_minutes ASC, task.created_at ASC, task.id ASC
+            task.due_time_minutes ASC, task.importance_code DESC, task.created_at ASC, task.id ASC
         LIMIT :limit
     """)
     fun observeTodayRows(date: String, limit: Int): Flow<List<TodoFamilyPageRow>>
