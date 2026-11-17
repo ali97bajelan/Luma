@@ -65,6 +65,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.luma.lifeos.R
@@ -519,6 +520,7 @@ internal fun LumaReadingPane(
 internal fun LumaSectionSurface(
     modifier: Modifier = Modifier,
     tone: LumaSurfaceTone = LumaSurfaceTone.Neutral,
+    contentPadding: Dp = LumaUi.SectionPadding,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -538,7 +540,7 @@ internal fun LumaSectionSurface(
         shadowElevation = 0.dp,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
+            modifier = Modifier.fillMaxWidth().padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
             content = content,
         )

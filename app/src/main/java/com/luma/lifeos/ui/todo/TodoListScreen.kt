@@ -51,6 +51,7 @@ import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaUi
+import com.luma.lifeos.ui.common.TodoImportancePresentation
 import com.luma.lifeos.domain.todo.TodoBucket
 import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoSort
@@ -435,7 +436,7 @@ fun TodoListScreen(
                         state = listState,
                         modifier = Modifier.weight(1f).fillMaxWidth().testTag("todo_list_rows"),
                         contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     ) {
                         state.undoableCompletion?.let { result ->
                             item(key = "undo:${result.taskId}:${result.resultingRevision}") {
@@ -642,6 +643,8 @@ private fun TodoListRowEntry(
         focusRequester = focusRequester,
         modifier = modifier,
         compact = task.parentId != null,
+        rowVerticalPadding = LumaUi.RelatedGap,
+        importancePresentation = TodoImportancePresentation.EXPRESSIVE,
         rowContext = row,
     )
     if (allowFamilyExpansion && task.parentId == null && row.progress != null) {

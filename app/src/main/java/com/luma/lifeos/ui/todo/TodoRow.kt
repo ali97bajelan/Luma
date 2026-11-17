@@ -3,7 +3,6 @@ package com.luma.lifeos.ui.todo
 import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaButton
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -29,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
@@ -63,6 +63,7 @@ internal fun TodoRow(
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    rowVerticalPadding: Dp = LumaUi.ContentGap,
     rowContext: TodoTaskRow? = null,
     omitNoneImportance: Boolean = false,
     importancePresentation: TodoImportancePresentation = TodoImportancePresentation.STANDARD,
@@ -137,7 +138,10 @@ internal fun TodoRow(
 
     val rowContent: @Composable ColumnScope.() -> Unit = {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = if (compact) 8.dp else 0.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().padding(
+                horizontal = if (compact) 8.dp else 0.dp,
+                vertical = rowVerticalPadding,
+            ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
@@ -274,12 +278,6 @@ internal fun TodoRow(
             shape = MaterialTheme.shapes.medium,
             color = rowColor,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            border = if (importance == TodoImportance.HIGH && importanceAccent != null) {
-                BorderStroke(1.5.dp, importanceAccent.copy(alpha = 0.68f))
-            } else {
-                null
-            },
-            shadowElevation = if (importance == TodoImportance.HIGH && importanceAccent != null) 3.dp else 0.dp,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -288,6 +286,10 @@ internal fun TodoRow(
             )
         }
     } else {
-        LumaSectionSurface(modifier = rowModifier, content = rowContent)
+        LumaSectionSurface(
+            modifier = rowModifier,
+            contentPadding = LumaUi.ContentGap,
+            content = rowContent,
+        )
     }
 }

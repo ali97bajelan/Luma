@@ -4,6 +4,7 @@ import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.common.LumaOutlinedButton
 import com.luma.lifeos.ui.common.TodoImportancePresentation
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
@@ -35,6 +40,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaSectionHeader
@@ -87,13 +93,10 @@ fun TodayTasksCard(
                 }
             }
             is TodayTasksState.Data -> {
-                if (state.total > 0) {
-                    Text(
-                        stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.testTag("today_tasks_count"),
-                    )
+                val countDescription = if (state.total > 0) {
+                    stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total))
+                } else {
+                    null
                 }
                 if (state.total == 0 && state.tasks.isEmpty()) {
                     Text(stringResource(R.string.todo_today_empty), modifier = Modifier.testTag("today_tasks_empty"))
@@ -105,26 +108,37 @@ fun TodayTasksCard(
                             }
                         }
                         .filter { (_, rows) -> rows.isNotEmpty() }
-                    val visibleTaskCount = bucketRows.sumOf { (_, rows) -> rows.size }
                     val firstBucket = bucketRows.firstOrNull()?.first
                     firstBucket?.let { bucket ->
+                        val groupLabel = stringResource(
+                            if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue
+                            else R.string.todo_group_today,
+                        )
+                        val groupDescription = if (state.total in 1..2 && countDescription != null) {
+                            listOf(groupLabel, countDescription).joinToString(
+                                stringResource(R.string.accessibility_label_separator),
+                            )
+                        } else {
+                            groupLabel
+                        }
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().then(
+                                if (state.total in 1..2) Modifier.testTag("today_tasks_count") else Modifier,
+                            ),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
-                                stringResource(
-                                    if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue
-                                    else R.string.todo_group_today,
-                                ),
+                                groupLabel,
                                 style = MaterialTheme.typography.labelLarge,
                                 color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
                                     else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.semantics { heading() }
-                                    .testTag("today_tasks_group_${bucket.name.lowercase()}"),
+                                modifier = Modifier.semantics {
+                                    heading()
+                                    contentDescription = groupDescription
+                                }.testTag("today_tasks_group_${bucket.name.lowercase()}"),
                             )
-                            if (visibleTaskCount > 2) {
+                            if (state.total > 2) {
                                 Surface(
                                     shape = CircleShape,
                                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -138,10 +152,10 @@ fun TodayTasksCard(
                                     Text(
                                         stringResource(
                                             R.string.todo_today_scroll_for_more,
-                                            NumberFormat.getIntegerInstance().format(visibleTaskCount),
+                                            NumberFormat.getIntegerInstance().format(state.total),
                                         ),
                                         style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(
+                                        modifier = Modifier.testTag("today_tasks_count").padding(
                                             horizontal = LumaUi.ContentGap,
                                             vertical = LumaUi.RelatedGap,
                                         ),
@@ -150,10 +164,66 @@ fun TodayTasksCard(
                             }
                         }
                     }
+                    val taskListState = rememberLazyListState()
+                    val scrollbarTrackColor = MaterialTheme.colorScheme.outlineVariant
+                    val scrollbarThumbColor = MaterialTheme.colorScheme.outline
                     LazyColumn(
-                        state = rememberLazyListState(),
+                        state = taskListState,
                         modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp)
+                            .drawWithContent {
+                                drawContent()
+                                if (!taskListState.canScrollBackward && !taskListState.canScrollForward) {
+                                    return@drawWithContent
+                                }
+                                val layoutInfo = taskListState.layoutInfo
+                                val visibleItems = layoutInfo.visibleItemsInfo
+                                val totalItems = layoutInfo.totalItemsCount
+                                if (visibleItems.isEmpty() || totalItems == 0) return@drawWithContent
+
+                                val trackInset = LumaUi.RelatedGap.toPx()
+                                val trackTop = layoutInfo.viewportStartOffset.toFloat() + trackInset
+                                val trackBottom = layoutInfo.viewportEndOffset.toFloat() - trackInset
+                                val trackHeight = (trackBottom - trackTop).coerceAtLeast(1f)
+                                val averageItemHeight = visibleItems
+                                    .map { it.size.toFloat() }
+                                    .average()
+                                    .toFloat()
+                                    .coerceAtLeast(1f)
+                                val visibleFraction = (visibleItems.size.toFloat() / totalItems).coerceIn(0f, 1f)
+                                val thumbHeight = (trackHeight * visibleFraction)
+                                    .coerceAtLeast(LumaUi.IconSize.toPx())
+                                    .coerceAtMost(trackHeight)
+                                val maxScroll = (averageItemHeight * totalItems - trackHeight).coerceAtLeast(1f)
+                                val scrollOffset = (
+                                    taskListState.firstVisibleItemIndex * averageItemHeight +
+                                        taskListState.firstVisibleItemScrollOffset
+                                    ).coerceAtLeast(0f)
+                                val thumbTop = trackTop +
+                                    (scrollOffset / maxScroll).coerceIn(0f, 1f) * (trackHeight - thumbHeight)
+                                val thumbWidth = LumaUi.RelatedGap.toPx()
+                                val trackWidth = 1.dp.toPx()
+                                val thumbLeft = if (layoutDirection == LayoutDirection.Ltr) {
+                                    size.width - thumbWidth
+                                } else {
+                                    0f
+                                }
+                                val trackLeft = thumbLeft + (thumbWidth - trackWidth) / 2f
+
+                                drawRoundRect(
+                                    color = scrollbarTrackColor.copy(alpha = 0.7f),
+                                    topLeft = Offset(trackLeft, trackTop),
+                                    size = Size(trackWidth, trackHeight),
+                                    cornerRadius = CornerRadius(trackWidth / 2f),
+                                )
+                                drawRoundRect(
+                                    color = scrollbarThumbColor,
+                                    topLeft = Offset(thumbLeft, thumbTop),
+                                    size = Size(thumbWidth, thumbHeight),
+                                    cornerRadius = CornerRadius(thumbWidth / 2f),
+                                )
+                            }
                             .testTag("today_tasks_scroll"),
+                        contentPadding = PaddingValues(end = LumaUi.ContentGap),
                     ) {
                         bucketRows.forEachIndexed { index, (bucket, bucketTasks) ->
                             if (index > 0) {
