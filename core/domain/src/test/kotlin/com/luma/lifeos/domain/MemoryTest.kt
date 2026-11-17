@@ -11,10 +11,10 @@ class MemoryTest {
         assertTrue(runCatching { MemoryInput("Text", Instant.EPOCH, importance = 0) }.isFailure)
         assertTrue(runCatching { MemoryMarkerInput(importance = 6) }.isFailure)
         assertTrue(runCatching { MemoryDetails(importance = -1) }.isFailure)
-        assertTrue(runCatching { MemoryInput("x".repeat(10_001), Instant.EPOCH) }.isFailure)
+        assertTrue(runCatching { MemoryInput("x".repeat(50_001), Instant.EPOCH) }.isFailure)
         assertTrue(runCatching { MemoryInput("Text", Instant.EPOCH, title = "x".repeat(201)) }.isFailure)
         assertTrue(runCatching { MemoryMarkerInput(note = "x".repeat(10_001)) }.isFailure)
-        assertEquals(10_000, MemoryInput("x".repeat(10_000), Instant.EPOCH, importance = 5).note.length)
+        assertEquals(50_000, MemoryInput("x".repeat(50_000), Instant.EPOCH, importance = 5).note.length)
     }
     @Test fun onlyCompleteManualMoodAndJournalSupportPromotion() {
         fun event(type: EventType) = LifeEvent(EventId.new(), type, Instant.EPOCH, Instant.EPOCH)

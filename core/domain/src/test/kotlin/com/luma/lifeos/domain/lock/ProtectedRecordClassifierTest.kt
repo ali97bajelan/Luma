@@ -8,11 +8,11 @@ class ProtectedRecordClassifierTest {
     fun eventRecordsMatchTheIndependentFixtureProtectionSets() {
         val expected = mapOf(
             "memory_private" to setOf(LockSection.MEMORIES),
-            "journal_public" to setOf(LockSection.JOURNAL),
-            "journal_marked" to setOf(LockSection.JOURNAL, LockSection.MEMORIES),
+            "journal_public" to setOf(LockSection.MEMORIES),
+            "journal_marked" to setOf(LockSection.MEMORIES),
             "mood_public" to setOf(LockSection.MOOD),
             "mood_marked" to setOf(LockSection.MOOD, LockSection.MEMORIES),
-            "journal_person_linked" to setOf(LockSection.JOURNAL),
+            "journal_person_linked" to setOf(LockSection.MEMORIES),
             "health_activity" to setOf(LockSection.HEALTH_USAGE),
             "usage_event" to setOf(LockSection.HEALTH_USAGE),
         )
@@ -31,7 +31,7 @@ class ProtectedRecordClassifierTest {
 
         assertEquals(setOf(LockSection.MEMORIES), ProtectedRecordClassifier.requiredSections(memory))
         assertEquals(setOf(LockSection.PEOPLE), ProtectedRecordClassifier.peopleFieldSections(memory))
-        assertEquals(setOf(LockSection.JOURNAL), ProtectedRecordClassifier.requiredSections(linkedJournal))
+        assertEquals(setOf(LockSection.MEMORIES), ProtectedRecordClassifier.requiredSections(linkedJournal))
         assertEquals(setOf(LockSection.PEOPLE), ProtectedRecordClassifier.peopleFieldSections(linkedJournal))
         assertEquals(emptySet<LockSection>(), ProtectedRecordClassifier.peopleFieldSections(ordinaryJournal))
     }

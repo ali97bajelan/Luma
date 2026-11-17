@@ -11,17 +11,17 @@ import com.luma.lifeos.domain.model.Person
 import java.time.Instant
 import java.util.UUID
 
-/** Independent expected visibility oracle copied from app-lock-v1.json. */
+/** Independent expected visibility oracle for the current memory-only capture behavior. */
 internal object AppLockFixture {
     private val timestamp = Instant.parse("2026-10-31T06:30:00Z")
 
     val records: List<FixtureRecord> = listOf(
         FixtureRecord("memory_private", setOf(LockSection.MEMORIES), eventRecord("memory_private", EventType.MEMORY, marker = true, linkedPeople = true)),
-        FixtureRecord("journal_public", setOf(LockSection.JOURNAL), eventRecord("journal_public", EventType.JOURNAL)),
-        FixtureRecord("journal_marked", setOf(LockSection.JOURNAL, LockSection.MEMORIES), eventRecord("journal_marked", EventType.JOURNAL, marker = true)),
+        FixtureRecord("journal_public", setOf(LockSection.MEMORIES), eventRecord("journal_public", EventType.JOURNAL)),
+        FixtureRecord("journal_marked", setOf(LockSection.MEMORIES), eventRecord("journal_marked", EventType.JOURNAL, marker = true)),
         FixtureRecord("mood_public", setOf(LockSection.MOOD), eventRecord("mood_public", EventType.MOOD)),
         FixtureRecord("mood_marked", setOf(LockSection.MOOD, LockSection.MEMORIES), eventRecord("mood_marked", EventType.MOOD, marker = true)),
-        FixtureRecord("journal_person_linked", setOf(LockSection.JOURNAL), eventRecord("journal_person_linked", EventType.JOURNAL, linkedPeople = true)),
+        FixtureRecord("journal_person_linked", setOf(LockSection.MEMORIES), eventRecord("journal_person_linked", EventType.JOURNAL, linkedPeople = true)),
         FixtureRecord("health_activity", setOf(LockSection.HEALTH_USAGE), eventRecord("health_activity", EventType.ACTIVITY, EventSource.HEALTH_CONNECT)),
         FixtureRecord("usage_event", setOf(LockSection.HEALTH_USAGE), eventRecord("usage_event", EventType.APP_USAGE, EventSource.USAGE_STATS)),
         FixtureRecord("task_open", setOf(LockSection.TASKS)),
@@ -33,7 +33,7 @@ internal object AppLockFixture {
     )
 
     val profiles: List<FixtureProfile> = listOf(
-        FixtureProfile("memories_locked", selected(LockSection.MEMORIES), setOf("memory_private", "journal_marked", "mood_marked")),
+        FixtureProfile("memories_locked", selected(LockSection.MEMORIES), setOf("memory_private", "journal_public", "journal_marked", "journal_person_linked", "mood_marked")),
         FixtureProfile("people_locked", selected(LockSection.PEOPLE), setOf("person_en", "person_fa")),
         FixtureProfile("tasks_habits_locked", selected(LockSection.TASKS, LockSection.HABITS), setOf("task_open", "habit_water")),
         FixtureProfile("health_focus_locked", selected(LockSection.HEALTH_USAGE, LockSection.FOCUS), setOf("health_activity", "usage_event", "focus_saved")),
@@ -43,8 +43,8 @@ internal object AppLockFixture {
     )
 
     val sectionOnlyHiddenAliases: Map<LockSection, Set<String>> = mapOf(
-        LockSection.MEMORIES to setOf("memory_private", "journal_marked", "mood_marked"),
-        LockSection.JOURNAL to setOf("journal_public", "journal_marked", "journal_person_linked"),
+        LockSection.MEMORIES to setOf("memory_private", "journal_public", "journal_marked", "journal_person_linked", "mood_marked"),
+        LockSection.JOURNAL to emptySet(),
         LockSection.MOOD to setOf("mood_public", "mood_marked"),
         LockSection.TASKS to setOf("task_open"),
         LockSection.HABITS to setOf("habit_water"),
