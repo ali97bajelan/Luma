@@ -134,6 +134,7 @@ fun TodayTasksCard(
                                     onDismissError = { onDismissTaskError(task.id) },
                                     focusRequester = focusRequester,
                                     compact = true,
+                                    omitNoneImportance = true,
                                     rowContext = row,
                                 )
                             }

@@ -30,6 +30,7 @@ import com.luma.lifeos.ui.common.LumaSectionSurface
 import com.luma.lifeos.ui.common.LumaTodoImportanceBadge
 import com.luma.lifeos.ui.common.todoImportanceLabelRes
 import com.luma.lifeos.domain.todo.TodoBucket
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.TodoTaskRow
 import com.luma.lifeos.domain.todo.todoBucket
@@ -55,11 +56,19 @@ internal fun TodoRow(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
     rowContext: TodoTaskRow? = null,
+    omitNoneImportance: Boolean = false,
 ) {
     val displayTime = rememberDisplayTimePolicy()
     val importance = rowContext?.takeIf { it.task.id == task.id }?.task?.importance ?: task.importance
-    val importanceLabel = stringResource(todoImportanceLabelRes(importance))
-    val importanceValue = stringResource(R.string.todo_importance_value, importanceLabel)
+    val showImportance = !omitNoneImportance || importance != TodoImportance.NONE
+    val importanceValue = if (showImportance) {
+        stringResource(
+            R.string.todo_importance_value,
+            stringResource(todoImportanceLabelRes(importance)),
+        )
+    } else {
+        null
+    }
     val statusDescription = stringResource(if (task.isCompleted) R.string.todo_status_completed else R.string.todo_status_open)
     val checkboxDescription = stringResource(
         if (task.isCompleted) R.string.todo_reopen else R.string.todo_mark_complete,
@@ -136,10 +145,12 @@ internal fun TodoRow(
             ) {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     Text(task.title, style = MaterialTheme.typography.bodyLarge)
-                    LumaTodoImportanceBadge(
-                        importance = importance,
-                        modifier = Modifier.testTag("todo_row_importance_${importance.name.lowercase(Locale.ROOT)}"),
-                    )
+                    if (showImportance) {
+                        LumaTodoImportanceBadge(
+                            importance = importance,
+                            modifier = Modifier.testTag("todo_row_importance_${importance.name.lowercase(Locale.ROOT)}"),
+                        )
+                    }
                     parentContext?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

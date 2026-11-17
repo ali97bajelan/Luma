@@ -24,6 +24,7 @@ import com.luma.lifeos.domain.widget.WidgetActionResult
 import com.luma.lifeos.domain.widget.WidgetKind
 import com.luma.lifeos.domain.widget.WidgetOutcome
 import com.luma.lifeos.domain.widget.WidgetRow
+import com.luma.lifeos.domain.todo.TodoImportance
 import com.luma.lifeos.domain.widget.WidgetSnapshot
 import com.luma.lifeos.domain.widget.WidgetStore
 import com.luma.lifeos.ui.common.todoImportanceLabelRes
@@ -908,8 +909,10 @@ object WidgetRenderer {
             else -> context.getString(R.string.widget_task_due_date, bidiWrapped(context, deadline))
         }
         val metadata = buildList {
-            val importanceLabel = context.getString(todoImportanceLabelRes(row.importance))
-            add(context.getString(R.string.todo_importance_value, importanceLabel))
+            if (row.importance != TodoImportance.NONE) {
+                val importanceLabel = context.getString(todoImportanceLabelRes(row.importance))
+                add(context.getString(R.string.todo_importance_value, importanceLabel))
+            }
             row.parentTitle?.let { parent ->
                 add(context.getString(R.string.todo_subtask_parent_name, bidiWrapped(context, parent)))
             }
