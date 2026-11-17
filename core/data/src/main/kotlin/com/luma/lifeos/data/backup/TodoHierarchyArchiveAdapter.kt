@@ -193,6 +193,11 @@ internal object TodoHierarchyArchiveAdapter {
 
     /** Final staged validation runs before preview and before the live replacement transaction. */
     fun validateStaged(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            """UPDATE todo_task SET family_revision_token = (
+                SELECT parent.family_revision_token FROM todo_task AS parent WHERE parent.id = todo_task.parent_id
+            ) WHERE parent_id IS NOT NULL""".trimIndent(),
+        )
         val invalidHierarchyQueries = listOf(
             """SELECT child.id FROM todo_task AS child
                LEFT JOIN todo_task AS parent ON parent.id = child.parent_id

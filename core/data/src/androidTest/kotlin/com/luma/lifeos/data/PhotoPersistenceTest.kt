@@ -126,7 +126,7 @@ class PhotoPersistenceTest {
         assertEquals(listOf(photo), memories.get(event)!!.photos)
         memories.update(event, MemoryInput("Keep edited", now, photos = emptyList()))
         assertTrue(memories.get(event)!!.photos.isEmpty())
-        assertEquals("Keep edited", memories.get(event)!!.memory!!.note)
+        assertEquals("Keep edited", memories.get(event)!!.event.note)
         photos.releaseDraft(owner)
         val bad = RoomPhotoRepository(db, files) { ByteArrayInputStream("Not an image".toByteArray()) }
         assertTrue(runCatching { bad.import(owner, UUID.randomUUID(), "content://bad") }.isFailure)

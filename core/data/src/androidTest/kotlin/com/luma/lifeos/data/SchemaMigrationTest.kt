@@ -45,9 +45,10 @@ class SchemaMigrationTest {
         try {
             val events = RoomLifeEventRepository(database)
             val stored = requireNotNull(events.get(EventId.parse(eventId)))
-            assertEquals(EventType.JOURNAL, stored.type)
+            assertEquals(EventType.MEMORY, stored.type)
+            assertEquals("Survives reopening", stored.note)
             assertEquals(1000L, stored.createdAt.toEpochMilli())
-            assertEquals("Survives reopening", RoomEventStore(database).get(stored.id)?.journal?.body)
+            assertEquals("Survives reopening", RoomEventStore(database).get(stored.id)?.event?.note)
             assertTrue(database.usageSessions().forDay(0, 10_000).isEmpty())
             database.usageSessions().upsert(listOf(com.luma.lifeos.data.entity.UsageSessionEntity("org.example.app", 2000, 3000, "Example", false)))
             database.usageSessions().upsertWindow(com.luma.lifeos.data.entity.UsageSessionWindowEntity(0, 10_000, true))
@@ -59,8 +60,9 @@ class SchemaMigrationTest {
         try {
             val details = requireNotNull(RoomEventStore(reopened).get(EventId.parse(eventId)))
             assertEquals("Updated after reopening", details.event.title)
-            assertEquals(journalId, details.journal?.id)
-            assertEquals("Survives reopening", details.journal?.body)
+            assertNull(details.journal)
+            assertNotNull(details.memory)
+            assertEquals("Survives reopening", details.event.note)
             assertEquals(1, reopened.usageSessions().forDay(0, 10_000).size)
             assertEquals(1, reopened.usageSessions().windows(0, 10_000).size)
             reopened.openHelper.readableDatabase.query("PRAGMA foreign_key_check").use { assertEquals(0, it.count) }

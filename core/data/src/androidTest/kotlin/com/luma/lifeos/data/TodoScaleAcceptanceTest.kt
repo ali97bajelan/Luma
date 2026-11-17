@@ -253,6 +253,7 @@ class TodoScaleAcceptanceTest {
                     "high_matches_ms_p95=${percentile(matchingSamples, 0.95)} " +
                     "today_ms_p95=${percentile(todaySamples, 0.95)}",
             )
+            Unit
         } finally {
             database.close()
             context.deleteDatabase(databaseName)

@@ -290,7 +290,20 @@ class RoomBackupService(private val context: Context, private val database: Luma
                                                             row[names.indexOf("completed_at")] = null
                                                         }
                                                         row[names.indexOf("revision_token")] = UUID.randomUUID().toString()
-                                                        row[names.indexOf("family_revision_token")] = UUID.randomUUID().toString()
+                                                        val familyRevisionIndex = names.indexOf("family_revision_token")
+                                                        row[familyRevisionIndex] = if (pass == TodoHierarchyArchiveAdapter.ImportPass.ROOTS) {
+                                                            UUID.randomUUID().toString()
+                                                        } else {
+                                                            val parentId = row[names.indexOf("parent_id")] as? String
+                                                                ?: error("Restored child task is missing its parent")
+                                                            target.query(
+                                                                "SELECT family_revision_token FROM todo_task WHERE id = ?",
+                                                                arrayOf(parentId),
+                                                            ).use { parentCursor ->
+                                                                check(parentCursor.moveToFirst()) { "Restored parent task is missing" }
+                                                                parentCursor.getString(0)
+                                                            }
+                                                        }
                                                         bind(statement, row)
                                                         statement.executeInsert()
                                                     }

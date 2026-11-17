@@ -4,6 +4,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.media.AndroidPhotoCodec
 import com.luma.lifeos.data.media.AndroidPhotoTransform
 import com.luma.lifeos.data.media.ManagedPhotoFiles
+import com.luma.lifeos.data.mapping.toDomainPhoto
 import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.PhotoDisplayRequest
@@ -23,7 +24,17 @@ import kotlinx.coroutines.sync.withLock
 class RoomPhotoRepository(private val database: LumaDatabase, private val files: ManagedPhotoFiles,
     private val mutex: Mutex = Mutex(), private val openSource: (String) -> InputStream) : PhotoRepository {
     override suspend fun import(draftId: UUID, id: UUID, source: String) = withContext(Dispatchers.IO) {
-        mutex.withLock { files.import(draftId, id, { openSource(source) }, AndroidPhotoCodec::inspect) }
+        mutex.withLock {
+            val saved = database.content().attachment(id.toString())?.toDomainPhoto()
+            val savedFile = saved?.let(files::resolve)
+            if (saved != null && savedFile != null) {
+                val existing = saved.copy(metadata = AndroidPhotoCodec.inspect(savedFile))
+                files.retain(draftId, listOf(existing))
+                existing
+            } else {
+                files.import(draftId, id, { openSource(source) }, AndroidPhotoCodec::inspect)
+            }
+        }
     }
     override suspend fun retainDraft(draftId: UUID, photos: List<PhotoAttachment>) = withContext(Dispatchers.IO) {
         mutex.withLock {

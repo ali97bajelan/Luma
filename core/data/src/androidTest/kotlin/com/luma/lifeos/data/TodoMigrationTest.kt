@@ -49,9 +49,18 @@ class TodoMigrationTest {
                 *LumaDatabase.MIGRATIONS.toTypedArray(),
             )
             try {
-                migrated.query("SELECT body FROM journal_entry WHERE id = '$JOURNAL_ID'").use {
+                migrated.query(
+                    "SELECT life_event.type, life_event.note, memory.id FROM life_event " +
+                        "JOIN memory ON memory.life_event_id = life_event.id WHERE life_event.id = '$EVENT_ID'",
+                ).use {
                     assertTrue(it.moveToFirst())
-                    assertEquals("Keep this journal", it.getString(0))
+                    assertEquals("MEMORY", it.getString(0))
+                    assertEquals("Keep this journal", it.getString(1))
+                    assertEquals(EVENT_ID, it.getString(2))
+                }
+                migrated.query("SELECT COUNT(*) FROM journal_entry WHERE life_event_id = '$EVENT_ID'").use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals(0, it.getInt(0))
                 }
                 migrated.query("SELECT relative_path FROM media_attachment WHERE id = '$PHOTO_ID'").use {
                     assertTrue(it.moveToFirst())

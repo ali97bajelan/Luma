@@ -41,13 +41,15 @@ data class MemoryMarkerInput(
     val personIds: Set<UUID>? = null,
     val placeSelection: PlaceSelection? = null,
     val photos: List<PhotoAttachment>? = null,
-    val tagNames: Set<String> = emptySet(),
+    val tagNames: Set<String>? = null,
 ) {
     init {
         validatePhotos(photos); validatePersonSelection(personIds); validateMarker(importance, note)
-        require(tagNames.all { it.trim().length <= MemoryTextLimits.TAG }) { "Tag name is too long" }
-        require(tagNames.map(Tag::normalize).distinct().size <= MemoryTextLimits.TAG_COUNT) { "Too many tags" }
-        require(tagNames.all { it.isNotBlank() }) { "Tag name is required" }
+        tagNames?.let { names ->
+            require(names.all { it.trim().length <= MemoryTextLimits.TAG }) { "Tag name is too long" }
+            require(names.map(Tag::normalize).distinct().size <= MemoryTextLimits.TAG_COUNT) { "Too many tags" }
+            require(names.all { it.isNotBlank() }) { "Tag name is required" }
+        }
     }
 }
 

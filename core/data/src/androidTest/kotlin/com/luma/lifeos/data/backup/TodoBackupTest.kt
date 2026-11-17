@@ -206,7 +206,12 @@ class TodoBackupTest {
 
         for (version in 4..13) {
             val legacy = rewriteTaskArchive(sourceArchive, version) { columns, rows -> columns to rows }
-            backup.prepare(ByteArrayInputStream(legacy)).use {
+            val prepared = try {
+                backup.prepare(ByteArrayInputStream(legacy))
+            } catch (failure: Exception) {
+                throw IllegalStateException("Could not import schema $version task archive", failure)
+            }
+            prepared.use {
                 assertEquals(2L, it.preview.todoCount)
                 it.restore()
             }
@@ -275,7 +280,7 @@ class TodoBackupTest {
             malformed { columns, rows ->
                 rows.single { it[columns.indexOf("title")] == "Archive first child" }[
                     columns.indexOf("importance_code")
-                ] = 99
+                ] = 99L
             },
             malformed { columns, rows ->
                 rows.single { it[columns.indexOf("title")] == "Archive second child" }[
@@ -353,7 +358,9 @@ class TodoBackupTest {
                 val index = columns.indexOf("due_time_minutes")
                 columns.filterIndexed { i, _ -> i != index } to rows.map { row -> row.filterIndexed { i, _ -> i != index } }
             },
-            rewriteTaskArchive(valid, 4) { columns, rows -> columns to rows },
+            rewriteTaskArchive(valid, 4) { columns, rows ->
+                columns.map { if (it == "title") "task_title" else it } to rows
+            },
             rewriteTaskArchive(valid, 5) { columns, rows ->
                 val index = columns.indexOf("due_time_minutes")
                 columns to rows.map { row -> row.toMutableList().apply {
@@ -454,6 +461,23 @@ class TodoBackupTest {
             row.filterIndexed { index, _ -> transformedColumns[index] !in omittedColumns }
         }
         taskFile.outputStream().use { BackupRows.write(it, newColumns, newRows.asSequence()) }
+        if (schemaVersion in 7..11) {
+            val focusSessionFile = File(payload, "tables/focus_session.tsv")
+            val focusSessionColumns = BackupRows.readHeader(focusSessionFile)
+            val legacyFocusColumns = when (schemaVersion) {
+                7 -> setOf("name", "tag_id", "timer_mode", "target_millis", "outcome", "next_step", "task_id", "task_origin")
+                8 -> setOf("timer_mode", "target_millis", "outcome", "next_step", "task_id", "task_origin")
+                in 9..10 -> setOf("outcome", "next_step", "task_id", "task_origin")
+                else -> setOf("task_id", "task_origin")
+            }
+            val legacyColumns = focusSessionColumns.filterNot { it in legacyFocusColumns }
+            val focusRows = mutableListOf<List<Any?>>()
+            BackupRows.read(focusSessionFile, focusSessionColumns) { focusRows += it }
+            val legacyRows = focusRows.map { row ->
+                row.filterIndexed { index, _ -> focusSessionColumns[index] !in legacyFocusColumns }
+            }
+            focusSessionFile.outputStream().use { BackupRows.write(it, legacyColumns, legacyRows.asSequence()) }
+        }
         val supportedTables = backupTables(schemaVersion).map { "tables/$it.tsv" }.toSet()
         val members = manifest.names
             .filter { it in supportedTables || it.startsWith("photos/") }

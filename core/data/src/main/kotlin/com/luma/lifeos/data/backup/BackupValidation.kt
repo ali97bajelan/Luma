@@ -32,7 +32,7 @@ import java.time.ZoneId
 
 /** Checks entity/domain invariants which SQLite's generated schema does not enforce. */
 internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
-    fun s(name: String) = row[name] as String
+    fun s(name: String) = row[name] as? String ?: error("Missing or invalid $name in $table backup row")
     fun text(name: String) = row[name] as String?
     fun l(name: String) = row[name] as Long
     fun long(name: String) = row[name] as Long?
@@ -43,8 +43,8 @@ internal fun validateBackupRow(table: String, row: Map<String, Any?>) {
     fun date(name: String) = LocalDate.parse(s(name)).also { require(it.toString() == s(name)) { "Invalid civil date" } }
     fun zone(name: String) = ZoneId.of(s(name)).also { require(it.id == s(name)) { "Invalid timezone identifier" } }
     row.forEach { (name, value) ->
-        if (value != null && (name == "id" || (name.endsWith("_id") && name !in setOf("zone_id", "tracking_zone_id", "setting_id"))))
-            require(UUID.fromString(value as String).toString() == value) { "Invalid record identity" }
+        if (value is String && (name == "id" || (name.endsWith("_id") && name !in setOf("zone_id", "tracking_zone_id", "setting_id"))))
+            require(UUID.fromString(value).toString() == value) { "Invalid record identity" }
         if (value != null && name.endsWith("_json")) {
             val json = value as String
             requireSafeJsonDepth(json)

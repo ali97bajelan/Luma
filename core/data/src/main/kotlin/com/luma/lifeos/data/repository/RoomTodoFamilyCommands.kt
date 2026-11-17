@@ -852,7 +852,7 @@ internal class RoomTodoFamilyCommands(
     }
 
     private suspend fun invalidateWidgetCommands(taskIds: List<String>) {
-        val outcome = encodeWidgetActionResult(WidgetActionResult(WidgetOutcome.STALE))
+        val outcome = encodeWidgetActionResult(WidgetActionResult(WidgetOutcome.MISSING))
         val widgets = database.widgets()
         for (taskId in taskIds) {
             widgets.clearFeedbackForTaskCommands(taskId)

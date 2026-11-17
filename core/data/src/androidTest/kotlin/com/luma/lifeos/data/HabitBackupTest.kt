@@ -11,6 +11,7 @@ import com.luma.lifeos.data.db.LumaDatabase
 import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.data.repository.RoomHabitRepository
 import com.luma.lifeos.data.repository.RoomJournalRepository
+import com.luma.lifeos.data.repository.RoomMemoryRepository
 import com.luma.lifeos.domain.habit.HabitLogInput
 import com.luma.lifeos.domain.habit.HabitSaveInput
 import com.luma.lifeos.domain.model.EventId
@@ -167,7 +168,7 @@ class HabitBackupTest {
                 assertEquals(0L, prepared.preview.habitLogCount)
                 prepared.restore()
             }
-            assertEquals("Retained journal", journal.get(eventId)!!.journal!!.body)
+            assertEquals("Retained journal", RoomMemoryRepository(database).get(eventId)!!.event.note)
             assertNull(habits.get(habitId))
             database.openHelper.readableDatabase.query("SELECT COUNT(*) FROM habit_log").use {
                 assertTrue(it.moveToFirst()); assertEquals(0, it.getInt(0))

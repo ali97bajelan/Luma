@@ -46,7 +46,14 @@ class HabitMigrationTest {
             val database = LumaDatabase.open(instrumentation.targetContext, fileName)
             try {
                 val sql = database.openHelper.readableDatabase
-                sql.query("SELECT body FROM journal_entry").use { assertTrue(it.moveToFirst()); assertEquals("Keep this journal", it.getString(0)) }
+                sql.query(
+                    "SELECT life_event.type, life_event.note FROM life_event " +
+                        "JOIN memory ON memory.life_event_id = life_event.id WHERE life_event.id = '00000000-0000-0000-0000-000000000001'",
+                ).use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals("MEMORY", it.getString(0))
+                    assertEquals("Keep this journal", it.getString(1))
+                }
                 sql.query("SELECT name FROM event_person JOIN person ON person.id = event_person.person_id WHERE event_id = '00000000-0000-0000-0000-000000000001'").use {
                     assertTrue(it.moveToFirst()); assertEquals("Keep this person", it.getString(0))
                 }

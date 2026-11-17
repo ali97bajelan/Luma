@@ -245,9 +245,10 @@ class TodoFamilyCommandsTest {
         val second = createChild("order-second", parent.id, TodoInput("Sort albums"))
         val third = createChild("order-third", parent.id, TodoInput("Archive duplicates"))
         val initialFamilyRevision = requireNotNull(todos.get(parent.id)).familyRevision
+        val firstBeforeEdgeMove = requireNotNull(todos.get(first.id))
 
         todos.moveChild(first.id, first.revision, revision("edge-no-op"), TodoMoveDirection.UP)
-        assertEquals(first, todos.get(first.id))
+        assertEquals(firstBeforeEdgeMove, todos.get(first.id))
         assertEquals(initialFamilyRevision, requireNotNull(todos.get(parent.id)).familyRevision)
 
         todos.moveChild(second.id, second.revision, revision("move-second-up"), TodoMoveDirection.UP)

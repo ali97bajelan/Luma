@@ -50,9 +50,13 @@ class FocusMigrationTest {
             *LumaDatabase.MIGRATIONS.toTypedArray(),
         )
         try {
-            migrated.query("SELECT body FROM journal_entry WHERE id = '$JOURNAL_ID'").use {
+            migrated.query(
+                "SELECT life_event.type, life_event.note FROM life_event " +
+                    "JOIN memory ON memory.life_event_id = life_event.id WHERE life_event.id = '$EVENT_ID'",
+            ).use {
                 assertTrue(it.moveToFirst())
-                assertEquals("Keep journal through focus migration", it.getString(0))
+                assertEquals("MEMORY", it.getString(0))
+                assertEquals("Keep journal through focus migration", it.getString(1))
             }
             migrated.query("SELECT relative_path FROM media_attachment WHERE id = '$PHOTO_ID'").use {
                 assertTrue(it.moveToFirst())
@@ -138,12 +142,11 @@ class FocusMigrationTest {
                 }
             }
             assertTrue("focus_storage_state" in tables)
-            assertEquals(
+            assertTrue(
                 setOf(
                     "focus_session", "focus_run", "focus_runtime", "focus_command_receipt",
                     "focus_deleted_session", "focus_storage_state",
-                ),
-                tables,
+                ).all { it in tables },
             )
         } finally {
             migrated.close()

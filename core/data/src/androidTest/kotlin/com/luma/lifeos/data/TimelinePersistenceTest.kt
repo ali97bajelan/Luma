@@ -139,7 +139,7 @@ class TimelinePersistenceTest {
         assertEquals(listOf(300L, 201L), first.records.map { it.event.id.value.leastSignificantBits })
         assertTrue(last.records.isEmpty())
         assertEquals(0L, timeline.get(EventId(UUID(0, 0)))!!.appUsage!!.durationMillis)
-        db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 60_001 WHERE life_event_id = ?",
+        db.openHelper.writableDatabase.execSQL("UPDATE app_usage_record SET duration_ms = 60001 WHERE life_event_id = ?",
             arrayOf(EventId(UUID(0, 0)).toString()))
         assertEquals(3, timeline.page(range, 0, 2).totalCount)
         assertEquals(listOf(0L), timeline.page(range, 2, 2).records.map { it.event.id.value.leastSignificantBits })

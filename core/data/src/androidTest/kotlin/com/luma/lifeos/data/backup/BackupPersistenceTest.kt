@@ -90,7 +90,7 @@ class BackupPersistenceTest {
         )
     }
 
-    @Test fun schemaSevenRoundTripIncludesTerminalHistoryAndInvalidatesOldFocusWork() = runBlocking {
+    @Test fun currentSchemaRoundTripIncludesTerminalHistoryAndInvalidatesOldFocusWork() = runBlocking {
         val focus = RoomFocusRepository(db)
         val oldGeneration = focus.currentGeneration()
         val terminalId = UUID.randomUUID()
@@ -112,8 +112,11 @@ class BackupPersistenceTest {
         }.toByteArray()
         val extracted = File(root, "schema-seven-inspection")
         val manifest = BackupArchive.read(ByteArrayInputStream(bytes), extracted)
-        assertEquals(7, manifest.schemaVersion)
-        assertEquals(backupTables(7).map { "tables/$it.tsv" }.toSet(), manifest.names)
+        assertEquals(CURRENT_BACKUP_SCHEMA_VERSION, manifest.schemaVersion)
+        assertEquals(
+            backupTables(CURRENT_BACKUP_SCHEMA_VERSION).map { "tables/$it.tsv" }.toSet(),
+            manifest.names,
+        )
         val sessionFile = File(extracted, "tables/focus_session.tsv")
         val sessionColumns = sessionFile.readLines().first().split('\t')
         val exportedSessionIds = mutableListOf<String>()
@@ -174,6 +177,16 @@ class BackupPersistenceTest {
         insertFocusSession(terminalId, FocusState.FINISHED, now.minusSeconds(1200), 600_000, "USER_STOP", null)
         val v7Directory = File(root, "schema-six-source")
         BackupArchive.read(ByteArrayInputStream(export()), v7Directory)
+        val taskFile = File(v7Directory, "tables/todo_task.tsv")
+        val taskColumns = BackupRows.readHeader(taskFile)
+        val taskRows = mutableListOf<List<Any?>>()
+        BackupRows.read(taskFile, taskColumns) { taskRows += it }
+        val v6OmittedColumns = setOf("importance_code", "parent_id", "sibling_position", "family_revision_token")
+        val v6Columns = taskColumns.filterNot { it in v6OmittedColumns }
+        val v6Rows = taskRows.map { row ->
+            row.filterIndexed { index, _ -> taskColumns[index] !in v6OmittedColumns }
+        }
+        taskFile.outputStream().use { BackupRows.write(it, v6Columns, v6Rows.asSequence()) }
         val v6Files = backupTables(6).associate { table ->
             val name = "tables/$table.tsv"
             name to File(v7Directory, name)
@@ -204,7 +217,12 @@ class BackupPersistenceTest {
         val corrupted = rows.single().toMutableList().apply { this[columns.indexOf("credited_millis")] = -1L }
         runsFile.outputStream().use { BackupRows.write(it, columns, sequenceOf(corrupted)) }
         val invalidBytes = ByteArrayOutputStream().also { output ->
-            BackupArchive.write(output, manifest.names.associateWith { File(payload, it) }, 7, 1234)
+            BackupArchive.write(
+                output,
+                manifest.names.associateWith { File(payload, it) },
+                CURRENT_BACKUP_SCHEMA_VERSION,
+                1234,
+            )
         }.toByteArray()
 
         assertTrue(runCatching { backup.prepare(ByteArrayInputStream(invalidBytes)) }.isFailure)
@@ -233,7 +251,12 @@ class BackupPersistenceTest {
             prepared.restore()
         }
         val restored = db.lifeEvents().getDetails(id.toString())!!
-        assertEquals(original.copy(attachments = restored.attachments), restored)
+        val normalizedExpected = original.copy(
+            event = original.event.copy(type = EventType.MEMORY, note = "Multiline\nFrançais"),
+            journal = null,
+            attachments = restored.attachments,
+        )
+        assertEquals(normalizedExpected, restored)
         assertEquals(original.attachments.single().copy(relativePath = restored.attachments.single().relativePath), restored.attachments.single())
         assertArrayEquals(image, files.resolve(restored.attachments.single().relativePath)!!.readBytes())
         assertNull(journals.get(extra))
@@ -248,7 +271,7 @@ class BackupPersistenceTest {
         journals.update(id, JournalInput("Still current", now))
         val original = db.lifeEvents().getDetails(id.toString())!!
         val image = files.resolve(photo.relativePath)!!.readBytes()
-        db.openHelper.writableDatabase.execSQL("CREATE TRIGGER reject_restore BEFORE INSERT ON journal_entry BEGIN SELECT RAISE(ABORT, 'test failure'); END")
+        db.openHelper.writableDatabase.execSQL("CREATE TRIGGER reject_restore BEFORE INSERT ON memory BEGIN SELECT RAISE(ABORT, 'test failure'); END")
         val prepared = backup.prepare(ByteArrayInputStream(bytes))
         assertTrue(runCatching { prepared.restore() }.isFailure)
         assertEquals(original, db.lifeEvents().getDetails(id.toString()))
@@ -327,7 +350,7 @@ class BackupPersistenceTest {
             assertEquals(0L, it.preview.todoCount)
             it.restore()
         }
-        assertEquals("Version one", RoomJournalRepository(db).get(id)!!.journal!!.body)
+        assertEquals("Version one", RoomMemoryRepository(db).get(id)!!.event.note)
         assertNull(RoomTodoRepository(db).get(taskId))
         assertEquals(0, db.openHelper.readableDatabase.query("SELECT * FROM usage_session").use { it.count })
     }

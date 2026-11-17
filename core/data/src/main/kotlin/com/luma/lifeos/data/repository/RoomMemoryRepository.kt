@@ -93,7 +93,7 @@ class RoomMemoryRepository(private val database: LumaDatabase, private val clock
         val marker = previous.memory ?: MemoryEntity(EventId.new().toString(), id.toString())
         // Source content remains intact; explicitly supplied people update only event links.
         content.upsertMemory(marker.copy(importance = input.importance, note = input.note.clean()))
-        replaceTags(id, input.tagNames)
+        input.tagNames?.let { replaceTags(id, it) }
         replacePeopleInTransaction(database, id, input.personIds)
         replacePlaceInTransaction(database, id, input.placeSelection)
         replacePhotosInTransaction(database, id, input.photos)

@@ -38,7 +38,7 @@ class MemoryPersistenceTest {
         val childId = database.lifeEvents().getDetails(id.toString())!!.memory!!.id
         assertEquals(EventType.MEMORY, original.event.type)
         assertEquals("Title", original.event.title)
-        assertEquals("A moment", original.memory!!.note)
+        assertEquals("A moment", original.event.note)
         assertEquals(1, memories.observe(range).first().size)
         assertTrue(runCatching { memories.create(id, input.copy(note = "Different")) }.isFailure)
         memories.update(id, input.copy(note = "Edited", importance = null, title = null, occurredAt = now.plusSeconds(86400)))

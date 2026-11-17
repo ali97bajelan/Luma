@@ -40,7 +40,11 @@ internal object FocusMetadataArchiveAdapter {
         schemaVersion: Int,
         sourceColumns: List<String>,
         currentColumns: List<String>,
-    ): List<String> = if (table == "focus_session" && schemaVersion in 7..11) currentColumns else sourceColumns
+    ): List<String> = when {
+        table == "focus_session" && schemaVersion in 7..11 -> currentColumns
+        table == "todo_task" -> currentColumns
+        else -> sourceColumns
+    }
 
     fun adaptRow(
         table: String,

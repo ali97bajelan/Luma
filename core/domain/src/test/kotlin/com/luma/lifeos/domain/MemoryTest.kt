@@ -10,6 +10,7 @@ class MemoryTest {
         assertTrue(runCatching { MemoryInput(" ", Instant.EPOCH) }.isFailure)
         assertTrue(runCatching { MemoryInput("Text", Instant.EPOCH, importance = 0) }.isFailure)
         assertTrue(runCatching { MemoryMarkerInput(importance = 6) }.isFailure)
+        assertNull(MemoryMarkerInput().tagNames)
         assertTrue(runCatching { MemoryDetails(importance = -1) }.isFailure)
         assertTrue(runCatching { MemoryInput("x".repeat(50_001), Instant.EPOCH) }.isFailure)
         assertTrue(runCatching { MemoryInput("Text", Instant.EPOCH, title = "x".repeat(201)) }.isFailure)
