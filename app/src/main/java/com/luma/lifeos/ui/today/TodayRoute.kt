@@ -188,14 +188,23 @@ fun TodayRoute(
                 (habitsDate != null && habitsState.date != habitsDate)) {
                 habitsState.copy(days = emptyList(), loadedDate = null, loading = true, error = null)
             } else habitsState
-            // The habit preview can follow its tracking-zone date; counts belong to the selected date.
-            val logCounts = remember(habits, date, retry, summaryRetry, habitsState.loading) {
-                habits.observeDay(date).map<List<HabitDay>, Int?> { days -> days.sumOf { it.count } }.catch { failure ->
-                    if (failure is CancellationException) throw failure
-                    emit(null)
+            // Reuse the preview observation when it already covers the selected date.
+            val habitLogCount = when {
+                displayedHabits.loadedDate == date ->
+                    displayedHabits.days.sumOf { it.day.count }
+                displayedHabits.loading -> null
+                else -> {
+                    val logCounts = remember(habits, date) {
+                        habits.observeDay(date).map<List<HabitDay>, Int?> { days -> days.sumOf { it.count } }
+                            .catch { failure ->
+                                if (failure is CancellationException) throw failure
+                                emit(null)
+                            }
+                    }
+                    val count by logCounts.collectAsStateWithLifecycle(initialValue = null)
+                    count
                 }
             }
-            val habitLogCount by logCounts.collectAsStateWithLifecycle(initialValue = null)
             LaunchedEffect(habitsDate, deviceDate, zone) { habitViewModel.selectDate(habitsDate, zone, deviceDate) }
             TodayScreen(date, zone, state, onSelectDate, onToday, onRetry = { retry++ },
                 onMoodClick = onMoodClick, onJournalClick = onJournalClick, onMemoryClick = onMemoryClick, heading = heading, screenTag = screenTag, onEventClick = onEventClick,

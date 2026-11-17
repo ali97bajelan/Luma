@@ -484,7 +484,7 @@ class RoomFocusRepository(
                 first.session.toDomain(joined.map { it.run.toDomain() })
             }
             focusStatistics(sessions, range)
-        }
+        }.flowOn(Dispatchers.Default)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeInsights(range: TimeRange?): Flow<FocusInsights> =

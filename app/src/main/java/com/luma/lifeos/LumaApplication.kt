@@ -223,12 +223,17 @@ class LumaApplication : Application() {
         getSharedPreferences("app_theme", MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(themePreferenceListener)
         applicationScope.launch {
+            var initialInvalidation = true
             storage.widgets.observeInvalidations().collect {
+                if (initialInvalidation) {
+                    // Room emits an initial snapshot on subscription; the Activity refreshes on start.
+                    initialInvalidation = false
+                    return@collect
+                }
                 WidgetRefreshCoordinator.request(this@LumaApplication)
                 enqueueReminderReconciliation(this@LumaApplication)
             }
         }
-        enqueueReminderReconciliation(this)
     }
 
     private fun scheduleVisibilityReconciliation() {

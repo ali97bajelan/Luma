@@ -408,7 +408,13 @@ interface TodoDao {
             SELECT parent_id, COUNT(*) AS child_total,
                 SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS child_completed
             FROM todo_task
-            WHERE parent_id IS NOT NULL
+            WHERE parent_id IN (
+                SELECT id FROM todo_task
+                WHERE completed_at IS NULL AND due_date <= :date
+                ORDER BY due_date ASC, CASE WHEN due_time_minutes IS NULL THEN 1 ELSE 0 END,
+                    due_time_minutes ASC, importance_code DESC, created_at ASC, id ASC
+                LIMIT :limit
+            )
             GROUP BY parent_id
         ) AS progress ON progress.parent_id = task.id
         ORDER BY task.due_date ASC, CASE WHEN task.due_time_minutes IS NULL THEN 1 ELSE 0 END,
