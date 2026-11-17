@@ -1,17 +1,15 @@
 package com.luma.lifeos.ui.todo
 
 import com.luma.lifeos.ui.common.LumaUi
-import com.luma.lifeos.ui.common.LumaOutlinedButton
+import com.luma.lifeos.ui.common.LumaButton
 import com.luma.lifeos.ui.common.TodoImportancePresentation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -329,15 +327,13 @@ fun TodayTasksCard(
             }
         }
         val addTaskLabel = stringResource(R.string.todo_list_add)
-        LumaOutlinedButton(
+        LumaButton(
             onClick = onAddTask,
-            shape = MaterialTheme.shapes.small,
             modifier = Modifier.fillMaxWidth()
+                .heightIn(min = LumaUi.MinTouchTargetHeight)
                 .semantics { contentDescription = addTaskLabel }
                 .testTag("today_tasks_add"),
         ) {
-            Text("+", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(LumaUi.RelatedGap))
             Text(addTaskLabel)
         }
     }
