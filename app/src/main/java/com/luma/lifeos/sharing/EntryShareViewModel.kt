@@ -52,7 +52,7 @@ class EntryShareViewModel(private val repository: TimelineRepository, private va
                 val snapshot = loadEntryShareSnapshot(repository, request, zone)
                 if (token != generation) return@launch
                 mutableState.value = if (snapshot == null) ShareStatus.Unavailable else {
-                    val options = EntryShareOptions()
+                    val options = EntryShareOptions(calendarSystem = context.calendarSystem)
                     ShareStatus.Ready(snapshot, options, formatEntryShare(snapshot, options, context), contextKey = contextKey)
                 }
             } catch (e: CancellationException) { throw e }

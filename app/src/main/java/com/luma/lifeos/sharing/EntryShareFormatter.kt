@@ -51,8 +51,8 @@ fun formatEntryShare(snapshot: EntryShareSnapshot, options: EntryShareOptions, c
         if (options.includeStress) mood.stress?.let { add("${context.stressHeading}: $it/5") }
     }
     val header = listOfNotNull(heading, if (options.includeDate) {
-        if (moodMode) context.formatMoodDateTime(event.occurredAt, snapshot.zone)
-        else context.formatDate(event.occurredAt, snapshot.zone)
+        if (moodMode) context.formatMoodDateTime(event.occurredAt, snapshot.zone, options.calendarSystem)
+        else context.formatDate(event.occurredAt, snapshot.zone, options.calendarSystem)
     } else null).joinToString("\n")
     return (listOf(header) + sections + "#Luma").joinToString("\n\n")
 }

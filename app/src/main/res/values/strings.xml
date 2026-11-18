@@ -1368,6 +1368,7 @@
     <string name="share_energy">Energy</string>
     <string name="share_stress">Stress</string>
     <string name="share_date">Date</string>
+    <string name="share_calendar_type">Calendar type</string>
     <string name="share_include_source">Include original entry content</string>
     <string name="share_source_explanation">Adds the original entry’s text to this share.</string>
     <string name="share_privacy_explanation">Names already written in text remain in the preview. You can edit the text before sharing.</string>

@@ -1,5 +1,6 @@
 package com.luma.lifeos.sharing
 
+import com.luma.lifeos.domain.calendar.CalendarSystem
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
@@ -15,16 +16,25 @@ data class EntryShareOptions(
     val includePeople: Boolean = false, val includePlace: Boolean = false,
     val includeEnergy: Boolean = false, val includeStress: Boolean = false,
     val includeSourceContent: Boolean = false,
+    val calendarSystem: CalendarSystem = CalendarSystem.GREGORIAN,
 )
 data class EntryShareSnapshot(val request: EntryShareRequest, val record: LifeEventRecord, val zone: ZoneId)
 data class EntryShareTextContext(
-    val locale: Locale, val memoryHeading: String, val feelingHeading: (String) -> String,
-    val emotionHeading: String, val noteHeading: String, val sourceHeading: String,
-    val peopleHeading: String, val placeHeading: String, val energyHeading: String,
-    val stressHeading: String, val scoreLabels: Map<Int, String>,
-    val formatDate: (Instant, ZoneId) -> String,
+    val locale: Locale,
+    val calendarSystem: CalendarSystem,
+    val memoryHeading: String,
+    val feelingHeading: (String) -> String,
+    val emotionHeading: String,
+    val noteHeading: String,
+    val sourceHeading: String,
+    val peopleHeading: String,
+    val placeHeading: String,
+    val energyHeading: String,
+    val stressHeading: String,
+    val scoreLabels: Map<Int, String>,
+    val formatDate: (Instant, ZoneId, CalendarSystem) -> String,
     val emotionName: (com.luma.lifeos.domain.model.Emotion) -> String = { it.name },
-    val formatMoodDateTime: (Instant, ZoneId) -> String = formatDate,
+    val formatMoodDateTime: (Instant, ZoneId, CalendarSystem) -> String = formatDate,
 )
 enum class EntryShareTextError { EMPTY, TOO_LARGE }
 

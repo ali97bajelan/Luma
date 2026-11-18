@@ -1369,6 +1369,7 @@
     <string name="share_energy">انرژی</string>
     <string name="share_stress">استرس</string>
     <string name="share_date">تاریخ</string>
+    <string name="share_calendar_type">نوع تقویم</string>
     <string name="share_include_source">گنجاندن متن اصلی</string>
     <string name="share_source_explanation">متن نوشته اصلی را به اشتراک اضافه می‌کند.</string>
     <string name="share_privacy_explanation">نام‌های نوشته‌شده در متن باقی می‌مانند. پیش از اشتراک می‌توانید متن را ویرایش کنید.</string>

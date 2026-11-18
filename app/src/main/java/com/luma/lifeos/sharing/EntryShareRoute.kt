@@ -30,8 +30,10 @@ import com.luma.lifeos.lock.AuthPurpose
 import com.luma.lifeos.lock.LockSensitiveOperationGuard
 import com.luma.lifeos.lock.OperationProof
 import com.luma.lifeos.lock.PendingSensitiveOperation
+import com.luma.lifeos.ui.calendar.CalendarSystemControl
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.DetailTopBar
+import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.ui.privacy.LockSensitiveActionDialog
 import com.luma.lifeos.ui.mood.moodScoreLabel
 import java.time.ZoneId
@@ -54,13 +56,36 @@ fun EntryShareRoute(
     val androidContext = LocalContext.current
     val policy = rememberDisplayTimePolicy()
     val labels = (1..5).associateWith { stringResource(moodScoreLabel(it)) }
-    val context = EntryShareTextContext(policy.locale, stringResource(R.string.share_memory),
-        { androidContext.getString(R.string.share_feeling, it) }, stringResource(R.string.share_emotions), stringResource(R.string.share_note),
-        stringResource(R.string.share_source), stringResource(R.string.share_people), stringResource(R.string.share_place),
-        stringResource(R.string.share_energy), stringResource(R.string.share_stress), labels,
-        { instant, displayZone -> policy.formatDate(instant.atZone(displayZone).toLocalDate(), FormatStyle.LONG) },
-        { emotion -> com.luma.lifeos.language.builtinEmotionResource(emotion.id, emotion.name)?.let { androidContext.getString(it) } ?: emotion.name },
-        { instant, displayZone -> policy.formatDateTime(instant.atZone(displayZone), FormatStyle.LONG) })
+    val context = EntryShareTextContext(
+        locale = policy.locale,
+        calendarSystem = policy.calendarSystem,
+        memoryHeading = stringResource(R.string.share_memory),
+        feelingHeading = { androidContext.getString(R.string.share_feeling, it) },
+        emotionHeading = stringResource(R.string.share_emotions),
+        noteHeading = stringResource(R.string.share_note),
+        sourceHeading = stringResource(R.string.share_source),
+        peopleHeading = stringResource(R.string.share_people),
+        placeHeading = stringResource(R.string.share_place),
+        energyHeading = stringResource(R.string.share_energy),
+        stressHeading = stringResource(R.string.share_stress),
+        scoreLabels = labels,
+        formatDate = { instant, displayZone, system ->
+            policy.copy(calendarSystem = system).formatDate(
+                instant.atZone(displayZone).toLocalDate(),
+                FormatStyle.LONG,
+            )
+        },
+        emotionName = { emotion ->
+            com.luma.lifeos.language.builtinEmotionResource(emotion.id, emotion.name)
+                ?.let { androidContext.getString(it) } ?: emotion.name
+        },
+        formatMoodDateTime = { instant, displayZone, system ->
+            policy.copy(calendarSystem = system).formatDateTime(
+                instant.atZone(displayZone),
+                FormatStyle.LONG,
+            )
+        },
+    )
     val key = "${policy.locale.toLanguageTag()}|${policy.use24Hour}|${policy.calendarSystem}"
     val factory = remember(repository, request) { viewModelFactory { initializer { EntryShareViewModel(repository, request) } } }
     val model: EntryShareViewModel = viewModel(factory = factory)
@@ -95,13 +120,13 @@ fun EntryShareRoute(
     Scaffold(topBar = { DetailTopBar(title = stringResource(R.string.share_preview), backTag = "share_back", onBack = onBack) },
         bottomBar = {
             val ready = state as? ShareStatus.Ready
-            if (ready != null) Column(Modifier.fillMaxWidth().imePadding().navigationBarsPadding().padding(16.dp)) {
+            if (ready != null) Column(Modifier.fillMaxWidth().imePadding().navigationBarsPadding().padding(LumaUi.SectionPadding)) {
                 if (ready.stale) LumaButton(onClick = { model.load(zone, context, key) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_refresh)) }
                 else LumaButton(onClick = ::requestShare, enabled = !ready.busy && ready.pendingOptions == null,
                     modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.share_action)) }
             }
         }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter), verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
             when (val s = state) {
                 ShareStatus.Loading -> CircularProgressIndicator()
                 ShareStatus.Unavailable -> AccessibleFeedback(stringResource(R.string.share_unavailable))
@@ -122,11 +147,25 @@ fun EntryShareRoute(
                     val enabled = !s.stale && !s.busy
                     @Composable fun Option(label: String, selected: Boolean, change: (Boolean) -> EntryShareOptions) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(label, Modifier.weight(1f).padding(vertical = 12.dp))
+                            Text(label, Modifier.weight(1f).padding(vertical = LumaUi.ChoiceGap))
                             Switch(selected, onCheckedChange = { model.option(change(it), context) }, enabled = enabled)
                         }
                     }
                     Option(stringResource(if (request.kind == EntryShareKind.MOOD) R.string.share_date_time else R.string.share_date), s.options.includeDate) { s.options.copy(includeDate = it) }
+                    if (s.options.includeDate) {
+                        Text(
+                            text = stringResource(R.string.share_calendar_type),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        CalendarSystemControl(
+                            system = s.options.calendarSystem,
+                            onSelect = { system ->
+                                model.option(s.options.copy(calendarSystem = system), context)
+                            },
+                            enabled = enabled,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                     Option(stringResource(R.string.share_note), s.options.includeNote) { s.options.copy(includeNote = it) }
                     if (record.people.isNotEmpty()) Option(stringResource(R.string.share_people), s.options.includePeople) { s.options.copy(includePeople = it) }
                     if (record.place != null) Option(stringResource(R.string.share_place), s.options.includePlace) { s.options.copy(includePlace = it) }
