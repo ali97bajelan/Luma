@@ -26,6 +26,7 @@ class PhotoDraftAccessRegistry(
         val epoch: Epoch,
         val parentToken: UUID?,
         val token: UUID,
+        val fallbackSections: Set<LockSection>?,
     )
     private data class AuthorizedScope(val registration: Registration, val sections: Set<LockSection>)
 
@@ -46,22 +47,41 @@ class PhotoDraftAccessRegistry(
         }
     }
 
-    /** Registers an editor or viewer lease only while the memory section is currently readable. */
-    fun open(leaseId: UUID, eventId: EventId?): AutoCloseable = open(leaseId, eventId, leaseId)
+    /** Registers a route lease while its memory section is currently readable. */
+    fun open(leaseId: UUID, eventId: EventId?): AutoCloseable = open(leaseId, eventId, leaseId, null)
+
+    /** Uses a saved source classification only when the original event no longer exists. */
+    fun open(leaseId: UUID, eventId: EventId?, fallbackSections: Set<LockSection>): AutoCloseable =
+        open(leaseId, eventId, leaseId, fallbackSections)
 
     /** Child staging/viewer leases share authorization with their owning memory editor lease. */
-    fun open(leaseId: UUID, eventId: EventId?, editorLeaseId: UUID): AutoCloseable {
+    fun open(leaseId: UUID, eventId: EventId?, editorLeaseId: UUID): AutoCloseable =
+        open(leaseId, eventId, editorLeaseId, null)
+
+    private fun open(
+        leaseId: UUID,
+        eventId: EventId?,
+        editorLeaseId: UUID,
+        requestedFallbackSections: Set<LockSection>?,
+    ): AutoCloseable {
         val editor = if (leaseId == editorLeaseId) null else currentRegistration(editorLeaseId)
         if (leaseId != editorLeaseId) check(
             editor != null && editor.editorLeaseId == editorLeaseId && editor.eventId == eventId,
         ) { "Memory editor photo scope is unavailable" }
+        val fallbackSections = requestedFallbackSections ?: editor?.fallbackSections
         val before = gateway.snapshot.value
         val beforeEpoch = epoch(before)
-        check(beforeEpoch != null && allowsMemories(before)) { "Memory photo access is unavailable" }
+        check(
+            beforeEpoch != null && allowsMemories(before) &&
+                (fallbackSections == null || allowsSections(before, fallbackSections + LockSection.MEMORIES)),
+        ) { "Memory photo access is unavailable" }
         val token = UUID.randomUUID()
         synchronized(lock) {
             val after = gateway.snapshot.value
-            check(epoch(after) == beforeEpoch && allowsMemories(after)) { "Memory photo access changed" }
+            check(
+                epoch(after) == beforeEpoch && allowsMemories(after) &&
+                    (fallbackSections == null || allowsSections(after, fallbackSections + LockSection.MEMORIES)),
+            ) { "Memory photo access changed" }
             if (editor != null) {
                 val currentEditor = registrations[editorLeaseId]
                 check(currentEditor?.token == editor.token && currentEditor.eventId == eventId) {
@@ -74,7 +94,9 @@ class PhotoDraftAccessRegistry(
                     child.editorLeaseId == leaseId && child.parentToken == previous.token
                 }
             }
-            registrations[leaseId] = Registration(leaseId, editorLeaseId, eventId, beforeEpoch, editor?.token, token)
+            registrations[leaseId] = Registration(
+                leaseId, editorLeaseId, eventId, beforeEpoch, editor?.token, token, fallbackSections,
+            )
         }
         return AutoCloseable {
             synchronized(lock) {
@@ -119,8 +141,8 @@ class PhotoDraftAccessRegistry(
         val registration = currentRegistration(leaseId) ?: return null
         val before = gateway.snapshot.value
         if (epoch(before) != registration.epoch || !allowsMemories(before)) return null
-        val parentSections = registration.eventId?.let { gateway.requiredSections(it) } ?:
-            if (registration.eventId == null) emptySet() else return null
+        val parentSections = if (registration.eventId == null) emptySet() else
+            gateway.requiredSections(registration.eventId) ?: registration.fallbackSections ?: return null
         val sections = parentSections + LockSection.MEMORIES
         val after = gateway.snapshot.value
         if (epoch(after) != registration.epoch || !gateway.sameAuthorizationEpoch(before, after) ||

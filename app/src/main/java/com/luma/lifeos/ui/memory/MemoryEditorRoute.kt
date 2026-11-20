@@ -155,6 +155,9 @@ fun MemoryEditorRoute(repository: MemoryRepository, eventId: EventId?, onCancel:
             )
         },
         onShare = onShare, shareEnabled = eventId != null && state.ready && !state.busy && !state.completed &&
-            !photoOperationActive && !state.hasChanges && !editor.hasPendingPhotoImport(),
-        photoOperationActive = photoOperationActive)
+            !photoOperationActive && !state.hasChanges &&
+            state.error !in setOf(MemoryEditorError.CONFLICT, MemoryEditorError.SOURCE_MISSING) &&
+            !editor.hasPendingPhotoImport(),
+        photoOperationActive = photoOperationActive,
+        onReloadLatest = editor::reloadLatest)
 }

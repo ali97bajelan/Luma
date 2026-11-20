@@ -61,9 +61,11 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
     onContextNote: (String) -> Unit = {}, onAddTag: (String) -> Boolean = { false },
     onRemoveTag: (String) -> Unit = {}, peopleContent: @Composable () -> Unit = {},
     placeContent: @Composable () -> Unit = {}, photosContent: @Composable () -> Unit = {},
-    onShare: (() -> Unit)? = null, shareEnabled: Boolean = false, photoOperationActive: Boolean = false) {
+    onShare: (() -> Unit)? = null, shareEnabled: Boolean = false, photoOperationActive: Boolean = false,
+    onReloadLatest: () -> Unit = {}) {
     var removing by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
+    var confirmingReload by rememberSaveable { mutableStateOf(false) }
     var tagText by rememberSaveable { mutableStateOf("") }
     var tagError by rememberSaveable { mutableStateOf(false) }
     var tagsExpanded by rememberSaveable { mutableStateOf(false) }
@@ -135,12 +137,16 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                 }
                 EditorActionRow(
                     secondaryAction = if (state.editing) { actionModifier ->
-                        LumaTextButton(enabled = enabled, onClick = { removing = true }, modifier = actionModifier.testTag("memory_remove")) {
+                        LumaTextButton(enabled = enabled &&
+                            state.error !in setOf(MemoryEditorError.CONFLICT, MemoryEditorError.SOURCE_MISSING),
+                            onClick = { removing = true }, modifier = actionModifier.testTag("memory_remove")) {
                             Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark))
                         }
                     } else null,
                     primaryAction = { actionModifier ->
-                        LumaPrimaryActionButton(enabled = enabled && (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
+                        LumaPrimaryActionButton(enabled = enabled &&
+                            state.error !in setOf(MemoryEditorError.CONFLICT, MemoryEditorError.SOURCE_MISSING) &&
+                            (!state.direct || state.draft.note.isNotBlank()), onClick = onSave,
                             modifier = actionModifier.testTag("memory_save")) {
                             Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                         }
@@ -160,6 +166,9 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         MemoryEditorError.TIME -> R.string.mood_time_error
                         MemoryEditorError.PHOTO -> R.string.photo_error
                         MemoryEditorError.TEXT -> R.string.memory_text_error
+                        MemoryEditorError.CONFLICT -> R.string.memory_conflict
+                        MemoryEditorError.SOURCE_MISSING -> R.string.memory_source_missing
+                        MemoryEditorError.ACCESS_BLOCKED -> R.string.memory_access_blocked
                     })
                     val showBodyError = when {
                         error == MemoryEditorError.SAVE || error == MemoryEditorError.REMOVE -> false
@@ -168,10 +177,28 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                         else -> true
                     }
                     if (showBodyError) AccessibleFeedback(message, Modifier.testTag("memory_error"))
-                    if (error == MemoryEditorError.LOAD) LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                    if (error == MemoryEditorError.LOAD || error == MemoryEditorError.ACCESS_BLOCKED) {
+                        LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)
+                            .testTag("memory_access_retry")) { Text(stringResource(R.string.retry)) }
+                    }
+                    if (error == MemoryEditorError.CONFLICT || error == MemoryEditorError.SOURCE_MISSING) LumaTextButton(
+                        onClick = { confirmingReload = true },
+                        enabled = !state.busy,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("memory_reload_latest"),
+                    ) { Text(stringResource(R.string.editor_reload_latest)) }
                 }
-                if (state.ready) CaptureTimestampRow(state.draft.occurredAtMillis, enabled && state.direct,
+                if (state.ready) {
+                    when {
+                        state.hasRestoredDraft ->
+                            AccessibleFeedback(stringResource(R.string.memory_draft_restored), isError = false,
+                                modifier = Modifier.testTag("memory_draft_status"))
+                        state.hasChanges ->
+                            AccessibleFeedback(stringResource(R.string.memory_draft_unsaved), isError = false,
+                                modifier = Modifier.testTag("memory_draft_status"))
+                    }
+                    CaptureTimestampRow(state.draft.occurredAtMillis, enabled && state.direct,
                     state.error == MemoryEditorError.TIME, onTime)
+                }
                 state.original?.let { original ->
                     LumaSectionSurface {
                         Text(stringResource(R.string.memory_original), style = MaterialTheme.typography.titleMedium,
@@ -330,6 +357,18 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
         confirmButton = { LumaDestructiveTextButton(onClick = { removing = false; onRemove() }, modifier = Modifier.testTag("memory_confirm_remove")) {
             Text(stringResource(if (state.direct) R.string.delete else R.string.memory_unmark)) } },
         dismissButton = { LumaTextButton(onClick = { removing = false }) { Text(stringResource(R.string.cancel)) } })
+    if (confirmingReload) LumaAlertDialog(
+        onDismissRequest = { confirmingReload = false },
+        title = { Text(stringResource(R.string.editor_reload_latest_title)) },
+        text = { Text(stringResource(R.string.memory_reload_latest_body)) },
+        confirmButton = {
+            LumaTextButton(onClick = { confirmingReload = false; onReloadLatest() },
+                modifier = Modifier.testTag("memory_confirm_reload")) {
+                Text(stringResource(R.string.editor_reload_latest))
+            }
+        },
+        dismissButton = { LumaTextButton(onClick = { confirmingReload = false }) { Text(stringResource(R.string.cancel)) } },
+    )
     if (discarding) LumaAlertDialog(onDismissRequest = { discarding = false },
         title = { Text(stringResource(R.string.mood_discard_title)) }, text = { Text(stringResource(R.string.mood_discard_body)) },
         confirmButton = { LumaTextButton(onClick = { discarding = false; onCancel() }) { Text(stringResource(R.string.discard)) } },

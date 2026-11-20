@@ -97,11 +97,14 @@ fun MoodEditorScreen(
     onRetryDraft: () -> Unit = {},
     onShare: (() -> Unit)? = null,
     shareEnabled: Boolean = false,
+    onReloadLatest: () -> Unit = {},
 ) {
     var more by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
+    var confirmingReload by rememberSaveable { mutableStateOf(false) }
     val enabled = state.ready && !state.busy && !state.completed
+    val writeBlocked = state.error in setOf(MoodEditorError.CONFLICT, MoodEditorError.SOURCE_MISSING)
     fun close() {
         if (state.busy) return
         if (state.hasChanges) discarding = true else onCancel()
@@ -135,14 +138,15 @@ fun MoodEditorScreen(
                     }
                     EditorActionRow(
                         secondaryAction = if (editing) { actionModifier ->
-                            LumaTextButton(enabled = enabled && state.draftDurable && !state.draftPersisting,
+                            LumaTextButton(enabled = enabled && !writeBlocked && state.draftDurable && !state.draftPersisting,
                                 onClick = { deleting = true }, modifier = actionModifier.testTag("mood_delete")) {
                                 Text(stringResource(if (state.deleteRecovery == MoodDeleteRecovery.STILL_PRESENT)
                                     R.string.mood_delete_retry else R.string.delete))
                             }
                         } else null,
                         primaryAction = { actionModifier ->
-                            LumaPrimaryActionButton(enabled = enabled && state.draft.score != null && state.draftDurable && !state.draftPersisting,
+                            LumaPrimaryActionButton(enabled = enabled && !writeBlocked && state.draft.score != null &&
+                                state.draftDurable && !state.draftPersisting,
                                 onClick = onSave, modifier = actionModifier.testTag("mood_save")) {
                                 Text(stringResource(if (state.busy) R.string.saving else R.string.save))
                             }
@@ -154,7 +158,7 @@ fun MoodEditorScreen(
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
             verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
-                val showRecoveryContent = !state.ready &&
+                val showRecoveryContent = !state.ready && state.error != MoodEditorError.ACCESS_BLOCKED &&
                     (state.hasRestoredDraft || state.deleteRecovery in setOf(
                         MoodDeleteRecovery.STATUS_UNKNOWN,
                         MoodDeleteRecovery.STILL_PRESENT,
@@ -176,6 +180,12 @@ fun MoodEditorScreen(
                 if (state.error == MoodEditorError.LOAD && !state.hasRestoredDraft) {
                     AccessibleFeedback(stringResource(R.string.mood_load_error), Modifier.testTag("mood_error"))
                     LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+                if (state.error == MoodEditorError.ACCESS_BLOCKED) {
+                    AccessibleFeedback(stringResource(R.string.mood_access_blocked), Modifier.testTag("mood_access_blocked"))
+                    LumaTextButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp).testTag("mood_access_retry")) {
                         Text(stringResource(R.string.retry))
                     }
                 }
@@ -225,6 +235,33 @@ fun MoodEditorScreen(
                         modifier = Modifier.fillMaxWidth().testTag("mood_note_recovery_preview"))
                 }
                 if (state.ready) {
+                    when {
+                        state.error == MoodEditorError.CONFLICT -> {
+                            AccessibleFeedback(stringResource(R.string.mood_conflict), Modifier.testTag("mood_conflict"))
+                            LumaTextButton(
+                                onClick = { confirmingReload = true },
+                                enabled = !state.busy,
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("mood_reload_latest"),
+                            ) { Text(stringResource(R.string.editor_reload_latest)) }
+                        }
+                        state.error == MoodEditorError.SOURCE_MISSING -> {
+                            AccessibleFeedback(stringResource(R.string.mood_source_missing), Modifier.testTag("mood_source_missing"))
+                            LumaTextButton(
+                                onClick = { confirmingReload = true },
+                                enabled = !state.busy,
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("mood_reload_latest"),
+                            ) { Text(stringResource(R.string.editor_reload_latest)) }
+                        }
+                        state.draftPersisting ->
+                            AccessibleFeedback(stringResource(R.string.mood_draft_saving), isError = false,
+                                modifier = Modifier.testTag("mood_draft_status"))
+                        state.hasRestoredDraft ->
+                            AccessibleFeedback(stringResource(R.string.mood_draft_restored), isError = false,
+                                modifier = Modifier.testTag("mood_draft_status"))
+                        state.hasChanges && state.draftDurable ->
+                            AccessibleFeedback(stringResource(R.string.mood_draft_saved_locally), isError = false,
+                                modifier = Modifier.testTag("mood_draft_status"))
+                    }
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.GroupGap)) {
                         CaptureTimestampRow(state.draft.occurredAtMillis, enabled, state.error == MoodEditorError.TIME, onTime)
                         Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
@@ -364,6 +401,18 @@ fun MoodEditorScreen(
         confirmButton = { LumaDestructiveTextButton(onClick = { deleting = false; onDelete() }, modifier = Modifier.testTag("mood_confirm_delete")) {
             Text(stringResource(R.string.delete)) } },
         dismissButton = { LumaTextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } },
+    )
+    if (confirmingReload) LumaAlertDialog(
+        onDismissRequest = { confirmingReload = false },
+        title = { Text(stringResource(R.string.editor_reload_latest_title)) },
+        text = { Text(stringResource(R.string.mood_reload_latest_body)) },
+        confirmButton = {
+            LumaTextButton(onClick = { confirmingReload = false; onReloadLatest() },
+                modifier = Modifier.testTag("mood_confirm_reload")) {
+                Text(stringResource(R.string.editor_reload_latest))
+            }
+        },
+        dismissButton = { LumaTextButton(onClick = { confirmingReload = false }) { Text(stringResource(R.string.cancel)) } },
     )
     if (discarding) LumaAlertDialog(
         onDismissRequest = { discarding = false },

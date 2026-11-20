@@ -115,17 +115,17 @@ internal class PhotoDraftSession(
 }
 
 /** Saved state contains compact references and metadata, never image bytes or Bitmap objects. */
-internal fun SavedStateHandle.savePhotos(photos: List<PhotoAttachment>) {
+internal fun SavedStateHandle.savePhotos(photos: List<PhotoAttachment>, key: String = "photos") {
     fun encode(value: String) = Base64.getEncoder().encodeToString(value.toByteArray(Charsets.UTF_8))
-    this["photos"] = ArrayList(photos.map { photo ->
+    this[key] = ArrayList(photos.map { photo ->
         val meta = photo.metadata
         listOf(photo.id.toString(), encode(photo.relativePath), meta?.let { encode(it.mimeType) }.orEmpty(),
             meta?.byteCount?.toString().orEmpty(), meta?.width?.toString().orEmpty(), meta?.height?.toString().orEmpty()).joinToString("|")
     })
 }
-internal fun SavedStateHandle.readPhotos(): List<PhotoAttachment> {
+internal fun SavedStateHandle.readPhotos(key: String = "photos"): List<PhotoAttachment> {
     fun decode(value: String) = String(Base64.getDecoder().decode(value), Charsets.UTF_8)
-    return get<ArrayList<String>>("photos").orEmpty().map { value ->
+    return get<ArrayList<String>>(key).orEmpty().map { value ->
         val fields = value.split('|')
         require(fields.size == 6)
         val meta = if (fields[2].isEmpty()) null else PhotoMetadata(decode(fields[2]), fields[3].toLong(), fields[4].toInt(), fields[5].toInt())

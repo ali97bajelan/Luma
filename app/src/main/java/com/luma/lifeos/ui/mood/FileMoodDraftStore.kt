@@ -2,6 +2,8 @@ package com.luma.lifeos.ui.mood
 
 import android.content.Context
 import android.util.AtomicFile
+import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.model.EventEditorBaseline
 import com.luma.lifeos.domain.model.EventId
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -70,16 +72,35 @@ class FileMoodDraftStore(context: Context) : MoodDraftStore {
             output.writeUTF(it.eventId.toString())
             output.writeBoolean(it.deleted)
         }
+        output.writeBoolean(snapshot.baselineDraft != null)
+        snapshot.baselineDraft?.let { writeDraft(output, it) }
+        output.writeBoolean(snapshot.baseline != null)
+        snapshot.baseline?.let { baseline ->
+            output.writeLong(baseline.updatedAtMillis)
+            output.writeInt(baseline.requiredSections.size)
+            baseline.requiredSections.sortedBy { it.name }.forEach { output.writeUTF(it.name) }
+        }
     }
 
     private fun readSnapshot(input: DataInputStream): MoodDraftSnapshot {
         require(input.readInt() == MAGIC) { "Invalid Mood draft file" }
-        require(input.readInt() == VERSION) { "Unsupported Mood draft file version" }
+        val version = input.readInt()
+        require(version in 1..VERSION) { "Unsupported Mood draft file version" }
         val revision = input.readLong()
         val draft = readDraft(input)
         val pendingDelete = input.readNullableString()?.let(EventId::parse)
         val completion = if (input.readBoolean()) MoodDraftCompletion(EventId.parse(input.readUTF()), input.readBoolean()) else null
-        return MoodDraftSnapshot(draft, revision, pendingDelete, completion)
+        val baselineDraft = if (version >= 2 && input.readBoolean()) readDraft(input) else null
+        val baseline = if (version >= 2 && input.readBoolean()) {
+            val updatedAtMillis = input.readLong()
+            val count = input.readInt()
+            require(count in 0..MAX_SET_SIZE) { "Invalid Mood draft access sections" }
+            val sections = buildSet(count) {
+                repeat(count) { add(LockSection.valueOf(input.readUTF())) }
+            }
+            EventEditorBaseline(updatedAtMillis, sections)
+        } else null
+        return MoodDraftSnapshot(draft, revision, pendingDelete, completion, baselineDraft, baseline)
     }
 
     private fun writeDraft(output: DataOutputStream, draft: MoodDraft) {
@@ -145,7 +166,7 @@ class FileMoodDraftStore(context: Context) : MoodDraftStore {
 
     private companion object {
         const val MAGIC = 0x4D4F4F44
-        const val VERSION = 1
+        const val VERSION = 2
         const val MAX_SET_SIZE = 10_000
     }
 }

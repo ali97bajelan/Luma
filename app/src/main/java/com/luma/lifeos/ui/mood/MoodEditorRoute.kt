@@ -168,5 +168,8 @@ fun MoodEditorRoute(repository: MoodRepository, eventId: EventId?, onCancel: () 
         placeContent = {
             PlacePicker(places, state.draft.placeId, state.ready && !state.busy && !state.completed,
                 editor::setPlace, { placeFeedback = null; onCreatePlace() }, placeFeedbackText, placeFeedback?.isError == true)
-        }, onShare = onShare, shareEnabled = eventId != null && state.ready && !state.busy && !state.completed && !state.hasChanges && !state.draftPersisting && state.draftDurable)
+        }, onShare = onShare, shareEnabled = eventId != null && state.ready && !state.busy && !state.completed &&
+            !state.hasChanges && state.error !in setOf(MoodEditorError.CONFLICT, MoodEditorError.SOURCE_MISSING) &&
+            !state.draftPersisting && state.draftDurable,
+        onReloadLatest = editor::reloadLatest)
 }

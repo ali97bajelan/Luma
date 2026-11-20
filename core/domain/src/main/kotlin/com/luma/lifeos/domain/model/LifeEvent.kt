@@ -1,9 +1,17 @@
 package com.luma.lifeos.domain.model
 
+import com.luma.lifeos.domain.lock.LockSection
 import java.time.Instant
 
 enum class EventType { MOOD, JOURNAL, MEMORY, ACTIVITY, APP_USAGE }
 enum class EventSource { MANUAL, HEALTH_CONNECT, USAGE_STATS }
+
+data class EventEditorBaseline(
+    val updatedAtMillis: Long,
+    val requiredSections: Set<LockSection>,
+)
+
+enum class EditorWriteResult { SAVED, STALE, MISSING }
 
 /** An import's stable upstream identity, used to make retrying a sync safe. */
 data class SourceIdentity(val source: EventSource, val reference: String) {

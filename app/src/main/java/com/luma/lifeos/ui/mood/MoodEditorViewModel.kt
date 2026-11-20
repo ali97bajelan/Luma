@@ -3,6 +3,9 @@ package com.luma.lifeos.ui.mood
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.luma.lifeos.domain.lock.ProtectedRecordClassifier
+import com.luma.lifeos.domain.model.EditorWriteResult
+import com.luma.lifeos.domain.model.EventEditorBaseline
 import com.luma.lifeos.domain.model.Emotion
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.LifeEventRecord
@@ -38,7 +41,7 @@ data class MoodDraft(
     val placeId: UUID? = null,
 )
 
-enum class MoodEditorError { LOAD, SAVE, DELETE, DELETE_PREPARATION, DELETE_STATUS, TIME, DRAFT_STORAGE }
+enum class MoodEditorError { LOAD, SAVE, DELETE, DELETE_PREPARATION, DELETE_STATUS, TIME, DRAFT_STORAGE, CONFLICT, SOURCE_MISSING, ACCESS_BLOCKED }
 
 enum class MoodDeleteRecovery {
     NONE, CHECKING, STATUS_UNKNOWN, STILL_PRESENT, PREPARATION_FAILED, COMPLETION_PENDING, INTENT_MISMATCH,
@@ -80,6 +83,7 @@ class MoodEditorViewModel(
         runCatching { UUID.fromString(value) }.getOrNull()
     } ?: UUID.randomUUID().also { saved[DRAFT_ID] = it.toString() }
     private var baseline = MoodDraft(initialTime)
+    private var baselineToken: EventEditorBaseline? = null
     private var editingId: EventId? = eventId
     private var loadingJob: Job? = null
     private var draftSnapshot: MoodDraftSnapshot? = null
@@ -105,6 +109,7 @@ class MoodEditorViewModel(
             var checkingDeleteStatus = false
             try {
                 var snapshot = draftStore.read(draftId)
+                val restoredDraft = snapshot != null || saved.get<Boolean>(HAS_DRAFT) == true
                 draftSnapshot = snapshot
                 draftRevision = snapshot?.revision ?: 0L
                 if (snapshot?.completion != null) {
@@ -119,7 +124,7 @@ class MoodEditorViewModel(
                     writeSnapshot(snapshot)
                     draftSnapshot = snapshot
                     draftRevision = snapshot.revision
-                    clearLegacyDraft()
+                    if (draftStore !is SavedStateMoodDraftStore) clearLegacyDraft()
                     restoreCompletion(completion, snapshot.draft)
                     return@launch
                 }
@@ -130,7 +135,7 @@ class MoodEditorViewModel(
                     writeSnapshot(snapshot)
                     draftSnapshot = snapshot
                     draftRevision = snapshot.revision
-                    clearLegacyDraft()
+                    if (draftStore !is SavedStateMoodDraftStore) clearLegacyDraft()
                 }
                 storageFailure = false
 
@@ -162,26 +167,74 @@ class MoodEditorViewModel(
 
                 repository.prepareEmotions()
                 val emotions = repository.observeEmotions().first()
-                val record = pendingDeleteRecord ?: repository.get(eventId ?: captureId)
-                if (eventId != null && pendingDelete == null) requireNotNull(record) { "Check-in unavailable" }
-                baseline = if (record == null) MoodDraft(initialTime) else {
-                    require(record.event.isEditable && record.mood != null)
-                    record.toDraft().also { require(it.personIds.size <= PersonTextLimits.SELECTION) }
+                val loadedRecord = pendingDeleteRecord ?: repository.get(eventId ?: captureId)
+                val sourceRecord = loadedRecord.takeIf { eventId != null }
+                if (eventId != null && sourceRecord == null && snapshot == null) {
+                    throw IllegalArgumentException("Check-in unavailable")
                 }
-                editingId = record?.event?.id ?: editingId
+                sourceRecord?.let { record ->
+                    require(record.event.isEditable && record.mood != null)
+                    require(record.people.size <= PersonTextLimits.SELECTION)
+                }
+                if (eventId != null && sourceRecord == null &&
+                    !canReadBaseline(snapshot?.baseline ?: EventEditorBaseline(0L, emptySet()))
+                ) {
+                    mutableState.value = state.value.copy(
+                        draft = snapshot?.draft ?: state.value.draft,
+                        loading = false,
+                        ready = false,
+                        error = MoodEditorError.ACCESS_BLOCKED,
+                        hasRestoredDraft = restoredDraft,
+                    )
+                    return@launch
+                }
+                baseline = if (eventId == null) MoodDraft(initialTime)
+                    else snapshot?.baselineDraft ?: sourceRecord?.toDraft() ?: snapshot?.draft ?: MoodDraft(initialTime)
+                baselineToken = if (eventId == null) null else snapshot?.baseline ?: sourceRecord?.toEditorBaseline()
+                editingId = eventId
                 val draft = snapshot?.draft ?: baseline
+                val baselineConflict = sourceRecord != null && snapshot?.baseline != null &&
+                    snapshot.baseline.updatedAtMillis != sourceRecord.event.updatedAt.toEpochMilli()
+                val sourceMissing = eventId != null && sourceRecord == null
                 if (snapshot == null) {
-                    val initialSnapshot = MoodDraftSnapshot(draft, 1L)
+                    val initialSnapshot = MoodDraftSnapshot(
+                        draft, 1L, baselineDraft = baseline, baseline = baselineToken,
+                    )
                     mutableState.value = state.value.copy(draft = draft)
                     storageFailure = true
                     writeSnapshot(initialSnapshot)
-                    draftSnapshot = initialSnapshot
                     draftRevision = initialSnapshot.revision
                     storageFailure = false
+                } else if (snapshot.baselineDraft == null ||
+                    (eventId != null && snapshot.baseline == null && sourceRecord != null)
+                ) {
+                    val updatedSnapshot = snapshot.copy(
+                        revision = snapshot.revision + 1L,
+                        baselineDraft = baseline,
+                        baseline = baselineToken,
+                    )
+                    storageFailure = true
+                    writeSnapshot(updatedSnapshot)
+                    snapshot = updatedSnapshot
+                    storageFailure = false
                 }
-                mutableState.value = state.value.copy(draft = draft, emotions = emotions, loading = false,
-                    ready = true, error = null, hasChanges = draft != baseline, draftPersisting = false,
-                    draftDurable = true, draftStorageError = false, editing = editingId != null)
+                mutableState.value = state.value.copy(
+                    draft = draft,
+                    emotions = emotions,
+                    loading = false,
+                    ready = true,
+                    error = when {
+                        sourceMissing -> MoodEditorError.SOURCE_MISSING
+                        baselineConflict -> MoodEditorError.CONFLICT
+                        else -> null
+                    },
+                    hasChanges = draft != baseline,
+                    draftPersisting = false,
+                    draftDurable = true,
+                    draftStorageError = false,
+                    editing = eventId != null,
+                    hasRestoredDraft = restoredDraft,
+                )
                 saved[DIRTY] = draft != baseline
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
@@ -224,14 +277,18 @@ class MoodEditorViewModel(
             change { it.copy(occurredAtMillis = instant.toEpochMilli()) }
             true
         } catch (_: IllegalArgumentException) {
-            mutableState.value = state.value.copy(error = MoodEditorError.TIME)
+            mutableState.value = state.value.copy(error = state.value.error.takeIf {
+                it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING
+            } ?: MoodEditorError.TIME)
             false
         }
     }
 
     fun save() {
         val current = state.value
-        if (!current.ready || current.busy || current.completed || current.draft.score == null) return
+        if (!current.ready || current.busy || current.completed || current.draft.score == null ||
+            current.error in setOf(MoodEditorError.CONFLICT, MoodEditorError.SOURCE_MISSING)
+        ) return
         if (!current.draftDurable) {
             mutableState.value = current.copy(error = MoodEditorError.DRAFT_STORAGE, draftStorageError = true)
             return
@@ -242,13 +299,24 @@ class MoodEditorViewModel(
         mutableState.value = current.copy(busy = true, error = null)
         viewModelScope.launch {
             try {
-                val recoveredId = editingId ?: repository.get(captureId)?.event?.id
-                val committedId = if (recoveredId == null) repository.create(captureId, input) else {
-                    editingId = recoveredId
-                    repository.update(recoveredId, input)
-                    recoveredId
+                if (eventId == null) {
+                    val committedId = repository.create(captureId, input)
+                    persistCompletion(MoodDraftCompletion(committedId, deleted = false))
+                } else {
+                    val baseline = baselineToken
+                    if (baseline == null) {
+                        mutableState.value = state.value.copy(busy = false, error = MoodEditorError.SOURCE_MISSING)
+                        return@launch
+                    }
+                    when (repository.updateIfUnchanged(eventId, baseline, input)) {
+                        EditorWriteResult.SAVED ->
+                            persistCompletion(MoodDraftCompletion(eventId, deleted = false))
+                        EditorWriteResult.STALE ->
+                            mutableState.value = state.value.copy(busy = false, error = MoodEditorError.CONFLICT)
+                        EditorWriteResult.MISSING ->
+                            mutableState.value = state.value.copy(busy = false, error = MoodEditorError.SOURCE_MISSING)
+                    }
                 }
-                persistCompletion(MoodDraftCompletion(committedId, deleted = false))
             } catch (failure: Exception) {
                 if (failure is CancellationException) {
                     mutableState.value = state.value.copy(busy = false)
@@ -259,10 +327,59 @@ class MoodEditorViewModel(
         }
     }
 
+    fun reloadLatest() {
+        val current = state.value
+        val id = eventId ?: return
+        if (!current.ready || current.busy ||
+            current.error !in setOf(MoodEditorError.CONFLICT, MoodEditorError.SOURCE_MISSING)
+        ) return
+        mutableState.value = current.copy(busy = true)
+        viewModelScope.launch {
+            try {
+                val record = repository.get(id)
+                if (record == null) {
+                    mutableState.value = state.value.copy(busy = false, error = MoodEditorError.SOURCE_MISSING)
+                    return@launch
+                }
+                require(record.event.isEditable && record.mood != null)
+                val latest = record.toDraft()
+                require(latest.personIds.size <= PersonTextLimits.SELECTION)
+                val latestBaseline = record.toEditorBaseline()
+                val revision = maxOf(draftRevision, draftSnapshot?.revision ?: 0L) + 1L
+                val snapshot = nextSnapshot(latest, revision).copy(
+                    baselineDraft = latest,
+                    baseline = latestBaseline,
+                )
+                writeSnapshot(snapshot)
+                baseline = latest
+                baselineToken = latestBaseline
+                saved[DIRTY] = false
+                mutableState.value = state.value.copy(
+                    draft = latest,
+                    busy = false,
+                    hasChanges = false,
+                    error = null,
+                    draftPersisting = false,
+                    draftDurable = true,
+                    draftStorageError = false,
+                    hasRestoredDraft = false,
+                )
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.value = state.value.copy(busy = false,
+                    error = state.value.error.takeIf {
+                        it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING
+                    } ?: MoodEditorError.DRAFT_STORAGE,
+                    draftStorageError = true)
+            }
+        }
+    }
+
     fun delete() {
         val id = editingId ?: return
         val current = state.value
-        if (!current.ready || current.busy || current.completed || pendingCompletion != null || !current.draftDurable) return
+        if (!current.ready || current.busy || current.completed || pendingCompletion != null || !current.draftDurable ||
+            current.error in setOf(MoodEditorError.CONFLICT, MoodEditorError.SOURCE_MISSING)) return
         mutableState.value = current.copy(busy = true, error = null, deleteRecovery = MoodDeleteRecovery.NONE)
         viewModelScope.launch {
             val marker = nextSnapshot(current.draft).copy(pendingDeleteId = id, completion = null)
@@ -323,19 +440,25 @@ class MoodEditorViewModel(
         val revision = maxOf(draftRevision, draftSnapshot?.revision ?: 0L) + 1L
         draftRevision = revision
         val snapshot = nextSnapshot(draft, revision)
-        mutableState.value = current.copy(draft = draft, error = null, noteLimitError = false,
-            hasChanges = draft != baseline, draftPersisting = true, draftDurable = false,
-            draftStorageError = false)
+        mutableState.value = current.copy(draft = draft,
+            error = current.error.takeIf { it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING },
+            noteLimitError = false, hasChanges = draft != baseline, draftPersisting = true,
+            draftDurable = false, draftStorageError = false)
         viewModelScope.launch {
             try {
                 writeSnapshot(snapshot)
                 if (revision == draftRevision) mutableState.value = state.value.copy(
-                    draftPersisting = false, draftDurable = true, draftStorageError = false, error = null)
+                    draftPersisting = false, draftDurable = true, draftStorageError = false,
+                    error = state.value.error.takeIf {
+                        it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING
+                    })
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 if (revision == draftRevision) mutableState.value = state.value.copy(
                     draftPersisting = false, draftDurable = false, draftStorageError = true,
-                    error = MoodEditorError.DRAFT_STORAGE)
+                    error = state.value.error.takeIf {
+                        it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING
+                    } ?: MoodEditorError.DRAFT_STORAGE)
             }
         }
     }
@@ -345,6 +468,8 @@ class MoodEditorViewModel(
             draft = draft,
             revision = revision,
             completion = null,
+            baselineDraft = baseline,
+            baseline = baselineToken,
         )
 
     private suspend fun writeSnapshot(snapshot: MoodDraftSnapshot) {
@@ -449,17 +574,21 @@ class MoodEditorViewModel(
         val revision = maxOf(draftRevision, draftSnapshot?.revision ?: 0L) + 1L
         draftRevision = revision
         val snapshot = nextSnapshot(current.draft, revision)
-        mutableState.value = current.copy(error = null, draftPersisting = true, draftDurable = false,
-            draftStorageError = false)
+        mutableState.value = current.copy(error = current.error.takeIf {
+            it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING
+        }, draftPersisting = true, draftDurable = false, draftStorageError = false)
         return try {
             writeSnapshot(snapshot)
-            mutableState.value = state.value.copy(error = null, draftPersisting = false,
-                draftDurable = true, draftStorageError = false)
+            mutableState.value = state.value.copy(error = state.value.error.takeIf {
+                it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING
+            }, draftPersisting = false, draftDurable = true, draftStorageError = false)
             true
         } catch (failure: Exception) {
             if (failure is CancellationException) throw failure
-            mutableState.value = state.value.copy(error = MoodEditorError.DRAFT_STORAGE,
-                draftPersisting = false, draftDurable = false, draftStorageError = true)
+            mutableState.value = state.value.copy(error = state.value.error.takeIf {
+                it == MoodEditorError.CONFLICT || it == MoodEditorError.SOURCE_MISSING
+            } ?: MoodEditorError.DRAFT_STORAGE, draftPersisting = false, draftDurable = false,
+                draftStorageError = true)
             false
         }
     }
@@ -487,6 +616,18 @@ class MoodEditorViewModel(
         return MoodDraft(event.occurredAt.toEpochMilli(), details.score, details.emotions.map { it.id }.toSet(),
             details.energy, details.stress, details.note.orEmpty(), people.map { it.id }.toSet(), place?.id)
     }
+
+    private suspend fun canReadBaseline(baseline: EventEditorBaseline): Boolean = try {
+        repository.canReadEditorBaseline(baseline)
+    } catch (failure: Exception) {
+        if (failure is CancellationException) throw failure
+        false
+    }
+
+    private fun LifeEventRecord.toEditorBaseline() = EventEditorBaseline(
+        updatedAtMillis = event.updatedAt.toEpochMilli(),
+        requiredSections = ProtectedRecordClassifier.requiredSections(this),
+    )
 
     private companion object {
         const val INITIAL_TIME = "initial_time"

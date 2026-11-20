@@ -7,6 +7,8 @@ import com.luma.lifeos.data.entity.EventWithDetails
 import com.luma.lifeos.data.entity.MoodEmotionEntity
 import com.luma.lifeos.data.entity.MoodEntryEntity
 import com.luma.lifeos.data.mapping.toRecord
+import com.luma.lifeos.domain.model.EditorWriteResult
+import com.luma.lifeos.domain.model.EventEditorBaseline
 import com.luma.lifeos.domain.model.Emotion
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
@@ -74,6 +76,22 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
 
     override suspend fun update(id: EventId, input: MoodInput) = database.withTransaction {
         val previous = editable(requireNotNull(database.lifeEvents().getDetails(id.toString())) { "Check-in was deleted" })
+        updateInTransaction(previous, input)
+    }
+
+    override suspend fun updateIfUnchanged(
+        id: EventId,
+        baseline: EventEditorBaseline,
+        input: MoodInput,
+    ): EditorWriteResult = database.withTransaction {
+        val row = database.lifeEvents().getDetails(id.toString()) ?: return@withTransaction EditorWriteResult.MISSING
+        val previous = editable(row)
+        if (previous.event.updatedAt != baseline.updatedAtMillis) return@withTransaction EditorWriteResult.STALE
+        updateInTransaction(row, input)
+        EditorWriteResult.SAVED
+    }
+
+    private suspend fun updateInTransaction(previous: EventWithDetails, input: MoodInput) {
         val record = previous.toRecord()
         val previousNote = record.mood?.note.orEmpty()
         require(MoodNotePolicy.canAcceptMoodNote(previousNote, input.note.orEmpty())) {
@@ -81,13 +99,13 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
         }
         val note = input.note.cleanNote()
         envelopes.upsertInTransaction(record.event.copy(occurredAt = input.occurredAt, endedAt = null,
-            updatedAt = maxOf(clock.instant(), record.event.updatedAt), note = note))
+            updatedAt = nextUpdatedAt(record.event.updatedAt), note = note))
         // Targeted updates preserve memory markers, media, metadata, and all unrelated links.
         val entry = requireNotNull(previous.mood).entry
         content.updateMood(entry.copy(moodScore = input.score, energy = input.energy, stress = input.stress, note = note))
         replaceEmotions(entry.id, input)
-        replacePeopleInTransaction(database, id, input.personIds)
-        replacePlaceInTransaction(database, id, input.placeSelection)
+        replacePeopleInTransaction(database, record.event.id, input.personIds)
+        replacePlaceInTransaction(database, record.event.id, input.placeSelection)
         database.derived().invalidateSummaries()
     }
 
@@ -109,6 +127,10 @@ class RoomMoodRepository(private val database: LumaDatabase, private val clock: 
         }
         return record
     }
+
+    private fun nextUpdatedAt(previous: java.time.Instant): java.time.Instant = java.time.Instant.ofEpochMilli(
+        maxOf(clock.millis(), Math.addExact(previous.toEpochMilli(), 1L)),
+    )
 
     private fun String?.cleanNote(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 }

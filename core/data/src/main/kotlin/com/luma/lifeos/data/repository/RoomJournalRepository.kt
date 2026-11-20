@@ -55,7 +55,9 @@ class RoomJournalRepository(private val database: LumaDatabase, private val cloc
         val event = previous.toRecord().event
         val title = input.title.cleanTitle()
         envelopes.upsertInTransaction(event.copy(occurredAt = input.occurredAt, endedAt = null,
-            updatedAt = maxOf(clock.instant(), event.updatedAt), title = title))
+            updatedAt = java.time.Instant.ofEpochMilli(
+                maxOf(clock.millis(), Math.addExact(event.updatedAt.toEpochMilli(), 1L)),
+            ), title = title))
         content.updateJournal(requireNotNull(previous.journal).copy(body = input.body, title = title))
         replaceTags(id, input.tagNames)
         replacePeopleInTransaction(database, id, input.personIds)

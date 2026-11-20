@@ -2,6 +2,10 @@ package com.luma.lifeos.ui.memory
 
 import androidx.lifecycle.SavedStateHandle
 import com.luma.lifeos.ui.photos.*
+import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.lock.ProtectedRecordClassifier
+import com.luma.lifeos.domain.model.EditorWriteResult
+import com.luma.lifeos.domain.model.EventEditorBaseline
 import com.luma.lifeos.domain.repository.PhotoRepository
 import com.luma.lifeos.domain.model.PhotoAttachment
 import com.luma.lifeos.domain.model.validatePhotos
@@ -28,8 +32,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 data class MemoryDraft(val occurredAtMillis: Long, val title: String = "", val note: String = "", val importance: Int? = null, val personIds: Set<UUID> = emptySet(), val placeId: UUID? = null, val photos: List<PhotoAttachment> = emptyList(), val tagNames: Set<String> = emptySet(), val contextNote: String = "")
-enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT, PHOTO }
+enum class MemoryEditorError { LOAD, SAVE, REMOVE, TIME, TEXT, PHOTO, CONFLICT, SOURCE_MISSING, ACCESS_BLOCKED }
 enum class MemoryTextField { TITLE, NOTE, CONTEXT_NOTE }
+private data class MemorySavedBaseline(
+    val draft: MemoryDraft,
+    val token: EventEditorBaseline?,
+    val direct: Boolean,
+    val editing: Boolean,
+)
 data class MemoryEditorState(
     val draft: MemoryDraft,
     val original: LifeEventRecord? = null,
@@ -44,6 +54,7 @@ data class MemoryEditorState(
     val error: MemoryEditorError? = null,
     val textErrors: Set<MemoryTextField> = emptySet(),
     val tags: List<Tag> = emptyList(),
+    val hasRestoredDraft: Boolean = false,
 )
 
 class MemoryEditorViewModel(private val repository: MemoryRepository, private val eventId: EventId?,
@@ -59,13 +70,15 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     private val photoViewerAccess = mutableMapOf<UUID, AutoCloseable>()
     private val photoViewerLeaseLocks = mutableMapOf<UUID, Mutex>()
     private var baseline = MemoryDraft(initialTime)
+    private var baselineToken: EventEditorBaseline? = null
     private var editingId: EventId? = eventId
     val resultEventId: EventId get() = editingId ?: eventId ?: captureId
     private var loadingJob: Job? = null
     private val mutableState = MutableStateFlow(MemoryEditorState(readDraft(), direct = saved["direct"] ?: true,
         completed = saved["completed"] ?: false, removed = saved["removed"] ?: false,
         hasChanges = saved.get<Boolean>("dirty") ?: (saved.get<Boolean>("has_draft") == true),
-        textErrors = readTextErrors()))
+        textErrors = readTextErrors(),
+        hasRestoredDraft = saved.get<Boolean>("dirty") == true))
     val state = mutableState.asStateFlow()
 
     private val photoSession = PhotoDraftSession(photoRepository, saved, viewModelScope, captureId.value,
@@ -76,8 +89,13 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
             if (photos != state.value.draft.photos) saved["pending_remove"] = null
             val draft = state.value.draft.copy(photos = photos)
             persist(draft)
-            mutableState.value = state.value.copy(draft = draft, hasChanges = draft != baseline, error = null)
-        }, error = { mutableState.value = state.value.copy(error = MemoryEditorError.PHOTO) })
+            mutableState.value = state.value.copy(draft = draft, hasChanges = draft != baseline,
+                error = state.value.error.takeIf { it == MemoryEditorError.CONFLICT || it == MemoryEditorError.SOURCE_MISSING })
+        }, error = {
+            mutableState.value = state.value.copy(error = state.value.error.takeIf {
+                it == MemoryEditorError.CONFLICT || it == MemoryEditorError.SOURCE_MISSING
+            } ?: MemoryEditorError.PHOTO)
+        })
 
     private val photoEditSession = MemoryPhotoEditSession(
         repository = photoRepository,
@@ -92,7 +110,11 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         },
         openAccess = ::openChildPhotoAccess,
         attach = photoSession::attachImported,
-        onError = { mutableState.value = state.value.copy(error = MemoryEditorError.PHOTO) },
+        onError = {
+            mutableState.value = state.value.copy(error = state.value.error.takeIf {
+                it == MemoryEditorError.CONFLICT || it == MemoryEditorError.SOURCE_MISSING
+            } ?: MemoryEditorError.PHOTO)
+        },
     )
     internal val photoEditState = photoEditSession.state
 
@@ -133,7 +155,10 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         val registry = photoDraftAccessRegistry ?: return true
         if (activePhotoRoute.value != generation) return false
         return try {
-            val handle = registry.open(photoDraftId, eventId)
+            val fallbackSections = runCatching { readBaseline()?.token?.requiredSections }.getOrNull()
+            val handle = if (eventId != null && fallbackSections != null) {
+                registry.open(photoDraftId, eventId, fallbackSections)
+            } else registry.open(photoDraftId, eventId)
             if (activePhotoRoute.value != generation) {
                 handle.close()
                 false
@@ -209,11 +234,30 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         photoDraftAccess?.close()
         photoDraftAccess = null
     }
-    fun discardPhotos(onDone: () -> Unit) {
-        if (!state.value.busy && !state.value.completed && photoEditSession.state.value is MemoryPhotoEditState.Idle) {
-            photoSession.discard(onDone)
+    fun discardDraft(onDone: () -> Unit) {
+        if (state.value.busy || state.value.completed ||
+            photoEditSession.state.value !is MemoryPhotoEditState.Idle) return
+        photoEditSession.cancel()
+        photoSession.discard {
+            clearDraftState()
+            baseline = MemoryDraft(initialTime)
+            baselineToken = null
+            editingId = eventId
+            onDone()
         }
     }
+
+    private fun clearDraftState() {
+        listOf(
+            "has_draft", "dirty", "time", "title", "note", "importance", "people", "place", "photos",
+            "tags", "context_note", "direct", "completed", "removed", "pending_remove", "text_error_fields",
+            "baseline_present", "baseline_direct", "baseline_editing", "baseline_has_token", "baseline_updated_at",
+            "baseline_sections", "baseline_time", "baseline_title", "baseline_note", "baseline_importance",
+            "baseline_people", "baseline_place", "baseline_photos", "baseline_tags", "baseline_context_note",
+        ).forEach { saved.remove<Any>(it) }
+    }
+
+    fun discardPhotos(onDone: () -> Unit) = discardDraft(onDone)
 
     init {
         viewModelScope.launch {
@@ -224,6 +268,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
 
     fun load() {
         if (state.value.busy || state.value.ready || state.value.completed || loadingJob?.isActive == true) return
+        val hadDraft = saved.get<Boolean>("has_draft") == true
+        val restoredDraft = hadDraft && saved.get<Boolean>("dirty") == true
         mutableState.value = state.value.copy(loading = true, error = null)
         loadingJob = viewModelScope.launch {
             try {
@@ -238,30 +284,87 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                     mutableState.value = state.value.copy(loading = false, direct = direct)
                     return@launch
                 }
-                if (eventId != null) requireNotNull(record) { "Original event unavailable" }
-                if (eventId == null && record != null) require(record.event.type == EventType.MEMORY) { "Capture ID is occupied" }
-                val direct = record == null || record.event.type == EventType.MEMORY
-                if (record != null) require(if (direct) record.event.isEditable && record.memory != null else record.canPromoteToMemory)
+                if (eventId == null && record != null) {
+                    require(record.event.type == EventType.MEMORY) { "Capture ID is occupied" }
+                }
+                val sourceRecord = record.takeIf { eventId != null }
+                val savedBaseline = readBaseline()
+                if (eventId != null && sourceRecord == null && savedBaseline == null && !hadDraft) {
+                    throw IllegalArgumentException("Original event unavailable")
+                }
+                val direct = if (eventId == null) true else sourceRecord?.let {
+                    require(it.event.isEditable || it.canPromoteToMemory)
+                    it.event.type == EventType.MEMORY
+                } ?: savedBaseline?.direct ?: (saved["direct"] ?: true)
+                sourceRecord?.let {
+                    require(if (direct) it.event.isEditable && it.memory != null else it.canPromoteToMemory)
+                }
                 check(ensurePhotoDraftAccess()) { "Memory photo access is unavailable" }
-                baseline = record?.toDraft(direct) ?: MemoryDraft(initialTime)
+
+                val loadedBaseline = sourceRecord?.toDraft(direct) ?: savedBaseline?.draft
+                    ?: if (eventId != null && hadDraft) readDraft() else MemoryDraft(initialTime)
                 // Larger legacy content stays in the database rather than entering saved state.
-                require(baseline.title.length <= MemoryTextLimits.TITLE && baseline.note.length <= MemoryTextLimits.NOTE &&
-                    baseline.contextNote.length <= MemoryTextLimits.CONTEXT_NOTE && baseline.tagNames.size <= MemoryTextLimits.TAG_COUNT &&
-                    baseline.personIds.size <= PersonTextLimits.SELECTION)
-                editingId = record?.event?.id
+                require(loadedBaseline.title.length <= MemoryTextLimits.TITLE &&
+                    loadedBaseline.note.length <= MemoryTextLimits.NOTE &&
+                    loadedBaseline.contextNote.length <= MemoryTextLimits.CONTEXT_NOTE &&
+                    loadedBaseline.tagNames.size <= MemoryTextLimits.TAG_COUNT &&
+                    loadedBaseline.personIds.size <= PersonTextLimits.SELECTION)
+                baseline = savedBaseline?.draft ?: loadedBaseline
+                baselineToken = savedBaseline?.token ?: sourceRecord?.toEditorBaseline()
+                editingId = eventId
                 saved["direct"] = direct
-                val draft = if (saved.get<Boolean>("has_draft") == true) readDraft() else baseline
+                val draft = if (hadDraft) readDraft() else baseline
+                val sourceMissing = eventId != null && sourceRecord == null
+                if (sourceMissing &&
+                    !canReadBaseline(baselineToken ?: EventEditorBaseline(0L, emptySet()))
+                ) {
+                    mutableState.value = state.value.copy(
+                        draft = draft,
+                        original = null,
+                        direct = direct,
+                        editing = savedBaseline?.editing == true,
+                        loading = false,
+                        ready = false,
+                        hasChanges = draft != baseline,
+                        hasRestoredDraft = restoredDraft,
+                        error = MemoryEditorError.ACCESS_BLOCKED,
+                    )
+                    return@launch
+                }
                 validatePhotos(draft.photos)
                 photoSession.retain(draft.photos)
+                if (savedBaseline == null) persistBaseline(baseline, baselineToken, direct)
                 persist(draft)
-                mutableState.value = state.value.copy(draft = draft, original = record.takeUnless { direct }, direct = direct,
-                    editing = record?.memory != null, loading = true, ready = false, hasChanges = draft != baseline, error = null)
+                val stale = sourceRecord != null && savedBaseline?.token != null &&
+                    savedBaseline.token.updatedAtMillis != sourceRecord.event.updatedAt.toEpochMilli()
+                mutableState.value = state.value.copy(
+                    draft = draft,
+                    original = sourceRecord.takeUnless { direct },
+                    direct = direct,
+                    editing = sourceRecord?.memory != null || (sourceRecord == null && savedBaseline?.editing == true),
+                    loading = true,
+                    ready = false,
+                    hasChanges = draft != baseline,
+                    error = when {
+                        sourceMissing -> MemoryEditorError.SOURCE_MISSING
+                        stale -> MemoryEditorError.CONFLICT
+                        else -> null
+                    },
+                    hasRestoredDraft = restoredDraft,
+                )
                 photoEditSession.restore()
                 mutableState.value = state.value.copy(loading = false, ready = true)
                 photoSession.resumePending()
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                mutableState.value = state.value.copy(loading = false, ready = false, error = MemoryEditorError.LOAD)
+                val savedToken = runCatching { readBaseline()?.token }.getOrNull()
+                val accessBlocked = eventId != null &&
+                    !canReadBaseline(savedToken ?: EventEditorBaseline(0L, emptySet()))
+                mutableState.value = state.value.copy(
+                    loading = false,
+                    ready = false,
+                    error = if (accessBlocked) MemoryEditorError.ACCESS_BLOCKED else MemoryEditorError.LOAD,
+                )
             }
         }
     }
@@ -302,7 +405,10 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
             photoEditSession.state.value is MemoryPhotoEditState.Idle) {
             val errors = state.value.textErrors + field
             persistTextErrors(errors)
-            mutableState.value = state.value.copy(textErrors = errors, error = MemoryEditorError.TEXT)
+            mutableState.value = state.value.copy(textErrors = errors,
+                error = state.value.error.takeIf {
+                    it == MemoryEditorError.CONFLICT || it == MemoryEditorError.SOURCE_MISSING
+                } ?: MemoryEditorError.TEXT)
         }
     }
     fun setLocalTime(local: LocalDateTime, zone: ZoneId): Boolean {
@@ -313,49 +419,134 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
             change { it.copy(occurredAtMillis = instant.toEpochMilli()) }
             true
         } catch (_: IllegalArgumentException) {
-            mutableState.value = state.value.copy(error = MemoryEditorError.TIME)
+            mutableState.value = state.value.copy(error = state.value.error.takeIf {
+                it == MemoryEditorError.CONFLICT || it == MemoryEditorError.SOURCE_MISSING
+            } ?: MemoryEditorError.TIME)
             false
         }
     }
+    fun reloadLatest() {
+        val current = state.value
+        val id = eventId ?: return
+        if (!current.ready || current.busy ||
+            current.error !in setOf(MemoryEditorError.CONFLICT, MemoryEditorError.SOURCE_MISSING)) return
+        mutableState.value = current.copy(busy = true)
+        viewModelScope.launch {
+            try {
+                val record = repository.get(id)
+                if (record == null) {
+                    mutableState.value = state.value.copy(busy = false, error = MemoryEditorError.SOURCE_MISSING)
+                    return@launch
+                }
+                val direct = record.event.type == EventType.MEMORY
+                require(if (direct) record.event.isEditable && record.memory != null else record.canPromoteToMemory)
+                val latest = record.toDraft(direct)
+                validatePhotos(latest.photos)
+                require(latest.title.length <= MemoryTextLimits.TITLE &&
+                    latest.note.length <= (if (direct) MemoryTextLimits.NOTE else MemoryTextLimits.CONTEXT_NOTE) &&
+                    latest.contextNote.length <= MemoryTextLimits.CONTEXT_NOTE &&
+                    latest.tagNames.size <= MemoryTextLimits.TAG_COUNT &&
+                    latest.personIds.size <= PersonTextLimits.SELECTION)
+                photoSession.retain(latest.photos)
+                val token = record.toEditorBaseline()
+                baseline = latest
+                baselineToken = token
+                editingId = id
+                saved["direct"] = direct
+                saved["pending_remove"] = null
+                persistBaseline(latest, token, direct)
+                persist(latest)
+                mutableState.value = state.value.copy(
+                    draft = latest,
+                    original = record.takeUnless { direct },
+                    direct = direct,
+                    editing = record.memory != null,
+                    busy = false,
+                    hasChanges = false,
+                    hasRestoredDraft = false,
+                    error = null,
+                )
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                mutableState.value = state.value.copy(busy = false,
+                    error = state.value.error.takeIf {
+                        it == MemoryEditorError.CONFLICT || it == MemoryEditorError.SOURCE_MISSING
+                    } ?: MemoryEditorError.PHOTO)
+            }
+        }
+    }
+
     fun save() {
         val current = state.value
-        if (photoEditSession.state.value !is MemoryPhotoEditState.Idle || !current.ready || current.busy || current.completed ||
+        if (photoEditSession.state.value !is MemoryPhotoEditState.Idle || !current.ready || current.busy ||
+            current.completed || current.error in setOf(MemoryEditorError.CONFLICT, MemoryEditorError.SOURCE_MISSING) ||
             (current.direct && current.draft.note.isBlank())) return
+        val baseline = if (eventId == null) null else baselineToken ?: run {
+            mutableState.value = current.copy(error = MemoryEditorError.SOURCE_MISSING)
+            return
+        }
         val draft = current.draft
+        val id = editingId
+        if (!current.direct && id == null) {
+            mutableState.value = current.copy(error = MemoryEditorError.SOURCE_MISSING)
+            return
+        }
         saved["pending_remove"] = null
-        write(MemoryEditorError.SAVE) {
-            if (current.direct) {
-                val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title,
-                    draft.importance, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
-                    draft.contextNote.trim().takeIf(String::isNotEmpty))
-                val recoveredId = editingId ?: repository.get(captureId)?.event?.id
-                if (recoveredId == null) repository.create(captureId, input) else {
-                    editingId = recoveredId
-                    repository.update(recoveredId, input)
+        mutableState.value = current.copy(busy = true, error = null)
+        viewModelScope.launch {
+            try {
+                val result = if (current.direct) {
+                    val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title,
+                        draft.importance, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
+                        draft.contextNote.trim().takeIf(String::isNotEmpty))
+                    if (eventId == null) {
+                        repository.create(captureId, input)
+                        EditorWriteResult.SAVED
+                    } else repository.updateIfUnchanged(requireNotNull(id), requireNotNull(baseline), input)
+                } else repository.saveMarkerIfUnchanged(requireNotNull(id), requireNotNull(baseline), MemoryMarkerInput(
+                    draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
+                ))
+                when (result) {
+                    EditorWriteResult.SAVED -> {
+                        photoSession.releaseAfterWrite()
+                        finish(removed = false)
+                    }
+                    EditorWriteResult.STALE ->
+                        mutableState.value = state.value.copy(busy = false, error = MemoryEditorError.CONFLICT)
+                    EditorWriteResult.MISSING ->
+                        mutableState.value = state.value.copy(busy = false, error = MemoryEditorError.SOURCE_MISSING)
                 }
-            } else repository.saveMarker(requireNotNull(editingId), MemoryMarkerInput(
-                draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
-            ))
+            } catch (failure: Exception) {
+                if (failure is CancellationException) {
+                    mutableState.value = state.value.copy(busy = false)
+                    throw failure
+                }
+                mutableState.value = state.value.copy(busy = false, error = MemoryEditorError.SAVE)
+            }
         }
     }
     fun remove() {
         val current = state.value
         if (photoEditSession.state.value !is MemoryPhotoEditState.Idle) return
         val id = editingId ?: return
-        if (!current.ready || !current.editing || current.busy || current.completed) return
+        if (!current.ready || !current.editing || current.busy || current.completed ||
+            current.error in setOf(MemoryEditorError.CONFLICT, MemoryEditorError.SOURCE_MISSING)) return
         saved["pending_remove"] = if (current.direct) "delete" else "unmark"
-        write(MemoryEditorError.REMOVE) {
+        writeRemove {
             if (current.direct) repository.delete(id) else repository.removeMarker(id)
         }
     }
-    private fun write(error: MemoryEditorError, action: suspend () -> Unit) {
+    private fun writeRemove(action: suspend () -> Unit) {
         mutableState.value = state.value.copy(busy = true, error = null)
         viewModelScope.launch {
-            try { action(); photoSession.releaseAfterWrite(); finish(removed = error == MemoryEditorError.REMOVE) }
-            catch (failure: Exception) {
+            try {
+                action()
+                photoSession.releaseAfterWrite()
+                finish(removed = true)
+            } catch (failure: Exception) {
                 mutableState.value = state.value.copy(busy = false)
                 if (failure is CancellationException) throw failure
-                mutableState.value = state.value.copy(error = error)
+                mutableState.value = state.value.copy(error = MemoryEditorError.REMOVE)
             }
         }
     }
@@ -382,7 +573,9 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         val errors = clearTextField?.let { current.textErrors - it } ?: current.textErrors
         persistTextErrors(errors)
         mutableState.value = current.copy(draft = draft, textErrors = errors,
-            error = if (errors.isNotEmpty()) MemoryEditorError.TEXT else null, hasChanges = draft != baseline)
+            error = current.error.takeIf { it == MemoryEditorError.CONFLICT || it == MemoryEditorError.SOURCE_MISSING }
+                ?: if (errors.isNotEmpty()) MemoryEditorError.TEXT else null,
+            hasChanges = draft != baseline)
     }
     fun setPlace(id: UUID?) = change { it.copy(placeId = id) }
 
@@ -402,29 +595,80 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
     }
 
     private fun persist(draft: MemoryDraft) {
-        saved.savePhotos(draft.photos)
-        saved["place"] = draft.placeId?.toString()
-        saved["people"] = ArrayList(draft.personIds.map(UUID::toString))
+        writeDraftFields(draft, "")
         saved["has_draft"] = true
         saved["dirty"] = draft != baseline
-        saved["time"] = draft.occurredAtMillis
-        saved["title"] = draft.title
-        saved["note"] = draft.note
-        saved["importance"] = draft.importance
-        saved["tags"] = ArrayList(draft.tagNames)
-        saved["context_note"] = draft.contextNote
     }
+
+    private fun persistBaseline(draft: MemoryDraft, token: EventEditorBaseline?, direct: Boolean) {
+        writeDraftFields(draft, "baseline_")
+        saved["baseline_present"] = true
+        saved["baseline_direct"] = direct
+        saved["baseline_editing"] = eventId != null
+        saved["baseline_has_token"] = token != null
+        saved["baseline_updated_at"] = token?.updatedAtMillis
+        saved["baseline_sections"] = ArrayList(token?.requiredSections.orEmpty().map { it.name }.sorted())
+    }
+
+    private fun writeDraftFields(draft: MemoryDraft, prefix: String) {
+        saved.savePhotos(draft.photos, prefix + "photos")
+        saved[prefix + "place"] = draft.placeId?.toString()
+        saved[prefix + "people"] = ArrayList(draft.personIds.map(UUID::toString))
+        saved[prefix + "time"] = draft.occurredAtMillis
+        saved[prefix + "title"] = draft.title
+        saved[prefix + "note"] = draft.note
+        saved[prefix + "importance"] = draft.importance
+        saved[prefix + "tags"] = ArrayList(draft.tagNames)
+        saved[prefix + "context_note"] = draft.contextNote
+    }
+
+    private fun readBaseline(): MemorySavedBaseline? {
+        if (saved.get<Boolean>("baseline_present") != true) return null
+        val token = if (saved.get<Boolean>("baseline_has_token") == true) {
+            val updatedAt = saved.get<Long>("baseline_updated_at") ?: return null
+            val sections = saved.get<ArrayList<String>>("baseline_sections").orEmpty()
+                .mapNotNull { runCatching { LockSection.valueOf(it) }.getOrNull() }.toSet()
+            EventEditorBaseline(updatedAt, sections)
+        } else null
+        return MemorySavedBaseline(
+            draft = readDraft("baseline_"),
+            token = token,
+            direct = saved.get<Boolean>("baseline_direct") ?: true,
+            editing = saved.get<Boolean>("baseline_editing") ?: (eventId != null),
+        )
+    }
+
     private fun readTextErrors(): Set<MemoryTextField> = saved.get<ArrayList<String>>("text_error_fields")
         .orEmpty().mapNotNull { runCatching { MemoryTextField.valueOf(it) }.getOrNull() }.toSet()
 
     private fun persistTextErrors(errors: Set<MemoryTextField>) {
         saved["text_error_fields"] = ArrayList(errors.map { it.name }.sorted())
     }
-    private fun readDraft() = MemoryDraft(saved.get<Long>("time") ?: initialTime, saved.get<String>("title") ?: "",
-        saved.get<String>("note") ?: "", saved["importance"],
-        saved.get<ArrayList<String>>("people")?.map(UUID::fromString)?.toSet() ?: emptySet(),
-        saved.get<String>("place")?.let(UUID::fromString), saved.readPhotos(),
-        saved.get<ArrayList<String>>("tags")?.toSet() ?: emptySet(), saved.get<String>("context_note") ?: "")
+
+    private fun readDraft(prefix: String = "") = MemoryDraft(
+        saved.get<Long>(prefix + "time") ?: initialTime,
+        saved.get<String>(prefix + "title") ?: "",
+        saved.get<String>(prefix + "note") ?: "",
+        saved[prefix + "importance"],
+        saved.get<ArrayList<String>>(prefix + "people")?.map(UUID::fromString)?.toSet() ?: emptySet(),
+        saved.get<String>(prefix + "place")?.let(UUID::fromString),
+        saved.readPhotos(prefix + "photos"),
+        saved.get<ArrayList<String>>(prefix + "tags")?.toSet() ?: emptySet(),
+        saved.get<String>(prefix + "context_note") ?: "",
+    )
+
+    private suspend fun canReadBaseline(baseline: EventEditorBaseline): Boolean = try {
+        repository.canReadEditorBaseline(baseline)
+    } catch (failure: Exception) {
+        if (failure is CancellationException) throw failure
+        false
+    }
+
+    private fun LifeEventRecord.toEditorBaseline() = EventEditorBaseline(
+        updatedAtMillis = event.updatedAt.toEpochMilli(),
+        requiredSections = ProtectedRecordClassifier.requiredSections(this),
+    )
+
     private fun LifeEventRecord.toDraft(direct: Boolean) = MemoryDraft(event.occurredAt.toEpochMilli(),
         if (direct) event.title.orEmpty() else "",
         if (direct) (event.note ?: memory?.note).orEmpty() else memory?.note.orEmpty(), memory?.importance,

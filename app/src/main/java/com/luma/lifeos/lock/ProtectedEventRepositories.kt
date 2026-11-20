@@ -2,6 +2,8 @@ package com.luma.lifeos.lock
 
 import com.luma.lifeos.domain.habit.TimelineFeedItem
 import com.luma.lifeos.domain.habit.TimelineFeedPage
+import com.luma.lifeos.domain.model.EditorWriteResult
+import com.luma.lifeos.domain.model.EventEditorBaseline
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.JournalInput
@@ -21,6 +23,7 @@ import com.luma.lifeos.domain.search.SearchOptions
 import com.luma.lifeos.domain.search.SearchPage
 import com.luma.lifeos.domain.search.SearchQuery
 import com.luma.lifeos.domain.time.TimeRange
+import com.luma.lifeos.domain.lock.AccessDecision
 import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
@@ -199,6 +202,13 @@ class ProtectedMemoryRepository(
             immutableProjectionList(tags.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty())
         }
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
+    override suspend fun canReadEditorBaseline(baseline: EventEditorBaseline): Boolean {
+        val state = gateway.snapshot.value
+        val requiredSections = baseline.requiredSections + LockSection.MEMORIES
+        return baseline.requiredSections.isNotEmpty() && state.loadStatus == LockLoadStatus.READY &&
+            state.decide(LockRequest(LockOperation.READ, requiredSections, LockContentClassification.CLASSIFIED)) ==
+            AccessDecision.Allow
+    }
     override fun observe(range: TimeRange): Flow<List<LifeEventRecord>> = gateway.records(delegate.observe(range))
     override fun observeLibrary(limit: Int, eventTypes: Set<EventType>): Flow<List<LifeEventRecord>> {
         require(limit > 0) { "Library limit must be positive" }
@@ -239,6 +249,15 @@ class ProtectedMemoryRepository(
             requiredExisting(id) + if (input.personIds != null) setOf(LockSection.PEOPLE) else emptySet(),
             id.toString(),
         ) { delegate.update(id, input) }
+    override suspend fun updateIfUnchanged(
+        id: EventId,
+        baseline: EventEditorBaseline,
+        input: MemoryInput,
+    ): EditorWriteResult = gateway.commit(
+        LockOperation.UPDATE,
+        baseline.requiredSections + if (input.personIds != null) setOf(LockSection.PEOPLE) else emptySet(),
+        id.toString(),
+    ) { delegate.updateIfUnchanged(id, baseline, input) }
     override suspend fun delete(id: EventId) {
         gateway.commit(LockOperation.DELETE, gateway.requiredSections(id, includePeopleFields = true).orEmpty(), id.toString()) {
             delegate.delete(id)
@@ -251,6 +270,16 @@ class ProtectedMemoryRepository(
                 if (input.personIds != null) setOf(LockSection.PEOPLE) else emptySet(),
             id.toString(),
         ) { delegate.saveMarker(id, input) }
+    override suspend fun saveMarkerIfUnchanged(
+        id: EventId,
+        baseline: EventEditorBaseline,
+        input: MemoryMarkerInput,
+    ): EditorWriteResult = gateway.commit(
+        LockOperation.UPDATE,
+        baseline.requiredSections + setOf(LockSection.MEMORIES) +
+            if (input.personIds != null) setOf(LockSection.PEOPLE) else emptySet(),
+        id.toString(),
+    ) { delegate.saveMarkerIfUnchanged(id, baseline, input) }
     override suspend fun removeMarker(id: EventId) =
         gateway.commit(
             LockOperation.UPDATE,
@@ -270,6 +299,12 @@ class ProtectedMoodRepository(
         immutableProjectionList(emotions.takeIf { gateway.filterSection(true, LockSection.MOOD, state) }.orEmpty())
     }
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
+    override suspend fun canReadEditorBaseline(baseline: EventEditorBaseline): Boolean {
+        val state = gateway.snapshot.value
+        return baseline.requiredSections.isNotEmpty() && state.loadStatus == LockLoadStatus.READY &&
+            state.decide(LockRequest(LockOperation.READ, baseline.requiredSections, LockContentClassification.CLASSIFIED)) ==
+            AccessDecision.Allow
+    }
     override suspend fun create(id: EventId, input: MoodInput): EventId =
         gateway.commit(LockOperation.CREATE, setOf(LockSection.MOOD), id.toString()) { delegate.create(id, input) }
     override suspend fun update(id: EventId, input: MoodInput) =
@@ -278,6 +313,15 @@ class ProtectedMoodRepository(
             requiredExisting(id) + if (input.personIds != null) setOf(LockSection.PEOPLE) else emptySet(),
             id.toString(),
         ) { delegate.update(id, input) }
+    override suspend fun updateIfUnchanged(
+        id: EventId,
+        baseline: EventEditorBaseline,
+        input: MoodInput,
+    ): EditorWriteResult = gateway.commit(
+        LockOperation.UPDATE,
+        baseline.requiredSections + if (input.personIds != null) setOf(LockSection.PEOPLE) else emptySet(),
+        id.toString(),
+    ) { delegate.updateIfUnchanged(id, baseline, input) }
     override suspend fun delete(id: EventId) {
         gateway.commit(LockOperation.DELETE, gateway.requiredSections(id, includePeopleFields = true).orEmpty(), id.toString()) {
             delegate.delete(id)
