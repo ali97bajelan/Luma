@@ -32,8 +32,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -91,8 +93,9 @@ fun TodayTasksCard(
                 }
             }
             is TodayTasksState.Data -> {
+                val formattedTotal = NumberFormat.getIntegerInstance().format(state.total)
                 val countDescription = if (state.total > 0) {
-                    stringResource(R.string.todo_today_count, NumberFormat.getIntegerInstance().format(state.total))
+                    pluralStringResource(R.plurals.todo_today_count, state.total, formattedTotal)
                 } else {
                     null
                 }
@@ -112,17 +115,8 @@ fun TodayTasksCard(
                             if (bucket == TodoBucket.OVERDUE) R.string.todo_group_overdue
                             else R.string.todo_group_today,
                         )
-                        val groupDescription = if (state.total in 1..2 && countDescription != null) {
-                            listOf(groupLabel, countDescription).joinToString(
-                                stringResource(R.string.accessibility_label_separator),
-                            )
-                        } else {
-                            groupLabel
-                        }
                         Row(
-                            modifier = Modifier.fillMaxWidth().then(
-                                if (state.total in 1..2) Modifier.testTag("today_tasks_count") else Modifier,
-                            ),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
@@ -131,12 +125,10 @@ fun TodayTasksCard(
                                 style = MaterialTheme.typography.labelLarge,
                                 color = if (bucket == TodoBucket.OVERDUE) MaterialTheme.colorScheme.error
                                     else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.semantics {
-                                    heading()
-                                    contentDescription = groupDescription
-                                }.testTag("today_tasks_group_${bucket.name.lowercase()}"),
+                                modifier = Modifier.semantics { heading() }
+                                    .testTag("today_tasks_group_${bucket.name.lowercase()}"),
                             )
-                            if (state.total > 2) {
+                            if (state.total > 0) {
                                 Surface(
                                     shape = CircleShape,
                                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -145,22 +137,48 @@ fun TodayTasksCard(
                                         1.dp,
                                         MaterialTheme.colorScheme.tertiary.copy(alpha = 0.32f),
                                     ),
-                                    modifier = Modifier.testTag("today_tasks_scroll_hint"),
+                                    modifier = Modifier.testTag(
+                                        if (state.total > 2) "today_tasks_scroll_hint" else "today_tasks_total_badge",
+                                    ),
                                 ) {
                                     Text(
-                                        stringResource(
-                                            R.string.todo_today_scroll_for_more,
-                                            NumberFormat.getIntegerInstance().format(state.total),
-                                        ),
+                                        text = if (state.total > 2) {
+                                            stringResource(R.string.todo_today_scroll_for_more, formattedTotal)
+                                        } else {
+                                            formattedTotal
+                                        },
                                         style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.testTag("today_tasks_count").padding(
-                                            horizontal = LumaUi.ContentGap,
-                                            vertical = LumaUi.RelatedGap,
-                                        ),
+                                        modifier = if (state.total <= 2) {
+                                            Modifier.clearAndSetSemantics {
+                                                countDescription?.let { contentDescription = it }
+                                            }.testTag("today_tasks_count").padding(
+                                                horizontal = LumaUi.ContentGap,
+                                                vertical = LumaUi.RelatedGap,
+                                            )
+                                        } else {
+                                            Modifier.testTag("today_tasks_count").padding(
+                                                horizontal = LumaUi.ContentGap,
+                                                vertical = LumaUi.RelatedGap,
+                                            )
+                                        },
                                     )
                                 }
                             }
                         }
+                    }
+                    val remainingCount = (state.total - state.rows.size).coerceAtLeast(0)
+                    if (remainingCount > 0) {
+                        Text(
+                            pluralStringResource(
+                                R.plurals.todo_today_unloaded_count,
+                                remainingCount,
+                                NumberFormat.getIntegerInstance().format(remainingCount),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                                .testTag("today_tasks_remaining"),
+                        )
                     }
                     val taskListState = rememberLazyListState()
                     val scrollbarTrackColor = MaterialTheme.colorScheme.outlineVariant
@@ -264,7 +282,7 @@ fun TodayTasksCard(
                                 )
                             }
                         }
-                        if (state.tasks.size < state.total) {
+                        if (remainingCount > 0) {
                             item(key = "today_tasks_load_more") {
                                 LumaTextButton(
                                     onClick = onLoadMoreTasks,

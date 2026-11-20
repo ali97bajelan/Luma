@@ -32,6 +32,7 @@
     <string name="today_capture_mood">حال‌وهوا</string>
     <string name="today_capture_journal">خاطره</string>
     <string name="today_capture_memory">خاطره</string>
+    <string name="today_actions">اقدام‌های امروز</string>
     <string name="today_recent_entries">ثبت‌های اخیر</string>
     <string name="today_capture_when">این مورد را برای چه زمانی ثبت می‌کنید؟</string>
     <string name="today_loading">در حال بارگذاری روز شما…</string>
@@ -1162,7 +1163,14 @@
     <string name="todo_list_page_error">بارگذاری کارهای بیشتر ممکن نشد. فهرست شما حفظ شده است.</string>
     <string name="todo_list_empty_open">کار بازی وجود ندارد.</string>
     <string name="todo_list_empty_completed">هنوز کاری تکمیل نشده است.</string>
-    <string name="todo_today_count">%1$s کار باز با مهلت امروز یا گذشته</string>
+    <plurals name="todo_today_count">
+        <item quantity="one">%1$s کار باز با مهلت امروز یا گذشته</item>
+        <item quantity="other">%1$s کار باز با مهلت امروز یا گذشته</item>
+    </plurals>
+    <plurals name="todo_today_unloaded_count">
+        <item quantity="one">%1$s کار باز دیگر برای بارگیری باقی مانده است</item>
+        <item quantity="other">%1$s کار باز دیگر برای بارگیری باقی مانده است</item>
+    </plurals>
     <string name="todo_today_scroll_for_more">برای دیدن موارد بیشتر پیمایش کنید (%1$s)</string>
     <string name="todo_today_empty">هیچ کار بازی با مهلت امروز یا گذشته وجود ندارد.</string>
     <string name="todo_today_view_all">دیدن همه</string>

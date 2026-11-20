@@ -32,6 +32,7 @@
     <string name="today_capture_mood">Mood</string>
     <string name="today_capture_journal">Memory</string>
     <string name="today_capture_memory">Memory</string>
+    <string name="today_actions">Today’s actions</string>
     <string name="today_recent_entries">Recent entries</string>
     <string name="today_capture_when">When would you like to record this?</string>
     <string name="today_loading">Loading your day…</string>
@@ -1161,7 +1162,14 @@
     <string name="todo_list_page_error">More tasks could not be loaded. Your list is retained.</string>
     <string name="todo_list_empty_open">No open tasks.</string>
     <string name="todo_list_empty_completed">No completed tasks yet.</string>
-    <string name="todo_today_count">%1$s open tasks due today or earlier</string>
+    <plurals name="todo_today_count">
+        <item quantity="one">%1$s open task due today or earlier</item>
+        <item quantity="other">%1$s open tasks due today or earlier</item>
+    </plurals>
+    <plurals name="todo_today_unloaded_count">
+        <item quantity="one">%1$s more open task to load</item>
+        <item quantity="other">%1$s more open tasks to load</item>
+    </plurals>
     <string name="todo_today_scroll_for_more">Scroll for more (%1$s)</string>
     <string name="todo_today_empty">No open tasks due today or earlier.</string>
     <string name="todo_today_view_all">View all</string>

@@ -130,6 +130,35 @@ fun TodayScreen(
             item(key = "capture") {
                 TodayCaptureActions(onDateCapture = { requestCapture(it, date) })
             }
+            if (date == deviceDate) {
+                if (todayTasks != null || habitsState != null || focusAction != null || focusReport != null) {
+                    item(key = "today_actions_heading") {
+                        AppSectionHeading(
+                            stringResource(R.string.today_actions),
+                            modifier = Modifier.testTag("today_actions_heading"),
+                        )
+                    }
+                }
+                todayTasks?.let { taskState -> item(key = "today_tasks") {
+                    TodayTasksCard(
+                        state = taskState,
+                        actions = todayTaskActions,
+                        today = date,
+                        onTask = onTask,
+                        onSetCompleted = onSetTaskCompleted,
+                        onAllTasks = onAllTasks,
+                        onLoadMoreTasks = onLoadMoreTasks,
+                        onAddTask = onAddTask,
+                        onRetry = onRetryTasks,
+                        onRetryTask = onRetryTask,
+                        onDismissTaskError = onDismissTaskError,
+                    )
+                } }
+            }
+            habitsState?.let { item(key = "habits") {
+                TodayHabitsCard(it, date, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
+                    onOpenDate = onHabitOpenDate)
+            } }
             if (focusReport != null) item(key = "focus_report") {
                 TodayFocusCard(
                     report = focusReport,
@@ -148,25 +177,6 @@ fun TodayScreen(
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("today_focus"),
                 ) { Text(stringResource(todayFocusActionLabel(focusInProgressState))) }
             }
-            habitsState?.let { item(key = "habits") {
-                TodayHabitsCard(it, date, onHabits, onCreateHabit, onHabit, onHabitLog, onHabitRetryLog, onHabitUndo, onHabitRetry,
-                    onOpenDate = onHabitOpenDate)
-            } }
-            todayTasks?.let { taskState -> item(key = "today_tasks") {
-                TodayTasksCard(
-                    state = taskState,
-                    actions = todayTaskActions,
-                    today = date,
-                    onTask = onTask,
-                    onSetCompleted = onSetTaskCompleted,
-                    onAllTasks = onAllTasks,
-                    onLoadMoreTasks = onLoadMoreTasks,
-                    onAddTask = onAddTask,
-                    onRetry = onRetryTasks,
-                    onRetryTask = onRetryTask,
-                    onDismissTaskError = onDismissTaskError,
-                )
-            } }
             item(key = "recent_entries") {
                 Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
                     AppSectionHeading(stringResource(R.string.today_recent_entries), style = MaterialTheme.typography.headlineSmall,
