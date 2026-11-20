@@ -1,0 +1,35 @@
+# Luma product improvement tasks
+
+Source proposal dated 18 November 2026. Task package prepared 20 November 2026. All implementation tasks are **PENDING**. IP-Q01 is **NOT RUN**.
+
+[Product proposal](20261118-Proposal.md) · [App reference](LUMA_APP_REFERENCE.md) · [Design system](luma-redesign/README.md) · [Emulator QA specification](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Emulator QA plan](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md)
+
+## Implementation backlog
+
+| Task | Proposal | Priority | Horizon | Dependencies | Deliverables |
+| --- | --- | --- | --- | --- | --- |
+| IP-I01 Today action hub | #1 | P1 | Now | Existing Today, Tasks, Habits and Focus source. IP-I06 extends the resulting Today header. | [Spec](superpowers/specs/2026-11-20-product-improvements-i01-today-action-hub-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i01-today-action-hub.md) |
+| IP-I02 Backup and recovery | #2 | P1 | Now disclosure → Next encrypted archive | Disclosure before archive integration. Reuse the existing F05 portable encryption design and existing backup validation and App Lock flows. | [Spec](superpowers/specs/2026-11-20-product-improvements-i02-backup-and-recovery-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i02-backup-and-recovery.md) |
+| IP-I03 Dependable capture drafts | #3 | P1 | Now | Existing Mood/Memory editors, protected capture and photo ownership. IP-I05 and IP-I09 consume the editor behavior. | [Spec](superpowers/specs/2026-11-20-product-improvements-i03-capture-drafts-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i03-capture-drafts.md) |
+| IP-I04 Reminder readiness | #4 | P1 | Next | Existing task/habit/Focus invitation planners and notification settings. Leaves IP-I08 Focus runtime behavior independently owned. | [Spec](superpowers/specs/2026-11-20-product-improvements-i04-reminder-readiness-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i04-reminder-readiness.md) |
+| IP-I05 First use and capture terminology | #5 | P1 | Next | IP-I03 editor state and discard contract. | [Spec](superpowers/specs/2026-11-20-product-improvements-i05-first-use-capture-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i05-first-use-capture.md) |
+| IP-I06 Findable and understandable Search | #6 | P1 | Next | IP-I01 Today header and IP-I05 Memory Library capture entry placement. | [Spec](superpowers/specs/2026-11-20-product-improvements-i06-search-entry-points-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i06-search-entry-points.md) |
+| IP-I07 Habit dates, counts and schedule changes | #7 | P2 | Later | IP-I01 Today habit preview ownership and IP-I04 habit-detail reminder presentation. | [Spec](superpowers/specs/2026-11-20-product-improvements-i07-habit-date-explanations-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i07-habit-date-explanations.md) |
+| IP-I08 Focus boundaries, recovery and completion | #8 | P2 | Later | Existing Focus guard/runtime and task-family completion flow. IP-I04 owns Focus invitation notification readiness. | [Spec](superpowers/specs/2026-11-20-product-improvements-i08-focus-boundaries-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i08-focus-boundaries.md) |
+| IP-I09 Weekly Review reflection loop | #9 | P2 | Later | IP-I03 durable editor behavior, IP-I05 capture terminology and IP-I06 existing retrieval experience. | [Spec](superpowers/specs/2026-11-20-product-improvements-i09-weekly-reflection-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i09-weekly-reflection.md) |
+
+Use proposal rank as the default sequence. IP-I02 has two ordered slices, so disclosure can hand off with the Now work and encryption can resume in Next. Source dependencies permit the next implementation to start as soon as the required predecessor source is ready. Preserve existing implementation/validation status from earlier roadmap work.
+
+## Final QA task
+
+| Task | Starts when | Deliverable | Status |
+| --- | --- | --- | --- |
+| IP-Q01 Integrated emulator QA | All nine implementation handoffs, including both backup slices | [Spec](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Plan and scenario matrix](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md) · dated execution record | NOT RUN |
+
+## Shared implementation contract
+
+- Use the existing warm-paper/obsidian theme, MaterialTheme roles, LumaUi tokens, shared Luma components and AppPageScaffold. Preserve intended timer/chart/Calendar/crop visuals, separate launcher-widget styling, offline fonts, System/Light/Dark, English/French/Persian, RTL, large text, 48 dp touch targets, accessibility, keyboard/system insets, scrolling and FAB clearance. Inspect the [route coverage](luma-redesign/route-coverage.md) and [UI consistency checklist](luma-redesign/ui-consistency-checklist.md) for affected surfaces.
+- Keep existing navigation and editor callbacks, validation, state/drafts, test tags, pending feedback, retry and Undo. Preserve saved data, authorization and restore-generation guards, and offline operation. Use bundled resources and synthetic QA data. Keep optional integration/absence states explicit. The release has no analytics, accounts, synchronization or automated uploads.
+- Record each source handoff with revision or patch identity, changed paths, decisions, known risks, static checks and its matching IP-Q01 scenario. This package uses an implementation-first QA sequence as requested. Gradle, test authoring/execution and emulator actions belong to IP-Q01, following this repository’s [shared delivery workflow](feature-roadmap/WORKFLOW.md).
+- IP-I03 records a reproducible pre-change revision and patch identity, characterizes draft recovery from source and addresses source-confirmed stale writes during implementation. IP-Q01 starts with an isolated pre-change runtime comparison for that work, then verifies the implementation and corrects any reproduced gaps. Behavior observed on the baseline and candidate should appear separately in the execution record.
+- The task specs describe proposed defaults. This plan keeps the primary navigation and existing records, uses separate Search sessions when launched anew, offers a distinct Tasks title lookup, and dates Review-origin Memory capture and Tasks context to the visible current civil date, and opens Habits on the reviewed through-date. Broader research described in the proposal remains product validation beyond emulator acceptance.
