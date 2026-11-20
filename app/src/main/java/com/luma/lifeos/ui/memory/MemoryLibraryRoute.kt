@@ -73,7 +73,7 @@ internal fun MemoryLibraryRoute(
     zone: ZoneId,
     authorizationEpoch: Pair<Long, Long>,
     onBack: () -> Unit,
-    onRecordMemory: () -> Unit,
+    onRecordMemory: (LocalDate) -> Unit,
     onEvent: (LifeEventRecord) -> Unit,
 ) {
     BackHandler(onBack = onBack)
@@ -179,7 +179,7 @@ internal fun MemoryLibraryRoute(
             ) {
                 item(key = "memory-library-add") {
                     LumaButton(
-                        onClick = onRecordMemory,
+                        onClick = { onRecordMemory(today) },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("memory_library_add"),
                         contentPadding = PaddingValues(horizontal = LumaUi.PageGutter, vertical = 14.dp),
                     ) {

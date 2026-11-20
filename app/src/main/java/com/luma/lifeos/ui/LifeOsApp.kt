@@ -798,12 +798,12 @@ fun LifeOsApp(
         calendarCaptureDueDate = null
         navController.navigate(AppRoutes.MEMORIES) { launchSingleTop = true }
     }
-    fun openMemoryCaptureFromLibrary() {
+    fun openMemoryCaptureFromLibrary(date: LocalDate) {
         if (appLockEnabled()) {
             openRestrictedCapture(RestrictedCaptureKind.MEMORY)
             return
         }
-        navController.navigate("memory")
+        openCapture("memory", date)
         navController.currentBackStackEntry?.savedStateHandle?.set(MEMORY_LIBRARY_CAPTURE_ORIGIN_KEY, true)
     }
     fun openTodoEditor(

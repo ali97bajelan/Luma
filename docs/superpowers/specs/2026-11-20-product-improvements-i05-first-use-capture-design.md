@@ -1,6 +1,6 @@
 # IP-I05 — First use and capture terminology specification
 
-**Priority** P1 · **Horizon** Next · **Status** PENDING
+**Priority** P1 · **Horizon** Next · **Status** SOURCE COMPLETE — QA PENDING
 
 [Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [Proposal](../../20261118-Proposal.md) · [Implementation plan](../plans/2026-11-20-product-improvements-i05-first-use-capture.md) · [Final emulator QA](../plans/2026-11-20-product-improvements-q01-emulator-qa.md#qa-05)
 

@@ -115,6 +115,7 @@ fun QuickCaptureSheet(
                     icon = R.drawable.ic_review_mood,
                     onClick = { onMood(captureDate) },
                     modifier = Modifier.testTag("capture_mood"),
+                    supportingText = stringResource(R.string.capture_mood_outcome),
                     showChevron = false,
                 )
                 LumaChoiceRow(
@@ -122,6 +123,7 @@ fun QuickCaptureSheet(
                     icon = R.drawable.ic_bookmark_outline,
                     onClick = { onMemory(captureDate) },
                     modifier = Modifier.testTag("capture_memory"),
+                    supportingText = stringResource(R.string.capture_memory_outcome),
                     showChevron = false,
                 )
             }
@@ -163,6 +165,7 @@ fun QuickCaptureSheet(
                         icon = R.drawable.ic_nav_tasks,
                         onClick = action,
                         modifier = Modifier.testTag("capture_task"),
+                        supportingText = stringResource(R.string.capture_task_outcome),
                         showChevron = false,
                     )
                 }

@@ -29,9 +29,9 @@
     <string name="cancel">لغو</string>
     <string name="retry">تلاش دوباره</string>
     <string name="today_no_entries">هنوز ورودی حال‌وهوا یا خاطره‌ای ثبت نشده</string>
-    <string name="today_capture_mood">حال‌وهوا</string>
+    <string name="today_capture_mood">ثبت حال‌وهوا</string>
     <string name="today_capture_journal">خاطره</string>
-    <string name="today_capture_memory">خاطره</string>
+    <string name="today_capture_memory">ثبت یک خاطره</string>
     <string name="today_actions">اقدام‌های امروز</string>
     <string name="today_recent_entries">ثبت‌های اخیر</string>
     <string name="today_capture_when">این مورد را برای چه زمانی ثبت می‌کنید؟</string>
@@ -167,8 +167,10 @@
     <string name="capture_use_now">استفاده از زمان فعلی</string>
     <string name="capture_add_to_date">افزودن به %1$s</string>
     <string name="capture_mood">ثبت حال‌وهوا</string>
+    <string name="capture_mood_outcome">احساس خود را ثبت کنید.</string>
     <string name="capture_journal">یادداشت روزانه</string>
     <string name="capture_memory">خاطره</string>
+    <string name="capture_memory_outcome">لحظه‌ای را که می‌خواهید به خاطر بسپارید ذخیره کنید.</string>
     <string name="capture_habit">ثبت یک عادت</string>
     <string name="close">بستن</string>
     <string name="save">ذخیره</string>
@@ -208,6 +210,7 @@
     <string name="capture_fewer_details">پنهان کردن افراد، مکان و عکس‌ها</string>
     <string name="mood_context_help">یادداشت، انرژی، استرس، افراد یا مکانی اضافه کنید.</string>
     <string name="capture_context_help">افراد یا مکانی پیوند دهید، یا عکس پیوست کنید.</string>
+    <string name="capture_place_summary">مکان پیوندشده</string>
     <string name="editor_text_limit_error">حداکثر %1$s نویسه وارد کنید. متن قبلی شما حفظ شده است.</string>
     <string name="mood_energy">انرژی</string>
     <string name="mood_stress">استرس</string>
@@ -215,6 +218,7 @@
     <string name="mood_scale_description">%1$s، %2$d از ۵</string>
     <string name="mood_optional_value">%1$s: %2$d/۵</string>
     <string name="mood_note">یادداشت (اختیاری)</string>
+    <string name="mood_note_added">یادداشت افزوده‌شده</string>
     <string name="mood_note_limit_error">یادداشت حداکثر می‌تواند ۵۰۰۰ واحد UTF-16 داشته باشد. متن فعلی شما حفظ شد.</string>
     <string name="mood_draft_save_error">این پیش‌نویس در این دستگاه به‌روز نشد. متن شما همین‌جا قابل مشاهده است.</string>
     <string name="mood_draft_retry">تلاش دوباره</string>
@@ -281,7 +285,7 @@
     <string name="journal_text_error">پیش‌نویس قبلی محفوظ است. برای یادداشت روزانه حداکثر ۵۰٬۰۰۰ نویسه، برای عنوان ۲۰۰ نویسه و برای برچسب‌ها حداکثر ۵۰ برچسب با حداکثر ۵۰ نویسه برای هرکدام وارد کنید.</string>
     <string name="journal_tag_size_error">حداکثر ۵۰ نویسه و ۵۰ برچسب وارد کنید. متن برچسب شما محفوظ است.</string>
     <string name="memory_capture">ثبت خاطره</string>
-    <string name="memory_promote">نگه داشتن به‌عنوان خاطره</string>
+    <string name="memory_promote">ثبت به‌عنوان خاطره</string>
     <string name="memory_edit">ویرایش خاطره</string>
     <string name="memory_title">عنوان (اختیاری)</string>
     <string name="memory_note">این خاطره را توصیف کنید</string>
@@ -322,7 +326,7 @@
     <string name="memory_library_title">خاطره</string>
     <string name="memory_library_loading">در حال بارگذاری خاطره‌ها…</string>
     <string name="memory_library_empty">هنوز خاطره‌ای برای نمایش نیست</string>
-    <string name="memory_library_empty_description">لحظه‌ای را که می‌خواهید به خاطر بسپارید ثبت کنید. همچنین می‌توانید حال‌وهوایی را به‌عنوان خاطره نگه دارید.</string>
+    <string name="memory_library_empty_description">برای ذخیرهٔ لحظه‌ای که می‌خواهید به خاطر بسپارید، «ثبت خاطره» را بزنید. حال‌وهوایی که به‌عنوان خاطره نگه می‌دارید نیز اینجا نمایش داده می‌شود.</string>
     <string name="memory_library_error">خاطره‌ها بارگذاری نشدند</string>
     <string name="memory_library_error_description">برای دیدن لحظه‌های ذخیره‌شده دوباره تلاش کنید.</string>
     <string name="memory_library_load_older">بارگذاری خاطره‌های قدیمی‌تر</string>
@@ -449,6 +453,10 @@
     <plurals name="memory_tags_summary">
         <item quantity="one">%1$d برچسب انتخاب شده</item>
         <item quantity="other">%1$d برچسب انتخاب شده</item>
+    </plurals>
+    <plurals name="capture_people_summary">
+        <item quantity="one">%1$d نفر پیوندشده</item>
+        <item quantity="other">%1$d نفر پیوندشده</item>
     </plurals>
     <plurals name="photo_count"><item quantity="one">%d عکس</item><item quantity="other">%d عکس</item></plurals>
     <string name="event_edit">ویرایش</string>
@@ -1148,6 +1156,7 @@
     <string name="more_memory_description">لحظه‌هایی را که ذخیره کرده‌اید دوباره مرور کنید.</string>
     <string name="capture_task_section">کارها</string>
     <string name="capture_task_description">بدون مهلت انجام شروع می‌شود.</string>
+    <string name="capture_task_outcome">کاری را که باید انجام دهید یادداشت کنید.</string>
     <string name="capture_task_due_date">موعد کار: %1$s</string>
     <string name="capture_task">کار</string>
     <string name="todo_list_title">کارها</string>

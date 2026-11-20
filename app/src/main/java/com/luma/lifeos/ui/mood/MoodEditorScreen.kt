@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -110,11 +111,35 @@ fun MoodEditorScreen(
         if (state.hasChanges) discarding = true else onCancel()
     }
     var contextExpansionInitialized by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(state.ready, editing, state.draft.personIds, state.draft.placeId) {
+    val optionalDetailsExpanded = more
+    val energySummary = state.draft.energy?.let { value ->
+        stringResource(R.string.mood_optional_value, stringResource(R.string.mood_energy), value)
+    }
+    val stressSummary = state.draft.stress?.let { value ->
+        stringResource(R.string.mood_optional_value, stringResource(R.string.mood_stress), value)
+    }
+    val noteSummary = if (state.draft.note.isNotBlank()) stringResource(R.string.mood_note_added) else null
+    val peopleSummary = if (state.draft.personIds.isNotEmpty()) {
+        pluralStringResource(R.plurals.capture_people_summary, state.draft.personIds.size, state.draft.personIds.size)
+    } else null
+    val placeSummary = if (state.draft.placeId != null) stringResource(R.string.capture_place_summary) else null
+    val optionalDetailsSummary = listOfNotNull(
+        energySummary, stressSummary, noteSummary, peopleSummary, placeSummary,
+    ).joinToString(" · ")
+    LaunchedEffect(
+        state.ready, editing, state.draft.personIds, state.draft.placeId,
+        state.draft.energy, state.draft.stress, state.draft.note,
+    ) {
         if (state.ready && !contextExpansionInitialized) {
-            more = editing || state.draft.personIds.isNotEmpty() || state.draft.placeId != null
+            more = editing || (
+                state.draft.personIds.isNotEmpty() || state.draft.placeId != null ||
+                    state.draft.energy != null || state.draft.stress != null || state.draft.note.isNotBlank()
+                )
             contextExpansionInitialized = true
         }
+    }
+    LaunchedEffect(state.noteLimitError) {
+        if (state.noteLimitError) more = true
     }
     BackHandler { close() }
     Scaffold(
@@ -360,21 +385,30 @@ fun MoodEditorScreen(
                         LumaSectionSurface {
                             Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
                                 val disclosureState = stringResource(
-                                    if (more) R.string.review_details_expanded else R.string.review_details_collapsed,
+                                    if (optionalDetailsExpanded) R.string.review_details_expanded else R.string.review_details_collapsed,
                                 )
-                                LumaTextButton(onClick = { more = !more }, enabled = !state.busy,
+                                LumaTextButton(onClick = { more = !more },
+                                    enabled = !state.busy,
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("mood_more")
                                         .semantics { heading(); stateDescription = disclosureState }) {
                                     Text(
-                                        stringResource(if (more) R.string.mood_fewer_details else R.string.mood_more_details),
+                                        stringResource(if (optionalDetailsExpanded) R.string.mood_fewer_details else R.string.mood_more_details),
                                         modifier = Modifier.weight(1f),
                                         style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                                if (!optionalDetailsExpanded && optionalDetailsSummary.isNotEmpty()) {
+                                    Text(
+                                        optionalDetailsSummary,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.testTag("mood_optional_summary"),
                                     )
                                 }
                                 Text(stringResource(R.string.mood_context_help), style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            if (more) {
+                            if (optionalDetailsExpanded) {
                                 Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
                                     OptionalScale(stringResource(R.string.mood_energy), "energy", state.draft.energy, enabled, onEnergy)
                                     OptionalScale(stringResource(R.string.mood_stress), "stress", state.draft.stress, enabled, onStress)

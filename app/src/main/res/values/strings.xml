@@ -29,9 +29,9 @@
     <string name="cancel">Cancel</string>
     <string name="retry">Try again</string>
     <string name="today_no_entries">No mood or memory entries yet</string>
-    <string name="today_capture_mood">Mood</string>
+    <string name="today_capture_mood">Mood check-in</string>
     <string name="today_capture_journal">Memory</string>
-    <string name="today_capture_memory">Memory</string>
+    <string name="today_capture_memory">Save a memory</string>
     <string name="today_actions">Today’s actions</string>
     <string name="today_recent_entries">Recent entries</string>
     <string name="today_capture_when">When would you like to record this?</string>
@@ -167,8 +167,10 @@
     <string name="capture_use_now">Use current time</string>
     <string name="capture_add_to_date">Add to %1$s</string>
     <string name="capture_mood">Mood check-in</string>
+    <string name="capture_mood_outcome">Record how you feel.</string>
     <string name="capture_journal">Journal entry</string>
     <string name="capture_memory">Memory</string>
+    <string name="capture_memory_outcome">Save a moment you want to keep.</string>
     <string name="capture_habit">Log a habit</string>
     <string name="close">Close</string>
     <string name="save">Save</string>
@@ -196,6 +198,7 @@
     <string name="capture_fewer_details">Hide people, place and photos</string>
     <string name="mood_context_help">Add a note, energy, stress, people or a place.</string>
     <string name="capture_context_help">Link people or a place, or attach photos.</string>
+    <string name="capture_place_summary">Place linked</string>
     <string name="editor_text_limit_error">Use at most %1$s characters. Your previous text has been kept.</string>
     <string name="mood_energy">Energy</string>
     <string name="mood_stress">Stress</string>
@@ -203,6 +206,7 @@
     <string name="mood_scale_description">%1$s, %2$d of 5</string>
     <string name="mood_optional_value">%1$s: %2$d/5</string>
     <string name="mood_note">Note (optional)</string>
+    <string name="mood_note_added">Note added</string>
     <string name="mood_note_limit_error">Notes may contain up to 5,000 UTF-16 units. Your current text was kept.</string>
     <string name="mood_draft_save_error">This draft could not be updated on this device. Your text is still visible here.</string>
     <string name="mood_draft_retry">Retry</string>
@@ -269,7 +273,7 @@
     <string name="journal_text_error">The previous draft is retained. Use at most 50,000 characters for the journal, 200 for its title, and 50 tags of up to 50 characters each.</string>
     <string name="journal_tag_size_error">Use up to 50 characters and no more than 50 tags. Your tag text is retained.</string>
     <string name="memory_capture">Record a memory</string>
-    <string name="memory_promote">Remember this</string>
+    <string name="memory_promote">Save as memory</string>
     <string name="memory_edit">Edit memory</string>
     <string name="memory_title">Title (optional)</string>
     <string name="memory_note">Describe this memory</string>
@@ -310,7 +314,7 @@
     <string name="memory_library_title">Memory</string>
     <string name="memory_library_loading">Loading memories…</string>
     <string name="memory_library_empty">No memories to show yet</string>
-    <string name="memory_library_empty_description">Record a moment you want to keep. You can also remember a mood.</string>
+    <string name="memory_library_empty_description">Use “Record a memory” to save a moment you want to keep. Moods marked as memories appear here too.</string>
     <string name="memory_library_error">Memories couldn’t be loaded</string>
     <string name="memory_library_error_description">Try again to see your saved moments.</string>
     <string name="memory_library_load_older">Load older memories</string>
@@ -437,6 +441,10 @@
     <plurals name="memory_tags_summary">
         <item quantity="one">%1$d tag selected</item>
         <item quantity="other">%1$d tags selected</item>
+    </plurals>
+    <plurals name="capture_people_summary">
+        <item quantity="one">%1$d person linked</item>
+        <item quantity="other">%1$d people linked</item>
     </plurals>
     <plurals name="photo_count"><item quantity="one">%d photo</item><item quantity="other">%d photos</item></plurals>
     <string name="event_edit">Edit</string>
@@ -1147,6 +1155,7 @@
     <string name="more_memory_description">Revisit moments you’ve saved</string>
     <string name="capture_task_section">Tasks</string>
     <string name="capture_task_description">Starts without a due date.</string>
+    <string name="capture_task_outcome">Write down something you need to do.</string>
     <string name="capture_task_due_date">Task due %1$s</string>
     <string name="capture_task">Task</string>
     <string name="todo_list_title">Tasks</string>

@@ -83,6 +83,15 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
         if (state.busy) return
         if (state.hasChanges || tagText.isNotBlank()) discarding = true else onCancel()
     }
+    val contextPeopleSummary = if (state.draft.personIds.isNotEmpty()) {
+        pluralStringResource(R.plurals.capture_people_summary, state.draft.personIds.size, state.draft.personIds.size)
+    } else null
+    val contextPlaceSummary = if (state.draft.placeId != null) stringResource(R.string.capture_place_summary) else null
+    val contextPhotoSummary = if (state.draft.photos.isNotEmpty()) {
+        pluralStringResource(R.plurals.photo_count, state.draft.photos.size, state.draft.photos.size)
+    } else null
+    val contextSummary = listOfNotNull(contextPeopleSummary, contextPlaceSummary, contextPhotoSummary)
+        .joinToString(" · ")
     LaunchedEffect(state.ready, state.editing, state.original, state.draft.personIds, state.draft.placeId, state.draft.photos) {
         if (state.ready && !contextExpansionInitialized) {
             more = state.error == MemoryEditorError.PHOTO || state.editing || state.original != null || state.draft.personIds.isNotEmpty() ||
@@ -323,19 +332,29 @@ fun MemoryEditorScreen(state: MemoryEditorState, onCancel: () -> Unit, onSave: (
                     val disclosureState = stringResource(
                         if (more) R.string.review_details_expanded else R.string.review_details_collapsed,
                     )
-                    LumaTextButton(
-                        onClick = { more = !more },
-                        enabled = enabled && contextExpansionInitialized,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .semantics { heading(); stateDescription = disclosureState }.testTag("memory_more"),
-                    ) {
-                        Text(
-                            stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
+                        LumaTextButton(
+                            onClick = { more = !more },
+                            enabled = enabled && contextExpansionInitialized,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                .semantics { heading(); stateDescription = disclosureState }.testTag("memory_more"),
+                        ) {
+                            Text(
+                                stringResource(if (more) R.string.capture_fewer_details else R.string.capture_more_details),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        if (!more && contextSummary.isNotEmpty()) {
+                            Text(
+                                contextSummary,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.testTag("memory_context_summary"),
+                            )
+                        }
+                        Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
                     }
-                    Text(stringResource(R.string.capture_context_help), style = MaterialTheme.typography.bodySmall)
                     if (more) {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap),

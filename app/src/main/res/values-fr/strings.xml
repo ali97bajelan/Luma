@@ -29,9 +29,9 @@
     <string name="cancel">Annuler</string>
     <string name="retry">Réessayer</string>
     <string name="today_no_entries">Aucune entrée d’humeur ou de souvenir pour le moment</string>
-    <string name="today_capture_mood">Humeur</string>
+    <string name="today_capture_mood">Point sur l’humeur</string>
     <string name="today_capture_journal">Souvenir</string>
-    <string name="today_capture_memory">Souvenir</string>
+    <string name="today_capture_memory">Enregistrer un souvenir</string>
     <string name="today_actions">Actions du jour</string>
     <string name="today_recent_entries">Entrées récentes</string>
     <string name="today_capture_when">Quand souhaitez-vous enregistrer cette entrée ?</string>
@@ -171,8 +171,10 @@
     <string name="capture_use_now">Utiliser l’heure actuelle</string>
     <string name="capture_add_to_date">Ajouter au %1$s</string>
     <string name="capture_mood">Point sur l’humeur</string>
+    <string name="capture_mood_outcome">Notez ce que vous ressentez.</string>
     <string name="capture_journal">Entrée de journal</string>
     <string name="capture_memory">Souvenir</string>
+    <string name="capture_memory_outcome">Enregistrez un moment qui mérite d’être gardé.</string>
     <string name="capture_habit">Enregistrer une habitude</string>
     <string name="close">Fermer</string>
     <string name="save">Enregistrer</string>
@@ -200,6 +202,7 @@
     <string name="capture_fewer_details">Masquer personnes, lieu et photos</string>
     <string name="mood_context_help">Ajoutez une note, l’énergie, le stress, des personnes ou un lieu.</string>
     <string name="capture_context_help">Associez des personnes ou un lieu, ou joignez des photos.</string>
+    <string name="capture_place_summary">Lieu associé</string>
     <string name="editor_text_limit_error">Utilisez au maximum %1$s caractères. Votre texte précédent a été conservé.</string>
     <string name="mood_energy">Énergie</string>
     <string name="mood_stress">Stress</string>
@@ -207,6 +210,7 @@
     <string name="mood_scale_description">%1$s, %2$d sur 5</string>
     <string name="mood_optional_value">%1$s : %2$d/5</string>
     <string name="mood_note">Note (facultatif)</string>
+    <string name="mood_note_added">Note ajoutée</string>
     <string name="mood_note_limit_error">Les notes peuvent contenir jusqu’à 5 000 unités UTF-16. Votre texte actuel a été conservé.</string>
     <string name="mood_draft_save_error">Impossible de mettre à jour ce brouillon sur cet appareil. Votre texte reste visible ici.</string>
     <string name="mood_draft_retry">Réessayer</string>
@@ -273,7 +277,7 @@
     <string name="journal_text_error">Le brouillon précédent est conservé. Utilisez au maximum 50 000 caractères pour le journal, 200 pour son titre et 50 étiquettes de 50 caractères chacune.</string>
     <string name="journal_tag_size_error">Utilisez au maximum 50 caractères et 50 étiquettes. Le texte de l’étiquette est conservé.</string>
     <string name="memory_capture">Enregistrer un souvenir</string>
-    <string name="memory_promote">Garder en souvenir</string>
+    <string name="memory_promote">Enregistrer comme souvenir</string>
     <string name="memory_edit">Modifier le souvenir</string>
     <string name="memory_title">Titre (facultatif)</string>
     <string name="memory_note">Décrivez ce souvenir</string>
@@ -314,7 +318,7 @@
     <string name="memory_library_title">Souvenir</string>
     <string name="memory_library_loading">Chargement des souvenirs…</string>
     <string name="memory_library_empty">Aucun souvenir à afficher pour le moment</string>
-    <string name="memory_library_empty_description">Enregistrez un moment à garder. Vous pouvez aussi garder une humeur en souvenir.</string>
+    <string name="memory_library_empty_description">Utilisez « Enregistrer un souvenir » pour garder un moment qui compte. Les humeurs gardées en souvenir apparaissent aussi ici.</string>
     <string name="memory_library_error">Impossible de charger les souvenirs</string>
     <string name="memory_library_error_description">Réessayez pour voir vos moments enregistrés.</string>
     <string name="memory_library_load_older">Charger les souvenirs plus anciens</string>
@@ -442,6 +446,11 @@
     <plurals name="memory_tags_summary">
         <item quantity="one">%1$d étiquette sélectionnée</item>
         <item quantity="other">%1$d étiquettes sélectionnées</item>
+    </plurals>
+    <plurals name="capture_people_summary">
+        <item quantity="one">%1$d personne associée</item>
+        <item quantity="many">%1$d personnes associées</item>
+        <item quantity="other">%1$d personnes associées</item>
     </plurals>
     <plurals name="photo_count">
         <item quantity="one">%d photo</item>
@@ -1162,6 +1171,7 @@
     <string name="more_memory_description">Revoyez les moments que vous avez enregistrés.</string>
     <string name="capture_task_section">Tâches</string>
     <string name="capture_task_description">Aucune échéance n’est définie au départ.</string>
+    <string name="capture_task_outcome">Notez une chose à faire.</string>
     <string name="capture_task_due_date">Tâche à faire le %1$s</string>
     <string name="capture_task">Tâche</string>
     <string name="todo_list_title">Tâches</string>
