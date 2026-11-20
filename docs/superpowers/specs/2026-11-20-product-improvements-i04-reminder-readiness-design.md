@@ -1,6 +1,6 @@
 # IP-I04 — Reminder readiness specification
 
-**Priority** P1 · **Horizon** Next · **Status** PENDING
+**Priority** P1 · **Horizon** Next · **Status** SOURCE COMPLETE — QA PENDING
 
 [Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [Proposal](../../20261118-Proposal.md) · [Implementation plan](../plans/2026-11-20-product-improvements-i04-reminder-readiness.md) · [Final emulator QA](../plans/2026-11-20-product-improvements-q01-emulator-qa.md#qa-04)
 

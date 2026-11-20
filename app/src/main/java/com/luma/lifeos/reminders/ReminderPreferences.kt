@@ -45,11 +45,23 @@ class ReminderPreferences(context: Context) {
     }
 }
 
+internal fun reminderNotificationBlockReason(context: Context): ReminderAccessBlockReason {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    ) {
+        return ReminderAccessBlockReason.APP
+    }
+    return when {
+        !NotificationManagerCompat.from(context).areNotificationsEnabled() -> ReminderAccessBlockReason.APP
+        context.getSystemService(NotificationManager::class.java)
+            .getNotificationChannel(ReminderPlatform.CHANNEL_ID)?.importance == NotificationManager.IMPORTANCE_NONE ->
+            ReminderAccessBlockReason.CHANNEL
+        else -> ReminderAccessBlockReason.NONE
+    }
+}
+
 fun notificationPermissionGranted(context: Context): Boolean =
-    (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
-        NotificationManagerCompat.from(context).areNotificationsEnabled() &&
-        (Build.VERSION.SDK_INT < 26 || context.getSystemService(NotificationManager::class.java)
-            .getNotificationChannel(ReminderPlatform.CHANNEL_ID)?.importance != NotificationManager.IMPORTANCE_NONE)
+    reminderNotificationBlockReason(context) == ReminderAccessBlockReason.NONE
 
 fun reminderStatusText(status: ReminderDeliveryStatus): Int = when (status) {
     ReminderDeliveryStatus.BLOCKED -> R.string.reminder_status_blocked

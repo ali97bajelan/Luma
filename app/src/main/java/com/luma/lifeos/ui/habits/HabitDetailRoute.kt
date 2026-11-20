@@ -25,8 +25,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -35,6 +37,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -48,12 +53,18 @@ import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.habit.HabitReminderRepository
 import com.luma.lifeos.domain.habit.ReminderSchedule
 import com.luma.lifeos.reminders.ReminderPermissionSwitch
-import com.luma.lifeos.reminders.enqueueReminderReconciliation
+import com.luma.lifeos.reminders.ReminderPreferences
+import com.luma.lifeos.reminders.ReminderReadinessBlock
+import com.luma.lifeos.reminders.ReminderSchedulePreview
 import com.luma.lifeos.reminders.ReminderStatusStore
 import com.luma.lifeos.reminders.ReminderDeliveryStatus
+import com.luma.lifeos.reminders.enqueueReminderReconciliation
+import com.luma.lifeos.reminders.habitReminderSchedulePreview
+import com.luma.lifeos.reminders.rememberReminderNotificationAccess
 import com.luma.lifeos.reminders.reminderStatusText
 import com.luma.lifeos.reminders.notificationPermissionGranted
 import com.luma.lifeos.domain.habit.scheduleFor
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -93,8 +104,18 @@ fun HabitDetailRoute(
     var reminderMinute by rememberSaveable(habitId.toString()) { mutableStateOf(9 * 60) }
     var pickingReminderTime by rememberSaveable(habitId.toString()) { mutableStateOf(false) }
     var reminderStatus by rememberSaveable(habitId.toString()) { mutableStateOf(R.string.reminder_status_configured) }
+    var reminderPreview by remember(habitId) { mutableStateOf<ReminderSchedulePreview?>(null) }
+    var reminderPreviewRefresh by remember(habitId) { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) reminderPreviewRefresh += 1
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     LaunchedEffect(reminderRepository, habitId) {
         val config = reminderRepository?.configuration(habitId)
         reminderEnabled = config?.enabled == true
@@ -104,6 +125,20 @@ fun HabitDetailRoute(
             null -> 9 * 60
         }
         if (reminderEnabled) reminderStatus = reminderStatusText(ReminderStatusStore(context).get("habit", habitId.toString()))
+    }
+    LaunchedEffect(reminderRepository, habitId, reminderEnabled, reminderMinute, reminderPreviewRefresh) {
+        if (reminderRepository == null) {
+            reminderPreview = null
+        } else {
+            val now = Instant.now()
+            val input = reminderRepository.planningInputs(now).firstOrNull { it.config.habitId == habitId }
+            reminderPreview = input?.let {
+                habitReminderSchedulePreview(
+                    it.copy(now = now, config = it.config.copy(enabled = reminderEnabled)),
+                    ReminderPreferences(context).quietHours(),
+                )
+            } ?: if (reminderEnabled) ReminderSchedulePreview.NoEligibleSlot else ReminderSchedulePreview.NoSchedule
+        }
     }
     LaunchedEffect(pickingReminderTime) {
         if (pickingReminderTime) {
@@ -120,6 +155,7 @@ fun HabitDetailRoute(
                             }
                             reminderStatus = reminderStatusText(deliveryStatus)
                             ReminderStatusStore(context).set("habit", habitId.toString(), deliveryStatus)
+                            reminderPreviewRefresh += 1
                             enqueueReminderReconciliation(context)
                         }
                         .onFailure { reminderStatus = R.string.reminder_save_failed }
@@ -144,6 +180,7 @@ fun HabitDetailRoute(
         reminderEnabled = reminderEnabled,
         reminderStatus = reminderStatus,
         reminderMinute = reminderMinute,
+        reminderPreview = reminderPreview,
         onReminderTimeClick = { pickingReminderTime = true },
         onReminderEnabled = { enabled ->
             if (reminderRepository != null) {
@@ -159,6 +196,7 @@ fun HabitDetailRoute(
                             }
                             reminderStatus = reminderStatusText(deliveryStatus)
                             ReminderStatusStore(context).set("habit", habitId.toString(), deliveryStatus)
+                            reminderPreviewRefresh += 1
                             enqueueReminderReconciliation(context)
                         }
                         .onFailure {
@@ -215,6 +253,7 @@ fun HabitDetailScreen(
     reminderEnabled: Boolean = false,
     reminderStatus: Int = R.string.reminder_status_configured,
     reminderMinute: Int = 9 * 60,
+    reminderPreview: ReminderSchedulePreview? = null,
     onReminderTimeClick: () -> Unit = {},
     onReminderEnabled: (Boolean) -> Unit = {},
 ) {
@@ -223,6 +262,7 @@ fun HabitDetailScreen(
     var correctionPickerOpen by rememberSaveable { mutableStateOf(false) }
     val detail = state.detail
     val habit = detail?.habit
+    val notificationAccess = rememberReminderNotificationAccess()
     val targetLogId = detail?.selectedLogId ?: selectedLogId
     val selectedTarget = detail?.takeIf { it.selectedLogStatus == HabitTargetStatus.FOUND }?.selectedLog
     val day = detail?.day
@@ -330,6 +370,19 @@ fun HabitDetailScreen(
                         }
                         if (reminderEnabled || reminderStatus == R.string.reminder_save_failed) {
                             Text(stringResource(reminderStatus), modifier = Modifier.padding(horizontal = LumaUi.SectionPadding))
+                        }
+                        reminderPreview?.let { preview ->
+                            ReminderReadinessBlock(
+                                access = notificationAccess,
+                                preview = preview,
+                                quietHoursEnabled = ReminderPreferences(LocalContext.current).quietHours().enabled,
+                                modifier = Modifier.padding(top = LumaUi.SectionGap),
+                                accessStatusTag = "habit_detail_reminder_access_status",
+                                accessActionTag = "habit_detail_reminder_access",
+                                previewTag = "habit_detail_reminder_schedule_preview",
+                                testActionTag = "habit_detail_test_notification",
+                                testStatusTag = "habit_detail_test_notification_status",
+                            )
                         }
                     }
                     item(key = "habit_detail_undo_feedback") {

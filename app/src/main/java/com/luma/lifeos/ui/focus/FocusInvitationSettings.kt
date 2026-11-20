@@ -47,10 +47,14 @@ import com.luma.lifeos.domain.focus.FocusProductContext
 import com.luma.lifeos.domain.focus.FocusProductResult
 import com.luma.lifeos.reminders.ReminderNotificationAccess
 import com.luma.lifeos.reminders.ReminderPreferences
+import com.luma.lifeos.reminders.ReminderReadinessBlock
+import com.luma.lifeos.domain.habit.ReminderQuietHours
 import com.luma.lifeos.reminders.enqueueReminderReconciliation
+import com.luma.lifeos.reminders.focusInvitationSchedulePreview
 import com.luma.lifeos.reminders.rememberReminderNotificationAccess
-import com.luma.lifeos.ui.common.LumaButton
 import java.time.DayOfWeek
+import java.time.Instant
+import java.time.ZoneId
 import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.Locale
@@ -160,10 +164,14 @@ internal fun FocusInvitationSettings(
         if (persisted.enabled) R.string.focus_invitation_schedule_enabled
         else R.string.focus_invitation_schedule_disabled,
     )
-    val notificationSummary = stringResource(
-        if (notificationAccess.granted) R.string.focus_invitation_notifications_allowed
-        else R.string.focus_invitation_notifications_blocked,
-    )
+    val notificationSummary = when (notificationAccess.blockReason) {
+        com.luma.lifeos.reminders.ReminderAccessBlockReason.NONE ->
+            stringResource(R.string.focus_invitation_notifications_allowed)
+        com.luma.lifeos.reminders.ReminderAccessBlockReason.APP ->
+            stringResource(R.string.focus_invitation_notifications_blocked)
+        com.luma.lifeos.reminders.ReminderAccessBlockReason.CHANNEL ->
+            stringResource(R.string.reminder_access_channel_blocked)
+    }
     val statusSummary = stringResource(
         R.string.focus_invitation_settings_summary,
         scheduleSummary,
@@ -184,9 +192,13 @@ internal fun FocusInvitationSettings(
             verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
         ) {
             Text(stringResource(R.string.focus_invitation_settings_intro), style = MaterialTheme.typography.bodyMedium)
-            if (preferences?.quietHours()?.enabled == true) {
-                Text(stringResource(R.string.focus_invitation_quiet_hours_hint), style = MaterialTheme.typography.bodySmall)
-            }
+            val quietHours = preferences?.quietHours() ?: ReminderQuietHours()
+            val schedulePreview = focusInvitationSchedulePreview(
+                draft,
+                Instant.now(),
+                ZoneId.systemDefault(),
+                quietHours,
+            )
             val enableInvitationLabel = stringResource(R.string.focus_invitation_enable)
             val disabledReason = when {
                 busy -> stringResource(R.string.focus_invitation_save_pending)
@@ -274,23 +286,16 @@ internal fun FocusInvitationSettings(
                     ))
                 }
             }
-            Text(
-                stringResource(
-                    if (notificationAccess.granted) R.string.focus_invitation_notifications_allowed
-                    else R.string.focus_invitation_notifications_blocked,
-                ),
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                    .testTag("focus_invitation_notification_status"),
-                style = MaterialTheme.typography.bodySmall,
+            ReminderReadinessBlock(
+                access = notificationAccess,
+                preview = schedulePreview,
+                quietHoursEnabled = quietHours.enabled,
+                accessStatusTag = "focus_invitation_notification_status",
+                accessActionTag = "focus_invitation_notification_access",
+                previewTag = "focus_invitation_schedule_preview",
+                testActionTag = "focus_invitation_test_notification",
+                testStatusTag = "focus_invitation_test_notification_status",
             )
-            if (!notificationAccess.granted) {
-                LumaButton(
-                    onClick = notificationAccess.request,
-                    modifier = Modifier.testTag("focus_invitation_notification_access"),
-                ) {
-                    Text(stringResource(R.string.focus_invitation_allow_notifications))
-                }
-            }
             if (busy) {
                 Text(
                     stringResource(R.string.focus_invitation_save_pending),

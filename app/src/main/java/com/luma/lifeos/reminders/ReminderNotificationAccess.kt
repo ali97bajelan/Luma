@@ -3,6 +3,7 @@ package com.luma.lifeos.reminders
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -27,15 +28,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.luma.lifeos.R
 
-internal data class ReminderNotificationAccess(val granted: Boolean, val request: () -> Unit)
+internal enum class ReminderAccessBlockReason { NONE, APP, CHANNEL }
 
+internal data class ReminderNotificationAccess(
+    val granted: Boolean,
+    val blockReason: ReminderAccessBlockReason = if (granted) ReminderAccessBlockReason.NONE else ReminderAccessBlockReason.APP,
+    val refresh: () -> Unit = {},
+    val request: () -> Unit,
+)
+
+@SuppressLint("InlinedApi")
 @Composable
 internal fun rememberReminderNotificationAccess(onRequestComplete: () -> Unit = {}): ReminderNotificationAccess {
     val context = LocalContext.current
@@ -43,10 +51,12 @@ internal fun rememberReminderNotificationAccess(onRequestComplete: () -> Unit = 
     val preferences = remember(context) { ReminderPreferences(context) }
     val completeRequest by rememberUpdatedState(onRequestComplete)
     // This is a display snapshot; every permission-sensitive action checks Android again.
-    var granted by remember(context) { mutableStateOf(notificationPermissionGranted(context)) }
-    var showRationale by rememberSaveable { mutableStateOf(false) }
+    var blockReason by remember(context) { mutableStateOf(reminderNotificationBlockReason(context)) }
+    val latestBlockReason = rememberUpdatedState(blockReason)
+    var showRationale by rememberSaveable { mutableStateOf(value = false) }
+    val refresh = { blockReason = reminderNotificationBlockReason(context) }
     val permissionRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        granted = notificationPermissionGranted(context)
+        refresh()
         completeRequest()
         enqueueReminderReconciliation(context)
     }
@@ -58,9 +68,9 @@ internal fun rememberReminderNotificationAccess(onRequestComplete: () -> Unit = 
     DisposableEffect(owner, context) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                val current = notificationPermissionGranted(context)
-                if (current != granted) enqueueReminderReconciliation(context)
-                granted = current
+                val current = reminderNotificationBlockReason(context)
+                if (current != latestBlockReason.value) enqueueReminderReconciliation(context)
+                blockReason = current
             }
         }
         owner.lifecycle.addObserver(observer)
@@ -83,13 +93,13 @@ internal fun rememberReminderNotificationAccess(onRequestComplete: () -> Unit = 
         )
     }
 
-    return ReminderNotificationAccess(granted) {
-        granted = notificationPermissionGranted(context)
+    val request = {
+        refresh()
         val activity = context.reminderActivity()
         val needsRuntimePermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
         when {
-            !needsRuntimePermission || activity == null -> {
+            (!needsRuntimePermission || activity == null) -> {
                 completeRequest()
                 openReminderNotificationSettings(context)
             }
@@ -101,11 +111,18 @@ internal fun rememberReminderNotificationAccess(onRequestComplete: () -> Unit = 
             else -> launchPermission()
         }
     }
+    return ReminderNotificationAccess(
+        granted = blockReason == ReminderAccessBlockReason.NONE,
+        blockReason = blockReason,
+        refresh = refresh,
+        request = request,
+    )
 }
 
 private fun openReminderNotificationSettings(context: Context) {
-    // A blocked app needs its app-level switch; otherwise expose the reminder channel.
-    val intent = if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+    // Repair the same layer reported to the user; available access opens the channel settings.
+    val reason = reminderNotificationBlockReason(context)
+    val intent = if (reason != ReminderAccessBlockReason.APP) {
         ReminderPlatform(context).ensureChannel()
         Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
@@ -117,8 +134,12 @@ private fun openReminderNotificationSettings(context: Context) {
     try {
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (_: ActivityNotFoundException) {
-        context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-            Uri.fromParts("package", context.packageName, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        context.startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null),
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
     }
 }
 

@@ -16,6 +16,8 @@ import com.luma.lifeos.domain.todo.TaskReminderAction
 
 enum class ReminderDeliveryStatus { OFF, CONFIGURED, PENDING, BLOCKED, SCHEDULED, QUIET_HOURS }
 
+internal enum class ReminderTestNotificationResult { ATTEMPTED, BLOCKED }
+
 class ReminderStatusStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("reminder_status", Context.MODE_PRIVATE)
     fun get(kind: String, id: String): ReminderDeliveryStatus = runCatching {
@@ -143,6 +145,33 @@ internal class ReminderPlatform(private val context: Context) {
         }
     }
 
+    fun postGenericTestNotification(): ReminderTestNotificationResult {
+        ensureChannel()
+        if (permissionBlocked()) return ReminderTestNotificationResult.BLOCKED
+        val title = context.getString(R.string.reminder_test_notification_title)
+        val body = context.getString(R.string.reminder_test_notification_body)
+        val publicVersion = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setContentTitle(title)
+            .setContentText(body)
+            .build()
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(publicVersion)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .build()
+        return try {
+            notifications.notify(TEST_NOTIFICATION_TAG, 0, notification)
+            ReminderTestNotificationResult.ATTEMPTED
+        } catch (_: SecurityException) {
+            ReminderTestNotificationResult.BLOCKED
+        }
+    }
+
     fun cancelNotification(kind: String, id: String) {
         notifications.cancel(notificationTag(kind, id), 0)
         val entries = registry.getStringSet(KEY_NOTIFICATIONS, emptySet()).orEmpty().toMutableSet()
@@ -173,6 +202,7 @@ internal class ReminderPlatform(private val context: Context) {
 
     companion object {
         const val CHANNEL_ID = "local_reminders"
+        private const val TEST_NOTIFICATION_TAG = "luma-reminder-test"
         private const val KEY_ALARMS = "scheduled_ids"
         private const val KEY_NOTIFICATIONS = "notification_revisions"
     }

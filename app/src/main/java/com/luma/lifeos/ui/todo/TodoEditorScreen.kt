@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.error
@@ -60,25 +61,33 @@ import com.luma.lifeos.calendar.rememberCalendarPolicy
 import com.luma.lifeos.ui.common.LumaCalendarDatePicker
 import com.luma.lifeos.ui.common.calendarPickerBounds
 import com.luma.lifeos.ui.common.rememberLumaCalendarDatePickerState
+import com.luma.lifeos.domain.todo.TaskReminderConfig
 import com.luma.lifeos.domain.todo.TodoField
 import com.luma.lifeos.domain.todo.TodoImportance
+import com.luma.lifeos.domain.todo.TodoTask
 import com.luma.lifeos.domain.todo.TodoTextLimits
 import com.luma.lifeos.domain.todo.TodoValidationReason
 import com.luma.lifeos.language.rememberDisplayTimePolicy
+import com.luma.lifeos.reminders.ReminderPreferences
+import com.luma.lifeos.reminders.ReminderReadinessBlock
+import com.luma.lifeos.reminders.ReminderSchedulePreview
+import com.luma.lifeos.reminders.rememberReminderNotificationAccess
+import com.luma.lifeos.reminders.taskReminderSchedulePreview
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.EditorTopBar
 import com.luma.lifeos.ui.common.EditorActionRow
 import com.luma.lifeos.ui.common.LumaEditorActionFooter
 import com.luma.lifeos.ui.common.LumaPrimaryActionButton
 import java.text.NumberFormat
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.FormatStyle
 import java.util.UUID
 import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaReadingPane
-import com.luma.lifeos.ui.common.LumaDestructiveTextButton
 import com.luma.lifeos.ui.common.LumaTodoImportanceSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,6 +151,10 @@ fun TodoEditorScreen(
     val timeFocus = remember { FocusRequester() }
     val timeBringIntoView = remember { BringIntoViewRequester() }
     val displayTime = rememberDisplayTimePolicy()
+    val context = LocalContext.current
+    val reminderAccess = rememberReminderNotificationAccess()
+    val reminderPreferences = remember(context) { ReminderPreferences(context) }
+    val reminderPreviewId = remember(state.taskId) { state.taskId ?: UUID.randomUUID() }
     val canEdit = state.ready && !state.busy && !state.finished && !state.conflict && !state.missing &&
         !state.move.hasPendingOperation &&
         state.pendingAction != "complete" && state.pendingAction != "reopen" && state.pendingAction != "delete"
@@ -491,12 +504,54 @@ fun TodoEditorScreen(
                     }
                 }
 
-                if (!state.taskCompleted && state.draft.dueDate != null && state.draft.dueTime != null) {
-                    Text(
-                        stringResource(R.string.reminder_task_automatic_description),
-                        modifier = Modifier.testTag("todo_editor_reminder_status"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (!state.taskCompleted && state.draft.dueDate != null) {
+                    val previewNow = Instant.now()
+                    val previewTask = runCatching {
+                        // This in-memory task lets the preview call the same pure planner without saving a draft.
+                        TodoTask(
+                            id = reminderPreviewId,
+                            title = "Reminder preview",
+                            note = null,
+                            dueDate = state.draft.dueDate,
+                            completedAt = null,
+                            createdAt = previewNow,
+                            updatedAt = previewNow,
+                            revision = reminderPreviewId,
+                            dueTime = state.draft.dueTime,
+                            importance = TodoImportance.NONE,
+                        )
+                    }.getOrNull()
+                    val previewConfig = TaskReminderConfig(
+                        taskId = reminderPreviewId,
+                        enabled = true,
+                        revision = reminderPreviewId,
+                        taskRevision = reminderPreviewId,
+                    )
+                    val schedulePreview = when {
+                        state.draft.dueTime == null -> ReminderSchedulePreview.MissingDueTime
+                        previewTask == null -> ReminderSchedulePreview.NoEligibleSlot
+                        else -> taskReminderSchedulePreview(
+                            previewTask,
+                            previewConfig,
+                            previewNow,
+                            ZoneId.systemDefault(),
+                            reminderPreferences.quietHours(),
+                        )
+                    }
+                    ReminderReadinessBlock(
+                        access = reminderAccess,
+                        preview = schedulePreview,
+                        description = if (state.draft.dueTime == null) null
+                            else stringResource(R.string.reminder_task_automatic_description),
+                        descriptionTag = if (state.draft.dueTime == null) null
+                            else "todo_editor_reminder_status",
+                        quietHoursEnabled = reminderPreferences.quietHours().enabled,
+                        modifier = Modifier.fillMaxWidth().testTag("todo_editor_reminder_readiness"),
+                        accessStatusTag = "todo_editor_reminder_access_status",
+                        accessActionTag = "todo_editor_reminder_access",
+                        previewTag = "todo_editor_reminder_schedule_preview",
+                        testActionTag = "todo_editor_test_notification",
+                        testStatusTag = "todo_editor_test_notification_status",
                     )
                 }
 
