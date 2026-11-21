@@ -96,9 +96,9 @@ Expected command gate is exit 0, zero unexplained skips/tests missing, zero fail
 
 **Weekly Review reflection loop** · [IP-I09 requirements](../specs/2026-11-20-product-improvements-i09-weekly-reflection-design.md#requirements) · **NOT RUN**
 
-**Actions** Open sparse, true-zero, unavailable and dense partial-week data. Change week-start and calendar system, then browse historical Review. Open an authorized source and return. From What helped? open Memory and save on the displayed current civil date. From What would you change? open current Tasks and dated Habits. Repeat with protected source groups.
+**Actions** Open sparse, true-zero, unavailable and dense partial-week data. Change week-start and calendar system, then browse historical Review. Open an authorized source and return. From What helped? open Memory and save on the displayed current civil date. Repeat through App Lock, trigger a manual Memory retry, and recreate the process before saving. From What would you change? open current Tasks and dated Habits. Repeat with protected source groups.
 
-**Expected** Both ranges and relevant coverage are clear. Missing observations remain distinct from measured zero. Follow-ups display the date/context before navigation and do not alter task due dates or habit schedules. Historical context and new Memory date are distinct. Source privacy and neutral, observational copy hold.
+**Expected** Both ranges and relevant coverage are clear when authorized; protected coverage facts are hidden when aggregate access is denied. Missing observations remain distinct from measured zero. Follow-ups display the date/context before navigation and do not alter task due dates or habit schedules. Historical context and new Memory date are distinct, and retry retains the date. A recreated restricted-capture route resumes its existing draft chooser without creating a second draft. Source privacy and neutral, observational copy hold.
 
 ## Execution evidence
 

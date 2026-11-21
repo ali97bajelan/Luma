@@ -101,9 +101,9 @@ class RestrictedCaptureService(
     private val active = ConcurrentHashMap<UUID, CreateSession>()
     private val sessionMutex = Mutex()
 
-    suspend fun begin(kind: CaptureKind): CreateSession = sessionMutex.withLock {
+    suspend fun begin(kind: CaptureKind, initialOccurredAt: Instant? = null): CreateSession = sessionMutex.withLock {
         val effectiveKind = kind.asMemoryKind()
-        val draft = newDraft(effectiveKind)
+        val draft = newDraft(effectiveKind, initialOccurredAt)
         drafts.write(draft)
         CreateSession(draft.id, effectiveKind).also { active[it.token] = it }
     }
@@ -319,14 +319,15 @@ class RestrictedCaptureService(
         }
     }
 
-    private suspend fun newDraft(kind: CaptureKind): CaptureDraft {
+    private suspend fun newDraft(kind: CaptureKind, initialOccurredAt: Instant?): CaptureDraft {
         val now = Instant.now()
+        val occurredAt = initialOccurredAt.takeIf { kind == CaptureKind.MEMORY } ?: now
         // Reuse only the habit tracking-zone preference (not any saved habit records) so the
         // existing create contract can accept a new definition on installations with a custom zone.
         val captureZone = if (kind == CaptureKind.HABIT_DEFINITION) habits.trackingZone() ?: zone() else zone()
         val today = LocalDate.now(captureZone)
         val fields = when (kind) {
-            CaptureKind.MEMORY, CaptureKind.JOURNAL, CaptureKind.MOOD -> mapOf("occurredAt" to now.toString())
+            CaptureKind.MEMORY, CaptureKind.JOURNAL, CaptureKind.MOOD -> mapOf("occurredAt" to occurredAt.toString())
             CaptureKind.TASK -> emptyMap()
             CaptureKind.HABIT_DEFINITION -> mapOf(
                 "start" to today.toString(), "target" to "1", "weekdays" to "1,2,3,4,5,6,7",

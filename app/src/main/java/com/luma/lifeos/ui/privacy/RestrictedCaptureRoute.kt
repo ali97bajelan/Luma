@@ -138,10 +138,10 @@ private class RestrictedCaptureViewModel(private val service: RestrictedCaptureS
         }
     }
 
-    fun begin(kind: CaptureKind) = viewModelScope.launch {
+    fun begin(kind: CaptureKind, initialTimeMillis: Long? = null) = viewModelScope.launch {
         mutableState.value = state.value.copy(busy = true, error = null)
         try {
-            val session = service.begin(kind)
+            val session = service.begin(kind, initialTimeMillis?.let(Instant::ofEpochMilli))
             val draft = service.activeDraft(session)
             mutableState.value = if (draft == null) state.value.copy(busy = false, error = CaptureUiError.STORAGE)
             else state.value.copy(busy = false, session = session, draft = draft, draftIds = emptyList())
@@ -341,6 +341,9 @@ fun RestrictedCaptureRoute(
     onBack: () -> Unit,
     onRequestDraftUnlock: (UUID, (OperationProof) -> Unit) -> Unit,
     initialKind: CaptureKind? = null,
+    initialTimeMillis: Long? = null,
+    initialRequestConsumed: Boolean = false,
+    onConsumeInitialRequest: () -> Unit = {},
     onMemorySaved: (EventId) -> Unit = {},
 ) {
     val factory = remember(service) { viewModelFactory { initializer { RestrictedCaptureViewModel(service) } } }
@@ -390,9 +393,12 @@ fun RestrictedCaptureRoute(
             if (activity?.isChangingConfigurations != true) cameraFilePath?.let(::File)?.delete()
         }
     }
-    LaunchedEffect(initialKind, state.loading) {
-        if (initialKind != null && !state.loading && state.session == null && !state.busy && !state.saved) {
-            vm.begin(initialKind)
+    LaunchedEffect(initialKind, initialTimeMillis, initialRequestConsumed, state.loading) {
+        if (initialKind != null && !initialRequestConsumed && !state.loading &&
+            state.session == null && !state.busy && !state.saved
+        ) {
+            onConsumeInitialRequest()
+            vm.begin(initialKind, initialTimeMillis)
         }
     }
     LaunchedEffect(state.saved) {
@@ -441,7 +447,9 @@ fun RestrictedCaptureRoute(
                     CaptureKind.entries.filterNot { it == CaptureKind.JOURNAL }.forEach { kind ->
                         LumaChoiceRow(
                             title = stringResource(kind.labelResource()), icon = R.drawable.ic_nav_timeline,
-                            onClick = { vm.begin(kind) }, modifier = Modifier.testTag("restricted_capture_kind_${kind.name.lowercase()}"),
+                            onClick = {
+                                vm.begin(kind, initialTimeMillis.takeIf { kind == initialKind })
+                            }, modifier = Modifier.testTag("restricted_capture_kind_${kind.name.lowercase()}"),
                             showChevron = true,
                         )
                     }

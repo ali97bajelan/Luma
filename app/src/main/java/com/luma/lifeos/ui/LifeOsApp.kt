@@ -196,6 +196,8 @@ private const val TODO_EDITOR_REQUEST_DELETE_KEY = "todo_editor_request_delete"
 private const val MEMORY_LIBRARY_CAPTURE_ORIGIN_KEY = "memory_library_capture_origin"
 private const val MEMORY_LIBRARY_RESTRICTED_CAPTURE_SAVED_ID_KEY = "memory_library_restricted_capture_saved_id"
 private const val RESTRICTED_CAPTURE_INITIAL_KIND_KEY = "restricted_capture_initial_kind"
+private const val RESTRICTED_CAPTURE_INITIAL_TIME_KEY = "restricted_capture_initial_time"
+private const val RESTRICTED_CAPTURE_INITIAL_REQUEST_CONSUMED_KEY = "restricted_capture_initial_request_consumed"
 
 private data class PendingWidgetActionConfirmation(
     val request: WidgetActionRequest,
@@ -771,19 +773,33 @@ fun LifeOsApp(
         (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
     val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
     fun appLockEnabled(): Boolean = lockSnapshot.policy?.enabled == true
-    fun openRestrictedCapture(initialKind: RestrictedCaptureKind? = null) {
+    fun openRestrictedCapture(
+        initialKind: RestrictedCaptureKind? = null,
+        initialDate: LocalDate? = null,
+    ) {
         capturing = false
         widgetQuickCapture = false
         calendarCaptureDueDate = null
         navController.navigate(AppRoutes.RESTRICTED_CAPTURE) { launchSingleTop = true }
-        initialKind?.let { kind ->
-            navController.currentBackStackEntry?.savedStateHandle?.set(RESTRICTED_CAPTURE_INITIAL_KIND_KEY, kind.name)
+        navController.currentBackStackEntry?.savedStateHandle?.let { state ->
+            state.remove<String>(RESTRICTED_CAPTURE_INITIAL_KIND_KEY)
+            state.remove<Long>(RESTRICTED_CAPTURE_INITIAL_TIME_KEY)
+            state[RESTRICTED_CAPTURE_INITIAL_REQUEST_CONSUMED_KEY] = false
+            initialKind?.let { kind -> state[RESTRICTED_CAPTURE_INITIAL_KIND_KEY] = kind.name }
+            initialDate?.let { date ->
+                state[RESTRICTED_CAPTURE_INITIAL_TIME_KEY] = captureInitialTimeMillis(date, currentDay.zone)
+            }
         }
     }
     fun openCapture(route: String, date: LocalDate?) {
         val targetRoute = if (route == "journal") "memory" else route
         if (appLockEnabled()) {
-            openRestrictedCapture(if (route == "journal") RestrictedCaptureKind.MEMORY else null)
+            val initialKind = if (route == "journal" || route == "memory") {
+                RestrictedCaptureKind.MEMORY
+            } else {
+                null
+            }
+            openRestrictedCapture(initialKind, date)
             return
         }
         capturing = false
@@ -800,7 +816,7 @@ fun LifeOsApp(
     }
     fun openMemoryCaptureFromLibrary(date: LocalDate) {
         if (appLockEnabled()) {
-            openRestrictedCapture(RestrictedCaptureKind.MEMORY)
+            openRestrictedCapture(RestrictedCaptureKind.MEMORY, date)
             return
         }
         openCapture("memory", date)
@@ -989,13 +1005,26 @@ fun LifeOsApp(
                         ?.let { kind -> runCatching { RestrictedCaptureKind.valueOf(kind) }.getOrNull() }
                         ?.let { kind -> if (kind == RestrictedCaptureKind.JOURNAL) RestrictedCaptureKind.MEMORY else kind }
                 }
+                val initialTimeMillis = remember(entry) {
+                    entry.savedStateHandle.get<Long>(RESTRICTED_CAPTURE_INITIAL_TIME_KEY)
+                }
+                val initialRequestConsumed by entry.savedStateHandle
+                    .getStateFlow(RESTRICTED_CAPTURE_INITIAL_REQUEST_CONSUMED_KEY, false)
+                    .collectAsStateWithLifecycle()
                 RestrictedCaptureRoute(
                     service = restrictedCaptureService,
                     onBack = {
                         entry.savedStateHandle.remove<String>(RESTRICTED_CAPTURE_INITIAL_KIND_KEY)
+                        entry.savedStateHandle.remove<Long>(RESTRICTED_CAPTURE_INITIAL_TIME_KEY)
+                        entry.savedStateHandle.remove<Boolean>(RESTRICTED_CAPTURE_INITIAL_REQUEST_CONSUMED_KEY)
                         navController.popBackStack()
                     },
                     initialKind = initialKind,
+                    initialTimeMillis = initialTimeMillis,
+                    initialRequestConsumed = initialRequestConsumed,
+                    onConsumeInitialRequest = {
+                        entry.savedStateHandle[RESTRICTED_CAPTURE_INITIAL_REQUEST_CONSUMED_KEY] = true
+                    },
                     onMemorySaved = { eventId ->
                         if (initialKind == RestrictedCaptureKind.MEMORY) {
                             navController.previousBackStackEntry
@@ -1158,6 +1187,14 @@ fun LifeOsApp(
                                 integrationAvailability = integrationAvailability,
                                 onIntegrations = { navController.navigate("settings_integrations") },
                                 onCheckIn = { openCapture("mood", null) },
+                                onCaptureMemory = { date -> openCapture("memory", date) },
+                                onOpenTasks = if (todos != null) {
+                                    { navController.navigate(AppRoutes.TASKS) }
+                                } else {
+                                    null
+                                },
+                                onOpenHabits = if (habits != null) ::openHabitsDate else null,
+                                canReadSummary = protectedSummaryReadable,
                                 focusRepository = focusRepository,
                                 focusProductRepository = focusProductRepository,
                                 focusInProgressMillis = focusState.runtime.session?.let { session ->

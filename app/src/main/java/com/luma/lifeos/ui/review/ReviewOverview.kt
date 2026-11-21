@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.repository.WeeklyReviewRepository
@@ -24,7 +25,6 @@ import com.luma.lifeos.domain.review.ReviewActivity
 import com.luma.lifeos.domain.review.ReviewDates
 import com.luma.lifeos.domain.review.ReviewMetric
 import com.luma.lifeos.domain.review.ReviewMetricKind
-import com.luma.lifeos.domain.review.ReviewStatistics
 import com.luma.lifeos.domain.review.WeeklyReview
 import com.luma.lifeos.ui.common.LumaSectionHeader
 import com.luma.lifeos.ui.common.LumaSectionSurface
@@ -51,6 +51,11 @@ internal fun ReviewOverview(
     onCheckIn: () -> Unit = {},
     habitState: ReviewHabitsState? = null,
     onHabits: () -> Unit = {},
+    today: LocalDate,
+    onCaptureMemory: (LocalDate) -> Unit,
+    onOpenTasks: (() -> Unit)?,
+    onOpenHabits: ((LocalDate) -> Unit)?,
+    canReadSummary: Boolean,
 ) {
     val current = report.current
     Column(
@@ -103,6 +108,7 @@ internal fun ReviewOverview(
 
         ReviewOverviewMemory(report, repository, onEvent)
         ReviewOverviewSignals(report, availability, onSources, onIntegrations)
+        ReviewReflection(report, today, onCaptureMemory, onOpenTasks, onOpenHabits, canReadSummary)
     }
 }
 

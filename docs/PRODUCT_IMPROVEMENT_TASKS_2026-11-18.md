@@ -1,6 +1,6 @@
 # Luma product improvement tasks
 
-Source proposal dated 18 November 2026. Task package prepared 20 November 2026. IP-I01, IP-I03, IP-I04, IP-I05, IP-I07 and IP-I08 are **SOURCE COMPLETE — QA PENDING**; IP-I02, IP-I06 and IP-I09 are **PENDING**. IP-Q01 is **NOT RUN**.
+Source proposal dated 18 November 2026. Task package prepared 20 November 2026. IP-I01, IP-I03, IP-I04, IP-I05, IP-I07, IP-I08 and IP-I09 are **SOURCE COMPLETE — QA PENDING**; IP-I02 and IP-I06 are **PENDING**. IP-Q01 is **NOT RUN**.
 
 [Product proposal](20261118-Proposal.md) · [App reference](LUMA_APP_REFERENCE.md) · [Design system](luma-redesign/README.md) · [Emulator QA specification](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Emulator QA plan](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md)
 
@@ -16,7 +16,7 @@ Source proposal dated 18 November 2026. Task package prepared 20 November 2026. 
 | IP-I06 Findable and understandable Search | #6 | P1 | Next | IP-I01 Today header and IP-I05 Memory Library capture entry placement. | PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i06-search-entry-points-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i06-search-entry-points.md) |
 | IP-I07 Habit dates, counts and schedule changes | #7 | P2 | Later | IP-I01 Today habit preview ownership and IP-I04 habit-detail reminder presentation. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i07-habit-date-explanations-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i07-habit-date-explanations.md) |
 | IP-I08 Focus boundaries, recovery and completion | #8 | P2 | Later | Existing Focus guard/runtime and task-family completion flow. IP-I04 owns Focus invitation notification readiness. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i08-focus-boundaries-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i08-focus-boundaries.md) |
-| IP-I09 Weekly Review reflection loop | #9 | P2 | Later | IP-I03 durable editor behavior, IP-I05 capture terminology and IP-I06 existing retrieval experience. | PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i09-weekly-reflection-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i09-weekly-reflection.md) |
+| IP-I09 Weekly Review reflection loop | #9 | P2 | Later | IP-I03 durable editor behavior, IP-I05 capture terminology and IP-I06 existing retrieval experience. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i09-weekly-reflection-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i09-weekly-reflection.md) |
 
 Use proposal rank as the default sequence. IP-I02 has two ordered slices, so disclosure can hand off with the Now work and encryption can resume in Next. Source dependencies permit the next implementation to start as soon as the required predecessor source is ready. Preserve existing implementation/validation status from earlier roadmap work.
 

@@ -79,6 +79,10 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     captureBottomClearance: Dp = 0.dp,
     onRequestProtectedFocusUnlock: () -> Unit = {},
     firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
+    onCaptureMemory: (LocalDate) -> Unit = {},
+    onOpenTasks: (() -> Unit)? = null,
+    onOpenHabits: ((LocalDate) -> Unit)? = null,
+    canReadSummary: Boolean = true,
 ) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
@@ -249,7 +253,12 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                             val a = report.current; val b = report.previous
                             item(key = "overview") { ReviewOverview(report, repository, onEvent, onSources, habitLogCount,
                                 integrationAvailability, onIntegrations, onCheckIn, habitState,
-                                onHabits = { section = "habits"; sectionTarget = "habits" }) }
+                                onHabits = { section = "habits"; sectionTarget = "habits" },
+                                today = today,
+                                onCaptureMemory = onCaptureMemory,
+                                onOpenTasks = onOpenTasks,
+                                onOpenHabits = onOpenHabits,
+                                canReadSummary = canReadSummary) }
                             stickyHeader(key = "sections") {
                                 Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
                                     ReviewSectionNavigation(section, period, onSection = { key ->
