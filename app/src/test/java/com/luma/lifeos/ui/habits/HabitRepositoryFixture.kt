@@ -2,6 +2,7 @@ package com.luma.lifeos.ui.habits
 
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitDefinition
+import com.luma.lifeos.domain.habit.HabitEffectiveDateChangedException
 import com.luma.lifeos.domain.habit.HabitHistoryPage
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitLog
@@ -80,6 +81,40 @@ internal class HabitRepositoryFixture(
         val existing = definitions.getValue(id)
         definitions[id] = existing.copy(name = name.trim(), unitLabel = unitLabel?.trim()?.takeUnless(String::isEmpty), updatedAt = clock.instant())
         refresh()
+    }
+
+    override suspend fun renameAndSchedule(
+        id: UUID,
+        name: String,
+        unitLabel: String?,
+        input: HabitScheduleInput,
+        expectedEffectiveDate: LocalDate,
+    ): HabitSchedule {
+        if (failNextRename) { failNextRename = false; error("rename failed") }
+        if (failNextSchedule) { failNextSchedule = false; error("schedule failed") }
+        val existingHabit = definitions.getValue(id)
+        val trackingZone = zone ?: ZoneId.of("UTC")
+        val today = clock.instant().atZone(trackingZone).toLocalDate()
+        val effectiveDate = if (today.isBefore(existingHabit.start)) existingHabit.start else today.plusDays(1)
+        if (expectedEffectiveDate != effectiveDate) throw HabitEffectiveDateChangedException(effectiveDate)
+        val existingSchedules = versions.getValue(id)
+        val currentSchedule = scheduleFor(effectiveDate, existingSchedules) ?: scheduleFor(today, existingSchedules)
+            ?: existingSchedules.lastOrNull()
+        val scheduleChanged = currentSchedule == null || currentSchedule.target != input.target ||
+            currentSchedule.weekdays != input.weekdays || currentSchedule.lifecycle != input.lifecycle
+        val savedSchedule = if (scheduleChanged) {
+            HabitSchedule(UUID.randomUUID(), id, effectiveDate, input.target, input.weekdays, input.lifecycle).also { value ->
+                existingSchedules.removeAll { it.effectiveFrom == effectiveDate }
+                existingSchedules += value
+            }
+        } else requireNotNull(currentSchedule)
+        val old = definitions.getValue(id)
+        val updatedAt = maxOf(clock.millis(), old.createdAt.toEpochMilli(), old.updatedAt.toEpochMilli())
+        definitions[id] = old.copy(name = name.trim(), unitLabel = unitLabel?.trim()?.takeUnless(String::isEmpty),
+            updatedAt = Instant.ofEpochMilli(updatedAt))
+        refresh()
+        changes.emit(Unit)
+        return savedSchedule
     }
 
     override suspend fun schedule(id: UUID, input: HabitScheduleInput): HabitSchedule {

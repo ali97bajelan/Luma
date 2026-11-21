@@ -932,6 +932,7 @@
     <string name="habit_tracking_zone_note">تاریخ عادت‌ها هنگام سفر هم در همین منطقه زمانی می‌ماند.</string>
     <string name="habit_tracking_zone_details">دربارهٔ تاریخ عادت‌ها</string>
     <string name="habit_tracking_elsewhere">تاریخ عادت: %1$s · %2$s</string>
+    <string name="habit_affected_date">تاریخ عادت: %1$s</string>
     <string name="habit_tracking_zone_mismatch">تاریخ عادت: %1$s (منطقهٔ زمانی %2$s). تاریخ دستگاه شما %3$s است.</string>
     <string name="habit_progress">%1$s از %2$s</string>
     <!-- The quantity is displayed separately; this resource selects only the unit label. -->
@@ -950,6 +951,7 @@
     <string name="habit_remaining_skipped">باقی‌مانده رد شد</string>
     <string name="habit_log">+۱</string>
     <string name="habit_log_accessibility">ثبت یک %1$s %2$s</string>
+    <string name="habit_log_accessibility_on_date">ثبت یک %1$s %2$s برای %3$s</string>
     <string name="habit_open_accessibility">مشاهده پیشرفت %1$s</string>
     <string name="habit_log_disabled_future">برای تاریخ آینده نمی‌توانید ثبت انجام دهید.</string>
     <string name="habit_log_disabled_not_scheduled">این عادت برای این تاریخ برنامه‌ریزی نشده است.</string>
@@ -991,6 +993,8 @@
     <string name="habit_start_future">تاریخ شروع نمی‌تواند در گذشته باشد.</string>
     <string name="habit_effective_tomorrow">تغییر برنامه از %1$s اعمال می‌شود.</string>
     <string name="habit_effective_start">این تنظیم از %1$s اعمال می‌شود.</string>
+    <string name="habit_effective_date_changed">روز منطقهٔ زمانی پیگیری هنگام ویرایش تغییر کرد. تاریخ تازه را بررسی کنید و دوباره ذخیره کنید.</string>
+    <string name="habit_schedule_history_preserved">تاریخ‌های پیشین از همان برنامه‌ای پیروی می‌کنند که در آن زمان اعمال می‌شد.</string>
     <string name="habit_schedule_details">جزئیات برنامه</string>
     <string name="habit_schedule_target">هدف: %1$d در روز</string>
     <string name="habit_schedule_weekdays">روزها: %1$s</string>
@@ -1021,6 +1025,7 @@
     <string name="habit_edit_log">ویرایش</string>
     <string name="habit_log_correction">ویرایش تکرار</string>
     <string name="habit_correction_date">تاریخ</string>
+    <string name="habit_correction_moved_date">تکرار از %1$s به %2$s منتقل می‌شود.</string>
     <string name="habit_correction_time">زمان</string>
     <string name="habit_correction_no_time">زمان ثبت نشده</string>
     <string name="habit_correction_clear_time">بدون زمان</string>

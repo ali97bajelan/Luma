@@ -115,6 +115,7 @@ fun HabitEditorScreen(
     var choosingStart by rememberSaveable { mutableStateOf(false) }
     var discarding by rememberSaveable { mutableStateOf(false) }
     val enabled = state.ready && !state.busy && !state.completed
+    val showScheduleSummary = !state.editing || state.scheduleChanged
     val colors = MaterialTheme.colorScheme
     val locale = LocalConfiguration.current.locales[0]
     fun close() { if (state.busy) return else if (state.hasChanges) discarding = true else onBack() }
@@ -134,6 +135,7 @@ fun HabitEditorScreen(
                             HabitEditorError.SAVE -> R.string.habit_save_error
                             HabitEditorError.INPUT -> state.fieldError?.let(::habitFieldErrorMessage)
                                 ?: R.string.habit_save_error
+                            HabitEditorError.EFFECTIVE_DATE_CHANGED -> R.string.habit_effective_date_changed
                         }
                         Text(stringResource(message), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_editor_error"))
                         if (error == HabitEditorError.LOAD) LumaTextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
@@ -336,12 +338,21 @@ fun HabitEditorScreen(
                             modifier = Modifier.testTag("habit_weekdays_error"))
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
-                    state.effectiveDate?.let { effective ->
-                        val futureStart = effective.isAfter(LocalDate.now(state.trackingZone ?: deviceZone))
-                        val message = if (state.editing && !futureStart) R.string.habit_effective_tomorrow else R.string.habit_effective_start
-                        Text(stringResource(message, com.luma.lifeos.language.localizedDate(effective, FormatStyle.MEDIUM)),
-                            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_effective_date"))
+                if (showScheduleSummary) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+                        state.effectiveDate?.let { effective ->
+                            val isFutureStart = effective == state.draft.start
+                            val message = if (state.editing && !isFutureStart) R.string.habit_effective_tomorrow
+                                else R.string.habit_effective_start
+                            Text(stringResource(message, com.luma.lifeos.language.localizedDate(effective, FormatStyle.MEDIUM)),
+                                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("habit_effective_date"))
+                            state.trackingZone?.let { HabitTrackingZoneNote(it, deviceZone) }
+                            if (state.editing && state.scheduleChanged && !isFutureStart) {
+                                Text(stringResource(R.string.habit_schedule_history_preserved),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
             }

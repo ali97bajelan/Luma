@@ -30,6 +30,7 @@ import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.LumaUi
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.reviewTarget
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.text.NumberFormat
 import java.time.DayOfWeek
 
@@ -69,10 +70,12 @@ internal fun HabitProgressContent(day: HabitDay) {
         }
     }
     val unit = habitUnitLabel(day.habit, target)
-    val numberFormat = NumberFormat.getIntegerInstance()
+    val displayTime = rememberDisplayTimePolicy()
+    val numberFormat = NumberFormat.getIntegerInstance(displayTime.locale)
     val count = numberFormat.format(day.count)
     val formattedTarget = numberFormat.format(target)
-    val percentage = NumberFormat.getPercentInstance().apply { maximumFractionDigits = 0 }.format(fraction)
+    val percentage = NumberFormat.getPercentInstance(displayTime.locale)
+        .apply { maximumFractionDigits = 0 }.format(fraction)
     val description = stringResource(R.string.habit_progress_accessibility, day.habit.name, day.count, target, unit)
 
     val progressText = stringResource(R.string.habit_progress, count, formattedTarget)

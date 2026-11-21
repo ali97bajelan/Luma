@@ -156,6 +156,7 @@ fun HabitsScreen(
                                 onRetry = onRetryLog,
                                 onOpenDate = onSelectDate,
                                 compact = false,
+                                deviceZone = deviceZone,
                             )
                         }
                         if (groups.other.isNotEmpty()) {
@@ -191,6 +192,7 @@ fun HabitsScreen(
                                         onOpenDate = onSelectDate,
                                         compact = false,
                                         showLog = false,
+                                        deviceZone = deviceZone,
                                     )
                                 }
                             }
@@ -210,7 +212,8 @@ fun HabitsScreen(
                                 modifier = Modifier.testTag("habit_retained_actions_heading"))
                         }
                         items(retained, key = { "retained:${it.id}" }) { action ->
-                            PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onSelectDate)
+                            PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onSelectDate,
+                                deviceZone = deviceZone)
                         }
                     }
                 }
@@ -230,10 +233,12 @@ internal fun HabitRow(
     compact: Boolean,
     showLog: Boolean = true,
     onOpenDate: (LocalDate) -> Unit = {},
+    deviceZone: ZoneId = ZoneId.systemDefault(),
 ) {
     val day = row.day
     val logUnit = habitUnitLabel(day.habit, 1)
-    val logLabel = stringResource(R.string.habit_log_accessibility, day.habit.name, logUnit)
+    val logDate = com.luma.lifeos.language.localizedDate(day.date, FormatStyle.MEDIUM)
+    val logLabel = stringResource(R.string.habit_log_accessibility_on_date, day.habit.name, logUnit, logDate)
     val showStatus = true
     val rowContent: @Composable ColumnScope.() -> Unit = {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -242,15 +247,15 @@ internal fun HabitRow(
             if (showLog && !stackAction) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
-                    HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, Modifier.weight(1f))
-                    HabitLogTarget(row, onLog, logLabel)
+                    HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, deviceZone, Modifier.weight(2f))
+                    HabitLogTarget(row, onLog, logLabel, deviceZone, Modifier.weight(1f))
                 }
             } else {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
-                    HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, Modifier.fillMaxWidth())
+                    HabitOpenTarget(day, pendingSchedule, onOpen, showStatus, deviceZone, Modifier.fillMaxWidth())
                     if (showLog) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            HabitLogTarget(row, onLog, logLabel)
+                            HabitLogTarget(row, onLog, logLabel, deviceZone)
                         }
                     }
                 }
@@ -258,7 +263,8 @@ internal fun HabitRow(
         }
         if (showLog) row.disabledReason?.let { Text(stringResource(disabledLabel(it)), style = MaterialTheme.typography.bodySmall) }
         pending.forEach { action ->
-            PendingHabitFeedback(action, onRetry = { onRetry(action.id) }, onOpenDate = onOpenDate)
+            PendingHabitFeedback(action, onRetry = { onRetry(action.id) }, onOpenDate = onOpenDate,
+                deviceZone = deviceZone)
         }
     }
     val rowModifier = Modifier.fillMaxWidth().testTag("habit_row_${day.habit.id}")
@@ -286,6 +292,7 @@ private fun HabitOpenTarget(
     pendingSchedule: HabitSchedule?,
     onOpen: () -> Unit,
     showStatus: Boolean,
+    deviceZone: ZoneId,
     modifier: Modifier,
 ) {
     val target = day.reviewTarget()
@@ -318,16 +325,27 @@ private fun HabitOpenTarget(
                 Text(stringResource(message,
                     com.luma.lifeos.language.localizedDate(schedule.effectiveFrom, FormatStyle.MEDIUM)),
                     style = MaterialTheme.typography.bodySmall)
+                HabitTrackingZoneNote(day.zone, deviceZone)
             }
         }
     }
 }
 
 @Composable
-private fun HabitLogTarget(row: HabitDayRow, onLog: () -> Unit, logLabel: String) {
-    LumaButton(onClick = onLog, enabled = row.canLog, modifier = Modifier.heightIn(min = 48.dp)
-        .testTag("habit_log_${row.day.habit.id}").semantics { contentDescription = logLabel }) {
-        Text(stringResource(R.string.habit_log))
+private fun HabitLogTarget(
+    row: HabitDayRow,
+    onLog: () -> Unit,
+    logLabel: String,
+    deviceZone: ZoneId,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
+        HabitAffectedDateLabel(row.day.date, row.day.zone, deviceZone)
+        LumaButton(onClick = onLog, enabled = row.canLog, modifier = Modifier.heightIn(min = 48.dp)
+            .testTag("habit_log_${row.day.habit.id}").semantics { contentDescription = logLabel }) {
+            Text(stringResource(R.string.habit_log))
+        }
     }
 }
 

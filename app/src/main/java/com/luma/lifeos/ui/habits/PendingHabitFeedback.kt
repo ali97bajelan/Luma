@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.language.localizedDate
+import java.time.ZoneId
 import java.time.format.FormatStyle
 
 @Composable
@@ -25,6 +26,7 @@ internal fun PendingHabitFeedback(
     onOpenDate: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     retryTag: String = "habit_retry_${pending.id}",
+    deviceZone: ZoneId = ZoneId.systemDefault(),
 ) {
     Column(modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -33,6 +35,7 @@ internal fun PendingHabitFeedback(
         Text(stringResource(R.string.habit_pending_context,
             localizedDate(pending.input.date, FormatStyle.FULL)),
             style = MaterialTheme.typography.bodySmall)
+        HabitTrackingZoneNote(pending.input.zone, deviceZone)
         Text(stringResource(if (pending.error == null) R.string.habit_log_saving else R.string.habit_log_failed),
             style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {

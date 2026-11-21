@@ -46,6 +46,7 @@ fun LazyListScope.habitHistoryItems(
     onDelete: (UUID) -> Unit,
     onLoadMore: () -> Unit,
     historyError: Boolean = false,
+    deviceZone: ZoneId = ZoneId.systemDefault(),
 ) {
     item(key = "habit_history_heading") {
         AppSectionHeading(stringResource(R.string.habit_history), style = MaterialTheme.typography.titleLarge,
@@ -56,7 +57,7 @@ fun LazyListScope.habitHistoryItems(
         Text(stringResource(R.string.habit_history_empty), modifier = Modifier.testTag("habit_history_empty"))
     }
     items(visibleLogs, key = { "habit-log:${it.id}" }) { log ->
-        HabitLogCard(log, screenZone, selected = false, onEdit = onEdit, onDelete = onDelete)
+        HabitLogCard(log, screenZone, deviceZone, selected = false, onEdit = onEdit, onDelete = onDelete)
     }
     if (historyError) item(key = "habit_history_error") {
         Text(stringResource(R.string.habit_history_error), color = MaterialTheme.colorScheme.error,
@@ -77,6 +78,7 @@ internal fun HabitSelectedLogArrival(
     onDelete: (UUID) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    deviceZone: ZoneId = ZoneId.systemDefault(),
 ) {
     Column(modifier.fillMaxWidth().testTag("habit_target_arrival"), verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
         when (status) {
@@ -88,7 +90,7 @@ internal fun HabitSelectedLogArrival(
             }
             HabitTargetStatus.FOUND -> log?.let {
                 Text(stringResource(R.string.habit_selected_repetition), style = MaterialTheme.typography.titleMedium)
-                HabitLogCard(it, screenZone, selected = true, onEdit = onEdit, onDelete = onDelete)
+                HabitLogCard(it, screenZone, deviceZone, selected = true, onEdit = onEdit, onDelete = onDelete)
             }
             HabitTargetStatus.MISSING -> Text(stringResource(R.string.habit_target_unavailable),
                 modifier = Modifier.testTag("habit_target_unavailable"))
@@ -106,6 +108,7 @@ internal fun HabitSelectedLogArrival(
 private fun HabitLogCard(
     log: HabitLog,
     screenZone: ZoneId,
+    deviceZone: ZoneId,
     selected: Boolean,
     onEdit: (HabitLog) -> Unit,
     onDelete: (UUID) -> Unit,
@@ -123,6 +126,7 @@ private fun HabitLogCard(
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(displayTime.formatDate(log.date, FormatStyle.MEDIUM),
                     style = MaterialTheme.typography.titleMedium)
+                HabitTrackingZoneNote(log.zone, deviceZone)
                 val occurred = log.occurredAt?.atZone(log.zone)
                 Text(occurred?.let {
                     val time = displayTime.time().format(it)

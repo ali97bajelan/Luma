@@ -12,6 +12,7 @@ import com.luma.lifeos.data.habit.HabitScheduleEntity
 import com.luma.lifeos.data.habit.HabitSettingsEntity
 import com.luma.lifeos.data.habit.toDomain
 import com.luma.lifeos.domain.habit.HabitDefinition
+import com.luma.lifeos.domain.habit.HabitEffectiveDateChangedException
 import com.luma.lifeos.domain.habit.HabitDay
 import com.luma.lifeos.domain.habit.HabitHistoryPage
 import com.luma.lifeos.domain.habit.HabitLifecycle
@@ -104,6 +105,54 @@ class RoomHabitRepository(
         check(dao.rename(id.toString(), name.trim(), unitLabel?.trim()?.takeUnless(String::isEmpty), now) == 1)
         dao.markReminderDirty(id.toString())
         Unit
+    }
+
+    override suspend fun renameAndSchedule(
+        id: UUID,
+        name: String,
+        unitLabel: String?,
+        input: HabitScheduleInput,
+        expectedEffectiveDate: LocalDate,
+    ): HabitSchedule = database.withTransaction {
+        val existing = requireNotNull(dao.habit(id.toString())) { "Habit does not exist" }
+        val habit = existing.toDomain()
+        val zone = requireNotNull(trackingZone()) { "Habit tracking zone has not been set" }
+        val now = clock.instant()
+        val today = now.atZone(zone).toLocalDate()
+        val effectiveDate = if (today.isBefore(habit.start)) habit.start else nextHabitEffectiveDate(now, zone)
+        if (effectiveDate != expectedEffectiveDate) {
+            throw HabitEffectiveDateChangedException(effectiveDate)
+        }
+
+        val oldVersions = dao.schedules(id.toString()).map { it.toDomain() }
+        val replacement = scheduleVersion(UUID.randomUUID(), id, habit.start, now, zone, oldVersions, input)
+        check(replacement.effectiveFrom == effectiveDate) { "Schedule policy disagrees with the displayed effective date" }
+        val currentSchedule = scheduleFor(effectiveDate, oldVersions) ?: scheduleFor(today, oldVersions)
+            ?: oldVersions.lastOrNull()
+        val scheduleChanged = currentSchedule == null || currentSchedule.target != input.target ||
+            currentSchedule.weekdays != input.weekdays || currentSchedule.lifecycle != input.lifecycle
+
+        val updatedAt = maxOf(now.toEpochMilli(), existing.createdAt, existing.updatedAt)
+        HabitDefinition(id, name.trim(), unitLabel?.trim()?.takeUnless(String::isEmpty), habit.start,
+            Instant.ofEpochMilli(existing.createdAt), Instant.ofEpochMilli(updatedAt))
+        check(dao.rename(id.toString(), name.trim(), unitLabel?.trim()?.takeUnless(String::isEmpty), updatedAt) == 1)
+        if (scheduleChanged) {
+            val updated = replaceScheduleAtEffectiveDate(oldVersions, replacement, today)
+            val previous = oldVersions.singleOrNull { it.effectiveFrom == replacement.effectiveFrom }
+            dao.upsertSchedule(HabitScheduleEntity(
+                id = (previous?.id ?: replacement.id).toString(),
+                habitId = id.toString(),
+                effectiveFrom = replacement.effectiveFrom.toString(),
+                target = replacement.target,
+                weekdayMask = weekdaysToMask(replacement.weekdays),
+                state = replacement.lifecycle.name,
+            ))
+            dao.markReminderDirty(id.toString())
+            updated.single { it.effectiveFrom == replacement.effectiveFrom }
+        } else {
+            dao.markReminderDirty(id.toString())
+            requireNotNull(currentSchedule)
+        }
     }
 
     override suspend fun schedule(id: UUID, input: HabitScheduleInput): HabitSchedule = database.withTransaction {

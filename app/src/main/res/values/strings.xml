@@ -932,6 +932,7 @@
     <string name="habit_tracking_zone_note">This zone stays fixed for your habit dates, including when you travel.</string>
     <string name="habit_tracking_zone_details">About habit dates</string>
     <string name="habit_tracking_elsewhere">Habit date: %1$s · %2$s</string>
+    <string name="habit_affected_date">Habit date: %1$s</string>
     <string name="habit_tracking_zone_mismatch">Habit date: %1$s (%2$s). Your device date is %3$s.</string>
     <string name="habit_progress">%1$s of %2$s</string>
     <plurals name="habit_unit_default">
@@ -949,6 +950,7 @@
     <string name="habit_remaining_skipped">Remaining skipped</string>
     <string name="habit_log">+1</string>
     <string name="habit_log_accessibility">Log one %1$s %2$s</string>
+    <string name="habit_log_accessibility_on_date">Log one %1$s %2$s for %3$s</string>
     <string name="habit_open_accessibility">Open %1$s progress</string>
     <string name="habit_log_disabled_future">You cannot log a future date.</string>
     <string name="habit_log_disabled_not_scheduled">This habit is not scheduled for this date.</string>
@@ -990,6 +992,8 @@
     <string name="habit_start_future">The start date cannot be in the past.</string>
     <string name="habit_effective_tomorrow">Schedule changes take effect %1$s.</string>
     <string name="habit_effective_start">This setup takes effect %1$s.</string>
+    <string name="habit_effective_date_changed">The tracking-zone day changed while you were editing. Review the updated date and save again.</string>
+    <string name="habit_schedule_history_preserved">Earlier dates keep the schedule that applied to them.</string>
     <string name="habit_schedule_details">Schedule details</string>
     <string name="habit_schedule_target">Target: %1$d per day</string>
     <string name="habit_schedule_weekdays">Days: %1$s</string>
@@ -1020,6 +1024,7 @@
     <string name="habit_edit_log">Edit</string>
     <string name="habit_log_correction">Edit repetition</string>
     <string name="habit_correction_date">Date</string>
+    <string name="habit_correction_moved_date">Moving this repetition from %1$s to %2$s.</string>
     <string name="habit_correction_time">Time</string>
     <string name="habit_correction_no_time">No time recorded</string>
     <string name="habit_correction_clear_time">No time</string>

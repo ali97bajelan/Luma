@@ -27,6 +27,7 @@ import com.luma.lifeos.language.localizedDate
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.FormatStyle
+import java.time.ZoneId
 import java.util.UUID
 
 
@@ -104,7 +105,8 @@ fun TodayHabitsCard(
                         }, state.pendingSchedules[row.day.habit.id],
                             onOpen = { onHabit(row.day.habit.id, row.day.date) },
                             onLog = { onLog(row.day.habit.id) }, onRetry = onRetryLog,
-                            compact = true, onOpenDate = onOpenDate)
+                            compact = true, onOpenDate = onOpenDate,
+                            deviceZone = state.deviceZone ?: ZoneId.systemDefault())
                     }
                 }
             }
@@ -117,7 +119,8 @@ fun TodayHabitsCard(
                 modifier = Modifier.testTag("today_habit_retained_actions_heading"))
             retained.forEach { action ->
                 PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onOpenDate,
-                    modifier = Modifier.testTag("today_habit_retained_${action.id}"))
+                    modifier = Modifier.testTag("today_habit_retained_${action.id}"),
+                    deviceZone = state.deviceZone ?: ZoneId.systemDefault())
             }
         }
         LumaButton(

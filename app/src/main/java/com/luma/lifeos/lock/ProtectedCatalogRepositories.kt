@@ -133,6 +133,15 @@ class ProtectedHabitRepository(
         gateway.commit(LockOperation.CREATE, setOf(LockSection.HABITS), id.toString()) { delegate.create(id, input) }
     override suspend fun rename(id: UUID, name: String, unitLabel: String?) =
         gateway.commit(LockOperation.UPDATE, setOf(LockSection.HABITS), id.toString()) { delegate.rename(id, name, unitLabel) }
+    override suspend fun renameAndSchedule(
+        id: UUID,
+        name: String,
+        unitLabel: String?,
+        input: HabitScheduleInput,
+        expectedEffectiveDate: LocalDate,
+    ) = gateway.commit(LockOperation.UPDATE, setOf(LockSection.HABITS), id.toString()) {
+        delegate.renameAndSchedule(id, name, unitLabel, input, expectedEffectiveDate)
+    }
     override suspend fun schedule(id: UUID, input: HabitScheduleInput) =
         gateway.commit(LockOperation.UPDATE, setOf(LockSection.HABITS), id.toString()) { delegate.schedule(id, input) }
     override suspend fun cancelPendingSchedule(id: UUID) =

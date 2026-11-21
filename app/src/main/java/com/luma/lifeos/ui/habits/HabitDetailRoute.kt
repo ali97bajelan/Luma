@@ -33,6 +33,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -268,6 +270,7 @@ fun HabitDetailScreen(
     val day = detail?.day
     val row = state.rowsFor(date).firstOrNull { it.day.habit.id == habitId }
     val trackingZone = state.trackingZone ?: habit?.let { day?.zone } ?: ZoneId.systemDefault()
+    val deviceZone = state.deviceZone ?: ZoneId.systemDefault()
     val today = LocalDate.now(trackingZone)
     val futureStart = habit?.start?.isAfter(today) == true
     val lifecycleDate = if (futureStart) habit?.start else today
@@ -322,6 +325,7 @@ fun HabitDetailScreen(
                             status = detail.selectedLogStatus,
                             log = detail.selectedLog,
                             screenZone = trackingZone,
+                            deviceZone = deviceZone,
                             onEdit = onEditLog,
                             onDelete = onDeleteLog,
                             onRetry = onRetrySelectedLog,
@@ -330,6 +334,7 @@ fun HabitDetailScreen(
                     item {
                         LumaSectionSurface(modifier = Modifier.testTag("habit_detail_summary")) {
                             Text(com.luma.lifeos.language.localizedDate(date, FormatStyle.FULL), style = MaterialTheme.typography.titleLarge)
+                            HabitTrackingZoneNote(trackingZone, deviceZone)
                             day?.let {
                                 HabitProgressContent(it)
                                 Text(stringResource(stateLabel(it)), style = MaterialTheme.typography.bodyMedium)
@@ -342,14 +347,23 @@ fun HabitDetailScreen(
                                     HabitLogDisabledReason.PAUSED -> R.string.habit_log_disabled_paused
                                     HabitLogDisabledReason.ARCHIVED -> R.string.habit_log_disabled_archived
                                 }))
+                                val logDescription = stringResource(
+                                    R.string.habit_log_accessibility_on_date,
+                                    activeRow.day.habit.name,
+                                    habitUnitLabel(activeRow.day.habit, 1),
+                                    com.luma.lifeos.language.localizedDate(date, FormatStyle.MEDIUM),
+                                )
+                                HabitAffectedDateLabel(date, activeRow.day.zone, deviceZone)
                                 LumaButton(onClick = onLog, enabled = activeRow.canLog,
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("habit_detail_log")) {
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                        .semantics { contentDescription = logDescription }
+                                        .testTag("habit_detail_log")) {
                                     Text(stringResource(R.string.habit_log))
                                 }
                             }
                             state.pendingLogs.filter { it.input.habitId == habitId && it.input.date == date }.forEach { action ->
                                 PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onOpenDate,
-                                    modifier = Modifier.testTag("habit_detail_pending_${action.id}"),
+                                    modifier = Modifier.testTag("habit_detail_pending_${action.id}"), deviceZone = deviceZone,
                                     retryTag = "habit_detail_retry_${action.id}")
                             }
                         }
@@ -395,7 +409,7 @@ fun HabitDetailScreen(
                         }
                         items(retained, key = { "detail-retained:${it.id}" }) { action ->
                             PendingHabitFeedback(action, onRetry = { onRetryLog(action.id) }, onOpenDate = onOpenDate,
-                                modifier = Modifier.testTag("habit_detail_retained_${action.id}"))
+                                modifier = Modifier.testTag("habit_detail_retained_${action.id}"), deviceZone = deviceZone)
                         }
                     }
                     if (canSkip) item {
@@ -433,7 +447,8 @@ fun HabitDetailScreen(
                         }
                     }
                     habitHistoryItems(detail.history, detail.historyTotal, selectedTarget?.id, trackingZone, onEditLog, onDeleteLog,
-                        onLoadMore, historyError = detail.actionErrors[HabitDetailOperation.HISTORY] is HabitDetailActionError.History)
+                        onLoadMore, historyError = detail.actionErrors[HabitDetailOperation.HISTORY] is HabitDetailActionError.History,
+                        deviceZone = deviceZone)
                     item(key = "manage-${habit.id}") {
                         HabitManagementSection(
                             lifecycle = lifecycle,
@@ -464,6 +479,7 @@ fun HabitDetailScreen(
             onSave = onSaveCorrection,
             onRequestClose = ::requestCorrectionClose,
             onPickerOpenChanged = { correctionPickerOpen = it },
+            deviceZone = deviceZone,
         )
     }
     if (confirmingDiscard) LumaAlertDialog(onDismissRequest = { confirmingDiscard = false },

@@ -946,6 +946,7 @@
     <string name="habit_tracking_zone_note">Les dates d’habitude restent dans ce fuseau pendant vos déplacements.</string>
     <string name="habit_tracking_zone_details">À propos des dates</string>
     <string name="habit_tracking_elsewhere">Date de l’habitude : %1$s · %2$s</string>
+    <string name="habit_affected_date">Date de l’habitude : %1$s</string>
     <string name="habit_tracking_zone_mismatch">Date de l’habitude : %1$s (%2$s). La date de votre appareil est le %3$s.</string>
     <string name="habit_progress">%1$s sur %2$s</string>
     <!-- The quantity is displayed separately; this resource selects only the unit label. -->
@@ -965,6 +966,7 @@
     <string name="habit_remaining_skipped">Reste passé</string>
     <string name="habit_log">+1</string>
     <string name="habit_log_accessibility">Ajouter une réalisation pour %1$s, unité %2$s</string>
+    <string name="habit_log_accessibility_on_date">Ajouter une réalisation pour %1$s, unité %2$s, le %3$s</string>
     <string name="habit_open_accessibility">Ouvrir la progression de %1$s</string>
     <string name="habit_log_disabled_future">Vous ne pouvez pas enregistrer une date future.</string>
     <string name="habit_log_disabled_not_scheduled">Cette habitude n’est pas prévue à cette date.</string>
@@ -1006,6 +1008,8 @@
     <string name="habit_start_future">La date de début ne peut pas être passée.</string>
     <string name="habit_effective_tomorrow">Les changements s’appliquent le %1$s.</string>
     <string name="habit_effective_start">Cette configuration s’applique le %1$s.</string>
+    <string name="habit_effective_date_changed">Le jour du fuseau de suivi a changé pendant la modification. Vérifiez la nouvelle date, puis enregistrez de nouveau.</string>
+    <string name="habit_schedule_history_preserved">Les dates précédentes conservent le programme qui leur était appliqué.</string>
     <string name="habit_schedule_details">Détails du programme</string>
     <string name="habit_schedule_target">Objectif : %1$d par jour</string>
     <string name="habit_schedule_weekdays">Jours : %1$s</string>
@@ -1036,6 +1040,7 @@
     <string name="habit_edit_log">Modifier</string>
     <string name="habit_log_correction">Modifier la répétition</string>
     <string name="habit_correction_date">Date</string>
+    <string name="habit_correction_moved_date">La répétition est déplacée du %1$s au %2$s.</string>
     <string name="habit_correction_time">Heure</string>
     <string name="habit_correction_no_time">Aucune heure enregistrée</string>
     <string name="habit_correction_clear_time">Aucune heure</string>

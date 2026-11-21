@@ -5,6 +5,9 @@ import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
+class HabitEffectiveDateChangedException(val effectiveDate: LocalDate) :
+    IllegalStateException("Habit schedule effective date changed to $effectiveDate")
+
 interface HabitRepository {
     fun observeDay(date: LocalDate): Flow<List<HabitDay>>
     fun observeChanges(): Flow<Unit>
@@ -15,6 +18,14 @@ interface HabitRepository {
     /** Reusing [id] with the same input returns the existing habit; a changed payload conflicts. */
     suspend fun create(id: UUID, input: HabitSaveInput): HabitDefinition
     suspend fun rename(id: UUID, name: String, unitLabel: String?)
+    /** Updates habit details and schedule atomically after validating the editor's displayed date. */
+    suspend fun renameAndSchedule(
+        id: UUID,
+        name: String,
+        unitLabel: String?,
+        input: HabitScheduleInput,
+        expectedEffectiveDate: LocalDate,
+    ): HabitSchedule
     suspend fun schedule(id: UUID, input: HabitScheduleInput): HabitSchedule
     suspend fun cancelPendingSchedule(id: UUID)
     /** Reusing [id] with the same input returns the existing log; a changed payload conflicts. */

@@ -28,7 +28,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.habit.HabitLog
+import com.luma.lifeos.language.rememberDisplayTimePolicy
 import com.luma.lifeos.ui.common.AccessibleFeedback
+import java.time.ZoneId
+import java.time.format.FormatStyle
 import java.util.UUID
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -42,9 +45,18 @@ fun HabitLogSnackbarFeedback(
 ) {
     val savedLog = state.undoableLog
     val failedLog = state.undoFailures.firstOrNull()
+    val deviceZone = state.deviceZone ?: ZoneId.systemDefault()
+    val displayTime = rememberDisplayTimePolicy()
     val savedMessage = savedLog?.let { log ->
-        state.undoableHabitName?.let { stringResource(R.string.habit_log_saved_named, it) }
+        val saved = state.undoableHabitName?.let { stringResource(R.string.habit_log_saved_named, it) }
             ?: stringResource(R.string.habit_log_saved)
+        val date = displayTime.formatDate(log.date, FormatStyle.MEDIUM)
+        val dateContext = if (log.zone != deviceZone) {
+            stringResource(R.string.habit_tracking_elsewhere, date, log.zone.id)
+        } else {
+            stringResource(R.string.habit_affected_date, date)
+        }
+        "$saved · $dateContext"
     }
     val failedMessage = failedLog?.let { stringResource(R.string.habit_undo_failed) }
     val undoLabel = stringResource(R.string.habit_undo)
@@ -86,6 +98,7 @@ fun HabitUndoStatusFeedback(
 ) {
     val pending = state.undoingLogs.filter { onlyHabitId == null || it.habitId == onlyHabitId }
     val failures = state.undoFailures.filter { onlyHabitId == null || it.habitId == onlyHabitId }
+    val deviceZone = state.deviceZone ?: ZoneId.systemDefault()
     if (pending.isEmpty() && failures.isEmpty()) return
 
     Column(
@@ -93,10 +106,10 @@ fun HabitUndoStatusFeedback(
         verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
     ) {
         pending.forEach { log ->
-            UndoStatusCard(log, state.habitNameFor(log), pending = true, onRetry = onRetry)
+            UndoStatusCard(log, state.habitNameFor(log), pending = true, deviceZone = deviceZone, onRetry = onRetry)
         }
         failures.forEach { log ->
-            UndoStatusCard(log, state.habitNameFor(log), pending = false, onRetry = onRetry)
+            UndoStatusCard(log, state.habitNameFor(log), pending = false, deviceZone = deviceZone, onRetry = onRetry)
         }
     }
 }
@@ -106,6 +119,7 @@ private fun UndoStatusCard(
     log: HabitLog,
     habitName: String?,
     pending: Boolean,
+    deviceZone: ZoneId,
     onRetry: (UUID) -> Unit,
 ) {
     LumaCard(Modifier.fillMaxWidth().testTag("habit_undo_feedback_${log.id}")) {
@@ -114,6 +128,7 @@ private fun UndoStatusCard(
             verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
         ) {
             habitName?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
+            HabitAffectedDateLabel(log.date, log.zone, deviceZone)
             if (pending) {
                 Row(
                     Modifier.fillMaxWidth(),

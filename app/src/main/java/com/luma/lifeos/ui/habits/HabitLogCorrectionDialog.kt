@@ -33,6 +33,7 @@ import com.luma.lifeos.calendar.rememberCalendarPolicy
 import com.luma.lifeos.language.rememberDisplayTimePolicy
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.FormatStyle
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
@@ -47,6 +48,7 @@ internal fun HabitLogCorrectionDialog(
     onSave: () -> Unit,
     onRequestClose: () -> Unit,
     onPickerOpenChanged: (Boolean) -> Unit,
+    deviceZone: ZoneId = ZoneId.systemDefault(),
 ) {
     var dateOpen by rememberSaveable { mutableStateOf(false) }
     var timeOpen by rememberSaveable { mutableStateOf(false) }
@@ -82,6 +84,18 @@ internal fun HabitLogCorrectionDialog(
                 ) {
                     Text("${stringResource(R.string.habit_correction_date)} · ${displayTime.formatDate(draft.selectedDate, FormatStyle.MEDIUM)}")
                 }
+                if (draft.originalDate != draft.selectedDate) {
+                    Text(
+                        stringResource(
+                            R.string.habit_correction_moved_date,
+                            displayTime.formatDate(draft.originalDate, FormatStyle.MEDIUM),
+                            displayTime.formatDate(draft.selectedDate, FormatStyle.MEDIUM),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                HabitTrackingZoneNote(draft.zone, deviceZone)
                 dateError?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("habit_correction_date_error"))
                 }

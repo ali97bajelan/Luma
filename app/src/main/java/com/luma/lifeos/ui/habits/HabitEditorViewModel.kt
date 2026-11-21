@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luma.lifeos.domain.habit.HabitDefinition
+import com.luma.lifeos.domain.habit.HabitEffectiveDateChangedException
 import com.luma.lifeos.domain.habit.HabitLifecycle
 import com.luma.lifeos.domain.habit.HabitRepository
 import com.luma.lifeos.domain.habit.HabitSaveInput
@@ -30,7 +31,7 @@ data class HabitEditorDraft(
     val lifecycle: HabitLifecycle = HabitLifecycle.ACTIVE,
 )
 
-enum class HabitEditorError { LOAD, SAVE, INPUT }
+enum class HabitEditorError { LOAD, SAVE, INPUT, EFFECTIVE_DATE_CHANGED }
 enum class HabitEditorFieldError {
     NAME_REQUIRED,
     NAME_TOO_LONG,
@@ -49,6 +50,7 @@ data class HabitEditorState(
     val completed: Boolean = false,
     val resultId: UUID? = null,
     val hasChanges: Boolean = false,
+    val scheduleChanged: Boolean = false,
     val error: HabitEditorError? = null,
     val textError: Boolean = false,
     val fieldError: HabitEditorFieldError? = null,
@@ -107,14 +109,16 @@ class HabitEditorViewModel(
                     val draft = if (saved.get<Boolean>(HAS_DRAFT) == true) readDraft() ?: loaded else loaded
                     persist(draft)
                     mutableState.update { it.copy(draft = draft, loading = false, ready = true, editing = true,
-                        hasChanges = draft != baseline, effectiveDate = effectiveDate(found, today),
-                        trackingZone = zone, error = if (it.fieldError == null) null else HabitEditorError.INPUT) }
+                        hasChanges = draft != baseline, scheduleChanged = hasScheduleChanges(draft),
+                        effectiveDate = effectiveDate(found, today), trackingZone = zone,
+                        error = if (it.fieldError == null) null else HabitEditorError.INPUT) }
                 } else {
                     val default = HabitEditorDraft(start = today)
                     baseline = default
                     val draft = if (saved.get<Boolean>(HAS_DRAFT) == true) readDraft() ?: default else default
                     mutableState.update { it.copy(draft = draft, loading = false, ready = true, editing = false,
-                        hasChanges = draft != baseline, effectiveDate = draft.start, trackingZone = zone,
+                        hasChanges = draft != baseline, scheduleChanged = hasScheduleChanges(draft),
+                        effectiveDate = draft.start, trackingZone = zone,
                         error = if (it.fieldError == null) null else HabitEditorError.INPUT) }
                 }
             } catch (failure: Exception) {
@@ -180,20 +184,26 @@ class HabitEditorViewModel(
                     repository.create(captureId, input).id.also { editingId = it }
                 } else {
                     editingId = existingId
-                    repository.rename(existingId, input.name, input.unitLabel)
-                    val versions = repository.schedules(existingId)
-                    val todayAtZone = LocalDate.now(clock.withZone(input.zone))
-                    val effectiveDate = if (todayAtZone.isBefore(draft.start)) draft.start else todayAtZone.plusDays(1)
-                    val currentSchedule = scheduleFor(effectiveDate, versions) ?: scheduleFor(todayAtZone, versions)
-                        ?: versions.lastOrNull()
-                    if (currentSchedule == null || currentSchedule.target != input.target ||
-                        currentSchedule.weekdays != input.weekdays || currentSchedule.lifecycle != draft.lifecycle) {
-                        repository.schedule(existingId, HabitScheduleInput(input.target, input.weekdays, draft.lifecycle))
+                    if (current.scheduleChanged) {
+                        repository.renameAndSchedule(
+                            existingId,
+                            input.name,
+                            input.unitLabel,
+                            HabitScheduleInput(input.target, input.weekdays, draft.lifecycle),
+                            requireNotNull(current.effectiveDate),
+                        )
+                    } else {
+                        repository.rename(existingId, input.name, input.unitLabel)
                     }
                     existingId
                 }
                 saved[COMPLETED] = true; saved[RESULT_ID] = id.toString(); saved[PENDING_SAVE] = false
-                mutableState.update { it.copy(busy = false, completed = true, resultId = id, hasChanges = false, error = null) }
+                mutableState.update { it.copy(busy = false, completed = true, resultId = id, hasChanges = false,
+                    scheduleChanged = false, error = null) }
+            } catch (failure: HabitEffectiveDateChangedException) {
+                saved[PENDING_SAVE] = false
+                mutableState.update { it.copy(busy = false, error = HabitEditorError.EFFECTIVE_DATE_CHANGED,
+                    fieldError = null, effectiveDate = failure.effectiveDate) }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 saved[PENDING_SAVE] = false
@@ -207,6 +217,10 @@ class HabitEditorViewModel(
     private fun effectiveDate(habit: HabitDefinition, today: LocalDate): LocalDate =
         if (today.isBefore(habit.start)) habit.start else today.plusDays(1)
 
+    private fun hasScheduleChanges(draft: HabitEditorDraft): Boolean =
+        draft.start != baseline.start || draft.target != baseline.target ||
+            draft.weekdays != baseline.weekdays || draft.lifecycle != baseline.lifecycle
+
     private fun change(transform: (HabitEditorDraft) -> HabitEditorDraft) {
         val current = state.value
         if (!current.ready || current.busy || current.completed) return
@@ -214,10 +228,15 @@ class HabitEditorViewModel(
         if (draft == current.draft) return
         persist(draft)
         val weekdayError = if (draft.weekdays.isEmpty()) HabitEditorFieldError.WEEKDAYS_REQUIRED else null
+        val scheduleChanged = hasScheduleChanges(draft)
         saved[TEXT_ERROR] = weekdayError != null
         saved[FIELD_ERROR] = weekdayError?.name
-        mutableState.update { it.copy(draft = draft, hasChanges = draft != baseline,
-            error = if (weekdayError == null) null else HabitEditorError.INPUT,
+        mutableState.update { it.copy(draft = draft, hasChanges = draft != baseline, scheduleChanged = scheduleChanged,
+            error = when {
+                weekdayError != null -> HabitEditorError.INPUT
+                scheduleChanged && it.error == HabitEditorError.EFFECTIVE_DATE_CHANGED -> HabitEditorError.EFFECTIVE_DATE_CHANGED
+                else -> null
+            },
             textError = weekdayError != null, fieldError = weekdayError, effectiveDate = if (it.editing) {
                 val zone = currentZone(); val today = LocalDate.now(clock.withZone(zone))
                 if (today.isBefore(draft.start)) draft.start else today.plusDays(1)
