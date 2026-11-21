@@ -353,6 +353,18 @@ class DefaultLockCredentialService internal constructor(
         }
     }
 
+    override suspend fun acknowledgeMigrationNotice(expectedGeneration: Long): CredentialResult = safely {
+        mutex.withLock {
+            val state = readState() ?: return@withLock CredentialResult.Unavailable
+            if (!state.policy.enabled || state.policy.generation != expectedGeneration) {
+                return@withLock CredentialResult.Cancelled
+            }
+            if (!state.policy.migrationNoticePending) return@withLock CredentialResult.Success()
+            writeState(state.copy(policy = state.policy.copy(migrationNoticePending = false)))
+            CredentialResult.Success()
+        }
+    }
+
     private suspend fun newPasswordCredential(
         secret: CharArray,
         type: LockCredentialType,

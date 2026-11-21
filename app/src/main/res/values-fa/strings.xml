@@ -1786,13 +1786,15 @@
     <string name="app_lock_gate_settings">تنظیمات قفل برنامه</string>
     <string name="app_lock_reset_requires_auth">تا زمانی که قفل برنامه روشن است، پاک‌کردن داده‌ها در دسترس نیست.</string>
     <string name="app_lock_settings_title">قفل برنامه</string>
-    <string name="app_lock_setup_body">یک گذرواژهٔ مستقل برای لوما بسازید و بخش‌های محافظت‌شده را انتخاب کنید.</string>
+    <string name="app_lock_setup_body">یک گذرواژهٔ مستقل برای لوما بسازید و انتخاب کنید که از کل برنامه محافظت کند یا فقط از بخش خاطرات.</string>
     <string name="app_lock_setup_continue">ادامه به کد بازیابی</string>
     <string name="app_lock_settings_auth_body">برای باز کردن تنظیمات امنیتی، اطلاعات قفل لوما را وارد کنید.</string>
     <string name="app_lock_settings_body">برای هر تغییر دوباره گذرواژه خواسته می‌شود. پس از ذخیره، لوما دوباره قفل می‌شود.</string>
     <string name="app_lock_coverage">محتوای محافظت‌شده</string>
+    <string name="app_lock_migration_notice">قفل قبلی شما از بخش‌های انتخاب‌شده محافظت می‌کرد. برای ادامهٔ محافظت از آن‌ها، پوشش به کل برنامه تغییر کرد. می‌توانید در این تنظیمات بخش خاطرات را انتخاب کنید.</string>
+    <string name="app_lock_migration_notice_ack">متوجه شدم</string>
     <string name="app_lock_coverage_whole">کل برنامه</string>
-    <string name="app_lock_coverage_selected">بخش‌های انتخاب‌شده</string>
+    <string name="app_lock_coverage_memory">بخش خاطرات</string>
     <string name="app_lock_section_memories">خاطرات</string>
     <string name="app_lock_section_journal">دفترچه</string>
     <string name="app_lock_section_mood">خلق‌وخو</string>

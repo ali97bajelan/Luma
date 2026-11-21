@@ -15,7 +15,13 @@ import com.luma.lifeos.domain.habit.HabitWeek
 import com.luma.lifeos.domain.model.Person
 import com.luma.lifeos.domain.model.PersonHistory
 import com.luma.lifeos.domain.model.PersonInput
+import com.luma.lifeos.domain.model.Place
+import com.luma.lifeos.domain.model.PlaceHistory
+import com.luma.lifeos.domain.model.PlaceInput
 import com.luma.lifeos.domain.repository.PersonRepository
+import com.luma.lifeos.domain.repository.PlaceRepository
+import com.luma.lifeos.data.repository.EventVisibility
+import com.luma.lifeos.data.repository.EventVisibilityQueries
 import com.luma.lifeos.domain.todo.TodoInput
 import com.luma.lifeos.domain.todo.TodoListQuery
 import com.luma.lifeos.domain.todo.TodoPage
@@ -26,8 +32,13 @@ import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
@@ -77,7 +88,7 @@ class ProtectedTodoRepository(
 
     override suspend fun get(id: UUID): TodoTask? = gateway.readValue(taskRead(id), { delegate.get(id) }) { value, _ -> value }
     override suspend fun create(id: UUID, initialRevision: UUID, input: TodoInput) =
-        gateway.commit(LockOperation.CREATE, setOf(LockSection.TASKS), id.toString()) {
+        gateway.commit(LockOperation.CREATE_IN_EDITOR, setOf(LockSection.TASKS), id.toString()) {
             delegate.create(id, initialRevision, input)
         }
     override suspend fun update(id: UUID, expectedRevision: UUID, nextRevision: UUID, input: TodoInput) =
@@ -130,7 +141,7 @@ class ProtectedHabitRepository(
         gateway.readValue(habitRead(id), { delegate.getLog(id) }) { value, _ -> value }
 
     override suspend fun create(id: UUID, input: HabitSaveInput) =
-        gateway.commit(LockOperation.CREATE, setOf(LockSection.HABITS), id.toString()) { delegate.create(id, input) }
+        gateway.commit(LockOperation.CREATE_IN_EDITOR, setOf(LockSection.HABITS), id.toString()) { delegate.create(id, input) }
     override suspend fun rename(id: UUID, name: String, unitLabel: String?) =
         gateway.commit(LockOperation.UPDATE, setOf(LockSection.HABITS), id.toString()) { delegate.rename(id, name, unitLabel) }
     override suspend fun renameAndSchedule(
@@ -182,15 +193,34 @@ class ProtectedHabitRepository(
 class ProtectedPersonRepository(
     private val delegate: PersonRepository,
     private val gateway: ProtectedContentGateway,
+    private val visibilityQueries: EventVisibilityQueries? = null,
 ) : PersonRepository by delegate {
-    override fun observePeople(): Flow<List<Person>> = combine(delegate.observePeople(), gateway.snapshot) { people, state ->
-        immutableProjectionList(people.takeIf { gateway.filterSection(true, LockSection.PEOPLE, state) }.orEmpty())
-    }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observePeople(): Flow<List<Person>> = gateway.snapshot
+        .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+        .flatMapLatest { state ->
+            if (!gateway.filterSection(true, LockSection.PEOPLE, state)) flowOf(emptyList())
+            else delegate.observePeople().map(::immutableProjectionList)
+        }
 
-    override fun observeHistory(id: UUID): Flow<PersonHistory?> = combine(delegate.observeHistory(id), gateway.snapshot) { history, state ->
-        if (!gateway.filterSection(true, LockSection.PEOPLE, state)) null
-        else history?.let { it.copy(events = immutableProjectionList(gateway.projectRecords(it.events, state))) }
-    }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeHistory(id: UUID): Flow<PersonHistory?> = gateway.snapshot
+        .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+        .flatMapLatest { before ->
+            if (!gateway.filterSection(true, LockSection.PEOPLE, before)) return@flatMapLatest flowOf(null)
+            val visibility = if (gateway.filterSection(true, LockSection.MEMORIES, before)) {
+                EventVisibility.ALL
+            } else EventVisibility.WITHOUT_MEMORY
+            val source = visibilityQueries?.observePersonHistory(id, visibility) ?: delegate.observeHistory(id)
+            source.map { history ->
+                val after = gateway.snapshot.value
+                if (!gateway.sameAuthorizationEpoch(before, after) ||
+                    !gateway.filterSection(true, LockSection.PEOPLE, after)
+                ) null else history?.let {
+                    it.copy(events = immutableProjectionList(gateway.projectRecords(it.events, after)))
+                }
+            }
+        }
 
     override suspend fun get(id: UUID) = gateway.readValue(personRead(id), { delegate.get(id) }) { value, _ -> value }
     override suspend fun create(id: UUID, input: PersonInput) =
@@ -205,6 +235,61 @@ class ProtectedPersonRepository(
     )
 }
 
+class ProtectedPlaceRepository(
+    private val delegate: PlaceRepository,
+    private val gateway: ProtectedContentGateway,
+    private val visibilityQueries: EventVisibilityQueries? = null,
+) : PlaceRepository by delegate {
+    private fun publicCatalogRequest() = LockRequest(
+        LockOperation.READ, emptySet(), LockContentClassification.KNOWN_UNPROTECTED,
+    )
+
+    private fun canReadPublicCatalog(state: com.luma.lifeos.domain.lock.LockSnapshot) =
+        state.decide(publicCatalogRequest()) == com.luma.lifeos.domain.lock.AccessDecision.Allow
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observePlaces(): Flow<List<com.luma.lifeos.domain.model.Place>> = gateway.snapshot
+        .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+        .flatMapLatest { state ->
+            if (!canReadPublicCatalog(state)) flowOf(emptyList())
+            else delegate.observePlaces().map(::immutableProjectionList)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observePlace(id: UUID): Flow<Place?> = gateway.snapshot
+        .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+        .flatMapLatest { state ->
+            if (!canReadPublicCatalog(state)) flowOf(null)
+            else delegate.observePlace(id)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeHistory(id: UUID): Flow<PlaceHistory?> = gateway.snapshot
+        .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+        .flatMapLatest { before ->
+            if (!canReadPublicCatalog(before)) return@flatMapLatest flowOf(null)
+            val visibility = if (gateway.filterSection(true, LockSection.MEMORIES, before)) {
+                EventVisibility.ALL
+            } else EventVisibility.WITHOUT_MEMORY
+            val source = visibilityQueries?.observePlaceHistory(id, visibility) ?: delegate.observeHistory(id)
+            source.map { history ->
+                val after = gateway.snapshot.value
+                if (!gateway.sameAuthorizationEpoch(before, after) || !canReadPublicCatalog(after)) null
+                else history?.let {
+                    it.copy(events = immutableProjectionList(gateway.projectRecords(it.events, after)))
+                }
+            }
+        }
+
+    override suspend fun get(id: UUID): Place? = gateway.readValue(publicCatalogRequest(), { delegate.get(id) }) { value, _ -> value }
+    override suspend fun create(id: UUID, input: PlaceInput) =
+        gateway.commit(LockOperation.UPDATE, emptySet(), id.toString()) { delegate.create(id, input) }
+    override suspend fun update(id: UUID, input: PlaceInput) =
+        gateway.commit(LockOperation.UPDATE, emptySet(), id.toString()) { delegate.update(id, input) }
+    override suspend fun delete(id: UUID) =
+        gateway.commit(LockOperation.DELETE, emptySet(), id.toString()) { delegate.delete(id) }
+}
+
 class ProtectedCalendarRepository(
     private val delegate: CalendarRepository,
     private val gateway: ProtectedContentGateway,
@@ -214,10 +299,19 @@ class ProtectedCalendarRepository(
             immutableProjectionMap(rows.takeIf { gateway.filterSection(true, LockSection.TASKS, state) }.orEmpty())
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeMemoryMarkers(range: CalendarRange, zone: ZoneId): Flow<Map<LocalDate, Int>> =
-        combine(delegate.observeMemoryMarkers(range, zone), gateway.snapshot) { rows, state ->
-            immutableProjectionMap(rows.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty())
-        }
+        gateway.snapshot
+            .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+            .flatMapLatest { before ->
+                if (!gateway.filterSection(true, LockSection.MEMORIES, before)) return@flatMapLatest flowOf(emptyMap())
+                delegate.observeMemoryMarkers(range, zone).map { rows ->
+                    val after = gateway.snapshot.value
+                    if (gateway.sameAuthorizationEpoch(before, after) &&
+                        gateway.filterSection(true, LockSection.MEMORIES, after)
+                    ) immutableProjectionMap(rows) else emptyMap()
+                }
+            }
 
     override fun observeTasks(date: LocalDate, today: LocalDate, overdueOnly: Boolean, limit: Int): Flow<TodoPage> =
         combine(delegate.observeTasks(date, today, overdueOnly, limit), gateway.snapshot) { page, state ->
@@ -230,12 +324,22 @@ class ProtectedCalendarRepository(
             count.takeIf { gateway.filterSection(true, LockSection.TASKS, state) } ?: 0
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeMemories(date: LocalDate, zone: ZoneId, limit: Int): Flow<CalendarMemories> =
-        combine(delegate.observeMemories(date, zone, limit), gateway.snapshot) { result, state ->
-            if (gateway.filterSection(true, LockSection.MEMORIES, state)) {
-                result.copy(items = immutableProjectionList(result.items))
-            } else CalendarMemories(0, emptyList())
-        }
+        gateway.snapshot
+            .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+            .flatMapLatest { before ->
+                if (!gateway.filterSection(true, LockSection.MEMORIES, before)) {
+                    return@flatMapLatest flowOf(CalendarMemories(0, emptyList()))
+                }
+                delegate.observeMemories(date, zone, limit).map { result ->
+                    val after = gateway.snapshot.value
+                    if (gateway.sameAuthorizationEpoch(before, after) &&
+                        gateway.filterSection(true, LockSection.MEMORIES, after)
+                    ) result.copy(items = immutableProjectionList(result.items))
+                    else CalendarMemories(0, emptyList())
+                }
+            }
 }
 
 private fun <K, V> immutableProjectionMap(values: Map<K, V>): Map<K, V> =

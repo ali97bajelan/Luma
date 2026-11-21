@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,7 +62,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.lock.LockCoverage
 import com.luma.lifeos.domain.lock.LockPolicy
-import com.luma.lifeos.domain.lock.LockSection
 import com.luma.lifeos.domain.lock.RelockMode
 import com.luma.lifeos.lock.AppLockCoordinator
 import com.luma.lifeos.lock.AuthPurpose
@@ -77,7 +75,6 @@ import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.ui.common.AppPageScaffold
 import com.luma.lifeos.ui.common.LumaAlertDialog
 import com.luma.lifeos.ui.common.LumaButton
-import com.luma.lifeos.ui.common.LumaFilterChip
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.PageNavigation
 import com.luma.lifeos.ui.theme.onPrimaryFixed
@@ -640,6 +637,38 @@ fun AppLockSettingsRoute(
                             )
                         }
                     }
+                    if (policy.migrationNoticePending) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ) {
+                            Column(Modifier.padding(LumaUi.PageGutter)) {
+                                Text(
+                                    stringResource(R.string.app_lock_migration_notice),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                LumaTextButton(
+                                    enabled = !busy,
+                                    onClick = {
+                                        val generation = policy.generation
+                                        busy = true
+                                        scope.launch {
+                                            val result = vm.acknowledgeMigrationNotice(generation)
+                                            describeResult(result)
+                                            if (result is CredentialResult.Success) {
+                                                coordinator.onMigrationNoticeAcknowledged(generation)
+                                                policy = policy.copy(migrationNoticePending = false)
+                                            }
+                                            busy = false
+                                        }
+                                    },
+                                    modifier = Modifier.testTag("app_lock_migration_notice_ack"),
+                                ) { Text(stringResource(R.string.app_lock_migration_notice_ack)) }
+                            }
+                        }
+                    }
                     descriptor?.let { current ->
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
@@ -807,51 +836,16 @@ private fun PolicyControls(policy: LockPolicy, enabled: Boolean, onPolicy: (Lock
                         selected = policy.coverage == LockCoverage.WHOLE_APP,
                         enabled = enabled,
                         label = stringResource(R.string.app_lock_coverage_whole),
-                        onClick = { onPolicy(policy.copy(coverage = LockCoverage.WHOLE_APP, sections = emptySet())) },
+                        onClick = { onPolicy(policy.copy(coverage = LockCoverage.WHOLE_APP)) },
                         testTag = "app_lock_coverage_whole",
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
-                        LockPolicyChoice(
-                            selected = policy.coverage == LockCoverage.SELECTED,
-                            enabled = enabled,
-                            label = stringResource(R.string.app_lock_coverage_selected),
-                            onClick = {
-                                onPolicy(policy.copy(coverage = LockCoverage.SELECTED,
-                                    sections = policy.sections.ifEmpty { setOf(LockSection.MEMORIES) }))
-                            },
-                            testTag = "app_lock_coverage_selected",
-                        )
-                        if (policy.coverage == LockCoverage.SELECTED) {
-                            FlowRow(
-                                modifier = Modifier.padding(start = 44.dp, bottom = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-                                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
-                            ) {
-                                LockSection.entries.filterNot { it == LockSection.JOURNAL }.forEach { section ->
-                                    val selected = section in policy.sections
-                                    LumaFilterChip(
-                                        selected = selected,
-                                        enabled = enabled,
-                                        onClick = {
-                                            val sections = if (selected) policy.sections - section else policy.sections + section
-                                            if (sections.isNotEmpty()) onPolicy(policy.copy(sections = sections))
-                                        },
-                                        label = { Text(stringResource(section.labelResource())) },
-                                        leadingIcon = if (selected) {
-                                            {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.ic_check),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp),
-                                                )
-                                            }
-                                        } else null,
-                                        modifier = Modifier.testTag("app_lock_section_${section.name.lowercase()}"),
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    LockPolicyChoice(
+                        selected = policy.coverage == LockCoverage.MEMORY_SECTION,
+                        enabled = enabled,
+                        label = stringResource(R.string.app_lock_coverage_memory),
+                        onClick = { onPolicy(policy.copy(coverage = LockCoverage.MEMORY_SECTION)) },
+                        testTag = "app_lock_coverage_memory",
+                    )
                 }
             }
         }
@@ -964,17 +958,6 @@ private fun Context.findSecureWindowActivity(): Activity? = when (this) {
     is Activity -> this
     is android.content.ContextWrapper -> baseContext.findSecureWindowActivity()
     else -> null
-}
-
-private fun LockSection.labelResource(): Int = when (this) {
-    LockSection.MEMORIES -> R.string.app_lock_section_memories
-    LockSection.JOURNAL -> R.string.app_lock_section_journal
-    LockSection.MOOD -> R.string.app_lock_section_mood
-    LockSection.TASKS -> R.string.app_lock_section_tasks
-    LockSection.HABITS -> R.string.app_lock_section_habits
-    LockSection.PEOPLE -> R.string.app_lock_section_people
-    LockSection.FOCUS -> R.string.app_lock_section_focus
-    LockSection.HEALTH_USAGE -> R.string.app_lock_section_health_usage
 }
 
 private fun LockCredentialType.labelResource(): Int = when (this) {

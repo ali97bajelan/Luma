@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
                     luma.protectedJournals,
                     luma.protectedMemories,
                     luma.protectedPeople,
-                    storage.places,
+                    luma.protectedPlaces,
                     luma.protectedPhotos,
                     luma.protectedTimeline,
                     luma.protectedUsage,

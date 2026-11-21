@@ -156,6 +156,17 @@ class AppLockCoordinator(
         }
     }
 
+    fun onMigrationNoticeAcknowledged(expectedGeneration: Long) {
+        synchronized(monitor) {
+            val current = mutableSnapshot.value
+            val policy = current.policy ?: return
+            if (current.loadStatus != LockLoadStatus.READY || policy.generation != expectedGeneration) return
+            mutableSnapshot.value = current.copy(
+                policy = policy.copy(migrationNoticePending = false),
+            )
+        }
+    }
+
     /** Applies credential setup or replacement without ending the current foreground session. */
     fun onCredentialChanged(policy: LockPolicy) {
         synchronized(monitor) {

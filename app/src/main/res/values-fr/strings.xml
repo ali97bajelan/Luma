@@ -1809,13 +1809,15 @@
     <string name="app_lock_gate_settings">Paramètres du verrouillage</string>
     <string name="app_lock_reset_requires_auth">L’effacement des données est indisponible tant que le verrouillage est activé.</string>
     <string name="app_lock_settings_title">Verrouillage de Luma</string>
-    <string name="app_lock_setup_body">Créez un mot de passe Luma indépendant et choisissez les sections à protéger.</string>
+    <string name="app_lock_setup_body">Créez un mot de passe Luma indépendant et choisissez s’il protège toute l’application ou la section Souvenirs.</string>
     <string name="app_lock_setup_continue">Continuer vers le code de récupération</string>
     <string name="app_lock_settings_auth_body">Saisissez votre identifiant de verrouillage Luma pour ouvrir les paramètres de sécurité.</string>
     <string name="app_lock_settings_body">Votre mot de passe sera redemandé pour chaque modification. Luma se reverrouille après l’enregistrement.</string>
     <string name="app_lock_coverage">Contenus protégés</string>
+    <string name="app_lock_migration_notice">Votre ancien verrou protégeait certaines sections. Pour continuer à les protéger, la couverture est passée à Toute l’application. Vous pouvez choisir la section Souvenirs dans ces réglages.</string>
+    <string name="app_lock_migration_notice_ack">Compris</string>
     <string name="app_lock_coverage_whole">Toute l’application</string>
-    <string name="app_lock_coverage_selected">Sections choisies</string>
+    <string name="app_lock_coverage_memory">Section Souvenirs</string>
     <string name="app_lock_section_memories">Souvenirs</string>
     <string name="app_lock_section_journal">Journal</string>
     <string name="app_lock_section_mood">Humeur</string>

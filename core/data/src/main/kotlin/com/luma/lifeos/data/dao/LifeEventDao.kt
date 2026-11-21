@@ -24,12 +24,15 @@ interface LifeEventDao {
         WHERE type != 'APP_USAGE' AND (
             (occurred_at >= :previousStart AND occurred_at < :previousEnd) OR
             (occurred_at >= :currentStart AND occurred_at < :currentEnd)
-        ) ORDER BY occurred_at, id""")
+        ) AND (:includeMemory OR (type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS
+            (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id)))
+        ORDER BY occurred_at, id""")
     suspend fun reviewSources(
         previousStart: Long,
         previousEnd: Long,
         currentStart: Long,
         currentEnd: Long,
+        includeMemory: Boolean = true,
     ): List<com.luma.lifeos.data.entity.ReviewSource>
 
     @Query("""SELECT app_usage_record.*, life_event.metadata_json FROM app_usage_record
@@ -39,8 +42,8 @@ interface LifeEventDao {
     suspend fun nativeUsageSources(start: Long, end: Long): List<com.luma.lifeos.data.entity.NativeUsageSource>
 
     @Transaction
-    @Query("SELECT id, occurred_at, metadata_json FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE' ORDER BY occurred_at, id")
-    suspend fun summarySources(start: Long, end: Long): List<SummarySource>
+    @Query("SELECT id, occurred_at, metadata_json FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE' AND (:includeMemory OR (type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id))) ORDER BY occurred_at, id")
+    suspend fun summarySources(start: Long, end: Long, includeMemory: Boolean = true): List<SummarySource>
 
     @Transaction
     @Query("""SELECT id, occurred_at, metadata_json FROM life_event WHERE id IN
@@ -54,6 +57,10 @@ interface LifeEventDao {
     @Transaction
     @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end ORDER BY occurred_at, id")
     fun observeDetails(start: Long, end: Long): Flow<List<EventWithDetails>>
+
+    @Transaction
+    @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND (:includeMemory OR (type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id))) ORDER BY occurred_at, id")
+    fun observeVisibleDetails(start: Long, end: Long, includeMemory: Boolean): Flow<List<EventWithDetails>>
 
     @Transaction
     @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end ORDER BY occurred_at, id")
@@ -71,17 +78,26 @@ interface LifeEventDao {
     fun observeMemoryLibrary(eventTypes: List<String>, limit: Int): Flow<List<EventWithDetails>>
 
     @Transaction
-    @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND " + TIMELINE_VISIBLE + " ORDER BY occurred_at DESC, id DESC LIMIT :limit OFFSET :offset")
-    suspend fun pageDetails(start: Long, end: Long, offset: Int, limit: Int, showAppUsage: Boolean): List<EventWithDetails>
+    @Query("SELECT * FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND " + TIMELINE_VISIBLE +
+        " AND (:includeMemory OR (type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS " +
+        "(SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id))) ORDER BY occurred_at DESC, id DESC LIMIT :limit OFFSET :offset")
+    suspend fun pageDetails(start: Long, end: Long, offset: Int, limit: Int, showAppUsage: Boolean,
+        includeMemory: Boolean = true): List<EventWithDetails>
 
     @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end")
     suspend fun countDay(start: Long, end: Long): Int
 
-    @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND " + TIMELINE_VISIBLE)
-    suspend fun countTimelineRows(start: Long, end: Long, showAppUsage: Boolean): Int
+    @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND " + TIMELINE_VISIBLE +
+        " AND (:includeMemory OR (type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS " +
+        "(SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id)))")
+    suspend fun countTimelineRows(start: Long, end: Long, showAppUsage: Boolean,
+        includeMemory: Boolean = true): Int
 
     @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE'")
     suspend fun countDayEvents(start: Long, end: Long): Int
+
+    @Query("SELECT COUNT(*) FROM life_event WHERE occurred_at >= :start AND occurred_at < :end AND type != 'APP_USAGE' AND (:includeMemory OR (type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id)))")
+    suspend fun countDayEventsVisible(start: Long, end: Long, includeMemory: Boolean): Int
 
     @Query("SELECT * FROM life_event WHERE id = :id")
     suspend fun get(id: String): LifeEventEntity?
@@ -93,6 +109,16 @@ interface LifeEventDao {
     @Transaction
     @Query("SELECT * FROM life_event WHERE id IN (:ids)")
     suspend fun detailsByIds(ids: List<String>): List<EventWithDetails>
+
+    @Transaction
+    @Query("SELECT * FROM life_event WHERE id IN (:ids) AND (:includeMemory OR (type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id))) ORDER BY occurred_at, id")
+    suspend fun detailsByIdsVisible(ids: List<String>, includeMemory: Boolean): List<EventWithDetails>
+
+    @Query("""SELECT type,
+        EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id) AS has_memory_marker,
+        EXISTS (SELECT 1 FROM event_person WHERE event_person.event_id = life_event.id) AS has_people
+        FROM life_event WHERE id = :id""")
+    suspend fun classification(id: String): com.luma.lifeos.data.entity.EventClassificationRow?
 
     @Query("SELECT * FROM life_event WHERE source = :source AND source_ref = :reference LIMIT 1")
     suspend fun findBySource(source: EventSource, reference: String): LifeEventEntity?

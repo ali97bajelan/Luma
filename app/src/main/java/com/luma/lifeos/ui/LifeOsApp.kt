@@ -773,6 +773,13 @@ fun LifeOsApp(
         (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
     val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
     fun appLockEnabled(): Boolean = lockSnapshot.policy?.enabled == true
+    fun wholeAppLockEnabled(): Boolean = appLockEnabled() &&
+        lockSnapshot.policy?.coverage == com.luma.lifeos.domain.lock.LockCoverage.WHOLE_APP
+    fun memoryCoverageLocked(): Boolean = appLockEnabled() &&
+        lockSnapshot.policy?.coverage == com.luma.lifeos.domain.lock.LockCoverage.MEMORY_SECTION &&
+        protectedContentGateway?.filterSection(true, LockSection.MEMORIES, lockSnapshot) != true
+    fun requiresRestrictedCapture(kind: RestrictedCaptureKind?): Boolean = wholeAppLockEnabled() ||
+        (kind == RestrictedCaptureKind.MEMORY && memoryCoverageLocked())
     fun openRestrictedCapture(
         initialKind: RestrictedCaptureKind? = null,
         initialDate: LocalDate? = null,
@@ -793,13 +800,11 @@ fun LifeOsApp(
     }
     fun openCapture(route: String, date: LocalDate?) {
         val targetRoute = if (route == "journal") "memory" else route
-        if (appLockEnabled()) {
-            val initialKind = if (route == "journal" || route == "memory") {
-                RestrictedCaptureKind.MEMORY
-            } else {
-                null
-            }
-            openRestrictedCapture(initialKind, date)
+        val captureKind = if (route == "journal" || route == "memory") {
+            RestrictedCaptureKind.MEMORY
+        } else null
+        if (requiresRestrictedCapture(captureKind)) {
+            openRestrictedCapture(captureKind, date)
             return
         }
         capturing = false
@@ -815,7 +820,7 @@ fun LifeOsApp(
         navController.navigate(AppRoutes.MEMORIES) { launchSingleTop = true }
     }
     fun openMemoryCaptureFromLibrary(date: LocalDate) {
-        if (appLockEnabled()) {
+        if (requiresRestrictedCapture(RestrictedCaptureKind.MEMORY)) {
             openRestrictedCapture(RestrictedCaptureKind.MEMORY, date)
             return
         }
@@ -832,7 +837,7 @@ fun LifeOsApp(
             requestProtectedFocusUnlock()
             return
         }
-        if (taskId == null && parentId == null && appLockEnabled()) {
+        if (taskId == null && parentId == null && wholeAppLockEnabled()) {
             openRestrictedCapture()
             return
         }
@@ -863,7 +868,7 @@ fun LifeOsApp(
         openTodoEditor(taskId = parentId)
     }
     fun openHabitEditor(habitId: UUID? = null) {
-        if (habitId == null && appLockEnabled()) {
+        if (habitId == null && wholeAppLockEnabled()) {
             openRestrictedCapture()
             return
         }
@@ -887,12 +892,18 @@ fun LifeOsApp(
         }
     }
     fun routeWidgetDestination(destination: WidgetDestination) {
+        val restrictedKind = when ((destination as? WidgetDestination.Capture)?.kind) {
+            CaptureKind.MEMORY, CaptureKind.JOURNAL -> RestrictedCaptureKind.MEMORY
+            CaptureKind.MOOD -> null
+            null -> null
+        }
         val isRestrictedCreate = when (destination) {
-            WidgetDestination.QuickCapture, is WidgetDestination.Capture,
-            WidgetDestination.NewTask, WidgetDestination.NewHabit -> true
+            WidgetDestination.QuickCapture -> wholeAppLockEnabled()
+            is WidgetDestination.Capture -> requiresRestrictedCapture(restrictedKind)
+            WidgetDestination.NewTask, WidgetDestination.NewHabit -> wholeAppLockEnabled()
             else -> false
         }
-        if (appLockEnabled() && isRestrictedCreate) {
+        if (isRestrictedCreate) {
             openRestrictedCapture()
             return
         }
@@ -980,7 +991,7 @@ fun LifeOsApp(
             if (showCaptureFab) {
                 val density = LocalDensity.current
                 ExtendedFloatingActionButton(
-                    onClick = { if (appLockEnabled()) openRestrictedCapture() else capturing = true },
+                    onClick = { if (wholeAppLockEnabled()) openRestrictedCapture() else capturing = true },
                     shape = RoundedCornerShape(percent = 50),
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -1933,7 +1944,7 @@ fun LifeOsApp(
                 capturing = false
                 widgetQuickCapture = false
                 calendarCaptureDueDate = null
-                if (appLockEnabled()) openRestrictedCapture() else openHabitsDate(date)
+                if (wholeAppLockEnabled()) openRestrictedCapture() else openHabitsDate(date)
             },
             taskDueDate = calendarCaptureDueDate?.let(LocalDate::parse),
             onScheduledTask = if (todos != null && calendarCaptureDueDate != null) ({ date ->

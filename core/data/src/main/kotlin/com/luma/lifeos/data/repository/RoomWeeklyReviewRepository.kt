@@ -25,7 +25,9 @@ class RoomWeeklyReviewRepository(private val database: LumaDatabase) : WeeklyRev
         "event_person", "person", "event_place", "place", "activity_record", "app_usage_record",
         "usage_session", "usage_session_window", "media_attachment", "event_tag", "tag",
     ).map { Unit }
-    override fun observe(period: ReviewPeriod) = observeChanges().map {
+    override fun observe(period: ReviewPeriod) = observeVisible(period, includeMemory = true)
+
+    fun observeVisible(period: ReviewPeriod, includeMemory: Boolean) = observeChanges().map {
         withContext(Dispatchers.IO) {
             database.withTransaction {
                 val rows = database.lifeEvents().reviewSources(
@@ -33,6 +35,7 @@ class RoomWeeklyReviewRepository(private val database: LumaDatabase) : WeeklyRev
                     previousEnd = period.previous.endInstant(period.zone).toEpochMilli(),
                     currentStart = period.current.startInstant(period.zone).toEpochMilli(),
                     currentEnd = period.current.endInstant(period.zone).toEpochMilli(),
+                    includeMemory = includeMemory,
                 )
                 val usage = RoomUsageRepository(database)
                 val dates = period.previous.dates + period.current.dates

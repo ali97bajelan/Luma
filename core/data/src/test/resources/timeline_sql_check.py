@@ -63,7 +63,7 @@ with tempfile.TemporaryDirectory(prefix="luma-timeline-history-") as directory:
     db.commit()
 
     bounds = (AT, AT + DAY)
-    args = bounds + (True,)
+    args = bounds + (True, True)
     assert db.execute(count, args).fetchone() == (2001,)
     assert db.execute(events, bounds).fetchone() == (2000,)
     collected = []
@@ -73,24 +73,24 @@ with tempfile.TemporaryDirectory(prefix="luma-timeline-history-") as directory:
         collected.extend(row[0] for row in rows)
     assert collected == [identifier(2001)] + [identifier(n) for n in range(1999, -1, -1)]
     # Only measured usage over one minute is visible; zero, exact-minute, and unknown rows are excluded.
-    assert db.execute(page, (AT + DAY, AT + 2 * DAY, True, 50, 0)).fetchall() == []
-    assert len(db.execute(page, (AT - DAY, AT, True, 50, 0)).fetchall()) == 28
-    hidden_usage = db.execute(page, bounds + (False, 50, 0)).fetchall()
+    assert db.execute(page, (AT + DAY, AT + 2 * DAY, True, True, 50, 0)).fetchall() == []
+    assert len(db.execute(page, (AT - DAY, AT, True, True, 50, 0)).fetchall()) == 28
+    hidden_usage = db.execute(page, bounds + (False, True, 50, 0)).fetchall()
     assert [row[0] for row in hidden_usage] == [identifier(n) for n in range(1999, 1949, -1)]
     print("PASS: generated Timeline SQL, half-open days, deterministic ties, paging, visibility toggle and >1-minute usage")
 
     for name, bounds, offset in [("burst_first", (AT, AT + DAY), 0), ("burst_last", (AT, AT + DAY), 1950),
                                   ("old_day", (AT - 1825 * DAY, AT - 1824 * DAY), 0),
                                   ("empty", (AT + DAY, AT + 2 * DAY), 0)]:
-        plan = [row[3] for row in db.execute("EXPLAIN QUERY PLAN " + page, bounds + (True, 50, offset))]
+        plan = [row[3] for row in db.execute("EXPLAIN QUERY PLAN " + page, bounds + (True, True, 50, offset))]
         assert any("index_life_event_occurred_at_id" in row for row in plan), plan
         assert not any("TEMP B-TREE" in row for row in plan), plan
         samples = []
         for _ in range(20):
             start = time.perf_counter()
-            db.execute(count, bounds + (True,)).fetchone()
+            db.execute(count, bounds + (True, True)).fetchone()
             db.execute(events, bounds).fetchone()
-            db.execute(page, bounds + (True, 50, offset)).fetchall()
+            db.execute(page, bounds + (True, True, 50, offset)).fetchall()
             samples.append((time.perf_counter() - start) * 1000)
         print(f"HOST_QUERY_ONLY sqlite={sqlite3.sqlite_version} rows=52003 query={name} median_ms={statistics.median(samples):.2f} p95_ms={sorted(samples)[18]:.2f}")
     db.close()

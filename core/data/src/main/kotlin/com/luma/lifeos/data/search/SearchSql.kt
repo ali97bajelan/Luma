@@ -2,15 +2,24 @@ package com.luma.lifeos.data.search
 
 import com.luma.lifeos.data.mapping.storageBoundary
 import com.luma.lifeos.domain.search.SearchQuery
+import com.luma.lifeos.data.repository.EventVisibility
+import com.luma.lifeos.data.repository.predicate
 import java.time.ZoneId
 
 /** Only fixed SQL fragments are concatenated; every input is a bind argument. */
-internal class SearchSql(query: SearchQuery, zone: ZoneId) {
+internal class SearchSql(
+    query: SearchQuery,
+    zone: ZoneId,
+    visibility: EventVisibility = EventVisibility.ALL,
+) {
     val arguments = mutableListOf<Any>()
     val where: String
     init {
         val predicates = mutableListOf("""(type != 'APP_USAGE' OR NOT EXISTS (
             SELECT 1 FROM app_usage_record WHERE life_event_id = life_event.id AND duration_ms = 0))""")
+        if (visibility == EventVisibility.WITHOUT_MEMORY) {
+            predicates += visibility.predicate("life_event")
+        }
         val bounds = query.bounds(zone)
         bounds.start?.let { predicates += "occurred_at >= ?"; arguments += it.storageBoundary() }
         bounds.endExclusive?.let { predicates += "occurred_at < ?"; arguments += it.storageBoundary() }

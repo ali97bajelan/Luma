@@ -29,6 +29,9 @@ import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
 import com.luma.lifeos.domain.lock.LockLoadStatus
+import com.luma.lifeos.domain.lock.LockCoverage
+import com.luma.lifeos.data.repository.EventVisibility
+import com.luma.lifeos.data.repository.EventVisibilityQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -38,22 +41,53 @@ import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.ZoneId
 
+private fun wholeAppLocked(state: com.luma.lifeos.domain.lock.LockSnapshot): Boolean {
+    val policy = state.policy ?: return false
+    return policy.enabled && policy.coverage == LockCoverage.WHOLE_APP &&
+        state.decide(LockRequest(LockOperation.READ, setOf(LockSection.MEMORIES))) != AccessDecision.Allow
+}
+
+private fun memoryVisibility(state: com.luma.lifeos.domain.lock.LockSnapshot): EventVisibility {
+    val policy = state.policy ?: return EventVisibility.ALL
+    return if (policy.enabled && policy.coverage == LockCoverage.MEMORY_SECTION &&
+        state.decide(LockRequest(LockOperation.READ, setOf(LockSection.MEMORIES))) != AccessDecision.Allow
+    ) EventVisibility.WITHOUT_MEMORY else EventVisibility.ALL
+}
+
 /** Event/detail/search projections pass through record classification before reaching UI state. */
 class ProtectedTimelineRepository(
     private val delegate: TimelineRepository,
     private val gateway: ProtectedContentGateway,
+    private val visibilityQueries: EventVisibilityQueries? = null,
 ) : TimelineRepository by delegate {
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
 
-    override suspend fun page(range: TimeRange, offset: Int, limit: Int, showAppUsage: Boolean) =
-        scanPage(offset, limit) { nextOffset, nextLimit ->
+    override suspend fun page(range: TimeRange, offset: Int, limit: Int, showAppUsage: Boolean): com.luma.lifeos.domain.model.TimelinePage {
+        val before = gateway.snapshot.value
+        if (before.loadStatus != LockLoadStatus.READY || wholeAppLocked(before)) {
+            return com.luma.lifeos.domain.model.TimelinePage(emptyList(), offset, 0, 0)
+        }
+        val visibility = memoryVisibility(before)
+        if (visibilityQueries != null) {
+            val result = visibilityQueries.timelinePage(range, offset, limit, showAppUsage, visibility)
+            return result.takeIf { gateway.sameAuthorizationEpoch(before, gateway.snapshot.value) }
+                ?: com.luma.lifeos.domain.model.TimelinePage(emptyList(), offset, 0, 0)
+        }
+        return scanPage(offset, limit) { nextOffset, nextLimit ->
             delegate.page(range, nextOffset, nextLimit, showAppUsage)
         }
+    }
 
     override suspend fun feed(date: LocalDate, zone: ZoneId, offset: Int, limit: Int, showAppUsage: Boolean): TimelineFeedPage {
         require(offset >= 0 && limit in 1..300)
         val before = gateway.snapshot.value
-        if (before.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) return emptyFeed(offset)
+        if (before.loadStatus != LockLoadStatus.READY || wholeAppLocked(before)) return emptyFeed(offset)
+        if (visibilityQueries != null) {
+            val result = visibilityQueries.timelineFeed(
+                date, zone, offset, limit, showAppUsage, memoryVisibility(before),
+            )
+            return result.takeIf { gateway.sameAuthorizationEpoch(before, gateway.snapshot.value) } ?: emptyFeed(offset)
+        }
         val rows = mutableListOf<TimelineFeedItem>()
         var nextOffset = 0
         var rawTotal = Int.MAX_VALUE
@@ -119,23 +153,43 @@ class ProtectedTimelineRepository(
 class ProtectedSearchRepository(
     private val delegate: SearchRepository,
     private val gateway: ProtectedContentGateway,
+    private val visibilityQueries: EventVisibilityQueries? = null,
 ) : SearchRepository by delegate {
-    override fun observeOptions(): Flow<SearchOptions> = combine(delegate.observeOptions(), gateway.snapshot) { options, state ->
-        options.copy(
-            tags = immutableProjectionList(
-                options.tags.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty(),
-            ),
-            people = immutableProjectionList(
-                options.people.takeIf { gateway.filterSection(true, LockSection.PEOPLE, state) }.orEmpty(),
-            ),
-            places = immutableProjectionList(options.places),
-        )
-    }
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
+    override fun observeOptions(): Flow<SearchOptions> = gateway.snapshot
+        .distinctUntilChangedBy { state ->
+            listOf(state.loadStatus, state.policy, state.sessionGeneration, state.grant)
+        }
+        .flatMapLatest { before ->
+            if (before.loadStatus != LockLoadStatus.READY || wholeAppLocked(before)) {
+                return@flatMapLatest flowOf(SearchOptions())
+            }
+            val visibility = memoryVisibility(before)
+            val source = visibilityQueries?.observeSearchOptions(visibility) ?: delegate.observeOptions()
+            source.map { options ->
+                val after = gateway.snapshot.value
+                if (!gateway.sameAuthorizationEpoch(before, after)) SearchOptions()
+                else options.copy(
+                    tags = immutableProjectionList(
+                        options.tags.takeIf { visibility == EventVisibility.ALL }.orEmpty(),
+                    ),
+                    people = immutableProjectionList(
+                        options.people.takeIf { gateway.filterSection(true, LockSection.PEOPLE, after) }.orEmpty(),
+                    ),
+                    places = immutableProjectionList(options.places),
+                )
+            }
+        }
 
     override suspend fun page(query: SearchQuery, zone: ZoneId, offset: Int, limit: Int): SearchPage {
         require(offset >= 0 && limit > 0)
         val before = gateway.snapshot.value
-        if (before.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) return SearchPage(emptyList(), offset, 0)
+        if (before.loadStatus != LockLoadStatus.READY || wholeAppLocked(before)) return SearchPage(emptyList(), offset, 0)
+        if (visibilityQueries != null) {
+            val result = visibilityQueries.searchPage(query, zone, offset, limit, memoryVisibility(before))
+            return result.takeIf { gateway.sameAuthorizationEpoch(before, gateway.snapshot.value) }
+                ?: SearchPage(emptyList(), offset, 0)
+        }
         val raw = mutableListOf<LifeEventRecord>()
         var rawTotal = Int.MAX_VALUE
         var nextOffset = 0
@@ -159,8 +213,25 @@ class ProtectedLifeEventRepository(
     private val delegate: LifeEventRepository,
     private val timeline: TimelineRepository,
     private val gateway: ProtectedContentGateway,
+    private val visibilityQueries: EventVisibilityQueries? = null,
 ) : LifeEventRepository by delegate {
-    override fun observeRecords(range: TimeRange): Flow<List<LifeEventRecord>> = gateway.records(delegate.observeRecords(range))
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
+    override fun observeRecords(range: TimeRange): Flow<List<LifeEventRecord>> = gateway.snapshot
+        .distinctUntilChangedBy { state ->
+            listOf(state.loadStatus, state.policy, state.sessionGeneration, state.grant)
+        }
+        .flatMapLatest { before ->
+            if (before.loadStatus != LockLoadStatus.READY || wholeAppLocked(before)) {
+                return@flatMapLatest flowOf(emptyList())
+            }
+            val source = visibilityQueries?.observeRecords(range, memoryVisibility(before))
+                ?: delegate.observeRecords(range)
+            source.map { records ->
+                val after = gateway.snapshot.value
+                if (!gateway.sameAuthorizationEpoch(before, after)) emptyList()
+                else gateway.projectRecords(records, after)
+            }
+        }
 
     override fun observe(range: TimeRange): Flow<List<LifeEvent>> =
         observeRecords(range).map { records -> immutableProjectionList(records.map(LifeEventRecord::event)) }
@@ -175,9 +246,16 @@ class ProtectedLifeEventRepository(
 
     override suspend fun upsert(event: LifeEvent): EventId {
         val existing = gateway.requiredSections(event.id)
-        val operation = if (existing == null) LockOperation.CREATE else LockOperation.UPDATE
-        val sections = existing.orEmpty() + event.requiredSection()
-        return gateway.commit(operation, sections, event.id.toString()) { delegate.upsert(event) }
+        if (existing == null) {
+            return gateway.commitEditorCreate(
+                id = event.id,
+                expectedType = event.type,
+                newSections = event.requiredSection(),
+            ) { delegate.upsert(event) }
+        }
+        return gateway.commit(LockOperation.UPDATE, existing + event.requiredSection(), event.id.toString()) {
+            delegate.upsert(event)
+        }
     }
 
     override suspend fun delete(id: EventId) {
@@ -197,9 +275,16 @@ class ProtectedMemoryRepository(
     private val delegate: MemoryRepository,
     private val gateway: ProtectedContentGateway,
 ) : MemoryRepository by delegate {
-    override fun observeTags(): Flow<List<com.luma.lifeos.domain.model.Tag>> =
-        combine(delegate.observeTags(), gateway.snapshot) { tags, state ->
-            immutableProjectionList(tags.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty())
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
+    override fun observeTags(): Flow<List<com.luma.lifeos.domain.model.Tag>> = gateway.snapshot
+        .distinctUntilChangedBy { state -> listOf(state.loadStatus, state.policy, state.sessionGeneration, state.grant) }
+        .flatMapLatest { state ->
+            if (!gateway.filterSection(true, LockSection.MEMORIES, state)) flowOf(emptyList())
+            else delegate.observeTags().map { tags ->
+                if (gateway.filterSection(true, LockSection.MEMORIES, gateway.snapshot.value)) {
+                    immutableProjectionList(tags)
+                } else emptyList()
+            }
         }
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
     override suspend fun canReadEditorBaseline(baseline: EventEditorBaseline): Boolean {
@@ -209,7 +294,18 @@ class ProtectedMemoryRepository(
             state.decide(LockRequest(LockOperation.READ, requiredSections, LockContentClassification.CLASSIFIED)) ==
             AccessDecision.Allow
     }
-    override fun observe(range: TimeRange): Flow<List<LifeEventRecord>> = gateway.records(delegate.observe(range))
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
+    override fun observe(range: TimeRange): Flow<List<LifeEventRecord>> = gateway.snapshot
+        .distinctUntilChangedBy { state -> listOf(state.loadStatus, state.policy, state.sessionGeneration, state.grant) }
+        .flatMapLatest { state ->
+            if (!gateway.filterSection(true, LockSection.MEMORIES, state)) flowOf(emptyList())
+            else delegate.observe(range).map { records ->
+                val current = gateway.snapshot.value
+                if (gateway.filterSection(true, LockSection.MEMORIES, current)) {
+                    gateway.projectRecords(records, current)
+                } else emptyList()
+            }
+        }
     override fun observeLibrary(limit: Int, eventTypes: Set<EventType>): Flow<List<LifeEventRecord>> {
         require(limit > 0) { "Library limit must be positive" }
         val supported = setOf(EventType.MEMORY, EventType.MOOD)
@@ -242,7 +338,9 @@ class ProtectedMemoryRepository(
             }
     }
     override suspend fun create(id: EventId, input: MemoryInput): EventId =
-        gateway.commit(LockOperation.CREATE, setOf(LockSection.MEMORIES), id.toString()) { delegate.create(id, input) }
+        gateway.commitEditorCreate(id, EventType.MEMORY, setOf(LockSection.MEMORIES)) {
+            delegate.create(id, input)
+        }
     override suspend fun update(id: EventId, input: MemoryInput) =
         gateway.commit(
             LockOperation.UPDATE,
@@ -306,7 +404,9 @@ class ProtectedMoodRepository(
             AccessDecision.Allow
     }
     override suspend fun create(id: EventId, input: MoodInput): EventId =
-        gateway.commit(LockOperation.CREATE, setOf(LockSection.MOOD), id.toString()) { delegate.create(id, input) }
+        gateway.commitEditorCreate(id, EventType.MOOD, setOf(LockSection.MOOD)) {
+            delegate.create(id, input)
+        }
     override suspend fun update(id: EventId, input: MoodInput) =
         gateway.commit(
             LockOperation.UPDATE,
@@ -336,12 +436,22 @@ class ProtectedJournalRepository(
     private val delegate: JournalRepository,
     private val gateway: ProtectedContentGateway,
 ) : JournalRepository by delegate {
-    override fun observeTags() = combine(delegate.observeTags(), gateway.snapshot) { tags, state ->
-        immutableProjectionList(tags.takeIf { gateway.filterSection(true, LockSection.MEMORIES, state) }.orEmpty())
-    }
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
+    override fun observeTags() = gateway.snapshot
+        .distinctUntilChangedBy { state -> listOf(state.loadStatus, state.policy, state.sessionGeneration, state.grant) }
+        .flatMapLatest { state ->
+            if (!gateway.filterSection(true, LockSection.MEMORIES, state)) flowOf(emptyList())
+            else delegate.observeTags().map { tags ->
+                if (gateway.filterSection(true, LockSection.MEMORIES, gateway.snapshot.value)) {
+                    immutableProjectionList(tags)
+                } else emptyList()
+            }
+        }
     override suspend fun get(id: EventId): LifeEventRecord? = gateway.readRecord { delegate.get(id) }?.record
     override suspend fun create(id: EventId, input: JournalInput): EventId =
-        gateway.commit(LockOperation.CREATE, setOf(LockSection.MEMORIES), id.toString()) { delegate.create(id, input) }
+        gateway.commitEditorCreate(id, EventType.JOURNAL, setOf(LockSection.MEMORIES)) {
+            delegate.create(id, input)
+        }
     override suspend fun update(id: EventId, input: JournalInput) =
         gateway.commit(
             LockOperation.UPDATE,

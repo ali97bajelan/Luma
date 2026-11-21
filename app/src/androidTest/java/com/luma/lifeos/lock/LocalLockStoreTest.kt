@@ -5,8 +5,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.luma.lifeos.domain.lock.LockCoverage
 import com.luma.lifeos.domain.lock.LockPolicy
-import com.luma.lifeos.domain.lock.LockSection
 import com.luma.lifeos.domain.lock.RelockMode
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.io.File
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -70,6 +71,28 @@ class LocalLockStoreTest {
     }
 
     @Test
+    fun legacyV1AndV2CoverageMigratesSafelyAndNoticeSurvivesCanonicalWrite() {
+        writeLegacyStore(version = 1, sections = listOf("MOOD"))
+        val moodMigration = store.read()!!
+        assertEquals(LockCoverage.WHOLE_APP, moodMigration.policy.coverage)
+        assertTrue(moodMigration.policy.migrationNoticePending)
+        assertEquals(LockCredentialType.PASSWORD, moodMigration.credential!!.type)
+        store.writeAtomically(moodMigration)
+        assertTrue(store.read()!!.policy.migrationNoticePending)
+
+        writeLegacyStore(version = 2, sections = listOf("MEMORIES", "JOURNAL"))
+        val memoryMigration = store.read()!!
+        assertEquals(LockCoverage.MEMORY_SECTION, memoryMigration.policy.coverage)
+        assertFalse(memoryMigration.policy.migrationNoticePending)
+        assertEquals(LockCredentialType.PASSWORD, memoryMigration.credential!!.type)
+
+        writeLegacyStore(version = 2, sections = listOf("MEMORIES", "MOOD"))
+        val mixedMigration = store.read()!!
+        assertEquals(LockCoverage.WHOLE_APP, mixedMigration.policy.coverage)
+        assertTrue(mixedMigration.policy.migrationNoticePending)
+    }
+
+    @Test
     fun failedFirstAtomicWriteRemovesTheUncommittedAuthenticatorKey() {
         lockDirectory.writeBytes(byteArrayOf(1))
 
@@ -78,16 +101,57 @@ class LocalLockStoreTest {
         assertFalse(File(lockDirectory, "credential_state.bin").exists())
     }
 
+    private fun writeLegacyStore(version: Int, sections: List<String>) {
+        require(version in 1..2)
+        val payloadBytes = ByteArrayOutputStream()
+        DataOutputStream(payloadBytes).use { output ->
+            output.writeInt(version)
+            output.writeBoolean(true)
+            output.writeUTF("SELECTED")
+            output.writeInt(sections.size)
+            sections.forEach(output::writeUTF)
+            output.writeUTF(RelockMode.AFTER_5_MINUTES.name)
+            output.writeBoolean(false)
+            output.writeLong(12L)
+            output.writeBoolean(true)
+            if (version >= 2) output.writeUTF(LockCredentialType.PASSWORD.name)
+            output.writeBoundedBytesForTest(ByteArray(16) { it.toByte() })
+            output.writeBoundedBytesForTest(ByteArray(32) { (it + 1).toByte() })
+            output.writeBoundedBytesForTest(ByteArray(16) { (it + 2).toByte() })
+            output.writeBoundedBytesForTest(ByteArray(32) { (it + 3).toByte() })
+            output.writeLong(0L)
+            output.writeBoolean(false)
+            output.writeLong(0L)
+            output.writeLong(1_700_000_000_000L)
+        }
+        val payload = payloadBytes.toByteArray()
+        val tag = authenticator.authenticate(payload)
+        lockDirectory.mkdirs()
+        DataOutputStream(File(lockDirectory, "credential_state.bin").outputStream()).use { output ->
+            output.writeInt(0x4c554d41)
+            output.writeInt(payload.size)
+            output.write(payload)
+            output.writeInt(tag.size)
+            output.write(tag)
+        }
+    }
+
+    private fun DataOutputStream.writeBoundedBytesForTest(value: ByteArray) {
+        writeInt(value.size)
+        write(value)
+    }
+
     private fun enabledState() = PersistedLockState(
         policy = LockPolicy(
             enabled = true,
-            coverage = LockCoverage.SELECTED,
-            sections = setOf(LockSection.MEMORIES),
+            coverage = LockCoverage.MEMORY_SECTION,
             relockMode = RelockMode.AFTER_5_MINUTES,
             screenshotsProtected = false,
             generation = 12,
+            migrationNoticePending = true,
         ),
         credential = PersistedCredential(
+            type = LockCredentialType.PASSWORD,
             passwordSalt = ByteArray(16) { it.toByte() },
             passwordVerifier = ByteArray(32) { (it + 1).toByte() },
             recoverySalt = ByteArray(16) { (it + 2).toByte() },

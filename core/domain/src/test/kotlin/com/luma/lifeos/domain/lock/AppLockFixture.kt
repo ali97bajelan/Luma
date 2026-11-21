@@ -11,7 +11,7 @@ import com.luma.lifeos.domain.model.Person
 import java.time.Instant
 import java.util.UUID
 
-/** Independent expected visibility oracle for the current memory-only capture behavior. */
+/** Independent expected visibility oracle for the canonical App Lock coverage choices. */
 internal object AppLockFixture {
     private val timestamp = Instant.parse("2026-10-31T06:30:00Z")
 
@@ -33,31 +33,21 @@ internal object AppLockFixture {
     )
 
     val profiles: List<FixtureProfile> = listOf(
-        FixtureProfile("memories_locked", selected(LockSection.MEMORIES), setOf("memory_private", "journal_public", "journal_marked", "journal_person_linked", "mood_marked")),
-        FixtureProfile("people_locked", selected(LockSection.PEOPLE), setOf("person_en", "person_fa")),
-        FixtureProfile("tasks_habits_locked", selected(LockSection.TASKS, LockSection.HABITS), setOf("task_open", "habit_water")),
-        FixtureProfile("health_focus_locked", selected(LockSection.HEALTH_USAGE, LockSection.FOCUS), setOf("health_activity", "usage_event", "focus_saved")),
-        FixtureProfile("all_sections_locked", selected(*LockSection.entries.toTypedArray()), records.map { it.alias }.filterNot { it == "place_fixture" }.toSet()),
-        FixtureProfile("whole_app_locked", LockPolicy(enabled = true, coverage = LockCoverage.WHOLE_APP, generation = 1), records.map { it.alias }.toSet()),
-        FixtureProfile("disabled", LockPolicy(enabled = false, coverage = LockCoverage.WHOLE_APP, generation = 1), emptySet()),
-    )
-
-    val sectionOnlyHiddenAliases: Map<LockSection, Set<String>> = mapOf(
-        LockSection.MEMORIES to setOf("memory_private", "journal_public", "journal_marked", "journal_person_linked", "mood_marked"),
-        LockSection.JOURNAL to emptySet(),
-        LockSection.MOOD to setOf("mood_public", "mood_marked"),
-        LockSection.TASKS to setOf("task_open"),
-        LockSection.HABITS to setOf("habit_water"),
-        LockSection.PEOPLE to setOf("person_en", "person_fa"),
-        LockSection.FOCUS to setOf("focus_saved"),
-        LockSection.HEALTH_USAGE to setOf("health_activity", "usage_event"),
-    )
-
-    private fun selected(vararg sections: LockSection) = LockPolicy(
-        enabled = true,
-        coverage = LockCoverage.SELECTED,
-        sections = sections.toSet(),
-        generation = 1,
+        FixtureProfile(
+            "memory_section_locked",
+            LockPolicy(enabled = true, coverage = LockCoverage.MEMORY_SECTION, generation = 1),
+            setOf("memory_private", "journal_public", "journal_marked", "journal_person_linked", "mood_marked"),
+        ),
+        FixtureProfile(
+            "whole_app_locked",
+            LockPolicy(enabled = true, coverage = LockCoverage.WHOLE_APP, generation = 1),
+            records.map { it.alias }.toSet(),
+        ),
+        FixtureProfile(
+            "disabled",
+            LockPolicy(enabled = false, coverage = LockCoverage.WHOLE_APP, generation = 1),
+            emptySet(),
+        ),
     )
 
     private fun eventRecord(

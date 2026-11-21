@@ -55,6 +55,7 @@ import com.luma.lifeos.lock.ProtectedLifeEventRepository
 import com.luma.lifeos.lock.ProtectedMemoryRepository
 import com.luma.lifeos.lock.ProtectedMoodRepository
 import com.luma.lifeos.lock.ProtectedPersonRepository
+import com.luma.lifeos.lock.ProtectedPlaceRepository
 import com.luma.lifeos.lock.ProtectedPhotoRepository
 import com.luma.lifeos.lock.PhotoDraftAccessRegistry
 import com.luma.lifeos.lock.ProtectedSearchRepository
@@ -122,26 +123,45 @@ class LumaApplication : Application() {
         }
     }
     val protectedContentGateway: ProtectedContentGateway by lazy {
-        ProtectedContentGateway(appLockCoordinator, lockActionGuard) { id -> storage.timeline.get(id) }
+        ProtectedContentGateway(
+            appLockCoordinator,
+            lockActionGuard,
+            loadMetadataForClassification = storage.eventVisibilityQueries::classifyRecord,
+        )
     }
     val photoDraftAccessRegistry by lazy { PhotoDraftAccessRegistry(protectedContentGateway, applicationScope) }
-    val protectedTimeline by lazy { ProtectedTimelineRepository(storage.timeline, protectedContentGateway) }
-    val protectedLifeEvents by lazy {
-        ProtectedLifeEventRepository(storage.lifeEvents, protectedTimeline, protectedContentGateway)
+    val protectedTimeline by lazy {
+        ProtectedTimelineRepository(storage.timeline, protectedContentGateway, storage.eventVisibilityQueries)
     }
-    val protectedSearch by lazy { ProtectedSearchRepository(storage.search, protectedContentGateway) }
+    val protectedLifeEvents by lazy {
+        ProtectedLifeEventRepository(
+            storage.lifeEvents, protectedTimeline, protectedContentGateway, storage.eventVisibilityQueries,
+        )
+    }
+    val protectedSearch by lazy {
+        ProtectedSearchRepository(storage.search, protectedContentGateway, storage.eventVisibilityQueries)
+    }
     val protectedMoods by lazy { ProtectedMoodRepository(storage.moods, protectedContentGateway) }
     val protectedJournals by lazy { ProtectedJournalRepository(storage.journals, protectedContentGateway) }
     val protectedMemories by lazy { ProtectedMemoryRepository(storage.memories, protectedContentGateway) }
-    val protectedPeople by lazy { ProtectedPersonRepository(storage.people, protectedContentGateway) }
+    val protectedPeople by lazy {
+        ProtectedPersonRepository(storage.people, protectedContentGateway, storage.eventVisibilityQueries)
+    }
+    val protectedPlaces by lazy {
+        ProtectedPlaceRepository(storage.places, protectedContentGateway, storage.eventVisibilityQueries)
+    }
     val protectedPhotos by lazy {
         ProtectedPhotoRepository(storage.photos, protectedContentGateway, photoDraftAccessRegistry)
     }
     val protectedTodos by lazy { ProtectedTodoRepository(storage.todos, protectedContentGateway) }
     val protectedHabits by lazy { ProtectedHabitRepository(storage.habits, protectedContentGateway) }
     val protectedCalendar by lazy { ProtectedCalendarRepository(storage.calendar, protectedContentGateway) }
-    val protectedSummaries by lazy { ProtectedDailySummaryRepository(storage.summaries, protectedContentGateway) }
-    val protectedReviews by lazy { ProtectedWeeklyReviewRepository(storage.reviews, protectedContentGateway) }
+    val protectedSummaries by lazy {
+        ProtectedDailySummaryRepository(storage.summaries, protectedContentGateway, storage.eventVisibilityQueries)
+    }
+    val protectedReviews by lazy {
+        ProtectedWeeklyReviewRepository(storage.reviews, protectedContentGateway, storage.eventVisibilityQueries)
+    }
     val protectedFocusRepository by lazy { ProtectedFocusRepository(storage.focus, protectedContentGateway) }
     val protectedFocusProductRepository by lazy {
         ProtectedFocusProductRepository(storage.focusProducts, protectedContentGateway)

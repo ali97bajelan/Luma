@@ -1,6 +1,6 @@
 package com.luma.lifeos.domain.lock
 
-/** The independently selectable private areas in Luma. Places remain outside this list. */
+/** Private data classifications used by repository authorization. Places remain outside this list. */
 enum class LockSection {
     MEMORIES,
     JOURNAL,
@@ -12,7 +12,7 @@ enum class LockSection {
     HEALTH_USAGE,
 }
 
-enum class LockCoverage { WHOLE_APP, SELECTED }
+enum class LockCoverage { WHOLE_APP, MEMORY_SECTION }
 
 enum class RelockMode {
     EVERY_TIME,
@@ -35,20 +35,18 @@ enum class RelockMode {
 data class LockPolicy(
     val enabled: Boolean = false,
     val coverage: LockCoverage = LockCoverage.WHOLE_APP,
-    val sections: Set<LockSection> = emptySet(),
     val relockMode: RelockMode = RelockMode.EVERY_TIME,
     val screenshotsProtected: Boolean = true,
     val generation: Long = 0L,
+    val migrationNoticePending: Boolean = false,
 ) {
     init {
         require(generation >= 0L) { "Policy generation cannot be negative" }
-        when (coverage) {
-            LockCoverage.WHOLE_APP -> require(sections.isEmpty()) {
-                "Whole-app coverage does not store a section selection"
-            }
-            LockCoverage.SELECTED -> require(sections.isNotEmpty()) {
-                "Selected coverage requires at least one section"
-            }
-        }
     }
+
+    val sections: Set<LockSection>
+        get() = when (coverage) {
+            LockCoverage.WHOLE_APP -> emptySet()
+            LockCoverage.MEMORY_SECTION -> setOf(LockSection.MEMORIES)
+        }
 }

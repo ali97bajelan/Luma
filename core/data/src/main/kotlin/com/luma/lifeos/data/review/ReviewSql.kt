@@ -2,10 +2,17 @@ package com.luma.lifeos.data.review
 
 import com.luma.lifeos.data.mapping.storageBoundary
 import com.luma.lifeos.domain.review.*
+import com.luma.lifeos.data.repository.EventVisibility
+import com.luma.lifeos.data.repository.predicate
 import java.time.ZoneId
 
 /** Metric predicates are shared by count and page; only input values are interpolated as bindings. */
-internal class ReviewSql(dates: ReviewDates, zone: ZoneId, metric: ReviewMetric) {
+internal class ReviewSql(
+    dates: ReviewDates,
+    zone: ZoneId,
+    metric: ReviewMetric,
+    visibility: EventVisibility = EventVisibility.ALL,
+) {
     val arguments = mutableListOf<Any>(dates.startInstant(zone).storageBoundary(), dates.endInstant(zone).storageBoundary())
     private val predicate = when (metric.kind) {
         ReviewMetricKind.ENTRIES -> "1"
@@ -32,7 +39,9 @@ internal class ReviewSql(dates: ReviewDates, zone: ZoneId, metric: ReviewMetric)
             "EXISTS (SELECT 1 FROM activity_record WHERE life_event_id = life_event.id AND activity_type = ? AND unit = ? AND source = ?)"
         }
     }
-    private val where = "type != 'APP_USAGE' AND occurred_at >= ? AND occurred_at < ? AND ($predicate)"
+    private val visibilityPredicate = if (visibility == EventVisibility.ALL) "" else
+        " AND ${visibility.predicate("life_event")}"
+    private val where = "type != 'APP_USAGE' AND occurred_at >= ? AND occurred_at < ? AND ($predicate)$visibilityPredicate"
     val countSql get() = "SELECT COUNT(*) FROM life_event WHERE $where"
     val pageSql get() = "SELECT * FROM life_event WHERE $where ORDER BY occurred_at, id LIMIT ? OFFSET ?"
 }

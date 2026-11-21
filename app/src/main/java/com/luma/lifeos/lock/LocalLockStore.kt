@@ -149,11 +149,10 @@ internal class AndroidLocalLockStore internal constructor(
             output.writeInt(VERSION)
             output.writeBoolean(state.policy.enabled)
             output.writeUTF(state.policy.coverage.name)
-            output.writeInt(state.policy.sections.size)
-            state.policy.sections.sortedBy { it.name }.forEach { output.writeUTF(it.name) }
             output.writeUTF(state.policy.relockMode.name)
             output.writeBoolean(state.policy.screenshotsProtected)
             output.writeLong(state.policy.generation)
+            output.writeBoolean(state.policy.migrationNoticePending)
 
             val credential = state.credential
             output.writeBoolean(credential != null)
@@ -178,29 +177,51 @@ internal class AndroidLocalLockStore internal constructor(
                 val version = input.readInt()
                 if (version !in MIN_VERSION..VERSION) throw LockStoreCorruptException("Unsupported lock state version")
                 val enabled = input.readBoolean()
-                val coverage = enumValue<LockCoverage>(input.readUTF())
-                val sectionCount = input.readInt()
-                if (sectionCount !in 0..LockSection.values().size) {
-                    throw LockStoreCorruptException("Invalid section count")
-                }
-                val storedSections = buildSet {
-                    repeat(sectionCount) {
-                        if (!add(enumValue<LockSection>(input.readUTF()))) {
-                            throw LockStoreCorruptException("Duplicate lock section")
+                val storedCoverageName = input.readUTF()
+                val legacySections = if (version <= 2) {
+                    val sectionCount = input.readInt()
+                    if (sectionCount !in 0..LockSection.values().size) {
+                        throw LockStoreCorruptException("Invalid section count")
+                    }
+                    buildSet {
+                        repeat(sectionCount) {
+                            if (!add(enumValue<LockSection>(input.readUTF()))) {
+                                throw LockStoreCorruptException("Duplicate lock section")
+                            }
                         }
                     }
-                }
-                val sections = storedSections.mapTo(linkedSetOf()) { section ->
-                    if (section == LockSection.JOURNAL) LockSection.MEMORIES else section
-                }
+                } else emptySet()
                 val relockMode = enumValue<RelockMode>(input.readUTF())
                 val screenshotsProtected = input.readBoolean()
                 val generation = input.readLong()
-                val policy = try {
-                    LockPolicy(enabled, coverage, sections, relockMode, screenshotsProtected, generation)
-                } catch (e: IllegalArgumentException) {
-                    throw LockStoreCorruptException("Invalid stored lock policy", e)
+                val storedMigrationNotice = if (version >= 3) input.readBoolean() else null
+                val (coverage, migrationNoticePending) = when {
+                    version >= 3 -> enumValue<LockCoverage>(storedCoverageName) to false
+                    storedCoverageName == "WHOLE_APP" -> {
+                        if (legacySections.isNotEmpty()) {
+                            throw LockStoreCorruptException("Whole-app coverage has stored sections")
+                        }
+                        LockCoverage.WHOLE_APP to false
+                    }
+                    storedCoverageName == "SELECTED" -> {
+                        if (legacySections.isEmpty()) throw LockStoreCorruptException("Selected coverage is empty")
+                        val memorySections = setOf(LockSection.MEMORIES, LockSection.JOURNAL)
+                        if (legacySections.all { it in memorySections }) {
+                            LockCoverage.MEMORY_SECTION to false
+                        } else {
+                            LockCoverage.WHOLE_APP to enabled
+                        }
+                    }
+                    else -> throw LockStoreCorruptException("Unknown legacy coverage value")
                 }
+                val policy = LockPolicy(
+                    enabled = enabled,
+                    coverage = coverage,
+                    relockMode = relockMode,
+                    screenshotsProtected = screenshotsProtected,
+                    generation = generation,
+                    migrationNoticePending = storedMigrationNotice ?: migrationNoticePending,
+                )
 
                 val credential = if (input.readBoolean()) {
                     PersistedCredential(
@@ -264,7 +285,7 @@ internal class AndroidLocalLockStore internal constructor(
         const val FILE_NAME = "credential_state.bin"
         const val MAGIC = 0x4c554d41 // "LUMA"
         const val MIN_VERSION = 1
-        const val VERSION = 2
+        const val VERSION = 3
         const val AUTH_TAG_BYTES = 32
         const val SALT_BYTES = 16
         const val VERIFIER_BYTES = 32

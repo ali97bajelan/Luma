@@ -1,5 +1,6 @@
 package com.luma.lifeos.data.search
 
+import com.luma.lifeos.data.repository.EventVisibility
 import com.luma.lifeos.domain.search.SearchQuery
 import java.io.File
 import java.time.LocalDate
@@ -26,11 +27,14 @@ class SearchSqlHostTest {
             "benchCombined" to SearchQuery("Fixture", LocalDate.parse("2026-10-01"), LocalDate.parse("2026-10-12"),
                 setOf(id(101)), setOf(id(201)), id(301)),
         )
+        val sqlCases = queries.map { (name, query) -> name to SearchSql(query, utc) } + listOf(
+            "lockedAll" to SearchSql(SearchQuery(), utc, EventVisibility.WITHOUT_MEMORY),
+            "lockedTag" to SearchSql(SearchQuery(tagIds = setOf(id(101))), utc, EventVisibility.WITHOUT_MEMORY),
+        )
         val file = File.createTempFile("luma-search-sql-", ".tsv")
         fun encode(text: String) = Base64.getEncoder().encodeToString(text.toByteArray(Charsets.UTF_8))
         try {
-            file.writeText(queries.entries.joinToString("\n") { (name, query) ->
-                val sql = SearchSql(query, utc)
+            file.writeText(sqlCases.joinToString("\n") { (name, sql) ->
                 listOf(name, encode(sql.countSql), encode(sql.pageSql),
                     sql.arguments.joinToString(",") { if (it is Number) "n$it" else "s${encode(it.toString())}" }).joinToString("\t")
             })

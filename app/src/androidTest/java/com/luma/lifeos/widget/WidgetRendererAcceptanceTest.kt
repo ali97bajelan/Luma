@@ -756,7 +756,6 @@ class WidgetRendererAcceptanceTest {
                         val actionIds = listOf(
                             R.id.widget_capture_mood,
                             R.id.widget_capture_memory,
-                            R.id.widget_capture_journal,
                         )
                         val directActions = actionIds.map { root.findViewById<TextView>(it) }
                         if (directActions.all { it != null }) {

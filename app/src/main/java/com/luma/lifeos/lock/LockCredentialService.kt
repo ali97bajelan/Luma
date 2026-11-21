@@ -220,4 +220,6 @@ interface LockCredentialService {
     ): CredentialResult
 
     suspend fun updatePolicy(proof: OperationProof, policy: LockPolicy): CredentialResult
+
+    suspend fun acknowledgeMigrationNotice(expectedGeneration: Long): CredentialResult
 }

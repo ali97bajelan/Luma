@@ -63,30 +63,40 @@ journal(6, "Envelope title")
 db.execute("UPDATE journal_entry SET title='Child title' WHERE life_event_id=?", (identifier(6),))
 event(7, "Unknown usage", kind="APP_USAGE")
 event(8, "Zero usage", kind="APP_USAGE")
+event(9, "Shared public task", kind="TASK")
+event(10, "Shared marked mood", kind="MOOD")
+event(11, "Shared standalone mood", kind="MOOD")
 db.execute("INSERT INTO app_usage_record(id,life_event_id,bucket_start,bucket_end,package_name,duration_ms,source) VALUES (?,?,?,?,?,0,'USAGE_STATS')",
            (identifier(10008), identifier(8), at, at + 60000, "org.example"))
 for n, name in [(101, "Weekend"), (102, "Work")]:
     db.execute("INSERT INTO tag(id,name,normalized_name) VALUES (?,?,?)", (identifier(n), name, name.lower()))
+for event_id in [10, 11]:
+    db.execute("INSERT INTO mood_entry(id,life_event_id,mood_score) VALUES (?,?,4)",
+               (identifier(10100 + event_id), identifier(event_id)))
+db.execute("INSERT INTO memory(id,life_event_id) VALUES (?,?)", (identifier(2010), identifier(10)))
 for n in [201, 202]:
     db.execute("INSERT INTO person(id,name,note) VALUES (?, 'آرش', 'catalog-secret')", (identifier(n),))
 db.execute("INSERT INTO place(id,name,note) VALUES (?, 'Park', 'catalog-secret')", (identifier(301),))
-for n in [2, 4, 5]:
-    for tag in [101, 102]:
+for n in [2, 4, 5, 9]:
+    for tag in ([101] if n == 9 else [101, 102]):
         db.execute("INSERT INTO event_tag VALUES (?,?)", (identifier(n), identifier(tag)))
     for person in [201, 202]:
         db.execute("INSERT INTO event_person VALUES (?,?)", (identifier(n), identifier(person)))
     db.execute("INSERT INTO event_place VALUES (?,?)", (identifier(n), identifier(301)))
 
-assert matches("all", [7, 6, 4, 3, 2, 1, 5]) == 7
+assert matches("all", [11, 10, 9, 7, 6, 4, 3, 2, 1, 5]) == 10
 for name in ["wildcard", "quote", "slash"]:
     assert matches(name, [1]) == 1
 for name in ["person", "tag", "place"]:
-    assert matches(name, [4, 2, 5]) == 3
+    assert matches(name, [9, 4, 2, 5]) == 4
 for name in ["body", "note", "injection", "missingPerson"]:
     assert matches(name, []) == 0
 assert matches("journalTitle", [6]) == 1
 assert matches("combined", [4]) == 1
-assert matches("all", [4, 3], offset=2, limit=2) == 7
+assert matches("lockedAll", [11, 9, 7]) == 3
+assert matches("lockedAll", [9], offset=1, limit=1) == 3
+assert matches("lockedTag", [9]) == 1
+assert matches("all", [9, 7], offset=2, limit=2) == 10
 db.execute("UPDATE person SET name='Renamed'")
 assert matches("person", []) == 0
 db.execute("DELETE FROM life_event WHERE id=?", (identifier(4),))
