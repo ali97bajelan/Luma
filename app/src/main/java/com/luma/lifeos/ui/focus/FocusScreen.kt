@@ -108,6 +108,9 @@ internal fun FocusScreen(
     taskContentReadable: Boolean = true,
     onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit = { _, _ -> },
     onTaskSessionChanged: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit = { _, _, _, _ -> },
+    onRefreshTaskSession: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit = { _, _, _, _ -> },
+    onUndoTaskCompletion: () -> Unit = {},
+    onDismissTaskCompletionUndo: () -> Unit = {},
     onMarkTaskComplete: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit = { _, _, _, _ -> },
     onRetryTaskCompletion: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit = { _, _, _, _ -> },
     onUnlinkTask: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit = { _, _, _, _ -> },
@@ -271,6 +274,9 @@ internal fun FocusScreen(
                     onStartBreak = onStartBreak,
                     onEndBreak = onEndBreak,
                     onTaskSessionChanged = onTaskSessionChanged,
+                    onRefreshTaskSession = onRefreshTaskSession,
+                    onUndoTaskCompletion = onUndoTaskCompletion,
+                    onDismissTaskCompletionUndo = onDismissTaskCompletionUndo,
                     taskFamilyActions = taskFamilyActions,
                     onMarkTaskComplete = onMarkTaskComplete,
                     onRetryTaskCompletion = onRetryTaskCompletion,
@@ -300,6 +306,9 @@ internal fun FocusScreen(
                     onStartBreak = onStartBreak,
                     onEndBreak = onEndBreak,
                     onTaskSessionChanged = onTaskSessionChanged,
+                    onRefreshTaskSession = onRefreshTaskSession,
+                    onUndoTaskCompletion = onUndoTaskCompletion,
+                    onDismissTaskCompletionUndo = onDismissTaskCompletionUndo,
                     taskFamilyActions = taskFamilyActions,
                     onMarkTaskComplete = onMarkTaskComplete,
                     onRetryTaskCompletion = onRetryTaskCompletion,
@@ -823,11 +832,24 @@ private fun RecoveryContent(
             liveRegion = LiveRegionMode.Polite
         },
     )
-    Text(stringResource(R.string.focus_recovery_body))
+    Text(
+        stringResource(R.string.focus_recovery_body),
+        style = MaterialTheme.typography.bodyMedium,
+    )
     SessionMetadata(session)
     val targetMillis = session.timer.targetMillis
+    if (targetMillis != null) {
+        Text(
+            stringResource(
+                R.string.focus_recovery_confirmed_duration,
+                DateUtils.formatElapsedTime(session.creditedMillis / 1_000),
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.testTag("focus_recovery_credited"),
+        )
+    }
     val timerLabel = stringResource(
-        if (targetMillis == null) R.string.focus_elapsed_label else R.string.focus_remaining_label,
+        if (targetMillis == null) R.string.focus_recovery_confirmed_label else R.string.focus_remaining_label,
     )
     val recoveryTime = targetMillis?.let { target ->
         (target - session.creditedMillis).coerceAtLeast(0L)
@@ -878,6 +900,9 @@ private fun TerminalContent(
     onOpenHistory: () -> Unit,
     onTerminalSessionMissing: (java.util.UUID, java.util.UUID) -> Unit,
     onTaskSessionChanged: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit,
+    onRefreshTaskSession: (java.util.UUID, Long, java.util.UUID?, java.util.UUID?) -> Unit,
+    onUndoTaskCompletion: () -> Unit,
+    onDismissTaskCompletionUndo: () -> Unit,
     taskFamilyActions: TodoFamilyActions? = null,
     onMarkTaskComplete: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
     onRetryTaskCompletion: (java.util.UUID, Long, java.util.UUID, java.util.UUID) -> Unit,
@@ -904,6 +929,9 @@ private fun TerminalContent(
         onOpenHistory = onOpenHistory,
         onTerminalSessionMissing = onTerminalSessionMissing,
         onTaskSessionChanged = onTaskSessionChanged,
+        onRefreshTaskSession = onRefreshTaskSession,
+        onUndoTaskCompletion = onUndoTaskCompletion,
+        onDismissTaskCompletionUndo = onDismissTaskCompletionUndo,
         taskFamilyActions = taskFamilyActions,
         onMarkTaskComplete = onMarkTaskComplete,
         onRetryTaskCompletion = onRetryTaskCompletion,
@@ -940,6 +968,10 @@ internal fun FocusBreakCountdown(
                 ),
                 modifier = Modifier.fillMaxWidth().testTag("focus_break_countdown"),
                 style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                stringResource(R.string.focus_break_credit_note),
+                modifier = Modifier.fillMaxWidth().testTag("focus_break_credit_note"),
             )
             Text(
                 stringResource(R.string.focus_break_continues_when_leave),

@@ -38,6 +38,7 @@ class TodoFamilyActions(
     private val onCompletionApplied: (TodoCompletionReceipt) -> Unit,
     private val onDeleteApplied: (UUID) -> Unit,
     private val beforeCompletionApply: suspend (TodoFamilyActionState) -> Unit = {},
+    private val onCommandStarted: (TodoFamilyActionState) -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow(readState())
     val state = mutableState.asStateFlow()
@@ -111,8 +112,11 @@ class TodoFamilyActions(
         clear()
     }
 
-    suspend fun undo(commandId: UUID, undoCommandId: UUID): TodoCompletionReceipt =
-        repository.undoCompletion(commandId, undoCommandId)
+    suspend fun undo(
+        commandId: UUID,
+        undoCommandId: UUID,
+        validate: suspend () -> Unit = {},
+    ): TodoCompletionReceipt = repository.undoCompletionValidated(commandId, undoCommandId, validate)
 
     private fun begin(
         type: TodoFamilyActionType,
@@ -134,6 +138,7 @@ class TodoFamilyActions(
         )
         save(initial)
         setState(initial)
+        onCommandStarted(initial)
         job = scope.launch {
             try {
                 val latest = repository.get(taskId) ?: throw TodoMissingException(taskId)
@@ -231,8 +236,34 @@ class TodoFamilyActions(
         if (current.phase == TodoFamilyActionPhase.AWAITING_CONFIRMATION ||
             current.phase == TodoFamilyActionPhase.PREVIEWING
         ) {
-            current.planId?.let(::release)
-            setState(current.copy(phase = TodoFamilyActionPhase.CONFLICT, planId = null))
+            val commandId = current.commandId
+            if (current.type == TodoFamilyActionType.COMPLETION && commandId != null) {
+                scope.launch {
+                    try {
+                        val receipt = repository.completionReceipt(commandId)
+                        if (receipt == null) {
+                            current.planId?.let(::release)
+                            setState(current.copy(phase = TodoFamilyActionPhase.CONFLICT, planId = null))
+                        } else {
+                            setState(current.copy(
+                                phase = TodoFamilyActionPhase.APPLIED,
+                                changedTaskCount = receipt.changedTaskCount,
+                            ))
+                            onCompletionApplied(receipt)
+                            if (!receipt.undoAvailable) {
+                                runCatching { repository.releaseCommandHandle(commandId) }
+                            }
+                        }
+                    } catch (failure: Exception) {
+                        if (failure is CancellationException) throw failure
+                        current.planId?.let(::release)
+                        setState(current.copy(phase = TodoFamilyActionPhase.RETRYABLE_FAILURE, planId = null))
+                    }
+                }
+            } else {
+                current.planId?.let(::release)
+                setState(current.copy(phase = TodoFamilyActionPhase.CONFLICT, planId = null))
+            }
             return
         }
         val commandId = current.commandId ?: run {

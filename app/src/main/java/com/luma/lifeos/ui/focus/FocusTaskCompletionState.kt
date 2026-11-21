@@ -1,5 +1,6 @@
 package com.luma.lifeos.ui.focus
 
+import com.luma.lifeos.ui.todo.TodoActionResult
 import com.luma.lifeos.ui.todo.TodoFamilyActionState
 import java.util.UUID
 
@@ -20,6 +21,9 @@ data class PendingFocusTaskUnlink(
 
 enum class FocusTaskCompletionPhase {
     IDLE,
+    CHECKING,
+    CHECK_ERROR,
+    LINK_CONFLICT,
     LOADING,
     SAVING,
     COMPLETED,
@@ -45,6 +49,10 @@ data class FocusTaskCompletionState(
     val pendingCompletion: PendingFocusTaskCompletion? = null,
     val unlinkPhase: FocusTaskUnlinkPhase = FocusTaskUnlinkPhase.IDLE,
     val pendingUnlink: PendingFocusTaskUnlink? = null,
+    val undoableCompletion: TodoActionResult? = null,
+    val undoing: Boolean = false,
+    val undoFailed: Boolean = false,
+    val undoTerminal: Boolean = false,
     val familyAction: TodoFamilyActionState = TodoFamilyActionState(),
 ) {
     fun matches(sessionId: UUID, sessionRevision: Long, taskId: UUID?, generation: UUID?): Boolean =

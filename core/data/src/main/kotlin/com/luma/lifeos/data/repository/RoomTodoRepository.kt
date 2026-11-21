@@ -231,6 +231,12 @@ class RoomTodoRepository(
     override suspend fun undoCompletion(commandId: UUID, undoCommandId: UUID) =
         familyCommands.undoCompletion(commandId, undoCommandId)
 
+    override suspend fun undoCompletionValidated(
+        commandId: UUID,
+        undoCommandId: UUID,
+        validate: suspend () -> Unit,
+    ) = familyCommands.undoCompletion(commandId, undoCommandId, validate)
+
     override suspend fun completionReceipt(commandId: UUID) =
         familyCommands.completionReceipt(commandId)
 

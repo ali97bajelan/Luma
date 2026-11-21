@@ -209,6 +209,9 @@ internal fun FocusRoute(
             if (viewModel.dismissMissingTerminalSession(sessionId, generation)) onBack()
         },
         onTaskSessionChanged = viewModel::syncTaskCompletionSession,
+        onRefreshTaskSession = viewModel::refreshTaskCompletionSession,
+        onUndoTaskCompletion = viewModel::undoTaskCompletion,
+        onDismissTaskCompletionUndo = viewModel::dismissTaskCompletionUndo,
         onMarkTaskComplete = viewModel::markTaskComplete,
         onRetryTaskCompletion = viewModel::retryTaskCompletion,
         onUnlinkTask = viewModel::unlinkTask,

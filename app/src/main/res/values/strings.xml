@@ -1481,6 +1481,7 @@
     <string name="focus_break_minutes_label">Break duration in minutes</string>
     <string name="focus_break_minutes_invalid">Enter a whole number from 1 to 60 minutes.</string>
     <string name="focus_break_heading">Break</string>
+    <string name="focus_break_credit_note">Break time is separate and does not count toward Focus time.</string>
     <string name="focus_break_continues_when_leave">Break continues when you leave.</string>
     <string name="focus_break_default_label">Default: 5 minutes</string>
     <string name="focus_break_replace_start_title">End your break and start focus?</string>
@@ -1511,6 +1512,7 @@
     <string name="focus_tag_suggestions">Recent tags</string>
     <string name="focus_saving">Saving…</string>
     <string name="focus_intro">Make time for one thing.</string>
+    <string name="focus_setup_boundary">Focus guides navigation inside Luma. Android Home, Recents, notifications and other apps remain available. If you need to leave, use Back to pause or end and save; Emergency exit is available in Help.</string>
     <string name="focus_running">Focus session in progress</string>
     <string name="focus_elapsed_label">Time focused</string>
     <string name="focus_paused_time_note">Paused — the timer is not counting.</string>
@@ -1528,7 +1530,9 @@
     <string name="focus_back_end_save">End and save</string>
     <string name="focus_back_keep_focusing">Keep focusing</string>
     <string name="focus_recovery_title">Recover focus session</string>
-    <string name="focus_recovery_body">Luma was closed while the timer was running. Choose whether to include elapsed time since the last saved checkpoint.</string>
+    <string name="focus_recovery_body">Only the saved focus time below is confirmed. Time while Luma was stopped is unconfirmed; it can count only when clock continuity can be verified. Choose whether to include that time, or end at the checkpoint.</string>
+    <string name="focus_recovery_confirmed_label">Confirmed focus time</string>
+    <string name="focus_recovery_confirmed_duration">Confirmed focus time: %1$s</string>
     <string name="focus_recovery_continue">Continue including elapsed time</string>
     <string name="focus_recovery_end">End at last saved checkpoint</string>
     <string name="focus_paused">Focus paused</string>
@@ -1684,6 +1688,10 @@
     <string name="focus_task_change">Change task</string>
     <string name="focus_task_link_removed">The task link was removed. This session still follows task privacy.</string>
     <string name="focus_task_complete_saving">Marking task complete…</string>
+    <string name="focus_task_checking">Checking linked task…</string>
+    <string name="focus_task_check_again">Check linked task again</string>
+    <string name="focus_task_completion_explanation">Ending Focus never completes a linked task automatically.</string>
+    <string name="focus_task_mark_complete">Mark linked task complete</string>
     <string name="focus_task_unlink_saving">Removing task link…</string>
     <string name="focus_task_loading">Loading task…</string>
     <string name="focus_task_selection_conflict">This task is missing or completed. Choose another open task before starting.</string>

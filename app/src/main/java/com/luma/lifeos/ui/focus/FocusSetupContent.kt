@@ -95,6 +95,11 @@ internal fun FocusSetupContent(
         style = MaterialTheme.typography.bodyLarge,
         modifier = Modifier.semantics { heading() },
     )
+    Text(
+        stringResource(R.string.focus_setup_boundary),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.testTag("focus_setup_boundary"),
+    )
     LumaOutlinedTextField(
         value = setup.name,
         onValueChange = onNameChange,

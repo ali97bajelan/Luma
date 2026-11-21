@@ -20,10 +20,14 @@ import com.luma.lifeos.domain.focus.FocusTimerMode
 import com.luma.lifeos.domain.focus.FocusWriteResult
 import com.luma.lifeos.domain.focus.normalizeFocusStartInput
 import com.luma.lifeos.domain.todo.TodoConflictException
+import com.luma.lifeos.domain.todo.TodoMissingException
 import com.luma.lifeos.domain.todo.TodoRepository
+import com.luma.lifeos.ui.todo.TodoActionResult
 import com.luma.lifeos.ui.todo.TodoFamilyActions
 import com.luma.lifeos.ui.todo.TodoFamilyActionPhase
 import com.luma.lifeos.ui.todo.TodoFamilyActionState
+import com.luma.lifeos.ui.todo.TodoFamilyActionType
+import com.luma.lifeos.ui.todo.TodoUndoOutcome
 import com.luma.lifeos.ui.focus.FocusInsightsState
 import com.luma.lifeos.ui.focus.FocusPrivateSurface
 import com.luma.lifeos.ui.focus.FocusPeriod
@@ -59,6 +63,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -118,6 +123,14 @@ class FocusViewModel(
         ) : PendingOperation
     }
 
+    private data class FocusTaskCompletionCommandSource(
+        val commandId: UUID,
+        val sessionId: UUID,
+        val sessionRevision: Long,
+        val taskId: UUID,
+        val generation: UUID,
+    )
+
     private data class LocalState(
         val busy: Boolean = false,
         val breakBusy: Boolean = false,
@@ -133,7 +146,12 @@ class FocusViewModel(
         val taskCompletion: FocusTaskCompletionState = FocusTaskCompletionState(),
     )
 
-    private val local = MutableStateFlow(LocalState(setup = restoreSetupState(savedStateHandle)))
+    private val local = MutableStateFlow(
+        LocalState(
+            setup = restoreSetupState(savedStateHandle),
+            taskCompletion = restoreTaskCompletionUndo(),
+        ),
+    )
     private val insightState = MutableStateFlow<FocusInsightsState>(FocusInsightsState.Unselected)
     private val recentWorkState = MutableStateFlow<FocusRecentWorkState>(FocusRecentWorkState.Hidden)
     private val recentWorkRetry = MutableStateFlow(0)
@@ -141,31 +159,17 @@ class FocusViewModel(
     private val privateContentAccess = MutableStateFlow(false)
     private val taskContentAccess = MutableStateFlow(false)
     private val taskActionAccess = MutableStateFlow(false)
+    private val taskAccessReady = MutableStateFlow(false)
+    private var taskActionAccessResolved = false
     val taskFamilyActions: TodoFamilyActions? = todos?.let { taskRepository ->
         TodoFamilyActions(
             repository = taskRepository,
             saved = savedStateHandle,
             scope = viewModelScope,
             keyPrefix = "focus_task_family",
-            onCompletionApplied = { receipt ->
-                // Focus does not offer Undo, so release the family receipt after completion.
-                viewModelScope.launch {
-                    runCatching { taskRepository.releaseCommandHandle(receipt.commandId) }
-                }
-                val current = local.value.taskCompletion
-                val generation = current.generation
-                if (current.taskId == receipt.targetId && generation != null &&
-                    canPerformTaskActions(generation)
-                ) {
-                    local.update {
-                        it.copy(taskCompletion = it.taskCompletion.copy(
-                            completionPhase = FocusTaskCompletionPhase.COMPLETED,
-                            pendingCompletion = null,
-                        ))
-                    }
-                }
-            },
+            onCompletionApplied = ::acceptTaskCompletionReceipt,
             onDeleteApplied = {},
+            onCommandStarted = ::saveTaskCompletionCommandSource,
             beforeCompletionApply = { action ->
                 val current = local.value.taskCompletion
                 val targetId = action.targetId ?: throw IllegalStateException("Missing focus task target")
@@ -262,7 +266,9 @@ class FocusViewModel(
                         localState.taskCompletion.completionPhase == FocusTaskCompletionPhase.SAVING
                     ) FocusTaskCompletionPhase.IDLE else localState.taskCompletion.completionPhase
                     TodoFamilyActionPhase.APPLYING -> FocusTaskCompletionPhase.SAVING
-                    TodoFamilyActionPhase.APPLIED -> FocusTaskCompletionPhase.COMPLETED
+                    TodoFamilyActionPhase.APPLIED -> localState.taskCompletion.completionPhase.takeUnless {
+                        it == FocusTaskCompletionPhase.LOADING || it == FocusTaskCompletionPhase.SAVING
+                    } ?: FocusTaskCompletionPhase.COMPLETED
                     TodoFamilyActionPhase.RETRYABLE_FAILURE -> FocusTaskCompletionPhase.ERROR
                     TodoFamilyActionPhase.CONFLICT -> FocusTaskCompletionPhase.CONFLICT
                     TodoFamilyActionPhase.MISSING -> FocusTaskCompletionPhase.MISSING
@@ -317,6 +323,24 @@ class FocusViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, baseState.value)
 
     init {
+        taskFamilyActions?.let { actions ->
+            viewModelScope.launch {
+                actions.state.collect { familyAction ->
+                    if (familyAction.phase == TodoFamilyActionPhase.IDLE) {
+                        readTaskCompletionCommandSource()?.let(::discardPendingTaskCompletionCommand)
+                        local.update {
+                            if (it.taskCompletion.completionPhase == FocusTaskCompletionPhase.SAVING) {
+                                it.copy(taskCompletion = it.taskCompletion.copy(
+                                    completionPhase = FocusTaskCompletionPhase.IDLE,
+                                ))
+                            } else it
+                        }
+                    } else if (familyAction.phase == TodoFamilyActionPhase.APPLIED) {
+                        retryAcceptPendingTaskCompletionReceipt()
+                    }
+                }
+            }
+        }
         viewModelScope.launch {
             runtime.state.map { it.databaseReplacementInProgress }.distinctUntilChanged().collect { replacing ->
                 if (!replacing) return@collect
@@ -327,6 +351,7 @@ class FocusViewModel(
                 recentWorkState.value = FocusRecentWorkState.Hidden
                 recentWorkRetry.value = 0
                 tagSuggestions.value = FocusTagSuggestionsSnapshot(null, emptyList())
+                clearTaskCompletionUndo(release = false)
                 local.update {
                     it.copy(
                         busy = false,
@@ -348,6 +373,7 @@ class FocusViewModel(
             runtime.state.map { it.databaseGeneration }.filterNotNull().distinctUntilChanged().collect { generation ->
                 val previous = local.value.setup.databaseGeneration
                 if (previous != null && previous != generation) {
+                    clearTaskCompletionUndo(release = false)
                     pendingOperation = null
                     pendingShortcutPackage = null
                     recentWorkState.value = FocusRecentWorkState.Hidden
@@ -456,6 +482,7 @@ class FocusViewModel(
         if (privateContentAccessResolved && privateContentAccess.value == allowed) return
         privateContentAccessResolved = true
         privateContentAccess.value = allowed
+        updateTaskAccessReadiness()
         if (!allowed) {
             updateSetup(FocusSetupEvent.PrivateContentLocked)
             clearTaskCompletionState()
@@ -471,6 +498,7 @@ class FocusViewModel(
         if (taskContentAccessResolved && taskContentAccess.value == allowed) return
         taskContentAccessResolved = true
         taskContentAccess.value = allowed
+        updateTaskAccessReadiness()
         if (!allowed) {
             val repeatRequestId = local.value.setup.repeatRequestId
             updateSetup(FocusSetupEvent.TaskContentLocked)
@@ -485,8 +513,10 @@ class FocusViewModel(
     }
 
     fun setTaskActionAccessAllowed(allowed: Boolean) {
-        if (taskActionAccess.value == allowed) return
+        if (taskActionAccessResolved && taskActionAccess.value == allowed) return
+        taskActionAccessResolved = true
         taskActionAccess.value = allowed
+        updateTaskAccessReadiness()
         if (!allowed) clearTaskCompletionState()
     }
 
@@ -497,25 +527,214 @@ class FocusViewModel(
         generation: UUID?,
     ) {
         val current = local.value.taskCompletion
+        if (current.matches(sessionId, sessionRevision, taskId, generation)) return
+        taskFamilyActions?.invalidate()
+        clearTaskCompletionUndo(release = true)
+        local.update {
+            it.copy(
+                taskCompletion = FocusTaskCompletionState(
+                    sessionId = sessionId,
+                    sessionRevision = sessionRevision,
+                    taskId = taskId,
+                    generation = generation,
+                    completionPhase = if (taskId != null) FocusTaskCompletionPhase.CHECKING
+                    else FocusTaskCompletionPhase.IDLE,
+                ),
+            )
+        }
+        if (taskId != null && generation != null) {
+            loadTaskCompletionStatus(sessionId, sessionRevision, taskId, generation)
+        }
+    }
+
+    fun refreshTaskCompletionSession(
+        sessionId: UUID,
+        sessionRevision: Long,
+        taskId: UUID?,
+        generation: UUID?,
+    ) {
+        if (taskId == null || generation == null) return
+        val current = local.value.taskCompletion
         if (!current.matches(sessionId, sessionRevision, taskId, generation)) {
-            taskFamilyActions?.invalidate()
-            local.update {
-                it.copy(
-                    taskCompletion = FocusTaskCompletionState(
-                        sessionId = sessionId,
-                        sessionRevision = sessionRevision,
-                        taskId = taskId,
-                        generation = generation,
-                    ),
+            syncTaskCompletionSession(sessionId, sessionRevision, taskId, generation)
+            return
+        }
+        val pendingSource = readTaskCompletionCommandSource()
+        val familyAction = taskFamilyActions?.state?.value
+        if (pendingSource != null &&
+            pendingSource.sessionId == sessionId &&
+            pendingSource.sessionRevision == sessionRevision &&
+            pendingSource.taskId == taskId &&
+            pendingSource.generation == generation &&
+            familyAction?.phase == TodoFamilyActionPhase.APPLIED &&
+            familyAction.commandId == pendingSource.commandId
+        ) {
+            retryAcceptPendingTaskCompletionReceipt()
+            return
+        }
+        if (current.undoing || taskFamilyActions?.state?.value?.isActive == true ||
+            current.completionPhase in setOf(
+                FocusTaskCompletionPhase.CHECKING,
+                FocusTaskCompletionPhase.LOADING,
+            )
+        ) return
+        local.update {
+            it.copy(taskCompletion = it.taskCompletion.copy(completionPhase = FocusTaskCompletionPhase.CHECKING))
+        }
+        loadTaskCompletionStatus(sessionId, sessionRevision, taskId, generation)
+    }
+
+    private fun loadTaskCompletionStatus(
+        sessionId: UUID,
+        sessionRevision: Long,
+        taskId: UUID,
+        generation: UUID,
+    ) {
+        viewModelScope.launch {
+            try {
+                if (!canPerformTaskActions(generation)) {
+                    clearTaskCompletionState()
+                    return@launch
+                }
+                if (!isCurrentTaskLinkedSession(sessionId, sessionRevision, taskId, generation)) {
+                    val latest = local.value.taskCompletion
+                    if (latest.matches(sessionId, sessionRevision, taskId, generation)) {
+                        clearTaskCompletionUndo(release = true)
+                        setTaskCompletionPhase(FocusTaskCompletionPhase.LINK_CONFLICT, clearPending = true)
+                    }
+                    return@launch
+                }
+                val task = todos?.get(taskId)
+                if (!canPerformTaskActions(generation)) {
+                    clearTaskCompletionState()
+                    return@launch
+                }
+                val latest = local.value.taskCompletion
+                if (!latest.matches(sessionId, sessionRevision, taskId, generation) || latest.undoing) return@launch
+                if (task == null || !task.isCompleted) clearTaskCompletionUndo(release = true)
+                setTaskCompletionPhase(
+                    when {
+                        task == null -> FocusTaskCompletionPhase.MISSING
+                        task.isCompleted -> FocusTaskCompletionPhase.COMPLETED
+                        else -> FocusTaskCompletionPhase.IDLE
+                    },
+                    clearPending = true,
                 )
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (canPerformTaskActions(generation) &&
+                    local.value.taskCompletion.matches(sessionId, sessionRevision, taskId, generation)
+                ) {
+                    setTaskCompletionPhase(FocusTaskCompletionPhase.CHECK_ERROR, clearPending = true)
+                } else if (!canPerformTaskActions(generation)) clearTaskCompletionState()
             }
         }
     }
 
+    fun undoTaskCompletion() {
+        val current = local.value.taskCompletion
+        val result = current.undoableCompletion ?: return
+        val commandId = result.completionCommandId ?: return
+        val generation = current.generation ?: return
+        val sessionId = current.sessionId ?: return
+        val sessionRevision = current.sessionRevision ?: return
+        val taskId = current.taskId ?: return
+        if (taskId != result.taskId || current.undoing || current.undoTerminal ||
+            !canPerformTaskActions(generation)
+        ) return
+        val undoKey = focusTaskUndoCommandKey(commandId)
+        val undoCommandId = savedStateHandle.get<String>(undoKey)
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+            ?: UUID.randomUUID().also { savedStateHandle[undoKey] = it.toString() }
+        local.update {
+            if (it.taskCompletion.matches(sessionId, sessionRevision, taskId, generation) &&
+                it.taskCompletion.undoableCompletion == result
+            ) {
+                it.copy(taskCompletion = it.taskCompletion.copy(undoing = true, undoFailed = false))
+            } else it
+        }
+        viewModelScope.launch {
+            try {
+                taskFamilyActions?.undo(commandId, undoCommandId) {
+                    val latest = local.value.taskCompletion
+                    if (!latest.matches(sessionId, sessionRevision, taskId, generation) ||
+                        latest.undoableCompletion != result ||
+                        !canPerformTaskActions(generation) ||
+                        !isCurrentTaskLinkedSession(sessionId, sessionRevision, taskId, generation)
+                    ) throw TodoConflictException(taskId)
+                } ?: throw IllegalStateException("Task family completion is unavailable")
+                runCatching { todos?.releaseCommandHandle(commandId) }
+                runCatching { todos?.releaseCommandHandle(undoCommandId) }
+                savedStateHandle.remove<String>(undoKey)
+                val latest = local.value.taskCompletion
+                if (latest.matches(sessionId, sessionRevision, taskId, generation) &&
+                    latest.undoableCompletion == result
+                ) {
+                    val familyState = taskFamilyActions?.state?.value
+                    if (familyState?.phase == TodoFamilyActionPhase.APPLIED &&
+                        familyState.commandId == commandId
+                    ) taskFamilyActions.invalidate()
+                    clearTaskCompletionUndo(expected = result, release = false)
+                    local.update {
+                        if (it.taskCompletion.matches(sessionId, sessionRevision, taskId, generation)) {
+                            it.copy(taskCompletion = it.taskCompletion.copy(
+                                completionPhase = FocusTaskCompletionPhase.IDLE,
+                                pendingCompletion = null,
+                            ))
+                        } else it
+                    }
+                    refreshTaskCompletionSession(sessionId, sessionRevision, taskId, generation)
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                val outcome = when (failure) {
+                    is TodoConflictException, is TodoMissingException -> TodoUndoOutcome.STALE
+                    else -> TodoUndoOutcome.RETRYABLE_FAILURE
+                }
+                val latest = local.value.taskCompletion
+                val stillCurrent = latest.matches(sessionId, sessionRevision, taskId, generation) &&
+                    latest.undoableCompletion == result
+                if (stillCurrent) {
+                    local.update {
+                        if (it.taskCompletion.matches(sessionId, sessionRevision, taskId, generation) &&
+                            it.taskCompletion.undoableCompletion == result
+                        ) {
+                            it.copy(taskCompletion = it.taskCompletion.copy(
+                                undoing = false,
+                                undoFailed = true,
+                                undoTerminal = outcome == TodoUndoOutcome.STALE,
+                            ))
+                        } else it
+                    }
+                    if (outcome == TodoUndoOutcome.STALE) {
+                        refreshTaskCompletionSession(sessionId, sessionRevision, taskId, generation)
+                    }
+                }
+            }
+        }
+    }
+
+    fun dismissTaskCompletionUndo() {
+        if (local.value.taskCompletion.undoing) return
+        clearTaskCompletionUndo(release = true)
+    }
+
     fun markTaskComplete(sessionId: UUID, sessionRevision: Long, taskId: UUID, generation: UUID) {
         if (!canPerformTaskActions(generation) || todos == null || repository == null) return
-        syncTaskCompletionSession(sessionId, sessionRevision, taskId, generation)
-        if (taskFamilyActions?.state?.value?.isActive == true) return
+        val completionState = local.value.taskCompletion
+        if (!completionState.matches(sessionId, sessionRevision, taskId, generation)) {
+            syncTaskCompletionSession(sessionId, sessionRevision, taskId, generation)
+            return
+        }
+        if (completionState.completionPhase == FocusTaskCompletionPhase.CHECKING ||
+            completionState.completionPhase == FocusTaskCompletionPhase.CHECK_ERROR ||
+            completionState.completionPhase == FocusTaskCompletionPhase.LINK_CONFLICT ||
+            completionState.completionPhase == FocusTaskCompletionPhase.COMPLETED ||
+            completionState.completionPhase == FocusTaskCompletionPhase.MISSING ||
+            completionState.completionPhase == FocusTaskCompletionPhase.LOADING ||
+            completionState.completionPhase == FocusTaskCompletionPhase.SAVING ||
+            taskFamilyActions?.state?.value?.isActive == true
+        ) return
         local.update {
             it.copy(taskCompletion = it.taskCompletion.copy(
                 completionPhase = FocusTaskCompletionPhase.LOADING,
@@ -534,7 +753,9 @@ class FocusViewModel(
                     return@launch
                 }
                 if (!linkedSessionIsCurrent) {
-                    setTaskCompletionPhase(FocusTaskCompletionPhase.CONFLICT, clearPending = true)
+                    if (local.value.taskCompletion.matches(sessionId, sessionRevision, taskId, generation)) {
+                        setTaskCompletionPhase(FocusTaskCompletionPhase.CONFLICT, clearPending = true)
+                    }
                     return@launch
                 }
                 val task = todos.get(taskId)
@@ -542,22 +763,32 @@ class FocusViewModel(
                     clearTaskCompletionState()
                     return@launch
                 }
+                val latest = local.value.taskCompletion
+                if (!latest.matches(sessionId, sessionRevision, taskId, generation)) return@launch
                 if (task == null) {
                     setTaskCompletionPhase(FocusTaskCompletionPhase.MISSING, clearPending = true)
                     return@launch
                 }
+                if (task.isCompleted) {
+                    setTaskCompletionPhase(FocusTaskCompletionPhase.COMPLETED, clearPending = true)
+                    return@launch
+                }
                 local.update {
-                    it.copy(taskCompletion = it.taskCompletion.copy(
-                        completionPhase = FocusTaskCompletionPhase.SAVING,
-                    ))
+                    if (it.taskCompletion.matches(sessionId, sessionRevision, taskId, generation)) {
+                        it.copy(taskCompletion = it.taskCompletion.copy(
+                            completionPhase = FocusTaskCompletionPhase.SAVING,
+                        ))
+                    } else it
                 }
                 taskFamilyActions?.complete(taskId, completed = true, title = task.title, expectedRevision = task.revision)
                     ?: setTaskCompletionPhase(FocusTaskCompletionPhase.ERROR, clearPending = true)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                if (canPerformTaskActions(generation)) {
+                if (canPerformTaskActions(generation) &&
+                    local.value.taskCompletion.matches(sessionId, sessionRevision, taskId, generation)
+                ) {
                     setTaskCompletionPhase(FocusTaskCompletionPhase.ERROR, clearPending = true)
-                } else clearTaskCompletionState()
+                } else if (!canPerformTaskActions(generation)) clearTaskCompletionState()
             }
         }
     }
@@ -566,6 +797,13 @@ class FocusViewModel(
         val state = local.value.taskCompletion
         if (!state.matches(sessionId, sessionRevision, taskId, generation)) {
             markTaskComplete(sessionId, sessionRevision, taskId, generation)
+            return
+        }
+        if (state.completionPhase == FocusTaskCompletionPhase.CHECK_ERROR ||
+            state.completionPhase == FocusTaskCompletionPhase.LINK_CONFLICT ||
+            state.completionPhase == FocusTaskCompletionPhase.MISSING
+        ) {
+            refreshTaskCompletionSession(sessionId, sessionRevision, taskId, generation)
             return
         }
         when (taskFamilyActions?.state?.value?.phase) {
@@ -691,6 +929,223 @@ class FocusViewModel(
             current.terminalReason in setOf(FocusTerminalReason.USER_STOP, FocusTerminalReason.TARGET_REACHED)
     }
 
+    private val acceptingTaskCompletionReceipts = mutableSetOf<UUID>()
+
+    private fun saveTaskCompletionCommandSource(action: TodoFamilyActionState) {
+        if (action.type != TodoFamilyActionType.COMPLETION) return
+        val commandId = action.commandId ?: return
+        val taskId = action.targetId ?: return
+        val current = local.value.taskCompletion
+        if (current.taskId != taskId) return
+        val sessionId = current.sessionId ?: return
+        val sessionRevision = current.sessionRevision ?: return
+        val generation = current.generation ?: return
+        savedStateHandle[KEY_TASK_COMPLETION_COMMAND] = listOf(
+            commandId,
+            sessionId,
+            sessionRevision,
+            taskId,
+            generation,
+        ).joinToString("|")
+    }
+
+    private fun readTaskCompletionCommandSource(): FocusTaskCompletionCommandSource? {
+        val parts = savedStateHandle.get<String>(KEY_TASK_COMPLETION_COMMAND)?.split('|') ?: return null
+        if (parts.size != 5) return null
+        val commandId = runCatching { UUID.fromString(parts[0]) }.getOrNull() ?: return null
+        val sessionId = runCatching { UUID.fromString(parts[1]) }.getOrNull() ?: return null
+        val sessionRevision = parts[2].toLongOrNull() ?: return null
+        val taskId = runCatching { UUID.fromString(parts[3]) }.getOrNull() ?: return null
+        val generation = runCatching { UUID.fromString(parts[4]) }.getOrNull() ?: return null
+        return FocusTaskCompletionCommandSource(commandId, sessionId, sessionRevision, taskId, generation)
+    }
+
+    private fun clearTaskCompletionCommandSource(commandId: UUID) {
+        if (readTaskCompletionCommandSource()?.commandId == commandId) {
+            savedStateHandle.remove<String>(KEY_TASK_COMPLETION_COMMAND)
+        }
+    }
+
+    private fun acceptTaskCompletionReceipt(receipt: com.luma.lifeos.domain.todo.TodoCompletionReceipt) {
+        val source = readTaskCompletionCommandSource()
+        val current = local.value.taskCompletion
+        if (current.undoableCompletion?.completionCommandId == receipt.commandId) {
+            clearTaskCompletionCommandSource(receipt.commandId)
+            return
+        }
+        if (source == null || source.commandId != receipt.commandId || source.taskId != receipt.targetId) {
+            if (receipt.undoAvailable) taskRepositoryRelease(receipt.commandId)
+            return
+        }
+        if (!acceptingTaskCompletionReceipts.add(receipt.commandId)) return
+        viewModelScope.launch {
+            try {
+                taskAccessReady.first { it }
+                val runtimeSnapshot = runtime.state.first {
+                    it.databaseGeneration != null || it.databaseReplacementInProgress
+                }
+                val identityMatches = local.value.taskCompletion.matches(
+                    source.sessionId,
+                    source.sessionRevision,
+                    source.taskId,
+                    source.generation,
+                )
+                if (runtimeSnapshot.databaseReplacementInProgress ||
+                    runtimeSnapshot.databaseGeneration != source.generation ||
+                    !identityMatches ||
+                    !canPerformTaskActions(source.generation)
+                ) {
+                    rejectTaskCompletionReceipt(source, receipt, FocusTaskCompletionPhase.LINK_CONFLICT)
+                    return@launch
+                }
+                if (!isCurrentTaskLinkedSession(
+                        source.sessionId,
+                        source.sessionRevision,
+                        source.taskId,
+                        source.generation,
+                    )
+                ) {
+                    rejectTaskCompletionReceipt(source, receipt, FocusTaskCompletionPhase.LINK_CONFLICT)
+                    return@launch
+                }
+                val task = todos?.get(source.taskId)
+                val latest = local.value.taskCompletion
+                if (!latest.matches(source.sessionId, source.sessionRevision, source.taskId, source.generation)) {
+                    rejectTaskCompletionReceipt(source, receipt, FocusTaskCompletionPhase.LINK_CONFLICT)
+                    return@launch
+                }
+                if (!canPerformTaskActions(source.generation)) {
+                    rejectTaskCompletionReceipt(source, receipt, FocusTaskCompletionPhase.LINK_CONFLICT)
+                    return@launch
+                }
+                if (task == null) {
+                    rejectTaskCompletionReceipt(source, receipt, FocusTaskCompletionPhase.MISSING)
+                    return@launch
+                }
+                if (!task.isCompleted) {
+                    rejectTaskCompletionReceipt(source, receipt, FocusTaskCompletionPhase.IDLE)
+                    return@launch
+                }
+
+                val retainedUndo = latest.undoableCompletion
+                if (retainedUndo?.completionCommandId != receipt.commandId) {
+                    clearTaskCompletionUndo(release = true)
+                }
+                val undoable = if (receipt.undoAvailable && receipt.changedTaskCount > 0) {
+                    TodoActionResult(
+                        receipt.targetId,
+                        completed = true,
+                        resultingRevision = null,
+                        completionCommandId = receipt.commandId,
+                    )
+                } else null
+                if (undoable != null && retainedUndo?.completionCommandId != receipt.commandId) {
+                    saveTaskCompletionUndo(latest, undoable)
+                } else if (receipt.undoAvailable && undoable == null) {
+                    taskRepositoryRelease(receipt.commandId)
+                }
+                clearTaskCompletionCommandSource(receipt.commandId)
+                local.update {
+                    if (it.taskCompletion.matches(
+                            source.sessionId,
+                            source.sessionRevision,
+                            source.taskId,
+                            source.generation,
+                        )
+                    ) {
+                        it.copy(taskCompletion = it.taskCompletion.copy(
+                            completionPhase = FocusTaskCompletionPhase.COMPLETED,
+                            pendingCompletion = null,
+                            undoableCompletion = undoable ?: it.taskCompletion.undoableCompletion,
+                            undoing = false,
+                            undoFailed = false,
+                            undoTerminal = false,
+                        ))
+                    } else it
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                val latest = local.value.taskCompletion
+                if (latest.matches(source.sessionId, source.sessionRevision, source.taskId, source.generation)) {
+                    setTaskCompletionPhase(FocusTaskCompletionPhase.CHECK_ERROR, clearPending = true)
+                }
+            } finally {
+                acceptingTaskCompletionReceipts.remove(receipt.commandId)
+            }
+        }
+    }
+
+    private fun rejectTaskCompletionReceipt(
+        source: FocusTaskCompletionCommandSource,
+        receipt: com.luma.lifeos.domain.todo.TodoCompletionReceipt,
+        phase: FocusTaskCompletionPhase,
+    ) {
+        clearTaskCompletionCommandSource(receipt.commandId)
+        val current = local.value.taskCompletion
+        current.undoableCompletion
+            ?.takeIf { it.completionCommandId == receipt.commandId }
+            ?.let { clearTaskCompletionUndo(expected = it, release = false) }
+        if (receipt.undoAvailable) taskRepositoryRelease(receipt.commandId)
+        if (local.value.taskCompletion.matches(
+                source.sessionId,
+                source.sessionRevision,
+                source.taskId,
+                source.generation,
+            )
+        ) setTaskCompletionPhase(phase, clearPending = true)
+    }
+
+    private fun retryAcceptPendingTaskCompletionReceipt() {
+        val source = readTaskCompletionCommandSource() ?: return
+        val action = taskFamilyActions?.state?.value ?: return
+        if (action.phase != TodoFamilyActionPhase.APPLIED || action.commandId != source.commandId) return
+        viewModelScope.launch {
+            try {
+                val receipt = todos?.completionReceipt(source.commandId)
+                if (receipt == null) {
+                    discardPendingTaskCompletionCommand(source)
+                    return@launch
+                }
+                acceptTaskCompletionReceipt(receipt)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+            }
+        }
+    }
+
+    private fun discardPendingTaskCompletionCommand(source: FocusTaskCompletionCommandSource) {
+        clearTaskCompletionCommandSource(source.commandId)
+        taskRepositoryRelease(source.commandId)
+        val current = local.value.taskCompletion
+        if (!current.matches(
+                source.sessionId,
+                source.sessionRevision,
+                source.taskId,
+                source.generation,
+            )
+        ) return
+        if (current.completionPhase !in setOf(
+                FocusTaskCompletionPhase.CHECKING,
+                FocusTaskCompletionPhase.SAVING,
+                FocusTaskCompletionPhase.CHECK_ERROR,
+            )
+        ) return
+        setTaskCompletionPhase(FocusTaskCompletionPhase.IDLE, clearPending = true)
+        if (canPerformTaskActions(source.generation)) {
+            loadTaskCompletionStatus(
+                source.sessionId,
+                source.sessionRevision,
+                source.taskId,
+                source.generation,
+            )
+        }
+    }
+
+    private fun updateTaskAccessReadiness() {
+        taskAccessReady.value =
+            privateContentAccessResolved && taskContentAccessResolved && taskActionAccessResolved
+    }
+
     private fun canPerformTaskActions(generation: UUID): Boolean =
         privateContentAccess.value && taskContentAccess.value && taskActionAccess.value &&
             !runtime.state.value.databaseReplacementInProgress &&
@@ -709,8 +1164,89 @@ class FocusViewModel(
 
     private fun clearTaskCompletionState() {
         taskFamilyActions?.invalidate()
+        clearTaskCompletionUndo(release = true)
         local.update { it.copy(taskCompletion = FocusTaskCompletionState()) }
     }
+
+    private fun saveTaskCompletionUndo(state: FocusTaskCompletionState, result: TodoActionResult) {
+        val sessionId = state.sessionId ?: return
+        val sessionRevision = state.sessionRevision ?: return
+        val taskId = state.taskId ?: return
+        val generation = state.generation ?: return
+        val commandId = result.completionCommandId ?: return
+        savedStateHandle[KEY_TASK_UNDO_RESULT] = listOf(
+            sessionId,
+            sessionRevision,
+            taskId,
+            generation,
+            commandId,
+        ).joinToString("|")
+    }
+
+    private fun restoreTaskCompletionUndo(): FocusTaskCompletionState {
+        val undoParts = savedStateHandle.get<String>(KEY_TASK_UNDO_RESULT)?.split('|')
+        if (undoParts != null && undoParts.size == 5) {
+            val sessionId = runCatching { UUID.fromString(undoParts[0]) }.getOrNull()
+            val sessionRevision = undoParts[1].toLongOrNull()
+            val taskId = runCatching { UUID.fromString(undoParts[2]) }.getOrNull()
+            val generation = runCatching { UUID.fromString(undoParts[3]) }.getOrNull()
+            val commandId = runCatching { UUID.fromString(undoParts[4]) }.getOrNull()
+            if (sessionId != null && sessionRevision != null && taskId != null &&
+                generation != null && commandId != null
+            ) {
+                return FocusTaskCompletionState(
+                    sessionId = sessionId,
+                    sessionRevision = sessionRevision,
+                    taskId = taskId,
+                    generation = generation,
+                    completionPhase = FocusTaskCompletionPhase.COMPLETED,
+                    undoableCompletion = TodoActionResult(
+                        taskId,
+                        completed = true,
+                        resultingRevision = null,
+                        completionCommandId = commandId,
+                    ),
+                )
+            }
+        }
+        val source = readTaskCompletionCommandSource() ?: return FocusTaskCompletionState()
+        return FocusTaskCompletionState(
+            sessionId = source.sessionId,
+            sessionRevision = source.sessionRevision,
+            taskId = source.taskId,
+            generation = source.generation,
+            completionPhase = FocusTaskCompletionPhase.CHECKING,
+        )
+    }
+
+    private fun clearTaskCompletionUndo(
+        expected: TodoActionResult? = null,
+        release: Boolean,
+    ) {
+        val result = local.value.taskCompletion.undoableCompletion
+        if (expected != null && result != expected) return
+        savedStateHandle.remove<String>(KEY_TASK_UNDO_RESULT)
+        result?.completionCommandId?.let { commandId ->
+            savedStateHandle.remove<String>(focusTaskUndoCommandKey(commandId))
+            if (release) taskRepositoryRelease(commandId)
+        }
+        local.update {
+            it.copy(taskCompletion = it.taskCompletion.copy(
+                undoableCompletion = null,
+                undoing = false,
+                undoFailed = false,
+                undoTerminal = false,
+            ))
+        }
+    }
+
+    private fun taskRepositoryRelease(commandId: UUID) {
+        todos?.let { repository ->
+            viewModelScope.launch { runCatching { repository.releaseCommandHandle(commandId) } }
+        }
+    }
+
+    private fun focusTaskUndoCommandKey(commandId: UUID) = "focus_task_undo_next_$commandId"
 
 
     fun focusOnTask(taskId: UUID) {
@@ -1211,6 +1747,8 @@ class FocusViewModel(
     }
 
     private companion object {
+        const val KEY_TASK_UNDO_RESULT = "focus_task_undo_result"
+        const val KEY_TASK_COMPLETION_COMMAND = "focus_task_completion_command"
         fun restoreSetupState(savedStateHandle: SavedStateHandle): FocusSetupState = restoreFocusSetupState(
             saved = savedStateHandle.keys().associateWith { key -> savedStateHandle.get<Any?>(key) },
             defaultZoneId = ZoneId.systemDefault().id,

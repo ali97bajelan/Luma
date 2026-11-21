@@ -1503,6 +1503,7 @@
     <string name="focus_break_minutes_label">Durée de la pause en minutes</string>
     <string name="focus_break_minutes_invalid">Saisissez un nombre entier de 1 à 60 minutes.</string>
     <string name="focus_break_heading">Pause</string>
+    <string name="focus_break_credit_note">La pause est distincte et n’ajoute pas de temps de concentration.</string>
     <string name="focus_break_continues_when_leave">La pause continue lorsque vous quittez cette page.</string>
     <string name="focus_break_default_label">Par défaut : 5 minutes</string>
     <string name="focus_break_replace_start_title">Terminer la pause et démarrer une session ?</string>
@@ -1533,6 +1534,7 @@
     <string name="focus_tag_suggestions">Étiquettes récentes</string>
     <string name="focus_saving">Enregistrement…</string>
     <string name="focus_intro">Prenez le temps de vous consacrer à une chose.</string>
+    <string name="focus_setup_boundary">Focus guide la navigation à l’intérieur de Luma. L’accueil Android, les applications récentes, les notifications et les autres applications restent accessibles. Pour partir, utilisez Retour pour mettre la session en pause ou la terminer et l’enregistrer ; la sortie d’urgence est disponible dans Aide.</string>
     <string name="focus_running">Session en cours</string>
     <string name="focus_elapsed_label">Temps de concentration</string>
     <string name="focus_paused_time_note">En pause — le minuteur ne compte pas.</string>
@@ -1550,7 +1552,9 @@
     <string name="focus_back_end_save">Terminer et enregistrer</string>
     <string name="focus_back_keep_focusing">Continuer la concentration</string>
     <string name="focus_recovery_title">Récupérer la session</string>
-    <string name="focus_recovery_body">Luma a été fermé pendant que le minuteur tournait. Choisissez si le temps écoulé depuis le dernier enregistrement doit être inclus.</string>
+    <string name="focus_recovery_body">Seule la durée de concentration enregistrée ci-dessous est confirmée. Le temps écoulé pendant l’arrêt de Luma n’est pas confirmé ; il ne peut être compté que si la continuité de l’horloge est vérifiable. Choisissez de l’inclure ou de terminer au dernier point enregistré.</string>
+    <string name="focus_recovery_confirmed_label">Temps de concentration confirmé</string>
+    <string name="focus_recovery_confirmed_duration">Temps confirmé : %1$s</string>
     <string name="focus_recovery_continue">Continuer en incluant le temps écoulé</string>
     <string name="focus_recovery_end">Terminer au dernier enregistrement</string>
     <string name="focus_paused">Session en pause</string>
@@ -1706,6 +1710,10 @@
     <string name="focus_task_change">Changer de tâche</string>
     <string name="focus_task_link_removed">Le lien avec la tâche a été supprimé. Cette session reste soumise à la confidentialité des tâches.</string>
     <string name="focus_task_complete_saving">Finalisation de la tâche…</string>
+    <string name="focus_task_checking">Vérification de la tâche associée…</string>
+    <string name="focus_task_check_again">Vérifier à nouveau la tâche associée</string>
+    <string name="focus_task_completion_explanation">Terminer une session Focus ne termine jamais automatiquement la tâche associée.</string>
+    <string name="focus_task_mark_complete">Marquer la tâche associée comme terminée</string>
     <string name="focus_task_unlink_saving">Suppression du lien de tâche…</string>
     <string name="focus_task_loading">Chargement de la tâche…</string>
     <string name="focus_task_selection_conflict">Cette tâche est absente ou terminée. Choisissez une autre tâche ouverte avant de démarrer.</string>

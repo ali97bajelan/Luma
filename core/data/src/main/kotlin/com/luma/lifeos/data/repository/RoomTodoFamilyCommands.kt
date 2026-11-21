@@ -515,7 +515,11 @@ internal class RoomTodoFamilyCommands(
         }
     }
 
-    suspend fun undoCompletion(commandId: UUID, undoCommandId: UUID): TodoCompletionReceipt {
+    suspend fun undoCompletion(
+        commandId: UUID,
+        undoCommandId: UUID,
+        validateBeforeUndo: suspend () -> Unit = {},
+    ): TodoCompletionReceipt {
         try {
             return database.withTransaction {
                 pruneJournal()
@@ -564,6 +568,7 @@ internal class RoomTodoFamilyCommands(
                 if (changed.isEmpty()) {
                     throw UndoFamilyConflict(original.id, UUID.fromString(original.targetId))
                 }
+                validateBeforeUndo()
 
                 val now = clock.instant()
                 val restoreOpen = changed.filter { it.previousCompletedAt == null }

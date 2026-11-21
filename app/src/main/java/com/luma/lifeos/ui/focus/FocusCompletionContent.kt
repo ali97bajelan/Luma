@@ -63,6 +63,9 @@ internal fun FocusCompletionContent(
     onOpenHistory: () -> Unit,
     onTerminalSessionMissing: (UUID, UUID) -> Unit,
     onTaskSessionChanged: (UUID, Long, UUID?, UUID?) -> Unit,
+    onRefreshTaskSession: (UUID, Long, UUID?, UUID?) -> Unit,
+    onUndoTaskCompletion: () -> Unit,
+    onDismissTaskCompletionUndo: () -> Unit,
     onMarkTaskComplete: (UUID, Long, UUID, UUID) -> Unit,
     onRetryTaskCompletion: (UUID, Long, UUID, UUID) -> Unit,
     onUnlinkTask: (UUID, Long, UUID, UUID) -> Unit,
@@ -246,6 +249,9 @@ internal fun FocusCompletionContent(
             state = state.taskCompletion,
             canAccessTaskActions = state.taskActionsAllowed && state.focusContentReadable && taskContentReadable,
             onSessionChanged = onTaskSessionChanged,
+            onRefreshSession = onRefreshTaskSession,
+            onUndoCompletion = onUndoTaskCompletion,
+            onDismissUndo = onDismissTaskCompletionUndo,
             onMarkComplete = onMarkTaskComplete,
             onRetryCompletion = onRetryTaskCompletion,
             onUnlinkTask = onUnlinkTask,
@@ -373,6 +379,11 @@ private fun BreakActions(
             Text(stringResource(if (showBreakOptions) R.string.focus_break_options_hide else R.string.focus_break_options))
         }
         if (showBreakOptions) {
+            Text(
+                stringResource(R.string.focus_break_credit_note),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("focus_break_credit_note"),
+            )
             Text(stringResource(R.string.focus_alert_limitations), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.focus_break_default_label), style = MaterialTheme.typography.bodyMedium)
             LumaOutlinedButton(

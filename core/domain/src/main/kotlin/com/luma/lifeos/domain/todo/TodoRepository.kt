@@ -203,6 +203,19 @@ interface TodoRepository {
     suspend fun undoCompletion(commandId: UUID, undoCommandId: UUID): TodoCompletionReceipt =
         unsupportedTodoFamilyOperation()
 
+    /**
+     * Undo a completion only after validating an aggregate guard. Persistent repositories that
+     * share the guarded aggregate's database must run [validate] inside the undo transaction.
+     */
+    suspend fun undoCompletionValidated(
+        commandId: UUID,
+        undoCommandId: UUID,
+        validate: suspend () -> Unit,
+    ): TodoCompletionReceipt {
+        validate()
+        return undoCompletion(commandId, undoCommandId)
+    }
+
     /** Read a committed completion receipt after process recreation without replaying the command. */
     suspend fun completionReceipt(commandId: UUID): TodoCompletionReceipt? =
         unsupportedTodoFamilyOperation()

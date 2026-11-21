@@ -1,6 +1,6 @@
 # IP-I08 — Focus boundaries, recovery and completion specification
 
-**Priority** P2 · **Horizon** Later · **Status** PENDING
+**Priority** P2 · **Horizon** Later · **Status** SOURCE COMPLETE — QA PENDING
 
 [Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [Proposal](../../20261118-Proposal.md) · [Implementation plan](../plans/2026-11-20-product-improvements-i08-focus-boundaries.md) · [Final emulator QA](../plans/2026-11-20-product-improvements-q01-emulator-qa.md#qa-08)
 
