@@ -36,7 +36,13 @@ import java.time.format.FormatStyle
 import kotlinx.coroutines.awaitCancellation
 
 @Composable
-fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, onEvent: (LifeEventRecord) -> Unit) {
+fun SearchRoute(
+    repository: SearchRepository,
+    zone: ZoneId,
+    onBack: () -> Unit,
+    onEvent: (LifeEventRecord) -> Unit,
+    onTasks: (() -> Unit)? = null,
+) {
     val factory = remember(repository) { viewModelFactory { initializer { SearchViewModel(repository, createSavedStateHandle()) } } }
     val vm: SearchViewModel = viewModel(factory = factory)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -51,6 +57,7 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
     var filters by rememberSaveable { mutableStateOf(false) }
     val count = state.input.activeFilterCount
     val hasCriteria = state.input.text.isNotBlank() || count > 0
+    var refreshObserved by remember(vm) { mutableStateOf(state.loading) }
     LumaReadingPane(Modifier.fillMaxSize().testTag("screen_search")) {
      Column(Modifier.fillMaxSize().padding(horizontal = LumaUi.PageGutter)) {
         LumaTextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
@@ -64,10 +71,25 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 } else null,
                 modifier = Modifier.fillMaxWidth().testTag("search_text"))
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
-                LumaTextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) { Text(stringResource(R.string.search_filter_count, count)) }
-                LumaTextButton(onClick = vm::clearFilters, enabled = count > 0, modifier = Modifier.testTag("search_reset_filters")) { Text(stringResource(R.string.search_reset_filters)) }
-                LumaTextButton(onClick = vm::clear, enabled = state.input.text.isNotEmpty() || count > 0,
-                    modifier = Modifier.testTag("search_clear")) { Text(stringResource(R.string.search_clear)) }
+                LumaTextButton(onClick = { filters = true }, modifier = Modifier.testTag("search_filters")) {
+                    Text(stringResource(R.string.search_filter_count, count))
+                }
+                LumaTextButton(
+                    onClick = vm::clearFilters,
+                    enabled = count > 0,
+                    modifier = Modifier.testTag("search_reset_filters"),
+                ) { Text(stringResource(R.string.search_reset_filters)) }
+                LumaTextButton(
+                    onClick = { vm.setText("") },
+                    enabled = state.input.text.isNotEmpty(),
+                    modifier = Modifier.testTag("search_clear"),
+                ) { Text(stringResource(R.string.search_clear)) }
+                onTasks?.let { openTasks ->
+                    LumaTextButton(
+                        onClick = openTasks,
+                        modifier = Modifier.testTag("search_tasks"),
+                    ) { Text(stringResource(R.string.search_tasks_title)) }
+                }
             }
             if (state.loaded && hasCriteria) AccessibleFeedback(stringResource(R.string.search_results, state.totalCount),
                 Modifier.testTag("search_result_count"), isError = false)
@@ -77,8 +99,19 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
         }
         key(state.input, zone) {
             val list = rememberLazyListState()
-            LaunchedEffect(list, state.windowVersion) {
-                if (state.loaded) list.scrollToItem(0)
+            LaunchedEffect(list, state.loaded, state.windowVersion) {
+                if (!state.loaded) {
+                    refreshObserved = true
+                    return@LaunchedEffect
+                }
+                if (!refreshObserved) return@LaunchedEffect
+                val anchor = vm.consumeReturnViewportAnchor()
+                val lastItemIndex = (state.listItemCount() - 1).coerceAtLeast(0)
+                val index = anchor?.let { state.listItemIndex(it.key) ?: it.index }
+                    ?.coerceIn(0, lastItemIndex)
+                    ?: 0
+                list.scrollToItem(index, anchor?.let { -it.offset } ?: 0)
+                refreshObserved = false
             }
             LazyColumn(state = list, modifier = Modifier.weight(1f).testTag("search_results_list"),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(LumaUi.ChoiceGap)) {
@@ -111,8 +144,16 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
                 items(state.records, key = { it.event.id.toString() }, contentType = { it.event.type }) { record ->
                     Column {
                         Text(com.luma.lifeos.language.localizedDate(record.event.occurredAt.atZone(zone).toLocalDate(), FormatStyle.MEDIUM), style = MaterialTheme.typography.labelLarge)
-                        EventCard(record, zone, onOpen = { vm.rememberResult(record.event.id); onEvent(record) },
-                            openActionLabel = R.string.event_open)
+                        EventCard(record, zone, onOpen = {
+                            val firstVisible = list.layoutInfo.visibleItemsInfo.firstOrNull()
+                            vm.rememberResult(
+                                record.event.id,
+                                viewportKey = firstVisible?.key?.toString(),
+                                viewportIndex = firstVisible?.index ?: 0,
+                                viewportOffset = firstVisible?.offset ?: 0,
+                            )
+                            onEvent(record)
+                        }, openActionLabel = R.string.event_open)
                     }
                 }
                 if (state.canLoadLater) item(key = "later") {
@@ -123,4 +164,37 @@ fun SearchRoute(repository: SearchRepository, zone: ZoneId, onBack: () -> Unit, 
     }
     }
     if (filters) SearchFilters(state, vm, onDone = { filters = false })
+}
+
+private fun SearchState.listItemIndex(key: String): Int? {
+    if (key == "scope_help") return 0
+    if (key == "active_filters") return 1
+
+    val hasCriteria = input.text.isNotBlank() || input.activeFilterCount > 0
+    var index = 2
+    if (!hasCriteria && loaded && !loading && !error) {
+        if (key == "intro") return index
+        index++
+    }
+    if (canLoadEarlier) {
+        if (key == "earlier") return index
+        index++
+    }
+    val recordIndex = records.indexOfFirst { it.event.id.toString() == key }
+    if (recordIndex >= 0) return index + recordIndex
+    index += records.size
+    if (canLoadLater && key == "later") return index
+    return null
+}
+
+private fun SearchState.listItemCount(): Int {
+    val hasCriteria = input.text.isNotBlank() || input.activeFilterCount > 0
+    return 2 +
+        (if (!hasCriteria && loaded && !loading && !error) 1 else 0) +
+        (if (loading) 1 else 0) +
+        (if (error) 1 else 0) +
+        (if (canLoadEarlier) 1 else 0) +
+        records.size +
+        (if (canLoadLater) 1 else 0) +
+        (if (loaded && !loading && !error && hasCriteria && records.isEmpty()) 1 else 0)
 }

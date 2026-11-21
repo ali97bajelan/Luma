@@ -1,5 +1,7 @@
 # IP-I06 — Findable and understandable Search Implementation Plan
 
+**Status:** SOURCE COMPLETE — QA PENDING.
+
 > **For agentic workers** Use the applicable Superpowers implementation skill when this plan is authorized for execution. Steps use checkbox syntax for tracking.
 
 **Goal** Make the existing entry search easy to reach and accurate about the content its text matching covers.
@@ -31,14 +33,32 @@ Existing asynchronous results may arrive after criteria or authorization changes
 
 ## Implementation checklist
 
-- [ ] **1.** Confirm current matcher fields, Tasks title filter entry and protected query wiring. Use one route for Search, with a fresh entry for a new launch and single-top protection against duplicate taps.
-- [ ] **2.** Place local scope copy and active-filter/reset controls with the existing Luma components. Preserve separate query clearing and page reset when criteria change, and preserve the viewport when simply returning from a result.
-- [ ] **3.** Connect the distinct Tasks lookup without prepopulating its text. Preserve back navigation, provider guards, loading, empty/error/retry behavior and late result invalidation.
-- [ ] **4.** Review source and localization against IP-I06-R1, IP-I06-R2, IP-I06-R3. Record the changed files, interface decisions, risks and source evidence for IP-Q01.
+- [x] **1.** Confirmed current matcher fields, Tasks title filter entry and protected query wiring. Reused one route for Search, with a fresh entry for a new launch and single-top protection against duplicate taps.
+- [x] **2.** Placed local scope copy and active-filter/reset controls with the existing Luma components. Kept query clearing separate from filter reset and preserved the loaded window and viewport when returning from a result.
+- [x] **3.** Connected the distinct Tasks title lookup without prepopulating its text. Preserved back navigation, provider guards, loading, empty/error/retry behavior and late result invalidation.
+- [x] **4.** Reviewed source and localization against IP-I06-R1, IP-I06-R2, IP-I06-R3. Recorded changed files, interface decisions, risks and source evidence for IP-Q01.
 
 ## QA handoff
 
-- [ ] Map `newSearchStartsFreshFromEachOrigin`, `resultBackRestoresCriteriaAndViewport`, `protectedResultsDisappearAfterRelock` to [QA-06](./2026-11-20-product-improvements-q01-emulator-qa.md#qa-06) for the final verification task. Extend the existing test surfaces where appropriate. SearchViewModelTest; ActiveSearchFiltersTest; SearchSqlHostTest; SearchFlowTest; SearchStatesTest; SearchPersistenceTest.
-- [ ] Record source status as **SOURCE COMPLETE — QA PENDING** after handoff and leave the QA result **NOT RUN** until IP-Q01 executes.
+- [x] Mapped `newSearchStartsFreshFromEachOrigin`, `resultBackRestoresCriteriaAndViewport`, `protectedResultsDisappearAfterRelock` to [QA-06](./2026-11-20-product-improvements-q01-emulator-qa.md#qa-06). Test extensions and execution remain assigned to IP-Q01: SearchViewModelTest; ActiveSearchFiltersTest; SearchSqlHostTest; SearchFlowTest; SearchStatesTest; SearchPersistenceTest.
+- [x] Recorded source status as **SOURCE COMPLETE — QA PENDING** and left the QA result **NOT RUN** for IP-Q01.
 
 **Acceptance evidence** Seed title-only, body-only, tag/person/place-linked, protected and task-only records in EN/FR/FA. Verify three entry origins, fresh starts, per-filter/reset behavior, paging and restored viewport, invalid range, failure/retry and visibility after relock. Verify Tasks links lead to title search separately.
+
+## Source handoff — 21 November 2026
+
+**Status:** SOURCE COMPLETE — QA PENDING. **Base revision:** `fe270c09734dc0297c2e7e7e81c053b165f5271e`.
+
+**Changed paths:** `app/src/main/java/com/luma/lifeos/ui/LifeOsApp.kt`, `app/src/main/java/com/luma/lifeos/ui/common/LumaUiComponents.kt`, `app/src/main/java/com/luma/lifeos/ui/memory/MemoryLibraryRoute.kt`, `app/src/main/java/com/luma/lifeos/ui/search/SearchRoute.kt`, `app/src/main/java/com/luma/lifeos/ui/search/SearchViewModel.kt`, `app/src/main/java/com/luma/lifeos/ui/timeline/TimelineRoute.kt`, `app/src/main/java/com/luma/lifeos/ui/today/TodayRoute.kt`, `app/src/main/java/com/luma/lifeos/ui/today/TodayScreen.kt`, `app/src/main/res/values/strings.xml`, `app/src/main/res/values-fr/strings.xml` and `app/src/main/res/values-fa/strings.xml`. This plan, the IP-I06 specification and the product task index record the handoff.
+
+**Requirement mapping and decisions:**
+
+- **R1:** Today, Timeline and Memory Library open the same Search destination with single-top protection. New navigation entries receive their own empty Search state. Returning from an entry reloads the saved result window in repository-capped 50-row pages and restores the saved list anchor; query/zone changes clear the anchor. Late results remain generation guarded.
+- **R2:** Search scope now names entry titles and linked tag/person/place names. The Tasks action opens the existing title-search route without passing Search text and is shown only when Tasks are available and readable. Individual active-filter chips remain; “Clear all filters” preserves text, and “Clear text” preserves filters.
+- **R3:** Replacement queries clear cached rows/counts while loading, option names clear before refresh, and the existing authorized repository remains the access boundary. The separate empty-library, no-match, invalid-range, query-error, paging and retry states remain.
+- **QA-06 mapping:** `newSearchStartsFreshFromEachOrigin`, `resultBackRestoresCriteriaAndViewport`, `protectedResultsDisappearAfterRelock` → [QA-06](./2026-11-20-product-improvements-q01-emulator-qa.md#qa-06). Tests and emulator scenarios remain NOT RUN for IP-Q01.
+- **Check:** `./gradlew check` FAILED (exit 1). App production Debug and Release Kotlin compilation completed. `:core:data:compileDebugUnitTestKotlin` and `:core:data:compileReleaseUnitTestKotlin` failed because `FocusMetadataArchiveAdapterTest.kt:120, :123 and :125` omit required `taskId` and `taskOrigin` arguments. No IP-I06 tests were authored or executed; test work remains assigned to IP-Q01.
+- **Known risks:** Rendered Light/Dark, EN/FR/FA, RTL, large-text and lock-transition acceptance remain for QA-06. If a saved viewport row disappears after mutation, restoration falls back to the nearest prior list index.
+- **Source patch SHA-256:** `42c436d599ea1a0d71738dd792364946a6bbdd9501560af81fc7b4618416c7fc` (app source/resources diff; handoff documents excluded).
+
+**Suggested commit message:** `feat(search): add entry points and task-title search`

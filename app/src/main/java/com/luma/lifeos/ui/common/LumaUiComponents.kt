@@ -588,31 +588,34 @@ internal fun LumaSectionHeader(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     actionModifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.headlineSmall,
+    actionStackBreakpoint: Dp = 280.dp,
 ) {
     require((actionLabel == null) == (onAction == null)) {
         "Section header action label and callback must be provided together."
     }
 
     val titleModifier = Modifier.semantics { heading() }
+    val headingStyle = style.copy(fontFamily = MaterialTheme.typography.headlineSmall.fontFamily)
     if (actionLabel == null || onAction == null) {
         Text(
             text = title,
             modifier = modifier.then(titleModifier),
-            style = MaterialTheme.typography.headlineSmall,
+            style = headingStyle,
             textAlign = TextAlign.Start,
         )
         return
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val stack = maxWidth < 280.dp || LocalDensity.current.fontScale >= 1.5f
+        val stack = maxWidth < actionStackBreakpoint || LocalDensity.current.fontScale >= 1.5f
         if (stack) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
                 horizontalAlignment = Alignment.Start,
             ) {
-                Text(title, modifier = titleModifier, style = MaterialTheme.typography.headlineSmall)
+                Text(title, modifier = titleModifier, style = headingStyle)
                 SectionActionButton(actionLabel, onAction, actionModifier)
             }
         } else {
@@ -624,7 +627,7 @@ internal fun LumaSectionHeader(
                 Text(
                     title,
                     modifier = Modifier.weight(1f).then(titleModifier),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = headingStyle,
                 )
                 SectionActionButton(actionLabel, onAction, actionModifier)
             }

@@ -91,6 +91,7 @@ fun TodayRoute(
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
     canReadTaskOrigin: Boolean = true,
     onRequestProtectedFocusUnlock: () -> Unit = {},
+    onSearch: (() -> Unit)? = null,
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
@@ -169,7 +170,7 @@ fun TodayRoute(
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
                 focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
                 onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory,
-                onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock)
+                onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock, onSearch = onSearch)
         } else {
             val habitFactory = remember(habits) {
                 viewModelFactory { initializer { HabitsViewModel(habits, createSavedStateHandle()) } }
@@ -231,7 +232,7 @@ fun TodayRoute(
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
                 focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
                 onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory,
-                onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock)
+                onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock, onSearch = onSearch)
         }
         TodoFamilyActionDialogs(
             state = todayTaskActions.familyAction,

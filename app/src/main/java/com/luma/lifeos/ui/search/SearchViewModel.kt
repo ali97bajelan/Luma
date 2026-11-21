@@ -35,6 +35,12 @@ data class SearchState(
     val canLoadLater get() = loaded && offset.toLong() + records.size < totalCount
 }
 
+internal data class SearchViewportAnchor(
+    val key: String,
+    val index: Int,
+    val offset: Int,
+)
+
 /** Query generations protect even against adapters that finish after cancellation. */
 class SearchViewModel(private val repository: SearchRepository, private val saved: SavedStateHandle) : ViewModel() {
     private fun ids(key: String) = saved.get<ArrayList<String>>(key).orEmpty().map(UUID::fromString).toSet()
@@ -55,23 +61,50 @@ class SearchViewModel(private val repository: SearchRepository, private val save
 
     fun start(zone: ZoneId) {
         if (active && state.value.zone == zone) return
-        val changedZone = state.value.zone != zone
+        val previous = state.value
+        val changedZone = previous.zone != zone
+        val resumeOffset = if (changedZone) 0 else saved["search_offset"] ?: previous.offset
+        val resumeWindowSize = if (changedZone) 50 else maxOf(
+            50,
+            previous.records.size,
+            saved["search_window_size"] ?: 50,
+        )
         stop(); active = true
         saved["search_zone"] = zone.id
-        mutableState.value = state.value.copy(zone = zone, offset = if (changedZone) 0 else saved["search_offset"] ?: state.value.offset,
-            records = emptyList(), loaded = false, loading = !state.value.invalidDates, error = false)
+        if (changedZone) {
+            saved["search_offset"] = 0
+            saved["search_window_size"] = 50
+            clearReturnViewportAnchor()
+        }
+        mutableState.value = previous.copy(
+            zone = zone,
+            offset = resumeOffset,
+            records = emptyList(),
+            totalCount = 0,
+            loaded = false,
+            loading = !previous.invalidDates,
+            error = false,
+        )
         observing = viewModelScope.launch {
             var first = true
             try {
                 repository.observeChanges().collect {
-                    val offset = if (first) state.value.offset else 0
+                    val initialEmission = first
                     first = false
-                    begin(Direction.REPLACE, offset)
+                    val offset = if (initialEmission) state.value.offset else 0
+                    val limit = if (initialEmission) resumeWindowSize else 50
+                    begin(Direction.REPLACE, offset, limitOverride = limit)
                 }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 generation++; request?.cancel()
-                mutableState.value = state.value.copy(loading = false, error = true)
+                mutableState.value = state.value.copy(
+                    records = emptyList(),
+                    totalCount = 0,
+                    loading = false,
+                    loaded = false,
+                    error = true,
+                )
             }
         }
         observeOptions()
@@ -81,7 +114,11 @@ class SearchViewModel(private val repository: SearchRepository, private val save
     }
     private fun observeOptions() {
         optionsJob?.cancel()
-        mutableState.value = state.value.copy(optionsLoading = true, optionsError = false)
+        mutableState.value = state.value.copy(
+            options = SearchOptions(),
+            optionsLoading = true,
+            optionsError = false,
+        )
         optionsJob = viewModelScope.launch {
             try {
                 repository.observeOptions().collect { mutableState.value = state.value.copy(options = it, optionsLoading = false, optionsError = false) }
@@ -98,7 +135,10 @@ class SearchViewModel(private val repository: SearchRepository, private val save
         saved["search_through"] = input.through?.toString()
         saved["search_tags"] = ArrayList(input.tagIds.map(UUID::toString))
         saved["search_people"] = ArrayList(input.personIds.map(UUID::toString))
-        saved["search_place"] = input.placeId?.toString(); saved["search_offset"] = 0
+        saved["search_place"] = input.placeId?.toString()
+        saved["search_offset"] = 0
+        saved["search_window_size"] = 50
+        clearReturnViewportAnchor()
         generation++; request?.cancel()
         mutableState.value = state.value.copy(input = input, records = emptyList(), offset = 0, totalCount = 0,
             loading = !input.invalidDates, loaded = false, error = false)
@@ -130,11 +170,44 @@ class SearchViewModel(private val repository: SearchRepository, private val save
         from = null, through = null, tagIds = emptySet(), personIds = emptySet(), placeId = null,
     ))
     fun clear() = update(SearchInput())
-    fun rememberResult(id: com.luma.lifeos.domain.model.EventId) {
+    fun rememberResult(
+        id: com.luma.lifeos.domain.model.EventId,
+        viewportKey: String? = null,
+        viewportIndex: Int? = null,
+        viewportOffset: Int = 0,
+    ) {
         val current = state.value
-        val index = current.records.indexOfFirst { it.event.id == id }
-        if (index >= 0) saved["search_offset"] = current.offset + index
+        val resultIndex = current.records.indexOfFirst { it.event.id == id }
+        if (resultIndex < 0) return
+
+        saved["search_offset"] = current.offset
+        saved["search_window_size"] = current.records.size.coerceAtLeast(50)
+        val hasCriteria = current.input.text.isNotBlank() || current.input.activeFilterCount > 0
+        val introOffset = if (!hasCriteria && current.loaded && !current.loading && !current.error) 1 else 0
+        val earlierOffset = if (current.canLoadEarlier) 1 else 0
+        saved["search_return_viewport_key"] = viewportKey ?: id.toString()
+        saved["search_return_viewport_index"] = viewportIndex
+            ?: (2 + introOffset + earlierOffset + resultIndex)
+        saved["search_return_viewport_offset"] = viewportOffset
     }
+
+    internal fun consumeReturnViewportAnchor(): SearchViewportAnchor? {
+        val key = saved.get<String>("search_return_viewport_key") ?: return null
+        val anchor = SearchViewportAnchor(
+            key = key,
+            index = saved.get<Int>("search_return_viewport_index") ?: 0,
+            offset = saved.get<Int>("search_return_viewport_offset") ?: 0,
+        )
+        clearReturnViewportAnchor()
+        return anchor
+    }
+
+    private fun clearReturnViewportAnchor() {
+        saved.remove<String>("search_return_viewport_key")
+        saved.remove<Int>("search_return_viewport_index")
+        saved.remove<Int>("search_return_viewport_offset")
+    }
+
     fun loadLater() { val s = state.value; if (!s.loading && s.canLoadLater) begin(Direction.LATER, s.offset + s.records.size) }
     fun loadEarlier() { val s = state.value; if (!s.loading && s.canLoadEarlier) begin(Direction.EARLIER, maxOf(0, s.offset - 50)) }
     fun retry() {
@@ -148,24 +221,66 @@ class SearchViewModel(private val repository: SearchRepository, private val save
         }
     }
     private fun startAgain() { val zone = state.value.zone; active = false; start(zone) }
-    private fun begin(direction: Direction, offset: Int, debounce: Long = 0) {
+
+    private suspend fun loadWindow(
+        query: SearchQuery,
+        zone: ZoneId,
+        offset: Int,
+        limit: Int,
+    ): SearchPage {
+        val records = ArrayList<LifeEventRecord>(limit)
+        var totalCount = 0
+        var nextOffset = offset
+        while (records.size < limit) {
+            val page = repository.page(
+                query,
+                zone,
+                nextOffset,
+                minOf(50, limit - records.size),
+            )
+            totalCount = page.totalCount
+            records += page.records
+            if (page.records.isEmpty() || nextOffset + page.records.size >= totalCount) break
+            nextOffset += page.records.size
+        }
+        return SearchPage(records, offset, totalCount)
+    }
+
+    private fun begin(
+        direction: Direction,
+        offset: Int,
+        debounce: Long = 0,
+        limitOverride: Int? = null,
+    ) {
         if (!active) return
         request?.cancel(); val token = ++generation
         val before = state.value
         if (before.invalidDates) { mutableState.value = before.copy(loading = false, records = emptyList(), loaded = false); return }
-        mutableState.value = before.copy(loading = true, error = false)
+        mutableState.value = before.copy(
+            records = if (direction == Direction.REPLACE) emptyList() else before.records,
+            totalCount = if (direction == Direction.REPLACE) 0 else before.totalCount,
+            loading = true,
+            loaded = if (direction == Direction.REPLACE) false else before.loaded,
+            error = false,
+        )
         request = viewModelScope.launch {
             try {
                 if (debounce > 0) delay(debounce)
-                val limit = if (direction == Direction.EARLIER) before.offset - offset else 50
-                var page = repository.page(before.input.query(), before.zone, offset, limit)
+                val limit = when {
+                    direction == Direction.EARLIER -> before.offset - offset
+                    limitOverride != null -> limitOverride
+                    direction == Direction.REPLACE && before.records.isEmpty() ->
+                        maxOf(50, saved["search_window_size"] ?: 50)
+                    else -> 50
+                }
+                var page = loadWindow(before.input.query(), before.zone, offset, limit)
                 var operation = direction
                 if (token != generation) return@launch
                 val retainedIds = before.records.map { it.event.id }.toSet()
                 val overlaps = direction != Direction.REPLACE && page.records.any { it.event.id in retainedIds }
                 if ((offset > 0 && page.records.isEmpty()) ||
                     (direction != Direction.REPLACE && page.totalCount != before.totalCount) || overlaps) {
-                    page = repository.page(before.input.query(), before.zone, 0, 50); operation = Direction.REPLACE
+                    page = loadWindow(before.input.query(), before.zone, 0, limit); operation = Direction.REPLACE
                 }
                 if (token != generation) return@launch
                 val joined = when (operation) {
@@ -180,6 +295,7 @@ class SearchViewModel(private val repository: SearchRepository, private val save
                     Direction.LATER -> before.offset + trim
                 }
                 saved["search_offset"] = anchor
+                saved["search_window_size"] = rows.size
                 mutableState.value = state.value.copy(records = rows, offset = anchor, totalCount = page.totalCount,
                     loading = false, loaded = true, error = false,
                     windowVersion = state.value.windowVersion + if (operation == Direction.REPLACE) 1 else 0)

@@ -621,13 +621,14 @@
     <string name="review_usage_partial_total_unknown">L’historique enregistré ne permet pas d’établir un total pour cette période.</string>
     <string name="search">Rechercher</string>
     <string name="search_entries_title">Rechercher des entrées</string>
-    <string name="search_scope_help">Recherche dans les titres des entrées, les étiquettes, les personnes et les lieux. Le contenu des souvenirs, les notes, l’historique des habitudes et les tâches ne sont pas recherchés.</string>
+    <string name="search_tasks_title">Rechercher les tâches par titre</string>
+    <string name="search_scope_help">Recherche dans les titres des entrées et les noms associés des étiquettes, des personnes et des lieux. Le contenu des souvenirs, les notes, l’historique des habitudes et les tâches ne sont pas recherchés.</string>
     <string name="search_text_hint">Titre, étiquette, personne ou lieu</string>
     <string name="search_text_help">%1$d/200 caractères</string>
     <string name="search_filters">Filtres de recherche</string>
     <string name="search_filter_count">Filtres (%1$d)</string>
     <string name="search_active_filters">Filtres actifs</string>
-    <string name="search_reset_filters">Réinitialiser les filtres</string>
+    <string name="search_reset_filters">Effacer tous les filtres</string>
     <string name="search_no_active_filters">Aucun filtre actif</string>
     <string name="search_filter_named">%1$s : %2$s</string>
     <string name="search_remove_filter">Retirer le filtre %1$s : %2$s</string>
@@ -635,7 +636,7 @@
     <string name="search_selection_unavailable">Sélection indisponible</string>
     <string name="search_filter_identity">%1$s (%2$s)</string>
     <string name="search_filters_help">Tous les types de filtres doivent correspondre ; pour les étiquettes ou les personnes, une seule sélection correspondante suffit.</string>
-    <string name="search_clear">Tout effacer</string>
+    <string name="search_clear">Effacer le texte</string>
     <string name="search_done">Terminé</string>
     <string name="search_from">Du</string>
     <string name="search_through">Au</string>
@@ -643,7 +644,7 @@
     <string name="search_clear_date">Effacer la date %1$s</string>
     <string name="search_category">%1$s (%2$d)</string>
     <string name="search_results">%1$d entrées correspondantes</string>
-    <string name="search_prompt">Recherchez des titres, étiquettes, personnes ou lieux</string>
+    <string name="search_prompt">Recherchez les titres des entrées ou les noms associés des étiquettes, des personnes ou des lieux</string>
     <string name="search_empty_library">Vos entrées enregistrées apparaîtront ici</string>
     <string name="search_empty">Aucune entrée ne correspond à votre recherche.</string>
     <string name="search_error">Impossible de charger les résultats. Votre recherche et vos filtres sont conservés.</string>

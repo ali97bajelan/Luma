@@ -622,13 +622,14 @@
     <string name="review_usage_partial_total_unknown">از سابقهٔ ذخیره‌شده نمی‌توان مجموع این بازه را تعیین کرد.</string>
     <string name="search">جستجو</string>
     <string name="search_entries_title">جست‌وجوی ثبت‌ها</string>
-    <string name="search_scope_help">عنوان ثبت‌ها، برچسب‌ها، افراد و مکان‌ها پیدا می‌شوند. متن خاطره‌ها، یادداشت‌ها، ثبت‌های عادت و کارها جست‌وجو نمی‌شوند.</string>
+    <string name="search_tasks_title">جست‌وجوی کارها بر پایهٔ عنوان</string>
+    <string name="search_scope_help">عنوان ثبت‌ها و نام برچسب‌ها، افراد و مکان‌های پیوندخورده پیدا می‌شوند. متن خاطره‌ها، یادداشت‌ها، ثبت‌های عادت و کارها جست‌وجو نمی‌شوند.</string>
     <string name="search_text_hint">عنوان، برچسب، فرد یا مکان</string>
     <string name="search_text_help">%1$d/۲۰۰ نویسه</string>
     <string name="search_filters">فیلترهای جستجو</string>
     <string name="search_filter_count">فیلترها (%1$d)</string>
     <string name="search_active_filters">فیلترهای فعال</string>
-    <string name="search_reset_filters">بازنشانی فیلترها</string>
+    <string name="search_reset_filters">پاک کردن همهٔ فیلترها</string>
     <string name="search_no_active_filters">فیلتر فعالی وجود ندارد</string>
     <string name="search_filter_named">%1$s: %2$s</string>
     <string name="search_remove_filter">حذف فیلتر %1$s: %2$s</string>
@@ -636,7 +637,7 @@
     <string name="search_selection_unavailable">انتخاب در دسترس نیست</string>
     <string name="search_filter_identity">%1$s (%2$s)</string>
     <string name="search_filters_help">همهٔ دسته‌های فیلتر باید مطابقت داشته باشند؛ در میان برچسب‌ها یا افراد، مطابقت با یکی از انتخاب‌ها کافی است.</string>
-    <string name="search_clear">پاک کردن همه</string>
+    <string name="search_clear">پاک کردن متن</string>
     <string name="search_done">تمام</string>
     <string name="search_from">از</string>
     <string name="search_through">تا</string>
@@ -644,7 +645,7 @@
     <string name="search_clear_date">پاک کردن تاریخ %1$s</string>
     <string name="search_category">%1$s (%2$d)</string>
     <string name="search_results">%1$d نوشتهٔ مطابق</string>
-    <string name="search_prompt">عنوان نوشته‌ها، برچسب‌ها، افراد یا مکان‌ها را جستجو کنید</string>
+    <string name="search_prompt">عنوان ثبت‌ها یا نام برچسب‌ها، افراد و مکان‌های پیوندخورده را جست‌وجو کنید</string>
     <string name="search_empty_library">نوشته‌های ذخیره‌شدهٔ شما اینجا نمایش داده می‌شوند</string>
     <string name="search_empty">هیچ نوشته‌ای با جستجوی شما مطابقت ندارد.</string>
     <string name="search_error">نتیجه‌ها بارگذاری نشدند. جستجو و فیلترهای شما محفوظ‌اند.</string>

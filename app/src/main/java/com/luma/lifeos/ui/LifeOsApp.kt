@@ -1110,7 +1110,7 @@ fun LifeOsApp(
                             onToday = { selectedDate = null },
                             onEvent = ::openEvent,
                             onMemory = { navController.navigate("memory?eventId=$it") },
-                            onSearch = search?.let { { navController.navigate("search") } },
+                            onSearch = search?.let { { navController.navigate("search") { launchSingleTop = true } } },
                             onHabit = { id, habitDate, logId ->
                                 navController.navigate("habit_detail/$id/$habitDate" + (logId?.let { "?logId=$it" } ?: ""))
                             },
@@ -1122,6 +1122,7 @@ fun LifeOsApp(
                             zone = currentDay.zone,
                             onSelectDate = { selectedDate = it.toString() },
                             onToday = { selectedDate = null },
+                            onSearch = search?.let { { navController.navigate("search") { launchSingleTop = true } } },
                             onMoodClick = { navController.navigate("mood?eventId=$it") },
                             onJournalClick = { navController.navigate("memory?eventId=$it") },
                             onMemoryClick = { navController.navigate("memory?eventId=$it") },
@@ -1283,6 +1284,7 @@ fun LifeOsApp(
                         },
                         onRecordMemory = ::openMemoryCaptureFromLibrary,
                         onEvent = ::openEvent,
+                        onSearch = search?.let { { navController.navigate("search") { launchSingleTop = true } } },
                     )
                 } else {
                     Box(Modifier.fillMaxSize())
@@ -1555,7 +1557,11 @@ fun LifeOsApp(
             }
             composable("search") {
                 search?.let { com.luma.lifeos.ui.search.SearchRoute(it, currentDay.zone,
-                    onBack = { navController.popBackStack() }, onEvent = ::openEvent) }
+                    onBack = { navController.popBackStack() },
+                    onEvent = ::openEvent,
+                    onTasks = if (todos != null && protectedTasksReadable) {
+                        { navController.navigate(AppRoutes.TASKS) { launchSingleTop = true } }
+                    } else null) }
             }
             composable("settings_language") {
                 SettingsSectionPage(R.string.settings_appearance_language_title, onBack = { navController.popBackStack() },

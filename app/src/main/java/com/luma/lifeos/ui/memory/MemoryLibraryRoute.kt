@@ -75,6 +75,7 @@ internal fun MemoryLibraryRoute(
     onBack: () -> Unit,
     onRecordMemory: (LocalDate) -> Unit,
     onEvent: (LifeEventRecord) -> Unit,
+    onSearch: (() -> Unit)? = null,
 ) {
     BackHandler(onBack = onBack)
     val displayTime = rememberDisplayTimePolicy()
@@ -167,6 +168,16 @@ internal fun MemoryLibraryRoute(
         title = stringResource(R.string.memory_library_title),
         navigation = PageNavigation.BACK,
         onNavigate = onBack,
+        actions = {
+            onSearch?.let { search ->
+                LumaTextButton(
+                    onClick = search,
+                    modifier = Modifier.testTag("memory_library_search"),
+                ) {
+                    Text(stringResource(R.string.search), maxLines = 1)
+                }
+            }
+        },
     ) { pagePadding ->
         LumaReadingPane(
             modifier = Modifier.fillMaxSize().padding(pagePadding).testTag("screen_memories"),

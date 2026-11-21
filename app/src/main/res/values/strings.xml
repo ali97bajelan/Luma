@@ -608,13 +608,14 @@
     <string name="review_usage_partial_total_unknown">The saved history does not establish a total for this period.</string>
     <string name="search">Search</string>
     <string name="search_entries_title">Search entries</string>
-    <string name="search_scope_help">Matches entry titles, tags, people and places. Memory text, notes, habit logs and tasks aren\'t searched.</string>
+    <string name="search_tasks_title">Search task titles</string>
+    <string name="search_scope_help">Matches entry titles and linked tag, person, and place names. Memory text, notes, habit logs, and tasks aren\'t searched.</string>
     <string name="search_text_hint">Title, tag, person or place</string>
     <string name="search_text_help">%1$d/200 characters</string>
     <string name="search_filters">Search filters</string>
     <string name="search_filter_count">Filters (%1$d)</string>
     <string name="search_active_filters">Active filters</string>
-    <string name="search_reset_filters">Reset filters</string>
+    <string name="search_reset_filters">Clear all filters</string>
     <string name="search_no_active_filters">No active filters</string>
     <string name="search_filter_named">%1$s: %2$s</string>
     <string name="search_remove_filter">Remove %1$s filter: %2$s</string>
@@ -622,7 +623,7 @@
     <string name="search_selection_unavailable">Selection unavailable</string>
     <string name="search_filter_identity">%1$s (%2$s)</string>
     <string name="search_filters_help">Match all filter categories; match any selection within tags or people.</string>
-    <string name="search_clear">Clear all</string>
+    <string name="search_clear">Clear text</string>
     <string name="search_done">Done</string>
     <string name="search_from">From</string>
     <string name="search_through">Through</string>
@@ -630,7 +631,7 @@
     <string name="search_clear_date">Clear %1$s date</string>
     <string name="search_category">%1$s (%2$d)</string>
     <string name="search_results">%1$d matching entries</string>
-    <string name="search_prompt">Search entry titles, tags, people or places</string>
+    <string name="search_prompt">Search entry titles or linked tags, people, or places</string>
     <string name="search_empty_library">Your saved entries will appear here</string>
     <string name="search_empty">No entries match your search.</string>
     <string name="search_error">Could not load matches. Your search and filters are retained.</string>

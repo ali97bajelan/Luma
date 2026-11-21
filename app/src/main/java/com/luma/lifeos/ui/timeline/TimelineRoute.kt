@@ -36,7 +36,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AccessibleFeedback
-import com.luma.lifeos.ui.common.AppSectionHeading
+import com.luma.lifeos.ui.common.LumaSectionHeader
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.domain.model.EventId
 import com.luma.lifeos.domain.model.EventType
@@ -92,7 +92,14 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
                         modifier = Modifier.padding(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
                     ) {
-                        TimelinePageHeader(onSearch)
+                        LumaSectionHeader(
+                title = stringResource(R.string.timeline),
+                actionLabel = onSearch?.let { stringResource(R.string.search_entries_title) },
+                onAction = onSearch,
+                actionModifier = Modifier.testTag("timeline_search"),
+                style = MaterialTheme.typography.titleLarge,
+                actionStackBreakpoint = 340.dp,
+            )
                         LumaSectionSurface(modifier = Modifier.testTag("timeline_date_ribbon")) {
                             DayNavigation(date, onSelectDate, onToday)
                             FlowRow(
@@ -258,27 +265,3 @@ private fun TimelineTypeNode(item: TimelineFeedItem, size: Dp, isEnd: Boolean) {
     }
 }
 
-@Composable
-private fun TimelinePageHeader(onSearch: (() -> Unit)?) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val stackSearch = maxWidth < 340.dp || LocalDensity.current.fontScale >= 1.5f
-        if (onSearch != null && !stackSearch) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                AppSectionHeading(stringResource(R.string.timeline),
-                    modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                LumaTextButton(onClick = onSearch, modifier = Modifier.heightIn(min = 48.dp).testTag("timeline_search")) {
-                    Text(stringResource(R.string.search_entries_title))
-                }
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
-                AppSectionHeading(stringResource(R.string.timeline), style = MaterialTheme.typography.titleLarge)
-                onSearch?.let {
-                    LumaTextButton(onClick = it, modifier = Modifier.heightIn(min = 48.dp).testTag("timeline_search")) {
-                        Text(stringResource(R.string.search_entries_title))
-                    }
-                }
-            }
-        }
-    }
-}

@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.ui.common.AppSectionHeading
+import com.luma.lifeos.ui.common.LumaSectionHeader
 import com.luma.lifeos.ui.common.LumaReadingPane
 import com.luma.lifeos.ui.common.AccessibleFeedback
 import com.luma.lifeos.domain.model.EventId
@@ -102,6 +103,7 @@ fun TodayScreen(
     onFocusReportRetry: () -> Unit = {},
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
     onRequestProtectedFocusUnlock: () -> Unit = {},
+    onSearch: (() -> Unit)? = null,
 ) {
     var choosingDateFor by rememberSaveable(date) { mutableStateOf<EventType?>(null) }
     var choosingCaptureDate by rememberSaveable(date) { mutableStateOf<String?>(null) }
@@ -122,7 +124,14 @@ fun TodayScreen(
         ) {
             item(key = "header") {
                 Column(verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap)) {
-                    AppSectionHeading(stringResource(heading), style = MaterialTheme.typography.headlineMedium)
+                    LumaSectionHeader(
+                        title = stringResource(heading),
+                        actionLabel = onSearch?.let { stringResource(R.string.search_entries_title) },
+                        onAction = onSearch,
+                        actionModifier = Modifier.testTag("today_search"),
+                        style = MaterialTheme.typography.headlineMedium,
+                        actionStackBreakpoint = 340.dp,
+                    )
                     DayNavigation(date, onSelectDate, onToday)
                     if (date != deviceDate) TodayDateNotice(selectedDate = date, currentDate = deviceDate)
                 }
