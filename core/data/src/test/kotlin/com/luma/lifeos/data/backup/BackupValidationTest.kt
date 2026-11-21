@@ -22,6 +22,14 @@ class BackupValidationTest {
             "terminal_reason" to "USER_STOP",
             "recovered_or_uncertain" to 0L,
             "open_slot" to null,
+            "name" to null,
+            "tag_id" to null,
+            "timer_mode" to "COUNT_UP",
+            "target_millis" to null,
+            "outcome" to null,
+            "next_step" to null,
+            "task_id" to null,
+            "task_origin" to 0L,
         )
         validateBackupRow("focus_session", session)
         assertThrows(Exception::class.java) { validateBackupRow("focus_session", session + ("state" to "RUNNING")) }
@@ -74,6 +82,7 @@ class BackupValidationTest {
             "created_at" to 1L,
             "updated_at" to 1L,
             "revision_token" to UUID.randomUUID().toString(),
+            "family_revision_token" to UUID.randomUUID().toString(),
         )
         validateBackupRow("todo_task", row)
 

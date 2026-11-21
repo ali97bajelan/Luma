@@ -287,7 +287,9 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                 if (eventId == null && record != null) {
                     require(record.event.type == EventType.MEMORY) { "Capture ID is occupied" }
                 }
-                val sourceRecord = record.takeIf { eventId != null }
+                val sourceRecord = record.takeIf {
+                    eventId != null || it?.event?.type == EventType.MEMORY
+                }
                 val savedBaseline = readBaseline()
                 if (eventId != null && sourceRecord == null && savedBaseline == null && !hadDraft) {
                     throw IllegalArgumentException("Original event unavailable")
@@ -311,7 +313,8 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                     loadedBaseline.personIds.size <= PersonTextLimits.SELECTION)
                 baseline = savedBaseline?.draft ?: loadedBaseline
                 baselineToken = savedBaseline?.token ?: sourceRecord?.toEditorBaseline()
-                editingId = eventId
+                editingId = eventId ?: sourceRecord?.event?.id
+                    ?: captureId.takeIf { savedBaseline?.editing == true }
                 saved["direct"] = direct
                 val draft = if (hadDraft) readDraft() else baseline
                 val sourceMissing = eventId != null && sourceRecord == null
@@ -333,7 +336,9 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                 }
                 validatePhotos(draft.photos)
                 photoSession.retain(draft.photos)
-                if (savedBaseline == null) persistBaseline(baseline, baselineToken, direct)
+                if (savedBaseline == null || (sourceRecord != null && savedBaseline.token == null)) {
+                    persistBaseline(baseline, baselineToken, direct)
+                }
                 persist(draft)
                 val stale = sourceRecord != null && savedBaseline?.token != null &&
                     savedBaseline.token.updatedAtMillis != sourceRecord.event.updatedAt.toEpochMilli()
@@ -481,12 +486,12 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         if (photoEditSession.state.value !is MemoryPhotoEditState.Idle || !current.ready || current.busy ||
             current.completed || current.error in setOf(MemoryEditorError.CONFLICT, MemoryEditorError.SOURCE_MISSING) ||
             (current.direct && current.draft.note.isBlank())) return
-        val baseline = if (eventId == null) null else baselineToken ?: run {
+        val draft = current.draft
+        val id = editingId
+        val baseline = if (id == null) null else baselineToken ?: run {
             mutableState.value = current.copy(error = MemoryEditorError.SOURCE_MISSING)
             return
         }
-        val draft = current.draft
-        val id = editingId
         if (!current.direct && id == null) {
             mutableState.value = current.copy(error = MemoryEditorError.SOURCE_MISSING)
             return
@@ -499,10 +504,10 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
                     val input = MemoryInput(draft.note, Instant.ofEpochMilli(draft.occurredAtMillis), draft.title,
                         draft.importance, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
                         draft.contextNote.trim().takeIf(String::isNotEmpty))
-                    if (eventId == null) {
+                    if (id == null) {
                         repository.create(captureId, input)
                         EditorWriteResult.SAVED
-                    } else repository.updateIfUnchanged(requireNotNull(id), requireNotNull(baseline), input)
+                    } else repository.updateIfUnchanged(id, requireNotNull(baseline), input)
                 } else repository.saveMarkerIfUnchanged(requireNotNull(id), requireNotNull(baseline), MemoryMarkerInput(
                     draft.importance, draft.note, draft.personIds, PlaceSelection(draft.placeId), draft.photos, draft.tagNames,
                 ))
@@ -604,7 +609,7 @@ class MemoryEditorViewModel(private val repository: MemoryRepository, private va
         writeDraftFields(draft, "baseline_")
         saved["baseline_present"] = true
         saved["baseline_direct"] = direct
-        saved["baseline_editing"] = eventId != null
+        saved["baseline_editing"] = editingId != null
         saved["baseline_has_token"] = token != null
         saved["baseline_updated_at"] = token?.updatedAtMillis
         saved["baseline_sections"] = ArrayList(token?.requiredSections.orEmpty().map { it.name }.sorted())

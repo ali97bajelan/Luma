@@ -94,10 +94,13 @@ class SearchViewModelTest {
         repeat(7) { vm.loadLater(); runCurrent() }
         val opened = vm.state.value.records[250].event.id
         vm.rememberResult(opened); vm.stop(); vm.start(zone); runCurrent()
-        assertEquals(opened, vm.state.value.records.first().event.id)
+        assertEquals(opened, vm.state.value.records[250].event.id)
+        assertTrue(vm.state.value.canLoadLater)
         vm.stop()
         val restored = SearchViewModel(repo, saved); restored.start(zone); runCurrent()
-        assertEquals(opened, restored.state.value.records.first().event.id); restored.stop()
+        assertEquals(opened, restored.state.value.records[250].event.id)
+        assertEquals(SearchViewportAnchor(opened.toString(), 254, 0), restored.consumeReturnViewportAnchor())
+        restored.stop()
     }
     @Test fun sameCountReorderingBeforeInvalidationCannotPublishDuplicateKeys() = runTest(dispatcher) {
         val repo = Fixture(150); val vm = SearchViewModel(repo, SavedStateHandle())

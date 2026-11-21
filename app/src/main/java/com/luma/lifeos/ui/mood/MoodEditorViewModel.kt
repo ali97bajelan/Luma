@@ -8,6 +8,7 @@ import com.luma.lifeos.domain.model.EditorWriteResult
 import com.luma.lifeos.domain.model.EventEditorBaseline
 import com.luma.lifeos.domain.model.Emotion
 import com.luma.lifeos.domain.model.EventId
+import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.MoodInput
 import com.luma.lifeos.domain.model.MoodNotePolicy
@@ -168,7 +169,11 @@ class MoodEditorViewModel(
                 repository.prepareEmotions()
                 val emotions = repository.observeEmotions().first()
                 val loadedRecord = pendingDeleteRecord ?: repository.get(eventId ?: captureId)
-                val sourceRecord = loadedRecord.takeIf { eventId != null }
+                val sourceRecord = loadedRecord.also { record ->
+                    if (eventId == null && record != null) {
+                        require(record.event.type == EventType.MOOD && record.mood != null)
+                    }
+                }
                 if (eventId != null && sourceRecord == null && snapshot == null) {
                     throw IllegalArgumentException("Check-in unavailable")
                 }
@@ -188,10 +193,12 @@ class MoodEditorViewModel(
                     )
                     return@launch
                 }
-                baseline = if (eventId == null) MoodDraft(initialTime)
+                baseline = if (eventId == null && sourceRecord == null) MoodDraft(initialTime)
                     else snapshot?.baselineDraft ?: sourceRecord?.toDraft() ?: snapshot?.draft ?: MoodDraft(initialTime)
-                baselineToken = if (eventId == null) null else snapshot?.baseline ?: sourceRecord?.toEditorBaseline()
-                editingId = eventId
+                baselineToken = if (eventId == null && sourceRecord == null) null
+                    else snapshot?.baseline ?: sourceRecord?.toEditorBaseline()
+                editingId = eventId ?: sourceRecord?.event?.id
+                    ?: captureId.takeIf { snapshot?.baseline != null }
                 val draft = snapshot?.draft ?: baseline
                 val baselineConflict = sourceRecord != null && snapshot?.baseline != null &&
                     snapshot.baseline.updatedAtMillis != sourceRecord.event.updatedAt.toEpochMilli()
@@ -206,7 +213,7 @@ class MoodEditorViewModel(
                     draftRevision = initialSnapshot.revision
                     storageFailure = false
                 } else if (snapshot.baselineDraft == null ||
-                    (eventId != null && snapshot.baseline == null && sourceRecord != null)
+                    (snapshot.baseline == null && sourceRecord != null)
                 ) {
                     val updatedSnapshot = snapshot.copy(
                         revision = snapshot.revision + 1L,
@@ -232,7 +239,7 @@ class MoodEditorViewModel(
                     draftPersisting = false,
                     draftDurable = true,
                     draftStorageError = false,
-                    editing = eventId != null,
+                    editing = editingId != null,
                     hasRestoredDraft = restoredDraft,
                 )
                 saved[DIRTY] = draft != baseline
@@ -297,9 +304,10 @@ class MoodEditorViewModel(
         val input = MoodInput(requireNotNull(draft.score), Instant.ofEpochMilli(draft.occurredAtMillis),
             draft.emotionIds, draft.energy, draft.stress, draft.note, draft.personIds, PlaceSelection(draft.placeId))
         mutableState.value = current.copy(busy = true, error = null)
+        val id = editingId
         viewModelScope.launch {
             try {
-                if (eventId == null) {
+                if (id == null) {
                     val committedId = repository.create(captureId, input)
                     persistCompletion(MoodDraftCompletion(committedId, deleted = false))
                 } else {
@@ -308,9 +316,9 @@ class MoodEditorViewModel(
                         mutableState.value = state.value.copy(busy = false, error = MoodEditorError.SOURCE_MISSING)
                         return@launch
                     }
-                    when (repository.updateIfUnchanged(eventId, baseline, input)) {
+                    when (repository.updateIfUnchanged(id, baseline, input)) {
                         EditorWriteResult.SAVED ->
-                            persistCompletion(MoodDraftCompletion(eventId, deleted = false))
+                            persistCompletion(MoodDraftCompletion(id, deleted = false))
                         EditorWriteResult.STALE ->
                             mutableState.value = state.value.copy(busy = false, error = MoodEditorError.CONFLICT)
                         EditorWriteResult.MISSING ->
