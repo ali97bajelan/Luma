@@ -12,6 +12,7 @@ enum class LockOperation {
     UPDATE,
     DELETE,
     CREATE,
+    CREATE_IN_EDITOR,
     SHARE,
     EXPORT,
     BACKUP,
@@ -91,7 +92,9 @@ data class LockSnapshot(
         if (request.operation in FRESH_AUTH_OPERATIONS) {
             return AccessDecision.Deny(AccessDenial.FRESH_AUTHENTICATION_REQUIRED)
         }
-        if (request.operation in CONTENT_READ_WRITE_OPERATIONS) {
+        if (request.operation in CONTENT_READ_WRITE_OPERATIONS ||
+            request.operation == LockOperation.CREATE_IN_EDITOR
+        ) {
             val validClassification = when (request.contentClassification) {
                 LockContentClassification.CLASSIFIED -> request.requiredSections.isNotEmpty()
                 LockContentClassification.KNOWN_UNPROTECTED -> request.requiredSections.isEmpty()
@@ -101,6 +104,11 @@ data class LockSnapshot(
         }
         if (request.operation == LockOperation.CREATE &&
             (request.objectId != null || request.createSessionId.isNullOrBlank())
+        ) {
+            return AccessDecision.Deny(AccessDenial.INVALID_CREATE_SESSION)
+        }
+        if (request.operation == LockOperation.CREATE_IN_EDITOR &&
+            (request.objectId.isNullOrBlank() || request.createSessionId != null)
         ) {
             return AccessDecision.Deny(AccessDenial.INVALID_CREATE_SESSION)
         }

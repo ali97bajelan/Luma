@@ -117,12 +117,12 @@ class FocusMetadataArchiveAdapterTest {
             FocusMetadataArchiveAdapter.validateTag(tag(name = "Work", normalized = "different"))
         }
         assertThrows(IllegalArgumentException::class.java) {
-            FocusMetadataArchiveAdapter.validateSession("RUNNING", 1L, "Reading")
+            FocusMetadataArchiveAdapter.validateSession("RUNNING", 1L, "Reading", null, 0L)
         }
         assertThrows(IllegalArgumentException::class.java) {
-            FocusMetadataArchiveAdapter.validateSession("FINISHED", null, "   ")
+            FocusMetadataArchiveAdapter.validateSession("FINISHED", null, "   ", null, 0L)
         }
-        assertTrue(runCatching { FocusMetadataArchiveAdapter.validateSession("INTERRUPTED", null, null) }.isSuccess)
+        assertTrue(runCatching { FocusMetadataArchiveAdapter.validateSession("INTERRUPTED", null, null, null, 0L) }.isSuccess)
     }
 
     @Test fun exportRowsOmitUnreferencedTags() {

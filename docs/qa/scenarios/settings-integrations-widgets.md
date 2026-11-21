@@ -424,13 +424,13 @@ Source: S-LOCK. Shared cooldown survives recreation/reboot.
 Oracle: exact fake-clock/store assertions; no production wall-clock guessing. Evidence: report. Cleanup: test store teardown. No hundreds of credential attempts.
 
 ### LOCK-005 — P0 · DEVICE · FL · NOT RUN
-Source: S-LOCK. Relock and selected coverage.
+Source: S-LOCK. Relock and Memory-section coverage.
 
-1. Unlock → Settings → App lock; authenticate settings; select selected sections (`app_lock_coverage_selected`), only Memories; Save policy (`app_lock_save_policy`), authenticate confirmation. Expected: one selected protected section; cannot save zero selected sections.
-2. Lock now (`app_lock_lock_now`); open More → Tasks and Places. Expected: unprotected content accessible; opening Memory requires unlock.
+1. Unlock → Settings → App lock; authenticate settings; select Memory section (`app_lock_coverage_memory`); Save policy (`app_lock_save_policy`), authenticate confirmation. Expected: Memory requires unlock while public Tasks and Places stay available.
+2. Lock now (`app_lock_lock_now`); open More → Tasks and Places. Expected: public content remains accessible; opening Memory requires unlock.
 3. Authenticate settings; select After 1 minute; save/authenticate. Unlock Memory; Home 30 seconds then return. Expected: grant retained.
 4. Home for 65 seconds then return. Expected: Memory gated; no private preview. Relaunch also gates.
-Oracle: 2 tasks/1 memory unchanged; policy persists. Evidence: selected policy/elapsed timing/gate. Cleanup C0. Use a stopwatch, not date/time change.
+Oracle: 2 tasks/1 memory unchanged; policy persists. Evidence: Memory-section policy/elapsed timing/gate. Cleanup C0. Use a stopwatch, not date/time change.
 
 ### LOCK-006 — P0 · DEVICE · FL · NOT RUN
 Source: S-LOCK. Screenshot and Recents privacy.

@@ -6,7 +6,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.luma.lifeos.domain.lock.LockCoverage
 import com.luma.lifeos.domain.lock.LockPolicy
-import com.luma.lifeos.domain.lock.LockSection
 import com.luma.lifeos.domain.focus.FocusInvitationSlot
 import com.luma.lifeos.reminders.FocusInvitationRequest
 import com.luma.lifeos.domain.model.EventId
@@ -231,6 +230,29 @@ class AppNavigationTest {
         assertTrue("error is not in the visible scroll viewport: $errorBounds", errorBounds.height > 0f)
     }
 
+    @Test fun appLockSetupOffersOnlyWholeAppAndMemorySectionCoverage() {
+        val application = compose.activity.application as LumaApplication
+        resetAppLockForTest(application)
+        try {
+            compose.onNodeWithTag("nav_more").performClick()
+            compose.onNodeWithTag("more_settings").performClick()
+            compose.onNodeWithTag("settings_privacy").performScrollTo().performClick()
+            compose.onNodeWithTag("privacy_app_lock").performScrollTo().performClick()
+            awaitTag("screen_app_lock_settings")
+
+            val wholeApp = compose.onNodeWithTag("app_lock_coverage_whole")
+            val memorySection = compose.onNodeWithTag("app_lock_coverage_memory")
+            wholeApp.assertIsDisplayed()
+            memorySection.assertIsDisplayed()
+            wholeApp.assertTextContains(compose.activity.getString(R.string.app_lock_coverage_whole))
+            memorySection.assertTextContains(compose.activity.getString(R.string.app_lock_coverage_memory))
+            memorySection.performClick().assertIsSelected()
+            wholeApp.assertIsNotSelected()
+        } finally {
+            resetAppLockForTest(application)
+        }
+    }
+
     @Test fun wholeAppGateKeepsUnlockDialogAndSettingsNavigationAvailable() {
         val application = compose.activity.application as LumaApplication
         resetAppLockForTest(application)
@@ -255,33 +277,20 @@ class AppNavigationTest {
         }
     }
 
-    @Test fun focusSettingsDestinationStaysGatedAfterUnlockIsCancelled() {
+    @Test fun focusSettingsRemainAvailableWithMemorySectionCoverage() {
         val application = compose.activity.application as LumaApplication
         resetAppLockForTest(application)
         try {
             enableWholeAppLockForTest(
                 application,
-                LockPolicy(
-                    enabled = true,
-                    coverage = LockCoverage.SELECTED,
-                    sections = setOf(LockSection.FOCUS),
-                ),
+                LockPolicy(enabled = true, coverage = LockCoverage.MEMORY_SECTION),
             )
             compose.onNodeWithTag("nav_more").performClick()
             compose.onNodeWithTag("more_settings").performClick()
             compose.onNodeWithTag("settings_focus").performScrollTo().performClick()
 
-            val gateTitle = compose.activity.getString(R.string.app_lock_gate_title)
-            compose.waitUntil(5_000) {
-                compose.onAllNodesWithText(gateTitle).fetchSemanticsNodes().isNotEmpty()
-            }
-            compose.onNodeWithTag("focus_settings_screen").assertDoesNotExist()
-            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_gate_unlock)).performClick()
-            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_unlock_title)).assertIsDisplayed()
-            compose.onNodeWithText(compose.activity.getString(R.string.cancel)).performClick()
-
-            compose.onNodeWithText(gateTitle).assertIsDisplayed()
-            compose.onNodeWithTag("focus_settings_screen").assertDoesNotExist()
+            compose.onNodeWithTag("focus_settings_screen").assertIsDisplayed()
+            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_gate_title)).assertDoesNotExist()
         } finally {
             resetAppLockForTest(application)
         }

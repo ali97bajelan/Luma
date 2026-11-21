@@ -17,9 +17,21 @@ interface CatalogDao {
     @Query("SELECT * FROM emotion ORDER BY name, id") fun observeEmotions(): Flow<List<EmotionEntity>>
     @Transaction
     @Query("SELECT * FROM person WHERE id = :id") fun observePersonHistory(id: String): Flow<PersonWithEvents?>
+    @Query("SELECT * FROM person WHERE id = :id") fun observePersonHeader(id: String): Flow<PersonEntity?>
+    @Query("""SELECT life_event.id FROM life_event INNER JOIN event_person ON event_person.event_id = life_event.id
+        WHERE event_person.person_id = :id AND (:includeMemory OR (life_event.type NOT IN ('MEMORY', 'JOURNAL')
+        AND NOT EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id)))
+        ORDER BY life_event.occurred_at, life_event.id""")
+    fun observePersonEventIds(id: String, includeMemory: Boolean): Flow<List<String>>
     @Query("SELECT * FROM person ORDER BY name, id") fun observePeople(): Flow<List<PersonEntity>>
     @Transaction
     @Query("SELECT * FROM place WHERE id = :id") fun observePlaceHistory(id: String): Flow<PlaceWithEvents?>
+    @Query("SELECT * FROM place WHERE id = :id") fun observePlaceHeader(id: String): Flow<PlaceEntity?>
+    @Query("""SELECT life_event.id FROM life_event INNER JOIN event_place ON event_place.event_id = life_event.id
+        WHERE event_place.place_id = :id AND (:includeMemory OR (life_event.type NOT IN ('MEMORY', 'JOURNAL')
+        AND NOT EXISTS (SELECT 1 FROM memory WHERE memory.life_event_id = life_event.id)))
+        ORDER BY life_event.occurred_at, life_event.id""")
+    fun observePlaceEventIds(id: String, includeMemory: Boolean): Flow<List<String>>
     @Query("SELECT * FROM place WHERE id = :id") fun observePlace(id: String): Flow<PlaceEntity?>
     @Query("SELECT * FROM place ORDER BY name, id") fun observePlaces(): Flow<List<PlaceEntity>>
     @Query("SELECT * FROM tag ORDER BY normalized_name, id") fun observeTags(): Flow<List<TagEntity>>

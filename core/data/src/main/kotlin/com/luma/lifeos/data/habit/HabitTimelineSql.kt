@@ -42,6 +42,8 @@ interface HabitTimelineSql {
                     SELECT 1 FROM app_usage_record u
                     WHERE u.life_event_id = e.id AND u.duration_ms > $APP_USAGE_DISPLAY_THRESHOLD_MILLIS
                 )))
+                AND (:includeMemory OR (e.type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS
+                    (SELECT 1 FROM memory WHERE memory.life_event_id = e.id)))
             UNION ALL
             SELECT 'HABIT' AS row_kind, NULL AS entry_id, l.id AS habit_log_id,
                 CASE WHEN l.occurred_at IS NULL THEN 0 ELSE 1 END AS precision_group,
@@ -53,7 +55,7 @@ interface HabitTimelineSql {
         LIMIT :limit OFFSET :offset
     """)
     suspend fun pageKeys(date: String, start: Long?, end: Long?, showAppUsage: Boolean,
-        offset: Int, limit: Int): List<TimelineFeedKey>
+        offset: Int, limit: Int, includeMemory: Boolean = true): List<TimelineFeedKey>
 
     @Query("""
         SELECT
@@ -62,13 +64,18 @@ interface HabitTimelineSql {
                 AND (e.type != 'APP_USAGE' OR (:showAppUsage AND EXISTS (
                     SELECT 1 FROM app_usage_record u
                     WHERE u.life_event_id = e.id AND u.duration_ms > $APP_USAGE_DISPLAY_THRESHOLD_MILLIS
-                ))))
+                )))
+                AND (:includeMemory OR (e.type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS
+                    (SELECT 1 FROM memory WHERE memory.life_event_id = e.id))))
             + (SELECT COUNT(*) FROM habit_log WHERE habit_date = :date) AS total_count,
             (SELECT COUNT(*) FROM life_event e WHERE (:start IS NOT NULL AND e.occurred_at >= :start
-                AND e.occurred_at < :end) AND e.type != 'APP_USAGE') AS event_count,
+                AND e.occurred_at < :end) AND e.type != 'APP_USAGE'
+                AND (:includeMemory OR (e.type NOT IN ('MEMORY', 'JOURNAL') AND NOT EXISTS
+                    (SELECT 1 FROM memory WHERE memory.life_event_id = e.id)))) AS event_count,
             (SELECT COUNT(*) FROM habit_log WHERE habit_date = :date) AS habit_log_count
     """)
-    suspend fun counts(date: String, start: Long?, end: Long?, showAppUsage: Boolean): TimelineFeedCounts
+    suspend fun counts(date: String, start: Long?, end: Long?, showAppUsage: Boolean,
+        includeMemory: Boolean = true): TimelineFeedCounts
 
     @Query("""
         SELECT l.id, l.habit_id, l.habit_date, l.zone_id, l.occurred_at, l.recorded_at, l.updated_at,

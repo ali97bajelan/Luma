@@ -184,7 +184,7 @@ class MemoryEditorTest {
     @Test fun oversizedTextAndDstGapsRetainPreviousDraft() = runTest(dispatcher) {
         val editor = MemoryEditorViewModel(TestMemoryRepository(), null, SavedStateHandle(), clock)
         advanceUntilIdle(); editor.setNote("Keep"); editor.setTitle("Title")
-        editor.setNote("x".repeat(10_001)); editor.setTitle("x".repeat(201))
+        editor.setNote("x".repeat(MemoryTextLimits.NOTE + 1)); editor.setTitle("x".repeat(201))
         assertEquals("Keep", editor.state.value.draft.note)
         assertEquals("Title", editor.state.value.draft.title)
         assertEquals(MemoryEditorError.TEXT, editor.state.value.error)
@@ -265,14 +265,17 @@ class MemoryEditorTest {
     @Test fun photosSurviveRestorationAndExistingPhotoCanBeRemovedWithoutChangingText() = runTest(dispatcher) {
         val repo = TestMemoryRepository(); val files = TestPhotoRepository(); val handle = SavedStateHandle()
         val editor = MemoryEditorViewModel(repo, null, handle, clock, files)
+        editor.enterPhotoRoute()
         advanceUntilIdle(); editor.setNote("Keep"); editor.importPhoto("content://selected/image"); advanceUntilIdle()
         val photo = editor.state.value.draft.photos.single()
         val restored = MemoryEditorViewModel(repo, null, handle, clock, files)
+        restored.enterPhotoRoute()
         advanceUntilIdle()
         assertEquals(listOf(photo), restored.state.value.draft.photos)
         restored.save(); advanceUntilIdle()
         assertEquals(listOf(photo), repo.submittedPhotos)
         val editing = MemoryEditorViewModel(repo, repo.records.keys.single(), SavedStateHandle(), clock, files)
+        editing.enterPhotoRoute()
         advanceUntilIdle(); assertEquals(listOf(photo), editing.state.value.draft.photos)
         editing.removePhoto(photo.id); advanceUntilIdle(); editing.save(); advanceUntilIdle()
         assertEquals(emptyList<PhotoAttachment>(), repo.submittedPhotos)
@@ -283,11 +286,13 @@ class MemoryEditorTest {
         val repo = TestMemoryRepository(); val files = TestPhotoRepository().apply { failAfterCopy = true }
         val handle = SavedStateHandle()
         val editor = MemoryEditorViewModel(repo, null, handle, clock, files)
+        editor.enterPhotoRoute()
         advanceUntilIdle(); editor.setNote("Keep"); editor.importPhoto("content://selected/image"); advanceUntilIdle()
         assertEquals(MemoryEditorError.PHOTO, editor.state.value.error)
         assertTrue(editor.state.value.draft.photos.isEmpty())
         files.failAfterCopy = false
         val restored = MemoryEditorViewModel(repo, null, handle, clock, files)
+        restored.enterPhotoRoute()
         advanceUntilIdle()
         assertEquals(1, files.files.size)
         assertEquals(files.files.values.single(), restored.state.value.draft.photos.single())
@@ -300,6 +305,7 @@ class MemoryEditorTest {
     @Test fun failedImportKeepsPreviousSelectionAndDiscardDoesNotWriteEntry() = runTest(dispatcher) {
         val repo = TestMemoryRepository(); val files = TestPhotoRepository()
         val editor = MemoryEditorViewModel(repo, null, SavedStateHandle(), clock, files)
+        editor.enterPhotoRoute()
         advanceUntilIdle(); editor.setNote("Keep"); editor.importPhoto("content://first"); advanceUntilIdle()
         val draft = editor.state.value.draft
         files.failImport = true; editor.importPhoto("content://missing"); advanceUntilIdle()
@@ -319,11 +325,13 @@ class MemoryEditorTest {
         repo.records[original.event.id] = original
         val handle = SavedStateHandle()
         val editor = MemoryEditorViewModel(repo, original.event.id, handle, clock, files)
+        editor.enterPhotoRoute()
         advanceUntilIdle(); editor.remove(); advanceUntilIdle()
         assertEquals(MemoryEditorError.REMOVE, editor.state.value.error)
         editor.importPhoto("content://new-draft"); advanceUntilIdle()
         val photo = editor.state.value.draft.photos.single()
         val restored = MemoryEditorViewModel(repo, original.event.id, handle, clock, files)
+        restored.enterPhotoRoute()
         advanceUntilIdle()
         assertFalse(restored.state.value.completed)
         assertTrue(restored.state.value.ready)
@@ -352,7 +360,7 @@ class MemoryEditorTest {
     @Test fun twoRejectedFieldsClearIndependently() = runTest(dispatcher) {
         val editor = MemoryEditorViewModel(TestMemoryRepository(), null, SavedStateHandle(), clock)
         advanceUntilIdle(); editor.setTitle("Title"); editor.setNote("Note")
-        editor.setTitle("x".repeat(201)); editor.setNote("x".repeat(10_001))
+        editor.setTitle("x".repeat(201)); editor.setNote("x".repeat(MemoryTextLimits.NOTE + 1))
         assertEquals(setOf(MemoryTextField.TITLE, MemoryTextField.NOTE), editor.state.value.textErrors)
         editor.setTitle("Corrected")
         assertEquals(setOf(MemoryTextField.NOTE), editor.state.value.textErrors)
@@ -361,7 +369,7 @@ class MemoryEditorTest {
     @Test fun recreationRestoresFieldFlags() = runTest(dispatcher) {
         val handle = SavedStateHandle(); val repo = TestMemoryRepository()
         val editor = MemoryEditorViewModel(repo, null, handle, clock)
-        advanceUntilIdle(); editor.setNote("Kept note"); editor.setNote("x".repeat(10_001))
+        advanceUntilIdle(); editor.setNote("Kept note"); editor.setNote("x".repeat(MemoryTextLimits.NOTE + 1))
         val restored = MemoryEditorViewModel(repo, null, handle, clock)
         assertEquals(setOf(MemoryTextField.NOTE), restored.state.value.textErrors)
         advanceUntilIdle()

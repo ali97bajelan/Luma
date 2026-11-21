@@ -42,8 +42,11 @@ import com.luma.lifeos.data.focus.RoomFocusInvitationRepository
 import com.luma.lifeos.domain.focus.FocusInvitationRepository
 
 /** One database per process, owned by the application composition root. */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class LumaStorage(context: Context) {
     private val database = LumaDatabase.open(context)
+    val eventVisibilityQueries: com.luma.lifeos.data.repository.EventVisibilityQueries =
+        com.luma.lifeos.data.repository.RoomEventVisibilityQueries(database)
     val reviews: com.luma.lifeos.domain.repository.WeeklyReviewRepository = com.luma.lifeos.data.repository.RoomWeeklyReviewRepository(database)
     val search: com.luma.lifeos.domain.repository.SearchRepository = com.luma.lifeos.data.repository.RoomSearchRepository(database)
     private val photoFiles = ManagedPhotoFiles(File(context.filesDir, "photos"))

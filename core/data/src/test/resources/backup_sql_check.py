@@ -10,8 +10,8 @@ instructions = [(line.split('\t')[0], base64.b64decode(line.split('\t')[1]).deco
 deletes = [sql for kind, sql in instructions if kind == 'D']
 validations = [sql for kind, sql in instructions if kind == 'V']
 insert = next(sql for kind, sql in instructions if kind == 'I')
-db.execute(insert, ('e', 'JOURNAL', 1, 1, 1, 'MANUAL'))
-db.execute("INSERT INTO journal_entry(id,life_event_id,body) VALUES ('j','e','before')")
+db.execute(insert, ('e', 'MOOD', 1, 1, 1, 'MANUAL'))
+db.execute("INSERT INTO mood_entry(id,life_event_id,mood_score) VALUES ('j','e',4)")
 db.execute("INSERT INTO person(id,name) VALUES ('p','فارسی')")
 db.execute("INSERT INTO event_person(event_id,person_id) VALUES ('e','p')")
 db.commit()
@@ -23,15 +23,15 @@ db.execute("INSERT INTO app_usage_record(id,life_event_id,bucket_start,bucket_en
 assert all(not db.execute(sql).fetchone() for sql in validations)
 db.commit()
 # FK-valid typed-child mismatch must still fail graph validation.
-db.execute("UPDATE life_event SET type='MOOD'")
+db.execute("UPDATE life_event SET type='ACTIVITY'")
 assert any(db.execute(sql).fetchone() for sql in validations)
 db.rollback()
 before = {e['tableName']: db.execute('SELECT * FROM ' + e['tableName']).fetchall() for e in schema['entities']}
 try:
     with db:
         for sql in deletes: db.execute(sql)
-        db.execute(insert, ('new', 'JOURNAL', 2, 2, 2, 'MANUAL'))
-        db.execute("INSERT INTO journal_entry(id,life_event_id,body) VALUES ('broken','missing','must roll back')")
+        db.execute(insert, ('new', 'MOOD', 2, 2, 2, 'MANUAL'))
+        db.execute("INSERT INTO mood_entry(id,life_event_id,mood_score) VALUES ('broken','missing',4)")
 except sqlite3.IntegrityError:
     pass
 else:
@@ -40,9 +40,9 @@ after = {e['tableName']: db.execute('SELECT * FROM ' + e['tableName']).fetchall(
 assert before == after, (before, after)
 with db:
     for sql in deletes: db.execute(sql)
-    db.execute(insert, ('replacement', 'JOURNAL', 3, 3, 3, 'MANUAL'))
-    db.execute("INSERT INTO journal_entry(id,life_event_id,body) VALUES ('replacement-body','replacement','after')")
-assert db.execute('SELECT body FROM journal_entry').fetchall() == [('after',)]
+    db.execute(insert, ('replacement', 'MOOD', 3, 3, 3, 'MANUAL'))
+    db.execute("INSERT INTO mood_entry(id,life_event_id,mood_score) VALUES ('replacement-mood','replacement',5)")
+assert db.execute('SELECT mood_score FROM mood_entry').fetchall() == [(5,)]
 assert not db.execute('SELECT * FROM person').fetchall()
 assert not db.execute('PRAGMA foreign_key_check').fetchall()
 print('production backup SQL: valid graph, child mismatch, all-table rollback and replacement verified')

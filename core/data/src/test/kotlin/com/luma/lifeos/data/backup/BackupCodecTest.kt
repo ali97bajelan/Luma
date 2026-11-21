@@ -27,7 +27,10 @@ class BackupCodecTest {
         assertEquals(backupTables(5) + "task_reminder", backupTables(6))
         assertEquals(backupTables(6) + listOf("focus_session", "focus_run"), backupTables(7))
         assertEquals(backupTables(6) + listOf("focus_tag", "focus_session", "focus_run"), backupTables(8))
-        assertEquals(8, CURRENT_BACKUP_SCHEMA_VERSION)
+        assertEquals(backupTables(8), backupTables(9))
+        assertEquals(backupTables(8) + listOf("focus_goal_settings", "focus_goal_version"), backupTables(10))
+        (11..14).forEach { version -> assertEquals(backupTables(10), backupTables(version)) }
+        assertEquals(14, CURRENT_BACKUP_SCHEMA_VERSION)
         (1..6).forEach { version ->
             assertFalse("focus_session must remain device-local in schema $version", "focus_session" in backupTables(version))
             assertFalse("focus_run must remain device-local in schema $version", "focus_run" in backupTables(version))

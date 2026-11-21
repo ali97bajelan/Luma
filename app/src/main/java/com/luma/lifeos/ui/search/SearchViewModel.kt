@@ -121,7 +121,7 @@ class SearchViewModel(private val repository: SearchRepository, private val save
         )
         optionsJob = viewModelScope.launch {
             try {
-                repository.observeOptions().collect { mutableState.value = state.value.copy(options = it, optionsLoading = false, optionsError = false) }
+                repository.observeOptions().collect { options -> acceptOptions(options) }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 mutableState.value = state.value.copy(optionsLoading = false, optionsError = true)
@@ -129,6 +129,16 @@ class SearchViewModel(private val repository: SearchRepository, private val save
         }
     }
     fun retryOptions() { if (active) observeOptions() }
+
+    private fun acceptOptions(options: SearchOptions) {
+        val current = state.value
+        val visibleTagIds = options.tags.mapTo(hashSetOf()) { it.id }
+        val currentTagIds = current.input.tagIds
+        if (!visibleTagIds.containsAll(currentTagIds)) {
+            update(current.input.copy(tagIds = currentTagIds intersect visibleTagIds))
+        }
+        mutableState.value = state.value.copy(options = options, optionsLoading = false, optionsError = false)
+    }
     private fun update(input: SearchInput, debounce: Boolean = false) {
         if (input == state.value.input) return
         saved["search_text"] = input.text; saved["search_from"] = input.from?.toString()

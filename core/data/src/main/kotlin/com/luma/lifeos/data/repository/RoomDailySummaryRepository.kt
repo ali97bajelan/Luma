@@ -19,31 +19,45 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class RoomDailySummaryRepository(private val database: LumaDatabase, private val clock: Clock = Clock.systemUTC()) : DailySummaryRepository {
-    override fun observe(date: LocalDate, zone: ZoneId) = database.invalidationTracker.createFlow(
+    override fun observe(date: LocalDate, zone: ZoneId) = observeVisible(date, zone, includeMemory = true)
+
+    fun observeVisible(date: LocalDate, zone: ZoneId, includeMemory: Boolean) = database.invalidationTracker.createFlow(
         "life_event", "mood_entry", "journal_entry", "memory", "activity_record", "app_usage_record",
         "usage_session", "usage_session_window",
-    ).map { recalculate(date, zone) }.distinctUntilChanged()
+    ).map { load(date, zone, force = !includeMemory, includeMemory = includeMemory) }.distinctUntilChanged()
 
     override suspend fun get(date: LocalDate, zone: ZoneId) = load(date, zone, force = false)
     override suspend fun recalculate(date: LocalDate, zone: ZoneId) = load(date, zone, force = true)
-    private suspend fun load(date: LocalDate, zone: ZoneId, force: Boolean): DailySummary = withContext(Dispatchers.IO) {
+    suspend fun getVisible(date: LocalDate, zone: ZoneId, includeMemory: Boolean) =
+        load(date, zone, force = !includeMemory, includeMemory = includeMemory)
+
+    private suspend fun load(
+        date: LocalDate,
+        zone: ZoneId,
+        force: Boolean,
+        includeMemory: Boolean = true,
+    ): DailySummary = withContext(Dispatchers.IO) {
         database.withTransaction {
             val derived = database.derived()
             val cached = derived.summary(date.toString(), zone.id)
-            if (!force && cached?.freshness == SummaryFreshness.FRESH && cached.algorithmVersion == DAILY_SUMMARY_VERSION) {
+            if (includeMemory && !force && cached?.freshness == SummaryFreshness.FRESH && cached.algorithmVersion == DAILY_SUMMARY_VERSION) {
                 runCatching { SummaryCacheCodec.decode(cached.metricsJson, date, zone) }.getOrNull()?.let { return@withTransaction it }
             }
             // Equal bounds on a skipped civil day produce an empty indexed query, not an invalid TimeRange.
             val start = date.atStartOfDay(zone).toInstant().toEpochMilli()
             val end = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            val rows = database.lifeEvents().summarySources(start, end)
+            val rows = database.lifeEvents().summarySources(start, end, includeMemory)
             // Match Settings and Review: prefer retained visits, then fall back to native totals.
             // Cache only derived app totals/coverage; an empty partial query is not a measured zero.
             val usage = RoomUsageRepository(database).loadDaily(date, zone)
                 ?.takeUnless { it.history == UsageHistory.PARTIAL && it.apps.isEmpty() }
                 ?.copy(sessions = emptyList())
             val result = calculateDailySummary(date, zone, rows.map { it.snapshot() }).copy(usage = usage)
-            derived.upsertSummary(DailySummaryEntity(date.toString(), zone.id, SummaryCacheCodec.encode(result), DAILY_SUMMARY_VERSION, clock.millis()))
+            if (includeMemory) {
+                derived.upsertSummary(
+                    DailySummaryEntity(date.toString(), zone.id, SummaryCacheCodec.encode(result), DAILY_SUMMARY_VERSION, clock.millis()),
+                )
+            }
             result
         }
     }

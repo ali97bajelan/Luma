@@ -41,11 +41,15 @@ import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
 import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.lock.LockCoverage
+import com.luma.lifeos.data.repository.EventVisibility
+import com.luma.lifeos.data.repository.EventVisibilityQueries
 import com.luma.lifeos.domain.lock.ProtectedRecordClassifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
@@ -60,34 +64,89 @@ import java.util.UUID
 class ProtectedDailySummaryRepository(
     private val delegate: DailySummaryRepository,
     private val gateway: ProtectedContentGateway,
+    private val visibilityQueries: EventVisibilityQueries? = null,
 ) : DailySummaryRepository by delegate {
-    override fun observe(date: LocalDate, zone: ZoneId): Flow<DailySummary> =
-        combine(delegate.observe(date, zone), gateway.snapshot) { summary, state ->
-            if (canReadAggregate(state)) immutableSummary(summary) else DailySummary(date, zone, 0, 0, 0)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observe(date: LocalDate, zone: ZoneId): Flow<DailySummary> = gateway.snapshot
+        .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+        .flatMapLatest { before ->
+            val source = when {
+                before.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY || !canReadAggregate(before) ->
+                    flowOf(emptySummary(date, zone))
+                isMemoryLocked(before) -> visibilityQueries?.observeSummary(
+                    date, zone, EventVisibility.WITHOUT_MEMORY,
+                ) ?: flowOf(emptySummary(date, zone))
+                else -> delegate.observe(date, zone)
+            }
+            source.map { summary ->
+                val after = gateway.snapshot.value
+                if (!gateway.sameAuthorizationEpoch(before, after) || !canReadAggregate(after) ||
+                    (isMemoryLocked(after) && visibilityQueries == null)
+                ) emptySummary(date, zone) else immutableSummary(summary)
+            }
         }
 
-    override suspend fun get(date: LocalDate, zone: ZoneId): DailySummary =
-        gateway.readValue(aggregateRead(), { delegate.get(date, zone) }) { value, _ -> immutableSummary(value) }
-            ?: DailySummary(date, zone, 0, 0, 0)
+    override suspend fun get(date: LocalDate, zone: ZoneId): DailySummary {
+        val state = gateway.snapshot.value
+        if (state.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY || !canReadAggregate(state)) {
+            return emptySummary(date, zone)
+        }
+        val visibility = if (isMemoryLocked(state)) EventVisibility.WITHOUT_MEMORY else EventVisibility.ALL
+        val summary = when {
+            visibility != EventVisibility.ALL && visibilityQueries != null ->
+                visibilityQueries.summary(date, zone, visibility)
+            visibility != EventVisibility.ALL -> emptySummary(date, zone)
+            else -> gateway.readValue(aggregateRead(), { delegate.get(date, zone) }) { value, _ -> value }
+                ?: emptySummary(date, zone)
+        }
+        return immutableSummary(summary)
+    }
 
     override suspend fun recalculate(date: LocalDate, zone: ZoneId): DailySummary =
         gateway.commit(LockOperation.UPDATE, LockSection.entries.toSet()) { delegate.recalculate(date, zone) }
+
+    private fun isMemoryLocked(state: com.luma.lifeos.domain.lock.LockSnapshot): Boolean {
+        val policy = state.policy ?: return false
+        return policy.enabled && policy.coverage == LockCoverage.MEMORY_SECTION &&
+            state.decide(LockRequest(LockOperation.READ, setOf(LockSection.MEMORIES))) !=
+            com.luma.lifeos.domain.lock.AccessDecision.Allow
+    }
 
     private fun canReadAggregate(state: com.luma.lifeos.domain.lock.LockSnapshot) =
         state.decide(aggregateRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow
 
     private fun aggregateRead() = LockRequest(
-        LockOperation.READ, LockSection.entries.toSet(), LockContentClassification.CLASSIFIED,
+        LockOperation.READ,
+        LockSection.entries.toSet() - setOf(LockSection.MEMORIES, LockSection.JOURNAL),
+        LockContentClassification.CLASSIFIED,
     )
+
+    private fun emptySummary(date: LocalDate, zone: ZoneId) = DailySummary(date, zone, 0, 0, 0)
 }
 
 class ProtectedWeeklyReviewRepository(
     private val delegate: WeeklyReviewRepository,
     private val gateway: ProtectedContentGateway,
+    private val visibilityQueries: com.luma.lifeos.data.repository.EventVisibilityQueries? = null,
 ) : WeeklyReviewRepository by delegate {
-    override fun observe(period: com.luma.lifeos.domain.review.ReviewPeriod): Flow<WeeklyReview> =
-        combine(delegate.observe(period), gateway.snapshot) { review, state ->
-            if (canReadReview(state)) immutableReview(review) else emptyReview(period)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observe(period: com.luma.lifeos.domain.review.ReviewPeriod): Flow<WeeklyReview> = gateway.snapshot
+        .distinctUntilChangedBy { listOf(it.loadStatus, it.policy, it.sessionGeneration, it.grant) }
+        .flatMapLatest { before ->
+            val source = when {
+                before.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY || !canReadReview(before) ->
+                    flowOf(emptyReview(period))
+                isMemoryLocked(before) -> visibilityQueries?.observeReview(
+                    period, EventVisibility.WITHOUT_MEMORY,
+                ) ?: flowOf(emptyReview(period))
+                else -> delegate.observe(period)
+            }
+            source.map { review ->
+                val after = gateway.snapshot.value
+                if (!gateway.sameAuthorizationEpoch(before, after) || !canReadReview(after) ||
+                    (isMemoryLocked(after) && visibilityQueries == null)
+                ) emptyReview(period) else immutableReview(review)
+            }
         }
 
     override suspend fun sources(
@@ -99,9 +158,23 @@ class ProtectedWeeklyReviewRepository(
     ): SearchPage {
         require(offset >= 0 && limit > 0)
         val before = gateway.snapshot.value
-        val request = aggregateRead()
-        if (before.decide(request) != com.luma.lifeos.domain.lock.AccessDecision.Allow) {
-            return SearchPage(emptyList(), offset, 0)
+        val request = LockRequest(
+            LockOperation.READ,
+            LockSection.entries.toSet() - setOf(LockSection.MEMORIES, LockSection.JOURNAL),
+            LockContentClassification.CLASSIFIED,
+        )
+        if (before.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY ||
+            before.decide(request) != com.luma.lifeos.domain.lock.AccessDecision.Allow
+        ) return SearchPage(emptyList(), offset, 0)
+        if (visibilityQueries != null) {
+            val visibility = if (before.policy?.coverage == com.luma.lifeos.domain.lock.LockCoverage.MEMORY_SECTION &&
+                before.decide(LockRequest(LockOperation.READ, setOf(LockSection.MEMORIES))) !=
+                    com.luma.lifeos.domain.lock.AccessDecision.Allow
+            ) com.luma.lifeos.data.repository.EventVisibility.WITHOUT_MEMORY
+            else com.luma.lifeos.data.repository.EventVisibility.ALL
+            val result = visibilityQueries.reviewSources(dates, zone, metric, offset, limit, visibility)
+            return result.takeIf { gateway.sameAuthorizationEpoch(before, gateway.snapshot.value) }
+                ?: SearchPage(emptyList(), offset, 0)
         }
         val raw = mutableListOf<com.luma.lifeos.domain.model.LifeEventRecord>()
         var rawTotal = Int.MAX_VALUE
@@ -118,11 +191,21 @@ class ProtectedWeeklyReviewRepository(
         return SearchPage(immutableProjectionList(safe.drop(offset).take(limit)), offset, safe.size)
     }
 
+    private fun isMemoryLocked(state: com.luma.lifeos.domain.lock.LockSnapshot): Boolean {
+        val policy = state.policy ?: return false
+        return policy.enabled &&
+            policy.coverage == com.luma.lifeos.domain.lock.LockCoverage.MEMORY_SECTION &&
+            state.decide(LockRequest(LockOperation.READ, setOf(LockSection.MEMORIES))) !=
+            com.luma.lifeos.domain.lock.AccessDecision.Allow
+    }
+
     private fun canReadReview(state: com.luma.lifeos.domain.lock.LockSnapshot) =
         state.decide(aggregateRead()) == com.luma.lifeos.domain.lock.AccessDecision.Allow
 
     private fun aggregateRead() = LockRequest(
-        LockOperation.READ, LockSection.entries.toSet(), LockContentClassification.CLASSIFIED,
+        LockOperation.READ,
+        LockSection.entries.toSet() - setOf(LockSection.MEMORIES, LockSection.JOURNAL),
+        LockContentClassification.CLASSIFIED,
     )
 
     private fun emptyReview(period: com.luma.lifeos.domain.review.ReviewPeriod): WeeklyReview {
@@ -354,8 +437,6 @@ class ProtectedPhotoRepository(
         }
         val sourceOwnerRequest = photoOwnerReadRequest(source.id)
         val outputOwnerRequest = photoOwnerReadRequest(outputId)
-        val required = routeSections + sourceOwnerRequest?.requiredSections.orEmpty() +
-            outputOwnerRequest?.requiredSections.orEmpty()
         val beforeAdmission = gateway.snapshot.value
         if (!allowsPhotoSections(beforeAdmission, routeSections) ||
             (sourceOwnerRequest != null && beforeAdmission.decide(sourceOwnerRequest) != com.luma.lifeos.domain.lock.AccessDecision.Allow) ||

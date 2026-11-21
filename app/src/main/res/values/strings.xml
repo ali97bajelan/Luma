@@ -1785,13 +1785,15 @@
     <string name="app_lock_gate_settings">App lock settings</string>
     <string name="app_lock_reset_requires_auth">Data reset is unavailable while app lock is enabled.</string>
     <string name="app_lock_settings_title">App Lock</string>
-    <string name="app_lock_setup_body">Create an independent Luma password and choose which sections it protects.</string>
+    <string name="app_lock_setup_body">Create an independent Luma password and choose whether it protects the whole app or the Memory section.</string>
     <string name="app_lock_setup_continue">Continue to recovery code</string>
     <string name="app_lock_settings_auth_body">Enter your Luma lock credential to open security settings.</string>
     <string name="app_lock_settings_body">Changes require your password again. Saving them returns Luma to its locked state.</string>
     <string name="app_lock_coverage">Protected content</string>
+    <string name="app_lock_migration_notice">Your previous lock covered selected sections. To keep them protected, coverage was changed to Whole app. You can choose Memory section in these settings.</string>
+    <string name="app_lock_migration_notice_ack">Got it</string>
     <string name="app_lock_coverage_whole">Whole app</string>
-    <string name="app_lock_coverage_selected">Selected sections</string>
+    <string name="app_lock_coverage_memory">Memory section</string>
     <string name="app_lock_section_memories">Memories</string>
     <string name="app_lock_section_journal">Journal</string>
     <string name="app_lock_section_mood">Mood</string>

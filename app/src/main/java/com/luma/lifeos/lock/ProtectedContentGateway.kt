@@ -5,36 +5,69 @@ import com.luma.lifeos.domain.lock.LockAccess
 import com.luma.lifeos.domain.lock.LockContentClassification
 import com.luma.lifeos.domain.lock.LockOperation
 import com.luma.lifeos.domain.lock.LockRequest
+import com.luma.lifeos.domain.lock.LockRecordClassification
 import com.luma.lifeos.domain.lock.LockSection
+import com.luma.lifeos.domain.model.EventType
 import com.luma.lifeos.domain.lock.LockSnapshot
 import com.luma.lifeos.domain.lock.ProtectedRecordClassifier
 import com.luma.lifeos.domain.model.LifeEventRecord
 import com.luma.lifeos.domain.model.EventId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 
 /** The only UI-facing record projection and commit authorization boundary for existing content. */
 class ProtectedContentGateway(
     private val access: LockAccess,
     private val actions: LockActionGuard,
     private val loadRecordForClassification: suspend (EventId) -> LifeEventRecord? = { null },
+    private val loadMetadataForClassification: suspend (EventId) -> LockRecordClassification? = { null },
 ) {
     val snapshot get() = access.snapshot
 
     /** Returns only the section labels needed to gate a route; record content stays inside the facade. */
     suspend fun classifyRecord(id: EventId, includePeopleFields: Boolean = false): Set<LockSection>? =
-        loadRecordForClassification(id)?.let { record ->
-            requiredSections(record, includePeopleFields)
+        recordClassification(id)?.let { classification ->
+            ProtectedRecordClassifier.requiredSections(classification) +
+                if (includePeopleFields) ProtectedRecordClassifier.peopleFieldSections(classification) else emptySet()
         }
 
     /** Classification metadata only; raw record values never leave this gateway. */
     suspend fun requiredSections(id: EventId, includePeopleFields: Boolean = false): Set<LockSection>? =
         classifyRecord(id, includePeopleFields)
 
-    private fun requiredSections(record: LifeEventRecord, includePeopleFields: Boolean): Set<LockSection> =
-        ProtectedRecordClassifier.requiredSections(record) +
-            if (includePeopleFields) ProtectedRecordClassifier.peopleFieldSections(record) else emptySet()
+    private suspend fun recordClassification(id: EventId): LockRecordClassification? =
+        loadMetadataForClassification(id) ?: loadRecordForClassification(id)?.let { record ->
+            LockRecordClassification(
+                type = record.event.type,
+                hasMemoryMarker = record.memory != null,
+                hasPeople = record.people.isNotEmpty(),
+            )
+        }
+
+    /** Create retries are checked against an existing record's actual scope and event kind. */
+    suspend fun <T> commitEditorCreate(
+        id: EventId,
+        expectedType: EventType,
+        newSections: Set<LockSection>,
+        commit: suspend () -> T,
+    ): T = actions.executeResolved(
+        request = {
+            val classification = recordClassification(id)
+            if (classification != null && classification.type != expectedType) {
+                throw LockActionDeniedException(
+                    AccessDecision.Deny(com.luma.lifeos.domain.lock.AccessDenial.UNCLASSIFIED_CONTENT),
+                )
+            }
+            val existingSections = classification?.let(ProtectedRecordClassifier::requiredSections).orEmpty()
+            LockRequest(
+                operation = LockOperation.CREATE_IN_EDITOR,
+                requiredSections = newSections + existingSections,
+                contentClassification = LockContentClassification.CLASSIFIED,
+                objectId = id.toString(),
+            )
+        },
+        commit = commit,
+    )
 
     fun projectRecord(record: LifeEventRecord, state: LockSnapshot = snapshot.value): ProtectedRecordProjection? {
         if (state.loadStatus != com.luma.lifeos.domain.lock.LockLoadStatus.READY) return null

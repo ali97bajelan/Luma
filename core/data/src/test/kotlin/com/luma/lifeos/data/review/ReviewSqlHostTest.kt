@@ -1,5 +1,6 @@
 package com.luma.lifeos.data.review
 
+import com.luma.lifeos.data.repository.EventVisibility
 import com.luma.lifeos.domain.review.*
 import com.luma.lifeos.domain.model.EventSource
 import java.io.File
@@ -17,12 +18,22 @@ class ReviewSqlHostTest {
             id = if (kind in listOf(ReviewMetricKind.EMOTION, ReviewMetricKind.PERSON, ReviewMetricKind.PLACE)) UUID(0, 100) else null,
             activity = if (kind == ReviewMetricKind.ACTIVITY) ReviewActivityKey("steps", "count", EventSource.MANUAL) else null) } +
             ("INJECTION" to ReviewMetric(ReviewMetricKind.ACTIVITY, activity = ReviewActivityKey("steps' OR 1=1 --", "count", EventSource.MANUAL)))
+        val sqlCases = metrics.entries.map { it.key to it.value } + listOf(
+            "LOCKED_ENTRIES" to metrics.getValue("ENTRIES"),
+            "LOCKED_JOURNALS" to metrics.getValue("JOURNALS"),
+            "LOCKED_MEMORIES" to metrics.getValue("MEMORIES"),
+            "LOCKED_MOOD" to metrics.getValue("MOOD"),
+            "LOCKED_ENERGY" to metrics.getValue("ENERGY"),
+            "LOCKED_STRESS" to metrics.getValue("STRESS"),
+            "LOCKED_PERSON" to metrics.getValue("PERSON"),
+        )
         val file = File.createTempFile("luma-review-sql-", ".tsv")
         val runner = File.createTempFile("luma-review-check-", ".py")
         fun encode(s: String) = Base64.getEncoder().encodeToString(s.toByteArray())
         try {
-            file.writeText(metrics.entries.joinToString("\n") { (name, metric) ->
-                val sql = ReviewSql(dates, ZoneId.of("UTC"), metric)
+            file.writeText(sqlCases.joinToString("\n") { (name, metric) ->
+                val visibility = if (name.startsWith("LOCKED_")) EventVisibility.WITHOUT_MEMORY else EventVisibility.ALL
+                val sql = ReviewSql(dates, ZoneId.of("UTC"), metric, visibility)
                 listOf(name, encode(sql.countSql), encode(sql.pageSql), sql.arguments.joinToString(",") {
                     if (it is Number) "n$it" else "s${encode(it.toString())}"
                 }).joinToString("\t")

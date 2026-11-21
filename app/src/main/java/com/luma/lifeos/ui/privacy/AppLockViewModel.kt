@@ -58,6 +58,9 @@ class AppLockViewModel(
     suspend fun updatePolicy(proof: OperationProof, policy: LockPolicy) =
         credentials.updatePolicy(proof, policy)
 
+    suspend fun acknowledgeMigrationNotice(expectedGeneration: Long) =
+        credentials.acknowledgeMigrationNotice(expectedGeneration)
+
     suspend fun disable(proof: OperationProof) = credentials.disable(proof)
 
     suspend fun prepareRecovery(): RecoveryPreparation = credentials.prepareRecovery()

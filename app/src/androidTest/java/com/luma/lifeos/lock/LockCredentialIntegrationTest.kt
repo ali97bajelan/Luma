@@ -54,14 +54,14 @@ class LockCredentialIntegrationTest {
         val tooShort = "aaaaaaa".toCharArray()
         val tooLong = "a".repeat(129).toCharArray()
 
-        assertEquals(CredentialResult.InvalidInput, service.enable(tooShort, policy, confirmation))
+        assertEquals(CredentialResult.InvalidInput, service.enable(tooShort, LockCredentialType.PASSWORD, policy, confirmation))
         assertArrayEquals(CharArray(tooShort.size), tooShort)
         assertEquals(null, backingStore.read())
-        assertEquals(CredentialResult.InvalidInput, service.enable(tooLong, policy, confirmation))
+        assertEquals(CredentialResult.InvalidInput, service.enable(tooLong, LockCredentialType.PASSWORD, policy, confirmation))
         assertEquals(null, backingStore.read())
 
         val password = "a".repeat(128).toCharArray()
-        assertEquals(CredentialResult.Success(), service.enable(password, policy, confirmation))
+        assertEquals(CredentialResult.Success(), service.enable(password, LockCredentialType.PASSWORD, policy, confirmation))
         assertArrayEquals(CharArray(password.size), password)
         assertTrue(service.verify("a".repeat(128).toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
 
@@ -74,7 +74,7 @@ class LockCredentialIntegrationTest {
         val (confirmation, recoveryCode) = confirmedRecovery(service)
         val emojiPassword = "🔒🔒🔒🔒🔒🔒🔒🔒".toCharArray()
 
-        assertEquals(CredentialResult.Success(), service.enable(emojiPassword, selectedPolicy(), confirmation))
+        assertEquals(CredentialResult.Success(), service.enable(emojiPassword, LockCredentialType.PASSWORD, selectedPolicy(), confirmation))
         assertTrue(service.verify("🔒🔒🔒🔒🔒🔒🔒🔒".toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
         assertEquals(CredentialResult.InvalidInput, service.verify("🔒🔒🔒🔒🔒🔒🔒".toCharArray(), AuthPurpose.BROWSE))
 
@@ -87,7 +87,7 @@ class LockCredentialIntegrationTest {
         val (confirmation, recoveryCode) = confirmedRecovery(service)
         val password = "  éééééééé  ".toCharArray()
 
-        assertEquals(CredentialResult.Success(), service.enable(password, selectedPolicy(), confirmation))
+        assertEquals(CredentialResult.Success(), service.enable(password, LockCredentialType.PASSWORD, selectedPolicy(), confirmation))
         assertTrue(service.verify("  éééééééé  ".toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
         assertEquals(CredentialResult.Incorrect, service.verify("éééééééé".toCharArray(), AuthPurpose.BROWSE))
         assertEquals(CredentialResult.Incorrect, service.verify("  éééééééé  ".toCharArray(), AuthPurpose.BROWSE))
@@ -109,7 +109,7 @@ class LockCredentialIntegrationTest {
         lockDirectory.writeBytes(byteArrayOf(1)) // A regular file makes the app_lock directory unavailable.
         val password = "Luma QA pass 31".toCharArray()
 
-        assertEquals(CredentialResult.Unavailable, service.enable(password, selectedPolicy(), confirmation))
+        assertEquals(CredentialResult.Unavailable, service.enable(password, LockCredentialType.PASSWORD, selectedPolicy(), confirmation))
         assertArrayEquals(CharArray(password.size), password)
         assertFalse(crypto.hasKey())
         assertEquals(null, backingStore.read())
@@ -121,7 +121,7 @@ class LockCredentialIntegrationTest {
     fun sharedCooldownPersistsAcrossServiceRecreationAndBootChange() = runBlocking {
         val service = newService()
         val (confirmation, recoveryCode) = confirmedRecovery(service)
-        assertEquals(CredentialResult.Success(), service.enable("Luma QA pass 31".toCharArray(), selectedPolicy(), confirmation))
+        assertEquals(CredentialResult.Success(), service.enable("Luma QA pass 31".toCharArray(), LockCredentialType.PASSWORD, selectedPolicy(), confirmation))
         val (retryConfirmation, retryCode) = confirmedRecovery(service)
 
         repeat(4) {
@@ -129,7 +129,7 @@ class LockCredentialIntegrationTest {
         }
         assertEquals(
             CredentialResult.Cooldown(30_000L),
-            service.recover("AAAAA-AAAAA-AAAAA-AAAAA-AAAAAA".toCharArray(), "New Luma QA pass 31".toCharArray(), retryConfirmation),
+            service.recover("AAAAA-AAAAA-AAAAA-AAAAA-AAAAAA".toCharArray(), "New Luma QA pass 31".toCharArray(), LockCredentialType.PASSWORD, retryConfirmation),
         )
         assertEquals(5L, backingStore.read()!!.failedAttempts)
 
@@ -150,6 +150,7 @@ class LockCredentialIntegrationTest {
                 restartedService.recover(
                     "AAAAA-AAAAA-AAAAA-AAAAA-AAAAAA".toCharArray(),
                     "New Luma QA pass 31".toCharArray(),
+                    LockCredentialType.PASSWORD,
                     restartedRetryConfirmation,
                 )
             } else {
@@ -174,26 +175,26 @@ class LockCredentialIntegrationTest {
         val faultingStore = FaultingStore(backingStore).also { store = it }
         val service = newService()
         val (setupConfirmation, oldRecoveryCode) = confirmedRecovery(service)
-        assertEquals(CredentialResult.Success(), service.enable("Luma QA pass 31".toCharArray(), selectedPolicy(), setupConfirmation))
+        assertEquals(CredentialResult.Success(), service.enable("Luma QA pass 31".toCharArray(), LockCredentialType.PASSWORD, selectedPolicy(), setupConfirmation))
         val (replacementConfirmation, replacementRecoveryCode) = confirmedRecovery(service)
 
         assertEquals(
             CredentialResult.Incorrect,
-            service.recover("AAAAA-AAAAA-AAAAA-AAAAA-AAAAAA".toCharArray(), "New Luma QA pass 31".toCharArray(), replacementConfirmation),
+            service.recover("AAAAA-AAAAA-AAAAA-AAAAA-AAAAAA".toCharArray(), "New Luma QA pass 31".toCharArray(), LockCredentialType.PASSWORD, replacementConfirmation),
         )
         assertTrue(service.verify("Luma QA pass 31".toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
 
         faultingStore.failNextWrite = true
         assertEquals(
             CredentialResult.Unavailable,
-            service.recover(oldRecoveryCode.copyOf(), "New Luma QA pass 31".toCharArray(), replacementConfirmation),
+            service.recover(oldRecoveryCode.copyOf(), "New Luma QA pass 31".toCharArray(), LockCredentialType.PASSWORD, replacementConfirmation),
         )
         assertTrue(service.verify("Luma QA pass 31".toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
         assertEquals(CredentialResult.Incorrect, service.verify("New Luma QA pass 31".toCharArray(), AuthPurpose.BROWSE))
 
         assertEquals(
             CredentialResult.Success(),
-            service.recover(oldRecoveryCode.copyOf(), "New Luma QA pass 31".toCharArray(), replacementConfirmation),
+            service.recover(oldRecoveryCode.copyOf(), "New Luma QA pass 31".toCharArray(), LockCredentialType.PASSWORD, replacementConfirmation),
         )
         assertEquals(CredentialResult.Incorrect, service.verify("Luma QA pass 31".toCharArray(), AuthPurpose.BROWSE))
         assertTrue(service.verify("New Luma QA pass 31".toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
@@ -201,12 +202,12 @@ class LockCredentialIntegrationTest {
         val (nextConfirmation, nextRecoveryCode) = confirmedRecovery(service)
         assertEquals(
             CredentialResult.Incorrect,
-            service.recover(oldRecoveryCode.copyOf(), "Another Luma QA pass".toCharArray(), nextConfirmation),
+            service.recover(oldRecoveryCode.copyOf(), "Another Luma QA pass".toCharArray(), LockCredentialType.PASSWORD, nextConfirmation),
         )
         assertTrue(service.verify("New Luma QA pass 31".toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
         assertEquals(
             CredentialResult.Success(),
-            service.recover(replacementRecoveryCode.copyOf(), "Another Luma QA pass".toCharArray(), nextConfirmation),
+            service.recover(replacementRecoveryCode.copyOf(), "Another Luma QA pass".toCharArray(), LockCredentialType.PASSWORD, nextConfirmation),
         )
         assertEquals(CredentialResult.Incorrect, service.verify("New Luma QA pass 31".toCharArray(), AuthPurpose.BROWSE))
         assertTrue(service.verify("Another Luma QA pass".toCharArray(), AuthPurpose.BROWSE) is CredentialResult.Success)
@@ -217,10 +218,56 @@ class LockCredentialIntegrationTest {
     }
 
     @Test
+    fun migrationNoticeSurvivesCredentialWriteAndAcknowledgementDoesNotChangeGeneration() = runBlocking {
+        val service = newService()
+        val (confirmation, recoveryCode) = confirmedRecovery(service)
+        assertEquals(
+            CredentialResult.Success(),
+            service.enable(
+                "Luma QA pass 31".toCharArray(),
+                LockCredentialType.PASSWORD,
+                selectedPolicy(),
+                confirmation,
+            ),
+        )
+        val enabled = backingStore.read()!!
+        backingStore.writeAtomically(
+            enabled.copy(policy = enabled.policy.copy(migrationNoticePending = true)),
+        )
+
+        val verification = service.verify(
+            "Luma QA pass 31".toCharArray(),
+            AuthPurpose.CHANGE_PASSWORD,
+        ) as CredentialResult.Success
+        val operationId = java.util.UUID.randomUUID()
+        assertTrue(verification.proof!!.bindPendingOperation(operationId, enabled.policy.generation))
+        assertTrue(verification.proof.validatePendingOperation(operationId, enabled.policy.generation))
+        assertEquals(
+            CredentialResult.Success(),
+            service.changePassword(
+                verification.proof,
+                "Luma QA pass 32".toCharArray(),
+                LockCredentialType.PASSWORD,
+            ),
+        )
+        val afterCredentialWrite = backingStore.read()!!
+        assertTrue(afterCredentialWrite.policy.migrationNoticePending)
+
+        assertEquals(
+            CredentialResult.Success(),
+            service.acknowledgeMigrationNotice(afterCredentialWrite.policy.generation),
+        )
+        val afterAcknowledgement = backingStore.read()!!
+        assertFalse(afterAcknowledgement.policy.migrationNoticePending)
+        assertEquals(afterCredentialWrite.policy.generation, afterAcknowledgement.policy.generation)
+        recoveryCode.fill('\u0000')
+    }
+
+    @Test
     fun validatedSettingsProofChangesPolicyAndInvalidatesItsOldGeneration() = runBlocking {
         val service = newService()
         val (confirmation, recoveryCode) = confirmedRecovery(service)
-        assertEquals(CredentialResult.Success(), service.enable("Luma QA pass 31".toCharArray(), selectedPolicy(), confirmation))
+        assertEquals(CredentialResult.Success(), service.enable("Luma QA pass 31".toCharArray(), LockCredentialType.PASSWORD, selectedPolicy(), confirmation))
         val oldPolicy = backingStore.read()!!.policy
         val verification = service.verify("Luma QA pass 31".toCharArray(), AuthPurpose.CHANGE_POLICY) as CredentialResult.Success
         val operationId = java.util.UUID.randomUUID()
@@ -231,18 +278,26 @@ class LockCredentialIntegrationTest {
             CredentialResult.Success(),
             service.updatePolicy(
                 verification.proof,
-                oldPolicy.copy(sections = setOf(LockSection.MEMORIES, LockSection.JOURNAL)),
+                oldPolicy.copy(coverage = LockCoverage.WHOLE_APP),
             ),
         )
         assertEquals(oldPolicy.generation + 1L, backingStore.read()!!.policy.generation)
-        assertEquals(setOf(LockSection.MEMORIES, LockSection.JOURNAL), backingStore.read()!!.policy.sections)
+        assertEquals(LockCoverage.WHOLE_APP, backingStore.read()!!.policy.coverage)
+        assertEquals(emptySet<LockSection>(), backingStore.read()!!.policy.sections)
         assertEquals(
             CredentialResult.Cancelled,
-            service.updatePolicy(
-                verification.proof,
-                oldPolicy.copy(sections = setOf(LockSection.MEMORIES)),
-            ),
+            service.updatePolicy(verification.proof, oldPolicy.copy(coverage = LockCoverage.MEMORY_SECTION)),
         )
+
+        val nextVerification = service.verify(
+            "Luma QA pass 31".toCharArray(), AuthPurpose.CHANGE_POLICY,
+        ) as CredentialResult.Success
+        assertEquals(
+            CredentialResult.Success(),
+            service.updatePolicy(nextVerification.proof!!, oldPolicy.copy(coverage = LockCoverage.MEMORY_SECTION)),
+        )
+        assertEquals(LockCoverage.MEMORY_SECTION, backingStore.read()!!.policy.coverage)
+        assertEquals(setOf(LockSection.MEMORIES), backingStore.read()!!.policy.sections)
 
         recoveryCode.fill('\u0000')
     }
@@ -251,7 +306,7 @@ class LockCredentialIntegrationTest {
         store = store,
         crypto = crypto,
         clock = clock,
-        onSecurityStateChanged = {},
+        onSecurityStateChanged = { _, _ -> },
     )
 
     private suspend fun confirmedRecovery(service: LockCredentialService): Pair<RecoveryConfirmation, CharArray> {
@@ -263,8 +318,7 @@ class LockCredentialIntegrationTest {
 
     private fun selectedPolicy() = LockPolicy(
         enabled = true,
-        coverage = LockCoverage.SELECTED,
-        sections = setOf(LockSection.MEMORIES),
+        coverage = LockCoverage.MEMORY_SECTION,
         relockMode = RelockMode.AFTER_5_MINUTES,
     )
 
