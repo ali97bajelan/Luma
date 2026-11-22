@@ -54,6 +54,13 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
         if (!state.value.busy) mutable.value = BackupUiState(message = BackupMessage.PICKER_UNAVAILABLE)
     }
 
+    fun exportCouldNotStart() {
+        if (!state.value.busy) {
+            discardOutput = null
+            mutable.value = BackupUiState(message = BackupMessage.EXPORT_FAILED)
+        }
+    }
+
     fun export(open: () -> OutputStream) = export(open, discardOutput = { false }, focusChoice = null)
 
     fun export(
@@ -61,15 +68,34 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
         discardOutput: suspend () -> Boolean,
         focusChoice: BackupFocusExportChoice? = null,
         authorize: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
+    ) = launchExport(open, discardOutput, focusChoice, null, authorize)
+
+    fun exportEncrypted(
+        open: () -> OutputStream,
+        discardOutput: suspend () -> Boolean,
+        focusChoice: BackupFocusExportChoice?,
+        encryption: BackupEncryptionOptions,
+        authorize: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
+    ) = launchExport(open, discardOutput, focusChoice, encryption, authorize)
+
+    private fun launchExport(
+        open: () -> OutputStream,
+        discardOutput: suspend () -> Boolean,
+        focusChoice: BackupFocusExportChoice?,
+        encryption: BackupEncryptionOptions?,
+        authorize: suspend (suspend () -> Unit) -> Unit,
     ) {
-        if (state.value.busy || prepared != null) return
+        if (state.value.busy || prepared != null) {
+            encryption?.close()
+            return
+        }
         this.discardOutput = discardOutput
         exportCompletedSuccessfully = false
         launchOperation(BackupOperation.EXPORTING) {
             try {
                 authorize {
                     withContext(io) {
-                        open().use { service.export(it, focusChoice) }
+                        open().use { service.export(it, focusChoice, encryption) }
                         exportCompletedSuccessfully = true
                     }
                 }
@@ -79,6 +105,8 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
                 if (failure is CancellationException) throw failure
                 mutable.value = BackupUiState(busy = true, message = BackupMessage.EXPORT_FAILED,
                     operation = BackupOperation.EXPORTING)
+            } finally {
+                encryption?.close()
             }
         }
     }
@@ -86,12 +114,31 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
     fun prepare(
         open: () -> InputStream,
         authorize: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
+    ) = launchPrepare(open, null, authorize)
+
+    fun prepareEncrypted(
+        open: () -> InputStream,
+        encryption: BackupEncryptionOptions,
+        authorize: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
+    ) = launchPrepare(open, encryption, authorize)
+
+    private fun launchPrepare(
+        open: () -> InputStream,
+        encryption: BackupEncryptionOptions?,
+        authorize: suspend (suspend () -> Unit) -> Unit,
     ) {
-        if (state.value.busy || prepared != null) return
+        if (state.value.busy || prepared != null) {
+            encryption?.close()
+            return
+        }
         launchOperation(BackupOperation.PREPARING) {
             var candidate: PreparedBackup? = null
             try {
-                authorize { withContext(io) { candidate = open().use { service.prepare(it) } } }
+                authorize {
+                    withContext(io) {
+                        candidate = open().use { service.prepare(it, encryption) }
+                    }
+                }
                 prepared = requireNotNull(candidate)
                 mutable.value = BackupUiState(busy = true, preview = prepared!!.preview,
                     operation = BackupOperation.PREPARING)
@@ -100,6 +147,8 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
                 if (failure is CancellationException) throw failure
                 mutable.value = BackupUiState(busy = true, message = BackupMessage.INVALID_BACKUP,
                     operation = BackupOperation.PREPARING)
+            } finally {
+                encryption?.close()
             }
         }
     }
@@ -220,9 +269,13 @@ class BackupViewModel(private val service: BackupService, private val io: Corout
             BackupMessage.EXPORTED -> BackupDeparture(BackupOperation.EXPORTING, BackupLeaveResult.COMPLETED)
             BackupMessage.RESTORED -> BackupDeparture(BackupOperation.RESTORING, BackupLeaveResult.COMPLETED)
             BackupMessage.EXPORT_FAILED -> {
-                val removed = discardIncompleteOutput()
-                BackupDeparture(BackupOperation.EXPORTING,
-                    if (removed) BackupLeaveResult.FAILED_CLEAN else BackupLeaveResult.FAILED_OUTPUT_MAY_REMAIN)
+                if (discardOutput == null) {
+                    BackupDeparture(BackupOperation.EXPORTING, BackupLeaveResult.FAILED_CLEAN)
+                } else {
+                    val removed = discardIncompleteOutput()
+                    BackupDeparture(BackupOperation.EXPORTING,
+                        if (removed) BackupLeaveResult.FAILED_CLEAN else BackupLeaveResult.FAILED_OUTPUT_MAY_REMAIN)
+                }
             }
             BackupMessage.INVALID_BACKUP -> BackupDeparture(BackupOperation.PREPARING, BackupLeaveResult.FAILED_CLEAN)
             BackupMessage.RESTORE_FAILED -> BackupDeparture(BackupOperation.RESTORING, BackupLeaveResult.FAILED_CLEAN)

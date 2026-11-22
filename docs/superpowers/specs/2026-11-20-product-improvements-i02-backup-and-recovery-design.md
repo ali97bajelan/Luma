@@ -1,14 +1,14 @@
 # IP-I02 — Backup and recovery specification
 
-**Priority** P1 · **Horizon** Now disclosure → Next encrypted archive · **Status** PENDING
+**Priority** P1 · **Horizon** Now disclosure → Next encrypted archive · **Status** SOURCE COMPLETE — QA PENDING
 
 [Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [Proposal](../../20261118-Proposal.md) · [Implementation plan](../plans/2026-11-20-product-improvements-i02-backup-and-recovery.md) · [Final emulator QA](../plans/2026-11-20-product-improvements-q01-emulator-qa.md#qa-02)
 
-## Intent and current behavior
+## Intent and baseline before IP-I02
 
 Make the consequences of export, restore and forgotten lock credentials clear, and provide a portable encrypted archive choice.
 
-The existing BackupService exports a plain ZIP, validates it before producing PreparedBackup, and separates preview from replacement. BackupSettingsCard already handles sensitive-action gates and paused-Focus choices. IP-I02 is the implementation owner for the existing [F05 encrypted archive design](2026-10-26-roadmap-05-encrypted-backups.md). Its applicable verification requirements roll into IP-Q01. Treat app/source behavior and the current portable archive contract as the compatibility baseline.
+Before IP-I02, BackupService exported a plain ZIP, validated it before producing PreparedBackup, and separated preview from replacement. BackupSettingsCard already handled sensitive-action gates and paused-Focus choices. IP-I02 is the implementation owner for the existing [F05 encrypted archive design](2026-10-26-roadmap-05-encrypted-backups.md). Its applicable verification requirements roll into IP-Q01. Treat app/source behavior and the current portable archive contract as the compatibility baseline.
 
 ## Scope
 
@@ -25,7 +25,7 @@ Out of scope. This task excludes accounts, synchronization, escrow, automatic up
 
 ## Implementation approach
 
-A compatible authenticated outer envelope preserves existing archive validation, staging and migration logic. Disclosure-only is the first shippable slice and leaves encrypted portability outstanding. Freeze one maintained streaming AEAD format in BACKUP_FORMAT.md under the existing F05 requirements before integrating the codec.
+The two ordered slices are implemented: clear export, restore and recovery disclosure, followed by a compatible authenticated outer envelope that preserves existing archive validation, staging and migration logic. The frozen LUMAENC v1 streaming-AEAD contract is documented in BACKUP_FORMAT.md. Runtime and interoperability acceptance remain owned by IP-Q01.before integrating the codec.
 
 ## Acceptance
 

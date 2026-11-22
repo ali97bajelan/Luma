@@ -23,7 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.luma.lifeos.ui.common.LumaOutlinedTextField
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -31,6 +36,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavBackStackEntry
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.backup.BackupService
+import com.luma.lifeos.domain.backup.BackupArchiveFormat
+import com.luma.lifeos.domain.backup.BackupEncryptionOptions
+import com.luma.lifeos.domain.backup.BackupFormatMarker
 import com.luma.lifeos.domain.backup.BackupFocusExportChoice
 import com.luma.lifeos.domain.focus.FocusSession
 import com.luma.lifeos.domain.focus.FocusState
@@ -52,7 +60,9 @@ import java.time.format.FormatStyle
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 const val BACKUP_DEPARTURE_FEEDBACK_KEY = "backup_departure_feedback"
 internal object BackupDepartureSession { val id: String = UUID.randomUUID().toString() }
@@ -92,45 +102,156 @@ fun BackupSettingsCard(
     var restorePreparationAuthorization by remember { mutableStateOf<BackupSensitiveAuthorization?>(null) }
     var showRestoreProtectionChoice by remember { mutableStateOf(false) }
     var restoreWithoutProtectionConfirmed by remember { mutableStateOf<Boolean?>(null) }
+    var showExportFormatChoice by remember { mutableStateOf(false) }
+    var showExportPasswordDialog by remember { mutableStateOf(false) }
+    var showRestorePasswordDialog by remember { mutableStateOf(false) }
+    var formatDetectionInProgress by remember { mutableStateOf(false) }
+    var exportPassword by remember { mutableStateOf("") }
+    var exportPasswordConfirmation by remember { mutableStateOf("") }
+    var restorePassword by remember { mutableStateOf("") }
+    var exportPasswordVisible by remember { mutableStateOf(false) }
+    var restorePasswordVisible by remember { mutableStateOf(false) }
+    var pendingExportFormat by remember { mutableStateOf<BackupArchiveFormat?>(null) }
+    var pendingExportPassword by remember { mutableStateOf<CharArray?>(null) }
+    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingRestoreAuthorization by remember { mutableStateOf<BackupSensitiveAuthorization?>(null) }
+
+    fun clearPendingExportPassword() {
+        pendingExportPassword?.fill(Char.MIN_VALUE)
+        pendingExportPassword = null
+    }
+
+    fun clearExportPasswordFields() {
+        exportPassword = ""
+        exportPasswordConfirmation = ""
+        exportPasswordVisible = false
+    }
+
+    fun clearRestorePasswordFields() {
+        restorePassword = ""
+        restorePasswordVisible = false
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            pendingExportPassword?.fill(Char.MIN_VALUE)
+            pendingExportPassword = null
+            exportPassword = ""
+            exportPasswordConfirmation = ""
+            restorePassword = ""
+            exportAuthorization?.let { lockGuard?.cancel(it.pending) }
+            restorePreparationAuthorization?.let { lockGuard?.cancel(it.pending) }
+            pendingRestoreAuthorization?.let { lockGuard?.cancel(it.pending) }
+            pendingSensitive?.let { lockGuard?.cancel(it) }
+        }
+    }
 
     LaunchedEffect(state.operation) {
         if (state.operation != BackupOperation.RESTORING) showRestoreInProgress = false
     }
 
-    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
-        if (uri != null) {
-            val authorization = exportAuthorization
-            exportAuthorization = null
-            vm.export(
-                open = { requireNotNull(resolver.openOutputStream(uri, "wt")) },
-                discardOutput = { discardCreatedDocument(resolver, uri) },
-                focusChoice = pendingExportChoice,
-                authorize = authorization.authorizer(lockGuard, AuthPurpose.EXPORT),
-            )
-        } else {
-            exportAuthorization?.let { authorization -> lockGuard?.cancel(authorization.pending) }
-            exportAuthorization = null
+    fun finishExportDocument(uri: Uri?) {
+        val authorization = exportAuthorization
+        exportAuthorization = null
+        val format = pendingExportFormat
+        pendingExportFormat = null
+        if (uri == null || format == null) {
+            pendingExportChoice = null
+            clearPendingExportPassword()
+            clearExportPasswordFields()
+            authorization?.let { lockGuard?.cancel(it.pending) }
+            return
         }
+
+        val focusChoice = pendingExportChoice
+        pendingExportChoice = null
+        val open = { requireNotNull(resolver.openOutputStream(uri, "wt")) }
+        val discard: suspend () -> Boolean = { discardCreatedDocument(resolver, uri) }
+        when (format) {
+            BackupArchiveFormat.PLAINTEXT_ZIP -> {
+                clearPendingExportPassword()
+                vm.export(
+                    open = open,
+                    discardOutput = discard,
+                    focusChoice = focusChoice,
+                    authorize = authorization.authorizer(lockGuard, AuthPurpose.EXPORT),
+                )
+            }
+            BackupArchiveFormat.ENCRYPTED -> {
+                val password = pendingExportPassword
+                pendingExportPassword = null
+                if (password == null) {
+                    vm.exportCouldNotStart()
+                    authorization?.let { lockGuard?.cancel(it.pending) }
+                } else {
+                    vm.exportEncrypted(
+                        open = open,
+                        discardOutput = discard,
+                        focusChoice = focusChoice,
+                        encryption = BackupEncryptionOptions(password),
+                        authorize = authorization.authorizer(lockGuard, AuthPurpose.EXPORT),
+                    )
+                }
+            }
+        }
+        clearExportPasswordFields()
     }
-    val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+
+    fun finishRestoreDocument(uri: Uri?) {
         val authorization = restorePreparationAuthorization
         restorePreparationAuthorization = null
-        if (uri != null) {
-            vm.prepare(
-                open = { requireNotNull(resolver.openInputStream(uri)) },
-                authorize = authorization.authorizer(lockGuard, AuthPurpose.RESTORE),
-            )
-        } else {
+        if (uri == null) {
             authorization?.let { lockGuard?.cancel(it.pending) }
+            return
+        }
+        pendingRestoreAuthorization = authorization
+        formatDetectionInProgress = true
+        scope.launch {
+            val encrypted = try {
+                withContext(Dispatchers.IO) { isEncryptedBackup(resolver, uri) }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                false
+            }
+            formatDetectionInProgress = false
+            if (encrypted) {
+                pendingRestoreUri = uri
+                showRestorePasswordDialog = true
+            } else {
+                pendingRestoreAuthorization = null
+                vm.prepare(
+                    open = { requireNotNull(resolver.openInputStream(uri)) },
+                    authorize = authorization.authorizer(lockGuard, AuthPurpose.RESTORE),
+                )
+            }
         }
     }
 
-    val launchExportPicker: (BackupFocusExportChoice?) -> Unit = { focusChoice ->
+    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) {
+        finishExportDocument(it)
+    }
+    val encryptedExport = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(BackupFormatMarker.ENCRYPTED_MIME_TYPE),
+    ) { finishExportDocument(it) }
+    val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
+        finishRestoreDocument(it)
+    }
+
+    val launchExportPicker: (BackupFocusExportChoice?, BackupArchiveFormat) -> Unit = { focusChoice, format ->
         try {
             focusActionFailed = false
             pendingExportChoice = focusChoice
-            export.launch("Luma-${LocalDate.now()}.zip")
+            pendingExportFormat = format
+            when (format) {
+                BackupArchiveFormat.PLAINTEXT_ZIP -> export.launch("Luma-${LocalDate.now()}.zip")
+                BackupArchiveFormat.ENCRYPTED -> encryptedExport.launch(
+                    "Luma-${LocalDate.now()}.${BackupFormatMarker.ENCRYPTED_FILE_EXTENSION}",
+                )
+            }
         } catch (_: ActivityNotFoundException) {
+            clearPendingExportPassword()
+            pendingExportFormat = null
+            pendingExportChoice = null
             exportAuthorization?.let { authorization -> lockGuard?.cancel(authorization.pending) }
             exportAuthorization = null
             vm.pickerUnavailable()
@@ -140,7 +261,12 @@ fun BackupSettingsCard(
     val launchRestorePicker: (BackupSensitiveAuthorization?) -> Unit = { authorization ->
         try {
             restorePreparationAuthorization = authorization
-            restore.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed"))
+            restore.launch(arrayOf(
+                "application/zip",
+                "application/octet-stream",
+                "application/x-zip-compressed",
+                BackupFormatMarker.ENCRYPTED_MIME_TYPE,
+            ))
         } catch (_: ActivityNotFoundException) {
             restorePreparationAuthorization = null
             authorization?.let { lockGuard?.cancel(it.pending) }
@@ -203,9 +329,19 @@ fun BackupSettingsCard(
                         null -> true
                     }
                     if (ready) {
-                        exportAuthorization = authorization
-                        launchExportPicker(focusChoice)
+                        val format = pendingExportFormat
+                        if (format != null && (format != BackupArchiveFormat.ENCRYPTED || pendingExportPassword != null)) {
+                            exportAuthorization = authorization
+                            launchExportPicker(focusChoice, format)
+                        } else {
+                            clearPendingExportPassword()
+                            pendingExportFormat = null
+                            authorization?.let { lockGuard?.cancel(it.pending) }
+                            sensitiveError = true
+                        }
                     } else {
+                        clearPendingExportPassword()
+                        pendingExportFormat = null
                         authorization?.let { lockGuard?.cancel(it.pending) }
                         focusActionFailed = true
                     }
@@ -219,7 +355,14 @@ fun BackupSettingsCard(
     val requestSensitiveStep: (BackupSensitiveStep) -> Unit = { step ->
         if (lockGuard?.requiresAuthentication() == true) {
             val pending = lockGuard.begin(step.purpose)
-            if (pending == null) sensitiveError = true else {
+            if (pending == null) {
+                if (step is BackupSensitiveStep.ExportPicker) {
+                    clearPendingExportPassword()
+                    pendingExportFormat = null
+                    pendingExportChoice = null
+                }
+                sensitiveError = true
+            } else {
                 pendingSensitive = pending
                 pendingSensitiveStep = step
                 showSensitivePrompt = true
@@ -228,11 +371,21 @@ fun BackupSettingsCard(
         } else dispatchSensitiveStep(step, null)
     }
 
+    val startExport: (BackupArchiveFormat) -> Unit = { format ->
+        pendingExportFormat = format
+        if (format == BackupArchiveFormat.PLAINTEXT_ZIP) clearPendingExportPassword()
+        requestSensitiveStep(BackupSensitiveStep.ExportPicker(pendingExportChoice))
+    }
+
     val requestExport: () -> Unit = {
+        pendingExportChoice = null
         when (openFocusSession?.state) {
             FocusState.PAUSED -> showPausedExportDisclosure = true
             FocusState.RUNNING -> focusActionFailed = true
-            else -> requestSensitiveStep(BackupSensitiveStep.ExportPicker(null))
+            else -> {
+                pendingExportChoice = null
+                showExportFormatChoice = true
+            }
         }
     }
 
@@ -280,6 +433,7 @@ fun BackupSettingsCard(
             focusActionFailed = focusActionFailed,
             showRestoreConfirmation = leavePromptFor == null && !showRestoreInProgress,
             restoreActionInProgress = restoreActionInProgress,
+            formatDetectionInProgress = formatDetectionInProgress,
             onExport = requestExport,
             onRestore = { requestSensitiveStep(BackupSensitiveStep.RestorePicker) },
             onConfirmRestore = confirmRestore,
@@ -290,7 +444,10 @@ fun BackupSettingsCard(
     if (showPausedExportDisclosure) {
         val currentSessionIsPaused = openFocusSession?.state == FocusState.PAUSED
         LumaAlertDialog(
-            onDismissRequest = { showPausedExportDisclosure = false },
+            onDismissRequest = {
+                showPausedExportDisclosure = false
+                pendingExportChoice = null
+            },
             title = { Text(stringResource(R.string.backup_paused_focus_title)) },
             text = { Text(stringResource(R.string.backup_paused_focus_message)) },
             confirmButton = {
@@ -298,9 +455,10 @@ fun BackupSettingsCard(
                     LumaTextButton(
                         onClick = {
                             showPausedExportDisclosure = false
-                            if (currentSessionIsPaused) requestSensitiveStep(
-                                BackupSensitiveStep.ExportPicker(BackupFocusExportChoice.STOPPED_AND_INCLUDE),
-                            ) else focusActionFailed = true
+                            if (currentSessionIsPaused) {
+                                pendingExportChoice = BackupFocusExportChoice.STOPPED_AND_INCLUDE
+                                showExportFormatChoice = true
+                            } else focusActionFailed = true
                         },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("backup_stop_focus_export"),
                     ) { Text(stringResource(R.string.backup_stop_focus_export)) }
@@ -308,9 +466,10 @@ fun BackupSettingsCard(
                         onClick = {
                             showPausedExportDisclosure = false
                             val sessionId = openFocusSession?.id
-                            if (currentSessionIsPaused && sessionId != null) requestSensitiveStep(
-                                BackupSensitiveStep.ExportPicker(BackupFocusExportChoice.EXCLUDE_PAUSED(sessionId)),
-                            ) else focusActionFailed = true
+                            if (currentSessionIsPaused && sessionId != null) {
+                                pendingExportChoice = BackupFocusExportChoice.EXCLUDE_PAUSED(sessionId)
+                                showExportFormatChoice = true
+                            } else focusActionFailed = true
                         },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("backup_exclude_paused_focus"),
                     ) { Text(stringResource(R.string.backup_exclude_paused_focus)) }
@@ -319,6 +478,212 @@ fun BackupSettingsCard(
                         Text(stringResource(R.string.cancel))
                     }
                 }
+            },
+        )
+    }
+
+    if (showExportFormatChoice) {
+        LumaAlertDialog(
+            onDismissRequest = {
+                showExportFormatChoice = false
+                pendingExportChoice = null
+            },
+            title = { Text(stringResource(R.string.backup_format_title)) },
+            text = { Text(stringResource(R.string.backup_format_message)) },
+            confirmButton = {
+                Column {
+                    LumaTextButton(
+                        onClick = {
+                            showExportFormatChoice = false
+                            showExportPasswordDialog = true
+                        },
+                        modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight)
+                            .testTag("backup_export_encrypted"),
+                    ) { Text(stringResource(R.string.backup_format_encrypted)) }
+                    LumaTextButton(
+                        onClick = {
+                            showExportFormatChoice = false
+                            startExport(BackupArchiveFormat.PLAINTEXT_ZIP)
+                        },
+                        modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight)
+                            .testTag("backup_export_plaintext"),
+                    ) { Text(stringResource(R.string.backup_format_plaintext)) }
+                }
+            },
+            dismissButton = {
+                LumaTextButton(
+                    onClick = {
+                        showExportFormatChoice = false
+                        pendingExportChoice = null
+                    },
+                    modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+                ) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+
+    if (showExportPasswordDialog) {
+        val passwordLengthValid = Character.codePointCount(exportPassword, 0, exportPassword.length) >=
+            BackupFormatMarker.MINIMUM_PASSWORD_CODE_POINTS
+        val passwordsMatch = exportPassword == exportPasswordConfirmation
+        LumaAlertDialog(
+            onDismissRequest = {
+                showExportPasswordDialog = false
+                clearExportPasswordFields()
+                clearPendingExportPassword()
+                pendingExportChoice = null
+            },
+            title = { Text(stringResource(R.string.backup_password_export_title)) },
+            text = {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .heightIn(max = maxHeight * 0.55f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                    ) {
+                        Text(stringResource(R.string.backup_password_export_message))
+                    LumaOutlinedTextField(
+                        value = exportPassword,
+                        onValueChange = { exportPassword = it },
+                        modifier = Modifier.fillMaxWidth().testTag("backup_export_password"),
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.backup_password_label)) },
+                        supportingText = { Text(stringResource(R.string.backup_password_requirements)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        visualTransformation = if (exportPasswordVisible) VisualTransformation.None
+                            else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            LumaTextButton(
+                                onClick = { exportPasswordVisible = !exportPasswordVisible },
+                                modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+                            ) {
+                                Text(stringResource(if (exportPasswordVisible) R.string.backup_password_hide
+                                    else R.string.backup_password_show))
+                            }
+                        },
+                    )
+                    LumaOutlinedTextField(
+                        value = exportPasswordConfirmation,
+                        onValueChange = { exportPasswordConfirmation = it },
+                        modifier = Modifier.fillMaxWidth().testTag("backup_export_password_confirm"),
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.backup_password_confirm_label)) },
+                        supportingText = if (exportPasswordConfirmation.isNotEmpty() && !passwordsMatch) {
+                            { Text(stringResource(R.string.backup_password_mismatch)) }
+                        } else null,
+                        isError = exportPasswordConfirmation.isNotEmpty() && !passwordsMatch,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        visualTransformation = if (exportPasswordVisible) VisualTransformation.None
+                            else PasswordVisualTransformation(),
+                    )
+                    }
+                }
+            },
+            confirmButton = {
+                LumaButton(
+                    onClick = {
+                        pendingExportPassword = exportPassword.toCharArray()
+                        showExportPasswordDialog = false
+                        clearExportPasswordFields()
+                        startExport(BackupArchiveFormat.ENCRYPTED)
+                    },
+                    enabled = passwordLengthValid && passwordsMatch,
+                    modifier = Modifier.testTag("backup_export_password_continue"),
+                ) { Text(stringResource(R.string.backup_continue)) }
+            },
+            dismissButton = {
+                LumaTextButton(
+                    onClick = {
+                        showExportPasswordDialog = false
+                        clearExportPasswordFields()
+                        clearPendingExportPassword()
+                        pendingExportChoice = null
+                    },
+                    modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+                ) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+
+    if (showRestorePasswordDialog) {
+        LumaAlertDialog(
+            onDismissRequest = {
+                showRestorePasswordDialog = false
+                clearRestorePasswordFields()
+                pendingRestoreUri = null
+                pendingRestoreAuthorization?.let { lockGuard?.cancel(it.pending) }
+                pendingRestoreAuthorization = null
+            },
+            title = { Text(stringResource(R.string.backup_password_import_title)) },
+            text = {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .heightIn(max = maxHeight * 0.55f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                    ) {
+                        Text(stringResource(R.string.backup_password_import_message))
+                    LumaOutlinedTextField(
+                        value = restorePassword,
+                        onValueChange = { restorePassword = it },
+                        modifier = Modifier.fillMaxWidth().testTag("backup_restore_password"),
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.backup_password_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        visualTransformation = if (restorePasswordVisible) VisualTransformation.None
+                            else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            LumaTextButton(
+                                onClick = { restorePasswordVisible = !restorePasswordVisible },
+                                modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+                            ) {
+                                Text(stringResource(if (restorePasswordVisible) R.string.backup_password_hide
+                                    else R.string.backup_password_show))
+                            }
+                        },
+                    )
+                    }
+                }
+            },
+            confirmButton = {
+                LumaButton(
+                    onClick = {
+                        val uri = pendingRestoreUri
+                        val authorization = pendingRestoreAuthorization
+                        pendingRestoreUri = null
+                        pendingRestoreAuthorization = null
+                        showRestorePasswordDialog = false
+                        val password = restorePassword.toCharArray()
+                        clearRestorePasswordFields()
+                        if (uri == null || password.isEmpty()) {
+                            password.fill(Char.MIN_VALUE)
+                            authorization?.let { lockGuard?.cancel(it.pending) }
+                            vm.pickerUnavailable()
+                        } else {
+                            vm.prepareEncrypted(
+                                open = { requireNotNull(resolver.openInputStream(uri)) },
+                                encryption = BackupEncryptionOptions(password),
+                                authorize = authorization.authorizer(lockGuard, AuthPurpose.RESTORE),
+                            )
+                        }
+                    },
+                    enabled = restorePassword.isNotEmpty(),
+                    modifier = Modifier.testTag("backup_restore_password_continue"),
+                ) { Text(stringResource(R.string.backup_continue)) }
+            },
+            dismissButton = {
+                LumaTextButton(
+                    onClick = {
+                        showRestorePasswordDialog = false
+                        clearRestorePasswordFields()
+                        pendingRestoreUri = null
+                        pendingRestoreAuthorization?.let { lockGuard?.cancel(it.pending) }
+                        pendingRestoreAuthorization = null
+                    },
+                    modifier = Modifier.heightIn(min = LumaUi.MinTouchTargetHeight),
+                ) { Text(stringResource(R.string.cancel)) }
             },
         )
     }
@@ -414,6 +779,11 @@ fun BackupSettingsCard(
                 showSensitivePrompt = false
                 pendingSensitive = null
                 pendingSensitiveStep = null
+                if (authStep is BackupSensitiveStep.ExportPicker) {
+                    clearPendingExportPassword()
+                    pendingExportFormat = null
+                    pendingExportChoice = null
+                }
             },
         )
     }
@@ -436,6 +806,7 @@ internal fun BackupCardContent(
     openFocusSession: FocusSession? = null,
     focusActionFailed: Boolean = false,
     restoreActionInProgress: Boolean = false,
+    formatDetectionInProgress: Boolean = false,
 ) {
     val displayTime = rememberDisplayTimePolicy()
     LumaSectionSurface(Modifier.testTag("backup_settings")) {
@@ -447,15 +818,15 @@ internal fun BackupCardContent(
                 AccessibleFeedback(stringResource(R.string.backup_focus_action_failed),
                     Modifier.testTag("backup_focus_action_failed"))
             }
-            LumaButton(onClick = onExport, enabled = !state.busy && state.preview == null,
+            LumaButton(onClick = onExport, enabled = !state.busy && state.preview == null && !formatDetectionInProgress,
                 modifier = Modifier.testTag("backup_export")) {
                 Text(stringResource(R.string.backup_export))
             }
-            LumaOutlinedButton(onClick = onRestore, enabled = !state.busy && state.preview == null,
+            LumaOutlinedButton(onClick = onRestore, enabled = !state.busy && state.preview == null && !formatDetectionInProgress,
                 modifier = Modifier.testTag("backup_choose")) {
                 Text(stringResource(R.string.backup_choose))
             }
-            if (state.busy) {
+            if (state.busy || formatDetectionInProgress) {
                 CircularProgressIndicator(Modifier.testTag("backup_busy"))
                 Text(stringResource(R.string.backup_working))
             }
@@ -494,7 +865,12 @@ internal fun BackupCardContent(
                             NumberFormat.getIntegerInstance().format(preview.todoCount),
                             NumberFormat.getIntegerInstance().format(preview.focusSessionCount),
                             displayTime.formatDateTime(preview.createdAt.atZone(ZoneId.systemDefault()), FormatStyle.MEDIUM)))
+                        Text(stringResource(
+                            if (preview.format == BackupArchiveFormat.ENCRYPTED) R.string.backup_preview_encrypted
+                            else R.string.backup_preview_plaintext,
+                        ))
                         Text(stringResource(R.string.backup_replace_warning))
+                        Text(stringResource(R.string.backup_portable_exclusions))
                         if (preview.todoCount == 0L) Text(stringResource(R.string.backup_no_tasks_warning))
                         if (preview.focusSessionCount == 0L) Text(stringResource(R.string.backup_no_focus_sessions_warning))
                         if (openFocusSession != null) Text(stringResource(R.string.backup_active_focus_message))
@@ -561,6 +937,20 @@ fun BackupDepartureFeedbackHost(
             val departure = BackupDeparture.decode(value.substring(separator + 1)) ?: return@collect
             snackbarHostState.showSnackbar(context.getString(departure.messageResource()))
         }
+    }
+}
+
+private fun isEncryptedBackup(resolver: android.content.ContentResolver, uri: Uri): Boolean {
+    val input = requireNotNull(resolver.openInputStream(uri)) { "Selected backup cannot be opened" }
+    return input.use {
+        val prefix = ByteArray(BackupFormatMarker.ENCRYPTED_SIGNATURE.length)
+        var length = 0
+        while (length < prefix.size) {
+            val count = it.read(prefix, length, prefix.size - length)
+            if (count <= 0) break
+            length += count
+        }
+        BackupFormatMarker.isEncryptedPrefix(prefix, length)
     }
 }
 

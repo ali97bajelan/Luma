@@ -15,7 +15,7 @@
 ## Global constraints
 
 - Exactly two phases per task: implementation, then QA; do not interleave a test cycle into implementation.
-- During implementation: no Gradle, sync, resolution, build, lint, schema generation, test execution, emulator or device. Test authoring belongs to QA.
+- No Gradle, sync, resolution, build, lint, schema generation, test execution, emulator or device until source implementation is complete. For the IP-I02 handoff, the user explicitly requested exactly one `bash gradlew check` afterward; its result is recorded there and does not start QA. Test authoring and runtime QA remain owned by phase 2.
 - Preserve existing personal data/user edits, module boundaries, minimum API28 and local-first/offline defaults; follow the spec for any explicit compatibility exception.
 - Calendar stays tasks/memories only; preserve navigation, drafts, revision checks, photo ownership and EN/FR/FA/RTL/light/dark support.
 - Read [WORKFLOW.md](../../feature-roadmap/WORKFLOW.md) for exact isolation, source handoff and QA result/evidence obligations.
@@ -46,11 +46,12 @@ Existing paths are source anchors, not a request to edit every file regardless o
 - Create if required by selected implementation: `core/data/src/main/kotlin/com/luma/lifeos/data/backup/EncryptedBackupEnvelope.kt`
 - Create if required by selected implementation: `core/domain/src/main/kotlin/com/luma/lifeos/domain/backup/BackupEncryptionOptions.kt`
 
-Interfaces consumed/produced:
+Implemented source contracts:
 
-- Proposed `BackupEncryptionOptions(password: CharArray)` is transient; no password in saved state/Bundle/preferences/logging.
-- Proposed `EncryptedBackupEnvelope.encrypt(input: InputStream, output: OutputStream, password: CharArray)` and `decryptToStaging(input: InputStream, password: CharArray): AuthenticatedArchive`; only authenticated completion returns a handle.
-- Use a maintained streaming-AEAD API with 256-bit authenticated encryption and a separate password-derived key. Envelope version, library key format, KDF identifier/parameters, random salt and all public header fields must be authenticated; library-specific protocol is fixed in the format note before implementation.
+- `BackupEncryptionOptions(password: CharArray)` is transient; password data is not placed in saved state, Bundle, preferences or logs.
+- `BackupService.export(output, focusChoice, encryption)` and `prepare(input, encryption)` keep plaintext callers compatible.
+- `EncryptedBackupEnvelope.encrypt(output, password, writeArchive)` streams the existing ZIP into the selected Tink Streaming AEAD. `decryptToFile(input, password, target)` authenticates the complete bounded stream into private staging before returning to ZIP validation.
+- LUMAENC v1, Tink 1.24.0, KDF, key wrapping, associated data and resource bounds are frozen in `docs/BACKUP_FORMAT.md`; QA must verify runtime behavior and cross-install portability.
 
 QA-owned tests (create only in phase 2; extend existing equivalent suites instead of duplicating them where practical):
 
@@ -61,37 +62,37 @@ QA-owned tests (create only in phase 2; extend existing equivalent suites instea
 
 ## Phase 1 — Implementation
 
-Initial status: **PENDING**.
+Initial status: **SOURCE COMPLETE — QA PENDING** as of 22 November 2026. See the [IP-I02 source handoff](2026-11-20-product-improvements-i02-backup-and-recovery.md#source-handoff).
 
 ### F05-I01 — Freeze cryptographic source design
 
-- [ ] Choose a maintained streaming-AEAD implementation from official documentation, inspect its supported API/minSdk/license and pin it in the catalog. Write byte-level envelope/KDF/authentication and resource-bound decisions in BACKUP_FORMAT.md. This source review must precede envelope code; Gradle resolution and performance remain QA.
-- [ ] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Choose Tink Android 1.24.0 and its AES256_GCM_HKDF_1MB Streaming AEAD template. Freeze the byte-level envelope, key wrapping, KDF, authentication and bounds in BACKUP_FORMAT.md before codec integration; runtime cost remains QA.
+- [x] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions.
 
 
 ### F05-I02 — Implement envelope boundary
 
-- [ ] Create EncryptedBackupEnvelope and transient options. Route encryption around existing archive creation and authenticated staged decryption before prepare; explicitly handle truncation/final authentication and close errors using the selected library contracts.
-- [ ] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Create EncryptedBackupEnvelope and transient options. Route encryption around existing archive creation and authenticated staged decryption before prepare; handle truncation/final authentication and close failures with the selected library contracts.
+- [x] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions.
 
 
 ### F05-I03 — Add password UI and error states
 
-- [ ] Integrate opt-in export confirmation and import detection/password entry with no saved password. Keep wrong-password/corruption messages generic and preserve live data and existing backup cancellation behavior.
-- [ ] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Integrate opt-in export confirmation and import detection/password entry with no saved password. Keep wrong-password/corruption messages generic and preserve live data and existing backup cancellation behavior.
+- [x] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions.
 
 
 ### F05-I04 — Complete compatibility handoff
 
-- [ ] Document envelope versioning, fixed resource bounds and vectors to be generated in QA, legacy import routes, secret handling and startup cleanup. Unresolved source-library compatibility is a documented implementation blocker, never a homemade cipher fallback.
-- [ ] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions. Do not run compilation or tests.
+- [x] Document envelope versioning, fixed resource bounds and vectors to be generated in QA, legacy import routes, secret handling and abandoned-work cleanup in BACKUP_FORMAT.md. Tink runtime compatibility remains an explicit QA check.
+- [x] Source-review the changed declarations/callers against F05-R01–R05 and record paths/decisions.
 
 ### F05-I05 — Source handoff
 
-- [ ] Review all changed files, call sites, permission/manifest declarations, EN/FR/FA resources and persistence/archive contracts for the actual selected scope.
-- [ ] Run source-only checks such as `git diff --check`, file/link checks and XML parsing where relevant. A successful static check is not a test/build pass.
-- [ ] Record Git/patch identity, implementation decisions, source-to-requirement mapping and known uncertainty. Generated schemas and all runtime verification remain pending QA.
-- [ ] Mark phase 1 **SOURCE COMPLETE — QA PENDING** only after I01–I04 and this handoff are complete. Do not mark the task complete or run a Gradle/emulator command here.
+- [x] Review all changed files, call sites, permission/manifest declarations, EN/FR/FA resources and persistence/archive contracts for the actual selected scope.
+- [x] Run source-only checks such as `git diff --check`, file/link checks and XML parsing where relevant. A successful static check is not a test/build pass.
+- [x] Record Git/patch identity, implementation decisions, source-to-requirement mapping and known uncertainty. Generated schemas and all runtime verification remain pending QA.
+- [x] Mark phase 1 **SOURCE COMPLETE — QA PENDING** after I01–I04 and this handoff are complete. The user-requested source check is not QA; all runtime verification remains pending.
 
 ## Phase 2 — QA
 

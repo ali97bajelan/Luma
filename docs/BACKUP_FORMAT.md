@@ -1,32 +1,82 @@
 # Luma portable backup — format version 1
 
 Settings → Backup and restore exports saved application tables and referenced
-photos using the system file picker. Choose backup to restore validates a file and
-shows its creation time, event count, photo count, habit count, repetition count,
-task-record count (including subtasks) and terminal focus-session count before asking
-to replace the current saved data. There is no merge mode.
-Export current data first to retain it.
+photos using the system file picker. Exports use either a legacy-compatible
+plaintext ZIP or a password-encrypted `LUMAENC` envelope around that same ZIP.
+Restore fully validates the selected format before showing its creation time,
+event, photo, habit, repetition, task-record (including subtasks) and terminal
+focus-session counts. It then asks to replace the current saved data; there is no
+merge mode. Export current data first to retain it.
 
 App Lock credentials and policy are device-local and are never archive members.
 The fixed table and photo allowlist excludes retry state, in-memory grants,
 restricted-capture drafts, action receipts, notification/widget runtime and Focus
 runtime. Android cloud backup and device transfer are disabled for app data; the
-lock store also lives under `noBackupFilesDir`. A fresh password is required for
-export and for the restore commit when App Lock is enabled. Restore into a device
-with an existing lock keeps that device's policy and returns it to a locked
-state. A destination without a lock must explicitly choose to set one up or
-continue without one before replacement is committed and restored content is
-shown. The archive itself remains unencrypted.
+lock store also lives under `noBackupFilesDir`. App Lock requires fresh
+authentication for export and for the restore commit. Restore into a device with
+an existing lock keeps that device's policy and returns it to a locked state. A
+destination without a lock must explicitly choose to set one up or continue
+without one before replacement is committed and restored content is shown.
 
-Backups are unencrypted and contain private text, terminal focus history including
-focus-session names and tags, task titles and notes, names and
-photos. No automatic
-upload occurs; the selected document provider controls the destination. No broad
-storage permission is requested. The picker follows Android's
-[Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files).
-An interrupted or failed export can leave an incomplete destination file; success
-is reported only after the archive and output stream complete. Missing or corrupt
-referenced photos abort export rather than silently omitting them.
+No automatic upload occurs; the selected document provider controls the
+destination. No broad storage permission is requested. The picker follows
+Android's [Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files).
+An interrupted or failed export can leave an incomplete destination file;
+success is reported only after the selected archive and output stream complete.
+Missing or corrupt referenced photos abort export rather than silently omitting
+them.
+
+## Export formats
+
+**Plain ZIP** preserves the original archive format and remains readable by
+existing Luma versions. It is not encrypted. It contains private text, terminal
+focus history including focus-session names and tags, task titles and notes,
+names and photos. The destination provider controls access to the exported file.
+
+**Encrypted backup** wraps the exact same ZIP payload in an authenticated
+`LUMAENC` v1 envelope. It is portable: no device or Android Keystore key is
+needed to restore it. A lost password cannot be recovered. Export accepts at
+least 12 Unicode code points, encodes the password as strict UTF-8, and uses its
+exact code points and whitespace without trimming or normalization. Export asks
+for exact confirmation. Passwords and derived keys are transient and are not
+written to saved state, preferences, logs or archive metadata. Export filenames
+contain only the generic app name, current date and format extension.
+
+### LUMAENC v1 wire format
+
+All integers are unsigned where noted, big-endian. The fixed header is:
+
+| Field | Size | Value |
+| --- | ---: | --- |
+| Magic | 7 bytes | ASCII `LUMAENC` |
+| Envelope version | 1 byte | `1` |
+| Password KDF | 1 byte | `1` = PBKDF2-HMAC-SHA256 |
+| Stream algorithm | 1 byte | `1` = Tink `AES256_GCM_HKDF_1MB` |
+| PBKDF2 iterations | 4 bytes | `600000` |
+| Salt | 16 bytes | fresh random bytes |
+| Wrapped keyset length | 4 bytes | wrapped keyset bytes that follow |
+| Wrapped keyset | declared length | 12-byte nonce || AES-GCM ciphertext || 16-byte tag |
+| Ciphertext body | remainder | Tink Streaming AEAD stream of the original ZIP |
+
+The implementation pins `com.google.crypto.tink:tink-android:1.24.0` and uses
+Tink's maintained Streaming AEAD format and binary keyset encoding. PBKDF2 derives
+a 256-bit AES key from the exact UTF-8 password bytes and 16-byte salt. AES-256-GCM
+wraps a fresh random Tink streaming keyset; the header prefix through the wrapped
+keyset length is its associated data. The complete header, including the wrapped
+keyset, is associated data for the Tink stream. The stream template fixes 256-bit
+AES-GCM segments with 1 MiB plaintext segments and HKDF key derivation.
+
+Unknown envelope versions, KDFs, stream algorithms or KDF parameters are rejected;
+they are never retried as ZIP. The wrapped keyset is limited to 64 KiB. Encrypted
+input and authenticated ZIP staging are each limited to 2 GiB plus 128 MiB of
+envelope overhead; inner archive expanded content retains the existing 2 GiB
+limit and per-entry limits below. The stream is drained through authenticated EOF
+and trailing data is rejected before the staged ZIP is handed to archive
+validation or a preview can be created. Wrong passwords, truncation, tampering,
+unsupported headers and resource-limit failures remove the private staged
+plaintext and leave live records unchanged. Work directories are app-private;
+failed/cancelled operations remove their files, and abandoned directories from a
+process interruption are cleared before the next backup operation.
 
 ## Archive layout
 

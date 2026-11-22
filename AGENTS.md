@@ -22,6 +22,16 @@ Preserve intentional specialized visuals such as Focus timers, charts, calendar 
 
 UI changes must preserve navigation, callbacks, state, drafts, validation, test tags, retry and undo behavior. Maintain System/Light/Dark support, English/French/Persian localization, RTL, offline fonts, accessible semantics, touch targets of at least 48 dp, large-text support, and existing inset, keyboard, scrolling and FAB clearance behavior.
 
+## QA workflow (required)
+
+Use this workflow whenever you are asked to run or plan QA. Match the checks to the acceptance criteria and the changed behavior.
+
+1. Start with the smallest relevant set of existing tests. Use local JVM tests for business logic and state, and targeted Compose instrumentation tests for UI behavior. Select the affected test class or method before expanding to broader suites. Run any broader checks required by the task.
+2. Reuse a running emulator and the installed QA build when they match the revision and device configuration under test. Start each scenario from known data. Wait for the expected UI state or event instead of using fixed sleeps.
+3. Drive app flows through Compose semantics and stable test tags. For exploratory steps without an existing test, query the accessibility hierarchy and return only matching nodes. Use UI Automator for system dialogs, the launcher, and other cross-app flows.
+4. Capture screenshots only for explicit visual checkpoints, requested evidence, or failures where an image helps diagnose the problem. For recurring visual checks, prefer local screenshot comparisons and inspect failed diffs. Keep screenshots and full logs as artifacts and pass only the relevant excerpts or images into the agent context.
+5. Report pass, fail, or unverified for each acceptance criterion. Include the checks run, a concise failure summary when relevant, and paths to evidence artifacts.
+
 ## Commit messages
 
 When asked to generate a commit message, use Conventional Commits format: `<type>(<optional scope>): <imperative summary>`. Keep it concise and based on the actual changes.

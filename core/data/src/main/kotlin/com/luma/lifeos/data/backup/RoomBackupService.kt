@@ -26,12 +26,28 @@ class RoomBackupService(private val context: Context, private val database: Luma
             runCatching { UUID.fromString(file.name).toString() == file.name }.getOrDefault(false)
     }
     private var abandonedCleaned = false
-    override suspend fun export(output: OutputStream) = exportInternal(output, null)
+    override suspend fun export(output: OutputStream) = export(output, null, null)
 
     override suspend fun export(output: OutputStream, focusChoice: BackupFocusExportChoice?) =
-        exportInternal(output, focusChoice)
+        export(output, focusChoice, null)
 
-    private suspend fun exportInternal(output: OutputStream, focusChoice: BackupFocusExportChoice?) = withContext(Dispatchers.IO) {
+    override suspend fun export(
+        output: OutputStream,
+        focusChoice: BackupFocusExportChoice?,
+        encryption: BackupEncryptionOptions?,
+    ) {
+        try {
+            exportInternal(output, focusChoice, encryption)
+        } finally {
+            encryption?.close()
+        }
+    }
+
+    private suspend fun exportInternal(
+        output: OutputStream,
+        focusChoice: BackupFocusExportChoice?,
+        encryption: BackupEncryptionOptions?,
+    ) = withContext(Dispatchers.IO) {
         val work = newWork()
         try {
             val payloads = linkedMapOf<String, File>()
@@ -100,15 +116,67 @@ class RoomBackupService(private val context: Context, private val database: Luma
                     }
                 }
             }
-            BackupArchive.write(output, payloads, CURRENT_BACKUP_SCHEMA_VERSION, System.currentTimeMillis())
+            val archiveWriter: (OutputStream) -> Unit = { archiveOutput ->
+                BackupArchive.write(archiveOutput, payloads, CURRENT_BACKUP_SCHEMA_VERSION, System.currentTimeMillis())
+            }
+            if (encryption == null) {
+                archiveWriter(output)
+            } else {
+                encryption.usePassword { password ->
+                    EncryptedBackupEnvelope.encrypt(output, password, archiveWriter)
+                }
+            }
         } finally { work.deleteRecursively() }
     }
 
-    override suspend fun prepare(input: InputStream): PreparedBackup = withContext(Dispatchers.IO) {
+    override suspend fun prepare(input: InputStream): PreparedBackup = prepare(input, null)
+
+    override suspend fun prepare(
+        input: InputStream,
+        encryption: BackupEncryptionOptions?,
+    ): PreparedBackup {
+        try {
+            return prepareInternal(input, encryption)
+        } finally {
+            encryption?.close()
+        }
+    }
+
+    private suspend fun prepareInternal(
+        input: InputStream,
+        encryption: BackupEncryptionOptions?,
+    ): PreparedBackup = withContext(Dispatchers.IO) {
         val work = newWork()
         var staged: LumaDatabase? = null
         try {
-            val manifest = BackupArchive.read(input, File(work, "payload"))
+            val bufferedInput = input.buffered()
+            bufferedInput.mark(BackupFormatMarker.ENCRYPTED_SIGNATURE.length)
+            val prefix = ByteArray(BackupFormatMarker.ENCRYPTED_SIGNATURE.length)
+            var prefixLength = 0
+            while (prefixLength < prefix.size) {
+                val count = bufferedInput.read(prefix, prefixLength, prefix.size - prefixLength)
+                if (count <= 0) break
+                prefixLength += count
+            }
+            bufferedInput.reset()
+            val isEncrypted = BackupFormatMarker.isEncryptedPrefix(prefix, prefixLength)
+            val payloadDirectory = File(work, "payload")
+            val (manifest, archiveFormat) = if (isEncrypted) {
+                val password = encryption ?: throw BackupPasswordRequiredException()
+                val authenticatedArchive = File(work, "authenticated.zip")
+                try {
+                    password.usePassword { secret ->
+                        EncryptedBackupEnvelope.decryptToFile(bufferedInput, secret, authenticatedArchive)
+                    }
+                    authenticatedArchive.inputStream().use { archive ->
+                        BackupArchive.read(archive, payloadDirectory)
+                    } to BackupArchiveFormat.ENCRYPTED
+                } finally {
+                    authenticatedArchive.delete()
+                }
+            } else {
+                BackupArchive.read(bufferedInput, payloadDirectory) to BackupArchiveFormat.PLAINTEXT_ZIP
+            }
             val archiveTables = backupTables(manifest.schemaVersion)
             require(manifest.names.filter { it.startsWith("tables/") }.toSet() == archiveTables.map { "tables/$it.tsv" }.toSet()) { "Backup tables do not match its schema version" }
             val stage = Room.databaseBuilder(context.applicationContext, LumaDatabase::class.java, File(work, "stage.db").path)
@@ -227,7 +295,7 @@ class RoomBackupService(private val context: Context, private val database: Luma
             val paths = referencedPhotos(stage.openHelper.readableDatabase)
             // Validate timestamp before handing ownership to the retained preview.
             val preview = BackupPreview(count, paths.size, Instant.ofEpochMilli(manifest.createdAt),
-                habitCount, habitLogCount, todoCount, focusSessionCount)
+                habitCount, habitLogCount, todoCount, focusSessionCount, archiveFormat)
             StagedBackup(stage, work, paths, manifest.schemaVersion, preview)
         } catch (failure: Throwable) {
             staged?.close(); work.deleteRecursively(); throw failure

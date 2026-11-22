@@ -1,6 +1,6 @@
 # F05 — Password-protected portable backups specification
 
-Date: 26 October 2026 · Priority: **P1** · Status: **DRAFT — NOT IMPLEMENTED / NOT VALIDATED**
+Date: 26 October 2026 · Priority: **P1** · Status: **SOURCE IMPLEMENTED THROUGH IP-I02 — QA PENDING**
 
 [Roadmap](../../FEATURE_ROADMAP_2026-10-26.md) · [Spec](2026-10-26-roadmap-05-encrypted-backups.md) · [Plan](../plans/2026-10-26-roadmap-05-encrypted-backups.md) · [QA scenarios](../../feature-roadmap/05-encrypted-backups-qa.md) · [Shared workflow](../../feature-roadmap/WORKFLOW.md)
 

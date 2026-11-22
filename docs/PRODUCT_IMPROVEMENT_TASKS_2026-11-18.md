@@ -1,6 +1,6 @@
 # Luma product improvement tasks
 
-Source proposal dated 18 November 2026. Task package prepared 20 November 2026. IP-I01, IP-I03, IP-I04, IP-I05, IP-I06, IP-I07, IP-I08 and IP-I09 are **SOURCE COMPLETE — QA PENDING**; IP-I02 is **PENDING**. IP-Q01 is **NOT RUN**.
+Source proposal dated 18 November 2026. Task package prepared 20 November 2026. IP-I01 through IP-I09 are **SOURCE COMPLETE — QA PENDING**. IP-Q01 is **NOT RUN**.
 
 [Product proposal](20261118-Proposal.md) · [App reference](LUMA_APP_REFERENCE.md) · [Design system](luma-redesign/README.md) · [Emulator QA specification](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Emulator QA plan](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md)
 
@@ -9,7 +9,7 @@ Source proposal dated 18 November 2026. Task package prepared 20 November 2026. 
 | Task | Proposal | Priority | Horizon | Dependencies | Status | Deliverables |
 | --- | --- | --- | --- | --- | --- | --- |
 | IP-I01 Today action hub | #1 | P1 | Now | Existing Today, Tasks, Habits and Focus source. IP-I06 extends the resulting Today header. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i01-today-action-hub-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i01-today-action-hub.md) |
-| IP-I02 Backup and recovery | #2 | P1 | Now disclosure → Next encrypted archive | Disclosure before archive integration. Reuse the existing F05 portable encryption design and existing backup validation and App Lock flows. | PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i02-backup-and-recovery-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i02-backup-and-recovery.md) |
+| IP-I02 Backup and recovery | #2 | P1 | Now disclosure → Next encrypted archive | Explicit export choice, portable encryption, existing backup validation and App Lock flows. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i02-backup-and-recovery-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i02-backup-and-recovery.md) |
 | IP-I03 Dependable capture drafts | #3 | P1 | Now | Existing Mood/Memory editors, protected capture and photo ownership. IP-I05 and IP-I09 consume the editor behavior. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i03-capture-drafts-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i03-capture-drafts.md) |
 | IP-I04 Reminder readiness | #4 | P1 | Next | Existing task/habit/Focus invitation planners and notification settings. Leaves IP-I08 Focus runtime behavior independently owned. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i04-reminder-readiness-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i04-reminder-readiness.md) |
 | IP-I05 First use and capture terminology | #5 | P1 | Next | IP-I03 editor state and discard contract. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i05-first-use-capture-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i05-first-use-capture.md) · [Source handoff](superpowers/plans/2026-11-20-product-improvements-i05-first-use-capture.md#source-handoff) |
@@ -18,7 +18,7 @@ Source proposal dated 18 November 2026. Task package prepared 20 November 2026. 
 | IP-I08 Focus boundaries, recovery and completion | #8 | P2 | Later | Existing Focus guard/runtime and task-family completion flow. IP-I04 owns Focus invitation notification readiness. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i08-focus-boundaries-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i08-focus-boundaries.md) |
 | IP-I09 Weekly Review reflection loop | #9 | P2 | Later | IP-I03 durable editor behavior, IP-I05 capture terminology and IP-I06 existing retrieval experience. | SOURCE COMPLETE — QA PENDING | [Spec](superpowers/specs/2026-11-20-product-improvements-i09-weekly-reflection-design.md) · [Plan](superpowers/plans/2026-11-20-product-improvements-i09-weekly-reflection.md) |
 
-Use proposal rank as the default sequence. IP-I02 has two ordered slices, so disclosure can hand off with the Now work and encryption can resume in Next. Source dependencies permit the next implementation to start as soon as the required predecessor source is ready. Preserve existing implementation/validation status from earlier roadmap work.
+Use proposal rank as the default sequence. IP-I02 delivered both ordered slices in one source handoff; its runtime acceptance remains sequenced in IP-Q01. Source dependencies permit the next implementation to start as soon as the required predecessor source is ready. Preserve existing implementation/validation status from earlier roadmap work.
 
 ## Final QA task
 
