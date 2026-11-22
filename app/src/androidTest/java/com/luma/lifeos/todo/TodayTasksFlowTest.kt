@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -47,10 +48,15 @@ class TodayTasksFlowTest {
         val title = "Today task ${System.nanoTime()}"
         compose.onNodeWithTag("todo_editor_title").performTextInput(title)
         compose.onNodeWithTag("todo_editor_save").performClick()
+        compose.waitUntil(15_000) {
+            compose.onAllNodesWithTag("screen_todo_editor").fetchSemanticsNodes().isEmpty()
+        }
         awaitTag("screen_today")
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("today_tasks_card"))
         compose.onNodeWithText(title).assertExists()
-        compose.onNodeWithTag("today_tasks_count").assertExists()
+        compose.onNodeWithContentDescription(
+            compose.activity.resources.getQuantityString(R.plurals.todo_today_count, 1, "1"),
+        ).assertExists()
 
         tapTaskCheckbox(title, R.string.todo_mark_complete)
         compose.waitUntil(15_000) {
@@ -63,7 +69,8 @@ class TodayTasksFlowTest {
         compose.onNodeWithText(title).performClick()
         awaitTag("screen_todo_editor")
         compose.onNodeWithTag("todo_editor_delete").performClick()
-        compose.onNodeWithTag("todo_editor_confirm_delete").performClick()
+        awaitTag("todo_family_action_confirmation")
+        compose.onNodeWithTag("todo_family_action_confirm").performClick()
         awaitTag("screen_today")
     }
 

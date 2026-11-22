@@ -106,10 +106,22 @@ class PhotoPersistenceTest {
         memories.saveMarker(event, MemoryMarkerInput(5))
         assertEquals(listOf(first), memories.get(event)!!.photos)
         memories.removeMarker(event)
-        assertEquals(before, db.lifeEvents().getDetails(event.toString()))
+        val afterRemoval = db.lifeEvents().getDetails(event.toString())!!
+        assertEquals(
+            before.copy(event = before.event.copy(updatedAt = afterRemoval.event.updatedAt)),
+            afterRemoval,
+        )
+        assertTrue(afterRemoval.event.updatedAt > before.event.updatedAt)
         journals.update(event, JournalInput("Keep", now, tagNames = setOf("Work"), photos = emptyList()))
         val remaining = db.lifeEvents().getDetails(event.toString())!!
-        assertEquals(before.copy(attachments = emptyList()), remaining)
+        assertEquals(
+            before.copy(
+                event = before.event.copy(updatedAt = remaining.event.updatedAt),
+                attachments = emptyList(),
+            ),
+            remaining,
+        )
+        assertTrue(remaining.event.updatedAt > afterRemoval.event.updatedAt)
         photos.releaseDraft(owner)
         assertNull(files.resolve(first.relativePath))
     }

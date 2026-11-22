@@ -44,7 +44,7 @@ class CaptureAccessibilityTest {
         }
 
         compose.onNodeWithTag("capture_mood").assertExists()
-        compose.onNodeWithTag("capture_journal").assertExists()
+        compose.onNodeWithTag("capture_journal").assertDoesNotExist()
         compose.onNodeWithTag("capture_memory").assertExists()
         compose.onNodeWithTag("capture_habit").assertDoesNotExist()
     }
@@ -53,7 +53,6 @@ class CaptureAccessibilityTest {
         val browsedDate = LocalDate.parse("2026-10-12")
         val habitDates = mutableListOf<LocalDate?>()
         val moodDates = mutableListOf<LocalDate?>()
-        val journalDates = mutableListOf<LocalDate?>()
         val memoryDates = mutableListOf<LocalDate?>()
         var taskCalls = 0
         compose.setContent {
@@ -62,7 +61,7 @@ class CaptureAccessibilityTest {
                     browsedDate = browsedDate,
                     onDismiss = {},
                     onMood = { moodDates += it },
-                    onJournal = { journalDates += it },
+                    onJournal = {},
                     onMemory = { memoryDates += it },
                     onTask = { taskCalls += 1 },
                     onHabit = { habitDates += it },
@@ -71,7 +70,6 @@ class CaptureAccessibilityTest {
         }
 
         compose.onNodeWithTag("capture_mood").performScrollTo().performClick()
-        compose.onNodeWithTag("capture_journal").performScrollTo().performClick()
         compose.onNodeWithTag("capture_memory").performScrollTo().performClick()
         compose.onNodeWithTag("capture_task").performScrollTo().performClick()
         compose.onNodeWithTag("capture_habit").performScrollTo().performClick()
@@ -81,7 +79,6 @@ class CaptureAccessibilityTest {
         compose.runOnIdle {
             assertEquals(listOf(null, browsedDate), habitDates)
             assertEquals(listOf(null), moodDates)
-            assertEquals(listOf(null), journalDates)
             assertEquals(listOf(null), memoryDates)
             assertEquals(1, taskCalls)
         }

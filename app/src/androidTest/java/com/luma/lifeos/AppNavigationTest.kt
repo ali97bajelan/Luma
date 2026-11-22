@@ -2,6 +2,7 @@ package com.luma.lifeos
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.luma.lifeos.domain.lock.LockCoverage
@@ -24,7 +25,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import com.luma.lifeos.widget.WidgetIntents
 import com.luma.lifeos.lock.AndroidLockCrypto
 import com.luma.lifeos.lock.CredentialResult
@@ -148,9 +148,9 @@ class AppNavigationTest {
         val yesterdayText = yesterday.format(com.luma.lifeos.language.localizedDate(FormatStyle.MEDIUM))
         compose.onNodeWithTag("nav_timeline").performClick()
         compose.onNodeWithTag("day_previous").performClick()
-        listOf("mood", "journal", "memory").forEach { type ->
+        listOf("mood", "memory").forEach { type ->
             compose.onNodeWithTag("quick_capture").performClick()
-            listOf("capture_now", "capture_on_browsed_date", "capture_mood", "capture_journal", "capture_memory", "capture_close")
+            listOf("capture_now", "capture_on_browsed_date", "capture_mood", "capture_memory", "capture_close")
                 .forEach { compose.onNodeWithTag(it).assertIsDisplayed() }
             compose.onNodeWithTag("capture_now").assertIsSelected()
             compose.onNodeWithTag("capture_$type").performClick()
@@ -187,7 +187,7 @@ class AppNavigationTest {
         compose.onNodeWithTag("mood_cancel").performClick()
         awaitTag("screen_timeline")
 
-        listOf("journal", "memory").forEach { type ->
+        listOf("memory").forEach { type ->
             launchWidgetQuickCapture(51)
             compose.onNodeWithTag("capture_$type").performClick()
             awaitTag("screen_$type")
@@ -210,24 +210,31 @@ class AppNavigationTest {
         launchWidgetQuickCapture(53)
         compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
         compose.onNodeWithTag("capture_mood").assertExists()
-        compose.onNodeWithTag("capture_journal").assertExists()
         compose.onNodeWithTag("capture_memory").assertExists()
     }
 
-    @Test fun emptyAppLockSetupScrollsValidationIntoView() {
+    @Test fun invalidAppLockSetupCredentialShowsInlineValidation() {
         compose.onNodeWithTag("nav_more").performClick()
         compose.onNodeWithTag("more_settings").performClick()
         awaitTag("screen_settings")
-        compose.onNodeWithTag("settings_privacy").performScrollTo().performClick()
-        awaitTag("screen_privacy")
-        compose.onNodeWithTag("privacy_app_lock").performScrollTo().performClick()
+        compose.onNodeWithTag("settings_app_lock").performScrollTo().performClick()
         awaitTag("screen_app_lock_settings")
 
-        compose.onNodeWithTag("app_lock_setup_continue").performScrollTo().performClick()
-        val error = compose.onNodeWithTag("app_lock_settings_error")
-        error.assertTextContains("Use a password between 8 and 128 characters.")
-        val errorBounds = error.fetchSemanticsNode().boundsInRoot
-        assertTrue("error is not in the visible scroll viewport: $errorBounds", errorBounds.height > 0f)
+        compose.onNodeWithTag("app_lock_setup_continue").assertIsNotEnabled()
+        val credentialFields = compose.onAllNodes(
+            hasSetTextAction().and(hasAnyAncestor(hasTestTag("app_lock_setup_credential"))),
+            useUnmergedTree = true,
+        )
+        assertEquals(2, credentialFields.fetchSemanticsNodes().size)
+        credentialFields[0].performTextInput("bad")
+        val validationMessage = compose.activity.getString(R.string.app_lock_error_credential_invalid)
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText(validationMessage, useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("screen_app_lock_settings")
+            .performScrollToNode(hasText(validationMessage))
+        compose.onNodeWithText(validationMessage, useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test fun appLockSetupOffersOnlyWholeAppAndMemorySectionCoverage() {
@@ -236,8 +243,8 @@ class AppNavigationTest {
         try {
             compose.onNodeWithTag("nav_more").performClick()
             compose.onNodeWithTag("more_settings").performClick()
-            compose.onNodeWithTag("settings_privacy").performScrollTo().performClick()
-            compose.onNodeWithTag("privacy_app_lock").performScrollTo().performClick()
+            awaitTag("screen_settings")
+            compose.onNodeWithTag("settings_app_lock").performScrollTo().performClick()
             awaitTag("screen_app_lock_settings")
 
             val wholeApp = compose.onNodeWithTag("app_lock_coverage_whole")
@@ -258,6 +265,7 @@ class AppNavigationTest {
         resetAppLockForTest(application)
         try {
             enableWholeAppLockForTest(application)
+            application.appLockCoordinator.lockNow()
             val gateTitle = compose.activity.getString(R.string.app_lock_gate_title)
             compose.waitUntil(5_000) {
                 compose.onAllNodesWithText(gateTitle).fetchSemanticsNodes().isNotEmpty()
@@ -271,7 +279,11 @@ class AppNavigationTest {
 
             compose.onNodeWithText(compose.activity.getString(R.string.app_lock_gate_settings)).performClick()
             compose.onNodeWithTag("screen_app_lock_settings").assertIsDisplayed()
-            compose.onNodeWithText(compose.activity.getString(R.string.app_lock_current_password)).assertIsDisplayed()
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithTag("app_lock_settings_password").fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("app_lock_settings_password").assertIsDisplayed()
+            compose.onNodeWithTag("app_lock_settings_auth").assertIsNotEnabled()
         } finally {
             resetAppLockForTest(application)
         }
@@ -361,7 +373,12 @@ class AppNavigationTest {
             activity.onBackPressedDispatcher.onBackPressed()
         }
         awaitTag("focus_screen")
-        compose.onNodeWithTag("focus_name").assertTextEquals("Keep this draft")
+        compose.onNodeWithTag("focus_name").assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.EditableText,
+                androidx.compose.ui.text.AnnotatedString("Keep this draft"),
+            ),
+        )
     }
 
     @Test fun staleReminderTokenDoesNotReplaceTheAuthoredFocusDraft() {
@@ -388,12 +405,19 @@ class AppNavigationTest {
             action = "OPEN",
             token = UUID.randomUUID().toString(),
         ).toIntent(compose.activity)
+        val scenarioLaunchIntent = compose.activity.intent
         compose.activityRule.scenario.onActivity { activity ->
             activity.startActivity(staleRequest.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
         }
         compose.waitForIdle()
+        compose.activityRule.scenario.onActivity { it.intent = scenarioLaunchIntent }
 
-        compose.onNodeWithTag("focus_name").assertTextEquals(authoredDraft)
+        compose.onNodeWithTag("focus_name").assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.EditableText,
+                androidx.compose.ui.text.AnnotatedString(authoredDraft),
+            ),
+        )
         compose.onNodeWithTag("focus_invitation_replace_dialog").assertDoesNotExist()
     }
 

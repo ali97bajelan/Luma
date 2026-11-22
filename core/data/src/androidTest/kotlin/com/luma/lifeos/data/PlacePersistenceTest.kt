@@ -129,7 +129,8 @@ class PlacePersistenceTest {
         assertEquals(first, memories.get(journal)!!.place!!.id)
         memories.saveMarker(journal, MemoryMarkerInput(4, placeSelection = PlaceSelection(second)))
         val replaced = database.lifeEvents().getDetails(journal.toString())!!
-        assertEquals(original.event, replaced.event)
+        assertEquals(original.event.copy(updatedAt = replaced.event.updatedAt), replaced.event)
+        assertTrue(replaced.event.updatedAt > original.event.updatedAt)
         assertEquals(original.journal, replaced.journal)
         assertEquals(listOf(second.toString()), replaced.places.map { it.id })
         memories.removeMarker(journal)

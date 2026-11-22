@@ -69,7 +69,11 @@ class MemoryPersistenceTest {
         val before = store.get(id)!!
         memories.saveMarker(id, MemoryMarkerInput(importance = 5, note = "Why it matters"))
         val promoted = store.get(id)!!
-        assertEquals(before, promoted.copy(memory = null))
+        assertEquals(
+            before.copy(event = before.event.copy(updatedAt = promoted.event.updatedAt)),
+            promoted.copy(memory = null),
+        )
+        assertTrue(promoted.event.updatedAt > before.event.updatedAt)
         val memoryId = promoted.memory!!.id
         memories.saveMarker(id, MemoryMarkerInput(importance = 5, note = "Why it matters"))
         assertEquals(memoryId, store.get(id)!!.memory!!.id)
@@ -81,7 +85,15 @@ class MemoryPersistenceTest {
         memories.saveMarker(id, MemoryMarkerInput())
         assertEquals(memoryId, store.get(id)!!.memory!!.id)
         memories.removeMarker(id); memories.removeMarker(id)
-        assertEquals(afterSourceEdit.copy(memory = null), store.get(id))
+        val afterRemoval = store.get(id)!!
+        assertEquals(
+            afterSourceEdit.copy(
+                event = afterSourceEdit.event.copy(updatedAt = afterRemoval.event.updatedAt),
+                memory = null,
+            ),
+            afterRemoval,
+        )
+        assertTrue(afterRemoval.event.updatedAt > afterSourceEdit.event.updatedAt)
         assertTrue(memories.observe(range).first().isEmpty())
         assertEquals("Edited source", journals.get(id)!!.journal!!.body)
     }

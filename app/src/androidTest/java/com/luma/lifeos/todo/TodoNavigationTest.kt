@@ -2,12 +2,14 @@ package com.luma.lifeos.todo
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -40,7 +42,7 @@ class TodoNavigationTest {
         awaitTag("screen_timeline")
         compose.onNodeWithTag("quick_capture").performClick()
         compose.onNodeWithTag("capture_mood").assertIsDisplayed()
-        compose.onNodeWithTag("capture_journal").assertIsDisplayed()
+        compose.onNodeWithTag("capture_journal").assertDoesNotExist()
         compose.onNodeWithTag("capture_memory").assertIsDisplayed()
         compose.onNodeWithTag("capture_close").assertIsDisplayed()
         compose.onNodeWithTag("capture_on_browsed_date").performClick()
@@ -64,7 +66,7 @@ class TodoNavigationTest {
         compose.onNodeWithTag("more_tasks").performClick()
         compose.onNodeWithText(title).performClick()
         awaitTag("screen_todo_editor")
-        compose.onNodeWithTag("todo_editor_status").performClick()
+        compose.onNodeWithTag("todo_editor_status").performScrollTo().assertIsEnabled().performClick()
         awaitTag("screen_todo_list")
         compose.waitUntil(15_000) {
             compose.onAllNodesWithText(compose.activity.getString(R.string.todo_undo)).fetchSemanticsNodes().isNotEmpty()
@@ -77,7 +79,8 @@ class TodoNavigationTest {
         compose.onNodeWithText(title).performClick()
         awaitTag("screen_todo_editor")
         compose.onNodeWithTag("todo_editor_delete").performClick()
-        compose.onNodeWithTag("todo_editor_confirm_delete").performClick()
+        awaitTag("todo_family_action_confirmation")
+        compose.onNodeWithTag("todo_family_action_confirm").performClick()
         awaitTag("screen_todo_list")
         compose.onNodeWithTag("todo_list_back").performClick()
         awaitTag("nav_timeline")

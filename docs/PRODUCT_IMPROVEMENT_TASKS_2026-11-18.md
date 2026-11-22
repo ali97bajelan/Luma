@@ -1,6 +1,6 @@
 # Luma product improvement tasks
 
-Source proposal dated 18 November 2026. Task package prepared 20 November 2026. IP-I01 through IP-I09 are **SOURCE COMPLETE — QA PENDING**. IP-Q01 is **NOT RUN**.
+Source proposal dated 18 November 2026. Task package prepared 20 November 2026. IP-I01 through IP-I09 are **SOURCE COMPLETE — QA PENDING**. IP-Q01 is **BLOCKED — PARTIAL EXECUTION** (release acceptance pending). [Execution record](validation/product-improvements/2026-11-22/acceptance.md).
 
 [Product proposal](20261118-Proposal.md) · [App reference](LUMA_APP_REFERENCE.md) · [Design system](luma-redesign/README.md) · [Emulator QA specification](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Emulator QA plan](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md)
 
@@ -24,9 +24,9 @@ Use proposal rank as the default sequence. IP-I02 delivered both ordered slices 
 
 | Task | Starts when | Deliverable | Status |
 | --- | --- | --- | --- |
-| IP-Q01 Integrated emulator QA | All nine implementation handoffs, including both backup slices | [Spec](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Plan and scenario matrix](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md) · dated execution record | NOT RUN |
+| IP-Q01 Integrated emulator QA | All nine implementation handoffs, including both backup slices | [Spec](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Plan and scenario matrix](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md) · [2026-11-22 execution record](validation/product-improvements/2026-11-22/acceptance.md) | BLOCKED — PARTIAL EXECUTION |
 
-IP-Q01 follows the [repository QA workflow](../AGENTS.md#qa-workflow-required). Start with targeted JVM and Compose tests, then use isolated emulators for remaining behavior, native checks and visual checkpoints. Cover QA-01–QA-09 and the required device and UI matrix. Use screenshots only for visual checkpoints, requested evidence or failures where an image helps. Record a result and evidence for each requirement in the dated execution record.
+IP-Q01 follows the [repository QA workflow](../AGENTS.md#qa-workflow-required). Targeted JVM and Compose checks have run and partial evidence is recorded. The 2026-11-22 execution remains blocked: API 28 coverage, a stable complete app connected run, required native scenarios and the device/UI matrix are outstanding. Release acceptance remains pending until QA-01–QA-09 and the required matrix have direct evidence.
 
 ## Shared implementation contract
 
