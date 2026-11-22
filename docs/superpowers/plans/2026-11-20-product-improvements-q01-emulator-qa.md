@@ -8,8 +8,11 @@
 
 - [ ] Record every source handoff and choose the exact candidate and pre-IP-I03 baseline. Capture Git SHA and any dirty patch identity. Use a reproducible snapshot or exact baseline APK plus its build provenance. Use isolation for baseline builds and the app under test.
 - [ ] Verify actual APK/app/runner IDs and use disposable AVD data. Record AVD model/image, API, locale, timezone, calendar/week start, theme, viewport and font scale. Clone/snapshot QA fixtures before testing destructive or cross-install cases.
-- [ ] Map QA-01–QA-09 to the owning specifications, extend existing tests for uncovered risks, then run the QA-only commands below. Use the existing built-in Compose, Room, planner and lifecycle tests and record actual commands, exit codes and results.
-- [ ] Execute the pre-change draft baseline and the candidate emulator cases. Exercise the [required UI/platform matrix](../../feature-roadmap/WORKFLOW.md#required-uiplatform-matrix) for the affected app surfaces. In particular test EN/FR/FA with actual RTL, System/Light/Dark, 2.0 font scale and narrow/wide/landscape viewports, plus TalkBack, hardware keyboard, visible IME, system insets and 48 dp touch targets. Add direct-entry and relock checks for affected protected flows.
+- [ ] Follow the [repository QA workflow](../../../AGENTS.md#qa-workflow-required). Map QA-01–QA-09 to the owning requirements and existing tests. Run targeted JVM tests for logic. Record commands, exit codes and results.
+- [ ] Execute the isolated pre-change draft baseline before the candidate runtime checks. Reuse running isolated AVDs and installed builds when their identities and configurations match. Seed a known state for each scenario and wait for specific UI states or events.
+- [ ] Run targeted candidate Compose tests for app behavior. Add coverage for required risks that existing tests miss, then complete the broader gates below.
+- [ ] Use Compose semantics and stable test tags for app interactions. For uncovered exploratory steps, query only relevant accessibility nodes. Use UI Automator for system dialogs, SAF and launcher interactions where applicable. A test can cover a scenario step when it exercises the same behavior, fixture and configuration and records the expected result.
+- [ ] Complete outstanding emulator checks and the [required UI/platform matrix](../../feature-roadmap/WORKFLOW.md#required-uiplatform-matrix) for affected surfaces. Include EN/FR/FA with actual RTL, System/Light/Dark, 2.0 font scale, narrow/wide/landscape viewports, TalkBack observation, hardware keyboard, visible IME, system insets and 48 dp touch targets. Add direct-entry and relock checks for affected protected flows.
 - [ ] Triage failures against the baseline. Correct reproducible in-scope defects in IP-Q01 and rerun the owning cases plus affected cross-feature cases. If a defect changes a feature contract or requires a new persistence/format design, reopen the owning handoff and dependents (IP-I05 and IP-I09 for draft changes) before affected QA resumes. Record any reason required evidence cannot be obtained.
 - [ ] Create one dated report with revision/patch, APK identity and checksums, fixture metadata, case-to-requirement evidence, defects/fixes/retests and actual acceptance. Mark every case individually. Keep release acceptance pending for any required missing or failed evidence.
 
@@ -17,14 +20,23 @@
 
 Run serially after isolation verification. Use the repository wrapper and current configured variant. The connected tasks run on the verified isolated AVD, with the API 28 and modern-device coverage recorded for applicable cases.
 
+After the targeted JVM checks and isolated draft baseline, start candidate instrumentation with a relevant test class or method. This example runs QA-02’s backup settings flow. Confirm the test assertions before crediting any requirements.
+
 ```sh
-bash gradlew -PdomainOnly=true :core:domain:test
-bash gradlew :app:testDebugUnitTest :core:data:testDebugUnitTest
-bash gradlew :app:assembleDebug :app:assembleDebugAndroidTest :core:data:assembleDebugAndroidTest :app:lintDebug :core:data:lintDebug
-bash gradlew :app:connectedDebugAndroidTest :core:data:connectedDebugAndroidTest
+bash gradlew :app:connectedProductionDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.backup.BackupSettingsFlowTest
 ```
 
-Expected command gate is exit 0, zero unexplained skips/tests missing, zero failed required tests and zero lint errors/fatals. Inspect generated schema artifacts only if schema-affecting work was needed and confirm the existing migration chain. A successful build leaves manual scenarios pending until their evidence is captured.
+Complete the following required gates after focused checks. Use the variant tasks exposed by the candidate.
+
+```sh
+bash gradlew -PdomainOnly=true :core:domain:test
+bash gradlew :app:testProductionDebugUnitTest :core:data:testDebugUnitTest
+bash gradlew :app:assembleProductionDebug :app:assembleProductionDebugAndroidTest :core:data:assembleDebugAndroidTest :app:lintProductionDebug :core:data:lintDebug
+bash gradlew :app:connectedProductionDebugAndroidTest :core:data:connectedDebugAndroidTest
+```
+
+Expected command gate is exit 0, zero unexplained skips/tests missing, zero failed required tests and zero lint errors/fatals. Inspect generated schema artifacts only if schema-affecting work was needed and confirm the existing migration chain. Record a scenario step as verified only when its expected result has direct evidence from the required fixture and configuration.
 
 ## Emulator scenarios
 
@@ -102,4 +114,4 @@ Expected command gate is exit 0, zero unexplained skips/tests missing, zero fail
 
 ## Execution evidence
 
-Create `docs/validation/product-improvements/<actual-run-date>/acceptance.md` on execution and attach current logs, JUnit XML, screenshots, TalkBack observations and record/photo integrity checks where relevant. Use one row per executed requirement/scenario/matrix cell, with fixture and build identities, expected/observed result, actual status and evidence. Mark status **NOT RUN** until execution. Record external product research and physical-device-only findings separately from the emulator result.
+Create `docs/validation/product-improvements/<actual-run-date>/acceptance.md` on execution. Keep full logs, JUnit XML and other evidence as artifacts. Include concise failure excerpts and paths in the report. Capture screenshots only at visual checkpoints such as clipping, RTL layout or IME clearance, when requested, or when an image helps diagnose a failure. Prefer local screenshot comparisons for recurring visual checks and inspect failed diffs. Attach TalkBack observations and record/photo integrity checks where relevant. Use one row per executed requirement/scenario/matrix cell, with fixture and build identities, expected/observed result, actual status and evidence. Mark status **NOT RUN** until execution. Record external product research and physical-device-only findings separately from the emulator result.

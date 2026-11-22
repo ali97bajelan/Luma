@@ -26,6 +26,8 @@ Use proposal rank as the default sequence. IP-I02 delivered both ordered slices 
 | --- | --- | --- | --- |
 | IP-Q01 Integrated emulator QA | All nine implementation handoffs, including both backup slices | [Spec](superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Plan and scenario matrix](superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md) · dated execution record | NOT RUN |
 
+IP-Q01 follows the [repository QA workflow](../AGENTS.md#qa-workflow-required). Start with targeted JVM and Compose tests, then use isolated emulators for remaining behavior, native checks and visual checkpoints. Cover QA-01–QA-09 and the required device and UI matrix. Use screenshots only for visual checkpoints, requested evidence or failures where an image helps. Record a result and evidence for each requirement in the dated execution record.
+
 ## Shared implementation contract
 
 - Use the existing warm-paper/obsidian theme, MaterialTheme roles, LumaUi tokens, shared Luma components and AppPageScaffold. Preserve intended timer/chart/Calendar/crop visuals, separate launcher-widget styling, offline fonts, System/Light/Dark, English/French/Persian, RTL, large text, 48 dp touch targets, accessibility, keyboard/system insets, scrolling and FAB clearance. Inspect the [route coverage](luma-redesign/route-coverage.md) and [UI consistency checklist](luma-redesign/ui-consistency-checklist.md) for affected surfaces.
