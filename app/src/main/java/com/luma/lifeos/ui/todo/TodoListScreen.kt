@@ -877,7 +877,10 @@ private fun TodoTerminalRowErrorCard(
                     Text(stringResource(R.string.todo_status_open))
                 }
             }
-            LumaTextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+            LumaTextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = 48.dp).testTag("todo_dismiss_$taskId"),
+            ) {
                 Text(stringResource(R.string.todo_feedback_dismiss))
             }
         }

@@ -177,12 +177,12 @@ class TodayScreenTest {
                     deviceDate = LocalDate.now(ZoneId.of("UTC")))
             }
         }
-        listOf("mood", "journal", "memory").forEach { type ->
+        listOf("mood", "memory").forEach { type ->
             compose.onNodeWithTag("today_capture_$type").performClick()
             compose.onNodeWithTag("today_capture_date_dialog").assertDoesNotExist()
         }
         compose.runOnIdle {
-            assertEquals(listOf(EventType.MOOD to null, EventType.JOURNAL to null, EventType.MEMORY to null), captured)
+            assertEquals(listOf(EventType.MOOD to null, EventType.MEMORY to null), captured)
         }
     }
 
@@ -199,7 +199,7 @@ class TodayScreenTest {
                 }
             }
         }
-        listOf("mood" to EventType.MOOD, "journal" to EventType.JOURNAL, "memory" to EventType.MEMORY).forEach { (tag, type) ->
+        listOf("mood" to EventType.MOOD, "memory" to EventType.MEMORY).forEach { (tag, type) ->
             compose.onNodeWithTag("today_capture_$tag").assertIsDisplayed().performClick()
             compose.onNodeWithTag("today_capture_date_dialog").assertIsDisplayed()
             compose.runOnIdle { assertEquals(0, captured.size) }

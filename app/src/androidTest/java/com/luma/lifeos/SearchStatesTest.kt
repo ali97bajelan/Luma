@@ -60,7 +60,9 @@ class SearchStatesTest {
         compose.onNodeWithTag("search_scope_help").assertTextEquals(
             InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.search_scope_help),
         )
-        compose.onNodeWithTag("search_prompt").assertTextEquals("Search entry titles, tags, people or places")
+        compose.onNodeWithTag("search_prompt").assertTextEquals(
+            InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.search_prompt),
+        )
         compose.onNodeWithTag("event_${repository.entry.event.id}").assertExists()
         compose.onNodeWithTag("search_result_count").assertDoesNotExist()
 
@@ -117,6 +119,20 @@ class SearchStatesTest {
         awaitTag("search_prompt")
         compose.onNodeWithTag("search_text").assert(
             SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
+        compose.onNodeWithTag("search_filter_tag_${repository.tag}").assertDoesNotExist()
+        compose.onNodeWithTag("search_reset_filters").assertIsNotEnabled()
+        compose.onNodeWithTag("search_clear").assertIsNotEnabled()
+    }
+
+    @Test fun clearAllIsEnabledForStructuredFiltersWithoutText() {
+        val repository = Fixture()
+        show(repository)
+        awaitTag("search_prompt")
+        selectUnusedTag()
+        awaitTag("search_empty")
+
+        compose.onNodeWithTag("search_clear").assertIsEnabled().performClick()
+        awaitTag("search_prompt")
         compose.onNodeWithTag("search_filter_tag_${repository.tag}").assertDoesNotExist()
         compose.onNodeWithTag("search_reset_filters").assertIsNotEnabled()
         compose.onNodeWithTag("search_clear").assertIsNotEnabled()

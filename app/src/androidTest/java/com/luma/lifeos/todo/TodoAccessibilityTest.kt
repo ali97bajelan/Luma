@@ -284,11 +284,9 @@ class TodoAccessibilitySemanticsTest {
         }
 
         val finalRecovery = tasks.last()
-        compose.onNodeWithTag("todo_list_rows")
-            .performScrollToNode(hasTestTag("todo_row_error_${finalRecovery.id}"))
+        compose.onNodeWithTag("todo_list_rows").performScrollToIndex(11)
         compose.onNodeWithTag("todo_row_error_${finalRecovery.id}").assertIsDisplayed()
-        compose.onNodeWithTag("todo_list_rows")
-            .performScrollToNode(hasTestTag("todo_open_${visibleTask.id}"))
+        compose.onNodeWithTag("todo_list_rows").performScrollToIndex(13)
         compose.onNodeWithTag("todo_open_${visibleTask.id}").assertIsDisplayed().assertHasClickAction()
     }
 

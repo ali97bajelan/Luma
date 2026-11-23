@@ -80,8 +80,8 @@ fun SearchRoute(
                     modifier = Modifier.testTag("search_reset_filters"),
                 ) { Text(stringResource(R.string.search_reset_filters)) }
                 LumaTextButton(
-                    onClick = { vm.setText("") },
-                    enabled = state.input.text.isNotEmpty(),
+                    onClick = vm::clear,
+                    enabled = state.input.text.isNotEmpty() || count > 0,
                     modifier = Modifier.testTag("search_clear"),
                 ) { Text(stringResource(R.string.search_clear)) }
                 onTasks?.let { openTasks ->

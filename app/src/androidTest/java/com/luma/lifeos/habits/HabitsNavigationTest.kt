@@ -157,7 +157,7 @@ class HabitsNavigationTest {
             .assertTextEquals(trackingDate.format(localizedDate(FormatStyle.MEDIUM)))
         assertEquals(0, runBlocking { habits.history(habitId, null, 0).total })
 
-        compose.onNodeWithTag("nav_timeline").performClick()
+        compose.onNodeWithTag("habits_back").performClick()
         compose.onNodeWithTag("day_previous").performClick()
         compose.onNodeWithTag("day_previous").performClick()
         val historicalDate = deviceDate.minusDays(2)
