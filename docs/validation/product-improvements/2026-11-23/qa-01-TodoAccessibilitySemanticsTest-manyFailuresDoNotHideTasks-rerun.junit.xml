@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.luma.lifeos.todo.TodoAccessibilitySemanticsTest" tests="1" failures="0" errors="0" skipped="0" time="3.017" timestamp="2026-11-23T14:45:00" hostname="localhost">
+  <properties>
+    <property name="device" value="Medium_Phone_API_36.1(AVD) - 16" />
+    <property name="flavor" value="production" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="manyFailuresDoNotHideTasks" classname="com.luma.lifeos.todo.TodoAccessibilitySemanticsTest" time="2.656" />
+</testsuite>

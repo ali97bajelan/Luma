@@ -4,13 +4,13 @@
 
 **Goal:** Keep tasks and every retained recovery action reachable when many task operations fail.
 
-**Architecture:** Place off-page recovery cards and Undo as stable items in the existing LazyColumn. Keep only bounded controls such as tabs and filters outside scrolling content.
+**Architecture:** Keep search, filters, loading feedback, recovery cards and task rows in scrollable content when fixed controls would leave no usable list viewport. In loading-only state, show controls in a scrollable fallback and leave the keyed LazyList uncomposed to preserve its saved position.
 
 **Tech Stack:** Kotlin/JVM 17, Jetpack Compose/Material 3, lifecycle StateFlow and the existing Android/Room modules; existing dependencies.
 
 **Spec:** [UX-008 specification](../specs/2026-10-20-audit-n-ux-008-task-recovery-list-design.md)
 
-**Status:** Implemented / acceptance pending. Regression coverage was added but not run; Gradle, emulator and device acceptance remain pending per request. No commit was created. Relative effort: Low.
+**Status:** Implemented / acceptance partial. AC-1 passes 1/1 on API 36; AC-2–AC-5 and the wider device/accessibility matrix remain pending. No commit was created. Relative effort: Low.
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 
 ## Review Focus
 
-These five concrete failure modes are pinned to regression cases owned by this task. Coverage was added for retained recovery reachability, Undo, stable item identity and task paging; tests have not been run.
+These five concrete failure modes are pinned to regression cases owned by this task. Coverage is present for retained recovery reachability, Undo, stable item identity and task paging. AC-1 passed its exact connected regression on 23 November 2026; AC-2–AC-5 remain not run.
 
 - **RF-1 → AC-1:** Render 12 off-page failures at 200% text in landscape. Scroll reaches every recovery action and at least one task without clipped pinned content. Covered by `manyFailuresDoNotHideTasks` in the regression step below.
 - **RF-2 → AC-2:** A completed task moves off-page and exposes Undo. Undo is a reachable stable lazy item with the original token. Covered by `undoRemainsDiscoverable` in the regression step below.
@@ -55,39 +55,39 @@ Keep changes in their current screen/state/repository responsibility. New files 
 
 - [x] **Step 1: Read the spec and confirm prerequisites.** Inspect each listed file and the working-tree diff; preserve unrelated edits. No implementation prerequisite is required. Classify missing tests as additions, not evidence of an already passing regression.
 
-- [x] **Step 2: Add the behavior regressions and manual checks.** Regression coverage was added for the changed list and recovery behavior. The tests and device/manual checks listed here have not been run; TalkBack and layout acceptance remain pending.
+- [x] **Step 2: Add the behavior regressions and manual checks.** Regression coverage is present for the changed list and recovery behavior. AC-1 passes 1/1; AC-2–AC-5, TalkBack and broader layout acceptance remain pending.
 
-| Case | Regression / evidence case | Fixture / action | Assertions |
-|---|---|---|---|
-| AC-1 | `manyFailuresDoNotHideTasks` | Render 12 off-page failures at 200% text in landscape. | Scroll reaches every recovery action and at least one task without clipped pinned content. |
-| AC-2 | `undoRemainsDiscoverable` | A completed task moves off-page and exposes Undo. | Undo is a reachable stable lazy item with the original token. |
-| AC-3 | `filterChangeKeepsActions` | Switch Open/Completed and due filters with retained failures. | No command disappears or changes identity. |
-| AC-4 | `recompositionKeepsScroll` | Emit an unrelated task change while scrolled. | Stable item identity preserves the current content position and focus. |
-| AC-5 | `feedbackDoesNotAdvancePaging` | Insert recovery items before a 50-record task page. | Load-more requests use task page boundaries, without skipped or duplicate tasks. |
+| Case | Regression / evidence case | Fixture / action | Assertions | Result |
+|---|---|---|---|---|
+| AC-1 | `manyFailuresDoNotHideTasks` | Render 12 off-page failures at 200% text in landscape. | Scroll reaches every recovery action and at least one task without clipped pinned content. | PASS 1/1; API 36 retest saved in the QA-01 report. |
+| AC-2 | `undoRemainsDiscoverable` | A completed task moves off-page and exposes Undo. | Undo is a reachable stable lazy item with the original token. | NOT RUN |
+| AC-3 | `filterChangeKeepsActions` | Switch Open/Completed and due filters with retained failures. | No command disappears or changes identity. | NOT RUN |
+| AC-4 | `recompositionKeepsScroll` | Emit an unrelated task change while scrolled. | Stable item identity preserves the current content position and focus. | NOT RUN |
+| AC-5 | `feedbackDoesNotAdvancePaging` | Insert recovery items before a 50-record task page. | Load-more requests use task page boundaries, without skipped or duplicate tasks. | NOT RUN |
 
-- [ ] **Step 3: Establish the regression.** Not run per request. The listed Gradle commands remain available for later acceptance; no failure/pass result is claimed.
+- [x] **Step 3: Establish and rerun the regression.** The pre-fix AC-1 assertion failure is preserved in the 2026-11-23 QA report. After moving controls into the scrollable content and switching the case to stable-tag scrolling, the exact method passes 1/1 on API 36. AC-2–AC-5 remain unverified.
 
 ```bash
-./gradlew :app:testDebugUnitTest --tests 'com.luma.lifeos.ui.todo.TodoListViewModelTest'
+./gradlew :app:testProductionDebugUnitTest --tests 'com.luma.lifeos.ui.todo.TodoListViewModelTest'
 ```
 
 ```bash
-./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.todo.TodoAccessibilityTest
+./gradlew :app:connectedProductionDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.todo.TodoAccessibilitySemanticsTest#manyFailuresDoNotHideTasks
 ```
 
 Device commands require a connected, configured test device/emulator. Locale/font/window and TalkBack settings are deliberate validation inputs; the command alone does not configure or certify that matrix. Do not install dependencies or alter the execution environment as part of this documentation task.
 
-- [x] **Step 4: Implement the owning contract.** Move unbounded recovery/Undo children into LazyColumn with separate stable key namespaces.
+- [x] **Step 4: Implement the owning contract.** Keep controls and recovery/task content in scrollable content at constrained sizes, with recovery/Undo as stable LazyColumn items and separate key namespaces.
 
 - [x] **Step 5: Connect the behavior.** Adjust task paging/scroll and focus targets to account for inserted feedback items while preserving all retained commands.
 
-- [ ] **Step 6: Exercise the complete flow.** Use a constrained viewport with many failures to prove both final recovery action and task rows can be reached.
+- [x] **Step 6: Exercise the constrained recovery flow.** The API 36 AC-1 test uses a 640×320 dp viewport with font scale 2.0 and reaches both the final recovery card and a task action.
 
-- [ ] **Step 7: Verify the task.** Not run per request. Targeted Gradle tests/build/lint and EN/FR/FA, theme, font/window and device acceptance remain pending; do not mark AC-1 through AC-5 verified.
+- [ ] **Step 7: Verify the full task.** AC-1 is verified; AC-2–AC-5, TalkBack, targeted wider suites and EN/FR/FA, theme, font/window and device acceptance remain pending.
 
-- [ ] **Step 8: Review and integrate this task alone.** Inspect the diff against the spec and confirm every AC/RF has evidence. Stage only this task's hunks in existing modified files and its new files; do not stage the pre-existing dirty tree wholesale. If the execution workflow uses commits, commit with `fix: ux-008 task recovery list`. Update the index status only from actual evidence.
+- [ ] **Step 8: Review and integrate this task alone.** Inspect the diff against the spec and confirm every AC/RF has evidence. Stage only this task's hunks in existing modified files and its new files; do not stage the pre-existing dirty tree wholesale. If the execution workflow uses commits, use `fix(todo): keep recovery rows reachable at large text sizes`. Update the index status only from actual evidence.
 
 ## Handoff
 
-Implementation and regression coverage are present. Runtime and accessibility acceptance remain pending because Gradle/emulator/device checks were not run per request. No commit was created. Do not mark the finding Verified until the remaining checks are completed.
+Implementation and regression coverage are present. AC-1 passes its exact connected test; AC-2–AC-5 and wider runtime/accessibility acceptance remain pending. No commit was created. Do not mark the full finding Verified until the remaining checks are completed.
 

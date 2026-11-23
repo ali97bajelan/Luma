@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -145,7 +146,7 @@ fun TodoListScreen(
         recoveryItemCount,
     ) {
         buildMap<UUID, Int> {
-            var index = recoveryItemCount
+            var index = TODO_LIST_CONTROLS_ITEM_COUNT + recoveryItemCount
             fun appendRows(rows: List<TodoTaskRow>) {
                 rows.forEach { row ->
                     put(row.task.id, index++)
@@ -207,238 +208,99 @@ fun TodoListScreen(
         },
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
-         Column(
-            Modifier.fillMaxSize().padding(horizontal = LumaUi.PageGutter),
-            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
-                LumaFilterChip(
-                    selected = !state.completed,
-                    onClick = { onSelectCompleted(false) },
-                    label = { Text(stringResource(R.string.todo_list_open_tab)) },
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).focusRequester(openTabFocusRequester)
-                        .testTag("todo_list_open_tab"),
-                )
-                LumaFilterChip(
-                    selected = state.completed,
-                    onClick = { onSelectCompleted(true) },
-                    label = { Text(stringResource(R.string.todo_list_completed_tab)) },
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("todo_list_completed_tab"),
-                )
-            }
-            LumaOutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = onSearchQueryChange,
-                singleLine = true,
-                label = {
-                    Text(
-                        stringResource(
-                            if (state.completed) R.string.todo_list_search_completed_label
-                            else R.string.todo_list_search_open_label,
-                        ),
-                    )
-                },
-                modifier = Modifier.fillMaxWidth().testTag("todo_list_search"),
-                trailingIcon = if (state.searchQuery.isNotEmpty()) {
-                    {
-                        LumaTextButton(
-                            onClick = { onSearchQueryChange("") },
-                            modifier = Modifier.testTag("todo_list_search_clear"),
+            Column(Modifier.fillMaxSize().padding(horizontal = LumaUi.PageGutter)) {
+                if (state.dataFresh || state.page.items.isNotEmpty() || recoveryItemCount > 0) {
+                    stateHolder.SaveableStateProvider(
+                        "${if (state.completed) "completed" else "open"}:" +
+                            "${state.importanceFilter?.code ?: -1}:${state.sort.name}:" +
+                            if (state.searchQuery.isNotBlank()) "search" else "browse",
+                    ) {
+                        val listState = rememberLazyListState()
+                        LaunchedEffect(
+                            state.completed,
+                            visibleIds,
+                            state.pendingIntents.keys,
+                            state.inFlight,
+                            state.dataFresh,
+                            state.rowErrors,
+                            state.undoableCompletion,
                         ) {
-                            Text(stringResource(R.string.todo_list_search_clear))
-                        }
-                    }
-                } else {
-                    null
-                },
-            )
-            Text(
-                stringResource(R.string.todo_list_filter_heading),
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.semantics { heading() },
-            )
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LumaFilterChip(
-                    selected = state.importanceFilter == null,
-                    onClick = { onImportanceFilter(null) },
-                    label = { Text(stringResource(R.string.todo_list_filter_all)) },
-                    modifier = Modifier.testTag("todo_list_importance_filter_all"),
-                )
-                listOf(
-                    TodoImportance.HIGH to R.string.todo_importance_high,
-                    TodoImportance.MEDIUM to R.string.todo_importance_medium,
-                    TodoImportance.LOW to R.string.todo_importance_low,
-                    TodoImportance.NONE to R.string.todo_importance_none,
-                ).forEach { (importance, labelResource) ->
-                    LumaFilterChip(
-                        selected = state.importanceFilter == importance,
-                        onClick = { onImportanceFilter(importance) },
-                        label = { Text(stringResource(labelResource)) },
-                        modifier = Modifier.testTag("todo_list_importance_filter_${importance.name.lowercase()}"),
-                    )
-                }
-            }
-            Text(
-                stringResource(R.string.todo_list_sort_heading),
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.semantics { heading() },
-            )
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LumaFilterChip(
-                    selected = state.sort == TodoSort.DATE,
-                    onClick = { onSort(TodoSort.DATE) },
-                    label = { Text(stringResource(R.string.todo_list_sort_date)) },
-                    modifier = Modifier.testTag("todo_list_sort_date"),
-                )
-                LumaFilterChip(
-                    selected = state.sort == TodoSort.IMPORTANCE,
-                    onClick = { onSort(TodoSort.IMPORTANCE) },
-                    label = { Text(stringResource(R.string.todo_list_sort_importance)) },
-                    modifier = Modifier.testTag("todo_list_sort_importance"),
-                )
-            }
-            if (state.sort == TodoSort.IMPORTANCE) {
-                Text(
-                    stringResource(R.string.todo_list_importance_order_heading),
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.semantics { heading() }
-                        .testTag("todo_list_importance_order_heading"),
-                )
-            }
-            Text(
-                stringResource(
-                    if (state.searchQuery.isNotBlank() || state.importanceFilter != null) {
-                        R.string.todo_list_matching_count
-                    } else if (state.completed) {
-                        R.string.todo_list_completed_count
-                    } else {
-                        R.string.todo_list_open_count
-                    },
-                    count,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.testTag("todo_list_count"),
-            )
-            if (state.loadError == TodoListLoadError.REFRESH) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(R.string.todo_list_refresh_error),
-                        Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    LumaTextButton(
-                        onClick = onRetryLoad,
-                        enabled = !state.refreshing,
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("todo_list_retry_refresh"),
-                    ) {
-                        Text(stringResource(R.string.retry))
-                    }
-                }
-            }
-            if (state.loading || state.refreshing) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CircularProgressIndicator(Modifier.heightIn(min = 24.dp), strokeWidth = 2.dp)
-                    Text(
-                        stringResource(
-                            if (state.loading && state.page.items.isEmpty()) R.string.todo_list_loading
-                            else R.string.todo_list_refreshing,
-                        ),
-                    )
-                }
-            }
-            if (state.loadError == TodoListLoadError.INITIAL) {
-                TodoListErrorCard(
-                    message = R.string.todo_list_load_error,
-                    onRetry = onRetryLoad,
-                    retryTag = "todo_list_retry_initial",
-                )
-            }
+                            val focus = pendingFocus.value ?: return@LaunchedEffect
+                            if (focus.completedMode != state.completed) {
+                                pendingFocus.value = null
+                                return@LaunchedEffect
+                            }
+                            if (focus.taskId in state.inFlight) return@LaunchedEffect
+                            val pendingIntentIndex = offPageIntents.indexOfFirst { it.taskId == focus.taskId }
+                            if (pendingIntentIndex >= 0) {
+                                listState.animateScrollToItem(
+                                    TODO_LIST_CONTROLS_ITEM_COUNT + undoItemCount + parentOfferItemCount +
+                                        pendingIntentIndex,
+                                )
+                                pendingFocus.value = null
+                                return@LaunchedEffect
+                            }
+                            if (focus.taskId in state.pendingIntents) return@LaunchedEffect
+                            if (!state.dataFresh) return@LaunchedEffect
+                            if (focus.taskId in visibleIds) {
+                                val matchingResult = state.undoableCompletion?.let {
+                                    it.taskId == focus.taskId && it.completed == focus.desiredCompleted
+                                } == true
+                                if (!matchingResult) pendingFocus.value = null
+                                return@LaunchedEffect
+                            }
 
-            // Do not compose a loading-only list: LazyListState would clamp its saved index to zero.
-            if (state.dataFresh || state.page.items.isNotEmpty() || recoveryItemCount > 0) {
-                stateHolder.SaveableStateProvider(
-                    "${if (state.completed) "completed" else "open"}:" +
-                        "${state.importanceFilter?.code ?: -1}:${state.sort.name}:" +
-                        if (state.searchQuery.isNotBlank()) "search" else "browse",
-                ) {
-                    val listState = rememberLazyListState()
-                    LaunchedEffect(
-                        state.completed,
-                        visibleIds,
-                        state.pendingIntents.keys,
-                        state.inFlight,
-                        state.dataFresh,
-                        state.rowErrors,
-                        state.undoableCompletion,
-                    ) {
-                        val focus = pendingFocus.value ?: return@LaunchedEffect
-                        if (focus.completedMode != state.completed) {
-                            pendingFocus.value = null
-                            return@LaunchedEffect
-                        }
-                        if (focus.taskId in state.inFlight) return@LaunchedEffect
-                        val pendingIntentIndex = offPageIntents.indexOfFirst { it.taskId == focus.taskId }
-                        if (pendingIntentIndex >= 0) {
-                            listState.animateScrollToItem(undoItemCount + parentOfferItemCount + pendingIntentIndex)
-                            pendingFocus.value = null
-                            return@LaunchedEffect
-                        }
-                        if (focus.taskId in state.pendingIntents) return@LaunchedEffect
-                        if (!state.dataFresh) return@LaunchedEffect
-                        if (focus.taskId in visibleIds) {
-                            val matchingResult = state.undoableCompletion?.let {
+                            val matchingUndo = state.undoableCompletion?.let {
                                 it.taskId == focus.taskId && it.completed == focus.desiredCompleted
                             } == true
-                            if (!matchingResult) pendingFocus.value = null
-                            return@LaunchedEffect
-                        }
+                            if (matchingUndo) {
+                                listState.animateScrollToItem(TODO_LIST_CONTROLS_ITEM_COUNT)
+                                pendingFocus.value = null
+                                return@LaunchedEffect
+                            }
+                            val terminalRecoveryIndex = offPageErrors.indexOfFirst { it.first == focus.taskId }
+                            if (terminalRecoveryIndex >= 0) {
+                                listState.animateScrollToItem(
+                                    TODO_LIST_CONTROLS_ITEM_COUNT + undoItemCount + parentOfferItemCount +
+                                        offPageIntents.size + terminalRecoveryIndex,
+                                )
+                                pendingFocus.value = null
+                                return@LaunchedEffect
+                            }
 
-                        val matchingUndo = state.undoableCompletion?.let {
-                            it.taskId == focus.taskId && it.completed == focus.desiredCompleted
-                        } == true
-                        if (matchingUndo) {
-                            listState.animateScrollToItem(0)
+                            val targetIndex = focus.originalIndex.coerceAtMost(visibleTasks.lastIndex)
+                            if (targetIndex < 0) {
+                                if (state.completed) openTabFocusRequester.requestFocus() else addFocusRequester.requestFocus()
+                            } else {
+                                val target = visibleTasks[targetIndex]
+                                val lazyIndex = taskLazyIndexes[target.id]
+                                    ?: (TODO_LIST_CONTROLS_ITEM_COUNT + recoveryItemCount)
+                                listState.animateScrollToItem(lazyIndex)
+                                val requester = snapshotFlow { focusRequesters[target.id] }.filterNotNull().first()
+                                requester.requestFocus()
+                            }
                             pendingFocus.value = null
-                            return@LaunchedEffect
                         }
-                        val terminalRecoveryIndex = offPageErrors.indexOfFirst { it.first == focus.taskId }
-                        if (terminalRecoveryIndex >= 0) {
-                            listState.animateScrollToItem(undoItemCount + parentOfferItemCount + offPageIntents.size + terminalRecoveryIndex)
-                            pendingFocus.value = null
-                            return@LaunchedEffect
-                        }
-
-                        val targetIndex = focus.originalIndex.coerceAtMost(visibleTasks.lastIndex)
-                        if (targetIndex < 0) {
-                            if (state.completed) openTabFocusRequester.requestFocus() else addFocusRequester.requestFocus()
-                        } else {
-                            val target = visibleTasks[targetIndex]
-                            val lazyIndex = taskLazyIndexes[target.id] ?: recoveryItemCount
-                            listState.animateScrollToItem(lazyIndex)
-                            val requester = snapshotFlow { focusRequesters[target.id] }.filterNotNull().first()
-                            requester.requestFocus()
-                        }
-                        pendingFocus.value = null
-                    }
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.weight(1f).fillMaxWidth().testTag("todo_list_rows"),
-                        contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-                    ) {
-                        state.undoableCompletion?.let { result ->
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.weight(1f).fillMaxWidth().testTag("todo_list_rows"),
+                            contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        ) {
+                            item(key = "todo_controls") {
+                                TodoListControls(
+                                    state = state,
+                                    count = count,
+                                    openTabFocusRequester = openTabFocusRequester,
+                                    onSelectCompleted = onSelectCompleted,
+                                    onSearchQueryChange = onSearchQueryChange,
+                                    onImportanceFilter = onImportanceFilter,
+                                    onSort = onSort,
+                                    onRetryLoad = onRetryLoad,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                            state.undoableCompletion?.let { result ->
                             item(key = "undo:${result.taskId}:${result.resultingRevision}") {
                                 undoFeedback()
                             }
@@ -593,11 +455,198 @@ fun TodoListScreen(
                         }
                     }
                 }
+            } else {
+                TodoListControls(
+                    state = state,
+                    count = count,
+                    openTabFocusRequester = openTabFocusRequester,
+                    onSelectCompleted = onSelectCompleted,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onImportanceFilter = onImportanceFilter,
+                    onSort = onSort,
+                    onRetryLoad = onRetryLoad,
+                    modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                )
             }
         }
     }
 }
 }
+
+@Composable
+private fun TodoListControls(
+    state: TodoListUiState,
+    count: String,
+    openTabFocusRequester: FocusRequester,
+    onSelectCompleted: (Boolean) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onImportanceFilter: (TodoImportance?) -> Unit,
+    onSort: (TodoSort) -> Unit,
+    onRetryLoad: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap)) {
+            LumaFilterChip(
+                selected = !state.completed,
+                onClick = { onSelectCompleted(false) },
+                label = { Text(stringResource(R.string.todo_list_open_tab)) },
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp).focusRequester(openTabFocusRequester)
+                    .testTag("todo_list_open_tab"),
+            )
+            LumaFilterChip(
+                selected = state.completed,
+                onClick = { onSelectCompleted(true) },
+                label = { Text(stringResource(R.string.todo_list_completed_tab)) },
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("todo_list_completed_tab"),
+            )
+        }
+        LumaOutlinedTextField(
+            value = state.searchQuery,
+            onValueChange = onSearchQueryChange,
+            singleLine = true,
+            label = {
+                Text(
+                    stringResource(
+                        if (state.completed) R.string.todo_list_search_completed_label
+                        else R.string.todo_list_search_open_label,
+                    ),
+                )
+            },
+            modifier = Modifier.fillMaxWidth().testTag("todo_list_search"),
+            trailingIcon = if (state.searchQuery.isNotEmpty()) {
+                {
+                    LumaTextButton(
+                        onClick = { onSearchQueryChange("") },
+                        modifier = Modifier.testTag("todo_list_search_clear"),
+                    ) {
+                        Text(stringResource(R.string.todo_list_search_clear))
+                    }
+                }
+            } else {
+                null
+            },
+        )
+        Text(
+            stringResource(R.string.todo_list_filter_heading),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.semantics { heading() },
+        )
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LumaFilterChip(
+                selected = state.importanceFilter == null,
+                onClick = { onImportanceFilter(null) },
+                label = { Text(stringResource(R.string.todo_list_filter_all)) },
+                modifier = Modifier.testTag("todo_list_importance_filter_all"),
+            )
+            listOf(
+                TodoImportance.HIGH to R.string.todo_importance_high,
+                TodoImportance.MEDIUM to R.string.todo_importance_medium,
+                TodoImportance.LOW to R.string.todo_importance_low,
+                TodoImportance.NONE to R.string.todo_importance_none,
+            ).forEach { (importance, labelResource) ->
+                LumaFilterChip(
+                    selected = state.importanceFilter == importance,
+                    onClick = { onImportanceFilter(importance) },
+                    label = { Text(stringResource(labelResource)) },
+                    modifier = Modifier.testTag("todo_list_importance_filter_${importance.name.lowercase()}"),
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.todo_list_sort_heading),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.semantics { heading() },
+        )
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LumaFilterChip(
+                selected = state.sort == TodoSort.DATE,
+                onClick = { onSort(TodoSort.DATE) },
+                label = { Text(stringResource(R.string.todo_list_sort_date)) },
+                modifier = Modifier.testTag("todo_list_sort_date"),
+            )
+            LumaFilterChip(
+                selected = state.sort == TodoSort.IMPORTANCE,
+                onClick = { onSort(TodoSort.IMPORTANCE) },
+                label = { Text(stringResource(R.string.todo_list_sort_importance)) },
+                modifier = Modifier.testTag("todo_list_sort_importance"),
+            )
+        }
+        if (state.sort == TodoSort.IMPORTANCE) {
+            Text(
+                stringResource(R.string.todo_list_importance_order_heading),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.semantics { heading() }
+                    .testTag("todo_list_importance_order_heading"),
+            )
+        }
+        Text(
+            stringResource(
+                if (state.searchQuery.isNotBlank() || state.importanceFilter != null) {
+                    R.string.todo_list_matching_count
+                } else if (state.completed) {
+                    R.string.todo_list_completed_count
+                } else {
+                    R.string.todo_list_open_count
+                },
+                count,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.testTag("todo_list_count"),
+        )
+        if (state.loadError == TodoListLoadError.REFRESH) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.todo_list_refresh_error),
+                    Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.error,
+                )
+                LumaTextButton(
+                    onClick = onRetryLoad,
+                    enabled = !state.refreshing,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("todo_list_retry_refresh"),
+                ) {
+                    Text(stringResource(R.string.retry))
+                }
+            }
+        }
+        if (state.loading || state.refreshing) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(Modifier.heightIn(min = 24.dp), strokeWidth = 2.dp)
+                Text(
+                    stringResource(
+                        if (state.loading && state.page.items.isEmpty()) R.string.todo_list_loading
+                        else R.string.todo_list_refreshing,
+                    ),
+                )
+            }
+        }
+        if (state.loadError == TodoListLoadError.INITIAL) {
+            TodoListErrorCard(
+                message = R.string.todo_list_load_error,
+                onRetry = onRetryLoad,
+                retryTag = "todo_list_retry_initial",
+            )
+        }
+    }
+}
+
+private const val TODO_LIST_CONTROLS_ITEM_COUNT = 1
 
 @Composable
 private fun TodoListRowEntry(

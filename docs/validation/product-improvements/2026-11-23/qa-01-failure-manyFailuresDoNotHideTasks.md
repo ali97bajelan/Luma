@@ -1,29 +1,40 @@
-# QA-01 failure case — `manyFailuresDoNotHideTasks`
+# QA-01 Todo recovery-list failure case — `manyFailuresDoNotHideTasks`
 
-**Status:** FAIL on candidate `072f43d7f2fd37377cd6664a3083de43e505f26f`  
-**Environment:** `Medium_Phone_API_36.1`, Android 16 / API 36, 1080×2400 px at 420 dpi, portrait system configuration; the test itself overrides the content to 640×320 dp landscape with font scale 2.0.  
+**Current status:** RESOLVED in the fix worktree. The exact connected regression now passes 1/1 on API 36 after the list layout fix.
+
+**Historical failure:** candidate `072f43d7f2fd37377cd6664a3083de43e505f26f` failed the assertion recorded below. The original JUnit XML is retained as failure evidence.
+
+**Environment:** `Medium_Phone_API_36.1`, Android 16 / API 36, 1080×2400 px at 420 dpi, portrait system configuration; test content is overridden to 640×320 dp landscape with font scale 2.0.
+
 **Fixture:** synthetic Todo UI state with 12 terminal conflict recovery cards and one visible open task.
 
-## Exact reproduction
+## Original failure
 
-Run from the repository root:
+The original implementation placed the search and filter controls in a fixed column above a weighted `LazyColumn`. At the short, large-text viewport those controls consumed the available height, leaving no usable list viewport.
 
-```sh
-bash gradlew :app:connectedProductionDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.todo.TodoAccessibilitySemanticsTest#manyFailuresDoNotHideTasks \
-  --console=plain
-```
-
-The test implementation is in [TodoAccessibilityTest.kt](../../../app/src/androidTest/java/com/luma/lifeos/todo/TodoAccessibilityTest.kt#L257). It scrolls `todo_list_rows` to index 11, then expects the twelfth recovery card, tagged `todo_row_error_c72dd6c6-e0c2-3df7-b08d-94cf0afbeca5`, to be displayed. The assertion at line 288 fails:
+The test implementation is in [TodoAccessibilityTest.kt](../../../app/src/androidTest/java/com/luma/lifeos/todo/TodoAccessibilityTest.kt). The failing assertion expected the twelfth recovery card, tagged `todo_row_error_c72dd6c6-e0c2-3df7-b08d-94cf0afbeca5`, to be displayed after scrolling to item index 11:
 
 ```
 java.lang.AssertionError: Assert failed: The component with TestTag = 'todo_row_error_c72dd6c6-e0c2-3df7-b08d-94cf0afbeca5' is not displayed!
 at com.luma.lifeos.todo.TodoAccessibilitySemanticsTest.manyFailuresDoNotHideTasks(TodoAccessibilityTest.kt:288)
 ```
 
-Gradle exit code: `1`. This run completed as an assertion failure; it did not crash the instrumentation process. Root cause remains untriaged. Keep this test failing until the recovery-card visibility expectation is satisfied and the exact method passes on the same layout.
+The original run exited with code 1 and completed as an assertion failure, not an instrumentation crash.
+
+## Fix and verification
+
+The Todo search, filters, count and loading feedback now live in the same scrollable `LazyColumn` as recovery and task rows. When the list has no data yet, the controls retain their separate scrollable fallback and the saved list state remains uncomposed. Focus restoration indices include the controls item. The existing regression now scrolls to stable recovery and task tags instead of relying on fixed item indices.
+
+Exact rerun on base revision `1e63510e1de0c6747f149723af1ae2b2d58a2350` with the source/test fix in the working tree:
+
+```sh
+./gradlew :app:connectedProductionDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.luma.lifeos.todo.TodoAccessibilitySemanticsTest#manyFailuresDoNotHideTasks
+```
+
+**Result:** PASS, 1/1 on `Medium_Phone_API_36.1` (Android 16 / API 36). The test still renders at 640×320 dp and font scale 2.0; both the final recovery card and visible task action are reachable.
 
 ## Evidence
 
-- Preserved JUnit result: [QA-01-TodoAccessibilitySemanticsTest-manyFailuresDoNotHideTasks.junit.xml](qa-01-TodoAccessibilitySemanticsTest-manyFailuresDoNotHideTasks.junit.xml)
-- Gradle log: [/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/126b49d2-ad34-4c97-961c-e43948f9af4b/session/agent/shell-logs/shell-207.log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/126b49d2-ad34-4c97-961c-e43948f9af4b/session/agent/shell-logs/shell-207.log)
+- Historical failing run: [original JUnit XML](qa-01-TodoAccessibilitySemanticsTest-manyFailuresDoNotHideTasks.junit.xml)
+- Passing fix rerun: [passing JUnit XML](qa-01-TodoAccessibilitySemanticsTest-manyFailuresDoNotHideTasks-rerun.junit.xml)
