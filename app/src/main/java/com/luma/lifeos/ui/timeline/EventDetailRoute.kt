@@ -215,7 +215,7 @@ fun EventDetailRoute(repository: TimelineRepository, photos: PhotoRepository, id
                                 Text(zone.id, style = MaterialTheme.typography.bodySmall)
                             }
                             record.mood?.let { MoodContent(it) }
-                            val body = record.event.note ?: record.mood?.note ?: record.memory?.note
+                            val body = record.event.note ?: record.mood?.note ?: record.memory?.note ?: record.journal?.body
                             body?.let { Text(it, modifier = Modifier.testTag("event_detail_body")) }
                             record.tags.takeIf { it.isNotEmpty() }?.let { Text(it.joinToString(", ") { tag -> tag.name }) }
                             SignalContent(record, zone, full = true)

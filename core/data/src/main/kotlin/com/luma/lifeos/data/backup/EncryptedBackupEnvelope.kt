@@ -54,13 +54,13 @@ internal object EncryptedBackupEnvelope {
         password: CharArray,
         writeArchive: (OutputStream) -> Unit,
     ) {
-        requirePassword(password)
         val job = currentCoroutineContext()[Job]
         val salt = ByteArray(SALT_SIZE_BYTES).also(random::nextBytes)
         var derivedKey: ByteArray? = null
         var serializedKeyset: ByteArray? = null
         var encryptedKeyset: ByteArray? = null
         try {
+            requirePassword(password)
             derivedKey = derivePasswordKey(password, salt, job)
             val keysetHandle = newKeyset()
             serializedKeyset = serializeKeyset(keysetHandle)
@@ -97,7 +97,6 @@ internal object EncryptedBackupEnvelope {
     }
 
     suspend fun decryptToFile(input: InputStream, password: CharArray, target: java.io.File) {
-        requirePassword(password)
         val job = currentCoroutineContext()[Job]
         var derivedKey: ByteArray? = null
         var serializedKeyset: ByteArray? = null
@@ -105,6 +104,7 @@ internal object EncryptedBackupEnvelope {
         var wrappedKeyset: ByteArray? = null
         var header: ByteArray? = null
         try {
+            requirePassword(password)
             val boundedInput = BoundedInputStream(input, MAX_ARCHIVE_BYTES, job)
             val data = DataInputStream(boundedInput)
             val readSignature = ByteArray(signature.size)

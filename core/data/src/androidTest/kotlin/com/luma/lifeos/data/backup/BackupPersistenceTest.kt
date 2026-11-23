@@ -13,7 +13,7 @@ import com.luma.lifeos.data.media.ManagedPhotoFiles
 import com.luma.lifeos.data.repository.*
 import com.luma.lifeos.domain.model.*
 import com.luma.lifeos.domain.todo.TodoInput
-import com.luma.lifeos.domain.backup.BackupFocusExportChoice
+import com.luma.lifeos.domain.backup.*
 import com.luma.lifeos.domain.focus.FocusInvalidReason
 import com.luma.lifeos.domain.focus.FocusState
 import com.luma.lifeos.domain.focus.FocusStartInput
@@ -262,6 +262,49 @@ class BackupPersistenceTest {
         assertNull(journals.get(extra))
         assertFalse(File(root, "work").walkTopDown().any { it.name == "stage.db" })
     }
+    @Test fun encryptedRestoreRequiresTheExactPasswordAndPreservesDataUntilCommit() = runBlocking {
+        val journals = RoomJournalRepository(db)
+        val sourceId = EventId.new()
+        val sourceBody = "Portable entry with فارسی"
+        journals.create(sourceId, JournalInput(sourceBody, now))
+        val passphraseText = "  exact Unicode 🔐 backup  "
+        val passphrase = passphraseText.toCharArray()
+        val encrypted = ByteArrayOutputStream()
+        backup.export(encrypted, null, BackupEncryptionOptions(passphrase))
+        val bytes = encrypted.toByteArray()
+        assertTrue(BackupFormatMarker.isEncryptedPrefix(bytes))
+        assertArrayEquals(CharArray(passphrase.size), passphrase)
+
+        journals.update(sourceId, JournalInput("Changed locally", now))
+        val sentinelId = EventId.new()
+        journals.create(sentinelId, JournalInput("Keep until commit", now))
+
+        val missingPassword = runCatching { backup.prepare(ByteArrayInputStream(bytes)) }.exceptionOrNull()
+        assertTrue(missingPassword is BackupPasswordRequiredException)
+        assertEquals("Changed locally", journals.get(sourceId)!!.journal!!.body)
+        assertEquals("Keep until commit", journals.get(sentinelId)!!.journal!!.body)
+
+        val wrongPassword = "a different long enough password".toCharArray()
+        val rejected = runCatching {
+            backup.prepare(ByteArrayInputStream(bytes), BackupEncryptionOptions(wrongPassword))
+        }
+        assertTrue(rejected.isFailure)
+        assertArrayEquals(CharArray(wrongPassword.size), wrongPassword)
+        assertEquals("Changed locally", journals.get(sourceId)!!.journal!!.body)
+        assertEquals("Keep until commit", journals.get(sentinelId)!!.journal!!.body)
+
+        val importPassword = passphraseText.toCharArray()
+        backup.prepare(ByteArrayInputStream(bytes), BackupEncryptionOptions(importPassword)).use { prepared ->
+            assertEquals(1L, prepared.preview.eventCount)
+            assertEquals("Changed locally", journals.get(sourceId)!!.journal!!.body)
+            assertEquals("Keep until commit", journals.get(sentinelId)!!.journal!!.body)
+            prepared.restore()
+        }
+        assertArrayEquals(CharArray(importPassword.size), importPassword)
+        assertEquals(sourceBody, db.lifeEvents().getDetails(sourceId.toString())!!.event.note)
+        assertNull(db.lifeEvents().getDetails(sentinelId.toString()))
+    }
+
     @Test fun failedCommitPreservesCurrentRecordsAndPhotos() = runBlocking {
         val owner = UUID.randomUUID(); val photo = photoRepository.import(owner, UUID.randomUUID(), "content://photo")
         val id = EventId.new(); val journals = RoomJournalRepository(db)

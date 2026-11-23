@@ -1,6 +1,7 @@
 package com.luma.lifeos.ui
 
 import com.luma.lifeos.ui.common.LumaAlertDialog
+import com.luma.lifeos.ui.common.LumaUi
 
 import android.app.Activity
 import android.content.Context
@@ -965,7 +966,15 @@ fun LifeOsApp(
         modifier = if (appLockGateVisible) {
             Modifier.clearAndSetSemantics { }
         } else Modifier,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                snackbarHostState,
+                modifier = Modifier.padding(
+                    bottom = if (primaryScreen) 0.dp else
+                        LumaUi.PrimaryActionHeight + LumaUi.EditorFooterVerticalPadding * 2,
+                ),
+            )
+        },
         bottomBar = {
             if (primaryScreen && !isFocusGuarded()) {
                 PrimaryNavigationBar(

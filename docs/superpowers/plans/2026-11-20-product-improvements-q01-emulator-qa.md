@@ -1,8 +1,8 @@
 # IP-Q01 — Integrated emulator QA plan
 
-**Status** BLOCKED — partial execution; release acceptance pending · **Depends on** IP-I01–IP-I09 source handoffs
+**Status** BLOCKED — QA-01–QA-03 partial execution; release acceptance pending · **Depends on** IP-I01–IP-I09 source handoffs
 
-[2026-11-23 QA-01 follow-up record](../../validation/product-improvements/2026-11-23/acceptance.md) · [2026-11-22 integrated acceptance record](../../validation/product-improvements/2026-11-22/acceptance.md)
+[2026-11-23 QA-01–03 follow-up record](../../validation/product-improvements/2026-11-23/acceptance.md) · [2026-11-22 integrated acceptance record](../../validation/product-improvements/2026-11-22/acceptance.md)
 
 [QA specification](../specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [Shared delivery workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -12,10 +12,10 @@
 - [ ] Verify actual APK/app/runner IDs and use disposable AVD data. Record AVD model/image, API, locale, timezone, calendar/week start, theme, viewport and font scale. Clone/snapshot QA fixtures before testing destructive or cross-install cases.
 - [x] Follow the [repository QA workflow](../../../AGENTS.md#qa-workflow-required). Map QA-01–QA-09 to the owning requirements and existing tests. Run targeted JVM tests for logic. Record commands, exit codes and results.
 - [ ] Execute the isolated pre-change draft baseline before the candidate runtime checks. Reuse running isolated AVDs and installed builds when their identities and configurations match. Seed a known state for each scenario and wait for specific UI states or events.
-- [x] Run targeted candidate Compose tests for app behavior. Add coverage for required risks that existing tests miss, then complete the broader gates below. QA-01 focused coverage is recorded in the 2026-11-23 follow-up; broader gates remain outstanding.
+- [x] Run targeted candidate Compose tests for app behavior. Add coverage for required risks that existing tests miss, then complete the broader gates below. Focused QA-01–QA-03 evidence is recorded in the 2026-11-23 follow-up; full app/data JVM suites and app/data assemble/lint gates pass. The full connected app suite and platform matrix remain outstanding.
 - [ ] Use Compose semantics and stable test tags for app interactions. For uncovered exploratory steps, query only relevant accessibility nodes. Use UI Automator for system dialogs, SAF and launcher interactions where applicable. A test can cover a scenario step when it exercises the same behavior, fixture and configuration and records the expected result.
 - [ ] Complete outstanding emulator checks and the [required UI/platform matrix](../../feature-roadmap/WORKFLOW.md#required-uiplatform-matrix) for affected surfaces. Include EN/FR/FA with actual RTL, System/Light/Dark, 2.0 font scale, narrow/wide/landscape viewports, TalkBack observation, hardware keyboard, visible IME, system insets and 48 dp touch targets. Add direct-entry and relock checks for affected protected flows.
-- [x] Triage observed failures against available baseline/source evidence. Correct reproducible in-scope test expectation defects and rerun owning cases and affected cross-feature checks. No production behavior defect was confirmed in the exercised QA-01 scope. The parent hierarchy test now scrolls offscreen controls into the tagged editor viewport; the hierarchy and family cancel/confirm/Undo cases pass on API 36. Record remaining environment and evidence limits in the acceptance record.
+- [x] Triage observed failures against available baseline/source evidence. Correct reproducible in-scope test expectation defects and rerun owning cases and affected cross-feature checks. QA-01 hierarchy interaction and Mood wait expectations were corrected; QA-02 password-buffer cleanup and QA-03 snackbar/footer clearance and Journal detail display were fixed and retested. The parent hierarchy and family cancel/confirm/Undo cases pass on API 36. Record remaining environment and evidence limits in the acceptance record.
 - [x] Create one dated report with revision/patch, APK identity and checksums, fixture metadata, case-to-requirement evidence, defects/fixes/retests and actual acceptance. Mark every case individually. Keep release acceptance pending for required missing evidence.
 
 ## QA-only commands
@@ -50,23 +50,27 @@ Expected command gate is exit 0, zero unexplained skips/tests missing, zero fail
 
 **Expected** Initially 7 unloaded, then no unloaded count after loading the remaining rows. Loaded rows outside the viewport remain scrollable. Due today, overdue and undated are distinct in Tasks; no date is changed by navigation. History has explicit date and return control; authorized habits open the chosen day. Family confirmation, error/retry and Undo preserve identity. Protected task/habit/Focus details remain gated.
 
-**2026-11-23 result** IP-I01-R1 passes. R2 is partial: buckets and completion behavior pass, but the Today “View all” route and unchanged due-date invariant remain unverified. R3 is partial: historical return, habit date return, family confirmation/Undo identity, parent hierarchy navigation, and one-session Focus lifecycle pass. The parent hierarchy test initially tapped priority and delete controls while they were offscreen; both are now brought into view before interaction. Hidden-provider behavior, protected-detail gates and a real midnight crossing remain unverified. Keep QA-01 blocked pending those cases and the UI/platform matrix. See the [dated acceptance record](../../validation/product-improvements/2026-11-23/acceptance.md#qa-01-acceptance).
+**2026-11-23 result** IP-I01-R1 passes. R2 is partial: buckets and completion behavior pass, but the Today “View all” route and unchanged due-date invariant remain unverified. R3 is partial: historical return, habit date return, family confirmation/Undo identity, parent hierarchy navigation, and one-session Focus lifecycle pass. The parent hierarchy test initially tapped priority and delete controls while they were offscreen; both are now brought into view before interaction. The latest candidate reruns also pass the 57-row paging, Today task-flow and two hierarchy/family tests. Hidden-provider behavior, protected-detail gates and a real midnight crossing remain unverified. Keep QA-01 blocked pending those cases and the UI/platform matrix. See the [dated acceptance record](../../validation/product-improvements/2026-11-23/acceptance.md#qa-01-acceptance).
 
 ### QA-02
 
-**Backup and recovery** · [IP-I02 requirements](../specs/2026-11-20-product-improvements-i02-backup-and-recovery-design.md#requirements) · **BLOCKED**
+**Backup and recovery** · [IP-I02 requirements](../specs/2026-11-20-product-improvements-i02-backup-and-recovery-design.md#requirements) · **BLOCKED — partial execution**
 
 **Actions** On A create a portable fixture with multilingual text, photos, task hierarchy, habits and terminal Focus. Export plaintext and encrypted using explicit format choice; confirm exact password handling with 11/12 code points and leading/trailing spaces. Import both plus every supported legacy form on B without A’s app keys. Inspect preview, cancel, re-authenticate, then confirm. Repeat with wrong password, tampered header/middle/end, truncation, unknown versions, bounded-storage failure and interrupted read/write or failed provider close. Exercise running/paused Focus export choices and App Lock forgotten-credential disclosure.
 
 **Expected** Copy identifies confidentiality, password loss, erase-only App Lock recovery, replacement and exclusions. Preview appears only after valid input; successful restore preserves IDs/relations and photo hashes. All cancellations and rejected inputs preserve a sentinel local record before commit. No private title/password in headers, saved state, logs or evidence. Staging cleans up after failure/restart and stale routes refresh after restore. Record KDF/envelope/library/version and measured cost, cross-install compatibility fixtures, and supported provider cleanup behavior.
 
+**2026-11-23 result** Partial: the exact 12-code-point passphrase, Unicode/space preservation, encrypted service round trip, wrong/missing-password sentinel preservation, pre-commit preview and confirm-only replacement pass in host and API 36 checks. Backup confirmation UI and the 18-case persistence suite pass. Independent-install compatibility, native providers, App Lock disclosure, all corruption/size/interruption cases and a controlled KDF benchmark remain unverified. See the [dated acceptance record](../../validation/product-improvements/2026-11-23/acceptance.md#qa-02-acceptance).
+
 ### QA-03
 
-**Dependable capture drafts** · [IP-I03 requirements](../specs/2026-11-20-product-improvements-i03-capture-drafts-design.md#requirements) · **BLOCKED**
+**Dependable capture drafts** · [IP-I03 requirements](../specs/2026-11-20-product-improvements-i03-capture-drafts-design.md#requirements) · **BLOCKED — partial execution**
 
 **Actions** Install and record a pre-IP-I03 baseline on an isolated AVD. In both builds create/edit dated Mood and Memory drafts with optional fields and photos. Rotate, change locale, cancel photo picker, then press Home, terminate only the background process (for example with `adb shell am kill <verified-qa-app-id>`), verify the PID changed and reopen from Recents. Inject save and storage errors where reproducible, retry, race a stale Mood, direct Memory and promoted-marker edit against an update or replacement, and test discard and relock.
 
 **Expected** Fields, date and valid photo order return on supported paths. Missing temp media gives feedback. Saved claims follow actual persistence/commit, retry creates only one record, concurrent edits or replacement are preserved with conflict feedback, and discard removes exclusively owned draft media. A lock/relock reveals no protected draft fields. Record cleared-data or task-removal tests separately when used to probe limits.
+
+**2026-11-23 result** Partial: Mood/Memory survive ActivityScenario recreation; Mood saves, reopens and edits; Memory edits/removes its marker while retaining a legacy Journal body; photo attach/remove and missing-file feedback pass. The baseline AVD could not be provisioned because SDK repository access failed. Process death/Recents, locale/picker, failure retry, duplicate/stale conflict, owned-draft discard and relock cases remain unverified. See the [dated acceptance record](../../validation/product-improvements/2026-11-23/acceptance.md#qa-03-acceptance).
 
 ### QA-04
 

@@ -3,6 +3,10 @@ package com.luma.lifeos
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.semantics.SemanticsProperties
+import com.luma.lifeos.domain.model.EventId
+import com.luma.lifeos.domain.model.JournalInput
+import java.time.Instant
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 
@@ -15,7 +19,7 @@ class MemoryCaptureTest {
         compose.onNodeWithTag("memory_note").performTextInput(note)
         awaitEnabled("memory_save")
         awaitStateDescription("memory_importance_toggle", R.string.review_details_collapsed)
-        compose.onNodeWithTag("memory_importance_toggle").performClick()
+        compose.onNodeWithTag("memory_importance_toggle").performScrollTo().performClick()
         awaitStateDescription("memory_importance_toggle", R.string.review_details_expanded)
         awaitTag("memory_importance_5")
         compose.onNodeWithTag("memory_importance_5").performScrollTo().performClick()
@@ -44,46 +48,42 @@ class MemoryCaptureTest {
         compose.onNodeWithText("$note edited").performClick()
         awaitTag("event_edit")
         compose.onNodeWithTag("event_edit").performClick()
-        awaitTag("memory_remove")
+        awaitEnabled("memory_remove")
         compose.onNodeWithTag("memory_remove").performClick()
+        awaitTag("memory_confirm_remove")
         compose.onNodeWithTag("memory_confirm_remove").performClick()
-        awaitTag("screen_event_detail")
-        compose.onNodeWithTag("event_detail_back").performClick()
         awaitTag("screen_timeline")
         compose.waitUntil(5_000) { compose.onAllNodesWithText("$note edited").fetchSemanticsNodes().isEmpty() }
     }
     @Test fun journalPromotionAndUnmarkingRetainOriginalBody() {
+        val id = EventId.new()
         val body = "Remember journal ${System.nanoTime()}"
-        compose.onNodeWithTag("today_capture_journal").performClick()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_body").performTextInput(body)
-        awaitEnabled("journal_save")
-        compose.onNodeWithTag("journal_save").performClick()
-        awaitTag("screen_today")
-        awaitTodayReady()
-        compose.onNodeWithTag("screen_today").performScrollToNode(hasText(body))
-        compose.onNodeWithText(body).performClick()
-        awaitTag("journal_detail_body")
-        compose.onNodeWithTag("journal_memory").performClick()
-        awaitTag("memory_original")
-        compose.onNodeWithTag("memory_original").assertTextContains(body)
-        compose.onNodeWithTag("capture_timestamp_change").assertIsNotEnabled()
-        compose.onNodeWithTag("memory_save").performClick()
-        awaitTag("journal_detail_body")
-        compose.onNodeWithTag("memory_status").assertIsDisplayed()
-        compose.onNodeWithTag("journal_memory").performClick()
-        awaitTag("memory_remove")
-        compose.onNodeWithTag("memory_remove").performClick()
-        compose.onNodeWithTag("memory_confirm_remove").performClick()
-        awaitTag("journal_detail_body")
-        compose.onNodeWithTag("journal_detail_body").assertTextEquals(body)
-        compose.onNodeWithTag("memory_status").assertDoesNotExist()
-        // Delete the source journal to leave the shared test database clean.
-        compose.onNodeWithTag("journal_edit").performClick()
-        awaitTag("journal_delete")
-        compose.onNodeWithTag("journal_delete").performClick()
-        compose.onNodeWithTag("journal_confirm_delete").performClick()
-        awaitTag("screen_today")
+        val storage = (compose.activity.application as LumaApplication).storage
+        runBlocking { storage.journals.create(id, JournalInput(body, Instant.now())) }
+        try {
+            compose.onNodeWithTag("nav_timeline").performClick()
+            awaitTag("timeline_counts")
+            compose.onNodeWithTag("screen_timeline").performScrollToNode(hasTestTag("event_$id"))
+            compose.onNodeWithTag("event_$id").performClick()
+            awaitTag("event_detail_body")
+            compose.onNodeWithTag("event_promote").performClick()
+            awaitTag("memory_original")
+            compose.onNodeWithTag("memory_original").assertTextContains(body)
+            compose.onNodeWithTag("capture_timestamp_change").assertIsNotEnabled()
+            compose.onNodeWithTag("memory_save").performClick()
+            awaitTag("event_detail_body")
+            compose.onNodeWithTag("memory_status").assertIsDisplayed()
+            compose.onNodeWithTag("event_promote").performClick()
+            awaitEnabled("memory_remove")
+            compose.onNodeWithTag("memory_remove").performClick()
+            awaitTag("memory_confirm_remove")
+            compose.onNodeWithTag("memory_confirm_remove").performClick()
+            awaitTag("event_detail_body")
+            compose.onNodeWithTag("event_detail_body").assertTextEquals(body)
+            compose.onNodeWithTag("memory_status").assertDoesNotExist()
+        } finally {
+            runBlocking { storage.lifeEvents.delete(id) }
+        }
     }
     private fun awaitTag(tag: String) {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
@@ -114,11 +114,5 @@ class MemoryCaptureTest {
         }
     }
 
-    private fun awaitTodayReady() {
-        compose.waitUntil(15_000) {
-            compose.onAllNodesWithTag("today_summary").fetchSemanticsNodes().isNotEmpty() ||
-                compose.onAllNodesWithTag("today_error").fetchSemanticsNodes().isNotEmpty()
-        }
-        compose.onNodeWithTag("today_summary").assertExists()
-    }
+
 }

@@ -1,9 +1,9 @@
-# IP-Q01 — QA-01 follow-up execution record
+# IP-Q01 — QA-01–03 focused execution record
 
 **Run date:** 2026-11-23  
-**QA-01 status:** BLOCKED — partial execution; release acceptance remains pending
+**QA-01 / QA-02 / QA-03 status:** BLOCKED — partial execution; release acceptance remains pending
 
-[QA plan and scenario matrix](../../../superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md#qa-01) · [QA specification](../../../superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [2026-11-22 integrated QA record](../2026-11-22/acceptance.md)
+[QA plan and scenario matrix](../../../superpowers/plans/2026-11-20-product-improvements-q01-emulator-qa.md) · [QA specification](../../../superpowers/specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [IP-I02 backup specification](../../../superpowers/specs/2026-11-20-product-improvements-i02-backup-and-recovery-design.md) · [IP-I03 capture-drafts specification](../../../superpowers/specs/2026-11-20-product-improvements-i03-capture-drafts-design.md) · [2026-11-22 integrated QA record](../2026-11-22/acceptance.md)
 
 ## Candidate and environment
 
@@ -14,6 +14,14 @@
 - **Connected device:** `Medium_Phone_API_36.1(AVD) - 16`, Android 16 / API 36, `sdk_gphone64_x86_64`, 1080×2400 px at 420 dpi, portrait. Locale `en-GB-u-fw-mon`, timezone `Asia/Tehran`, font scale 1.0 and system light mode; same AVD profile as the 2026-11-22 record.
 - **Fixtures:** synthetic Compose test data and controlled repositories. The paging test covers 57 due/overdue matches against the 50-row page; the full real-data Today → Tasks → Habits → Focus sequence was not seeded or run. The production package was not used.
 - **Scope limit:** only API 36 ran in this follow-up. API 28, EN/FR/FA and RTL, dark mode, large text, viewport variations, TalkBack, keyboard, IME/insets and protected-detail direct-entry/relock checks remain outstanding.
+
+### Latest focused candidate (QA-01–03)
+
+- **Repository HEAD:** `aa01aa9464c34d0a97367b790db290ecdd22923f`.
+- **QA source/test patch SHA-256:** `dec602eeba341d25f7bf72289460b7b0e2ba516411e9ee29d89a4365b46dda44` over the seven changed/added source and test paths for this follow-up; documentation is excluded.
+- **Variant and configured IDs:** `productionDebug`, application ID `com.luma.lifeos.qa`, instrumentation ID `com.luma.lifeos.qa.test`, versionCode 21, versionName 1.6.7.
+- **APK SHA-256:** app `2405b8d276f49c4ff9c8caeb3cf796bfb83b66fd17c7ccc2849a9a88935edc2e`; app instrumentation `958f926163a461ed12be82261107ba6e6a0eea45cd00f99c7c3503d358e97ce6`.
+- **Device/configuration:** `Medium_Phone_API_36.1(AVD) - 16`, Android 16 / API 36, `sdk_gphone64_x86_64`, 1080×2400 at 420 dpi, portrait, `en-GB-u-fw-mon`, `Asia/Tehran`, font scale 1.0, system light mode. All fixtures were synthetic; no user data or screenshots were used.
 
 ## Focused checks
 
@@ -27,8 +35,17 @@
 | `HabitDateSelectionFlowTest#todayRejectsStaleClicksDuringDelayFailureAndReturnToSameDate` | PASS — 1 test | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-30.log) |
 | `FocusLifecycleTest#recreationSystemBackPauseResumeAndStopKeepOneFocusSession` | PASS — 1 test | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-32.log) |
 | `TodoHierarchyFlowTest#savedParentCreatesIndependentChildAndReturnsThroughParentContext` | PASS — 1 test | The original failure came from tapping the High importance option while it was below the editor viewport; the later delete action had the same offscreen issue. The editor now exposes its existing scroll viewport with a stable test tag, and the test waits for each target to be displayed before acting. Final API 36 rerun passed through child creation, priority persistence, parent navigation, and delete-confirmation cancellation. [Final Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-53.log) |
+| Latest `TodayTasksStateTest` | PASS — 8 tests | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-98.log) |
+| Latest QA-01 Compose reruns: 57-row paging, `TodayTasksFlowTest`, `TodoHierarchyFlowTest` | PASS — 1 + 2 + 2 tests | [Paging log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-103.log) · [Today flow log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-99.log) · [Hierarchy log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-100.log) |
+| Focused app JVM tests: BackupViewModel, MemoryEditor, MoodEditor and PhotoDraftSession | PASS — 47 tests | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-104.log) |
+| Full `:app:testProductionDebugUnitTest` | PASS — exit 0 | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-111.log) |
+| `EncryptedBackupEnvelopeTest` and full `:core:data:testDebugUnitTest` | PASS — envelope tests 2/2; full task exit 0 | [Final Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-109.log) · [JUnit XML](../../../../core/data/build/test-results/testDebugUnitTest/TEST-com.luma.lifeos.data.backup.EncryptedBackupEnvelopeTest.xml) |
+| `BackupPersistenceTest` | PASS — 18 tests | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-97.log) · [JUnit XML](../../../../core/data/build/outputs/androidTest-results/connected/debug/TEST-Medium_Phone_API_36.1(AVD)%20-%2016-_core_data-.xml) |
+| `BackupSettingsFlowTest` | PASS — 4 tests | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-101.log) |
+| App/data APK assembly and lint gate | PASS — all requested assemble and lint tasks exit 0 | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-112.log) |
+| `MemoryCaptureTest`, `MoodCaptureTest`, `PhotoCaptureTest` | PASS — 2 + 1 + 2 tests | [Memory log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-85.log) · [Mood log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-90.log) · [Photo log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-b0b7573d2431/session/agent/shell-logs/shell-87.log) |
 
-`git diff --check` passed. The broader app suite and the full host/build/lint gates were not rerun in this follow-up. No screenshot was needed for these semantic checks.
+The full app/data JVM suites and app/data assembly/lint gates pass. `git diff --check` is rerun after the report update. The full connected app suite and platform matrix remain outstanding. No screenshot was needed for these semantic/editor checks.
 
 ## QA-01 acceptance
 
@@ -40,11 +57,38 @@
 | **Actual emulator midnight crossing and device-zone change** | NOT RUN | A unit test covers historical/future visibility across simulated midnight and zone changes; no connected run crossed midnight. |
 | **IP-I01 product validation** | NOT RUN | No unassisted-use observation or large-library usability measure was collected. |
 
+## QA-02 acceptance
+
+| Requirement or scenario | Result | Evidence and limit |
+| --- | --- | --- |
+| **IP-I02-R1 — disclosure, preview and replacement confirmation** | BLOCKED — partial | `BackupSettingsFlowTest` passes replacement warning, cancel, busy-state and paused-Focus action-layout checks. The full format disclosure, forgotten-App-Lock erase copy, fresh authorization, and native document-provider flows were not exercised. |
+| **IP-I02-R2 — exact passphrase, portable format and legacy support** | BLOCKED — partial | Host envelope tests reject 11 Unicode code points, accept exactly 12 with leading/trailing spaces, preserve Unicode payload and emit the LUMAENC signature. Service test exports and imports the same envelope with exact spaces and Unicode. Existing plaintext persistence/legacy checks pass. Independent-install interoperability and the full photo/task/habit/Focus encrypted fixture remain unverified. |
+| **IP-I02-R3 — authentication, sentinel preservation and staging** | BLOCKED — partial | Service test confirms missing/wrong passwords fail before preview and preserve both changed local data and a sentinel; correct password previews without mutation and commits replacement only on `restore()`. Envelope test rejects tampering, clears password buffers and removes partial staging output. Header/truncation/version/size/provider-close/interrupted-I/O cases and private-log scan remain unverified. |
+| **IP-I02-R4 — Focus, success reporting and generation invalidation** | BLOCKED — partial | Backup persistence and settings tests cover existing generation invalidation, replacement preview/cancel and Focus choices. Full running/paused export interaction and authorization/relock checks remain unverified. |
+| **KDF cost and independent-install compatibility** | NOT RUN | LUMAENC v1 uses PBKDF2-HMAC-SHA256 at 600,000 iterations and Tink 1.24.0 `AES256_GCM_HKDF_1MB`; test duration is not a controlled KDF benchmark. A second isolated install was unavailable. |
+
+## QA-03 acceptance
+
+| Requirement or scenario | Result | Evidence and limit |
+| --- | --- | --- |
+| **IP-I03-R1 — draft restore and attachment feedback** | BLOCKED — partial | Mood and Memory editor tests survive ActivityScenario recreation; Photo tests render an attached private image and show/remove a missing image. Device rotation, locale change, native picker return/cancel, date preservation across historical drafts, photo order/crop metadata, and background-process kill/Recents recovery were not run. |
+| **IP-I03-R2 — retry, duplicate and stale-edit safety** | BLOCKED — partial | Mood capture saves, reopens from Timeline, edits and confirms the persisted score; Memory draft restores and edits from Timeline. Failure retry, duplicate-save injection, stale/deleted-source conflicts and interrupted create reconciliation remain unverified. |
+| **IP-I03-R3 — discard ownership and access control** | BLOCKED — partial | Memory removal and Photo editor removal preserve unrelated body/tags and clear the removed media; missing-media feedback passes. Explicit unsaved-draft discard ownership, low-storage failure and App Lock relock/direct-entry checks remain unverified. |
+| **Baseline comparison and required matrix** | NOT RUN | Only one configured AVD was available. A second/baseline AVD could not be provisioned when the SDK manager could not reach its remote repository. No process-kill baseline/candidate comparison or EN/FR/FA/RTL, dark, large-text, TalkBack, keyboard, IME/inset or viewport matrix was collected. |
+
+### QA findings and fixes
+
+- The root snackbar overlapped the Memory editor footer and intercepted its remove action. Its host now reserves the shared Luma footer height on non-primary screens; `MemoryCaptureTest` passes after the adjustment.
+- Timeline detail omitted the body for legacy Journal entries. The detail fallback now includes `record.journal?.body`; the promotion/unmarking test confirms the original body remains after marker removal.
+- Mood instrumentation waited for a summary tag instead of the saved entry, so it timed out during loading. It now waits for the requested entry and passes.
+- Encrypted-envelope password-length rejection previously occurred before buffer cleanup. Validation now runs inside the cleanup `try/finally`; the regression test first failed on this behavior and now verifies both import and export buffers are cleared.
+- Two initial service-test failures came from test setup (reusing the correctly wiped export buffer, then reading the restored Journal through a type-specific repository); corrected fixtures/assertions now pass. No remaining failure was observed in the final focused reruns.
+
 ## Integrated QA status
 
-- **IP-Q01-R1 — BLOCKED:** focused JVM and Compose checks ran, but the complete host, lint, connected suite, API 28 and UI/accessibility matrix have not been completed.
-- **IP-Q01-R2 — BLOCKED:** this record maps QA-01 evidence; QA-01 itself is partial and QA-02–QA-09 remain open.
-- **IP-Q01-R3 — PARTIAL:** the QA-01 paging test, parent hierarchy flow, and family cancel/confirm/Undo coverage pass. The hierarchy test now scrolls its editor viewport until offscreen controls are displayed before interacting. Hidden-provider behavior, protected-detail gates, direct-entry/relock, and the full Today-to-destination flow remain unverified.
-- **IP-Q01-R4 — BLOCKED:** this dated record is saved, but the required platform and scenario matrix is incomplete.
+- **IP-Q01-R1 — BLOCKED:** full app/data JVM suites and app/data assembly/lint gates pass, along with the focused QA-01–03 Compose checks. The full connected app suite, API 28 and UI/accessibility matrix remain outstanding.
+- **IP-Q01-R2 — BLOCKED:** this report maps partial evidence for QA-01–03; QA-04–QA-09 remain unrun.
+- **IP-Q01-R3 — PARTIAL:** reproduced QA-02/03 code and test issues were corrected and their owning checks rerun. QA-01 paging/hierarchy and family cancel/confirm/Undo also pass. Protected-detail gates, providers, independent install, process recovery, native picker, direct-entry/relock, and the full Today-to-destination flow remain unverified.
+- **IP-Q01-R4 — BLOCKED:** the dated record and APK/patch identities are captured, but the required platform and scenario matrix is incomplete.
 
-**Decision:** Keep QA-01 **BLOCKED — partial execution**, IP-I01 **SOURCE COMPLETE — QA PENDING**, and IP-Q01 **BLOCKED — PARTIAL EXECUTION**. Continue with the missing protected-detail/provider cases, an actual midnight boundary, and the required UI/platform matrix.
+**Decision:** Keep QA-01, QA-02 and QA-03 **BLOCKED — partial execution**, IP-I01 through IP-I03 **SOURCE COMPLETE — QA PENDING**, and IP-Q01 **BLOCKED — PARTIAL EXECUTION**. Release acceptance remains pending for the remaining cases and required matrix.
