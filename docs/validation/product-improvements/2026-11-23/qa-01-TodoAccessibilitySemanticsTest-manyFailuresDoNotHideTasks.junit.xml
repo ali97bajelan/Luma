@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.luma.lifeos.todo.TodoAccessibilitySemanticsTest" tests="1" failures="1" errors="0" skipped="0" time="1.148" timestamp="2026-11-23T13:53:58" hostname="localhost">
+  <properties>
+    <property name="device" value="Medium_Phone_API_36.1(AVD) - 16" />
+    <property name="flavor" value="production" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="manyFailuresDoNotHideTasks" classname="com.luma.lifeos.todo.TodoAccessibilitySemanticsTest" time="0.795">
+    <failure>java.lang.AssertionError: Assert failed: The component with TestTag = 'todo_row_error_c72dd6c6-e0c2-3df7-b08d-94cf0afbeca5' is not displayed!
+at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+at com.luma.lifeos.todo.TodoAccessibilitySemanticsTest.manyFailuresDoNotHideTasks(TodoAccessibilityTest.kt:288)
+</failure>
+  </testcase>
+</testsuite>
