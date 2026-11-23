@@ -47,7 +47,7 @@ fun TodayHabitsCard(
     val shownDate = state.date ?: fallbackDate
     val rows = state.rowsFor(shownDate)
     val scheduled = splitHabitRows(rows).scheduled
-    val visible = scheduled
+    val visible = scheduled.take(2)
     val visibleHabitIds = visible.mapTo(mutableSetOf()) { it.day.habit.id }
     val showScheduledCount = !state.loading && state.loadedDate == shownDate &&
         state.error != HabitUiError.LOAD && scheduled.isNotEmpty()

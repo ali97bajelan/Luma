@@ -24,66 +24,58 @@ class JournalCaptureTest {
             compose.onNodeWithTag("nav_timeline").performClick()
             awaitTag("event_$id")
             compose.onNodeWithTag("event_$id").performClick()
-            awaitTag("journal_detail_content")
-            compose.onNodeWithTag("journal_detail_content").performTouchInput {
+            awaitTag("event_detail_content")
+            compose.onNodeWithTag("event_detail_content").performTouchInput {
                 repeat(12) { swipeUp() }
             }
-            compose.onNodeWithTag("journal_detail_body").assertIsDisplayed()
-            compose.onNodeWithTag("journal_detail_back").assertIsDisplayed()
-            compose.onNodeWithTag("journal_edit").assertIsDisplayed()
+            compose.onNodeWithTag("event_detail_body").assertIsDisplayed()
+            compose.onNodeWithTag("event_detail_back").assertIsDisplayed()
+            compose.onNodeWithTag("event_edit").assertIsDisplayed()
         } finally {
             runBlocking { storage.lifeEvents.delete(id) }
         }
     }
 
-    @Test fun captureRestoresDraftAndOpensDetailThenEditsAndDeletes() {
-        val body = "Journal test ${System.nanoTime()}"
-        compose.onNodeWithTag("today_capture_journal").performClick()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_body").performTextInput(body)
-        compose.onNodeWithTag("journal_title").performTextInput("A journal")
-        compose.onNodeWithTag("journal_tags_toggle").performScrollTo().performClick()
-        compose.onNodeWithTag("journal_tag_input").performScrollTo().performTextInput("Ideas")
-        compose.onNodeWithTag("journal_add_tag").performScrollTo().performClick()
+    @Test fun directMemoryCaptureRestoresDraftOpensDetailAndCanBeEditedAndDeleted() {
+        val note = "Memory test ${System.nanoTime()}"
+        compose.onNodeWithTag("today_capture_memory").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").performTextInput(note)
         compose.activityRule.scenario.recreate()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_body").assertTextContains(body)
-        compose.onNodeWithTag("journal_save").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").assertTextContains(note)
+        compose.onNodeWithTag("memory_save").performClick()
         awaitTag("screen_today")
         compose.onNodeWithTag("nav_timeline").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("timeline_loading").fetchSemanticsNodes().isEmpty() }
-        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText(body))
-        compose.onNodeWithText(body).performClick()
-        awaitTag("journal_detail_body")
-        compose.onNodeWithTag("journal_detail_body").assertTextEquals(body)
-        compose.onNodeWithText("Ideas").assertExists()
-        compose.onNodeWithTag("journal_edit").performClick()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_body").performTextReplacement("$body edited")
-        compose.onNodeWithTag("journal_save").performClick()
-        awaitTag("journal_detail_body")
-        compose.onNodeWithTag("journal_detail_body").assertTextEquals("$body edited")
-        compose.onNodeWithTag("journal_edit").performClick()
-        awaitTag("journal_delete")
-        compose.onNodeWithTag("journal_delete").performClick()
-        compose.onNodeWithTag("journal_confirm_delete").performClick()
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText(note))
+        compose.onNodeWithText(note).performClick()
+        awaitTag("event_detail_body")
+        compose.onNodeWithTag("event_detail_body").assertTextEquals(note)
+        compose.onNodeWithTag("event_edit").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").performTextReplacement("$note edited")
+        compose.onNodeWithTag("memory_save").performClick()
+        awaitTag("event_detail_body")
+        compose.onNodeWithTag("event_detail_body").assertTextEquals("$note edited")
+        compose.onNodeWithTag("event_edit").performClick()
+        awaitTag("memory_remove")
+        compose.onNodeWithTag("memory_remove").performClick()
+        compose.onNodeWithTag("memory_confirm_remove").performClick()
         awaitTag("screen_timeline")
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("$body edited").fetchSemanticsNodes().isEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("$note edited").fetchSemanticsNodes().isEmpty() }
     }
-    @Test fun navigatingBackRequiresExplicitDiscardForChangedText() {
-        compose.onNodeWithTag("today_capture_journal").performClick()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_body").performTextInput("Unsaved")
-        compose.onNodeWithTag("journal_body").performTextReplacement("x".repeat(50_001))
-        compose.onNodeWithTag("journal_body").assertTextContains("Unsaved")
-        compose.onNodeWithTag("journal_body").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
+    @Test fun navigatingBackRequiresExplicitDiscardForChangedMemory() {
+        compose.onNodeWithTag("today_capture_memory").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").performTextInput("Unsaved")
         compose.activityRule.scenario.recreate()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_body").assertTextContains("Unsaved")
-        compose.onNodeWithTag("journal_cancel").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").assertTextContains("Unsaved")
+        compose.onNodeWithTag("memory_cancel").performClick()
         compose.onNodeWithText("Keep editing").performClick()
-        compose.onNodeWithTag("journal_body").assertTextContains("Unsaved")
-        compose.onNodeWithTag("journal_cancel").performClick()
+        compose.onNodeWithTag("memory_note").assertTextContains("Unsaved")
+        compose.onNodeWithTag("memory_cancel").performClick()
         compose.onNodeWithText("Discard").performClick()
         awaitTag("screen_today")
     }

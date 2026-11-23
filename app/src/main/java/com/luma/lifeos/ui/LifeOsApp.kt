@@ -889,7 +889,7 @@ fun LifeOsApp(
     fun openHabitsDate(date: LocalDate?) {
         navController.navigate(AppRoutes.HABITS)
         navController.currentBackStackEntry?.takeIf { it.destination.route == AppRoutes.HABITS }?.let { entry ->
-            entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = (date ?: currentDay.date).toString()
+            entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = date?.toString().orEmpty()
         }
     }
     fun routeWidgetDestination(destination: WidgetDestination) {
@@ -1158,7 +1158,7 @@ fun LifeOsApp(
                             habits = habits.takeIf { protectedHabitsReadable },
                             habitsDate = selectedDate?.let(LocalDate::parse),
                             deviceDate = currentDay.date,
-                            onHabits = { openHabitsDate(selectedDate?.let(LocalDate::parse) ?: currentDay.date) },
+                            onHabits = { openHabitsDate(selectedDate?.let(LocalDate::parse)) },
                             onCreateHabit = { openHabitEditor() },
                             onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
                             onHabitOpenDate = ::openHabitsDate,
@@ -1279,7 +1279,7 @@ fun LifeOsApp(
                             onPeoplePlaces = { navController.navigate(AppRoutes.PEOPLE) },
                             onSettings = { navController.navigate(AppRoutes.SETTINGS) },
                             onTasks = if (todos != null) ({ navController.navigate(AppRoutes.TASKS) }) else null,
-                            onHabits = { openHabitsDate(currentDay.date) },
+                            onHabits = { openHabitsDate(selectedDate?.let(LocalDate::parse)) },
                             onFocus = if (focusRuntime != null) ({
                                 navController.navigate(AppRoutes.FOCUS) { launchSingleTop = true }
                             }) else null,
@@ -1344,14 +1344,15 @@ fun LifeOsApp(
                 }
             }
             composable(AppRoutes.HABITS) { entry ->
-                val legacyDate = remember(selectedDate, currentDay.date) {
-                    selectedDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: currentDay.date
+                val legacyDate = remember(selectedDate) {
+                    selectedDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }?.toString().orEmpty()
                 }
                 val savedDate by entry.savedStateHandle
-                    .getStateFlow(HABITS_SELECTED_DATE_KEY, legacyDate.toString())
+                    .getStateFlow(HABITS_SELECTED_DATE_KEY, legacyDate)
                     .collectAsStateWithLifecycle()
-                val habitsDate = remember(savedDate, currentDay.date) {
-                    runCatching { LocalDate.parse(savedDate) }.getOrDefault(currentDay.date)
+                val habitsDate = remember(savedDate) {
+                    savedDate.takeIf { it.isNotBlank() }
+                        ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
                 }
                 LaunchedEffect(entry, savedDate) {
                     if (entry.savedStateHandle.get<String>(HABITS_SELECTED_DATE_KEY) == null) {
@@ -1362,7 +1363,7 @@ fun LifeOsApp(
                     repository = habits,
                     date = habitsDate,
                     onSelectDate = { entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = it.toString() },
-                    onToday = { entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = currentDay.date.toString() },
+                    onToday = { entry.savedStateHandle[HABITS_SELECTED_DATE_KEY] = "" },
                     onCreate = { openHabitEditor() },
                     onHabit = { id, habitDate -> navController.navigate("habit_detail/$id/$habitDate") },
                     deviceDate = currentDay.date,

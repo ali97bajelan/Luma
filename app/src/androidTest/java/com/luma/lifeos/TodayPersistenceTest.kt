@@ -72,7 +72,7 @@ class TodayPersistenceTest {
         val today = LocalDate.now()
         val yesterday = today.minusDays(1)
         compose.onNodeWithTag("day_previous").performClick()
-        listOf("mood", "journal", "memory").forEach { type ->
+        listOf("mood", "memory").forEach { type ->
             compose.onNodeWithTag("today_capture_$type").performClick()
             compose.onNodeWithTag("today_capture_selected_date").performClick()
             compose.onNodeWithTag("screen_$type").assertIsDisplayed()
@@ -82,7 +82,7 @@ class TodayPersistenceTest {
             compose.onNodeWithTag("screen_today").assertIsDisplayed()
         }
         compose.onNodeWithTag("day_today").performClick()
-        listOf("mood", "journal", "memory").forEach { type ->
+        listOf("mood", "memory").forEach { type ->
             compose.onNodeWithTag("today_capture_$type").performClick()
             compose.onNodeWithTag("today_capture_date_dialog").assertDoesNotExist()
             compose.onNodeWithTag("screen_$type").assertIsDisplayed()

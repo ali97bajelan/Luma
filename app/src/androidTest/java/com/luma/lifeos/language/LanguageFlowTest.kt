@@ -67,38 +67,32 @@ class LanguageFlowTest {
         }
     }
 
-    @Test fun journalDraftTextTagsAndDateSurviveLanguageChangeThenSaveAndDetail() {
-        val body = "یادداشت / Mon texte / My words ${System.nanoTime()}"
-        compose.onNodeWithTag("today_capture_journal").performClick()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_title").performTextInput("عنوان / Titre")
-        compose.onNodeWithTag("journal_body").performTextInput(body)
-        compose.onNodeWithTag("journal_tags_toggle").performScrollTo().performClick()
-        compose.onNodeWithTag("journal_tag_input").performScrollTo().performTextInput("من / Moi")
-        compose.onNodeWithTag("journal_add_tag").performScrollTo().performClick()
+    @Test fun memoryDraftTextAndDateSurviveLanguageChangeThenSaveAndDetail() {
+        val note = "یادداشت / Mon texte / My words ${System.nanoTime()}"
+        compose.onNodeWithTag("today_capture_memory").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").performTextInput(note)
         for (language in listOf(AppLanguage.PERSIAN, AppLanguage.FRENCH, AppLanguage.ENGLISH)) {
             select(language)
-            awaitTag("journal_body")
-            compose.onNodeWithTag("journal_body").assertTextContains(body)
-            compose.onNodeWithTag("journal_title").assertTextContains("عنوان / Titre")
-            compose.onNodeWithTag("journal_save").assertTextContains(text(R.string.save))
+            awaitTag("memory_note")
+            compose.onNodeWithTag("memory_note").assertTextContains(note)
+            compose.onNodeWithTag("memory_save").assertTextContains(text(R.string.save))
             compose.onNodeWithTag("capture_timestamp_value").performScrollTo()
                 .assertTextContains(text(R.string.today), substring = true)
-            compose.onNodeWithTag("journal_cancel").performClick()
+            compose.onNodeWithTag("memory_cancel").performClick()
             compose.onNodeWithText(text(R.string.keep_editing)).assertIsDisplayed().performClick()
         }
-        compose.onNodeWithTag("journal_save").performClick()
+        compose.onNodeWithTag("memory_save").performClick()
         awaitTag("screen_today")
         select(AppLanguage.PERSIAN)
         compose.onNodeWithTag("nav_timeline").performClick()
-        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText(body))
-        compose.onNodeWithText(body).performClick()
-        awaitTag("journal_detail_body")
-        compose.onNodeWithTag("journal_detail_body").assertTextEquals(body)
-        compose.onNodeWithText("من / Moi").assertExists()
-        compose.onNodeWithTag("journal_edit").performClick()
-        awaitTag("journal_body")
-        compose.onNodeWithTag("journal_body").assertTextContains(body)
+        compose.onNodeWithTag("screen_timeline").performScrollToNode(hasText(note))
+        compose.onNodeWithText(note).performClick()
+        awaitTag("event_detail_body")
+        compose.onNodeWithTag("event_detail_body").assertTextEquals(note)
+        compose.onNodeWithTag("event_edit").performClick()
+        awaitTag("memory_note")
+        compose.onNodeWithTag("memory_note").assertTextContains(note)
     }
 
     @Test fun persianResourcesFormatPluralsNumbersAccessibilityAndNativePickers() {

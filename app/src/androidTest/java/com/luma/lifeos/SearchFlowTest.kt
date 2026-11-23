@@ -55,11 +55,13 @@ class SearchFlowTest {
             compose.onNodeWithTag("timeline_search").performClick(); awaitTag("screen_search")
             compose.onNodeWithTag("search_text").performTextReplacement(token); awaitTag("event_$id")
             compose.onNodeWithTag("search_order").assertTextEquals("Newest first")
-            compose.activityRule.scenario.recreate(); awaitTag("screen_search"); awaitTag("event_$id")
+            compose.activityRule.scenario.recreate()
+            awaitTag("screen_search")
             compose.onNodeWithTag("search_text").assertTextContains(token)
-            compose.onNodeWithTag("event_$id").performClick(); awaitTag("screen_journal_detail")
+            awaitTag("event_$id")
+            compose.onNodeWithTag("event_$id").performClick(); awaitTag("screen_event_detail")
             compose.onNodeWithText("Private source text").assertExists()
-            compose.onNodeWithTag("journal_detail_back").performClick(); awaitTag("screen_search"); awaitTag("event_$id")
+            compose.onNodeWithTag("event_detail_back").performClick(); awaitTag("screen_search"); awaitTag("event_$id")
             runBlocking { storage().lifeEvents.delete(id) }
             awaitTag("search_empty"); compose.onNodeWithTag("event_$id").assertDoesNotExist()
         } finally { runBlocking { storage().lifeEvents.delete(id) } }
@@ -87,17 +89,21 @@ class SearchFlowTest {
                 compose.onNode(option).performClick()
                 compose.onNodeWithTag("search_options_done").performClick()
             }
-            compose.onNodeWithTag("search_filters_done").performClick(); awaitTag("event_$id")
+            compose.onNodeWithTag("search_filters_done").performClick()
+            awaitTag("event_$id")
             compose.onNodeWithTag("search_order").assertTextEquals("Newest first")
             compose.onNodeWithTag("search_text").performTextReplacement("Simple title"); awaitTag("event_$id")
             val tagId = runBlocking { storage().search.observeOptions().first().tags.single { it.name == tag }.id }
             val tagChip = "search_filter_tag_$tagId"
             val personChip = "search_filter_person_$person"
             val placeChip = "search_filter_place_$place"
-            awaitTag(personChip); awaitTag(placeChip)
-            compose.activityRule.scenario.recreate(); awaitTag("screen_search"); awaitTag(personChip)
-            compose.onNodeWithTag("event_$id").performClick(); awaitTag("screen_journal_detail")
-            compose.onNodeWithTag("journal_detail_back").performClick(); awaitTag("screen_search"); awaitTag(personChip)
+            awaitTag(personChip)
+            awaitTag(placeChip)
+            compose.activityRule.scenario.recreate()
+            awaitTag("screen_search")
+            awaitTag(personChip)
+            compose.onNodeWithTag("event_$id").performClick(); awaitTag("screen_event_detail")
+            compose.onNodeWithTag("event_detail_back").performClick(); awaitTag("screen_search"); awaitTag(personChip)
             compose.onNodeWithTag(personChip).assertIsDisplayed().performClick()
             compose.onNodeWithTag(personChip).assertDoesNotExist()
             compose.onNodeWithTag(placeChip).assertExists()

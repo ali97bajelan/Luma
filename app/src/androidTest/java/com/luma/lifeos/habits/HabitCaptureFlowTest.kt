@@ -299,7 +299,7 @@ class HabitCaptureFlowTest {
         compose.onNodeWithTag("habit_pause_resume").assertDoesNotExist()
         compose.onNodeWithTag("habit_manage").performClick()
         assertEquals(0, lifecycleChanges)
-        compose.onNodeWithTag("habit_manage_edit").assertIsDisplayed()
+        compose.onNodeWithTag("habit_detail_edit").assertIsDisplayed()
         compose.onNodeWithTag("habit_pause_resume").assertIsDisplayed()
         compose.onNodeWithTag("habit_archive").assertIsDisplayed()
         compose.onNodeWithTag("habit_delete").performClick()
@@ -557,7 +557,17 @@ class HabitCaptureFlowTest {
 
         compose.onNodeWithText("0 of 2").assertIsDisplayed()
         compose.onNodeWithTag("habit_log_$id", useUnmergedTree = true)
-            .assertContentDescriptionEquals("Log one Read time")
+            .assertContentDescriptionEquals(
+                compose.activity.getString(
+                    R.string.habit_log_accessibility_on_date,
+                    "Read",
+                    "time",
+                    today.format(
+                        DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
+                            .withLocale(compose.activity.resources.configuration.locales[0]),
+                    ),
+                ),
+            )
     }
 
     @Test fun futureStartEditAndArchiveUseStartDateWithoutPauseControl() = runBlocking {
@@ -636,8 +646,10 @@ class HabitCaptureFlowTest {
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("habit_edit_log_$logId")).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("habit_edit_log_$logId").performClick()
         compose.onNodeWithTag("habit_correction_date").performClick()
-        val correctedDateLabel = correctedDate.format(DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.FULL)
-            .withLocale(Locale.US))
+        val correctedDateLabel = correctedDate.format(
+            DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.FULL)
+                .withLocale(compose.activity.resources.configuration.locales[0]),
+        )
         compose.onNodeWithText(correctedDateLabel).performClick()
         compose.onNodeWithTag("habit_correction_select_date").performClick()
         compose.onNodeWithTag("habit_save_correction").performClick()
@@ -668,7 +680,7 @@ class HabitCaptureFlowTest {
         val open = compose.onNodeWithTag("habit_open_${row.day.habit.id}", useUnmergedTree = true)
         val log = compose.onNodeWithTag("habit_log_${row.day.habit.id}", useUnmergedTree = true)
         open.assertIsDisplayed()
-        log.assertIsDisplayed()
+        log.performScrollTo().assertIsDisplayed()
         val density = InstrumentationRegistry.getInstrumentation().targetContext.resources.displayMetrics.density
         val openBounds = open.fetchSemanticsNode().boundsInRoot
         val logBounds = log.fetchSemanticsNode().boundsInRoot

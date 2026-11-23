@@ -110,7 +110,7 @@ class HabitsNavigationTest {
     @Test fun quickCaptureHabitShortcutUsesTrackingTodayAndPreservesHistoricalDateWithoutLogging() {
         val deviceDate = LocalDate.now(zone)
         val trackingZone = ZoneId.of("Pacific/Kiritimati")
-        val trackingDate = deviceDate.minusDays(1)
+        val trackingDate = LocalDate.now(trackingZone)
         val fixedInstant = trackingDate.atTime(1, 0).toInstant(ZoneOffset.UTC)
         habits = RoomHabitRepository(database, Clock.fixed(fixedInstant, trackingZone))
         val habitId = UUID.randomUUID()

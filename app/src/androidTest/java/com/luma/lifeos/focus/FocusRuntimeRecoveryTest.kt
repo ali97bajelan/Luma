@@ -162,6 +162,7 @@ class FocusRuntimeRecoveryTest {
             assertEquals(FocusState.RUNNING, runtime.state.value.session?.state)
             assertNull(repository.currentBreak())
             application.focusBreakRuntime.state.first { it == FocusBreakState.Idle }
+            Unit
         } finally {
             runtime.state.value.session
                 ?.takeIf { it.state == FocusState.RUNNING || it.state == FocusState.PAUSED }

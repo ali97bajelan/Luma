@@ -23,10 +23,23 @@
 - **APK SHA-256:** app `2405b8d276f49c4ff9c8caeb3cf796bfb83b66fd17c7ccc2849a9a88935edc2e`; app instrumentation `958f926163a461ed12be82261107ba6e6a0eea45cd00f99c7c3503d358e97ce6`.
 - **Device/configuration:** `Medium_Phone_API_36.1(AVD) - 16`, Android 16 / API 36, `sdk_gphone64_x86_64`, 1080×2400 at 420 dpi, portrait, `en-GB-u-fw-mon`, `Asia/Tehran`, font scale 1.0, system light mode. All fixtures were synthetic; no user data or screenshots were used.
 
+## Latest full connected run on the committed candidate
+
+- **Candidate revision:** `be7e15e395b277a12214524d8f519234e03acd38` (`fix(qa): resolve capture flow and backup cleanup defects`); working tree was clean at run start.
+- **Command:** `bash gradlew :app:connectedProductionDebugAndroidTest :core:data:connectedDebugAndroidTest --console=plain`.
+- **Device:** `Medium_Phone_API_36.1(AVD) - 16`, API 36. The emulator used host graphics and exited with `SIGSEGV` during the app suite; the log records EGL/OpenGL context errors.
+- **Data connected suite:** PASS — 198 tests completed, 0 failures, 0 skipped.
+- **App connected suite:** FAIL / INCOMPLETE — Gradle reported 29 test failures and expected 325 tests but received 185 before the AVD disconnected. The runner also showed 186 completed in progress output. Do not count this as a passing full app suite.
+- **Confirmed test/source mismatches:** Journal tests request the `today_capture_journal` Compose tag although the current capture sheet exposes Memory as `capture_memory`; `SearchStatesTest` asserts older scope-help text than the current `search_scope_help` resource. Other Today, habit, lock and Review assertions failed and still need triage. These are not being credited as product passes or treated as confirmed product defects without isolated reruns.
+- **Evidence:** [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-118.log) · [emulator log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-115.log) · [domain JVM log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-119.log).
+
 ## Focused checks
 
 | Check | Result | Evidence |
 | --- | --- | --- |
+| `bash gradlew -PdomainOnly=true :core:domain:test --console=plain` | PASS — task up-to-date, exit 0 | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-119.log) |
+| `:core:data:connectedDebugAndroidTest` | PASS — 198 tests, 0 failures, 0 skipped | [Combined connected Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-118.log) |
+| `:app:connectedProductionDebugAndroidTest` | FAIL / INCOMPLETE — 29 failures reported; AVD disconnected before all 325 tests completed | [Combined connected Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-118.log) · [emulator log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-115.log) |
 | `bash gradlew :app:testProductionDebugUnitTest --tests com.luma.lifeos.ui.todo.TodayTasksStateTest --rerun-tasks --console=plain` | PASS — 8 tests, 0 failures | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-23.log) · [JUnit XML](../../../../app/build/test-results/testProductionDebugUnitTest/TEST-com.luma.lifeos.ui.todo.TodayTasksStateTest.xml) |
 | `TodayTasksSemanticsTest#fiftySevenMatchingRowsShowSevenUnloadedThenRemainScrollableAfterLoading` | PASS — 1 test | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-24.log) |
 | `TodoAccessibilitySemanticsTest#openTaskBucketsRemainDistinctAndCompletedRowsRemainInCompletedView` | PASS — 1 test | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-25.log) |
@@ -45,7 +58,7 @@
 | App/data APK assembly and lint gate | PASS — all requested assemble and lint tasks exit 0 | [Gradle log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-112.log) |
 | `MemoryCaptureTest`, `MoodCaptureTest`, `PhotoCaptureTest` | PASS — 2 + 1 + 2 tests | [Memory log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-85.log) · [Mood log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-9b65-b0b7573d2431/session/agent/shell-logs/shell-90.log) · [Photo log](/home/bajelan/.android/studio/agent/conversations/Luma-fc9658513f7c6e6667848c164f3350/cfdfe55b-2a14-4993-b0b7573d2431/session/agent/shell-logs/shell-87.log) |
 
-The full app/data JVM suites and app/data assembly/lint gates pass. `git diff --check` is rerun after the report update. The full connected app suite and platform matrix remain outstanding. No screenshot was needed for these semantic/editor checks.
+The full app/data JVM suites, domain-only JVM gate, app/data assembly/lint gates and full core:data connected suite pass. The full app connected suite failed/incompletely executed: Gradle reported 29 failures and the AVD disconnected before all 325 tests completed. Focused QA-01–03 checks remain passing, but this broader failure report and the required platform matrix keep overall acceptance blocked. `git diff --check` is rerun after this report update. No screenshot was needed for these semantic/editor checks.
 
 ## QA-01 acceptance
 

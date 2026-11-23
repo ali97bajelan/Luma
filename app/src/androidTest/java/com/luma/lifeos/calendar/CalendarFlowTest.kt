@@ -71,13 +71,6 @@ class CalendarFlowTest {
         awaitTag("screen_calendar")
         compose.onNodeWithTag("calendar_day_$dueDate").performClick()
         compose.onNodeWithTag("calendar_schedule").performClick()
-        compose.onNodeWithTag("capture_sheet").assertIsDisplayed()
-        val dueCaption = compose.activity.getString(
-            R.string.capture_task_due_date,
-            dueDate.format(localizedDate(FormatStyle.MEDIUM)),
-        )
-        compose.onNodeWithText(dueCaption).assertIsDisplayed()
-        compose.onNodeWithTag("capture_task").performScrollTo().performClick()
         awaitTag("screen_todo_editor")
         compose.onNodeWithTag("todo_editor_due_date_value")
             .assertTextEquals(dueDate.format(localizedDate(FormatStyle.LONG)))

@@ -76,7 +76,7 @@ class EntryHabitCountsFlowTest {
         runBlocking { habits.log(UUID.randomUUID(), HabitLogInput(habitId, date, zone, null)) }
         show()
         awaitCounts("today_summary", "0 entries · 1 habit log")
-        compose.onNodeWithTag("today_empty").assertTextContains("No mood, journal or memory entries yet")
+        compose.onNodeWithTag("today_empty").assertTextContains("No mood or memory entries yet")
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("today_daily_summary"))
         compose.onNodeWithTag("today_daily_summary").performClick()
         compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("summary_records"))

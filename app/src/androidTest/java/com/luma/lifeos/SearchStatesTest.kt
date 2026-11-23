@@ -57,7 +57,9 @@ class SearchStatesTest {
         show(repository)
         awaitTag("search_prompt")
         compose.onNodeWithTag("search_title").assertTextEquals("Search entries")
-        compose.onNodeWithTag("search_scope_help").assertTextEquals("Matches entry titles, tags, people and places. Journal text, notes, habit logs and tasks aren't searched.")
+        compose.onNodeWithTag("search_scope_help").assertTextEquals(
+            InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.search_scope_help),
+        )
         compose.onNodeWithTag("search_prompt").assertTextEquals("Search entry titles, tags, people or places")
         compose.onNodeWithTag("event_${repository.entry.event.id}").assertExists()
         compose.onNodeWithTag("search_result_count").assertDoesNotExist()
