@@ -1,5 +1,6 @@
 package com.luma.lifeos.todo
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -10,6 +11,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import com.luma.lifeos.MainActivity
 import com.luma.lifeos.R
 import com.luma.lifeos.language.AppLanguage
@@ -47,16 +50,19 @@ class TodoHierarchyFlowTest {
         awaitTag("screen_todo_editor")
         compose.onNodeWithTag("todo_editor_add_subtask").performScrollTo().performClick()
         awaitTag("todo_editor_open_parent")
-        compose.onNodeWithTag("todo_editor_parent_context").assertTextContains(parentTitle)
+        compose.onNodeWithText(parentTitle).assertExists()
         compose.onNodeWithTag("todo_editor_due_date_value")
             .assertTextContains(compose.activity.getString(R.string.todo_no_date))
 
+        compose.onNodeWithTag("todo_importance_none").assertIsSelected()
+        scrollEditorUntilDisplayed("todo_importance_high")
+        val highImportance = compose.onNodeWithTag("todo_importance_high")
+        highImportance.performClick()
+        highImportance.assertIsSelected()
         compose.onNodeWithTag("todo_editor_title").performTextInput(childTitle)
-        compose.onNodeWithTag("todo_importance_high").performScrollTo().performClick()
-        compose.onNodeWithTag("todo_importance_high").assertIsSelected()
         compose.onNodeWithTag("todo_editor_due_date_value")
             .assertTextContains(compose.activity.getString(R.string.todo_no_date))
-        compose.onNodeWithTag("todo_editor_save").performScrollTo().performClick()
+        compose.onNodeWithTag("todo_editor_save").performClick()
 
         val progressLabel = compose.activity.getString(R.string.todo_subtask_progress, 0, 1)
         compose.waitUntil(15_000) {
@@ -69,7 +75,7 @@ class TodoHierarchyFlowTest {
 
         awaitTag("todo_editor_open_parent")
         compose.onNodeWithTag("todo_editor_title").assertTextContains(childTitle)
-        compose.onNodeWithTag("todo_editor_parent_context").assertTextContains(parentTitle)
+        compose.onNodeWithText(parentTitle).assertExists()
         compose.onNodeWithTag("todo_importance_high").assertIsSelected()
         compose.onNodeWithTag("todo_editor_due_date_value")
             .assertTextContains(compose.activity.getString(R.string.todo_no_date))
@@ -105,13 +111,71 @@ class TodoHierarchyFlowTest {
             }.isSuccess
         }
 
-        compose.onNodeWithTag("todo_editor_delete").performScrollTo().performClick()
+        scrollEditorUntilDisplayed("todo_editor_delete")
+        compose.onNodeWithTag("todo_editor_delete").performClick()
         awaitTag("todo_family_action_confirmation")
         compose.onNodeWithText(
             compose.activity.getString(R.string.todo_family_delete_body, parentTitle, 1),
         ).assertExists()
         compose.onNodeWithTag("todo_family_action_cancel").performClick()
         compose.onNodeWithTag("todo_editor_title").assertTextContains(parentTitle)
+    }
+
+    @Test
+    fun parentFamilyCompletionCanBeCancelledConfirmedAndUndoneWithoutLosingItsChild() {
+        val parentTitle = "QA01 parent ${System.nanoTime()}"
+        val childTitle = "QA01 child ${System.nanoTime()}"
+        val progress = compose.activity.getString(R.string.todo_subtask_progress, 0, 1)
+        val undoLabel = compose.activity.getString(R.string.todo_undo)
+
+        compose.onNodeWithTag("nav_more").performClick()
+        compose.onNodeWithTag("more_tasks").performClick()
+        awaitTag("screen_todo_list")
+        compose.onNodeWithTag("todo_list_add").performClick()
+        awaitTag("screen_todo_editor")
+        compose.onNodeWithTag("todo_editor_title").performTextInput(parentTitle)
+        compose.onNodeWithTag("todo_editor_save").performClick()
+        awaitTag("screen_todo_list")
+
+        compose.onNodeWithText(parentTitle).performClick()
+        awaitTag("screen_todo_editor")
+        compose.onNodeWithTag("todo_editor_add_subtask").performScrollTo().performClick()
+        awaitTag("todo_editor_open_parent")
+        compose.onNodeWithTag("todo_editor_title").performTextInput(childTitle)
+        compose.onNodeWithTag("todo_editor_save").performClick()
+        compose.waitUntil(15_000) {
+            compose.onAllNodesWithTag("todo_editor_subtask_progress").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("todo_editor_subtask_progress").assertTextContains(progress)
+
+        compose.onNodeWithTag("todo_editor_status").performScrollTo().performClick()
+        awaitTag("todo_family_action_confirmation")
+        compose.onNodeWithText(
+            compose.activity.getString(R.string.todo_family_complete_body, 1),
+        ).assertExists()
+        compose.onNodeWithTag("todo_family_action_cancel").performClick()
+        compose.onNodeWithTag("todo_editor_subtask_progress").assertTextContains(progress)
+
+        compose.onNodeWithTag("todo_editor_status").performScrollTo().performClick()
+        awaitTag("todo_family_action_confirmation")
+        compose.onNodeWithTag("todo_family_action_confirm").performClick()
+        awaitTag("screen_todo_list")
+        compose.waitUntil(15_000) {
+            compose.onAllNodesWithText(undoLabel).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText(undoLabel).performClick()
+        compose.waitUntil(15_000) {
+            compose.onAllNodesWithText(parentTitle).fetchSemanticsNodes().isNotEmpty() &&
+                compose.onAllNodesWithText(undoLabel).fetchSemanticsNodes().isEmpty()
+        }
+
+        compose.onNodeWithText(parentTitle).performClick()
+        awaitTag("screen_todo_editor")
+        compose.waitUntil(15_000) {
+            runCatching { compose.onNodeWithTag("todo_editor_subtask_progress").assertTextContains(progress) }
+                .isSuccess
+        }
+        compose.onNodeWithText(childTitle).assertExists()
     }
 
     private fun selectEnglish() {
@@ -128,5 +192,15 @@ class TodoHierarchyFlowTest {
             compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
         }
         compose.waitForIdle()
+    }
+
+    private fun scrollEditorUntilDisplayed(tag: String) {
+        val target = compose.onNodeWithTag(tag)
+        repeat(8) {
+            if (runCatching { target.assertIsDisplayed() }.isFailure) {
+                compose.onNodeWithTag("todo_editor_scroll").performTouchInput { swipeUp() }
+            }
+        }
+        target.assertIsDisplayed()
     }
 }

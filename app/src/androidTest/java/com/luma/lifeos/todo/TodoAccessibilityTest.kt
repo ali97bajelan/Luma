@@ -113,6 +113,56 @@ class TodoAccessibilityTest {
 class TodoAccessibilitySemanticsTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun openTaskBucketsRemainDistinctAndCompletedRowsRemainInCompletedView() {
+        val today = LocalDate.parse("2026-10-19")
+        val overdue = task(1_101).copy(title = "Overdue QA task", dueDate = today.minusDays(1))
+        val dueToday = task(1_102).copy(title = "Due today QA task", dueDate = today)
+        val future = task(1_103).copy(title = "Future QA task", dueDate = today.plusDays(1))
+        val undated = task(1_104).copy(title = "Undated QA task", dueDate = null)
+        val completed = task(1_105).copy(
+            title = "Completed QA task",
+            dueDate = today,
+            completedAt = Instant.EPOCH,
+        )
+        val openTasks = listOf(overdue, dueToday, future, undated)
+        val state = mutableStateOf(listState(openTasks, total = 4, today = today))
+
+        compose.setContent {
+            LifeOsTheme {
+                TodoListScreen(
+                    state = state.value,
+                    onBack = {},
+                    onAddTask = {},
+                    onOpenTask = {},
+                    onSelectCompleted = { selected ->
+                        state.value = if (selected) {
+                            listState(listOf(completed), total = 1, today = today).copy(completed = true)
+                        } else {
+                            listState(openTasks, total = 4, today = today)
+                        }
+                    },
+                    onSetCompleted = { _, _ -> },
+                    onRetry = {},
+                    onDismissRowError = {},
+                    onRetryLoad = {},
+                    onLoadMore = {},
+                    undoFeedback = {},
+                )
+            }
+        }
+
+        listOf("todo_group_overdue", "todo_group_today", "todo_group_upcoming", "todo_group_no_date")
+            .forEach { tag ->
+                compose.onNodeWithTag("todo_list_rows")
+                    .performScrollToNode(hasTestTag(tag))
+                compose.onNodeWithTag(tag).assertIsDisplayed()
+            }
+
+        compose.onNodeWithTag("todo_list_completed_tab").performClick()
+        compose.onNodeWithText(completed.title).assertExists()
+        compose.onNodeWithText(overdue.title).assertDoesNotExist()
+    }
+
     @Test fun taskTargetsAndHeadingsRemainDistinctAtNarrowWidthAndLargeText() {
         val today = LocalDate.now()
         val tasks = (0 until 50).map(::task)

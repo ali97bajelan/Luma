@@ -265,7 +265,8 @@ fun TodoEditorScreen(
     ) { padding ->
         LumaReadingPane(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter),
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LumaUi.PageGutter)
+                    .testTag("todo_editor_scroll"),
                 verticalArrangement = Arrangement.spacedBy(LumaUi.GroupGap),
             ) {
                 if (state.loading) {

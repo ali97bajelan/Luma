@@ -2,7 +2,7 @@
 
 **Status** BLOCKED — partial execution; release acceptance pending · **Depends on** IP-I01–IP-I09 source handoffs
 
-[2026-11-22 acceptance record](../../validation/product-improvements/2026-11-22/acceptance.md)
+[2026-11-23 QA-01 follow-up record](../../validation/product-improvements/2026-11-23/acceptance.md) · [2026-11-22 integrated acceptance record](../../validation/product-improvements/2026-11-22/acceptance.md)
 
 [QA specification](../specs/2026-11-20-product-improvements-q01-emulator-qa-design.md) · [Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [Shared delivery workflow](../../feature-roadmap/WORKFLOW.md)
 
@@ -12,10 +12,10 @@
 - [ ] Verify actual APK/app/runner IDs and use disposable AVD data. Record AVD model/image, API, locale, timezone, calendar/week start, theme, viewport and font scale. Clone/snapshot QA fixtures before testing destructive or cross-install cases.
 - [x] Follow the [repository QA workflow](../../../AGENTS.md#qa-workflow-required). Map QA-01–QA-09 to the owning requirements and existing tests. Run targeted JVM tests for logic. Record commands, exit codes and results.
 - [ ] Execute the isolated pre-change draft baseline before the candidate runtime checks. Reuse running isolated AVDs and installed builds when their identities and configurations match. Seed a known state for each scenario and wait for specific UI states or events.
-- [ ] Run targeted candidate Compose tests for app behavior. Add coverage for required risks that existing tests miss, then complete the broader gates below.
+- [x] Run targeted candidate Compose tests for app behavior. Add coverage for required risks that existing tests miss, then complete the broader gates below. QA-01 focused coverage is recorded in the 2026-11-23 follow-up; broader gates remain outstanding.
 - [ ] Use Compose semantics and stable test tags for app interactions. For uncovered exploratory steps, query only relevant accessibility nodes. Use UI Automator for system dialogs, SAF and launcher interactions where applicable. A test can cover a scenario step when it exercises the same behavior, fixture and configuration and records the expected result.
 - [ ] Complete outstanding emulator checks and the [required UI/platform matrix](../../feature-roadmap/WORKFLOW.md#required-uiplatform-matrix) for affected surfaces. Include EN/FR/FA with actual RTL, System/Light/Dark, 2.0 font scale, narrow/wide/landscape viewports, TalkBack observation, hardware keyboard, visible IME, system insets and 48 dp touch targets. Add direct-entry and relock checks for affected protected flows.
-- [x] Triage observed failures against available baseline/source evidence. Correct reproducible in-scope test expectation defects and rerun owning cases and affected cross-feature checks. No production defect was confirmed. Record remaining environment and evidence limits in the acceptance record.
+- [x] Triage observed failures against available baseline/source evidence. Correct reproducible in-scope test expectation defects and rerun owning cases and affected cross-feature checks. No production behavior defect was confirmed in the exercised QA-01 scope. The parent hierarchy test now scrolls offscreen controls into the tagged editor viewport; the hierarchy and family cancel/confirm/Undo cases pass on API 36. Record remaining environment and evidence limits in the acceptance record.
 - [x] Create one dated report with revision/patch, APK identity and checksums, fixture metadata, case-to-requirement evidence, defects/fixes/retests and actual acceptance. Mark every case individually. Keep release acceptance pending for required missing evidence.
 
 ## QA-only commands
@@ -44,11 +44,13 @@ Expected command gate is exit 0, zero unexplained skips/tests missing, zero fail
 
 ### QA-01
 
-**Today action hub** · [IP-I01 requirements](../specs/2026-11-20-product-improvements-i01-today-action-hub-design.md#requirements) · **BLOCKED**
+**Today action hub** · [IP-I01 requirements](../specs/2026-11-20-product-improvements-i01-today-action-hub-design.md#requirements) · **BLOCKED — partial execution** · [2026-11-23 follow-up evidence](../../validation/product-improvements/2026-11-23/acceptance.md)
 
 **Actions** Create 57 open tasks matching Today and the current 50-row page, plus at least one task each due later, undated and completed. Add a habit with one log, a prior day and a paused Focus session. Inspect Today, Load more, full Tasks, Habits and return from a historical day. Complete a parent task, cancel once, then confirm and Undo. Repeat across midnight.
 
 **Expected** Initially 7 unloaded, then no unloaded count after loading the remaining rows. Loaded rows outside the viewport remain scrollable. Due today, overdue and undated are distinct in Tasks; no date is changed by navigation. History has explicit date and return control; authorized habits open the chosen day. Family confirmation, error/retry and Undo preserve identity. Protected task/habit/Focus details remain gated.
+
+**2026-11-23 result** IP-I01-R1 passes. R2 is partial: buckets and completion behavior pass, but the Today “View all” route and unchanged due-date invariant remain unverified. R3 is partial: historical return, habit date return, family confirmation/Undo identity, parent hierarchy navigation, and one-session Focus lifecycle pass. The parent hierarchy test initially tapped priority and delete controls while they were offscreen; both are now brought into view before interaction. Hidden-provider behavior, protected-detail gates and a real midnight crossing remain unverified. Keep QA-01 blocked pending those cases and the UI/platform matrix. See the [dated acceptance record](../../validation/product-improvements/2026-11-23/acceptance.md#qa-01-acceptance).
 
 ### QA-02
 

@@ -2,7 +2,9 @@ package com.luma.lifeos.todo
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -67,6 +69,39 @@ class TodayTasksSemanticsTest {
             assertEquals(1, allTasks)
             assertEquals(1, addTask)
         }
+    }
+
+    @Test fun fiftySevenMatchingRowsShowSevenUnloadedThenRemainScrollableAfterLoading() {
+        val date = LocalDate.parse("2026-10-19")
+        val tasks = (1..57).map(::task)
+        val tasksState = mutableStateOf<TodayTasksState>(
+            TodayTasksState.Data(tasks.take(50), total = 57),
+        )
+        compose.setContent {
+            LifeOsTheme {
+                TodayScreen(
+                    date = date,
+                    zone = ZoneId.of("UTC"),
+                    state = TodayUiState.Empty,
+                    onSelectDate = {},
+                    onToday = {},
+                    onRetry = {},
+                    todayTasks = tasksState.value,
+                    onLoadMoreTasks = { tasksState.value = TodayTasksState.Data(tasks, total = 57) },
+                    deviceDate = date,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("screen_today").performScrollToNode(hasTestTag("today_tasks_card"))
+        compose.onNodeWithTag("today_tasks_remaining").assertTextContains("7", substring = true)
+        compose.onNodeWithTag("today_tasks_scroll")
+            .performScrollToNode(hasTestTag("today_tasks_load_more"))
+        compose.onNodeWithTag("today_tasks_load_more").performClick()
+        compose.onNodeWithTag("today_tasks_remaining").assertDoesNotExist()
+        compose.onNodeWithTag("today_tasks_scroll")
+            .performScrollToNode(hasText(tasks.last().title))
+        compose.onNodeWithText(tasks.last().title).assertIsDisplayed()
     }
 
     @Test fun taskPreviewErrorDoesNotHideEntriesHabitsOrSummary() {

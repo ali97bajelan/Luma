@@ -95,6 +95,47 @@ class TodayTasksStateTest {
         assertEquals(TODO_DEFAULT_PAGE_SIZE, repository.todayRequests.single().limit)
     }
 
+    @Test fun todayOverflowCountsOnlyLoadedMatchingRows() = runTest(dispatcher) {
+        val eligible = (0 until 57).map { index ->
+            todoFixtureTask(
+                "Overflow eligible $index",
+                id = stableId("overflow-eligible-$index"),
+                dueDate = if (index % 2 == 0) today.minusDays(1) else today,
+            )
+        }
+        val excluded = listOf(
+            todoFixtureTask("Overflow future", id = stableId("overflow-future"), dueDate = today.plusDays(1)),
+            todoFixtureTask("Overflow undated", id = stableId("overflow-undated"), dueDate = null),
+            todoFixtureTask(
+                "Overflow completed",
+                id = stableId("overflow-completed"),
+                dueDate = today,
+                completedAt = java.time.Instant.EPOCH,
+            ),
+        )
+        val repository = TodoRepositoryFixture(eligible + excluded)
+
+        val firstPage = observeTodayTasks(repository, today, TODO_DEFAULT_PAGE_SIZE)
+            .take(2).toList().last() as TodayTasksState.Data
+        assertEquals(57, firstPage.total)
+        assertEquals(50, firstPage.rows.size)
+        assertEquals(7, firstPage.total - firstPage.rows.size)
+        assertTrue(firstPage.tasks.all {
+            !it.isCompleted && (it.dueDate == today || it.dueDate == today.minusDays(1))
+        })
+
+        val loadedPage = observeTodayTasks(repository, today, limit = 57)
+            .take(2).toList().last() as TodayTasksState.Data
+        assertEquals(57, loadedPage.total)
+        assertEquals(57, loadedPage.rows.size)
+        assertEquals(0, loadedPage.total - loadedPage.rows.size)
+        assertEquals(eligible.map { it.id }.toSet(), loadedPage.tasks.map { it.id }.toSet())
+        assertTrue(excluded.none { excludedTask -> loadedPage.tasks.any { it.id == excludedTask.id } })
+        eligible.forEach { expected ->
+            assertEquals(expected.dueDate, repository.tasks.single { it.id == expected.id }.dueDate)
+        }
+    }
+
     @Test fun historicalAndFutureDaysStayHiddenAcrossMidnightAndZoneChanges() {
         val task = todoFixtureTask("Civil date", dueDate = today)
         assertEquals(TodoBucket.TODAY, todoBucket(task, today))

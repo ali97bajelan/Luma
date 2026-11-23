@@ -2,7 +2,7 @@
 
 **Status** BLOCKED — partial execution; release acceptance pending
 
-[Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [QA plan and scenario matrix](../plans/2026-11-20-product-improvements-q01-emulator-qa.md) · [2026-11-22 acceptance record](../../validation/product-improvements/2026-11-22/acceptance.md) · [Shared QA workflow](../../feature-roadmap/WORKFLOW.md)
+[Task index](../../PRODUCT_IMPROVEMENT_TASKS_2026-11-18.md) · [QA plan and scenario matrix](../plans/2026-11-20-product-improvements-q01-emulator-qa.md) · [2026-11-23 QA-01 follow-up record](../../validation/product-improvements/2026-11-23/acceptance.md) · [2026-11-22 integrated acceptance record](../../validation/product-improvements/2026-11-22/acceptance.md) · [Shared QA workflow](../../feature-roadmap/WORKFLOW.md)
 
 ## Entry gate
 
