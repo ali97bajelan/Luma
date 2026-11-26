@@ -1,8 +1,22 @@
 # Luma Android Performance and Reliability Audit
 
 **Date:** 2026-11-27  
-**Scope:** Read-only review of startup, navigation, Today and Timeline Compose paths, focus timer state, Room-backed storage setup, and startup theme/lock rendering. Source files were not changed.  
-**Limits:** No emulator, device, instrumentation test, screenshot, profiler trace, or rendering/timing measurement was used.
+**Scope:** The initial pass was a read-only review of startup, navigation, Today and Timeline Compose paths, focus timer state, Room-backed storage setup, and startup theme/lock rendering. No source files changed during that review; follow-up fixes are tracked below.  
+**Limits:** No emulator, device, instrumentation test, screenshot, profiler trace, or rendering/timing measurement was used during the initial audit. Post-fix runtime verification remains unverified.
+
+## Follow-up status (2026-11-27)
+
+All seven findings have source fixes. No post-fix build, test run, device check, screenshot, profiler trace, or rendering/timing measurement has been performed.
+
+| Finding | Source status | Post-fix verification |
+|---|---|---|
+| Photo filesystem setup during startup | **Fixed** | Cold-start timing and failure behavior unverified. |
+| Focus timer invalidates app shell | **Fixed** | Frame and recomposition impact unmeasured. |
+| FAB measurement feeds back into padding | **Fixed** | Rendered layout and resize behavior unverified. |
+| Today feed restarts from Loading | **Fixed** | Return-to-tab rendering unverified. |
+| App-lock gate may flash during cold start | **Fixed** | Cold-start rendering unverified. |
+| Platform launch theme fixed to Light | **Fixed** | Light, Dark, and System launch rendering unverified. |
+| Timeline uses BoxWithConstraints in each lazy row | **Fixed** | Scroll profiling unverified; IDE analysis found no code errors. |
 
 ## Findings
 
@@ -75,7 +89,7 @@ Ran the targeted local JVM task with these selectors:
       --tests com.luma.lifeos.ui.timeline.TimelineViewModelTest.stoppedScreensDoNotRefreshUntilForegroundObservationRestarts
       --tests com.luma.lifeos.focus.FocusNavigationGuardTest
 
-**Result:** 9 passed, 0 skipped, 0 failed. The checks cover feed loading, retry and cancellation, late Timeline results, lifecycle refresh, and focus navigation guard state. They do not verify rendering smoothness or flicker.
+**Result:** 9 passed, 0 skipped, 0 failed. These checks were run during the initial audit before the follow-up source fixes and have not been rerun. They cover feed loading, retry and cancellation, late Timeline results, lifecycle refresh, and focus navigation guard state. They do not verify rendering smoothness or flicker.
 
 Report: [Gradle JVM test results](../../app/build/reports/tests/testProductionDebugUnitTest/index.html).
 
@@ -83,7 +97,7 @@ Report: [Gradle JVM test results](../../app/build/reports/tests/testProductionDe
 
 | Area | Status | Basis |
 |---|---|---|
-| Startup | **Fail** | Startup reaches main-thread photo filesystem setup; failure can throw before the UI. |
-| Responsiveness | **Unverified** | Timer-driven root invalidations and per-row subcomposition are code-level risks; no frame measurements were taken. |
-| Screen flicker | **Unverified** | Today loading, lock-gate, FAB-padding, and launch-theme transitions require rendering to assess. |
-| Reliability | **Fail** | Photo-directory setup has a startup exception path. Tested feed retry and cancellation behavior passed. |
+| Startup | **Unverified** | The source startup paths have been changed; cold-start timing and lock/theme rendering were not checked after the fixes. |
+| Responsiveness | **Unverified** | Timer, FAB, and Timeline source paths have been changed; no post-fix frame or scroll measurements were taken. |
+| Screen flicker | **Unverified** | Today, lock-gate, FAB-clearance, and launch-theme changes have not received post-fix rendered inspection. |
+| Reliability | **Unverified** | The photo setup startup path has been changed; the existing JVM checks are pre-fix and were not rerun. |

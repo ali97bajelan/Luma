@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.material3.*
 import com.luma.lifeos.ui.common.LumaTextButton
@@ -84,106 +85,164 @@ fun TimelineRoute(repository: TimelineRepository, date: LocalDate, zone: ZoneId,
             }
         }
         LumaReadingPane(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("screen_timeline"),
-                contentPadding = PaddingValues(start = LumaUi.PageGutter, top = 24.dp, end = LumaUi.PageGutter, bottom = captureBottomClearance),
-            ) {
-                item(key = "header") {
-                    Column(
-                        modifier = Modifier.padding(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-                    ) {
-                        LumaSectionHeader(
-                title = stringResource(R.string.timeline),
-                actionLabel = onSearch?.let { stringResource(R.string.search_entries_title) },
-                onAction = onSearch,
-                actionModifier = Modifier.testTag("timeline_search"),
-                style = MaterialTheme.typography.titleLarge,
-                actionStackBreakpoint = 340.dp,
-            )
-                        LumaSectionSurface(modifier = Modifier.testTag("timeline_date_ribbon")) {
-                            DayNavigation(date, onSelectDate, onToday)
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-                                verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
-                            ) {
-                                if (state.loaded) Text(entryLogCounts(state.eventCount, state.habitLogCount),
-                                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("timeline_counts"))
-                                TimelineViewOptions(
-                                    expanded = viewOptionsExpanded,
-                                    onExpandedChange = { viewOptionsExpanded = it },
-                                    showAppUsage = observed.showAppUsage,
-                                    onShowAppUsageChange = { show ->
-                                        usagePreference.setShowAppUsage(show)
-                                        pager.setShowAppUsage(show)
-                                    },
-                                    zone = zone,
-                                    modifier = if (viewOptionsExpanded) Modifier.fillMaxWidth() else Modifier,
-                                )
-                            }
-                            if (observed.showAppUsage) {
-                                Text(
-                                    text = stringResource(R.string.timeline_app_usage_active),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.testTag("timeline_app_usage_active"),
-                                )
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val layoutDirection = LocalLayoutDirection.current
+                val density = LocalDensity.current
+                val contentPadding = PaddingValues(
+                    start = LumaUi.PageGutter,
+                    top = 24.dp,
+                    end = LumaUi.PageGutter,
+                    bottom = captureBottomClearance,
+                )
+                val rowWidth = maxWidth -
+                    contentPadding.calculateLeftPadding(layoutDirection) -
+                    contentPadding.calculateRightPadding(layoutDirection)
+                val compact = rowWidth < 340.dp || density.fontScale >= 1.8f
+                val railWidth = if (compact) 32.dp else 48.dp
+                val nodeSize = if (compact) 28.dp else 40.dp
+                val timelineColors = MaterialTheme.colorScheme
+
+                LazyColumn(
+                    state = list,
+                    modifier = Modifier.fillMaxSize().testTag("screen_timeline"),
+                    contentPadding = contentPadding,
+                ) {
+                    item(key = "header") {
+                        Column(
+                            modifier = Modifier.padding(bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                        ) {
+                            LumaSectionHeader(
+                                title = stringResource(R.string.timeline),
+                                actionLabel = onSearch?.let { stringResource(R.string.search_entries_title) },
+                                onAction = onSearch,
+                                actionModifier = Modifier.testTag("timeline_search"),
+                                style = MaterialTheme.typography.titleLarge,
+                                actionStackBreakpoint = 340.dp,
+                            )
+                            LumaSectionSurface(modifier = Modifier.testTag("timeline_date_ribbon")) {
+                                DayNavigation(date, onSelectDate, onToday)
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+                                    verticalArrangement = Arrangement.spacedBy(LumaUi.RelatedGap),
+                                ) {
+                                    if (state.loaded) Text(
+                                        entryLogCounts(state.eventCount, state.habitLogCount),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.testTag("timeline_counts"),
+                                    )
+                                    TimelineViewOptions(
+                                        expanded = viewOptionsExpanded,
+                                        onExpandedChange = { viewOptionsExpanded = it },
+                                        showAppUsage = observed.showAppUsage,
+                                        onShowAppUsageChange = { show ->
+                                            usagePreference.setShowAppUsage(show)
+                                            pager.setShowAppUsage(show)
+                                        },
+                                        zone = zone,
+                                        modifier = if (viewOptionsExpanded) Modifier.fillMaxWidth() else Modifier,
+                                    )
+                                }
+                                if (observed.showAppUsage) {
+                                    Text(
+                                        text = stringResource(R.string.timeline_app_usage_active),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.testTag("timeline_app_usage_active"),
+                                    )
+                                }
                             }
                         }
                     }
-                }
-                if (state.loading) item(key = "loading") { CircularProgressIndicator(Modifier.testTag("timeline_loading")) }
-                if (state.error != null) item(key = "error") {
-                    Column(Modifier.testTag("timeline_error").padding(bottom = 16.dp)) {
-                        AccessibleFeedback(stringResource(R.string.timeline_error), Modifier.testTag("timeline_error_message"))
-                        LumaTextButton(onClick = pager::retry) { Text(stringResource(R.string.retry)) }
+                    if (state.loading) item(key = "loading") {
+                        CircularProgressIndicator(Modifier.testTag("timeline_loading"))
                     }
-                }
-                if (state.loaded && state.items.isEmpty()) item(key = "empty") {
-                    Box(Modifier.padding(bottom = 16.dp)) {
-                        EmptyStateCard(R.drawable.ic_nav_timeline, R.string.timeline_empty_heading, R.string.timeline_empty,
-                            "timeline_empty")
+                    if (state.error != null) item(key = "error") {
+                        Column(Modifier.testTag("timeline_error").padding(bottom = 16.dp)) {
+                            AccessibleFeedback(
+                                stringResource(R.string.timeline_error),
+                                Modifier.testTag("timeline_error_message"),
+                            )
+                            LumaTextButton(onClick = pager::retry) { Text(stringResource(R.string.retry)) }
+                        }
                     }
-                }
-                if (state.canLoadEarlier) item(key = "later") {
-                    LumaTextButton(enabled = !state.busy, onClick = pager::loadEarlier,
-                        modifier = Modifier.padding(bottom = 16.dp).testTag("timeline_later")) {
-                        Text(stringResource(R.string.timeline_later))
+                    if (state.loaded && state.items.isEmpty()) item(key = "empty") {
+                        Box(Modifier.padding(bottom = 16.dp)) {
+                            EmptyStateCard(
+                                R.drawable.ic_nav_timeline,
+                                R.string.timeline_empty_heading,
+                                R.string.timeline_empty,
+                                "timeline_empty",
+                            )
+                        }
                     }
-                }
-                val firstTimed = state.items.indexOfFirst { item ->
-                    item !is TimelineFeedItem.Habit || item.log.occurredAt != null
-                }
-                val dateOnlyCount = if (firstTimed < 0) state.items.size else firstTimed
-                if (dateOnlyCount > 0) item(key = "date_only_group") {
-                    Text(stringResource(R.string.habit_time_not_recorded), style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(bottom = 16.dp).testTag("timeline_date_only_group"))
-                }
-                itemsIndexed(state.items, key = { _, item -> item.key }, contentType = { _, item ->
-                    when (item) {
-                        is TimelineFeedItem.Entry -> item.record.event.type
-                        is TimelineFeedItem.Habit -> "habit"
+                    if (state.canLoadEarlier) item(key = "later") {
+                        LumaTextButton(
+                            enabled = !state.busy,
+                            onClick = pager::loadEarlier,
+                            modifier = Modifier.padding(bottom = 16.dp).testTag("timeline_later"),
+                        ) {
+                            Text(stringResource(R.string.timeline_later))
+                        }
                     }
-                }) { index, item ->
-                    TimelineRailItem(index = index, itemCount = state.items.size, item = item) {
+                    val firstTimed = state.items.indexOfFirst { item ->
+                        item !is TimelineFeedItem.Habit || item.log.occurredAt != null
+                    }
+                    val dateOnlyCount = if (firstTimed < 0) state.items.size else firstTimed
+                    if (dateOnlyCount > 0) item(key = "date_only_group") {
+                        Text(
+                            stringResource(R.string.habit_time_not_recorded),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(bottom = 16.dp).testTag("timeline_date_only_group"),
+                        )
+                    }
+                    itemsIndexed(state.items, key = { _, item -> item.key }, contentType = { _, item ->
                         when (item) {
-                            is TimelineFeedItem.Entry -> EventCard(item.record, zone, onOpen = { onEvent(item.record) },
-                                openActionLabel = R.string.event_open,
-                                onMemory = { onMemory(item.record.event.id) })
-                            is TimelineFeedItem.Habit -> HabitTimelineCard(item, zone) {
-                                onHabit(item.log.habitId, item.log.date, item.log.id)
+                            is TimelineFeedItem.Entry -> item.record.event.type
+                            is TimelineFeedItem.Habit -> "habit"
+                        }
+                    }) { index, item ->
+                        TimelineRailItem(
+                            index = index,
+                            itemCount = state.items.size,
+                            item = item,
+                            railWidth = railWidth,
+                            nodeSize = nodeSize,
+                            railColor = timelineColors.outline,
+                            colorScheme = timelineColors,
+                            layoutDirection = layoutDirection,
+                        ) {
+                            when (item) {
+                                is TimelineFeedItem.Entry -> EventCard(
+                                    item.record,
+                                    zone,
+                                    onOpen = { onEvent(item.record) },
+                                    openActionLabel = R.string.event_open,
+                                    onMemory = { onMemory(item.record.event.id) },
+                                )
+                                is TimelineFeedItem.Habit -> HabitTimelineCard(item, zone) {
+                                    onHabit(item.log.habitId, item.log.date, item.log.id)
+                                }
                             }
                         }
                     }
-                }
-                if (state.busy && state.loaded) item(key = "busy") {
-                    Box(Modifier.fillMaxWidth().padding(vertical = LumaUi.SectionGap), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    if (state.busy && state.loaded) item(key = "busy") {
+                        Box(
+                            Modifier.fillMaxWidth().padding(vertical = LumaUi.SectionGap),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
-                }
-                if (state.canLoadLater) item(key = "earlier") {
-                    LumaTextButton(enabled = !state.busy, onClick = pager::loadLater,
-                        modifier = Modifier.padding(top = LumaUi.SectionGap, bottom = 16.dp).testTag("timeline_earlier")) {
-                        Text(stringResource(R.string.timeline_earlier))
+                    if (state.canLoadLater) item(key = "earlier") {
+                        LumaTextButton(
+                            enabled = !state.busy,
+                            onClick = pager::loadLater,
+                            modifier = Modifier.padding(top = LumaUi.SectionGap, bottom = 16.dp)
+                                .testTag("timeline_earlier"),
+                        ) {
+                            Text(stringResource(R.string.timeline_earlier))
+                        }
                     }
                 }
             }
@@ -196,58 +255,84 @@ private fun TimelineRailItem(
     index: Int,
     itemCount: Int,
     item: TimelineFeedItem,
+    railWidth: Dp,
+    nodeSize: Dp,
+    railColor: Color,
+    colorScheme: ColorScheme,
+    layoutDirection: LayoutDirection,
     content: @Composable () -> Unit,
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val compact = maxWidth < 340.dp || LocalDensity.current.fontScale >= 1.8f
-        val railWidth = if (compact) 32.dp else 48.dp
-        val nodeSize = if (compact) 28.dp else 40.dp
-        val railColor = MaterialTheme.colorScheme.outline
-        val layoutDirection = LocalLayoutDirection.current
-
-        Row(
-            modifier = Modifier.fillMaxWidth()
-                .drawBehind {
-                    val centerX = if (layoutDirection == LayoutDirection.Ltr) railWidth.toPx() / 2f
-                    else size.width - railWidth.toPx() / 2f
-                    val centerY = nodeSize.toPx() / 2f
-                    val startY = if (index == 0) centerY else 0f
-                    val endY = if (index == itemCount - 1) centerY else size.height
-                    if (endY > startY) {
-                        drawLine(
-                            color = railColor,
-                            start = Offset(centerX, startY),
-                            end = Offset(centerX, endY),
-                            strokeWidth = 2.dp.toPx(),
-                            cap = StrokeCap.Round,
-                        )
-                    }
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .drawBehind {
+                val centerX = if (layoutDirection == LayoutDirection.Ltr) railWidth.toPx() / 2f
+                else size.width - railWidth.toPx() / 2f
+                val centerY = nodeSize.toPx() / 2f
+                val startY = if (index == 0) centerY else 0f
+                val endY = if (index == itemCount - 1) centerY else size.height
+                if (endY > startY) {
+                    drawLine(
+                        color = railColor,
+                        start = Offset(centerX, startY),
+                        end = Offset(centerX, endY),
+                        strokeWidth = 2.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
                 }
-                .padding(bottom = if (index < itemCount - 1) 16.dp else 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Box(
-                modifier = Modifier.width(railWidth).heightIn(min = nodeSize),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                TimelineTypeNode(item = item, size = nodeSize, isEnd = index == itemCount - 1)
             }
-            Box(modifier = Modifier.weight(1f)) { content() }
+            .padding(bottom = if (index < itemCount - 1) 16.dp else 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(LumaUi.ContentGap),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier = Modifier.width(railWidth).heightIn(min = nodeSize),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            TimelineTypeNode(
+                item = item,
+                size = nodeSize,
+                isEnd = index == itemCount - 1,
+                colorScheme = colorScheme,
+            )
         }
+        Box(modifier = Modifier.weight(1f)) { content() }
     }
 }
 
 @Composable
-private fun TimelineTypeNode(item: TimelineFeedItem, size: Dp, isEnd: Boolean) {
-    val colors = MaterialTheme.colorScheme
+private fun TimelineTypeNode(
+    item: TimelineFeedItem,
+    size: Dp,
+    isEnd: Boolean,
+    colorScheme: ColorScheme,
+) {
     val (icon, background, foreground) = when (item) {
-        is TimelineFeedItem.Habit -> Triple(R.drawable.ic_nav_habits, colors.secondaryContainer, colors.onSecondaryContainer)
+        is TimelineFeedItem.Habit -> Triple(
+            R.drawable.ic_nav_habits,
+            colorScheme.secondaryContainer,
+            colorScheme.onSecondaryContainer,
+        )
         is TimelineFeedItem.Entry -> when (item.record.event.type) {
-            EventType.MOOD -> Triple(R.drawable.ic_review_mood, colors.secondaryContainer, colors.onSecondaryContainer)
-            EventType.JOURNAL, EventType.MEMORY -> Triple(R.drawable.ic_bookmark, colors.tertiaryContainer, colors.onTertiaryContainer)
-            EventType.ACTIVITY -> Triple(R.drawable.ic_review_activity, colors.surfaceContainerHighest, colors.onSurface)
-            EventType.APP_USAGE -> Triple(R.drawable.ic_review_usage, colors.surfaceContainerLow, colors.onSurface)
+            EventType.MOOD -> Triple(
+                R.drawable.ic_review_mood,
+                colorScheme.secondaryContainer,
+                colorScheme.onSecondaryContainer,
+            )
+            EventType.JOURNAL, EventType.MEMORY -> Triple(
+                R.drawable.ic_bookmark,
+                colorScheme.tertiaryContainer,
+                colorScheme.onTertiaryContainer,
+            )
+            EventType.ACTIVITY -> Triple(
+                R.drawable.ic_review_activity,
+                colorScheme.surfaceContainerHighest,
+                colorScheme.onSurface,
+            )
+            EventType.APP_USAGE -> Triple(
+                R.drawable.ic_review_usage,
+                colorScheme.surfaceContainerLow,
+                colorScheme.onSurface,
+            )
         }
     }
     Surface(
@@ -260,7 +345,11 @@ private fun TimelineTypeNode(item: TimelineFeedItem, size: Dp, isEnd: Boolean) {
         shadowElevation = 0.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(if (size < 32.dp) 16.dp else 20.dp))
+            Icon(
+                painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(if (size < 32.dp) 16.dp else 20.dp),
+            )
         }
     }
 }
