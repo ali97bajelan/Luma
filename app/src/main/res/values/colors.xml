@@ -1,0 +1,4 @@
+<resources>
+    <color name="luma_window_background_light">#FFFFF8F4</color>
+    <color name="luma_window_background_dark">#FF131413</color>
+</resources>

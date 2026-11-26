@@ -1,7 +1,9 @@
 package com.luma.lifeos
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.ViewModelProvider
@@ -9,6 +11,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luma.lifeos.ui.LifeOsApp
 import com.luma.lifeos.ui.theme.LifeOsTheme
+import com.luma.lifeos.ui.theme.readAppTheme
+import com.luma.lifeos.ui.theme.resolveDarkTheme
 import com.luma.lifeos.widget.WidgetIntents
 import com.luma.lifeos.widget.WidgetLaunchViewModel
 import com.luma.lifeos.widget.WidgetRefreshCoordinator
@@ -38,6 +42,12 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val darkTheme = readAppTheme(getSharedPreferences("app_theme", MODE_PRIVATE))
+            .resolveDarkTheme(
+                systemIsDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                    Configuration.UI_MODE_NIGHT_YES,
+            )
+        setTheme(if (darkTheme) R.style.Theme_PersonalLifeOS_Dark else R.style.Theme_PersonalLifeOS_Light)
         super.onCreate(savedInstanceState)
         widgetLaunches = ViewModelProvider(this)[WidgetLaunchViewModel::class.java]
         if (savedInstanceState == null) enqueueWidgetLaunch(intent)
@@ -47,7 +57,16 @@ class MainActivity : ComponentActivity() {
             focusInvitationLaunch = focusInvitationOpenRequest(intent)
         }
         if (savedInstanceState == null) widgetAction = WidgetIntents.decodePendingMutation(intent)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ) { darkTheme },
+            navigationBarStyle = SystemBarStyle.auto(
+                0xE6FFFFFF.toInt(),
+                0x801B1B1B.toInt(),
+            ) { darkTheme },
+        )
         val luma = application as LumaApplication
         val storage = luma.storage
         setContent {

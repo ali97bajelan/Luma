@@ -1,7 +1,15 @@
 <resources>
-    <style name="Theme.PersonalLifeOS" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="Theme.PersonalLifeOS" parent="Theme.PersonalLifeOS.Light" />
+    <style name="Theme.PersonalLifeOS.Light" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">@color/luma_window_background_light</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+    <style name="Theme.PersonalLifeOS.Dark" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">@color/luma_window_background_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
 </resources>

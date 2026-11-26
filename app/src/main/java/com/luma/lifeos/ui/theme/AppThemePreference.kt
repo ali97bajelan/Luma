@@ -11,6 +11,17 @@ internal enum class AppTheme(val preferenceValue: String) {
 
 internal const val THEME_KEY = "selected_theme"
 
+internal fun readAppTheme(preferences: SharedPreferences): AppTheme =
+    AppTheme.entries.firstOrNull {
+        it.preferenceValue == preferences.getString(THEME_KEY, null)
+    } ?: AppTheme.SYSTEM
+
+internal fun AppTheme.resolveDarkTheme(systemIsDark: Boolean): Boolean = when (this) {
+    AppTheme.SYSTEM -> systemIsDark
+    AppTheme.LIGHT -> false
+    AppTheme.DARK -> true
+}
+
 @Composable
 internal fun rememberThemePreferences(): SharedPreferences {
     val context = LocalContext.current.applicationContext
@@ -20,9 +31,7 @@ internal fun rememberThemePreferences(): SharedPreferences {
 /** Observe the same durable choice in every themed window and in the settings panel. */
 @Composable
 internal fun rememberAppTheme(preferences: SharedPreferences = rememberThemePreferences()): AppTheme {
-    fun read() = AppTheme.entries.firstOrNull {
-        it.preferenceValue == preferences.getString(THEME_KEY, null)
-    } ?: AppTheme.SYSTEM
+    fun read() = readAppTheme(preferences)
 
     var theme by remember(preferences) { mutableStateOf(read()) }
     DisposableEffect(preferences) {

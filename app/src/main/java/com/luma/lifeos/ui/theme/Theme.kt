@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import com.luma.lifeos.R
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 
@@ -127,20 +128,27 @@ internal val ColorScheme.onPrimaryFixedVariant: Color get() = fixedRoles.onPrima
 
 @Composable
 fun LifeOsTheme(content: @Composable () -> Unit) {
-    val darkTheme = when (rememberAppTheme()) {
-        AppTheme.SYSTEM -> isSystemInDarkTheme()
-        AppTheme.LIGHT -> false
-        AppTheme.DARK -> true
-    }
+    val darkTheme = rememberAppTheme().resolveDarkTheme(isSystemInDarkTheme())
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            view.context.activity()?.enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT,
-                    android.graphics.Color.TRANSPARENT) { darkTheme },
-                // Match Activity's default scrims, resolving their contrast from the app choice.
-                navigationBarStyle = SystemBarStyle.auto(0xE6FFFFFF.toInt(), 0x801B1B1B.toInt()) { darkTheme },
-            )
+            view.context.activity()?.let { activity ->
+                activity.window.setBackgroundDrawableResource(
+                    if (darkTheme) R.color.luma_window_background_dark
+                    else R.color.luma_window_background_light,
+                )
+                activity.enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme },
+                    // Match Activity's default scrims, resolving their contrast from the app choice.
+                    navigationBarStyle = SystemBarStyle.auto(
+                        0xE6FFFFFF.toInt(),
+                        0x801B1B1B.toInt(),
+                    ) { darkTheme },
+                )
+            }
         }
     }
     MaterialTheme(
