@@ -93,12 +93,14 @@ fun TodayRoute(
     onRequestProtectedFocusUnlock: () -> Unit = {},
     onSearch: (() -> Unit)? = null,
     focusInProgressMillisFlow: kotlinx.coroutines.flow.StateFlow<Long>? = null,
+    authorizationEpoch: Pair<Long, Long> = 0L to 0L,
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
     var todoRetry by remember { mutableIntStateOf(0) }
     var todayTaskLimit by rememberSaveable(deviceDate.toString()) { mutableIntStateOf(TODO_DEFAULT_PAGE_SIZE) }
     var focusRetry by remember { mutableIntStateOf(0) }
+    val todayFeedViewModel: TodayFeedViewModel = viewModel()
     val todayTasksViewModel = if (todos != null) {
         val tasksFactory = remember(todos) {
             viewModelFactory { initializer { TodayTasksViewModel(todos, createSavedStateHandle()) } }
@@ -125,10 +127,12 @@ fun TodayRoute(
     } else {
         todayTaskActions = TodayTasksActionState()
     }
-    // Recreate collection state so old-day rows cannot appear under the new date header.
-    key(repository, summaries, focusRepository, date, zone) {
-        val observation = remember(retry) { observeToday(repository, date, zone) }
-        val state by observation.collectAsStateWithLifecycle(initialValue = TodayUiState.Loading)
+    // Keep this date's last successful result while its destination is recreated.
+    key(repository, summaries, focusRepository, date, zone, authorizationEpoch) {
+        val observation = remember(todayFeedViewModel, repository, date, zone, authorizationEpoch, retry) {
+            todayFeedViewModel.observe(repository, date, zone, authorizationEpoch)
+        }
+        val state by observation.collectAsStateWithLifecycle()
         val focusReport = if (focusRepository != null && showProtectedFocus) {
             val focusSource = remember(focusRepository) { FocusReportSource(focusRepository) }
             val focusObservation = remember(focusSource, date, zone, focusRetry, canReadTaskOrigin) {

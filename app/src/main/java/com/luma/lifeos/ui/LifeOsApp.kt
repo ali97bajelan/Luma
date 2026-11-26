@@ -1196,6 +1196,8 @@ fun LifeOsApp(
                                 }
                             },
                             focusInProgressMillisFlow = focusViewModel?.displayedMillisFlow,
+                            authorizationEpoch = (lockSnapshot.policy?.generation ?: 0L) to
+                                lockSnapshot.sessionGeneration,
                             focusInProgressState = focusState.runtime.session?.state?.takeIf {
                                 it in setOf(
                                     com.luma.lifeos.domain.focus.FocusState.RUNNING,
