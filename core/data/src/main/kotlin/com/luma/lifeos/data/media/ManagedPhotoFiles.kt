@@ -14,11 +14,27 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.UUID
 
-/** Pure file operations. The repository serializes them with reference queries using one mutex. */
+/** File operations for photo storage. Repository callers run these operations on Dispatchers.IO. */
 class ManagedPhotoFiles(directory: File, private val maxBytes: Long = PhotoLimits.BYTES) {
-    private val root = directory.canonicalFile
-    private val drafts = File(root, ".drafts")
-    init { require(maxBytes > 0); check(root.isDirectory || root.mkdirs()); check(drafts.isDirectory || drafts.mkdirs()); check(drafts.canonicalFile == drafts.absoluteFile) }
+    private val root: File by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        directory.canonicalFile.also { canonicalRoot ->
+            ensureDirectory(canonicalRoot, "photo directory")
+            val draftsDirectory = File(canonicalRoot, ".drafts")
+            ensureDirectory(draftsDirectory, "photo drafts directory")
+            if (draftsDirectory.canonicalFile != draftsDirectory.absoluteFile) {
+                throw IOException("Photo drafts directory is not managed")
+            }
+        }
+    }
+    private val drafts: File get() = File(root, ".drafts")
+
+    init { require(maxBytes > 0) }
+
+    private fun ensureDirectory(directory: File, description: String) {
+        if (!directory.isDirectory && !directory.mkdirs() && !directory.isDirectory) {
+            throw IOException("Could not create $description")
+        }
+    }
 
     fun import(owner: UUID, id: UUID, open: () -> InputStream, inspect: (File) -> PhotoMetadata): PhotoAttachment {
         val path = "photos/$id.img"
