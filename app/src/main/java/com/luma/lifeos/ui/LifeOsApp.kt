@@ -18,7 +18,6 @@ import com.luma.lifeos.ui.settings.SettingsRoute
 import com.luma.lifeos.ui.settings.SettingsSectionPage
 import com.luma.lifeos.ui.settings.IntegrationsSettingsRoute
 import com.luma.lifeos.ui.usage.UsageForegroundRefresh
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Box
@@ -396,7 +395,6 @@ fun LifeOsApp(
     var calendarCaptureDueDate by rememberSaveable { mutableStateOf<String?>(null) }
     var todoRestoreGeneration by rememberSaveable { mutableStateOf(0) }
     var lastCaptureRestoreGeneration by rememberSaveable { mutableStateOf(todoRestoreGeneration) }
-    var captureFabHeight by remember { mutableStateOf(0.dp) }
     val currentRoute = backStackEntry?.destination?.route
     val lockEventId = backStackEntry?.arguments?.getString("eventId")
     val eventScopedRoute = currentRoute in setOf(
@@ -773,7 +771,14 @@ fun LifeOsApp(
     }
     val showCaptureFab = primaryScreen && !isFocusGuarded() &&
         (currentRoute == PrimaryDestination.TIMELINE.route || currentRoute == PrimaryDestination.REVIEW.route)
-    val captureBottomClearance = if (showCaptureFab && captureFabHeight > 0.dp) captureFabHeight + 16.dp else 0.dp
+    val captureBottomClearance = if (showCaptureFab) {
+        with(LocalDensity.current) {
+            maxOf(
+                LumaUi.PrimaryActionHeight,
+                MaterialTheme.typography.labelLarge.lineHeight.toDp() * 2 + LumaUi.SectionPadding * 2,
+            ) + LumaUi.SectionGap
+        }
+    } else 0.dp
     fun appLockEnabled(): Boolean = lockSnapshot.policy?.enabled == true
     fun wholeAppLockEnabled(): Boolean = appLockEnabled() &&
         lockSnapshot.policy?.coverage == com.luma.lifeos.domain.lock.LockCoverage.WHOLE_APP
@@ -999,16 +1004,12 @@ fun LifeOsApp(
         },
         floatingActionButton = {
             if (showCaptureFab) {
-                val density = LocalDensity.current
                 ExtendedFloatingActionButton(
                     onClick = { if (wholeAppLockEnabled()) openRestrictedCapture() else capturing = true },
                     shape = RoundedCornerShape(percent = 50),
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.widthIn(max = 240.dp).onGloballyPositioned { coordinates ->
-                        val measuredHeight = with(density) { coordinates.size.height.toDp() }
-                        if (captureFabHeight != measuredHeight) captureFabHeight = measuredHeight
-                    }.testTag("quick_capture"),
+                    modifier = Modifier.widthIn(max = 240.dp).testTag("quick_capture"),
                 ) {
                     Text(stringResource(R.string.quick_capture), maxLines = 2)
                 }
