@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -24,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.luma.lifeos.R
 import com.luma.lifeos.domain.focus.FocusState
+import kotlinx.coroutines.flow.StateFlow
 
 internal fun todayFocusActionLabel(state: FocusState?): Int = when (state) {
     FocusState.RUNNING -> R.string.today_focus_return_running
@@ -40,7 +42,11 @@ internal fun TodayFocusCard(
     onHistory: () -> Unit,
     onFocus: (() -> Unit)?,
     onRequestUnlock: () -> Unit = {},
+    inProgressMillisFlow: StateFlow<Long>? = null,
 ) {
+    val displayedInProgressMillis = if (inProgressMillis != null && inProgressMillisFlow != null) {
+        inProgressMillisFlow.collectAsStateWithLifecycle().value
+    } else inProgressMillis
     LumaCard(Modifier.fillMaxWidth().testTag("today_focus_card")) {
         Column(
             Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
@@ -90,12 +96,12 @@ internal fun TodayFocusCard(
                     }
                 }
             }
-            if (inProgressMillis != null && inProgressState != null) {
+            if (displayedInProgressMillis != null && inProgressState != null) {
                 Text(
                     stringResource(
                         if (inProgressState == FocusState.PAUSED) R.string.focus_current_paused
                         else R.string.focus_current_in_progress,
-                        focusDuration(inProgressMillis),
+                        focusDuration(displayedInProgressMillis),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.testTag("today_focus_in_progress"),

@@ -92,6 +92,7 @@ fun TodayRoute(
     canReadTaskOrigin: Boolean = true,
     onRequestProtectedFocusUnlock: () -> Unit = {},
     onSearch: (() -> Unit)? = null,
+    focusInProgressMillisFlow: kotlinx.coroutines.flow.StateFlow<Long>? = null,
 ) {
     var retry by remember { mutableIntStateOf(0) }
     var summaryRetry by remember { mutableIntStateOf(0) }
@@ -168,6 +169,9 @@ fun TodayRoute(
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
                 deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
+                focusInProgressMillisFlow = focusInProgressMillisFlow.takeIf {
+                    showProtectedFocus && focusInProgressMillis != null
+                },
                 focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
                 onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory,
                 onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock, onSearch = onSearch)
@@ -230,6 +234,9 @@ fun TodayRoute(
                 onRetryTask = { todayTasksViewModel?.retry(it) }, onDismissTaskError = { todayTasksViewModel?.dismissRowError(it) },
                 deviceDate = deviceDate, onFocus = onFocus, focusPaused = focusPaused && showProtectedFocus,
                 focusReport = focusReport, focusInProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
+                focusInProgressMillisFlow = focusInProgressMillisFlow.takeIf {
+                    showProtectedFocus && focusInProgressMillis != null
+                },
                 focusInProgressState = focusInProgressState.takeIf { showProtectedFocus },
                 onFocusReportRetry = { focusRetry++ }, onFocusHistory = onFocusHistory,
                 onRequestProtectedFocusUnlock = onRequestProtectedFocusUnlock, onSearch = onSearch)

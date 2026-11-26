@@ -20,6 +20,7 @@ import com.luma.lifeos.ui.common.DetailsDisclosure
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
@@ -83,6 +84,7 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
     onOpenTasks: (() -> Unit)? = null,
     onOpenHabits: ((LocalDate) -> Unit)? = null,
     canReadSummary: Boolean = true,
+    focusInProgressMillisFlow: StateFlow<Long>? = null,
 ) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
@@ -283,6 +285,9 @@ fun WeeklyReviewRoute(repository: WeeklyReviewRepository, today: LocalDate, zone
                                     onPlanAnotherSession = onPlanAnotherSession,
                                     goalReport = focusGoalReport,
                                     inProgressMillis = focusInProgressMillis.takeIf { showProtectedFocus },
+                                    inProgressMillisFlow = focusInProgressMillisFlow.takeIf {
+                                        showProtectedFocus && focusInProgressMillis != null
+                                    },
                                     inProgressPaused = focusInProgressPaused && showProtectedFocus,
                                     onRequestUnlock = onRequestProtectedFocusUnlock,
                                     recentContext = focusRecentContext,

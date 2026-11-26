@@ -56,6 +56,7 @@ import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -321,6 +322,20 @@ class FocusViewModel(
         ) FocusRecentWorkState.Hidden else recentWork
         base.copy(recentWork = visibleRecentWork)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, baseState.value)
+
+    val shellState: StateFlow<FocusScreenState> = state
+        .map { screen -> screen.copy(runtime = screen.runtime.copy(displayedMillis = 0L)) }
+        .distinctUntilChanged()
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            state.value.copy(runtime = state.value.runtime.copy(displayedMillis = 0L)),
+        )
+
+    val displayedMillisFlow: StateFlow<Long> = runtime.state
+        .map { it.displayedMillis }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, runtime.state.value.displayedMillis)
 
     init {
         taskFamilyActions?.let { actions ->

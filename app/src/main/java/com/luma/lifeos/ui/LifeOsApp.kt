@@ -148,6 +148,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -305,7 +306,7 @@ fun LifeOsApp(
         }
         viewModel<FocusViewModel>(factory = focusFactory)
     }
-    val focusStateHolder = focusViewModel?.state?.collectAsStateWithLifecycle()
+    val focusStateHolder = focusViewModel?.shellState?.collectAsStateWithLifecycle()
         ?: remember { mutableStateOf(FocusScreenState(FocusRuntimeState(initialized = true, loading = false))) }
     val focusState by focusStateHolder
     var focusNavigationGuard by rememberSaveable { mutableStateOf(FocusNavigationGuard()) }
@@ -472,7 +473,7 @@ fun LifeOsApp(
             ?: flowOf(true)
     }
     val focusDatabaseGenerationFlow = remember(focusViewModel) {
-        focusViewModel?.state?.map { it.runtime.databaseGeneration } ?: flowOf(null)
+        focusViewModel?.shellState?.map { it.runtime.databaseGeneration }?.distinctUntilChanged() ?: flowOf(null)
     }
     val visibleFocusSurfaces = visibleFocusPrivateSurfaces(protectedFocusReadable)
     LaunchedEffect(focusViewModel, protectedFocusReadable) {
@@ -1193,6 +1194,7 @@ fun LifeOsApp(
                                     )
                                 }
                             },
+                            focusInProgressMillisFlow = focusViewModel?.displayedMillisFlow,
                             focusInProgressState = focusState.runtime.session?.state?.takeIf {
                                 it in setOf(
                                     com.luma.lifeos.domain.focus.FocusState.RUNNING,
@@ -1226,6 +1228,7 @@ fun LifeOsApp(
                                         )
                                     }
                                 },
+                                focusInProgressMillisFlow = focusViewModel?.displayedMillisFlow,
                                 focusInProgressPaused = focusState.runtime.session?.state ==
                                     com.luma.lifeos.domain.focus.FocusState.PAUSED,
                                 showProtectedFocus = FocusPrivateSurface.REVIEW in visibleFocusSurfaces,

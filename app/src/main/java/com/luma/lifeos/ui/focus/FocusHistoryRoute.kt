@@ -86,7 +86,7 @@ internal fun FocusHistoryRoute(
     requestedSessionId: UUID? = null,
     onRequestProtectedFocusUnlock: () -> Unit = {},
 ) {
-    val focusScreenState = focusViewModel?.state?.collectAsStateWithLifecycle()
+    val focusScreenState = focusViewModel?.shellState?.collectAsStateWithLifecycle()
     val taskCompletionState = focusScreenState?.value?.taskCompletion ?: FocusTaskCompletionState()
     val factory = remember(
         repository,

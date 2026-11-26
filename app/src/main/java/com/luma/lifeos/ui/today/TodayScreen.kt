@@ -104,6 +104,7 @@ fun TodayScreen(
     onFocusHistory: (LocalDate, LocalDate, ZoneId) -> Unit = { _, _, _ -> },
     onRequestProtectedFocusUnlock: () -> Unit = {},
     onSearch: (() -> Unit)? = null,
+    focusInProgressMillisFlow: kotlinx.coroutines.flow.StateFlow<Long>? = null,
 ) {
     var choosingDateFor by rememberSaveable(date) { mutableStateOf<EventType?>(null) }
     var choosingCaptureDate by rememberSaveable(date) { mutableStateOf<String?>(null) }
@@ -173,6 +174,7 @@ fun TodayScreen(
                     report = focusReport,
                     inProgressMillis = focusInProgressMillis,
                     inProgressState = focusInProgressState,
+                    inProgressMillisFlow = focusInProgressMillisFlow,
                     onRetry = onFocusReportRetry,
                     onHistory = { onFocusHistory(date, date, zone) },
                     onFocus = focusAction,

@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.luma.lifeos.ui.common.LumaTextButton
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -39,6 +40,7 @@ import com.luma.lifeos.language.localizedDate
 import com.luma.lifeos.domain.review.ReviewPeriod
 import java.time.LocalDate
 import java.time.format.FormatStyle
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun WeeklyFocusCard(
@@ -56,7 +58,11 @@ internal fun WeeklyFocusCard(
     recentContext: FocusReviewContextState = FocusReviewContextState.Hidden,
     onRetryRecentContext: () -> Unit = {},
     onViewSession: (UUID) -> Unit = {},
+    inProgressMillisFlow: StateFlow<Long>? = null,
 ) {
+    val displayedInProgressMillis = if (inProgressMillis != null && inProgressMillisFlow != null) {
+        inProgressMillisFlow.collectAsStateWithLifecycle().value
+    } else inProgressMillis
     LumaCard(Modifier.fillMaxWidth().testTag("review_focus_card")) {
         Column(
             Modifier.fillMaxWidth().padding(LumaUi.SectionPadding),
@@ -182,11 +188,11 @@ internal fun WeeklyFocusCard(
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                             )
-                            if (inProgressMillis != null && inProgressMillis > 0) {
+                            if (displayedInProgressMillis != null && displayedInProgressMillis > 0) {
                                 Text(
                                     stringResource(
                                         if (inProgressPaused) R.string.focus_current_paused else R.string.focus_current_in_progress,
-                                        focusDuration(inProgressMillis),
+                                        focusDuration(displayedInProgressMillis),
                                     ),
                                     modifier = Modifier.testTag("review_focus_goal_in_progress"),
                                     style = MaterialTheme.typography.bodySmall,
