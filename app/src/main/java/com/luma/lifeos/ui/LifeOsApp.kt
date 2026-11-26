@@ -187,6 +187,7 @@ import com.luma.lifeos.lock.OperationProof
 import com.luma.lifeos.lock.EventEditorKind
 import com.luma.lifeos.lock.LockPendingDestination
 import com.luma.lifeos.ui.privacy.AppLockGate
+import com.luma.lifeos.ui.privacy.AppLockInitializationSurface
 import com.luma.lifeos.ui.privacy.RestrictedCaptureRoute
 import com.luma.lifeos.ui.privacy.AppLockSettingsRoute
 import com.luma.lifeos.ui.privacy.AppLockRecoveryRoute
@@ -532,6 +533,8 @@ fun LifeOsApp(
     LaunchedEffect(appLockCoordinator, lockContext) {
         appLockCoordinator?.onNavigationChanged(lockContext)
     }
+    val lockPolicyInitializing = appLockCoordinator != null &&
+        lockSnapshot.loadStatus == LockLoadStatus.UNKNOWN
     val appLockGateVisible = appLockCoordinator != null && when {
         currentRoute in setOf(AppRoutes.RESTRICTED_CAPTURE, AppRoutes.APP_LOCK_SETTINGS, AppRoutes.APP_LOCK_RECOVERY) -> false
         currentRoute == "privacy" && lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY -> false
@@ -606,10 +609,11 @@ fun LifeOsApp(
         aggregateContentRoute -> readableProtectedSections
         else -> lockContext.requiredSections.intersect(readableProtectedSections)
     }
-    val alwaysSecureWindow = appLockUnlockVisible || appLockGateVisible || currentRoute in setOf(
-        AppRoutes.APP_LOCK_SETTINGS,
-        AppRoutes.APP_LOCK_RECOVERY,
-    )
+    val alwaysSecureWindow = appLockUnlockVisible || appLockGateVisible || lockPolicyInitializing ||
+        currentRoute in setOf(
+            AppRoutes.APP_LOCK_SETTINGS,
+            AppRoutes.APP_LOCK_RECOVERY,
+        )
     val lifecycleOwner = LocalLifecycleOwner.current
     SideEffect {
         hostActivity?.let { activity ->
@@ -969,7 +973,7 @@ fun LifeOsApp(
     }
     Box(Modifier.fillMaxSize()) {
     Scaffold(
-        modifier = if (appLockGateVisible) {
+        modifier = if (appLockGateVisible || lockPolicyInitializing) {
             Modifier.clearAndSetSemantics { }
         } else Modifier,
         snackbarHost = {
@@ -2166,7 +2170,9 @@ fun LifeOsApp(
         } },
     )
     }
-    if (appLockGateVisible) {
+    if (lockPolicyInitializing) {
+        AppLockInitializationSurface()
+    } else if (appLockGateVisible) {
         AppLockGate(
             canRequestUnlock = lockSnapshot.loadStatus == com.luma.lifeos.domain.lock.LockLoadStatus.READY,
             addNewEntryAvailable = restrictedCaptureService != null,

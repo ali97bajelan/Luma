@@ -6,12 +6,14 @@ import com.luma.lifeos.ui.common.LumaButton
 import com.luma.lifeos.ui.common.LumaAlertDialog
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -45,7 +48,33 @@ import com.luma.lifeos.lock.OperationProof
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-/** Preview-free shell shown while authorization is unknown, unavailable, or missing. */
+/** Opaque launch surface shown until the persisted lock policy is resolved. */
+@Composable
+internal fun AppLockInitializationSurface() {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("app_lock_initializing")
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent().changes.forEach { it.consume() }
+                    }
+                }
+            },
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+}
+
+/** Preview-free shell shown while authorization is unavailable or missing. */
 @Composable
 fun AppLockGate(
     canRequestUnlock: Boolean,
